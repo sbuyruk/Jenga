@@ -1,0 +1,73 @@
+﻿@model Jenga.Models.ViewModels.DepoHareketVM
+
+<form method="post" asp-action="Create" enctype="multipart/form-data">
+    <input asp-for="DepoHareket.Id" hidden />
+    <div class="row pt-3">
+        <div class="col ">
+            <h4 class="text-primary text-start fw-bold">Anı Objesi Oluşturma</h4>
+        </div>
+    </div>
+    <hr />
+    <div class="row">
+        @*<div asp-validation-summary="All"></div>*@
+
+        <div class="mb-3 col-3">
+            <label asp-for="DepoHareket.DepoId"></label>
+            <select asp-for="DepoHareket.DepoId" asp-items="@Model.DepoTanimList" class="form-select">
+                <option disabled selected>--Depo seçiniz--</option>
+            </select>
+            <span asp-validation-for="DepoHareket.DepoId" class="text-danger"></span>
+        </div>
+        <div class="mb-3 col-4">
+            <label asp-for="DepoHareket.AniObjesiId"></label>
+            <select asp-for="DepoHareket.AniObjesiId" asp-items="@Model.AniObjesiList" class="form-select">
+                <option disabled selected>--Anı Objesi seçiniz--</option>
+            </select>
+            <span asp-validation-for="DepoHareket.AniObjesiId" class="text-danger"></span>
+        </div>
+        <div class="mb-3  col-2">
+            <label asp-for="DepoHareket.Adet"></label>
+            <input asp-for="DepoHareket.Adet" class="form-control" />
+            <span asp-validation-for="DepoHareket.Adet" class="text-danger"></span>
+        </div>
+        <div class="mb-3 col-3">
+            <label asp-for="DepoHareket.GirisCikis"></label>
+            <select asp-for="DepoHareket.GirisCikis" asp-items="@Model.GirisCikisList" class="form-select">
+                @*<option disabled selected>--Stok takibi yapılacak mı, seçiniz--</option>*@
+            </select>
+            <span asp-validation-for="DepoHareket.GirisCikis" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="DepoHareket.Aciklama"></label>
+            <textarea asp-for="DepoHareket.Aciklama" rows="3" class="form-control"></textarea>
+            <span asp-validation-for="DepoHareket.Aciklama" class="text-danger"></span>
+        </div>
+        <div class="col-12">
+            @if (Model.DepoHareket.Id != 0)
+            {
+                <button type="submit" class="btn btn-primary" style="width:150px">Güncelle</button>
+            }
+            else
+            {
+                <button type="submit" class="btn btn-primary" style="width:150px">Kaydet</button>
+            }
+            <a asp-controller="DepoHareket" asp-action="Index" class="btn btn-secondary" style="width:150px">
+                Listeye Dön
+            </a>
+        </div>
+    </div>
+</form>
+
+@section Scripts{
+    @{
+        <partial name="_ValidationScriptsPartial" />
+    }
+    <script>
+        tinymce.init({
+            selector: 'textarea',
+            plugins: 'advlist autolink lists link image charmap print preview hr anchor pagebreak',
+            toolbar_mode: 'floating',
+        });      
+    </script>
+}
