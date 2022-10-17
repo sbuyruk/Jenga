@@ -1,10 +1,10 @@
 ﻿@model Jenga.Models.ViewModels.AniObjesiVM
 
-<form method="post" asp-action="Upsert" enctype="multipart/form-data">
+<form method="post" asp-action="Create" enctype="multipart/form-data">
     <input asp-for="AniObjesiTanim.Id" hidden />
     <div class="row pt-3">
         <div class="col ">
-            <h4 class="text-primary text-start fw-bold">Anı Objesi @(Model.AniObjesiTanim.Id != 0 ? "Düzenleme" : "Oluşturma")</h4>
+            <h4 class="text-primary text-start fw-bold">Anı Objesi Oluşturma</h4>
         </div>
     </div>
     <hr />
@@ -37,7 +37,7 @@
         <div class="col-12">
             @if (Model.AniObjesiTanim.Id != 0)
             {
-                <button type="submit" class="btn btn-primary" style="width:150px">Güncelle</button>
+                <button type="submit" class="btn btn-primary" style="width:150px">Kaydet</button>
             }
             else
             {
@@ -59,6 +59,6 @@
             selector: 'textarea',
             plugins: 'advlist autolink lists link image charmap print preview hr anchor pagebreak',
             toolbar_mode: 'floating',
-        });
+        });      
     </script>
 }

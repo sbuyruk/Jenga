@@ -8,13 +8,13 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using Jenga.Models.MTS;
 using System.ComponentModel;
+using Jenga.Models.Ortak;
 
 namespace Jenga.Models.MTS
 {
-    public class AniObjesiTanim
+    public class AniObjesiTanim :BaseModel
     {
-        [Key]
-        public int Id { get; set; }
+       
         [Required]
         [DisplayName("Anı Objesinin Adı")]
         public string Adi { get; set; }
@@ -26,11 +26,7 @@ namespace Jenga.Models.MTS
         [ValidateNever]
         public KaynakTanim KaynakTanim { get; set; }
         public string Aciklama { get; set; }
-        public string? Olusturan { get; set; }
-        public DateTime OlusturmaTarihi { get; set; } = DateTime.Now;
-        public string? Degistiren { get; set; }
-        [ValidateNever]
-        public DateTime DegistirmeTarihi { get; set; } = DateTime.Now;
+       
         
     }
 }

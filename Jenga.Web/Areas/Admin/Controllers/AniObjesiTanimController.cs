@@ -21,9 +21,31 @@ namespace Jenga.Web.Areas.Admin.Controllers
         {
             return View();
         }
-        
+
         //GET
-        public IActionResult Upsert(int? id)
+        public IActionResult Create()
+        {
+
+            var stokDurumuList = new List<SelectListItem> {
+              new SelectListItem { Text = "Stoklu", Value = "Stoklu" },
+              new SelectListItem { Text = "Stoksuz", Value = "Stoksuz" }
+            };
+            AniObjesiVM aniObjesiVM = new()
+            {
+                AniObjesiTanim = new(),
+                KaynakTanimList = _unitOfWork.KaynakTanim.GetAll().Select(i => new SelectListItem
+                {
+                    Text = i.Adi,
+                    Value = i.Id.ToString()
+                }),
+                StokDurumuList = stokDurumuList
+
+            };
+
+            return View(aniObjesiVM);
+
+        }
+        public IActionResult Update(int? id)
         {
             var stokDurumuList = new List<SelectListItem> {
               new SelectListItem { Text = "Stoklu", Value = "Stoklu" },
@@ -43,8 +65,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
 
             if (id == null || id == 0)
             {
-                //create 
-                return View(aniObjesiVM);
+                return NotFound();
             }
             else
             {
@@ -52,30 +73,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 aniObjesiVM.AniObjesiTanim = _unitOfWork.AniObjesiTanim.GetFirstOrDefault(u => u.Id == id);
                 return View(aniObjesiVM);
             }
-            
-        }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult Upsert(AniObjesiVM obj)
-        {
-            if (ModelState.IsValid)
-            {
-                if (obj.AniObjesiTanim.Id == 0)
-                {
-                    _unitOfWork.AniObjesiTanim.Add(obj.AniObjesiTanim);
-                    TempData["success"] = "Anı Objesi oluşturuldu";
-                }
-                else
-                {
-                    _unitOfWork.AniObjesiTanim.Update(obj.AniObjesiTanim);
-                    TempData["success"] = "Anı Objesi güncellendi";
-                }
-                _unitOfWork.Save();
-                
-                return RedirectToAction("Index");
-            }
-            return View(obj);
         }
 
         #region API CALLS
@@ -102,6 +100,51 @@ namespace Jenga.Web.Areas.Admin.Controllers
             _unitOfWork.AniObjesiTanim.Remove(obj);
             _unitOfWork.Save();
             return Json(new { success = true, message = "Anı Objesi silindi" });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult Create(AniObjesiVM obj)
+        {
+            if (ModelState.IsValid)
+            {
+                if (obj.AniObjesiTanim.Id == 0)
+                {
+                    _unitOfWork.AniObjesiTanim.Add(obj.AniObjesiTanim);
+                    TempData["success"] = "Anı Objesi oluşturuldu";
+                }
+                else
+                {
+                    TempData["error"] = "Anı Objesi oluşturulamadı";
+                }
+
+                _unitOfWork.Save();
+
+                return RedirectToAction("Index");
+            }
+            return View(obj);
+        }
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult Update(AniObjesiVM obj)
+        {
+            if (ModelState.IsValid)
+            {
+                if (obj.AniObjesiTanim.Id == 0)
+                {
+                    TempData["success"] = "Anı Objesi Id bulunamadı";
+                }
+                else
+                {
+                    _unitOfWork.AniObjesiTanim.Update(obj.AniObjesiTanim);
+                    TempData["success"] = "Anı Objesi güncellendi";
+                }
+
+                _unitOfWork.Save();
+
+                return RedirectToAction("Index");
+            }
+            return View(obj);
         }
         #endregion
     }

@@ -7,13 +7,12 @@ using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Jenga.Models.Ortak;
 
 namespace Jenga.Models.MTS
 {
-    public class DepoHareket
+    public class DepoHareket : BaseModel
     {
-        [Key]
-        public int Id { get; set; }
         public int AniObjesiId { get; set; }
         [DisplayName("Anı Objesi")]
         [ForeignKey("AniObjesiId")]
@@ -33,10 +32,6 @@ namespace Jenga.Models.MTS
         [DisplayFormat(ApplyFormatInEditMode = true, DataFormatString = "{0:MM/dd/yyyy}")]
         public DateTime IslemTarihi { get; set; } = DateTime.Now;
         public string? IslemYapan { get; set; }
-        public string? Olusturan { get; set; }
-        public DateTime OlusturmaTarihi { get; set; } = DateTime.Now;
-        public string? Degistiren { get; set; }
-        public DateTime DegistirmeTarihi { get; set; } = DateTime.Now;
 
     }
 }

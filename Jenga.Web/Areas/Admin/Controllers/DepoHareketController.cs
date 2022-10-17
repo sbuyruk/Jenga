@@ -46,8 +46,8 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 GirisCikisList = girisCikisList
 
             };
-           
-                return View(depoHareketVM);
+
+            return View(depoHareketVM);
             
         }
         public IActionResult Update(int? id)
@@ -86,52 +86,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             }
 
         }
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult Create(DepoHareketVM obj)
-        {
-            if (ModelState.IsValid)
-            {
-                DepoStokKaydiOlusturVeyaGuncelle(obj,false);
-                if (obj.DepoHareket.Id == 0)
-                {
-                    _unitOfWork.DepoHareket.Add(obj.DepoHareket);
-                    TempData["success"] = "Depo işlemi gerçekleşti";
-                }
-                else
-                {
-                    TempData["success"] = "Depo Id bulunamadı";
-                }
-               
-                _unitOfWork.Save();
-                
-                return RedirectToAction("Index");
-            }
-            return View(obj);
-        }
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult Update(DepoHareketVM obj)
-        {
-            if (ModelState.IsValid)
-            {
-                DepoStokKaydiOlusturVeyaGuncelle(obj, false);
-                if (obj.DepoHareket.Id == 0)
-                {
-                    TempData["success"] = "Depo Id bulunamadı";
-                }
-                else
-                {
-                    _unitOfWork.DepoHareket.Update(obj.DepoHareket);
-                    TempData["success"] = "Depo işlemi güncellendi";
-                }
-
-                _unitOfWork.Save();
-
-                return RedirectToAction("Index");
-            }
-            return View(obj);
-        }
+        
 
         private void DepoStokKaydiOlusturVeyaGuncelle(DepoHareketVM obj, bool isDelete)
         {
@@ -212,7 +167,54 @@ namespace Jenga.Web.Areas.Admin.Controllers
             _unitOfWork.Save();
             return Json(new { success = true, message = "Depo işlemi silindi" });
         }
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult Create(DepoHareketVM obj)
+        {
+            if (ModelState.IsValid)
+            {
+                DepoStokKaydiOlusturVeyaGuncelle(obj, false);
+                if (obj.DepoHareket.Id == 0)
+                {
+                    _unitOfWork.DepoHareket.Add(obj.DepoHareket);
+                    TempData["success"] = "Depo işlemi gerçekleşti";
+                }
+                else
+                {
+                    TempData["error"] = "Depo Id bulunamadı";
+                }
+
+                _unitOfWork.Save();
+
+                return RedirectToAction("Index");
+            }
+            return View(obj);
+        }
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult Update(DepoHareketVM obj)
+        {
+            if (ModelState.IsValid)
+            {
+                DepoStokKaydiOlusturVeyaGuncelle(obj, false);
+                if (obj.DepoHareket.Id == 0)
+                {
+                    TempData["error"] = "Depo Id bulunamadı";
+                }
+                else
+                {
+                    _unitOfWork.DepoHareket.Update(obj.DepoHareket);
+                    TempData["success"] = "Depo işlemi güncellendi";
+                }
+
+                _unitOfWork.Save();
+
+                return RedirectToAction("Index");
+            }
+            return View(obj);
+        }
         #endregion
+
     }
 
 

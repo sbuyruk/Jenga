@@ -16,6 +16,5 @@ namespace Jenga.Models.ViewModels
         public IEnumerable<SelectListItem> KaynakTanimList { get; set; }
         [ValidateNever]
         public IEnumerable<SelectListItem> StokDurumuList { get; set; }
-        public object DepoHareket { get; set; }
     }
 }
