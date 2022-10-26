@@ -7,6 +7,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Jenga.Models.MTS;
+using Jenga.Models.Ortak;
+using Jenga.DataAccess.Repository.IRepository.Ortak;
 
 namespace Jenga.DataAccess.Repository
 {

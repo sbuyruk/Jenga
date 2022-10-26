@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="~/lib/toastr/toastr.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/lib/animate/animate.css" asp-append-version="true" />
     <link rel="stylesheet" type="text/css" href="~/lib/DataTables/datatables.min.css" />
+    <link rel="stylesheet" type="text/css" href="~/lib/jqTree/jqTree.css" />
 </head>
 <body>
     <header>
@@ -27,13 +28,13 @@
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Ana Sayfa</a>
+                            <a class="nav-link text-light" asp-area="" asp-controller="Home" asp-action="Index">Ana Sayfa</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Kullanım Koşulları</a>
+                            <a class="nav-link text-light" asp-area="" asp-controller="Home" asp-action="Privacy">Kullanım Koşulları</a>
                         </li>
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">Depo İşlemleri</a>
+                            <a class="nav-link dropdown-toggle text-light" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">Depo İşlemleri</a>
                             <div class="dropdown-menu">
                                 <a class="dropdown-item " asp-area="Admin" asp-controller="DepoTanim" asp-action="Index">Depo Tanımlama</a>
                                 <a class="dropdown-item " asp-area="Admin" asp-controller="KaynakTanim" asp-action="Index">Kaynak Tanımlama</a>
@@ -43,12 +44,32 @@
                                 <div class="dropdown-divider"></div>
                             </div>
                         </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle " data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">Yetki İşlemleri</a>
+                            <div class="dropdown-menu">
+                                <a class="dropdown-item " asp-area="Admin" asp-controller="ModulTanim" asp-action="Index">Modül Listesi</a>
+                                <a class="dropdown-item " asp-area="Admin" asp-controller="MenuTanim" asp-action="Index">Menü Listesi</a>
+                                <div class="dropdown-divider"></div>
+                            </div>
+                        </li>
                     </ul>
                     <p class="nav navbar-text">Hello, @User.Identity?.Name!</p>
                 </div>
             </div>
         </nav>
+        <div class="border border-light" style="width:2px"></div>
+        <div class="navbar-dark bg-primary">
+            
+            <input class="checkbox-trigger" type="checkbox" />
+            <div class="menu-content">
+
+                <div id="tree1"></div>
+                <span class="hamburger-menu"></span>
+            </div>
+        </div>
+        
     </header>
+
     <div class="container shadow">
         <main role="main" class="pb-3">
             <partial name="_Notification" />
@@ -68,6 +89,9 @@
     <script src="~/lib/sweetalert2/dist/sweetalert2.all.min.js"></script>
     <script src="~/lib/tinymce/tinymce.min.js"></script>
     <script type="text/javascript" src="~/lib/DataTables/datatables.min.js"></script>
+    <script type="text/javascript" src="~/lib/jqTree/tree.jquery.js"></script>
+    <script type="text/javascript" src="~/js/sliderMenu.js"></script>
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

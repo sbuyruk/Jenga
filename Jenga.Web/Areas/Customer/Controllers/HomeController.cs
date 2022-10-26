@@ -1,4 +1,4 @@
-﻿using Jenga.Models.Ortak;
+﻿using Jenga.Models.Sistem;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 

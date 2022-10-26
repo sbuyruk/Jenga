@@ -1,5 +1,6 @@
 ﻿using Jenga.DataAccess.Repository.IRepository;
 using Jenga.Models.MTS;
+using Jenga.Models.Ortak;
 using System;
 using System.Collections.Generic;
 using System.Linq;

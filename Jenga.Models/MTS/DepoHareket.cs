@@ -7,7 +7,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Jenga.Models.Ortak;
+using Jenga.Models.Sistem;
 
 namespace Jenga.Models.MTS
 {

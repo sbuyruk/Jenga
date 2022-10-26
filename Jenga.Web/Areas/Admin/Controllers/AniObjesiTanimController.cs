@@ -45,7 +45,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             return View(aniObjesiVM);
 
         }
-        public IActionResult Update(int? id)
+        public IActionResult Edit(int? id)
         {
             var stokDurumuList = new List<SelectListItem> {
               new SelectListItem { Text = "Stoklu", Value = "Stoklu" },
@@ -126,7 +126,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
         }
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Update(AniObjesiVM obj)
+        public IActionResult Edit(AniObjesiVM obj)
         {
             if (ModelState.IsValid)
             {

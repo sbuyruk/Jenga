@@ -1,4 +1,5 @@
 ﻿using Jenga.Models.MTS;
+using Jenga.Models.Ortak;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -19,5 +20,7 @@ namespace Jenga.DataAccess.Data
         public DbSet<AniObjesiTanim> AniObjesiTanim_Table { get; set; }
         public DbSet<DepoHareket> DepoHareket_Table { get; set; }
         public DbSet<DepoStok> DepoStok_Table { get; set; }
+        public DbSet<ModulTanim> ModulTanim_Table { get; set; }
+        public DbSet<MenuTanim> MenuTanim_Table { get; set; }
     }
 }

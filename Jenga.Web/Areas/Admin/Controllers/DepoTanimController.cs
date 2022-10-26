@@ -108,7 +108,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             {
                 _unitOfWork.DepoTanim.Remove(obj);
                 _unitOfWork.Save();
-                TempData["success"] = "DepoTanim deleted successifully";
+                TempData["success"] = "Depo tanımı silindi";
                 return RedirectToAction("Index");
             }
         }

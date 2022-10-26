@@ -1,4 +1,4 @@
-namespace Jenga.Models.Ortak
+namespace Jenga.Models.Sistem
 {
     public class ErrorViewModel
     {

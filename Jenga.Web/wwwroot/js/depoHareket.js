@@ -23,7 +23,7 @@ function loadDataTable() {
                 "render": function (data) {
                     return `
                         <div class="btn-group" role="group">
-                        <a href="/Admin/DepoHareket/Update?id=${data}"
+                        <a href="/Admin/DepoHareket/Edit?id=${data}"
                         class="btn btn-primary mx-2"> <i class="bi bi-pencil-square"></i> Düzenle</a>
                         <a onClick=Delete('/Admin/DepoHareket/Delete/${data}')
                         class="btn btn-danger mx-2"> <i class="bi bi-trash-fill"></i> Sil</a>

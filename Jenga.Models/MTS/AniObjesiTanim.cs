@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using Jenga.Models.MTS;
 using System.ComponentModel;
-using Jenga.Models.Ortak;
+using Jenga.Models.Sistem;
 
 namespace Jenga.Models.MTS
 {

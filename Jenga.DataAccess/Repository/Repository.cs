@@ -7,6 +7,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace Jenga.DataAccess.Repository
 {
@@ -17,7 +18,6 @@ namespace Jenga.DataAccess.Repository
         public Repository(ApplicationDbContext db)
         {
             _db = db;
-            //_db.AniObjesiTanim_Table.Include(u => u.KaynakTanim);
             this.dbSet=_db.Set<T>();
         }
 
@@ -25,19 +25,27 @@ namespace Jenga.DataAccess.Repository
         {
             dbSet.Add(entity);
         }
-        //IncludeProp - "KaynakTanim, DepoTanim"
+        //IncludeProp - "KaynakTanim, DepoTanim, vs"
         public IEnumerable<T> GetAll(string? includeProperties = null)
         {
-            IQueryable<T> query = dbSet;
-            
-            if (includeProperties != null)
+            try
             {
-                foreach (var includeProp in includeProperties.Split(new char[] { ',' } ,StringSplitOptions.RemoveEmptyEntries ))
+
+                IQueryable<T> query = dbSet;
+
+                if (includeProperties != null) 
                 {
-                    query = query.Include(includeProp);
+                    foreach (var includeProp in includeProperties.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        query = query.Include(includeProp);
+                    }
                 }
+                return query.ToList();
             }
-            return query.ToList();
+            catch (Exception e)
+            {
+                throw e;
+            }
         }
 
 

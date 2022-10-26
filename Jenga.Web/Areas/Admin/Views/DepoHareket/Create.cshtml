@@ -31,11 +31,11 @@
             <span asp-validation-for="DepoHareket.Adet" class="text-danger"></span>
         </div>
         <div class="mb-3 col-3">
-            <label asp-for="DepoHareket.GirisCikis"></label>
-            <select asp-for="DepoHareket.GirisCikis" asp-items="@Model.GirisCikisList" class="form-select">
-                @*<option disabled selected>--Stok takibi yapılacak mı, seçiniz--</option>*@
-            </select>
-            <span asp-validation-for="DepoHareket.GirisCikis" class="text-danger"></span>
+            <div class="form-group">
+                <label asp-for="DepoHareket.IslemTarihi" class="control-label"></label>
+                <input asp-for="DepoHareket.IslemTarihi" class="form-control datepicker" type="text" />
+                <span asp-validation-for="DepoHareket.IslemTarihi" class="text-danger"></span>
+            </div>
         </div>
 
         <div class="mb-3">

@@ -50,7 +50,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             return View(depoHareketVM);
             
         }
-        public IActionResult Update(int? id)
+        public IActionResult Edit(int? id)
         {
             var girisCikisList = new List<SelectListItem> {
               new SelectListItem { Text = "Giriş", Value = "Giriş" },
@@ -192,7 +192,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
         }
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Update(DepoHareketVM obj)
+        public IActionResult Edit(DepoHareketVM obj)
         {
             if (ModelState.IsValid)
             {

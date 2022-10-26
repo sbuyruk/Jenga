@@ -1,4 +1,5 @@
 ﻿using Jenga.Models.MTS;
+using Jenga.Models.Ortak;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System;

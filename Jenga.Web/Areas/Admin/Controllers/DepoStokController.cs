@@ -26,7 +26,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
         [HttpGet]
         public IActionResult GetAll()
         {
-            var depoStokList = _unitOfWork.DepoStok.GetAll(includeProperties:"DepoTanim,AniObjesiTanim");
+            var depoStokList = _unitOfWork.DepoStok.GetAll( includeProperties:"DepoTanim,AniObjesiTanim");
             return Json(new { data = depoStokList });
         }
 

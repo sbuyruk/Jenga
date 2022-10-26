@@ -1,4 +1,4 @@
-﻿using Jenga.Models.Ortak;
+﻿using Jenga.Models.Sistem;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
