@@ -1,12 +1,9 @@
-﻿using Jenga.DataAccess.Data;
-using Jenga.DataAccess.Repository.IRepository;
-using Jenga.Models;
-using Jenga.Models.MTS;
-using Jenga.Models.Ortak;
+﻿using Jenga.DataAccess.Repository.IRepository;
+using Jenga.Models.IKYS;
 using Jenga.Models.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.Extensions.Hosting;
+using System.Text.Json;
 
 namespace Jenga.Web.Areas.Admin.Controllers
 {
@@ -65,6 +62,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 return View(menuTanimVM);
             }
         }
+       
         #region API CALLS
         [HttpGet]
         public IActionResult GetAll()
@@ -73,7 +71,13 @@ namespace Jenga.Web.Areas.Admin.Controllers
 
             return Json(new { data = menuTanimList });
         }
+        public string GetMenuAll()
+        {
+            int rootMenuId = 0;
+            string json = _unitOfWork.MenuTanim.GetMenuAll(rootMenuId);
 
+            return json;
+        }
         //Delete
         [HttpDelete]
         public IActionResult Delete(int? id)

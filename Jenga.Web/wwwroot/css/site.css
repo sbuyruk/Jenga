@@ -22,145 +22,107 @@ body {
 html {
     height: 100%;
 }
-
-section {
-    display: inline-block;
-    width: 100%;
+/*Vertical Menu icon bar*/
+.icon-bar {
+    width: 90px;
+    background-color: #555;
 }
 
-a {
-/*    color: #40798C;
-    background-color: #0B2027;*/
-    padding: 0.3em;
-    border-radius: 5px;
-    text-decoration: none;
-}
-
-/**
-CSS Hamburger Menu
-**/
-/** always use classes and id's,[Type=checkbox] is slow css **/
-
-.checkbox-container {
-    display: block;
-    float: left;
-    width: 50px;
-    /*height: 50px;*/
-    position: relative;
-    /*background: #182825;*/
-}
-
-.checkbox-trigger {
-    opacity: 0;
-    position: absolute;
-    width: 50px;
-    height: 50px;
-    left: 0px;
-    cursor: pointer;
-    z-index: 5;
-}
-
-.hamburger-menu, .hamburger-menu::before, .hamburger-menu::after {
-    display: block;
-    position: absolute;
-    background: white;
-    width: 40px;
-    height: 4px;
-    margin: 1.3em 3em;
-    transition: background 0.3s;
-}
-
-    .hamburger-menu::before, .hamburger-menu::after {
-        content: '';
-        position: absolute;
-        margin: -0.7em 0 0;
-        transition: width 0.7s ease 0.3s, transform 0.7s ease 0.3s;
-    }
-
-    .hamburger-menu::after {
-        margin-top: 0.7em;
-    }
-
-.hamburger-menu {
-    position: relative;
-    display: block;
-    margin: 0;
-    margin-top: 1.45em;
-    margin-right: 0.35em;
-    margin-left: 0.35em;
-    margin-bottom: 1.45em;
-    transition: width 0.3s ease;
-}
-
-.checkbox-trigger:checked {
-    left: 202px;
-}
-
-    .checkbox-trigger:checked + .menu-content .hamburger-menu {
-        width: 2em;
-        transition: width 0.7s ease 0.7s;
-    }
-
-        .checkbox-trigger:checked + .menu-content .hamburger-menu::before {
-            width: 1.2em;
-            transform: rotate(-35deg);
-            margin-top: -0.4em;
-        }
-
-        .checkbox-trigger:checked + .menu-content .hamburger-menu::after {
-            width: 1.2em;
-            transform: rotate(35deg);
-            margin-top: 0.4em;
-        }
-
-    .checkbox-trigger:checked + .menu-content ul {
-        width: 200px;
-        height: auto;
-        transition: width 0.7s ease 0.3s, height 0.3s ease;
-    }
-
-.menu-content {
-    display: flex;
-    background: rgba(var(--bs-primary-rgb), var(--bs-bg-opacity)) !important;
-    color: white;
-    float: left;
-}
-
-    .menu-content ul {
+    .icon-bar a {
         display: block;
-        padding-left: 0;
-        padding-top: 1em;
-        padding-bottom: 1em;
-        margin: 0;
-        width: 0px;
-        height: 0px;
-        overflow: hidden;
-        transition: height 0.3s ease 0.7s, width 0.7s ease;
+        text-align: center;
+        padding: 16px;
+        transition: all 0.3s ease;
+        color: white;
+        font-size: 36px;
     }
 
-        .menu-content ul li {
-            list-style: none;
-            padding-top: 1em;
-            padding-bottom: 1em;
-            cursor: pointer;
-            transition: color 0.5s, background 0.5s;
+        .icon-bar a:hover {
+            background-color: #000;
         }
 
-            .menu-content ul li:hover {
-                color: #0CD6AD;
-                background: #1E332F;
-            }
+.active {
+    background-color: #04AA6D;
+}
+/*Menu icon*/
+.bar1, .bar2, .bar3 {
+    width: 35px;
+    height: 5px;
+    background-color: white;
+    margin: 6px 0;
+    transition: 0.4s;
+}
 
-/**
-┌─┐┌─┐┌─┐┌┬┐┌─┐┬─┐
-├┤ │ ││ │ │ ├┤ ├┬┘
-└  └─┘└─┘ ┴ └─┘┴└─
-**/
-/** footer **/
-#footer {
-    line-height: 2em;
-    font-size: 0.9em;
-    display: inline-block;
-    min-width: 2em;
-    margin: 0 auto;
+.change .bar1 {
+    transform: translate(0, 11px) rotate(-45deg);
+}
+
+.change .bar2 {
+    opacity: 0;
+}
+
+.change .bar3 {
+    transform: translate(0, -11px) rotate(45deg);
+}
+/*Sidebar*/
+.sidebar {
+    height: 100%;
+    width: 0px;
+    position: fixed;
+    z-index: 1;
+    top: 0;
+    left: 0;
+    overflow-x: hidden;
+    transition: 0.5s;
+    padding-top: 60px;
+}
+
+    .sidebar a {
+        padding: 8px 8px 8px 32px;
+        text-decoration: none;
+        font-size: 25px;
+        color: #818181;
+        display: block;
+        transition: 0.3s;
+    }
+
+        .sidebar a:hover {
+            color: #f1f1f1;
+        }
+
+    .sidebar .closebtn {
+        position: absolute;
+        top: 0;
+        right: 25px;
+        font-size: 36px;
+        margin-left: 50px;
+    }
+
+.openbtn {
+    font-size: 20px;
+    cursor: pointer;
+    background-color: #111;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+}
+
+    .openbtn:hover {
+        background-color: #444;
+    }
+
+#main {
+    transition: margin-left .5s;
+    padding: 5px;
+}
+
+/* On smaller screens, where height is less than 450px, change the style of the sidenav (less padding and a smaller font size) */
+@media screen and (max-height: 450px) {
+    .sidebar {
+        padding-top: 15px;
+    }
+
+        .sidebar a {
+            font-size: 18px;
+        }
 }

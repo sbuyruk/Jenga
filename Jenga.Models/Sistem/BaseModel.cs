@@ -12,8 +12,11 @@ namespace Jenga.Models.Sistem
     {
         [Key]
         public int Id { get; set; }
+        [ValidateNever]
         public string? Olusturan { get; set; }
+        [ValidateNever]
         public DateTime OlusturmaTarihi { get; set; } = DateTime.Now;
+        [ValidateNever]
         public string? Degistiren { get; set; }
         [ValidateNever]
         public DateTime DegistirmeTarihi { get; set; } = DateTime.Now;

@@ -1,5 +1,6 @@
 ﻿using Jenga.DataAccess.Data;
 using Jenga.DataAccess.Repository.IRepository;
+using Jenga.Models.Ortak;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -55,7 +56,12 @@ namespace Jenga.DataAccess.Repository
             query = query.Where(filter);
             return query.FirstOrDefault();
         }
-
+        public List<T> GetByFilter(Expression<Func<T, bool>> filter, string? includeProperties = null)
+        {
+            IQueryable<T> query = dbSet;
+            query = query.Where(filter);
+            return query.ToList();
+        }
         public void Remove(T entity)
         {
             if (entity != null)
