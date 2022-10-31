@@ -2,7 +2,7 @@
 $(document).ready(function () {
     loadSliderMenu();
 });
-var tree =  [
+var data =  [
     {
         text: "Node 1",
         icon: "fa fa-folder",
@@ -48,8 +48,24 @@ var tree =  [
         icon: "fa fa-folder"
     }
 ];
+
 function loadSliderMenu() {
-    
+    //$.getJSON('Admin/MenuTanim/GetMenuAll', function (data) {
+
+    //    var text = `text: ${data.text}<br>
+    //                id: ${data.time}<br>`
+
+
+    //    $(".mySidebar").html(text);
+    //});
+    $(jQuery.parseJSON(JSON.stringify(data))).each(function () {
+
+        var text = `id: ${this.id}<br>
+                    text: ${this.text}<br>`
+
+
+        $(".mySidebar").html(text);
+    });
 };
 var isClosed = true;
 function menuTreeFunction(x) {
@@ -69,6 +85,6 @@ function openNav() {
 }
 
 function closeNav() {
-    document.getElementById("mySidebar").style.width = "50px";
-    document.getElementById("main").style.marginLeft = "50px";
+    document.getElementById("mySidebar").style.width = "0px";
+    document.getElementById("main").style.marginLeft = "0px";
 }
