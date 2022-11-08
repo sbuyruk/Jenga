@@ -17,12 +17,18 @@ namespace Jenga.Models.Ortak
     public class MenuTanim : BaseModel
     {
         [Required]
-        [DisplayName("Menu Başlığı")]
+        [DisplayName("Menü Adı")]
         public string? Adi { get; set; }
+        [DisplayName("Üst Menü")]
         public int UstMenuId { get; set; }
         [ValidateNever]
-        public string? Aciklama { get; set; }
-
-
+        [DisplayName("URL")]
+        public string? Url { get; set; }
+        [ValidateNever]
+        [DisplayName("Webpart")]
+        public string? Webpart { get; set; }
+        [ValidateNever]
+        [DisplayName("Sıra")]
+        public int Sira { get; set; }
     }
 }

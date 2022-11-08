@@ -11,7 +11,7 @@
     <div class="row">
         @*<div asp-validation-summary="All"></div>*@
 
-        <div class="mb-3 col-3">
+        <div class="mb-3 col-2">
             <label asp-for="MenuTanim.UstMenuId"></label>
             <select asp-for="MenuTanim.UstMenuId" asp-items="@Model.UstMenuTanimList" class="form-select">
                 <option disabled selected>--Üst Menü seçiniz--</option>
@@ -23,6 +23,21 @@
             <label asp-for="MenuTanim.Adi"></label>
             <input asp-for="MenuTanim.Adi" class="form-control" />
             <span asp-validation-for="MenuTanim.Adi" class="text-danger"></span>
+        </div>
+        <div class="mb-3  col-3">
+            <label asp-for="MenuTanim.Url"></label>
+            <input asp-for="MenuTanim.Url" class="form-control" />
+            <span asp-validation-for="MenuTanim.Url" class="text-danger"></span>
+        </div>
+        <div class="mb-3  col-3">
+            <label asp-for="MenuTanim.Webpart"></label>
+            <input asp-for="MenuTanim.Webpart" class="form-control" />
+            <span asp-validation-for="MenuTanim.Webpart" class="text-danger"></span>
+        </div>
+        <div class="mb-3  col-1">
+            <label asp-for="MenuTanim.Sira"></label>
+            <input asp-for="MenuTanim.Sira" class="form-control" />
+            <span asp-validation-for="MenuTanim.Sira" class="text-danger"></span>
         </div>
         <div class="mb-3">
             <label asp-for="MenuTanim.Aciklama"></label>

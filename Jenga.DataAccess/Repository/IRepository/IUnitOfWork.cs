@@ -1,4 +1,6 @@
-﻿using Jenga.DataAccess.Repository.IRepository.Ortak;
+﻿using Jenga.DataAccess.Repository.IRepository.IKYS;
+using Jenga.DataAccess.Repository.IRepository.MTS;
+using Jenga.DataAccess.Repository.IRepository.Ortak;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,6 +19,8 @@ namespace Jenga.DataAccess.Repository.IRepository
         IDepoStokRepository DepoStok { get; }
         IModulTanimRepository ModulTanim { get; }
         IMenuTanimRepository MenuTanim { get; }
+        IPersonelRepository Personel { get; }
+        IPersonelMenuRepository PersonelMenu { get; }
         void Save();
     }
 }

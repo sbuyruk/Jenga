@@ -29,8 +29,5 @@ namespace Jenga.Models.MTS
         [DisplayFormat(ApplyFormatInEditMode = true, DataFormatString = "{0:dd/MM/yyyy HH:mm}")]
         public DateTime SonIslemTarihi { get; set; } = DateTime.Now;
         public string? SonIslemYapan { get; set; }
-        [ValidateNever]
-        public string Aciklama { get; set; }
-
     }
 }

@@ -15,7 +15,4 @@ public class ModulTanim : BaseModel
     [ValidateNever]
     [DisplayName("Webpart Adı")]
     public string? WebpartAdi { get; set; }
-    [ValidateNever]
-    [DisplayName("Açıklama")]
-    public string? Aciklama { get; set; }
 }

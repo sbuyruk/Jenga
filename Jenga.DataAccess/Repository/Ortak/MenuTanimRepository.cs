@@ -18,16 +18,20 @@ namespace Jenga.DataAccess.Repository.Ortak
         
         private List<MenuTree> MenuTreeJsonGetir(List<MenuTree> menuTreeList, int ustMenuId)
         {
-            List<MenuTanim> menuTanimList =GetByFilter(u => u.UstMenuId == ustMenuId);
-            
-            foreach (var item in menuTanimList)
+            List<MenuTanim> menuTanimList = GetByFilter(u => u.UstMenuId == ustMenuId);
+            var menuTanimSortedList = menuTanimList.OrderBy(x => x.Sira).ThenBy(x => x.UstMenuId);
+            foreach (var item in menuTanimSortedList)
             {
                 List<MenuTree> subMenuList = new List<MenuTree>();
 
                 MenuTree menuTree = new()
                 {
-                    text = item.Adi,
                     id = item.Id,
+                    text = item.Adi,
+                    url=item.Url,
+                    webpart=item.Webpart,
+                    sira=item.Sira,
+                    aciklama=item.Aciklama,
                     nodes = MenuTreeJsonGetir(subMenuList, item.Id)
                 };
                 menuTreeList.Add(menuTree);
@@ -61,8 +65,11 @@ namespace Jenga.DataAccess.Repository.Ortak
             var objFromDb = _db.MenuTanim_Table.FirstOrDefault(u => u.Id == obj.Id);
             if (objFromDb != null)
             {
-                objFromDb.UstMenuId = obj.UstMenuId;
                 objFromDb.Adi = obj.Adi;
+                objFromDb.UstMenuId = obj.UstMenuId;
+                objFromDb.Url = obj.Url;
+                objFromDb.Webpart = obj.Webpart;
+                objFromDb.Sira = obj.Sira;
                 objFromDb.Aciklama = obj.Aciklama;
                 objFromDb.Degistiren = obj.Degistiren;
                 objFromDb.DegistirmeTarihi = obj.DegistirmeTarihi;

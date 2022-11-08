@@ -27,7 +27,6 @@ namespace Jenga.Models.MTS
         public int Adet { get; set; }
         [Required]
         public string GirisCikis { get; set; } = "Giriş";
-        public string Aciklama { get; set; }
         [DataType(DataType.Date)]
         [DisplayFormat(ApplyFormatInEditMode = true, DataFormatString = "{0:MM/dd/yyyy}")]
         public DateTime IslemTarihi { get; set; } = DateTime.Now;

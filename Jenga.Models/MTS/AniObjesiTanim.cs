@@ -6,7 +6,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
-using Jenga.Models.MTS;
 using System.ComponentModel;
 using Jenga.Models.Sistem;
 
@@ -25,7 +24,6 @@ namespace Jenga.Models.MTS
         [ForeignKey("KaynakId")]
         [ValidateNever]
         public KaynakTanim KaynakTanim { get; set; }
-        public string Aciklama { get; set; }
        
         
     }

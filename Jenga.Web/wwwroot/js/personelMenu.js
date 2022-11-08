@@ -2,6 +2,34 @@
 $(document).ready(function () {
     loadSidebarMenu();
 });
+function loadDataTable() {
+    dataTable = $('#tblData').DataTable({
+        "ajax": {
+            "url": "/Admin/Personel/GetAll"
+        },
+        "columns": [
+            { "data": "personel.adi", "width": "15%" },
+            { "data": "personel.soyadi", "width": "15%" },
+            {
+                "data": "id",
+                "width": "20%",
+                "render": function (data) {
+                    return `
+                        <div class="btn-group" role="group">
+                        <a href="/Admin/PersonelMenu/Edit?id=${data}"
+                        class="btn btn-primary mx-2"> <i class="bi bi-pencil-square"></i> Menü Yetkilerini Görüntüle</a>
+                        <a onClick=Delete('/Admin/DepoHareket/Delete/${data}')
+                        class="btn btn-danger mx-2"> <i class="bi bi-trash-fill"></i> Tüm Menü Yetkilerini Sil</a>
+                        <a onClick=Delete('/Admin/DepoHareket/Delete/${data}')
+                        class="btn btn-danger mx-2"> <i class="bi bi-trash-fill"></i> Menü Yetkilerini Düzenle</a>
+					</div>
+                        `
+                },
+            },
+
+        ],
+    });
+}
 //Sidebar 
 function loadSidebarMenu() {
     let url = '/Admin/MenuTanim/GetMenuAll';
@@ -42,24 +70,3 @@ function buildMenu(parent, items) {
     });
 }
 
-//Open - Close Sidebar with animation
-var isClosed = true;
-function openCloseSideBar(menuIconsDiv) {
-    menuIconsDiv.classList.toggle("change");
-    if (isClosed) {
-        openNav();
-        isClosed = false;
-    } else {
-        closeNav();
-        isClosed = true;
-    }
-    
-}
-function openNav() {
-    document.getElementById("mySidebar").style.width = "300px";
-    document.getElementById("main").style.marginLeft = "300px";
-}
-function closeNav() {
-    document.getElementById("mySidebar").style.width = "0px";
-    document.getElementById("main").style.marginLeft = "0px";
-}

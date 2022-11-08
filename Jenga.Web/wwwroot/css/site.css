@@ -1,7 +1,9 @@
-﻿html {
-  font-size: 14px;
-}
+﻿
 
+#main {
+    transition: margin-left .5s;
+    /*padding: 5px;*/
+}
 @media (min-width: 768px) {
   html {
     font-size: 16px;
@@ -9,8 +11,9 @@
 }
 
 html {
-  position: relative;
-  min-height: 100%;
+    position: relative;
+    min-height: 100%;
+    font-size: 14px;
 }
 
 body {
@@ -22,6 +25,14 @@ body {
 html {
     height: 100%;
 }
+
+.menuheader {
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    line-height: 1.2;
+}
+
 /*Menu icon bar*/
 .icon-bar {
     width: 90px;
@@ -90,17 +101,13 @@ html {
             color: #f1f1f1;
         }
 
-#main {
-    transition: margin-left .5s;
-    padding: 5px;
-}
 
 /*dinamik menü*/
 ul {
     list-style-type: none;
 }
 
-label {
+.menu-label {
     /*background-color: #AAAFAB;*/
     border-radius: 5px;
     padding: 3px;

@@ -1,14 +1,13 @@
 ﻿using Jenga.DataAccess.Data;
-using Jenga.DataAccess.Repository.IRepository;
-using Jenga.DataAccess.Repository;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Jenga.Models.MTS;
+using Jenga.DataAccess.Repository.IRepository.MTS;
 
-namespace Jenga.DataAccess.Repository
+namespace Jenga.DataAccess.Repository.MTS
 {
     public class AniObjesiTanimRepository : Repository<AniObjesiTanim>, IAniObjesiTanimRepository
     {
@@ -34,6 +33,6 @@ namespace Jenga.DataAccess.Repository
                 objFromDb.StokluMu = obj.StokluMu;
             }
         }
-    
+
     }
 }

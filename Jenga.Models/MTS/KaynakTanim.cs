@@ -8,7 +8,4 @@ public class KaynakTanim : BaseModel
     [Required]
     [DisplayName("Anı Objesi Kaynağı")]
     public string Adi { get; set; }
-    [DisplayName("Açıklama")]
-    public string? Aciklama { get; set; }
-
 }

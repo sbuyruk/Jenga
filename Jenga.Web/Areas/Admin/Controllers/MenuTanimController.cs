@@ -68,12 +68,13 @@ namespace Jenga.Web.Areas.Admin.Controllers
         public IActionResult GetAll()
         {
             var menuTanimList = _unitOfWork.MenuTanim.GetAll();
+            var menuTanimSortedList = menuTanimList.OrderBy(x => x.Sira).ThenBy(x => x.UstMenuId);
 
-            return Json(new { data = menuTanimList });
+            return Json(new { data = menuTanimSortedList });
         }
         public string GetMenuAll()
         {
-            int rootMenuId = 0;
+            int rootMenuId = 1;
             string json = _unitOfWork.MenuTanim.GetMenuAll(rootMenuId);
 
             return json;

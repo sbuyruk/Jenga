@@ -7,31 +7,30 @@ $(document).ready(function () {
 function loadDataTable() {
     dataTable = $('#tblData').DataTable({
         "ajax": {
-            "url": "/Admin/MenuTanim/GetAll"
+            "url": "/Admin/Personel/GetAll"
         },
         "columns": [
             { "data": "adi", "width": "20%" },
-            { "data": "ustMenuId", "width": "5%" },
-            { "data": "url", "width": "15%" },
-            { "data": "webpart", "width": "15%" },
-            { "data": "sira", "width": "5%" },
-            { "data": "aciklama", "width": "20%" },
+            { "data": "soyadi", "width": "20%" },
+            { "data": "sicilNo", "width": "10%" },
+            { "data": "tahsili", "width": "20%" },
+            { "data": "asker_sivil", "width": "10%" },
             {
-                "data": "id", "width": "20%",
+                "data": "id",
+                "width": "20%",
                 "render": function (data) {
                     return `
                         <div class="btn-group" role="group">
-                        <a href="/Admin/MenuTanim/Edit?id=${data}"
+                        <a href="/Admin/Personel/Edit?id=${data}"
                         class="btn btn-primary mx-2"> <i class="bi bi-pencil-square"></i> Düzenle</a>
-                        <a onClick=Delete('/Admin/MenuTanim/Delete/${data}')
+                        <a onClick=Delete('/Admin/Personel/Delete/${data}')
                         class="btn btn-danger mx-2"> <i class="bi bi-trash-fill"></i> Sil</a>
 					</div>
                         `
                 },
             },
-            
-        ],
-        order: [[4, 'asc'], [1, 'asc']],
+
+        ]
     });
 }
 function Delete(url) {

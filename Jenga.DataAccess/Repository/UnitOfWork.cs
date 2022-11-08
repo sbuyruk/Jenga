@@ -1,13 +1,11 @@
 ﻿using Jenga.DataAccess.Data;
 using Jenga.DataAccess.Repository.IRepository;
+using Jenga.DataAccess.Repository.IRepository.IKYS;
+using Jenga.DataAccess.Repository.IRepository.MTS;
 using Jenga.DataAccess.Repository.IRepository.Ortak;
+using Jenga.DataAccess.Repository.IKYS;
+using Jenga.DataAccess.Repository.MTS;
 using Jenga.DataAccess.Repository.Ortak;
-using Jenga.Models.Ortak;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Jenga.DataAccess.Repository
 {
@@ -26,6 +24,8 @@ namespace Jenga.DataAccess.Repository
             //Ortak
             ModulTanim = new ModulTanimRepository(_db);
             MenuTanim = new MenuTanimRepository(_db);
+            Personel = new PersonelRepository(_db);
+            PersonelMenu = new PersonelMenuRepository(_db);
         }
         public IDepoTanimRepository DepoTanim { get; private set; }
         public IKaynakTanimRepository KaynakTanim { get; private set; }        
@@ -34,6 +34,8 @@ namespace Jenga.DataAccess.Repository
         public IDepoStokRepository DepoStok { get; private set; }        
         public IModulTanimRepository ModulTanim { get; private set; }        
         public IMenuTanimRepository MenuTanim { get; private set; }        
+        public IPersonelRepository Personel { get; private set; }        
+        public IPersonelMenuRepository PersonelMenu { get; private set; }        
 
         public void Save()
         {

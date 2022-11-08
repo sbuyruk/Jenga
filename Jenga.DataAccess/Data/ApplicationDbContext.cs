@@ -1,11 +1,7 @@
-﻿using Jenga.Models.MTS;
+﻿using Jenga.Models.IKYS;
+using Jenga.Models.MTS;
 using Jenga.Models.Ortak;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Jenga.DataAccess.Data
 {
@@ -22,5 +18,7 @@ namespace Jenga.DataAccess.Data
         public DbSet<DepoStok> DepoStok_Table { get; set; }
         public DbSet<ModulTanim> ModulTanim_Table { get; set; }
         public DbSet<MenuTanim> MenuTanim_Table { get; set; }
+        public DbSet<Personel> Personel_Table { get; set; }
+        public DbSet<PersonelMenu> PersonelMenu_Table { get; set; }
     }
 }

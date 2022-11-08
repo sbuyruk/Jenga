@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Jenga.DataAccess.Repository.IRepository
+namespace Jenga.DataAccess.Repository.IRepository.MTS
 {
     public interface IDepoTanimRepository : IRepository<DepoTanim>
     {

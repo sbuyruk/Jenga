@@ -31,7 +31,6 @@ namespace Jenga.DataAccess.Repository
         {
             try
             {
-
                 IQueryable<T> query = dbSet;
 
                 if (includeProperties != null) 
