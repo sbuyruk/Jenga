@@ -4,46 +4,90 @@
     <input asp-for="PersonelMenu.Id" hidden />
     <div class="row pt-3">
         <div class="col ">
-            <h4 class="text-primary text-start fw-bold">Depoya Giren Anı Objesi Düzenleme</h4>
+            <h4 class="text-primary text-start fw-bold">Personelin Menülerini  Düzenleme</h4>
         </div>
     </div>
     <hr />
     <div class="row">
 
         @*<div asp-validation-summary="All"></div>*@
-
-        <div class="mb-3 col-3">
-            <label asp-for="PersonelMenu.PersonelId"></label>
-            <select asp-for="PersonelMenu.PersonelId" asp-items="@Model.PersonelList" class="form-select">
-                <option disabled selected>--Depo seçiniz--</option>
-            </select>
-            <span asp-validation-for="PersonelMenu.PersonelId" class="text-danger"></span>
-        </div>
         
-        <div class="mb-3">
+            <div class="col">
+                <div class="row">
+                    <div class="mb-3 col-3">
+                        <label asp-for="Personel.Adi"></label>
+                        <input asp-for="Personel.Adi" class="form-control" disabled />
+                    </div>
+
+                    <div class="mb-3 col-3">
+                        <label asp-for="Personel.Soyadi"></label>
+                        <input asp-for="Personel.Soyadi" class="form-control" disabled />
+                    </div>
+                </div>
+                <div class="mb-3">
             <label asp-for="PersonelMenu.Aciklama"></label>
             <textarea asp-for="PersonelMenu.Aciklama" rows="3" class="form-control"></textarea>
             <span asp-validation-for="PersonelMenu.Aciklama" class="text-danger"></span>
         </div>
-        <div class="col-12">
-            @if (Model.PersonelMenu.Id != 0)
-            {
-                <button type="submit" class="btn btn-primary" style="width:150px">Güncelle</button>
-            }
-            else
-            {
-                <button type="submit" class="btn btn-primary" style="width:150px">Kaydet</button>
-            }
-            <a asp-controller="PersonelMenu" asp-action="Index" class="btn btn-secondary" style="width:150px">
-                Listeye Dön
-            </a>
+            </div>
+        <div class="col">
+            @*MenuTree*@
+            <div class="tree_main">
+                <ul id="bs_main" class="main_ul">
+                    <li id="bs_1"></li>
+                </ul>
+            </div>
         </div>
     </div>
 </form>
+<style>
 
+    .plus, .minus {
+        display: inline-block;
+        background-repeat: no-repeat;
+        background-size: 16px 16px !important;
+        width: 16px;
+        height: 16px;
+          vertical-align: middle;
+      }
+
+      .plus {
+          background-image: url(/images/home/plusSign.png);
+      }
+
+      .minus {
+          background-image: url(/images/home/minusSign.png);
+      }
+
+      .menuEditUl {
+          list-style: none;
+          padding: 0px 0px 0px 20px;
+      }
+
+      .menuEditUl.inner_ul .menuEditLi:before {
+              content: "├";
+              font-size: 18px;
+              margin-left: -11px;
+              margin-top: -5px;
+              vertical-align: middle;
+              float: left;
+              width: 8px;
+              color: #41424e;
+          }
+
+      .menuEditUl.inner_ul .menuEditLi:last-child:before {
+              content: "└";
+          }
+
+      .inner_ul {
+          padding: 0px 0px 0px 35px;
+      }
+</style>
 @section Scripts{
     @{
+        <script src="~/js/personelMenu.js"></script>
         <partial name="_ValidationScriptsPartial" />
     }
 
 }
+

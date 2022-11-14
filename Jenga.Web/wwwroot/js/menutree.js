@@ -21,12 +21,12 @@ function loadSidebarMenu() {
 
 function buildMenu(parent, items) {
     $.each(items, function () {
-        var li = $('<li></li>');
+        var li = $('<li id=liSB' + this.id + '></li>');
         var aTag;
         if (this.nodes && this.nodes.length > 0) {
-            aTag = $('<input type="checkbox" id=' + this.id + ' /><label class=menu-label for=' + this.id + '>' + this.sira + '.'+this.text + '</label>');
+            aTag = $('<input class=menuInput type="checkbox" id=' + this.id + ' /><label class=menu-label for=' + this.id + '>' + this.sira + '.'+this.text + '</label>');
         } else {
-            aTag = $('<a class=menu-label href=' + this.url + '>' + this.sira + '.' + this.text + '</a>');
+            aTag = $('<a class=menu-label href=' + this.url + '> <i class="bi bi-circle-fill" style="font-size:14px;" ></i>&nbsp;&nbsp;&nbsp;' + this.sira + '.' + this.text + '</a>');
         }
         aTag.appendTo(li)
         //if (!this.isActive) {
@@ -35,7 +35,7 @@ function buildMenu(parent, items) {
         li.text = this.text;
         li.appendTo(parent);
         if (this.nodes && this.nodes.length > 0) {
-            var subUl = $('<ul></ul>');
+            var subUl = $('<ul class=menuUl></ul>');
             subUl.appendTo(li);
             buildMenu(subUl, this.nodes);
         }

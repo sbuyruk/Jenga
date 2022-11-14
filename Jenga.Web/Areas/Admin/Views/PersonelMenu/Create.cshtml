@@ -10,14 +10,6 @@
     <hr />
     <div class="row">
         @*<div asp-validation-summary="All"></div>*@
-
-        <div class="mb-3 col-3">
-            <label asp-for="PersonelMenu.PersonelId"></label>
-            <select asp-for="PersonelMenu.PersonelId" asp-items="@Model.PersonelList" class="form-select">
-                <option disabled selected>--Depo seçiniz--</option>
-            </select>
-            <span asp-validation-for="PersonelMenu.PersonelId" class="text-danger"></span>
-        </div>
         
         <div class="mb-3">
             <label asp-for="PersonelMenu.Aciklama"></label>

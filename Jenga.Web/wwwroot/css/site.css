@@ -89,7 +89,7 @@ html {
 }
 
     .sidebar a {
-        padding: 0px 0px 8px 0px;
+        padding: 0px 0px 0px 20px;
         text-decoration: none;
         font-size: 18px;
         color: #818181;
@@ -116,16 +116,25 @@ ul {
 }
 
 li {
-    margin: 10px;
+    /*margin: 10px;*/
     /*padding: 5px;*/
-    padding-left:0.6em;
+    padding-left:0.7em !important;
     margin-top:0em;
     margin-bottom:0em;
-    /*border: 1px solid #ABC;*/
+    /*border: 1px so.menuLid #ABC;*/
+    border-radius: 5px;
+}
+.menuLi {
+    margin: 10px;
+    /*padding: 5px;*/
+    padding-left: 0.6em !important;
+    margin-top: 0em;
+    margin-bottom: 0em;
+    /*border: 1px so.menuLid #ABC;*/
     border-radius: 5px;
 }
 
-input[type=checkbox] {
+/*input[type=checkbox] {
     display: none;
 }
 
@@ -168,9 +177,54 @@ input[type=checkbox] {
     }
 
     input[type=checkbox]:checked + label:before {
-        transform: rotate(90deg);
+        transform: rotate(90deg);*/
         /*margin-top: 6px;
   margin-left: -25px;*/
+    /*}*/
+.menuInput {
+    display: none;
+}
+
+    .menuInput ~ ul {
+        max-height: 0;
+        max-width: 0;
+        opacity: 0;
+        overflow: hidden;
+        white-space: nowrap;
+        -webkit-transition: all 1s ease;
+        -moz-transition: all 1s ease;
+        -o-transition: all 1s ease;
+        transition: all 1s ease;
+    }
+
+    .menuInput:checked ~ ul {
+        max-height: 100%;
+        max-width: 100%;
+        opacity: 1;
+    }
+
+    .menuInput + label:before {
+        transform-origin: 25% 50%;
+        border: 8px solid transparent;
+        border-width: 8px 12px;
+        border-left-color: white;
+        margin-left: -20px;
+        width: 0;
+        height: 0;
+        display: inline-block;
+        text-align: center;
+        content: '';
+        color: #AAAFAB;
+        -webkit-transition: all .5s ease;
+        -moz-transition: all .5s ease;
+        -o-transition: all .5s ease;
+        transition: all .5s ease;
+        position: absolute;
+        margin-top: 1px;
+    }
+
+    .menuInput:checked + label:before {
+        transform: rotate(90deg);
     }
 /* On smaller screens, where height is less than 450px, change the style of the sidenav (less padding and a smaller font size) */
 @media screen and (max-height: 450px) {
