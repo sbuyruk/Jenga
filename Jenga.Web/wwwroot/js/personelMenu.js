@@ -32,7 +32,7 @@ function loadDataTable() {
         ],
     });
 }
-//Sidebar 
+// URL'de yazan API den datayı al
 function loadMenuTree() {
     let url = '/Admin/PersonelMenu/GetMenuAll';
     try {
@@ -47,7 +47,8 @@ function loadMenuTree() {
         console.log('error');
     }
 }
-
+//Veritabanından (MenuTanim_Table) okuduğu listeyi recursive olarak tree ye yerleştirsin
+// TODO veritabanından okumayı personel-menu ilişkisinin tanımlandığı tablodan getirmeli
 function buildMenuTree(parent, items) {
     $.each(items, function () {
         var inputTag;
@@ -83,48 +84,49 @@ function ToggleCollapsState() {
         $(this).toggleClass("minus").siblings("ul").toggle();
     })
 }
+/*
+ Bir item checked edildiğinde varsa tüm altsoyları de checked edilsin
+ */
 function SetChilderenCheckedValue() {
     $("input[class=menuEditInput]").click(function () {
         $(this).siblings("ul").find("input[class=menuEditInput]").prop('checked', $(this).prop('checked'));
     })
 }
-//1. Check durumu değiştirildiğinde
+/*  ÖNEMLİ
+//  Check durumu değiştirildiğinde
 //  a. Bu nodun alt soyunun tamamının checked durumu değişir
 //  b. Bu nodun üst soyunun ise:
 //      (1). Eğer tek işaretli nod bu nodun atasıysa değişir
 //      (2). Ata nodlardan biri işaretlenmiş kardeş noda sahipse bundan üstteki atalar değişmez
+*/
 function SetParentsCheckedValue(item, isChecked) {
-    if (item.is("li")){
-        var inputt = item.find("input[type=checkbox]")[0];
-        inputt.checked = isChecked;
-        var siblingss = item.siblings().find("input[class=menuEditInput]").prop('id');
-        if (typeof siblingss === "undefined") {
+    if (item.is("li")){ //li ise içinde input vardır
+        var inputt = item.find("input[type=checkbox]")[0]; //ilk input benim parent'imdir
+        inputt.checked = isChecked; //parent'imin inputunu benim checked değerime eşitle
+        var siblingss = item.siblings().find("input[class=menuEditInput]").prop('id'); //parent'imin kardeşleri var mı? yoksa undefined döner
+        if (typeof siblingss === "undefined") {//undefined döndü ise, kardeşi yok demektir o zaman perintimin parentine git
             SetParentsCheckedValue(item.parent(), isChecked)
         }
-        else if (((item.siblings().children('input[class=menuEditInput]').prop('checked') != isChecked) && isChecked)
-            || (item.siblings().children('input[class=menuEditInput]').prop('checked') == isChecked) && !isChecked)
+        else if (((item.siblings().children('input[class=menuEditInput]').prop('checked') != isChecked) && isChecked)// parent'imin kardeşleri varsa o kardeşlerin checked durumu ...
+            || (item.siblings().children('input[class=menuEditInput]').prop('checked') == isChecked) && !isChecked) // .. getirdiğimiz checked durumundan farklı mı
         {
             var checkedVarMi = false;
-            item.siblings().children('input[class=menuEditInput]').each(function () {
+            item.siblings().children('input[class=menuEditInput]').each(function () { //parentimin kardeşlerinin child'larına bakıyoruz, çünkü input li'nin bir altındadır
                 if ($(this).prop('checked')) {
                     checkedVarMi = true;
                     return false;
                 }
-
-
             });
-            if (!checkedVarMi)
+            if (!checkedVarMi) //parentimn child'larından hiç biri checked değilde üst soya işleme devam et
                 SetParentsCheckedValue(item.parent(), isChecked)
         }
         else return;
-    }else if (item.is("div")) {
+    }else if (item.is("div")) {//burası çıkış noktası en üstteki div'e ulaşınca dur!.
         return;
     }
-    else {
+    else { // item li değilse bişey yapmadan üst soya devam et 
         SetParentsCheckedValue(item.parent(), isChecked)
     }
-        
-    
 }
 function loadFunctions() {
     ToggleCollapsState();
@@ -134,46 +136,5 @@ function loadFunctions() {
     $("input[class=menuEditInput]").click(function () {
         SetParentsCheckedValue($(this), $(this).prop('checked'));
     })
-
-    //$("input[class=menuEditInput]").change(function () {
-    //    var sp = $(this).attr("id");
-    //    if (sp.substring(0, 4) === "c_io") {
-    //        var ff = $(this).parents("ul[id^=bf_l]").attr("id");
-    //        if ($('#' + ff + ' > li input[class=menuEditInput]:checked').length == $('#' + ff + ' > li input[class=menuEditInput]').length) {
-    //            $('#' + ff).siblings("input[class=menuEditInput]").prop('checked', true);
-    //            check_fst_lvl(ff);
-    //        }
-    //        else {
-    //            $('#' + ff).siblings("input[class=menuEditInput]").prop('checked', false);
-    //            check_fst_lvl(ff);
-    //        }
-    //    }
-
-    //    if (sp.substring(0, 4) === "c_bf") {
-    //        var ss = $(this).parents("ul[id^=bs_l]").attr("id");
-    //        if ($('#' + ss + ' > li input[class=menuEditInput]:checked').length == $('#' + ss + ' > li input[class=menuEditInput]').length) {
-    //            $('#' + ss).siblings("input[class=menuEditInput]").prop('checked', true);
-    //            check_fst_lvl(ss);
-    //        }
-    //        else {
-    //            $('#' + ss).siblings("input[class=menuEditInput]").prop('checked', false);
-    //            check_fst_lvl(ss);
-    //        }
-    //    }
-    //});
-
 }
 
-function check_fst_lvl(dd) {
-    //var ss = $('#' + dd).parents("ul[id^=bs_l]").attr("id");
-    var ss = $('#' + dd).parent().closest("ul").attr("id");
-    if ($('#' + ss + ' > li input[class=menuEditInput]:checked').length == $('#' + ss + ' > li input[class=menuEditInput]').length) {
-        //$('#' + ss).siblings("input[id^=c_bs]").prop('checked', true);
-        $('#' + ss).siblings("input[class=menuEditInput]").prop('checked', true);
-    }
-    else {
-        //$('#' + ss).siblings("input[id^=c_bs]").prop('checked', false);
-        $('#' + ss).siblings("input[class=menuEditInput]").prop('checked', false);
-    }
-
-}
