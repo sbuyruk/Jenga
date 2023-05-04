@@ -47,7 +47,11 @@ namespace Jenga.DataAccess.Repository
                 throw e;
             }
         }
-
+        public async Task<IEnumerable<T>> GetAllAsync()
+        {
+            IQueryable<T> query = dbSet;
+            return await query.ToListAsync<T>();
+        }
 
         public T GetFirstOrDefault(Expression<Func<T, bool>> filter, string? includeProperties = null)
         {

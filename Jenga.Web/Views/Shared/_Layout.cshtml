@@ -17,6 +17,7 @@
     <link rel="stylesheet" href="~/lib/toastr/toastr.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/lib/animate/animate.css" asp-append-version="true" />
     <link rel="stylesheet" type="text/css" href="~/lib/DataTables/datatables.min.css" />
+    <base href="~/" />
 </head>
 <body>
     <div id="main">
@@ -84,12 +85,13 @@
             <main role="main" class="pb-3">
                 <partial name="_Notification" />
                 @RenderBody()
+                <hr></hr>
             </main>
         </div>
 
         <footer class="border-top footer text-muted bg-primary">
             <div class="container">
-                &copy; 2022 - Jenga.Web By Bilgi|<strong>Sistem</strong>™ - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+                &copy; 2023 - Jenga.Web By Bilgi|<strong>Sistem</strong>™ - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
             </div>
         </footer>
     </div>

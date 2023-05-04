@@ -10,7 +10,6 @@ using System.Threading.Tasks;
 using Jenga.Models.Sistem;
 using Jenga.Models.MTS;
 using System.Runtime.Serialization;
-using Newtonsoft.Json;
 
 namespace Jenga.Models.Ortak
 {
