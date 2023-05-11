@@ -1,7 +1,6 @@
 ﻿using Jenga.DataAccess.Data;
 using Jenga.DataAccess.Repository.IRepository;
 using Jenga.Models;
-using Jenga.Models.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Extensions.Hosting;

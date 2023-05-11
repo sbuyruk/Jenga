@@ -1,11 +1,10 @@
 ﻿using Jenga.DataAccess.Data;
 using Jenga.DataAccess.Repository.IRepository;
-using Jenga.Models;
 using Jenga.Models.MTS;
-using Jenga.Models.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Extensions.Hosting;
+using Jenga.Models.Ortak;
 
 namespace Jenga.Web.Areas.Admin.Controllers
 {
@@ -24,11 +23,24 @@ namespace Jenga.Web.Areas.Admin.Controllers
         }
         
         //GET
-        public IActionResult Create()
+        public IActionResult Create(int? id)
         {
 
-            return View();
-            
+            PersonelMenuVM personelMenuVM = new()
+            {
+
+                PersonelMenu = new(),
+                MenuTanimList = _unitOfWork.MenuTanim.GetAll().Select(i => new SelectListItem
+                {
+                    Text = i.Adi,
+                    Value = i.Id.ToString()
+                }),
+                Personel = _unitOfWork.Personel.GetFirstOrDefault(u => u.Id == id)
+            };
+
+            return View(personelMenuVM);
+
+
         }
         public IActionResult Edit(int? id)
         {
@@ -62,9 +74,39 @@ namespace Jenga.Web.Areas.Admin.Controllers
         [HttpGet]
         public IActionResult GetAll()
         {
-            var personelList = _unitOfWork.Personel.GetAll();
-            return Json(new { data = personelList });
+            //var personelList = _unitOfWork.Personel.GetAll();
+            var personelMenuList = _unitOfWork.PersonelMenu.GetAll(includeProperties: "Personel,MenuTanim");
+            return Json(new { data = personelMenuList });
         }
+        public IActionResult GetPersonelAll()
+        {
+            ////var personelMenuList = _unitOfWork.PersonelMenu.GetAll(includeProperties: "Personel,MenuTanim").DistinctBy(i => i.PersonelId);
+            //var personnelMenus = _unitOfWork.PersonelMenu.GetAll(includeProperties: "Personel,MenuTanim");
+            //var personelMenuList = personnelMenus
+            //.GroupBy(pt => pt.Personel)
+            //.Select(g => new
+            //{
+            //    Personel = g.Key,
+            //    MenuTanim = string.Join(", ", g.Select(pt => pt.MenuTanim.Adi))
+            //});
+
+            var personelMenus = _unitOfWork.PersonelMenu.GetAll(includeProperties: "Personel,MenuTanim");
+            var personel = _unitOfWork.Personel.GetAll();
+
+            var personelMenuList = personel
+                .GroupJoin(personelMenus,
+                    p => p.Id,
+                    pm => pm.PersonelId,
+                    (p, pm) => new {
+                        Personel = p,
+                        MenuTanim = string.Join(", ", pm.Select(t => t.MenuTanim.Adi))
+                    });
+
+            return Json(new { data = personelMenuList });
+        }
+
+        
+
         public string GetMenuAll()
         {
             int rootMenuId = 1;

@@ -7,23 +7,24 @@ $(document).ready(function () {
 function loadDataTable() {
     dataTable = $('#tblData').DataTable({
         "ajax": {
-            "url": "/Admin/PersonelMenu/GetAll"
+            "url": "/Admin/PersonelMenu/GetPersonelAll"
         },
         "columns": [
-            { "data": "adi", "width": "20%" },
-            { "data": "soyadi", "width": "20%" },
+            { "data": "personel.adi", "width": "20%" },
+            { "data": "personel.soyadi", "width": "20%" },
+            { "data": "menuTanim", "width": "20%" },
             {
-                "data": "id",
+                "data": "personel.id",
                 "width": "20%",
                 "render": function (data) {
                     return `
-                        <div class="btn-group" role="group">
+                        <div class="form-group" role="group">
                         <a href="/Admin/PersonelMenu/Edit?id=${data}"
-                        class="btn btn-secondary mx-2"> <i class="bi bi-binoculars "></i>Görüntüle</a>
-                        <a onClick=Delete('/Admin/DepoHareket/Edit/${data}')
-                        class="btn btn-primary mx-2"> <i class="bi bi-pencil-square"></i> Düzenle</a>
-                        <a onClick=Delete('/Admin/DepoHareket/Delete/${data}')
-                        class="btn btn-danger mx-2"> <i class="bi bi-trash-fill"></i> Sil</a>
+                        class="btn btn-secondary"> <i class="bi bi-binoculars "></i>Görüntüle</a>
+                        <a href="/Admin/PersonelMenu/Edit?id=${data}"
+                        class="btn btn-primary"> <i class="bi bi-pencil-square"></i> Düzenle</a>
+                        <a onClick=Delete('/Admin/PersonelMenu/Delete/${data}')
+                        class="btn btn-danger"> <i class="bi bi-trash-fill"></i> Sil</a>
 					</div>
                         `
                 },

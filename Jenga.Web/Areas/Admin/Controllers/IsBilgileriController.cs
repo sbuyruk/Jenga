@@ -1,15 +1,14 @@
 ﻿using Jenga.DataAccess.Repository.IRepository;
 using Jenga.Models.IKYS;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace Jenga.Web.Areas.Admin.Controllers
 {
-    public class PersonelController : Controller
+    public class IsBilgileriController : Controller
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IWebHostEnvironment _hostEnvironment;
-        public PersonelController(IUnitOfWork unitOfWork, IWebHostEnvironment hostEnvironment)
+        public IsBilgileriController(IUnitOfWork unitOfWork, IWebHostEnvironment hostEnvironment)
         {
             _unitOfWork = unitOfWork;
             _hostEnvironment = hostEnvironment;
@@ -35,8 +34,8 @@ namespace Jenga.Web.Areas.Admin.Controllers
             else
             {
                 //update 
-                Personel personel = _unitOfWork.Personel.GetFirstOrDefault(u => u.Id == id);
-                return View(personel);
+                IsBilgileri isBilgileri = _unitOfWork.IsBilgileri.GetFirstOrDefault(u => u.Id == id);
+                return View(isBilgileri);
             }
 
         }
@@ -45,8 +44,10 @@ namespace Jenga.Web.Areas.Admin.Controllers
         [HttpGet]
         public IActionResult GetAll()
         {
-            var personelList = _unitOfWork.Personel.GetAll(includeProperties: "IsBilgileri,GorevTanim");
-            return Json(new { data = personelList });
+            var personelIsBilgileriList = _unitOfWork.IsBilgileri.GetAll(includeProperties: "Personel,BirimTanim,GorevTanim,UnvanTanim");
+            return Json(new { data = personelIsBilgileriList });
+            //var aniObjesiList = _unitOfWork.AniObjesiTanim.GetAll(includeProperties: "KaynakTanim");
+            //return Json(new { data = aniObjesiList });
         }
 
         //Delete
@@ -57,30 +58,30 @@ namespace Jenga.Web.Areas.Admin.Controllers
             {
                 return NotFound();
             }
-            var obj = _unitOfWork.Personel.GetFirstOrDefault(u => u.Id == id);
+            var obj = _unitOfWork.IsBilgileri.GetFirstOrDefault(u => u.Id == id);
             if (obj == null)
             {
                 return Json(new { success = false, message = "Kayıt silmede hata" });
             }
-            _unitOfWork.Personel.Remove(obj);
+            _unitOfWork.IsBilgileri.Remove(obj);
             _unitOfWork.Save();
-            return Json(new { success = true, message = "Personel silindi" });
+            return Json(new { success = true, message = "IsBilgileri silindi" });
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Create(Personel obj)
+        public IActionResult Create(IsBilgileri obj)
         {
             if (ModelState.IsValid)
             {
                 if (obj.Id == 0)
                 {
-                    _unitOfWork.Personel.Add(obj);
-                    TempData["success"] = "Personel oluşturuldu";
+                    _unitOfWork.IsBilgileri.Add(obj);
+                    TempData["success"] = "IsBilgileri oluşturuldu";
                 }
                 else
                 {
-                    TempData["error"] = "Personel oluşturulamadı";
+                    TempData["error"] = "IsBilgileri oluşturulamadı";
                 }
 
                 _unitOfWork.Save();
@@ -91,18 +92,18 @@ namespace Jenga.Web.Areas.Admin.Controllers
         }
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Edit(Personel obj)
+        public IActionResult Edit(IsBilgileri obj)
         {
             if (ModelState.IsValid)
             {
                 if (obj.Id == 0)
                 {
-                    TempData["success"] = "Personel Id bulunamadı";
+                    TempData["success"] = "IsBilgileri Id bulunamadı";
                 }
                 else
                 {
-                    _unitOfWork.Personel.Update(obj);
-                    TempData["success"] = "Personel güncellendi";
+                    _unitOfWork.IsBilgileri.Update(obj);
+                    TempData["success"] = "IsBilgileri güncellendi";
                 }
 
                 _unitOfWork.Save();

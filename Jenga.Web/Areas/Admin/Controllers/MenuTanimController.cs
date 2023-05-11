@@ -1,6 +1,5 @@
 ﻿using Jenga.DataAccess.Repository.IRepository;
-using Jenga.Models.IKYS;
-using Jenga.Models.ViewModels;
+using Jenga.Models.Ortak;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System.Text.Json;

@@ -21,6 +21,10 @@ namespace Jenga.DataAccess.Repository.IRepository
         IMenuTanimRepository MenuTanim { get; }
         IPersonelRepository Personel { get; }
         IPersonelMenuRepository PersonelMenu { get; }
+        IIsBilgileriRepository IsBilgileri { get; }
+        IGorevTanimRepository GorevTanim { get; }
+        IBirimTanimRepository BirimTanim { get; }
+        IUnvanTanimRepository UnvanTanim { get; }
         void Save();
     }
 }

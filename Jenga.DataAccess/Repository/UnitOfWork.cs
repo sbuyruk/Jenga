@@ -6,6 +6,7 @@ using Jenga.DataAccess.Repository.IRepository.Ortak;
 using Jenga.DataAccess.Repository.IKYS;
 using Jenga.DataAccess.Repository.MTS;
 using Jenga.DataAccess.Repository.Ortak;
+using Jenga.Models.IKYS;
 
 namespace Jenga.DataAccess.Repository
 {
@@ -24,8 +25,13 @@ namespace Jenga.DataAccess.Repository
             //Ortak
             ModulTanim = new ModulTanimRepository(_db);
             MenuTanim = new MenuTanimRepository(_db);
+            //IKYS
             Personel = new PersonelRepository(_db);
             PersonelMenu = new PersonelMenuRepository(_db);
+            IsBilgileri = new IsBilgileriRepository(_db);
+            GorevTanim = new GorevTanimRepository(_db);
+            BirimTanim = new BirimTanimRepository(_db);
+            UnvanTanim = new UnvanTanimRepository(_db);
         }
         public IDepoTanimRepository DepoTanim { get; private set; }
         public IKaynakTanimRepository KaynakTanim { get; private set; }        
@@ -36,6 +42,10 @@ namespace Jenga.DataAccess.Repository
         public IMenuTanimRepository MenuTanim { get; private set; }        
         public IPersonelRepository Personel { get; private set; }        
         public IPersonelMenuRepository PersonelMenu { get; private set; }        
+        public IIsBilgileriRepository IsBilgileri{ get; private set; }        
+        public IGorevTanimRepository GorevTanim { get; private set; }        
+        public IBirimTanimRepository BirimTanim { get; private set; }        
+        public IUnvanTanimRepository UnvanTanim { get; private set; }        
 
         public void Save()
         {

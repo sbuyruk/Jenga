@@ -20,5 +20,9 @@ namespace Jenga.DataAccess.Data
         public DbSet<MenuTanim> MenuTanim_Table { get; set; }
         public DbSet<Personel> Personel_Table { get; set; }
         public DbSet<PersonelMenu> PersonelMenu_Table { get; set; }
+        public DbSet<IsBilgileri> IsBilgileri_Table { get; set; }
+        public DbSet<GorevTanim> GorevTanim_Table { get; set; }
+        public DbSet<BirimTanim> BirimTanim_Table { get; set; }
+        public DbSet<UnvanTanim> UnvanTanim_Table { get; set; }
     }
 }
