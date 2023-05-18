@@ -8977,7 +8977,7 @@ textarea.form-control-lg {
 
 .bg-primary {
     --bs-bg-opacity: 1;
-    background-color: rgba(var(--bs-primary-rgb), var(--bs-bg-opacity)) !important;
+    background-image: linear-gradient(20deg, black, transparent);
 }
 
 .bg-secondary {
@@ -12480,7 +12480,7 @@ textarea.form-control-lg {
 }
 
 .navbar.bg-primary {
-    background-image: linear-gradient(#7191b3, #446e9b 50%, #3f658f);
+    background-image: linear-gradient(340deg, black, transparent);
     filter: none;
     border: 1px solid #36587c;
 }

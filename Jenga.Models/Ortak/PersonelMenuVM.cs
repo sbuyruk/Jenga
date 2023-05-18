@@ -7,6 +7,8 @@ namespace Jenga.Models.Ortak
     {
         public PersonelMenu PersonelMenu { get; set; }
         public Personel Personel { get; set; }
-        public IEnumerable<SelectListItem>? MenuTanimList { get; set; }
+        public IEnumerable<SelectListItem>? MenuTanimSelecList { get; set; }
+        public IEnumerable<MenuTanimVM>? MenuTanimList { get; set; }
+        public IEnumerable<MenuTanim>? SelectedMenuTanimList { get; set; }
     }
 }

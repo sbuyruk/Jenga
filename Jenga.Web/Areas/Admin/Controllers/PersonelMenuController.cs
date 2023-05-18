@@ -5,6 +5,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Extensions.Hosting;
 using Jenga.Models.Ortak;
+using Jenga.Models.IKYS;
+using Jenga.DataAccess.Repository;
+using Jenga.Web.Areas.Admin.Services;
 
 namespace Jenga.Web.Areas.Admin.Controllers
 {
@@ -12,10 +15,12 @@ namespace Jenga.Web.Areas.Admin.Controllers
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IWebHostEnvironment _hostEnvironment;
-        public PersonelMenuController(IUnitOfWork unitOfWork, IWebHostEnvironment hostEnvironment)
+        private readonly MenuTanimService _menuTanimService;
+        public PersonelMenuController(IUnitOfWork unitOfWork, IWebHostEnvironment hostEnvironment, MenuTanimService menuTanimService)
         {
             _unitOfWork = unitOfWork;
             _hostEnvironment = hostEnvironment;
+            _menuTanimService = menuTanimService;
         }
         public IActionResult Index()
         {
@@ -30,7 +35,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             {
 
                 PersonelMenu = new(),
-                MenuTanimList = _unitOfWork.MenuTanim.GetAll().Select(i => new SelectListItem
+                MenuTanimSelecList = _unitOfWork.MenuTanim.GetAll().Select(i => new SelectListItem
                 {
                     Text = i.Adi,
                     Value = i.Id.ToString()
@@ -44,15 +49,20 @@ namespace Jenga.Web.Areas.Admin.Controllers
         }
         public IActionResult Edit(int? id)
         {
+            Personel personel = _unitOfWork.Personel.GetFirstOrDefault(u => u.Id == id);
+            List<MenuTanim> selectesMenuList = GetMenuListByPersonelId(personel.Id);
+            List<MenuTanimVM> menuTanimList = _menuTanimService.GetAllMenuTanims(1);
             PersonelMenuVM personelMenuVM = new()
             {
                 PersonelMenu = new(),
-                MenuTanimList = _unitOfWork.MenuTanim.GetAll().Select(i => new SelectListItem
+                MenuTanimSelecList = _unitOfWork.MenuTanim.GetAll().Select(i => new SelectListItem
                 {
                     Text = i.Adi,
                     Value = i.Id.ToString()
                 }),
-                Personel = _unitOfWork.Personel.GetFirstOrDefault(u => u.Id == id)
+                Personel = _unitOfWork.Personel.GetFirstOrDefault(u => u.Id == id),
+                MenuTanimList = menuTanimList,
+                SelectedMenuTanimList = selectesMenuList
             };
 
             if (id == null || id == 0)
@@ -69,7 +79,51 @@ namespace Jenga.Web.Areas.Admin.Controllers
 
         }
 
+        public List<MenuTanim> GetMenuListByPersonelId(int? personelId)
+        {
+            var personelMenus = _unitOfWork.PersonelMenu.GetPersonelMenuByPersonelId(personelId);
+            var menuIds = personelMenus.Select(pt => pt.MenuTanimId);
+            var menus = _unitOfWork.MenuTanim.GetMenusByIds(menuIds);
 
+            return menus;
+        }
+        public List<MenuTanimVM> GetMenuListByParentId(int parentId)
+        {
+            List<MenuTanimVM> menuList= _unitOfWork.MenuTanim.GetSubMenuMenuListByParentId(parentId);
+            //foreach (var menu in menus)
+            //{
+            //    var submenu = _unitOfWork.MenuTanim.GetSubMenuMenuListByParentId(menu.MenuTanim.Id);
+            //    MenuTanimVM menuTanimVM = new()
+            //    {
+            //        MenuTanim = menu.MenuTanim,
+            //        SubMenu = submenu,
+
+            //    };
+            //    menuList.Add(menuTanimVM);
+            //    if (submenu != null)
+            //    {
+                   
+            //        GetMenuListByParentId(menu.MenuTanim.Id);
+            //    }
+               
+                
+            //}
+        
+            return menuList;
+        }
+        public IEnumerable<MenuTanim> GetMenuTanimAll()
+        {
+            var menus = _unitOfWork.MenuTanim.GetAll();
+
+            return menus;
+        }
+        public string GetMenuAll()
+        {
+            int rootMenuId = 1;
+            string json = _unitOfWork.MenuTanim.GetMenuJson(rootMenuId);
+
+            return json;
+        }
         #region API CALLS
         [HttpGet]
         public IActionResult GetAll()
@@ -80,16 +134,6 @@ namespace Jenga.Web.Areas.Admin.Controllers
         }
         public IActionResult GetPersonelAll()
         {
-            ////var personelMenuList = _unitOfWork.PersonelMenu.GetAll(includeProperties: "Personel,MenuTanim").DistinctBy(i => i.PersonelId);
-            //var personnelMenus = _unitOfWork.PersonelMenu.GetAll(includeProperties: "Personel,MenuTanim");
-            //var personelMenuList = personnelMenus
-            //.GroupBy(pt => pt.Personel)
-            //.Select(g => new
-            //{
-            //    Personel = g.Key,
-            //    MenuTanim = string.Join(", ", g.Select(pt => pt.MenuTanim.Adi))
-            //});
-
             var personelMenus = _unitOfWork.PersonelMenu.GetAll(includeProperties: "Personel,MenuTanim");
             var personel = _unitOfWork.Personel.GetAll();
 
@@ -104,16 +148,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
 
             return Json(new { data = personelMenuList });
         }
-
-        
-
-        public string GetMenuAll()
-        {
-            int rootMenuId = 1;
-            string json = _unitOfWork.MenuTanim.GetMenuAll(rootMenuId);
-
-            return json;
-        }
+       
         //Delete
         [HttpDelete]
         public IActionResult Delete(int? id)

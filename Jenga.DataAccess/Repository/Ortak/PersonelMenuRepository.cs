@@ -9,6 +9,7 @@ using Jenga.Models.MTS;
 using Jenga.Models.Ortak;
 using Jenga.DataAccess.Repository.IRepository.Ortak;
 using Jenga.DataAccess.Repository.IRepository.IKYS;
+using Microsoft.EntityFrameworkCore;
 
 namespace Jenga.DataAccess.Repository.Ortak
 {
@@ -38,6 +39,11 @@ namespace Jenga.DataAccess.Repository.Ortak
 
             }
         }
-
+        public List<PersonelMenu> GetPersonelMenuByPersonelId(int? personelId)
+        {
+            return _db.Set<PersonelMenu>()
+                .Where(pt => pt.PersonelId == personelId)
+                .ToList();
+        }
     }
 }

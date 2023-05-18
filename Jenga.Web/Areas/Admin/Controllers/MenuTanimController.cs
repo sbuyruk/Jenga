@@ -2,6 +2,7 @@
 using Jenga.Models.Ortak;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 
 namespace Jenga.Web.Areas.Admin.Controllers
@@ -27,7 +28,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             MenuTanimVM menuTanimVM = new()
             {
                 MenuTanim = new(),
-                UstMenuTanimList = _unitOfWork.MenuTanim.GetAll().Select(i => new SelectListItem
+                UstMenuSelectList = _unitOfWork.MenuTanim.GetAll().Select(i => new SelectListItem
                 {
                     Text = i.Adi,
                     Value = i.Id.ToString()
@@ -43,7 +44,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             MenuTanimVM menuTanimVM = new()
             {
                 MenuTanim = new(),
-                UstMenuTanimList = _unitOfWork.MenuTanim.GetAll().Select(i => new SelectListItem
+                UstMenuSelectList = _unitOfWork.MenuTanim.GetAll().Select(i => new SelectListItem
                 {
                     Text = i.Adi,
                     Value = i.Id.ToString()
@@ -74,7 +75,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
         public string GetMenuAll()
         {
             int rootMenuId = 1;
-            string json = _unitOfWork.MenuTanim.GetMenuAll(rootMenuId);
+            string json = _unitOfWork.MenuTanim.GetMenuJson(rootMenuId);
 
             return json;
         }
@@ -144,7 +145,9 @@ namespace Jenga.Web.Areas.Admin.Controllers
             return View(obj);
         }
         #endregion
+        #region methods
 
+        #endregion
     }
 
 

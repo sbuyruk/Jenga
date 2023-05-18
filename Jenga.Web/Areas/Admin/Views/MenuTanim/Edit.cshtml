@@ -14,7 +14,7 @@
 
         <div class="mb-3 col-3">
             <label asp-for="MenuTanim.UstMenuId"></label>
-            <select asp-for="MenuTanim.UstMenuId" asp-items="@Model.UstMenuTanimList" class="form-select">
+            <select asp-for="MenuTanim.UstMenuId" asp-items="@Model.UstMenuSelectList" class="form-select">
                 <option disabled selected>--Üst Menü seçiniz--</option>
             </select>
             <span asp-validation-for="MenuTanim.UstMenuId" class="text-danger"></span>

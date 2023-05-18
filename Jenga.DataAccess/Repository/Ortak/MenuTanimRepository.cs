@@ -39,7 +39,8 @@ namespace Jenga.DataAccess.Repository.Ortak
             
             return menuTreeList;
         }
-        public string  GetMenuAll(int ustMenuId)
+
+        public string  GetMenuJson(int ustMenuId)
         {
             try
             {
@@ -76,5 +77,38 @@ namespace Jenga.DataAccess.Repository.Ortak
 
             }
         }
+        public List<MenuTanimVM> GetSubMenuMenuListByParentId(int? parentId)
+        {
+            IQueryable<MenuTanim> query = _db.MenuTanim_Table;
+
+            if (parentId != null)
+            {
+                query = query.Where(mt => mt.UstMenuId == parentId);
+            }
+            else
+            {
+                query = query.Where(mt => mt.UstMenuId > 0);
+            }
+            List<MenuTanim> menuList=query.ToList() ;
+            List<MenuTanimVM> subMenu=new List<MenuTanimVM>() ;
+            foreach (var menuItem in menuList) {
+                
+                MenuTanimVM menuTanimVM = new()
+                {
+                    MenuTanim = menuItem,
+
+                };
+                subMenu.Add(menuTanimVM);
+                GetSubMenuMenuListByParentId(menuItem.Id);
+            }
+            return subMenu;
+        }
+        public List<MenuTanim> GetMenusByIds(IEnumerable<int> menuTanimIds)
+        {
+            return _db.Set<MenuTanim>()
+                .Where(t => menuTanimIds.Contains(t.Id))
+                .ToList();
+        }
+        
     }
 }

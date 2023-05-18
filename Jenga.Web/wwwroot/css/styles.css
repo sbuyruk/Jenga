@@ -37,3 +37,17 @@ body {
         background-position: 200% center;
     }
 }
+.jenga-container {
+    /* 80% of viewport */
+    height: 82vh;
+
+    font-family: Calibri;
+    font-size:medium;
+    padding: 1rem;
+    overflow:auto;
+}
+.jenga-card {
+    overflow: auto;
+    height:660px;
+    background-color:lightcyan;
+}

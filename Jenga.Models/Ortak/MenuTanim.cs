@@ -29,5 +29,6 @@ namespace Jenga.Models.Ortak
         [ValidateNever]
         [DisplayName("Sıra")]
         public int Sira { get; set; }
+
     }
 }

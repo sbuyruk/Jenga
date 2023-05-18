@@ -247,3 +247,13 @@ li {
     color: white;
     text-align: center;
 }
+.jenga-footer {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 100px;
+    width:100%;
+    background-color: lightgray;
+    color: white;
+    text-align: center;
+}

@@ -24,6 +24,6 @@ namespace Jenga.Models.Ortak
         [DisplayName("Menü")]
         [ForeignKey("MenuTanimId")]
         [ValidateNever]
-        public MenuTanim MenuTanim { get; set; }
+        public MenuTanim? MenuTanim { get; set; }
     }
 }

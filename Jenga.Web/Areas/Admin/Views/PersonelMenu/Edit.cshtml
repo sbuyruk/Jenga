@@ -1,93 +1,80 @@
-﻿@model PersonelMenuVM
+﻿@using Microsoft.AspNetCore.Html;
+@model PersonelMenuVM
 
-<form method="post" asp-action="Edit" enctype="multipart/form-data">
-    <input asp-for="PersonelMenu.Id" hidden />
-    <div class="row pt-3">
-        <div class="col ">
-            <h4 class="text-primary text-start fw-bold">Personelin Menülerini  Düzenleme</h4>
-        </div>
-    </div>
-    <hr />
-    <div class="row">
-
-        @*<div asp-validation-summary="All"></div>*@
-        
-            <div class="col">
-                <div class="row">
-                    <div class="mb-3 col-3">
-                        <label asp-for="Personel.Adi"></label>
-                        <input asp-for="Personel.Adi" class="form-control" disabled />
-                    </div>
-
-                    <div class="mb-3 col-3">
-                        <label asp-for="Personel.Soyadi"></label>
-                        <input asp-for="Personel.Soyadi" class="form-control" disabled />
-                    </div>
-                </div>
-                <div class="mb-3">
-            <label asp-for="PersonelMenu.Aciklama"></label>
-            <textarea asp-for="PersonelMenu.Aciklama" rows="3" class="form-control"></textarea>
-            <span asp-validation-for="PersonelMenu.Aciklama" class="text-danger"></span>
-        </div>
-            </div>
-        <div class="col">
-            @*MenuTree*@
-            <div class="tree_main">
-                <ul id="bs_main" class="main_ul">
-                    <li id="bs_1"></li>
-                </ul>
-            </div>
-        </div>
-    </div>
-</form>
-<style>
-
-    .plus, .minus {
-        display: inline-block;
-        background-repeat: no-repeat;
-        background-size: 16px 16px !important;
-        width: 16px;
-        height: 16px;
-          vertical-align: middle;
-      }
-
-      .plus {
-          background-image: url(/images/home/plusSign.png);
-      }
-
-      .minus {
-          background-image: url(/images/home/minusSign.png);
-      }
-
-      .menuEditUl {
-          list-style: none;
-          padding: 0px 0px 0px 20px;
-      }
-
-      .menuEditUl.inner_ul .menuEditLi:before {
-              content: "├";
-              font-size: 18px;
-              margin-left: -11px;
-              margin-top: -5px;
-              vertical-align: middle;
-              float: left;
-              width: 8px;
-              color: #41424e;
-          }
-
-      .menuEditUl.inner_ul .menuEditLi:last-child:before {
-              content: "└";
-          }
-
-      .inner_ul {
-          padding: 0px 0px 0px 35px;
-      }
-</style>
-@section Scripts{
-    @{
-        <script src="~/js/personelMenu.js"></script>
-        <partial name="_ValidationScriptsPartial" />
-    }
-
+@{
+    ViewData["Title"] = " Menü Yetkileri - " + @Model.Personel.Adi + " " + @Model.Personel.Soyadi;
 }
 
+<div class="jenga-container">
+    <div class="">
+
+
+        <div class="row">
+            <div class="col ">
+                <h4 class="text-primary text-start fw-bold">@ViewData["Title"]</h4>
+            </div>
+        </div>
+        <form asp-action="Edit">
+            <div class="card">
+                <div class="jenga-card">
+                    <div class="form-group">
+                        <ul>
+                            @foreach (var menuTanimVM in Model.MenuTanimList.ToList())
+                            {
+
+                                var isChecked = Model.SelectedMenuTanimList.Any(x => x.Id == menuTanimVM.MenuTanim.Id);
+
+                                <li>
+                                    <input type="checkbox" name="MenuTanimIds" value="@menuTanimVM.MenuTanim.Id" checked="@isChecked" />
+                                    <label>@menuTanimVM.MenuTanim.Adi</label>
+                                    @if (menuTanimVM.SubMenu.Any())
+                                    {
+                                        <ul>
+                                            @RenderSubMenu(menuTanimVM.SubMenu)
+                                        </ul>
+                                    }
+                                </li>
+
+                            }
+                        </ul>
+
+                        @functions {
+                            IHtmlContent RenderSubMenu(List<MenuTanimVM> subMenuItems)
+                            {
+                                foreach (var subMenuItem in subMenuItems)
+                                {
+                                    var isChecked = Model.SelectedMenuTanimList.Any(x => x.Id == subMenuItem.MenuTanim.Id);
+                                    <li>
+
+                                        <input type="checkbox" name="@subMenuItem.MenuTanim.Id" id="@subMenuItem.MenuTanim.Id" value="@subMenuItem.MenuTanim.Id" checked="@isChecked" />
+                                        <label>@subMenuItem.MenuTanim.Adi</label>
+                                        @if (subMenuItem.SubMenu.Any())
+                                        {
+                                            <ul>
+                                                @RenderSubMenu(subMenuItem.SubMenu)
+                                            </ul>
+                                        }
+                                    </li>
+                                }
+                                return null;
+                            }
+                        }
+
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="form-group">
+                        <input type="hidden" asp-for="Personel.Id" />
+                        <input type="submit" value="Kaydet" class="btn btn-primary" />
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
