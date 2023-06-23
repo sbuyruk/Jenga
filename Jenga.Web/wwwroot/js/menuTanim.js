@@ -7,17 +7,17 @@ $(document).ready(function () {
 function loadDataTable() {
     dataTable = $('#tblData').DataTable({
         "ajax": {
-            "url": "/Admin/MenuTanim/GetAll"
+            "url": "/Admin/MenuTanim/GetMenuTanimList"
         },
         "columns": [
-            { "data": "adi", "width": "20%" },
-            { "data": "ustMenuId", "width": "5%" },
-            { "data": "url", "width": "15%" },
-            { "data": "webpart", "width": "15%" },
-            { "data": "sira", "width": "5%" },
-            { "data": "aciklama", "width": "20%" },
+            { "data": "menuTanim.adi", "width": "15%" },
+            { "data": "ustMenuTanim.adi", "width": "15%" },
+            { "data": "menuTanim.url", "width": "15%" },
+            { "data": "menuTanim.webpart", "width": "10%" },
+            { "data": "menuTanim.sira", "width": "5%" },
+            { "data": "menuTanim.aciklama", "width": "20%" },
             {
-                "data": "id", "width": "20%",
+                "data": "menuTanim.id", "width": "20%",
                 "render": function (data) {
                     return `
                         <div class="btn-group" role="group">

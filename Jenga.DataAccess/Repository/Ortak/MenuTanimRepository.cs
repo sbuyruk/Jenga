@@ -2,9 +2,6 @@
 using Jenga.Models.Ortak;
 using Jenga.DataAccess.Repository.IRepository.Ortak;
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
-using System.Linq.Expressions;
-using Jenga.DataAccess.Repository.IRepository;
 
 namespace Jenga.DataAccess.Repository.Ortak
 {
@@ -14,47 +11,6 @@ namespace Jenga.DataAccess.Repository.Ortak
         public MenuTanimRepository(ApplicationDbContext db) : base(db)
         {
             _db = db;
-        }
-        
-        private List<MenuTree> MenuTreeJsonGetir(List<MenuTree> menuTreeList, int ustMenuId)
-        {
-            List<MenuTanim> menuTanimList = GetByFilter(u => u.UstMenuId == ustMenuId);
-            var menuTanimSortedList = menuTanimList.OrderBy(x => x.Sira).ThenBy(x => x.UstMenuId);
-            foreach (var item in menuTanimSortedList)
-            {
-                List<MenuTree> subMenuList = new List<MenuTree>();
-
-                MenuTree menuTree = new()
-                {
-                    id = item.Id,
-                    text = item.Adi,
-                    url=item.Url,
-                    webpart=item.Webpart,
-                    sira=item.Sira,
-                    aciklama=item.Aciklama,
-                    nodes = MenuTreeJsonGetir(subMenuList, item.Id)
-                };
-                menuTreeList.Add(menuTree);
-            }
-            
-            return menuTreeList;
-        }
-
-        public string  GetMenuJson(int ustMenuId)
-        {
-            try
-            {
-                List<MenuTree> menuTreeList = new List<MenuTree>();
-                menuTreeList= MenuTreeJsonGetir(menuTreeList, ustMenuId);
-                string json = JsonSerializer.Serialize(menuTreeList);
-                
-                return json;
-                
-            }
-            catch (Exception e)
-            {
-                return string.Empty;
-            }
         }
         public void Save()
         {

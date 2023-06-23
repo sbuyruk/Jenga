@@ -32,6 +32,8 @@ namespace Jenga.Web.Areas.Admin.Controllers
             }
             if (ModelState.IsValid)
             {
+                string? userName = HttpContext.User.Identity.Name;
+                obj.Olusturan = userName;
                 _unitOfWork.KaynakTanim.Add(obj);
                 _unitOfWork.Save();
                 TempData["success"] = "Kaynak kayıtlara eklendi.";
@@ -64,6 +66,8 @@ namespace Jenga.Web.Areas.Admin.Controllers
             }
             if (ModelState.IsValid)
             {
+                string? userName = HttpContext.User.Identity.Name;
+                obj.Degistiren = userName;
                 _unitOfWork.KaynakTanim.Update(obj);
                 _unitOfWork.Save();
                 TempData["success"] = "Kaynak kaydı güncellendi";
@@ -103,7 +107,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             {
                 _unitOfWork.KaynakTanim.Remove(obj);
                 _unitOfWork.Save();
-                TempData["success"] = "KaynakTanim deleted successifully";
+                TempData["success"] = "Kaynak tanımı silindi";
                 return RedirectToAction("Index");
             }
         }

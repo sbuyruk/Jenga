@@ -1,18 +1,18 @@
 ﻿using Jenga.DataAccess.Data;
 using Jenga.DataAccess.Repository.IRepository;
 using Jenga.Models.Ortak;
+using Jenga.Models.Sistem;
+using Jenga.Utility;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace Jenga.DataAccess.Repository
 {
-    public class Repository<T> : IRepository<T> where T : class
+    public class Repository<T> : IRepository<T> where T : BaseModel
     {
         private readonly ApplicationDbContext _db;
         internal DbSet<T> dbSet;
@@ -22,8 +22,9 @@ namespace Jenga.DataAccess.Repository
             this.dbSet=_db.Set<T>();
         }
 
-        public void Add(T entity)
+        public void Add(T entity) 
         {
+            entity.OlusturmaTarihi= DateTime.Now;
             dbSet.Add(entity);
         }
         //IncludeProp - "KaynakTanim, DepoTanim, vs"
@@ -56,12 +57,26 @@ namespace Jenga.DataAccess.Repository
         public T GetFirstOrDefault(Expression<Func<T, bool>> filter, string? includeProperties = null)
         {
             IQueryable<T> query = dbSet;
+            if (includeProperties != null)
+            {
+                foreach (var includeProp in includeProperties.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    query = query.Include(includeProp);
+                }
+            }
             query = query.Where(filter);
             return query.FirstOrDefault();
         }
         public List<T> GetByFilter(Expression<Func<T, bool>> filter, string? includeProperties = null)
         {
             IQueryable<T> query = dbSet;
+            if (includeProperties != null)
+            {
+                foreach (var includeProp in includeProperties.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    query = query.Include(includeProp);
+                }
+            }
             query = query.Where(filter);
             return query.ToList();
         }

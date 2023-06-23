@@ -4,7 +4,9 @@ $(document).ready(function () {
 });
 //Sidebar 
 function loadSidebarMenu() {
-    let url = '/Admin/MenuTanim/GetMenuAll';
+    //let url = '/Admin/MenuTanim/GetMenuAll';
+    let url = '/Admin/MenuTanim/GetMenuByPersonId';
+   
     try {
         //API'den json al
         $.getJSON(url, function (data) {
@@ -17,8 +19,6 @@ function loadSidebarMenu() {
         console.log('error');
     }
 }
-
-
 function buildMenu(parent, items) {
     $.each(items, function () {
         var li = $('<li id=liSB' + this.id + '></li>');
@@ -43,7 +43,7 @@ function buildMenu(parent, items) {
 }
 
 //Open - Close Sidebar with animation
-var isClosed = true;
+var isClosed = false;
 function openCloseSideBar(menuIconsDiv) {
     menuIconsDiv.classList.toggle("change");
     if (isClosed) {

@@ -7,6 +7,7 @@ using Jenga.DataAccess.Repository.IKYS;
 using Jenga.DataAccess.Repository.MTS;
 using Jenga.DataAccess.Repository.Ortak;
 using Jenga.Models.IKYS;
+using Jenga.Models.MTS;
 
 namespace Jenga.DataAccess.Repository
 {
@@ -32,6 +33,7 @@ namespace Jenga.DataAccess.Repository
             GorevTanim = new GorevTanimRepository(_db);
             BirimTanim = new BirimTanimRepository(_db);
             UnvanTanim = new UnvanTanimRepository(_db);
+            DagitimYeriTanim = new DagitimYeriTanimRepository(_db);
         }
         public IDepoTanimRepository DepoTanim { get; private set; }
         public IKaynakTanimRepository KaynakTanim { get; private set; }        
@@ -46,6 +48,7 @@ namespace Jenga.DataAccess.Repository
         public IGorevTanimRepository GorevTanim { get; private set; }        
         public IBirimTanimRepository BirimTanim { get; private set; }        
         public IUnvanTanimRepository UnvanTanim { get; private set; }        
+        public IDagitimYeriTanimRepository DagitimYeriTanim { get; private set; }        
 
         public void Save()
         {

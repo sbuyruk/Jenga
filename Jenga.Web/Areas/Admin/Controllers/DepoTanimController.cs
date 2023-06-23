@@ -69,6 +69,8 @@ namespace Jenga.Web.Areas.Admin.Controllers
             }
             if (ModelState.IsValid)
             {
+                string? userName = HttpContext.User.Identity.Name;
+                obj.Olusturan = userName;
                 _unitOfWork.DepoTanim.Update(obj);
                 _unitOfWork.Save();
                 TempData["success"] = "Depo kaydı güncellendi";

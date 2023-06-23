@@ -13,9 +13,13 @@ namespace Jenga.Models.MTS
     {
         public DepoHareket DepoHareket { get; set; }
         [ValidateNever]
-        public IEnumerable<SelectListItem> DepoTanimList { get; set; }
+        public IEnumerable<SelectListItem> KaynakList { get; set; }
         [ValidateNever]
-        public IEnumerable<SelectListItem> AniObjesiList { get; set; }
+        public IEnumerable<SelectListItem> KaynakDepoList { get; set; }
+        [ValidateNever]
+        public IEnumerable<SelectListItem> HedefDepoList { get; set; }
+        [ValidateNever]
+        public IEnumerable<SelectListItem> AniObjesiList { get; set; } 
         [ValidateNever]
         public IEnumerable<SelectListItem> GirisCikisList { get; set; }
     }

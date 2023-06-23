@@ -8,6 +8,7 @@ using Jenga.Models.Ortak;
 using Jenga.Models.IKYS;
 using Jenga.DataAccess.Repository;
 using Jenga.Web.Areas.Admin.Services;
+using System.Linq;
 
 namespace Jenga.Web.Areas.Admin.Controllers
 {
@@ -15,18 +16,19 @@ namespace Jenga.Web.Areas.Admin.Controllers
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IWebHostEnvironment _hostEnvironment;
-        private readonly MenuTanimService _menuTanimService;
-        public PersonelMenuController(IUnitOfWork unitOfWork, IWebHostEnvironment hostEnvironment, MenuTanimService menuTanimService)
+        private readonly MenuService _menuService;
+        public PersonelMenuController(IUnitOfWork unitOfWork, IWebHostEnvironment hostEnvironment, MenuService menuService)
         {
             _unitOfWork = unitOfWork;
             _hostEnvironment = hostEnvironment;
-            _menuTanimService = menuTanimService;
+            _menuService = menuService;
         }
+        #region GET
         public IActionResult Index()
         {
             return View();
         }
-        
+
         //GET
         public IActionResult Create(int? id)
         {
@@ -50,8 +52,8 @@ namespace Jenga.Web.Areas.Admin.Controllers
         public IActionResult Edit(int? id)
         {
             Personel personel = _unitOfWork.Personel.GetFirstOrDefault(u => u.Id == id);
-            List<MenuTanim> selectesMenuList = GetMenuListByPersonelId(personel.Id);
-            List<MenuTanimVM> menuTanimList = _menuTanimService.GetAllMenuTanims(1);
+            List<MenuTanim> assignedMenuList = _menuService.GetMenuListByPersonelId(personel.Id);
+            List<MenuTanimVM> menuTanimList = _menuService.GetMenuTanimVmListByParent(1);
             PersonelMenuVM personelMenuVM = new()
             {
                 PersonelMenu = new(),
@@ -62,7 +64,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 }),
                 Personel = _unitOfWork.Personel.GetFirstOrDefault(u => u.Id == id),
                 MenuTanimList = menuTanimList,
-                SelectedMenuTanimList = selectesMenuList
+                SelectedMenuTanimList = assignedMenuList
             };
 
             if (id == null || id == 0)
@@ -77,78 +79,9 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 return View(personelMenuVM);
             }
 
-        }
-
-        public List<MenuTanim> GetMenuListByPersonelId(int? personelId)
-        {
-            var personelMenus = _unitOfWork.PersonelMenu.GetPersonelMenuByPersonelId(personelId);
-            var menuIds = personelMenus.Select(pt => pt.MenuTanimId);
-            var menus = _unitOfWork.MenuTanim.GetMenusByIds(menuIds);
-
-            return menus;
-        }
-        public List<MenuTanimVM> GetMenuListByParentId(int parentId)
-        {
-            List<MenuTanimVM> menuList= _unitOfWork.MenuTanim.GetSubMenuMenuListByParentId(parentId);
-            //foreach (var menu in menus)
-            //{
-            //    var submenu = _unitOfWork.MenuTanim.GetSubMenuMenuListByParentId(menu.MenuTanim.Id);
-            //    MenuTanimVM menuTanimVM = new()
-            //    {
-            //        MenuTanim = menu.MenuTanim,
-            //        SubMenu = submenu,
-
-            //    };
-            //    menuList.Add(menuTanimVM);
-            //    if (submenu != null)
-            //    {
-                   
-            //        GetMenuListByParentId(menu.MenuTanim.Id);
-            //    }
-               
-                
-            //}
-        
-            return menuList;
-        }
-        public IEnumerable<MenuTanim> GetMenuTanimAll()
-        {
-            var menus = _unitOfWork.MenuTanim.GetAll();
-
-            return menus;
-        }
-        public string GetMenuAll()
-        {
-            int rootMenuId = 1;
-            string json = _unitOfWork.MenuTanim.GetMenuJson(rootMenuId);
-
-            return json;
-        }
-        #region API CALLS
-        [HttpGet]
-        public IActionResult GetAll()
-        {
-            //var personelList = _unitOfWork.Personel.GetAll();
-            var personelMenuList = _unitOfWork.PersonelMenu.GetAll(includeProperties: "Personel,MenuTanim");
-            return Json(new { data = personelMenuList });
-        }
-        public IActionResult GetPersonelAll()
-        {
-            var personelMenus = _unitOfWork.PersonelMenu.GetAll(includeProperties: "Personel,MenuTanim");
-            var personel = _unitOfWork.Personel.GetAll();
-
-            var personelMenuList = personel
-                .GroupJoin(personelMenus,
-                    p => p.Id,
-                    pm => pm.PersonelId,
-                    (p, pm) => new {
-                        Personel = p,
-                        MenuTanim = string.Join(", ", pm.Select(t => t.MenuTanim.Adi))
-                    });
-
-            return Json(new { data = personelMenuList });
-        }
-       
+        }       
+        #endregion
+        #region POST
         //Delete
         [HttpDelete]
         public IActionResult Delete(int? id)
@@ -157,30 +90,30 @@ namespace Jenga.Web.Areas.Admin.Controllers
             {
                 return NotFound();
             }
-            var obj = _unitOfWork.DepoHareket.GetFirstOrDefault(u => u.Id == id);
+            var obj = _unitOfWork.PersonelMenu.GetFirstOrDefault(u => u.Id == id);
             if (obj == null)
             {
-                return Json(new {success=false, message="Kayıt silmede hata"});
+                return Json(new { success = false, message = "Kayıt silmede hata" });
             }
 
-            _unitOfWork.DepoHareket.Remove(obj);
-            DepoHareketVM personelMenuVM = new()
+            _unitOfWork.PersonelMenu.Remove(obj);
+            PersonelMenuVM personelMenuVM = new()
             {
-                DepoHareket = obj
-               
+                PersonelMenu = obj
+
             };
             _unitOfWork.Save();
             return Json(new { success = true, message = "Yetki silindi" });
         }
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Create(DepoHareketVM obj)
+        public IActionResult Create(PersonelMenuVM obj)
         {
             if (ModelState.IsValid)
             {
-                if (obj.DepoHareket.Id == 0)
+                if (obj.PersonelMenu.Id == 0)
                 {
-                    _unitOfWork.DepoHareket.Add(obj.DepoHareket);
+                    _unitOfWork.PersonelMenu.Add(obj.PersonelMenu);
                     TempData["success"] = "Menu işlemi gerçekleşti";
                 }
                 else
@@ -196,29 +129,93 @@ namespace Jenga.Web.Areas.Admin.Controllers
         }
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Edit(DepoHareketVM obj)
+        public IActionResult Edit(PersonelMenuVM obj)
         {
-            if (ModelState.IsValid)
+            if (obj!=null && obj.Personel != null && obj.Personel.Id > 0)
             {
-                if (obj.DepoHareket.Id == 0)
-                {
-                    TempData["error"] = "PersonelMenu Id bulunamadı";
-                }
-                else
-                {
-                    _unitOfWork.DepoHareket.Update(obj.DepoHareket);
-                    TempData["success"] = "Yetki işlemi güncellendi";
-                }
+                Personel personel = _unitOfWork.Personel.GetFirstOrDefault(u => u.Id == obj.Personel.Id);
+                List<MenuTanim> assignedMenuList = _menuService.GetMenuListByPersonelId(personel.Id);
+                string[]? selectedMenuIds = (obj == null ? string.Empty : obj.SelectedMenuTanimString)?.Split(",");
 
+                // checked olanlar
+                if (selectedMenuIds != null)
+                {
+                    foreach (var item in selectedMenuIds)
+                    {
+                        MenuTanim menuTanim = _unitOfWork.MenuTanim.GetFirstOrDefault(m => m.Id == int.Parse(item));
+                        PersonelMenu personelMenu = _unitOfWork.PersonelMenu.GetFirstOrDefault(pm => pm.MenuTanimId == int.Parse(item) && pm.PersonelId == obj.Personel.Id);
+                        if (personelMenu != null) //update et
+                        {
+                            //personelMenu.MenuTanimId = menuTanim.Id;
+
+                            //_unitOfWork.PersonelMenu.Update(personelMenu);
+                            //TempData["success"] = "Yetki işlemi güncellendi";
+
+                        }
+                        else //insert et
+                        {
+                            PersonelMenu personelMenuNew = new()
+                            {
+                                MenuTanimId = menuTanim.Id,
+                                PersonelId = personel.Id,
+                                Aciklama="Eklendi",
+                                Olusturan="ben",
+                                OlusturmaTarihi= DateTime.Now,
+                            };
+
+                            _unitOfWork.PersonelMenu.Add(personelMenuNew);
+                            TempData["success"] = "Yetki işlemi güncellendi";
+                        }
+                    }
+                    //bir de cheked iken unchecked olanlar varsa loop içinde onlara bakalım
+                    foreach (var item in assignedMenuList)
+                    {
+                        if (item.Id>1 && !selectedMenuIds.ToList().Contains(item.Id.ToString())) //bu demekki silindi
+                        {
+                            MenuTanim menuTanim = _unitOfWork.MenuTanim.GetFirstOrDefault(m => m.Id == item.Id);
+                            PersonelMenu personelMenu = _unitOfWork.PersonelMenu.GetFirstOrDefault(pm => pm.MenuTanimId == item.Id && pm.PersonelId == personel.Id);
+                            // bulduk mu
+                            if (personelMenu != null)
+                            {
+                                _unitOfWork.PersonelMenu.Remove(personelMenu);
+                            }
+                        }
+                    }
+                }
                 _unitOfWork.Save();
-
-                return RedirectToAction("Index");
             }
-            return View(obj);
+            else
+            {
+                TempData["error"] = "PersonelMenu Id bulunamadı";
+            }
+            return RedirectToAction("Index");
+        } 
+        #endregion
+        #region API CALLS
+        [HttpGet]
+        public IActionResult GetAll()
+        {
+            var personelMenuList = _unitOfWork.PersonelMenu.GetAll(includeProperties: "Personel,MenuTanim");
+            return Json(new { data = personelMenuList });
+        }
+        public IActionResult GetPersonelAll()
+        {
+            var personelMenus = _unitOfWork.PersonelMenu.GetAll(includeProperties: "Personel,MenuTanim");
+            //var personel = _unitOfWork.Personel.GetAll();
+            var personel = _unitOfWork.IsBilgileri.GetAll(includeProperties: "Personel").Where(ib=>ib.CalismaDurumu.Equals("1"));
+
+            var personelMenuList = personel
+                .GroupJoin(personelMenus,
+                    p => p.Id,
+                    pm => pm.PersonelId,
+                    (p, pm) => new {
+                        Personel = p,
+                        MenuTanim = string.Join(", ", pm.Select(t => t.MenuTanim.Adi))
+                    });
+
+            return Json(new { data = personelMenuList });
         }
         #endregion
 
     }
-
-
 }

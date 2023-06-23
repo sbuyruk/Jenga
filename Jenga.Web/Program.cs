@@ -29,7 +29,7 @@ builder.Services.AddControllers()
 //    .AddEntityFrameworkStores<ApplicationDbContext>();
 
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-builder.Services.AddScoped<MenuTanimService>();
+builder.Services.AddScoped<MenuService>();
 
 builder.Services.AddAuthentication(NegotiateDefaults.AuthenticationScheme)
    .AddNegotiate();

@@ -25,6 +25,7 @@ namespace Jenga.DataAccess.Repository.IRepository
         IGorevTanimRepository GorevTanim { get; }
         IBirimTanimRepository BirimTanim { get; }
         IUnvanTanimRepository UnvanTanim { get; }
+        IDagitimYeriTanimRepository DagitimYeriTanim { get; }
         void Save();
     }
 }

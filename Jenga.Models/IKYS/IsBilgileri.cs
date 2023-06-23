@@ -7,6 +7,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Jenga.Models.IKYS;
 public class IsBilgileri : BaseModel
 {
+    [Required]
     public int PersonelId { get; set; }
     [DisplayName("Personel")]
     [ForeignKey("PersonelId")]

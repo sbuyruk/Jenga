@@ -24,5 +24,6 @@ namespace Jenga.DataAccess.Data
         public DbSet<GorevTanim> GorevTanim_Table { get; set; }
         public DbSet<BirimTanim> BirimTanim_Table { get; set; }
         public DbSet<UnvanTanim> UnvanTanim_Table { get; set; }
+        public DbSet<DagitimYeriTanim> DagitimYeriTanim_Table { get; set; }
     }
 }

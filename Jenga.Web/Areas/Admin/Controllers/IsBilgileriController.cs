@@ -46,8 +46,6 @@ namespace Jenga.Web.Areas.Admin.Controllers
         {
             var personelIsBilgileriList = _unitOfWork.IsBilgileri.GetAll(includeProperties: "Personel,BirimTanim,GorevTanim,UnvanTanim");
             return Json(new { data = personelIsBilgileriList });
-            //var aniObjesiList = _unitOfWork.AniObjesiTanim.GetAll(includeProperties: "KaynakTanim");
-            //return Json(new { data = aniObjesiList });
         }
 
         //Delete
@@ -83,7 +81,8 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 {
                     TempData["error"] = "IsBilgileri oluşturulamadı";
                 }
-
+                string? userName = HttpContext.User.Identity.Name;
+                obj.Olusturan = userName;
                 _unitOfWork.Save();
 
                 return RedirectToAction("Index");

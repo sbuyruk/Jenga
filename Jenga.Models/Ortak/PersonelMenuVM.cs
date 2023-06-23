@@ -10,5 +10,6 @@ namespace Jenga.Models.Ortak
         public IEnumerable<SelectListItem>? MenuTanimSelecList { get; set; }
         public IEnumerable<MenuTanimVM>? MenuTanimList { get; set; }
         public IEnumerable<MenuTanim>? SelectedMenuTanimList { get; set; }
+        public string? SelectedMenuTanimString { get; set; }
     }
 }

@@ -1,0 +1,35 @@
+﻿<div class="container pt-3">
+    <div class="row">
+        <div class="col ">
+            <h4 class="text-primary text-start fw-bold">Depolar Arası Transferler</h4>
+
+        </div>
+        <div class="col text-end">
+            <a asp-controller="DepoHareket" asp-action="Transfer" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i>  Yeni Transfer
+            </a>
+        </div>
+    </div>
+    <hr />
+    <div class="pt-3">
+        <table id="tblData" class="table table-bordered table-striped" style="width:100%">
+            <thead>
+                <tr>
+                    <th>Çıktığı Depo</th>
+                    <th>Anı Objesi</th>
+                    <th>Adet</th>
+                    <th>Girdiği Depo</th>
+                    <th>İşlem Tipi</th>
+                    <th>İşlem Tarihi</th>
+                    <th>Açıklama</th>
+                    <th>Düzenle/Sil</th>
+                </tr>
+            </thead>
+        </table>
+
+    </div>
+</div>
+
+@section Scripts{
+    <script src="~/js/transfer.js"></script>
+}

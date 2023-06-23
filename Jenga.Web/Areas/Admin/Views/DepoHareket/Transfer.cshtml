@@ -1,0 +1,123 @@
+﻿@model DepoHareketVM
+
+<form method="post" asp-action="Transfer" enctype="multipart/form-data">
+    <input asp-for="DepoHareket.Id" hidden />
+    <div class="row pt-3">
+        <div class="col ">
+            <h4 class="text-primary text-start fw-bold">Depolar Arası Anı Objesi Aktarımı</h4>
+        </div>
+    </div>
+    <hr />
+    <div class="row">
+        @*<div asp-validation-summary="All"></div>*@
+
+        <div class="mb-3 col-3">
+            <label asp-for="DepoHareket.KaynakDepoId">Çıkış Deposu</label>
+            <select asp-for="DepoHareket.KaynakDepoId" asp-items="@Model.KaynakDepoList" class="form-select" id="cikisDepoId">
+                <option disabled selected>--Çıkış Deposu seçiniz--</option>
+            </select>
+            <span asp-validation-for="DepoHareket.KaynakDepoId" class="text-danger"></span>
+        </div>
+        <div class="mb-3 col-4">
+            <label asp-for="DepoHareket.AniObjesiId"></label>
+            <select asp-for="DepoHareket.AniObjesiId" class="form-select" id="aniObjesiId">
+                <option disabled selected>--Anı Objesi seçiniz--</option>
+            </select>
+            <span asp-validation-for="DepoHareket.AniObjesiId" class="text-danger"></span>
+        </div>
+        <div class="mb-3  col-2">
+            <label asp-for="DepoHareket.Adet"></label>
+            <input asp-for="DepoHareket.Adet" class="form-control" />
+            <span asp-validation-for="DepoHareket.Adet" class="text-danger"></span>
+        </div>
+        <div class="mb-3 col-3">
+            <label asp-for="DepoHareket.HedefDepoId">Giriş Deposu</label>
+            <select asp-for="DepoHareket.HedefDepoId" asp-items="@Model.HedefDepoList" class="form-select" id="girisDepoId">
+                <option disabled selected>--Giriş Deposu seçiniz--</option>
+            </select>
+            <span asp-validation-for="DepoHareket.HedefDepoId" class="text-danger"></span>
+        </div>
+        <div class="mb-3 col-3">
+            <div class="form-group">
+                <label asp-for="DepoHareket.IslemTarihi" class="control-label"></label>
+                <input asp-for="DepoHareket.IslemTarihi" type="date" asp-format="{0:dd.MM.yyyy}" class="form-control" />
+                <span asp-validation-for="DepoHareket.IslemTarihi" class="text-danger"></span>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="DepoHareket.Aciklama"></label>
+            <textarea asp-for="DepoHareket.Aciklama" rows="3" class="form-control"></textarea>
+            <span asp-validation-for="DepoHareket.Aciklama" class="text-danger"></span>
+        </div>
+        <div class="col-12">
+            @if (Model.DepoHareket.Id != 0)
+            {
+                <button type="submit" class="btn btn-primary" style="width:150px">Güncelle</button>
+            }
+            else
+            {
+                <button type="submit" class="btn btn-primary" style="width:150px">Aktar</button>
+            }
+            <a asp-controller="DepoHareket" asp-action="Index" class="btn btn-secondary" style="width:150px">
+                Listeye Dön
+            </a>
+        </div>
+    </div>
+</form>
+
+@section Scripts{
+    @{
+        <partial name="_ValidationScriptsPartial" />
+    }
+    <script>
+        tinymce.init({
+            selector: 'textarea',
+            plugins: 'advlist autolink lists link image charmap print preview hr anchor pagebreak',
+            toolbar_mode: 'floating',
+        });
+        $(document).ready(function (){
+            getDepoTanimListExceptSelected();
+            getAniObjesiListByDepo();
+        })
+        $("#cikisDepoId").change(function (){
+            getDepoTanimListExceptSelected();
+            getAniObjesiListByDepo();
+        })
+        //giriş deposu seçilince çıkış deposu ddl dolsun
+        var getDepoTanimListExceptSelected = function (){
+            $.ajax({
+                url: '@Url.Action("GetDepoListExceptThis","DepoHareket")',
+                type:'GET',
+                data:{
+                    depoId: $("#cikisDepoId").val(),
+                },
+                success:function (data){
+                    $('#girisDepoId').find('option').remove();
+                    $(data).each(
+                        function(index,item){
+                            $('#girisDepoId').append('<option value="' + item.id + '">' + item.adi+'</option>')
+                        }
+                    );
+                }
+            })
+        }
+        var getAniObjesiListByDepo = function () {
+            $.ajax({
+                url: '@Url.Action("GetAniObjesiListByDepo","DepoStok")',
+                type: 'GET',
+                data: {
+                    depoId: $("#cikisDepoId").val(),
+                },
+                success: function (data) {
+                    $('#aniObjesiId').find('option').remove();
+                    $(data).each(
+                        function (index, item) {
+                            $('#aniObjesiId').append('<option value="' + item.aniObjesiId + '">' + item.aniObjesiTanim.adi + ' ('+item.sonAdet+ ' adet)</option>')
+                        }
+                    );
+                }
+            })
+        }
+    </script>
+}

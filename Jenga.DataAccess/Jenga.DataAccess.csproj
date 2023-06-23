@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Jenga.Models\Jenga.Models.csproj" />
+    <ProjectReference Include="..\Jenga.Utility\Jenga.Utility.csproj" />
   </ItemGroup>
 
 </Project>

@@ -19,7 +19,7 @@ namespace Jenga.Models.Sistem
         [ValidateNever]
         public string? Olusturan { get; set; }
         [ValidateNever]
-        public DateTime? OlusturmaTarihi { get; set; } = DateTime.Now;
+        public DateTime? OlusturmaTarihi { get; set; } 
         [ValidateNever]
         public string? Degistiren { get; set; }
         [ValidateNever]

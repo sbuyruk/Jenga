@@ -22,21 +22,10 @@ namespace Jenga.DataAccess.Repository.MTS
             _db.SaveChanges();
         }
 
-        public void Update(DepoStok obj)
+        public bool Update(DepoStok obj)
         {
-            var objFromDb = _db.DepoStok_Table.FirstOrDefault(u => u.Id == obj.Id);
-            if (objFromDb != null)
-            {
-                objFromDb.AniObjesiId = obj.AniObjesiId;
-                objFromDb.DepoId = obj.DepoId;
-                objFromDb.SonAdet = obj.SonAdet;
-                objFromDb.SonIslemYapan = obj.SonIslemYapan;
-                objFromDb.SonIslemTarihi = obj.SonIslemTarihi;
-                objFromDb.Aciklama = obj.Aciklama;
-                objFromDb.Degistiren = obj.Degistiren;
-                objFromDb.DegistirmeTarihi = obj.DegistirmeTarihi;
-
-            }
+            var updated = _db.DepoStok_Table.Update(obj);
+            return updated!=null;
         }
 
     }

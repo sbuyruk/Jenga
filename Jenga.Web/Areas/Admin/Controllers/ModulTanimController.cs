@@ -70,6 +70,8 @@ namespace Jenga.Web.Areas.Admin.Controllers
             }
             if (ModelState.IsValid)
             {
+                string? userName = HttpContext.User.Identity.Name;
+                obj.Degistiren = userName;
                 _unitOfWork.ModulTanim.Update(obj);
                 _unitOfWork.Save();
                 TempData["success"] = "Modül kaydı güncellendi";

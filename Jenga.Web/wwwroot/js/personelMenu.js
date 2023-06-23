@@ -10,8 +10,8 @@ function loadDataTable() {
             "url": "/Admin/PersonelMenu/GetPersonelAll"
         },
         "columns": [
-            { "data": "personel.adi", "width": "20%" },
-            { "data": "personel.soyadi", "width": "20%" },
+            { "data": "personel.personel.adi", "width": "20%" },
+            { "data": "personel.personel.soyadi", "width": "20%" },
             { "data": "menuTanim", "width": "20%" },
             {
                 "data": "personel.id",
@@ -31,11 +31,39 @@ function loadDataTable() {
             },
 
         ],
+        dom: 'Bfrtip',
+        buttons: [
+            {
+                extend: 'print',
+                exportOptions: {
+                    columns: ':visible'
+                }
+            },
+            {
+                extend: 'excel',
+                exportOptions: {
+                    columns: ':visible'
+                }
+            },
+            {
+                extend: 'pdf',
+                exportOptions: {
+                    columns: ':visible'
+                }
+            },
+            {
+                extend: 'copy',
+                exportOptions: {
+                    columns: ':visible'
+                }
+            },
+            , 'pageLength', "colvis"
+        ],
     });
 }
 // URL'de yazan API den datayı al
 function loadMenuTree() {
-    let url = '/Admin/PersonelMenu/GetMenuAll';
+    let url = '/Admin/MenuTanim/GetMenuAll';
     try {
         //API'den json al
         $.getJSON(url, function (menuTanimdata) {
@@ -137,5 +165,25 @@ function loadFunctions() {
     $("input[class=menuEditInput]").click(function () {
         SetParentsCheckedValue($(this), $(this).prop('checked'));
     })
+    var array = [];
+    //$("input:checkbox[name=type]:checked").each(function () {
+    $("input[class=menuEditInput]:checked").each(function () {
+        array.push($(this).val());
+    });
+    $('#GFG_DOWN').text(array);
+}
+
+function FindCheckedMenus() {
+    var array = [];
+    //$("input:checkbox[name=type]:checked").each(function () {
+    $("input[class=menuEditInput]:checked").each(function () {
+        array.push($(this).val());
+    });
+    $('#GFG_DOWN').text(array);
+/*    alert("array=" + array);*/
+    document.getElementById("SelectedMenuTanimListLbl").value = "1,2,3";
+    $('#SelectedMenuTanimListLbl').val(array);
+    //alert("SelectedMenuTanimListLbl=" + $('#SelectedMenuTanimListLbl').val());
+
 }
 

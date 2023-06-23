@@ -14,7 +14,8 @@
 
     <link rel="stylesheet" href="~/lib/jquery-ui/jquery-ui.css" />
     
-    <link rel="stylesheet" href="~/icon/bootstrap-icons-1.9.1/bootstrap-icons.css" />
+    @*<link rel="stylesheet" href="~/icon/bootstrap-icons-1.10.5/bootstrap-icons.css" />*@
+    <link rel="stylesheet" href="~/icon/bootstrap-icons-1.10.5/font/bootstrap-icons.css">
     <link rel="stylesheet" href="~/lib/toastr/toastr.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/lib/animate/animate.css" asp-append-version="true" />
     <link rel="stylesheet" type="text/css" href="~/lib/DataTables/datatables.min.css" />
@@ -27,7 +28,7 @@
 
                 <div class="container-fluid">
                     @*menu icon*@
-                    <div class="me-4" onclick="openCloseSideBar(this)">
+                    <div class="me-4 change" onclick="openCloseSideBar(this)">
                         <div class="bar1"></div>
                         <div class="bar2"></div>
                         <div class="bar3"></div>
@@ -45,25 +46,6 @@
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link text-light" asp-area="" asp-controller="Home" asp-action="Privacy">Kullanım Koşulları</a>
-                            </li>
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle text-light" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">Depo İşlemleri</a>
-                                <div class="dropdown-menu">
-                                    <a class="dropdown-item " asp-area="Admin" asp-controller="DepoTanim" asp-action="Index">Depo Tanımlama</a>
-                                    <a class="dropdown-item " asp-area="Admin" asp-controller="KaynakTanim" asp-action="Index">Kaynak Tanımlama</a>
-                                    <a class="dropdown-item " asp-area="Admin" asp-controller="AniObjesiTanim" asp-action="Index">Anı Objesi Tanımlama</a>
-                                    <a class="dropdown-item " asp-area="Admin" asp-controller="DepoHareket" asp-action="Index">Depoya Anı Objesi Girişi</a>
-                                    <a class="dropdown-item " asp-area="Admin" asp-controller="DepoStok" asp-action="Index">Depo Stok Durumu</a>
-                                    <div class="dropdown-divider"></div>
-                                </div>
-                            </li>
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle " data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">Yetki İşlemleri</a>
-                                <div class="dropdown-menu">
-                                    <a class="dropdown-item " asp-area="Admin" asp-controller="ModulTanim" asp-action="Index">Modül Listesi</a>
-                                    <a class="dropdown-item " asp-area="Admin" asp-controller="MenuTanim" asp-action="Index">Menü Listesi</a>
-                                    <div class="dropdown-divider"></div>
-                                </div>
                             </li>
                         </ul>
                         <p class="nav navbar-text">Hoş Geldiniz, 

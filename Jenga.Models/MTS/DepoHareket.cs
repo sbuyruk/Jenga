@@ -18,17 +18,31 @@ namespace Jenga.Models.MTS
         [ForeignKey("AniObjesiId")]
         [ValidateNever]
         public AniObjesiTanim AniObjesiTanim { get; set; }
-        public int DepoId { get; set; }
-        [DisplayName("Depo/Yer")]
-        [ForeignKey("DepoId")]
+
+        public int KaynakId { get; set; }
+        [DisplayName("Geldiği Kaynak")]
+        [ForeignKey("KaynakId")]
+        [ValidateNever]
+        public DepoTanim KaynakTanim { get; set; }
+
+        public int KaynakDepoId { get; set; }
+        [DisplayName("Çıkış Yapılan Depo")]
+        [ForeignKey("KaynakDepoId")]
+        [ValidateNever]
+        public DepoTanim KaynakDepoTanim { get; set; }
+        
+        public int HedefDepoId { get; set; }
+        [DisplayName("Giriş Yapılan Depo")]
+        [ForeignKey("HedefDepoId")]
         [ValidateNever]
         public DepoTanim DepoTanim { get; set; }
+     
         [Required]
         public int Adet { get; set; }
         [Required]
         public string GirisCikis { get; set; } = "Giriş";
-        [DataType(DataType.Date)]
-        [DisplayFormat(ApplyFormatInEditMode = true, DataFormatString = "{0:MM/dd/yyyy}")]
+        [DataType(DataType.DateTime)]
+        //[DisplayFormat(ApplyFormatInEditMode = true, DataFormatString = "{0:MM/dd/yyyy hh:mm}")]
         public DateTime IslemTarihi { get; set; } = DateTime.Now;
         public string? IslemYapan { get; set; }
 

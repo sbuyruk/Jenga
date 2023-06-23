@@ -82,7 +82,8 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 {
                     TempData["error"] = "Personel oluşturulamadı";
                 }
-
+                string? userName = HttpContext.User.Identity.Name;
+                obj.Olusturan = userName;
                 _unitOfWork.Save();
 
                 return RedirectToAction("Index");
@@ -104,7 +105,8 @@ namespace Jenga.Web.Areas.Admin.Controllers
                     _unitOfWork.Personel.Update(obj);
                     TempData["success"] = "Personel güncellendi";
                 }
-
+                string? userName = HttpContext.User.Identity.Name;
+                obj.Degistiren = userName;
                 _unitOfWork.Save();
 
                 return RedirectToAction("Index");

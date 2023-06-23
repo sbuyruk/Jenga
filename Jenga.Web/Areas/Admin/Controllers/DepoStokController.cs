@@ -1,6 +1,7 @@
 ﻿using Jenga.DataAccess.Data;
 using Jenga.DataAccess.Repository.IRepository;
 using Jenga.Models;
+using Jenga.Models.MTS;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Extensions.Hosting;
@@ -28,7 +29,11 @@ namespace Jenga.Web.Areas.Admin.Controllers
             var depoStokList = _unitOfWork.DepoStok.GetAll( includeProperties:"DepoTanim,AniObjesiTanim");
             return Json(new { data = depoStokList });
         }
-
+        public JsonResult GetAniObjesiListByDepo(int depoId)
+        {
+            List<DepoStok> aniObjesiStoks = _unitOfWork.DepoStok.GetByFilter(u => u.DepoId == depoId, includeProperties: "DepoTanim,AniObjesiTanim").ToList();
+            return Json(aniObjesiStoks);
+        }
         #endregion
     }
 

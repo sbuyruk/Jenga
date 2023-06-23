@@ -10,5 +10,7 @@ namespace Jenga.Models.Ortak
         public IEnumerable<SelectListItem> UstMenuSelectList { get; set; }
         [ValidateNever]
         public List<MenuTanimVM> SubMenu { get; set; }
+        [ValidateNever]
+        public MenuTanim UstMenuTanim { get; set; }
     }
 }

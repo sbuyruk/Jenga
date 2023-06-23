@@ -26,7 +26,8 @@ namespace Jenga.Models.MTS
         [Required]
         public int SonAdet { get; set; }
         [DataType(DataType.DateTime)]
-        [DisplayFormat(ApplyFormatInEditMode = true, DataFormatString = "{0:dd/MM/yyyy HH:mm}")]
+        //[DisplayFormat(ApplyFormatInEditMode = true, DataFormatString = "{0:dd/MM/yyyy HH:mm}")]
+        [DisplayFormat(DataFormatString = "{0:dd/MM/yyyy}")]
         public DateTime SonIslemTarihi { get; set; } = DateTime.Now;
         public string? SonIslemYapan { get; set; }
     }

@@ -1,5 +1,6 @@
 ﻿using Jenga.DataAccess.Repository.IRepository;
 using Jenga.Models.Ortak;
+using Jenga.Web.Areas.Admin.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -11,10 +12,12 @@ namespace Jenga.Web.Areas.Admin.Controllers
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IWebHostEnvironment _hostEnvironment;
-        public MenuTanimController(IUnitOfWork unitOfWork, IWebHostEnvironment hostEnvironment)
+        private readonly MenuService _menuService;
+        public MenuTanimController(IUnitOfWork unitOfWork, IWebHostEnvironment hostEnvironment, MenuService menuService)
         {
             _unitOfWork = unitOfWork;
             _hostEnvironment = hostEnvironment;
+            _menuService = menuService;
         }
         public IActionResult Index()
         {
@@ -49,6 +52,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
                     Text = i.Adi,
                     Value = i.Id.ToString()
                 }),
+                
             };
 
             if (id == null || id == 0)
@@ -59,6 +63,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             {
                 //update 
                 menuTanimVM.MenuTanim = _unitOfWork.MenuTanim.GetFirstOrDefault(u => u.Id == id);
+                menuTanimVM.UstMenuTanim = _unitOfWork.MenuTanim.GetFirstOrDefault(u => u.UstMenuId == id);
                 return View(menuTanimVM);
             }
         }
@@ -72,11 +77,28 @@ namespace Jenga.Web.Areas.Admin.Controllers
 
             return Json(new { data = menuTanimSortedList });
         }
+        public IActionResult GetMenuTanimList()
+        {
+            var menuTanimList = _menuService.GetAllMenus();
+            var menuTanimSortedList = menuTanimList.OrderBy(x => x.MenuTanim.Sira).ThenBy(x => x.MenuTanim.UstMenuId);
+
+            return Json(new { data = menuTanimSortedList });
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns>Tüm MenuTanim nesneleri json formatında ve recursive</returns>
         public string GetMenuAll()
         {
             int rootMenuId = 1;
-            string json = _unitOfWork.MenuTanim.GetMenuJson(rootMenuId);
-
+            string json = _menuService.GetMenuJson(rootMenuId);
+            return json;
+        }
+        public string GetMenuByPersonId()
+        {
+            int rootMenuId = 1;
+            string? userName = "asbuyruk";// HttpContext.User?.Identity?.Name?.Split('\\')[1];
+            string json = _menuService.GetMenuJson(userName, rootMenuId);
             return json;
         }
         //Delete
@@ -144,9 +166,6 @@ namespace Jenga.Web.Areas.Admin.Controllers
             }
             return View(obj);
         }
-        #endregion
-        #region methods
-
         #endregion
     }
 

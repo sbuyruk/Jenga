@@ -10,7 +10,7 @@ namespace Jenga.DataAccess.Repository.IRepository.Ortak
 {
     public interface IMenuTanimRepository : IRepository<MenuTanim>
     {
-        string GetMenuJson(int ustMenuId);
+        //string GetMenuJson(int ustMenuId);
         void Update(MenuTanim obj);
         public List<MenuTanim> GetMenusByIds(IEnumerable<int> menuTanimIds);
         public List<MenuTanimVM> GetSubMenuMenuListByParentId(int? parentId);

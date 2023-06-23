@@ -10,7 +10,7 @@ namespace Jenga.DataAccess.Repository.IRepository.MTS
 {
     public interface IDepoHareketRepository : IRepository<DepoHareket>
     {
-        void Update(DepoHareket obj);
+        bool Update(DepoHareket obj);
 
     }
 }
