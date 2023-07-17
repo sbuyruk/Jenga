@@ -97,7 +97,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
         public string GetMenuByPersonId()
         {
             int rootMenuId = 1;
-            string? userName = "asbuyruk";// HttpContext.User?.Identity?.Name?.Split('\\')[1];
+            string? userName =  HttpContext.User?.Identity?.Name?.Split('\\')[1];//"asbuyruk";// 
             string json = _menuService.GetMenuJson(userName, rootMenuId);
             return json;
         }

@@ -24,9 +24,9 @@ function buildMenu(parent, items) {
         var li = $('<li id=liSB' + this.id + '></li>');
         var aTag;
         if (this.nodes && this.nodes.length > 0) {
-            aTag = $('<input class=menuInput type="checkbox" id=' + this.id + ' /><label class=menu-label for=' + this.id + '>' + this.sira + '.'+this.text + '</label>');
+            aTag = $('<input class=menuInput type="checkbox" id=' + this.id + ' /><label class=menu-label for=' + this.id + '>' + this.text + '</label>'); //+ this.sira + '.'+this.text + '</label>');
         } else {
-            aTag = $('<a class=menu-label href=' + this.url + '> <i class="bi bi-circle-fill" style="font-size:14px;" ></i>&nbsp;&nbsp;&nbsp;' + this.sira + '.' + this.text + '</a>');
+            aTag = $('<a class=menu-label href=' + this.url + '> <i class="bi bi-circle-fill" style="font-size:14px;" ></i>&nbsp;&nbsp;&nbsp;' + this.text + '</a>');//+ this.sira + '.' + this.text + '</a>');
         }
         aTag.appendTo(li)
         //if (!this.isActive) {

@@ -1,0 +1,31 @@
+﻿<div class="container pt-3">
+    <div class="row">
+        <div class="col ">
+            <h4 class="text-primary text-start fw-bold">Gönderi Paketi</h4>
+
+        </div>
+        <div class="col text-end">
+            <a asp-controller="GonderiPaketi" asp-action="Create" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> &nbsp; Yeni Gönderi Paketi Oluştur
+            </a>
+        </div>
+    </div>
+    <hr />
+    <div class="pt-3">
+        <table id="tblData" class="table table-bordered table-striped" style="width:100%">
+            <thead>
+                <tr>
+                    <th>Etiket</th>
+                    <th>Teslim Yeri</th>
+                    <th>Gönderme Tarihi</th>
+                    <th>Düzenle/Sil</th>
+                </tr>
+            </thead>
+        </table>
+
+    </div>
+</div>
+
+@section Scripts{
+    <script src="~/js/gonderiPaketi.js"></script>
+}

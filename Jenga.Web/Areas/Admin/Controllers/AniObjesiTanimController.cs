@@ -2,6 +2,7 @@
 using Jenga.Models.MTS;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Jenga.Web.Areas.Admin.Controllers
 {
@@ -9,11 +10,13 @@ namespace Jenga.Web.Areas.Admin.Controllers
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IWebHostEnvironment _hostEnvironment;
-        public AniObjesiTanimController(IUnitOfWork unitOfWork, IWebHostEnvironment hostEnvironment)
+        public AniObjesiTanimController(IUnitOfWork unitOfWork, IWebHostEnvironment hostEnvironment, IMemoryCache cache)
         {
             _unitOfWork = unitOfWork;
             _hostEnvironment = hostEnvironment;
+            _cache = cache;
         }
+        private readonly IMemoryCache _cache;
         public IActionResult Index()
         {
             return View();
@@ -77,10 +80,30 @@ namespace Jenga.Web.Areas.Admin.Controllers
         [HttpGet]
         public IActionResult GetAll()
         {
-            var aniObjesiList = _unitOfWork.AniObjesiTanim.GetAll(includeProperties:"KaynakTanim");
-            return Json(new { data = aniObjesiList });
-        }
+            // Check if the item is present in the cache
+            if (!_cache.TryGetValue("aniObjesiListCache", out IEnumerable<AniObjesiTanim> cachedObject))
+            {
+                // Item is not in the cache, fetch it from the data source
+                cachedObject = GetDataFromDataSource();
 
+                // Set the item in the cache with a specific expiration time
+                var cacheOptions = new MemoryCacheEntryOptions()
+                    .SetSlidingExpiration(TimeSpan.FromMinutes(10)); // Example: Sliding expiration of 10 minutes
+
+                _cache.Set("aniObjesiListCache", cachedObject, cacheOptions);
+            }
+
+            var aniObjesiList = _unitOfWork.AniObjesiTanim.GetAll(includeProperties: "KaynakTanim");
+            return Json(new { data = aniObjesiList });
+            //return Json(new { data = cachedObject });
+        }
+        private IEnumerable<AniObjesiTanim> GetDataFromDataSource()
+        {
+            // Code to fetch the data from the data source
+            // ...
+            var aniObjesiList = _unitOfWork.AniObjesiTanim.GetAll(includeProperties: "KaynakTanim");
+            return  aniObjesiList;
+        }
         //Delete
         [HttpDelete]
         public IActionResult Delete(int? id)

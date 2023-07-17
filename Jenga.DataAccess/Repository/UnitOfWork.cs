@@ -23,7 +23,10 @@ namespace Jenga.DataAccess.Repository
             AniObjesiTanim= new AniObjesiTanimRepository(_db);
             DepoHareket= new DepoHareketRepository(_db);
             DepoStok= new DepoStokRepository(_db);
+            GonderiPaketi = new GonderiPaketiRepository(_db);
             //Ortak
+            Il = new IlRepository(_db);
+            Ilce = new IlceRepository(_db);
             ModulTanim = new ModulTanimRepository(_db);
             MenuTanim = new MenuTanimRepository(_db);
             //IKYS
@@ -34,6 +37,7 @@ namespace Jenga.DataAccess.Repository
             BirimTanim = new BirimTanimRepository(_db);
             UnvanTanim = new UnvanTanimRepository(_db);
             DagitimYeriTanim = new DagitimYeriTanimRepository(_db);
+            GonderiPaketi = new GonderiPaketiRepository(_db);
         }
         public IDepoTanimRepository DepoTanim { get; private set; }
         public IKaynakTanimRepository KaynakTanim { get; private set; }        
@@ -49,6 +53,9 @@ namespace Jenga.DataAccess.Repository
         public IBirimTanimRepository BirimTanim { get; private set; }        
         public IUnvanTanimRepository UnvanTanim { get; private set; }        
         public IDagitimYeriTanimRepository DagitimYeriTanim { get; private set; }        
+        public IGonderiPaketiRepository GonderiPaketi{ get; private set; }        
+        public IIlRepository Il{ get; private set; }        
+        public IIlceRepository Ilce { get; private set; }        
 
         public void Save()
         {

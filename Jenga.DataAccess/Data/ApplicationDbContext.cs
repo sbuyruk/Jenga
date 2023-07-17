@@ -25,5 +25,8 @@ namespace Jenga.DataAccess.Data
         public DbSet<BirimTanim> BirimTanim_Table { get; set; }
         public DbSet<UnvanTanim> UnvanTanim_Table { get; set; }
         public DbSet<DagitimYeriTanim> DagitimYeriTanim_Table { get; set; }
+        public DbSet<GonderiPaketi> GonderiPaketi_Table { get; set; }
+        public DbSet<Il> Il_Table { get; set; }
+        public DbSet<Ilce> Ilce_Table { get; set; }
     }
 }

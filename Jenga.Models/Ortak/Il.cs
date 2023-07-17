@@ -1,0 +1,25 @@
+﻿using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel;
+using Jenga.Models.Sistem;
+
+namespace Jenga.Models.Ortak
+{
+    public class Il : BaseModel
+    {
+        [Required]
+        [DisplayName("İl")]
+        public string? IlAdi { get; set; }
+        [ValidateNever]
+        [DisplayName("Plaka Kodu")]
+        public int? PlakaKodu { get; set; }
+
+        [ValidateNever]
+        [DisplayName("İngilizce Adı")]
+        public string? IngIlAdi { get; set; }
+
+        [ValidateNever]
+        [DisplayName("Bölge")]
+        public string? Bolge { get; set; }
+    }
+}
