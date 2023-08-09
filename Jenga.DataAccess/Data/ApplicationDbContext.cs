@@ -11,6 +11,7 @@ namespace Jenga.DataAccess.Data
         {
 
         }
+        //MTS
         public DbSet<DepoTanim> DepoTanim_Table { get; set; }
         public DbSet<KaynakTanim> KaynakTanim_Table { get; set; }
         public DbSet<AniObjesiTanim> AniObjesiTanim_Table { get; set; }
@@ -26,7 +27,15 @@ namespace Jenga.DataAccess.Data
         public DbSet<UnvanTanim> UnvanTanim_Table { get; set; }
         public DbSet<DagitimYeriTanim> DagitimYeriTanim_Table { get; set; }
         public DbSet<GonderiPaketi> GonderiPaketi_Table { get; set; }
+        public DbSet<Kisi> Kisi_Table { get; set; }
+        public DbSet<Randevu> Randevu_Table { get; set; }
+        public DbSet<RandevuKatilim> RandevuKatilim_Table { get; set; }
+        public DbSet<AniObjesiDagitim> AniObjesiDagitim_Table { get; set; }
+        
+        //ortak
         public DbSet<Il> Il_Table { get; set; }
         public DbSet<Ilce> Ilce_Table { get; set; }
+        
+
     }
 }

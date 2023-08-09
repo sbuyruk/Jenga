@@ -24,6 +24,13 @@ namespace Jenga.DataAccess.Repository
             DepoHareket= new DepoHareketRepository(_db);
             DepoStok= new DepoStokRepository(_db);
             GonderiPaketi = new GonderiPaketiRepository(_db);
+            Kisi = new KisiRepository(_db);
+            UnvanTanim = new UnvanTanimRepository(_db);
+            DagitimYeriTanim = new DagitimYeriTanimRepository(_db);
+            GonderiPaketi = new GonderiPaketiRepository(_db);
+            Randevu = new RandevuRepository(_db);
+            RandevuKatilim = new RandevuKatilimRepository(_db);
+            AniObjesiDagitim = new AniObjesiDagitimRepository(_db);
             //Ortak
             Il = new IlRepository(_db);
             Ilce = new IlceRepository(_db);
@@ -35,27 +42,33 @@ namespace Jenga.DataAccess.Repository
             IsBilgileri = new IsBilgileriRepository(_db);
             GorevTanim = new GorevTanimRepository(_db);
             BirimTanim = new BirimTanimRepository(_db);
-            UnvanTanim = new UnvanTanimRepository(_db);
-            DagitimYeriTanim = new DagitimYeriTanimRepository(_db);
-            GonderiPaketi = new GonderiPaketiRepository(_db);
         }
+        //MTS
         public IDepoTanimRepository DepoTanim { get; private set; }
         public IKaynakTanimRepository KaynakTanim { get; private set; }        
         public IAniObjesiTanimRepository AniObjesiTanim { get; private set; }        
         public IDepoHareketRepository DepoHareket { get; private set; }        
         public IDepoStokRepository DepoStok { get; private set; }        
+        public IGonderiPaketiRepository GonderiPaketi{ get; private set; }        
+        public IDagitimYeriTanimRepository DagitimYeriTanim { get; private set; }        
+        public IKisiRepository Kisi { get; private set; }        
+        public IRandevuRepository Randevu { get; private set; }        
+        public IRandevuKatilimRepository RandevuKatilim { get; private set; }        
+        public IAniObjesiDagitimRepository AniObjesiDagitim { get; private set; }        
+        
+        //Ortak
+        public IIlRepository Il{ get; private set; }        
+        public IIlceRepository Ilce { get; private set; }        
         public IModulTanimRepository ModulTanim { get; private set; }        
-        public IMenuTanimRepository MenuTanim { get; private set; }        
+        public IMenuTanimRepository MenuTanim { get; private set; }
+
+        //IKYS
         public IPersonelRepository Personel { get; private set; }        
         public IPersonelMenuRepository PersonelMenu { get; private set; }        
         public IIsBilgileriRepository IsBilgileri{ get; private set; }        
         public IGorevTanimRepository GorevTanim { get; private set; }        
         public IBirimTanimRepository BirimTanim { get; private set; }        
         public IUnvanTanimRepository UnvanTanim { get; private set; }        
-        public IDagitimYeriTanimRepository DagitimYeriTanim { get; private set; }        
-        public IGonderiPaketiRepository GonderiPaketi{ get; private set; }        
-        public IIlRepository Il{ get; private set; }        
-        public IIlceRepository Ilce { get; private set; }        
 
         public void Save()
         {

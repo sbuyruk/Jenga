@@ -1,0 +1,37 @@
+﻿<div class="container pt-3">
+    <div class="row">
+        <div class="col ">
+            <h4 class="text-primary text-start fw-bold">Kişiler (Vakıf Dışından Gelen Ziyaretçiler)</h4>
+
+        </div>
+        <div class="col text-end">
+            <a asp-controller="Kisi" asp-action="Create" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> &nbsp; Yeni Kişi Oluştur
+            </a>
+        </div>
+    </div>
+    <hr />
+    <div class="pt-3">
+        <table id="tblData" class="table table-bordered table-striped" style="width:100%">
+            <thead>
+                <tr>
+                    <th>No</th>
+                    <th>Adı</th>
+                    <th>Soyadı</th>
+                    <th>Kurumu</th>
+                    <th>Ünvanı</th>
+                    <th>Görevi</th>
+                    <th>Telefon</th>
+                    <th>Ara./ Gör.</th>
+                    <th>Kişi Kartı</th>
+                    <th>Düz.</th>
+                </tr>
+            </thead>
+        </table>
+
+    </div>
+</div>
+
+@section Scripts{
+    <script src="~/js/kisi.js"></script>
+}

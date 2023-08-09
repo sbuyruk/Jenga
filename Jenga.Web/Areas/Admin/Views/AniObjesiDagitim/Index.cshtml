@@ -1,0 +1,32 @@
+﻿<div class="container pt-3">
+    <div class="row">
+        <div class="col ">
+            <h4 class="text-primary text-start fw-bold">Anı Objeleri</h4>
+        </div>
+        <div class="col text-end">
+            <a asp-controller="AniObjesiTanim" asp-action="Create" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> &nbsp; Anı Objesi Dağıt
+            </a>
+        </div>
+    </div>
+    <hr />
+    <div class="pt-3">
+        <table id="tblData" class="table table-bordered table-striped table-sm" style="width:100%">
+            <thead>
+                <tr>
+                    <th>Adı Soyadı</th>
+                    <th>Anı Objesi</th>
+                    <th>Verilen Adet</th>
+                    <th>Stok Durumu</th>
+                    <th>Çıkış Deposu</th>
+                    <th>Açıklama</th>
+                    <th>Düzenle/Sil</th>
+                </tr>
+            </thead>
+        </table>
+    </div>
+</div>
+
+@section Scripts{
+    <script src="~/js/aniObjesiDagitim.js"></script>
+}

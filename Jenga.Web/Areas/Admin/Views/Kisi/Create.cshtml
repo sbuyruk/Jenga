@@ -1,0 +1,188 @@
+﻿@model KisiVM
+
+<form method="post" asp-action="Create" enctype="multipart/form-data">
+    <input asp-for="Kisi.Id" hidden />
+    <div class="row pt-3">
+        <div class="col ">
+            <h4 class="text-primary text-start fw-bold">Kişi (Vakıf Dışı Ziyaretçi) Girişi</h4>
+        </div>
+    </div>
+    <hr />
+    <div class="container ">
+        <div class="row">
+            @*<div asp-validation-summary="All"></div>*@
+            <div class="col-2 ">
+
+                <div class="form-group">
+                    <label asp-for="Kisi.Adi"></label>
+                    <input asp-for="Kisi.Adi" class="form-control" />
+                    <span asp-validation-for="Kisi.Adi" class="text-danger"></span>
+                </div>
+                <div class="form-group">
+                    <label asp-for="Kisi.Soyadi"></label>
+                    <input asp-for="Kisi.Soyadi" class="form-control" />
+                    <span asp-validation-for="Kisi.Soyadi" class="text-danger"></span>
+                </div>
+                <div class="form-group">
+                    <label asp-for="Kisi.TCKimlikNo"></label>
+                    <input asp-for="Kisi.TCKimlikNo" type="number" class="form-control" />
+                </div>
+                <div class="form-group">
+                    <label asp-for="Kisi.DogumTarihi" class="control-label">Doğum Tarihi</label>
+                    <input asp-for="Kisi.DogumTarihi" class="form-control" type="date" />
+                </div>
+
+            </div>
+            <div class="col-4">
+
+                <div class="form-group">
+                    <label asp-for="Kisi.Kurumu" ></label>
+                    <input asp-for="Kisi.Kurumu" class="form-control" />
+                </div>
+                <div class="form-group">
+                    <label asp-for="Kisi.Unvani" ></label>
+                    <input asp-for="Kisi.Unvani" class="form-control" />
+                </div>
+                <div class="form-group">
+                    <label asp-for="Kisi.Gorevi"></label>
+                    <input asp-for="Kisi.Gorevi" type="text" class="form-control" />
+                </div>
+
+            </div>
+            <div class="col-2 ">
+
+                <div class="form-group">
+                    <label asp-for="Kisi.Telefon1"></label>
+                    <input asp-for="Kisi.Telefon1" type="" class="form-control input-phone" placeholder="( _ _ _ ) _ _  _ _" />
+                </div>
+                <div class="form-group">
+                    <label asp-for="Kisi.Telefon2"></label>
+                    <input asp-for="Kisi.Telefon2" class="form-control input-phone" placeholder="( _ _ _ ) _ _  _ _"  />
+                </div>
+                <div class="form-group">
+                    <label asp-for="Kisi.Telefon3"></label>
+                    <input asp-for="Kisi.Telefon3" type="" class="form-control input-phone" placeholder="( _ _ _ ) _ _  _ _" />
+                </div>
+                <div class="form-group">
+                    <label asp-for="Kisi.Ili">İl</label>
+                    <select asp-for="Kisi.Ili" asp-items="@Model.IlList" class="form-select" id="ilId">
+                        <option disabled selected>--İl seçiniz--</option>
+                    </select>
+                    <span asp-validation-for="Kisi.Ili" class="text-danger"></span>
+                </div>
+
+            </div>
+            <div class="col-2 ">
+
+                <div class="form-group">
+                    <label asp-for="Kisi.Dahili1"></label>
+                    <input asp-for="Kisi.Dahili1" class="form-control" />
+                </div>
+                <div class="form-group">
+                    <label asp-for="Kisi.Dahili2"></label>
+                    <input asp-for="Kisi.Dahili2" class="form-control" />
+                </div>
+                <div class="form-group">
+                    <label asp-for="Kisi.Dahili3"></label>
+                    <input asp-for="Kisi.Dahili3" type="text" class="form-control" />
+                </div>
+                <div class="form-group">
+                    <label asp-for="Kisi.Ilcesi">İlçe</label>
+                    <select asp-for="Kisi.Ilcesi" asp-items="@Model.IlceList" class="form-select" id="ilceId">
+                        <option disabled selected>--İlçe seçiniz--</option>
+                    </select>
+                    <span asp-validation-for="Kisi.Ilcesi" class="text-danger"></span>
+                </div>
+            </div>
+            <div class="col-2 ">
+
+                <div class="form-group">
+                    <label asp-for="Kisi.TelAciklama1">Tel Açıklaması 1</label>
+                    <input asp-for="Kisi.TelAciklama1" class="form-control" />
+                </div>
+                <div class="form-group">
+                    <label asp-for="Kisi.TelAciklama2">Tel Açıklaması 2</label>
+                    <input asp-for="Kisi.TelAciklama2" class="form-control" />
+                </div>
+                <div class="form-group">
+                    <label asp-for="Kisi.TelAciklama3">Tel Açıklaması 3</label>
+                    <input asp-for="Kisi.TelAciklama3" type="text" class="form-control" />
+                </div>
+
+            </div>
+
+        </div>
+        <div class="row">
+            <div class="col form-group">
+                <label asp-for="Kisi.Adres"></label>
+                <textarea asp-for="Kisi.Adres" rows="2" class="form-control"></textarea>
+            </div>
+            <div class="col form-group">
+                    <label asp-for="Kisi.Aciklama"></label>
+                    <textarea asp-for="Kisi.Aciklama" rows="2" class="form-control"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12">
+        @if (@Model.Kisi.Id != 0)
+        {
+            <button type="submit" class="btn btn-primary" style="width:150px">Güncelle</button>
+        }
+        else
+        {
+            <button type="submit" class="btn btn-primary" style="width:150px">Kaydet</button>
+        }
+        <a asp-controller="Kisi" asp-action="Index" class="btn btn-secondary" style="width:150px">
+            Listeye Dön
+        </a>
+    </div>
+</form>
+
+@section Scripts{
+    @{
+        <partial name="_ValidationScriptsPartial" />
+    }
+    <script>
+        tinymce.init({
+            selector: 'textarea',
+            plugins: 'advlist autolink lists link image charmap print preview hr anchor pagebreak',
+            toolbar_mode: 'floating',
+        });
+
+        var className = "." + "input-phone";
+        if ($(className).length) {
+            if ($(className).toArray().forEach(function (field) {
+                new Cleave(field, {
+                    numericOnly: true,
+                    blocks: [0, 3, 0, 3, 2, 2],
+                    delimiters: ["(", ")", " ", " ", " "]
+                });
+            }));
+        }
+        $(document).ready(function () {
+            //ilceDDLDoldur(); // kapandı çünkü tekrar doldurmaya gerek yok, ayrıca seçili olanı değiştiriyor
+        })
+        $("#ilId").change(function () {
+            ilceDDLDoldur();
+        })
+        //il seçilinceilçe ddl dolsun
+        var ilceDDLDoldur = function () {
+            $.ajax({
+                url: '@Url.Action("GetIlceListByIlId","Il")',
+                type: 'GET',
+                data: {
+                    ilId: $("#ilId").val(),
+                },
+                success: function (data) {
+                    $('#ilceId').find('option').remove();
+                    $(data).each(
+                        function (index, item) {
+                            $('#ilceId').append('<option value="' + item.id + '">' + item.ilceAdi + '</option>')
+                        }
+                    );
+                }
+            })
+        }
+    </script>
+}

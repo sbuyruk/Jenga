@@ -1,0 +1,61 @@
+﻿using Jenga.Models.Sistem;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+
+namespace Jenga.Models.NBYS
+{
+    public class NakitBagisci:BaseModel
+    {
+        [Required]
+        [DisplayName("Adı")]
+        public string? Adi { get; set; }
+        [Required]
+        [DisplayName("Soyadı")]
+        public string? Soyadi { get; set; }
+        [ValidateNever]
+        [DisplayName("TC Kimlik No")]
+        public long? TCKimlikNo { get; set; }
+        [ValidateNever]
+        [DisplayName("İli")]
+        public string? Ili { get; set; }
+        [ValidateNever]
+        [DisplayName("İlçesi")]
+        public string? Ilcesi { get; set; }
+        [ValidateNever]
+        [DisplayName("Adres")]
+        public string? Adres { get; set; }
+        [ValidateNever]
+        [DisplayName("Telefon 1")]
+        public string? Telefon1 { get; set; }
+        [ValidateNever]
+        [DisplayName("Telefon 2")]
+        public string? Telefon2 { get; set; }
+        [ValidateNever]
+        [DisplayName("Tüzel Kişi")]
+        public bool TuzelKisi { get; set; }
+        [ValidateNever]
+        [DisplayName("Sağ/Vefat")]
+        public bool Sag { get; set; }
+        [ValidateNever]
+        [DisplayName("E-Posta")]
+        public string? Eposta { get; set; }
+        [ValidateNever]
+        [DisplayName("Posta Kodu")]
+        public string? PostaKodu { get; set; }
+        [ValidateNever]
+        [DisplayName("Ulaşılamıyor")]
+        public bool Ulasilamiyor { get; set; }
+        [ValidateNever]
+        [DisplayName("Belge İstemiyor")]
+        public bool BelgeIstemiyor { get; set; }
+        [ValidateNever]
+        [DisplayName("Dergi Gönderilmesin")]
+        public bool DergiGonderilmesin { get; set; }
+    }
+}

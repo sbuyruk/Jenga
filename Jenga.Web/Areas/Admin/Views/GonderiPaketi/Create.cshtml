@@ -95,12 +95,12 @@
         });
 
         $(document).ready(function () {
-            ilceDDLDoldur();
+            //ilceDDLDoldur();
         })
         $("#ilId").change(function () {
             ilceDDLDoldur();
         })
-        //giriş deposu seçilince çıkış deposu ddl dolsun
+        //il seçilinceilçe ddl dolsun
         var ilceDDLDoldur = function () {
             $.ajax({
                 url: '@Url.Action("GetIlceListByIlId","Il")',

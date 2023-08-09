@@ -86,9 +86,9 @@ namespace Jenga.Web.Areas.Admin.Controllers
                         Value = i.Id.ToString()
                     }),
                     GondermeAraciList = gonderiAraciList,
-                    IlList = _unitOfWork.DepoTanim.GetAll().Select(i => new SelectListItem
+                    IlList = _unitOfWork.Il.GetAll().Select(i => new SelectListItem
                     {
-                        Text = i.Adi,
+                        Text = i.IlAdi,
                         Value = i.Id.ToString()
                     }),
                     IlceList = _unitOfWork.Ilce.GetAll().Select(i => new SelectListItem
@@ -112,12 +112,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             var gonderiPaketiList = _unitOfWork.GonderiPaketi.GetAll(includeProperties:"DagitimYeriTanim");
             return Json(new { data = gonderiPaketiList });
         }
-        public IActionResult GetTransfers()
-        {
-            var depoHareketList = _unitOfWork.DepoHareket.GetByFilter(u=>u.KaynakId==0 ,includeProperties: "DepoTanim,KaynakDepoTanim,AniObjesiTanim");
-            return Json(new { data = depoHareketList });
-        }
-       
+
 
         //Delete
         [HttpDelete]
@@ -127,23 +122,23 @@ namespace Jenga.Web.Areas.Admin.Controllers
             {
                 return NotFound();
             }
-            var obj = _unitOfWork.DepoHareket.GetFirstOrDefault(u => u.Id == id);
+            var obj = _unitOfWork.GonderiPaketi.GetFirstOrDefault(u => u.Id == id);
             if (obj == null)
             {
                 return Json(new {success=false, message="Kayıt silmede hata"});
             }
 
-            _unitOfWork.DepoHareket.Remove(obj);
-            DepoHareketVM depoHareketVM = new()
+            _unitOfWork.GonderiPaketi.Remove(obj);
+            GonderiPaketiVM gonderiPaketiVM = new()
             {
-                DepoHareket = obj
+                GonderiPaketi = obj
                
             };
 
             string? userName = HttpContext.User.Identity.Name;
-            obj.Olusturan = userName;
+            obj.Degistiren = userName;
             _unitOfWork.Save();
-            return Json(new { success = true, message = "Depo işlemi silindi" });
+            return Json(new { success = true, message = "Gönderi paketi silindi" });
         }
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -171,19 +166,19 @@ namespace Jenga.Web.Areas.Admin.Controllers
         }
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Edit(DepoHareketVM obj)
+        public IActionResult Edit(GonderiPaketiVM obj)
         {
             if (ModelState.IsValid)
             {
-                if (obj.DepoHareket.Id == 0)
+                if (obj.GonderiPaketi.Id == 0)
                 {
-                    TempData["error"] = "Depo Id bulunamadı";
+                    TempData["error"] = "Gönderi paketi Id bulunamadı";
                 }
                 else
                 {
                    
-                    _unitOfWork.DepoHareket.Update(obj.DepoHareket);
-                    TempData["success"] = "Depo işlemi güncellendi";
+                    _unitOfWork.GonderiPaketi.Update(obj.GonderiPaketi);
+                    TempData["success"] = "Gönderi paketi güncellendi";
                 }
 
                 _unitOfWork.Save();

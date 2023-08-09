@@ -7,22 +7,45 @@ $(document).ready(function () {
 function loadDataTable() {
     dataTable = $('#tblData').DataTable({
         "ajax": {
-            "url": "/Admin/GonderiPaketi/GetAll"
+            "url": "/Admin/AniObjesiDagitim/GetAll"
         },
         "columns": [
-            { "data": "etiket"},
-            { "data": "dagitimYeriTanim.adi"},
-            { "data": "gondermeTarihi" },
+            {
+                "data": "katilimci",
+                "width": "20%",
+                "render": function (data) {
+                    var retval = "";
+                    if (data) {
+                        retval = data.adi +' '+ data.soyadi;
+                    }
+                    return retval;
+                },
+            },
+            { "data": "aniObjesiTanim.adi", "width": "10%" },
+            { "data": "adet", "width": "5%" },
+            { "data": "aniObjesiTanim.stokluMu", "width": "10%" },
+            {
+                "data": "depoTanim",
+                "width": "15%",
+                "render": function (data) {
+                    var retval = "";
+                    if (data) {
+                        retval = data.adi;
+                    }
+                    return retval;
+                },
+            },
+            { "data": "aciklama", "width": "20%" },
             {
                 "data": "id",
                 "width": "20%",
                 "render": function (data) {
                     return `
-                        <div class="form-group" role="group">
-                        <a href="/Admin/GonderiPaketi/Edit?id=${data}"
-                        class="btn btn-primary "> <i class="bi bi-pencil-square"></i> Düzenle</a>
-                        <a onClick=Delete('/Admin/GonderiPaketi/Delete/${data}')
-                        class="btn btn-danger "> <i class="bi bi-trash-fill"></i> Sil</a>
+                        <div class="btn-group" role="group">
+                        <a href="/Admin/AniObjesiTanim/Edit?id=${data}"
+                        class="btn btn-primary mx-2"> <i class="bi bi-pencil-square"></i> Düzenle</a>
+                        <a onClick=Delete('/Admin/AniObjesiTanim/Delete/${data}')
+                        class="btn btn-danger mx-2"> <i class="bi bi-trash-fill"></i> Sil</a>
 					</div>
                         `
                 },
@@ -61,7 +84,7 @@ function loadDataTable() {
 }
 function Delete(url) {
     Swal.fire({
-        title: 'ben deSilmek istediğinize emin misiniz?',
+        title: 'Silmek istediğinize emin misiniz?',
         text: "Silinen kayıt geri getirilemez!",
         icon: 'warning',
         showCancelButton: true,

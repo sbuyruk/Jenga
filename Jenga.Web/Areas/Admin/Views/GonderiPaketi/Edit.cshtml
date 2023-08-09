@@ -53,7 +53,7 @@
             <select asp-for="GonderiPaketi.IlceId" asp-items="@Model.IlceList" class="form-select" id="ilceId">
                 <option disabled selected>--İlçe seçiniz--</option>
             </select>
-            <span asp-validation-for="GonderiPaketi.IlId" class="text-danger"></span>
+            <span asp-validation-for="GonderiPaketi.IlceId" class="text-danger"></span>
         </div>
     </div>
     <div class="row">
@@ -94,12 +94,12 @@
             toolbar_mode: 'floating',
         });
         $(document).ready(function () {
-            ilceDDLDoldur();
+            //ilceDDLDoldur(); // kapandı çünkü tekrar doldurmaya gerek yok, ayrıca seçili olanı değiştiriyor
         })
         $("#ilId").change(function () {
             ilceDDLDoldur();
         })
-        //giriş deposu seçilince çıkış deposu ddl dolsun
+        //il seçilince ilçe ddl dolsun
         var ilceDDLDoldur = function () {
             $.ajax({
                 url: '@Url.Action("GetIlceListByIlId","Il")',
@@ -116,5 +116,6 @@
                     );
                 }
             })
+        }
     </script>
 }
