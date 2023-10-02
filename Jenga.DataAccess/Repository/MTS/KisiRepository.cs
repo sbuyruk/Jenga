@@ -2,11 +2,8 @@
 using Jenga.DataAccess.Repository.IRepository.MTS;
 using Jenga.Models.IKYS;
 using Jenga.Models.MTS;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+
 
 namespace Jenga.DataAccess.Repository.MTS
 {
@@ -26,6 +23,17 @@ namespace Jenga.DataAccess.Repository.MTS
         public void Update(Kisi obj)
         {
             _db.Kisi_Table.Update(obj);
+        }
+        public IEnumerable<Kisi> IncludeIt()
+        {
+            //IEnumerable<Kisi> list = _db.Kisi_Table.Include(m => m.MTSKurumGorevs);
+            //return list;
+
+            //IEnumerable<Kisi> list = _db.Kisi_Table.Where(a=> a.MTSKurumGorevs !=null).Include(m => m.MTSKurumGorevs.Where(n=>n.Durum.Equals("Görevde")));
+            IEnumerable<Kisi> list = _db.Kisi_Table.Include(m => m.MTSKurumGorevs).ThenInclude(n=>n.MTSKurumTanim)
+                .Include(m => m.MTSKurumGorevs).ThenInclude(n => n.MTSGorevTanim);//.Where(n=>n.Durum.Equals("Görevde")));
+            return list.ToList();
+            
         }
     }
 }

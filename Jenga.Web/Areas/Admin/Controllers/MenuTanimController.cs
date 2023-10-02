@@ -102,7 +102,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             return json;
         }
         //Delete
-        [HttpDelete]
+        [HttpPost]
         public IActionResult Delete(int? id)
         {
             if (id == null || id == 0)

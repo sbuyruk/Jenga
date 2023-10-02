@@ -2,11 +2,14 @@
 using Jenga.DataAccess.Repository.IRepository;
 using Jenga.DataAccess.Repository.IRepository.IKYS;
 using Jenga.DataAccess.Repository.IRepository.MTS;
+using Jenga.DataAccess.Repository.IRepository.NBYS;
+using Jenga.DataAccess.Repository.IRepository.TBYS;
 using Jenga.DataAccess.Repository.IRepository.Ortak;
 using Jenga.DataAccess.Repository.IKYS;
 using Jenga.DataAccess.Repository.MTS;
+using Jenga.DataAccess.Repository.TBYS;
+using Jenga.DataAccess.Repository.NBYS;
 using Jenga.DataAccess.Repository.Ortak;
-using Jenga.Models.IKYS;
 using Jenga.Models.MTS;
 
 namespace Jenga.DataAccess.Repository
@@ -31,6 +34,10 @@ namespace Jenga.DataAccess.Repository
             Randevu = new RandevuRepository(_db);
             RandevuKatilim = new RandevuKatilimRepository(_db);
             AniObjesiDagitim = new AniObjesiDagitimRepository(_db);
+            MTSKurumTanim = new MTSKurumTanimRepository(_db);
+            MTSGorevTanim = new MTSGorevTanimRepository(_db);
+            MTSUnvanTanim = new MTSUnvanTanimRepository(_db);
+            MTSKurumGorev = new MTSKurumGorevRepository(_db);
             //Ortak
             Il = new IlRepository(_db);
             Ilce = new IlceRepository(_db);
@@ -42,6 +49,10 @@ namespace Jenga.DataAccess.Repository
             IsBilgileri = new IsBilgileriRepository(_db);
             GorevTanim = new GorevTanimRepository(_db);
             BirimTanim = new BirimTanimRepository(_db);
+            //TBYS
+            TasinmazBagisci = new TasinmazBagisciRepository(_db);
+            //NBYS
+            NakitBagisci = new NakitBagisciRepository(_db);
         }
         //MTS
         public IDepoTanimRepository DepoTanim { get; private set; }
@@ -55,6 +66,10 @@ namespace Jenga.DataAccess.Repository
         public IRandevuRepository Randevu { get; private set; }        
         public IRandevuKatilimRepository RandevuKatilim { get; private set; }        
         public IAniObjesiDagitimRepository AniObjesiDagitim { get; private set; }        
+        public IMTSKurumTanimRepository MTSKurumTanim { get; private set; }        
+        public IMTSGorevTanimRepository MTSGorevTanim { get; private set; }        
+        public IMTSUnvanTanimRepository MTSUnvanTanim { get; private set; }        
+        public IMTSKurumGorevRepository MTSKurumGorev { get; private set; }        
         
         //Ortak
         public IIlRepository Il{ get; private set; }        
@@ -68,8 +83,11 @@ namespace Jenga.DataAccess.Repository
         public IIsBilgileriRepository IsBilgileri{ get; private set; }        
         public IGorevTanimRepository GorevTanim { get; private set; }        
         public IBirimTanimRepository BirimTanim { get; private set; }        
-        public IUnvanTanimRepository UnvanTanim { get; private set; }        
-
+        public IUnvanTanimRepository UnvanTanim { get; private set; }
+        //TBYS
+        public ITasinmazBagisciRepository TasinmazBagisci { get; private set; }
+        //NBYS
+        public INakitBagisciRepository NakitBagisci { get; private set; }
         public void Save()
         {
             _db.SaveChanges();

@@ -1,6 +1,8 @@
 ﻿using Jenga.Models.IKYS;
 using Jenga.Models.MTS;
+using Jenga.Models.NBYS;
 using Jenga.Models.Ortak;
+using Jenga.Models.TBYS;
 using Microsoft.EntityFrameworkCore;
 
 namespace Jenga.DataAccess.Data
@@ -11,6 +13,8 @@ namespace Jenga.DataAccess.Data
         {
 
         }
+        //Test
+
         //MTS
         public DbSet<DepoTanim> DepoTanim_Table { get; set; }
         public DbSet<KaynakTanim> KaynakTanim_Table { get; set; }
@@ -31,7 +35,14 @@ namespace Jenga.DataAccess.Data
         public DbSet<Randevu> Randevu_Table { get; set; }
         public DbSet<RandevuKatilim> RandevuKatilim_Table { get; set; }
         public DbSet<AniObjesiDagitim> AniObjesiDagitim_Table { get; set; }
-        
+        public DbSet<MTSKurumTanim> MTSKurumTanim_Table { get; set; }
+        public DbSet<MTSGorevTanim> MTSGorevTanim_Table { get; set; }
+        public DbSet<MTSUnvanTanim> MTSUnvanTanim_Table { get; set; }
+        public DbSet<MTSKurumGorev> MTSKurumGorev_Table { get; set; }
+        //TBYS
+        public DbSet<TasinmazBagisci> TasinmazBagisci_Table { get; set; }
+        //NBYS
+        public DbSet<NakitBagisci> NakitBagisci_Table { get; set; }
         //ortak
         public DbSet<Il> Il_Table { get; set; }
         public DbSet<Ilce> Ilce_Table { get; set; }

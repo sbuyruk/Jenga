@@ -115,7 +115,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
 
 
         //Delete
-        [HttpDelete]
+        [HttpPost]
         public IActionResult Delete(int? id)
         {
             if (id == null || id == 0)

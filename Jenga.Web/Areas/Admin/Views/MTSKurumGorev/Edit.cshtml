@@ -1,0 +1,89 @@
+@model MTSKurumGorevVM
+
+<form method="post" asp-action="Edit" enctype="multipart/form-data">
+    <input asp-for="MTSKurumGorev.Id" hidden />
+    <input asp-for="MTSKurumGorev.MTSKurumTanim.Id" hidden />
+    <input asp-for="MTSKurumGorev.MTSGorevTanim.Id" hidden />
+    <input asp-for="MTSKurumGorev.KisiId" hidden />
+    <input asp-for="MTSKurumGorev.MTSKurumTanim.KisaAdi" hidden />
+    <input asp-for="MTSKurumGorev.MTSGorevTanim.KisaAdi" hidden />
+    <div class="row pt-3">
+        <div class="col ">
+            <h4 class="text-primary text-start fw-bold">Görev Bitirme</h4>
+        </div>
+    </div>
+    <hr />
+    <div class="p-3 mt-4 row">
+        @*<div asp-validation-summary="All"></div>*@
+        <div class="row">
+            <div class="col-3">
+                <label asp-for="MTSKurumGorev.Kisi.Adi"></label>
+                <input asp-for="MTSKurumGorev.Kisi.Adi" class="form-control" readonly />
+            </div>
+            <div class="col-3">
+                <label asp-for="MTSKurumGorev.Kisi.Soyadi"></label>
+                <input asp-for="MTSKurumGorev.Kisi.Soyadi" class="form-control" readonly />
+            </div>
+            <div class="col-3" >
+                <label asp-for="MTSKurumGorev.BaslamaTarihi" class="control-label">Başlama Tarihi</label>
+                <input asp-for="MTSKurumGorev.BaslamaTarihi" class="form-control" type="date" />
+            </div>
+            <div class="col-3">
+                <label asp-for="MTSKurumGorev.Durum"></label>
+                <select asp-for="MTSKurumGorev.Durum" asp-items="@Model.DurumList" class="form-select" id="durum">
+                    @*<option disabled selected>--Stok takibi yapılacak mı, seçiniz--</option>*@
+                </select>
+                <span asp-validation-for="MTSKurumGorev.Durum" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-3">
+                <label asp-for="MTSKurumGorev.MTSKurumTanim.Adi"></label>
+                <input asp-for="MTSKurumGorev.MTSKurumTanim.Adi" class="form-control" readonly />
+            </div>
+            <div class="col-3">
+                <label asp-for="MTSKurumGorev.MTSGorevTanim.Adi"></label>
+                <input asp-for="MTSKurumGorev.MTSGorevTanim.Adi" class="form-control" readonly />
+            </div>
+            <div class="col-3" id="AyrilmaTarihiDiv" style="display:none">
+                <label asp-for="MTSKurumGorev.AyrilmaTarihi" class="control-label"></label>
+                <input asp-for="MTSKurumGorev.AyrilmaTarihi" class="form-control" type="date" />
+                <span asp-validation-for="MTSKurumGorev.AyrilmaTarihi" class="text-danger"></span>
+            </div>
+        </div>
+        
+        <div class="form-group mt-5">
+            @if (Model.MTSKurumGorev.Id != 0)
+            {
+                <button id="GoreviBitirBtn" type="submit" class="btn btn-danger" style="width:150px">Görevi Bitir</button>
+            }
+            <a asp-controller="Kisi" asp-action="Index" class="btn btn-secondary" style="width:150px">
+                Kişi Listesine Dön
+            </a>
+        </div>
+    </div>
+</form>
+
+@section Scripts{
+    @{
+    <partial name="_ValidationScriptsPartial" />
+    }
+    <script>
+        $(document).ready(function () {
+            AyrilmatarihiVisible();
+        })
+        $("#durum").change(function () {
+            AyrilmatarihiVisible();
+        });
+        var AyrilmatarihiVisible = function () {
+            var gorevdurumu = $("#durum").val();
+            if (gorevdurumu == "Ayrıldı") {
+                $("#AyrilmaTarihiDiv").show();
+                $("#GoreviBitirBtn").show();
+            } else {
+                $("#AyrilmaTarihiDiv").hide();
+                $("#GoreviBitirBtn").hide();
+            }
+        }
+    </script>
+}

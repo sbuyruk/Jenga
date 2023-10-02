@@ -27,12 +27,14 @@ namespace Jenga.Models.MTS
         public int KatilimciId { get; set; }
         public Katilimci? Katilimci { get; set; }
 
+        [DisplayName("Veriliş Tarihi")]
+        [ValidateNever]
+        public DateTime? VerilisTarihi { get; set; }
         public int? CikisDepoId { get; set; }
         [DisplayName("Çıkış Deposu")]
         [ForeignKey("CikisDepoId")]
         [ValidateNever]
         public DepoTanim? DepoTanim { get; set; }
-
         public int? DagitimYeriTanimId { get; set; }
         [DisplayName("Dağıtım Yeri")]
         [ForeignKey("DagitimYeriTanimId")]

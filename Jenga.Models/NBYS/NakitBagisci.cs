@@ -23,10 +23,10 @@ namespace Jenga.Models.NBYS
         public long? TCKimlikNo { get; set; }
         [ValidateNever]
         [DisplayName("İli")]
-        public string? Ili { get; set; }
+        public int? Ili { get; set; }
         [ValidateNever]
         [DisplayName("İlçesi")]
-        public string? Ilcesi { get; set; }
+        public int? Ilcesi { get; set; }
         [ValidateNever]
         [DisplayName("Adres")]
         public string? Adres { get; set; }

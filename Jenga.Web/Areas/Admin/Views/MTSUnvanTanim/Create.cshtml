@@ -1,0 +1,51 @@
+@model MTSUnvanTanim
+
+<form method="post">
+    <div class="row pt-3">
+        <div class="col ">
+            <h4 class="text-primary text-start fw-bold">Ünvan Oluşturma</h4>
+        </div>
+    </div>
+    <hr />
+    <div class="border p-3 mt-4">
+        @*<div asp-validation-summary="All"></div>*@
+        <div class="form-floating py-2 col-12">
+             <input asp-for="Adi" class="form-control border-0 shadow" />
+             <label asp-for="Adi" class="ms-2"></label>
+            <span asp-validation-for="Adi" class="text-danger"></span>
+        </div>
+        <div class="form-floating py-2 col-12">
+            <input asp-for="KisaAdi" class="form-control border-0 shadow" />
+            <label asp-for="KisaAdi" class="ms-2"></label>
+            <span asp-validation-for="KisaAdi" class="text-danger"></span>
+        </div>
+        <div class="form-floating py-2 col-12">
+            <label asp-for="Aciklama"></label>
+            <textarea asp-for="Aciklama" rows="3" class="form-control"></textarea>
+            <span asp-validation-for="Aciklama" class="text-danger"></span>
+        </div>
+        <div class="row pt-2">
+            <div class="col-6 col-md-3">
+                <button type="submit" class="btn btn-primary form-control">Ekle</button>
+            </div>
+            <div class="col-6 col-md-3">
+                <a asp-controller="MTSUnvanTanim" asp-action="Index" class="btn btn-outline-primary border form-control">
+                    Listeye Geri Dön
+                </a>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts{
+    @{
+        <partial name="_ValidationScriptsPartial" />
+    }
+    <script>
+        tinymce.init({
+            selector: 'textarea',
+            plugins: 'advlist autolink lists link image charmap print preview hr anchor pagebreak',
+            toolbar_mode: 'floating',
+        });      
+    </script>
+}

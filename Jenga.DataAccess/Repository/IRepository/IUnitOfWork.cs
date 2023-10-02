@@ -1,6 +1,8 @@
 ﻿using Jenga.DataAccess.Repository.IRepository.IKYS;
 using Jenga.DataAccess.Repository.IRepository.MTS;
+using Jenga.DataAccess.Repository.IRepository.NBYS;
 using Jenga.DataAccess.Repository.IRepository.Ortak;
+using Jenga.DataAccess.Repository.IRepository.TBYS;
 
 namespace Jenga.DataAccess.Repository.IRepository
 {
@@ -18,6 +20,10 @@ namespace Jenga.DataAccess.Repository.IRepository
         IRandevuRepository Randevu { get; }
         IRandevuKatilimRepository RandevuKatilim { get; }
         IAniObjesiDagitimRepository AniObjesiDagitim { get; }
+        IMTSKurumTanimRepository MTSKurumTanim { get; }
+        IMTSGorevTanimRepository MTSGorevTanim { get; }
+        IMTSUnvanTanimRepository MTSUnvanTanim { get; }
+        IMTSKurumGorevRepository MTSKurumGorev { get; }
         //Ortak
         IIlRepository Il { get; }
         IIlceRepository Ilce { get; }
@@ -30,6 +36,10 @@ namespace Jenga.DataAccess.Repository.IRepository
         IGorevTanimRepository GorevTanim { get; }
         IBirimTanimRepository BirimTanim { get; }
         IUnvanTanimRepository UnvanTanim { get; }
+        //TBYS
+        ITasinmazBagisciRepository TasinmazBagisci { get; }
+        //NBYS
+        INakitBagisciRepository NakitBagisci { get; }
         void Save();
     }
 }

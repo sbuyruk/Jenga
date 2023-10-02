@@ -33,21 +33,40 @@
                 </div>
 
             </div>
-            <div class="col-4">
-
+            <div class="col-4 row">
+                
                 <div class="form-group">
-                    <label asp-for="Kisi.Kurumu" ></label>
-                    <input asp-for="Kisi.Kurumu" class="form-control" />
+                    
+                    @if ((@Model.MTSKurumu != null) && (@Model.MTSKurumu.Adi != null))
+                    {
+                        <label asp-for="MTSKurumu.Adi"></label>
+                        <input asp-for="MTSKurumu.Adi" class="form-control" readonly />
+                    }else{
+                        <label>Kurum</label>
+                        <input  class="form-control" readonly />
+                    }
+                   
                 </div>
                 <div class="form-group">
-                    <label asp-for="Kisi.Unvani" ></label>
-                    <input asp-for="Kisi.Unvani" class="form-control" />
+                    <label asp-for="Kisi.MTSUnvanTanim">MTSÜnvan</label>
+                    <select asp-for="Kisi.MTSUnvanTanim" asp-items="@Model.MTSUnvanTanimList" class="form-select" id="MTSUnvanTanimId">
+                        <option disabled selected>--Ünvan seçiniz--</option>
+                    </select>
+                    <span asp-validation-for="Kisi.MTSUnvanTanim" class="text-danger"></span>
                 </div>
                 <div class="form-group">
-                    <label asp-for="Kisi.Gorevi"></label>
-                    <input asp-for="Kisi.Gorevi" type="text" class="form-control" />
+                    
+                    @if ((@Model.MTSGorevi != null) && (@Model.MTSGorevi.Adi != null))
+                    {
+                        <label asp-for="MTSGorevi.Adi"></label>
+                        <input asp-for="MTSGorevi.Adi" class="form-control" readonly />
+                    }
+                    else
+                    {
+                        <label>Görev</label>
+                        <input class="form-control" readonly />
+                    }
                 </div>
-
             </div>
             <div class="col-2 ">
 
@@ -144,11 +163,11 @@
         <partial name="_ValidationScriptsPartial" />
     }
     <script>
-        tinymce.init({
-            selector: 'textarea',
-            plugins: 'advlist autolink lists link image charmap print preview hr anchor pagebreak',
-            toolbar_mode: 'floating',
-        });
+        // tinymce.init({
+        //     selector: 'textarea',
+        //     plugins: 'advlist autolink lists link image charmap print preview hr anchor pagebreak',
+        //     toolbar_mode: 'floating',
+        // });
 
         var className = "." + "input-phone";
         if ($(className).length) {

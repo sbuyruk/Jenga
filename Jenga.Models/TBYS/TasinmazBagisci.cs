@@ -21,57 +21,57 @@ namespace Jenga.Models.TBYS
         [ValidateNever]
         [DisplayName("TC Kimlik No")]
         public long? TCKimlikNo { get; set; }
-        [ValidateNever]
-        [DisplayName("Doğum Yeri")]
-        public string? DogumYeri { get; set; }
-        [ValidateNever]
-        [DisplayName("Doğum Tarihi")]
-        public DateTime? DogumTarihi { get; set; }
-        [ValidateNever]
-        [DisplayName("İli")]
-        public string? Ili { get; set; }
-        [ValidateNever]
-        [DisplayName("İlçesi")]
-        public string? Ilcesi { get; set; }
-        [ValidateNever]
-        [DisplayName("Adres")]
-        public string? Adres { get; set; }
-        [ValidateNever]
-        [DisplayName("Telefon 1")]
-        public string? Telefon1 { get; set; }
-        [ValidateNever]
-        [DisplayName("Telefon 2")]
-        public string? Telefon2 { get; set; }
-        [ValidateNever]
-        [DisplayName("Mesleği")]
-        public string? Meslegi { get; set; }
-        [ValidateNever]
-        [DisplayName("Sosyal Güvence")]
-        public string? SosyalGuvence { get; set; }
-        [ValidateNever]
-        [DisplayName("Foto")]
-        public string? Foto { get; set; }
-        [ValidateNever]
-        [DisplayName("Sağ/Vefat")]
-        public string? Sag_vefat { get; set; }
-        [ValidateNever]
-        [DisplayName("Vefat Tarihi")]
-        public DateTime VefatTarihi { get; set; }
-        [ValidateNever]
-        [DisplayName("Defin Yeri")]
-        public string? DefinYeri { get; set; }
-        [ValidateNever]
-        [DisplayName("Defin İli")]
-        public string? DefinIli { get; set; }
-        [ValidateNever]
-        [DisplayName("Defin İlçesi")]
-        public string? DefinIlcesi { get; set; }
-        [ValidateNever]
-        [DisplayName("Defin Açıklama")]
-        public string? DefinAciklama { get; set; }
-        [ValidateNever]
-        [DisplayName("Gizli")]        
-        public bool Gizli { get; set; }
+        //[ValidateNever]
+        //[DisplayName("Doğum Yeri")]
+        //public string? DogumYeri { get; set; }
+        //[ValidateNever]
+        //[DisplayName("Doğum Tarihi")]
+        //public DateTime? DogumTarihi { get; set; }
+        //[ValidateNever]
+        //[DisplayName("İli")]
+        //public string? Ili { get; set; }
+        //[ValidateNever]
+        //[DisplayName("İlçesi")]
+        //public string? Ilcesi { get; set; }
+        //[ValidateNever]
+        //[DisplayName("Adres")]
+        //public string? Adres { get; set; }
+        //[ValidateNever]
+        //[DisplayName("Telefon 1")]
+        //public string? Telefon1 { get; set; }
+        //[ValidateNever]
+        //[DisplayName("Telefon 2")]
+        //public string? Telefon2 { get; set; }
+        //[ValidateNever]
+        //[DisplayName("Mesleği")]
+        //public string? Meslegi { get; set; }
+        //[ValidateNever]
+        //[DisplayName("Sosyal Güvence")]
+        //public string? SosyalGuvence { get; set; }
+        //[ValidateNever]
+        //[DisplayName("Foto")]
+        //public string? Foto { get; set; }
+        //[ValidateNever]
+        //[DisplayName("Sağ/Vefat")]
+        //public string? Sag_vefat { get; set; }
+        //[ValidateNever]
+        //[DisplayName("Vefat Tarihi")]
+        //public DateTime VefatTarihi { get; set; }
+        //[ValidateNever]
+        //[DisplayName("Defin Yeri")]
+        //public string? DefinYeri { get; set; }
+        //[ValidateNever]
+        //[DisplayName("Defin İli")]
+        //public string? DefinIli { get; set; }
+        //[ValidateNever]
+        //[DisplayName("Defin İlçesi")]
+        //public string? DefinIlcesi { get; set; }
+        //[ValidateNever]
+        //[DisplayName("Defin Açıklama")]
+        //public string? DefinAciklama { get; set; }
+        //[ValidateNever]
+        //[DisplayName("Gizli")]        
+        //public bool Gizli { get; set; }
 
     }
 }

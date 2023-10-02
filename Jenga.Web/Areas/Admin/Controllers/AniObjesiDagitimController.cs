@@ -2,6 +2,7 @@
 using Jenga.Models.IKYS;
 using Jenga.Models.MTS;
 using Jenga.Utility;
+using Jenga.Web.Areas.Admin.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Extensions.Caching.Memory;
@@ -12,11 +13,13 @@ namespace Jenga.Web.Areas.Admin.Controllers
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IWebHostEnvironment _hostEnvironment;
-        public AniObjesiDagitimController(IUnitOfWork unitOfWork, IWebHostEnvironment hostEnvironment, IMemoryCache cache)
+        private readonly AniObjesiService _aniObjesiService;
+        public AniObjesiDagitimController(IUnitOfWork unitOfWork, IWebHostEnvironment hostEnvironment, IMemoryCache cache, AniObjesiService aniObjesiService)
         {
             _unitOfWork = unitOfWork;
             _hostEnvironment = hostEnvironment;
             _cache = cache;
+            _aniObjesiService = aniObjesiService;
         }
         private readonly IMemoryCache _cache;
         public IActionResult Index()
@@ -25,13 +28,11 @@ namespace Jenga.Web.Areas.Admin.Controllers
         }
 
         //GET
+        [HttpGet]
         public IActionResult Create()
         {
 
-            var verilenAlinanList = new List<SelectListItem> {
-              new SelectListItem { Text = "Verilen", Value = "False" },
-              new SelectListItem { Text = "Alinan", Value = "True" }
-            };
+
             AniObjesiDagitimVM aniObjesiDagitimVM = new()
             {
                 AniObjesiDagitim = new(),
@@ -40,7 +41,11 @@ namespace Jenga.Web.Areas.Admin.Controllers
                     Text = i.Adi,
                     Value = i.Id.ToString()
                 }),
-                VerilenAlinanList = verilenAlinanList,
+                //KatilimciList = _aniObjesiService.GetKatilimciList().Select(i => new SelectListItem
+                //{
+                //    Text = i.Adi,
+                //    Value = i.Id.ToString()
+                //}),
                 DepoTanimList = _unitOfWork.DepoTanim.GetAll().Select(i => new SelectListItem
                 {
                     Text = i.Adi,
@@ -94,90 +99,37 @@ namespace Jenga.Web.Areas.Admin.Controllers
             var aniObjesiList = _unitOfWork.AniObjesiDagitim.GetAll(includeProperties: "AniObjesiTanim,Randevu,DepoTanim,DagitimYeriTanim");
             foreach (var item in aniObjesiList)
             {
-                if (item.KatilimciTipi ==ProjectConstants.RANDEVU_KATILIMCI_DIS_INT)
+                if (item.KatilimciTipi == ProjectConstants.RANDEVU_KATILIMCI_DIS_INT)
                 {
-                    Kisi kisi = _unitOfWork.Kisi.GetFirstOrDefault(u=> u.Id==item.KatilimciId);
-                    Katilimci katilimci = new Katilimci()
-                    {
-                        Id = item.KatilimciId,
-                        Adi = kisi.Adi,
-                        Aciklama = kisi.Aciklama,
-                        Adres = kisi.Adres,
-                        Dahili1 = kisi.Dahili1,
-                        Dahili2 = kisi.Dahili2,
-                        Dahili3 = kisi.Dahili3,
-                        DogumTarihi = kisi.DogumTarihi,
-                        Gorevi = kisi.Gorevi,
-                        Ilcesi = kisi.Ilcesi,
-                        Ili = kisi.Ili,
-                        Kurumu = kisi.Kurumu,
-                        Kutlama = kisi.Kutlama,
-                        KatilimciTipi = item.KatilimciTipi,
-                        Soyadi = kisi.Soyadi,
-                        Unvani = kisi.Unvani,
-                    };
+                    Katilimci katilimci = _aniObjesiService.GetKatilimci(item.KatilimciId, ProjectConstants.RANDEVU_KATILIMCI_DIS_INT);
                     item.Katilimci = katilimci;
 
                 }
-                else if(item.KatilimciTipi == ProjectConstants.RANDEVU_KATILIMCI_IC_INT)
+                else if (item.KatilimciTipi == ProjectConstants.RANDEVU_KATILIMCI_IC_INT)
                 {
-                    //Personel personel = _unitOfWork.Personel.GetFirstOrDefault(u => u.Id == item.KatilimciId, includeProperties: "IsBilgileri");
-                    var personel = _unitOfWork.IsBilgileri.GetFirstOrDefault(u => u.Id == item.KatilimciId, includeProperties: "Personel");
-                    Katilimci katilimci = new Katilimci()
-                    {
-                        Id = item.KatilimciId,
-                        Adi = personel.Personel.Adi,
-                        Aciklama = personel.Personel.Aciklama,
-                        //Adres = personel.Adres,
-                        //Dahili1 = personel.Dahili1,
-                        //Dahili2 = personel.Dahili2,
-                        //Dahili3 = personel.Dahili3,
-                        //DogumTarihi = personel.DogumTarihi,
-                        //Gorevi = personel.Gorevi,
-                        //Ilcesi = personel.Ilcesi,
-                        //Ili = personel.Ili,
-                        //Kurumu = personel.Kurumu,
-                        //Kutlama = personel.Kutlama,
-                        KatilimciTipi = item.KatilimciTipi,
-                        Soyadi = personel.Personel.Soyadi,
-                        //Unvani = personel.Unvani,
-                    };
+                    Katilimci katilimci = _aniObjesiService.GetKatilimci(item.KatilimciId, ProjectConstants.RANDEVU_KATILIMCI_IC_INT);
                     item.Katilimci = katilimci;
 
                 }
                 else if (item.KatilimciTipi == ProjectConstants.RANDEVU_KATILIMCI_NAKITBAGISCI_INT)
                 {
-                    //Personel personel = _unitOfWork.Personel.GetFirstOrDefault(u => u.Id == item.KatilimciId, includeProperties: "IsBilgileri");
-                    var nakitBagisci = _unitOfWork.IsBilgileri.GetFirstOrDefault(u => u.Id == item.KatilimciId, includeProperties: "Personel");
-                    Katilimci katilimci = new Katilimci()
-                    {
-                        Id = item.KatilimciId,
-                        Adi = nakitBagisci.Personel.Adi,
-                        Aciklama = nakitBagisci.Personel.Aciklama,
-                        //Adres = personel.Adres,
-                        //Dahili1 = personel.Dahili1,
-                        //Dahili2 = personel.Dahili2,
-                        //Dahili3 = personel.Dahili3,
-                        //DogumTarihi = personel.DogumTarihi,
-                        //Gorevi = personel.Gorevi,
-                        //Ilcesi = personel.Ilcesi,
-                        //Ili = personel.Ili,
-                        //Kurumu = personel.Kurumu,
-                        //Kutlama = personel.Kutlama,
-                        KatilimciTipi = item.KatilimciTipi,
-                        Soyadi = nakitBagisci.Personel.Soyadi,
-                        //Unvani = personel.Unvani,
-                    };
+                    Katilimci katilimci = _aniObjesiService.GetKatilimci(item.KatilimciId, ProjectConstants.RANDEVU_KATILIMCI_NAKITBAGISCI_INT);
+                    item.Katilimci = katilimci;
+
+                }
+                else if (item.KatilimciTipi == ProjectConstants.RANDEVU_KATILIMCI_TASINMAZBAGISCI_INT)
+                {
+                    Katilimci katilimci = _aniObjesiService.GetKatilimci(item.KatilimciId, ProjectConstants.RANDEVU_KATILIMCI_TASINMAZBAGISCI_INT);
                     item.Katilimci = katilimci;
 
                 }
             }
             return Json(new { data = aniObjesiList });
-            //return Json(new { data = cachedObject });
+            
         }
         
         //Delete
-        [HttpDelete]
+        [HttpPost]
         public IActionResult Delete(int? id)
         {
             if (id == null || id == 0)

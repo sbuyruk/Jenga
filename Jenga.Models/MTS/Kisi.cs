@@ -1,9 +1,12 @@
 ﻿using Jenga.Models.Sistem;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+using Microsoft.Extensions.Hosting;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Jenga.Models.MTS;
+
 public class Kisi : BaseModel
 {
     [Required]
@@ -15,15 +18,35 @@ public class Kisi : BaseModel
     [ValidateNever]
     [DisplayName("TC Kimlik No")]
     public long? TCKimlikNo { get; set; }
+
+    public virtual List<MTSKurumGorev>? MTSKurumGorevs { get; set; }
+    //public int? MTSKurumTanimId { get; set; }
+    //[DisplayName("MTSKurum Id")]
+    //[ForeignKey("MTSKurumTanimId")]
+    //[ValidateNever]
+    //public MTSKurumTanim? MTSKurumTanim { get; set; }
+
+    //public int? MTSGorevTanimId { get; set; }
+    //[DisplayName("MTSGorev Id")]
+    //[ForeignKey("MTSGorevTanimId")]
+    //[ValidateNever]
+    //public MTSGorevTanim? MTSGorevTanim { get; set; }
+
+    public int? MTSUnvanTanimId { get; set; }
+    [DisplayName("MTSUnvan Id")]
+    [ForeignKey("MTSUnvanTanimId")]
+    [ValidateNever]
+    public MTSUnvanTanim? MTSUnvanTanim { get; set; }
+
     [ValidateNever]
     [DisplayName("Kurumu")]
     public string? Kurumu { get; set; }
     [ValidateNever]
-    [DisplayName("Ünvanı")]
-    public string? Unvani { get; set; }
-    [ValidateNever]
     [DisplayName("Görevi")]
     public string? Gorevi { get; set; }
+    [ValidateNever]
+    [DisplayName("Ünvanı")]
+    public string? Unvani { get; set; }
     [ValidateNever]
     [DisplayName("Telefon 1")]
     public string? Telefon1 { get; set; }

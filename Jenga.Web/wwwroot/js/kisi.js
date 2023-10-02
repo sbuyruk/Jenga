@@ -10,39 +10,68 @@ function loadDataTable() {
             "url": "/Admin/Kisi/GetAll"
         },
         "columns": [
-            { data: "id" },
-            { data: "adi" },
-            { data: "soyadi" },
-            { data: "kurumu" },
-            { data: "unvani" },
-            { data: "gorevi" },
-            { data: "telefon1", "width": "14%" },
+            { data: "Id", "width": "4%" },
             {
-                "data": "id",
+                "data": "Id",
+                "width": "15%",
+                "render": function (data, type, row, meta) {
+                    return row.Adi + ' ' + row.Soyadi;
+                },
+            },
+            { data: "MTSKurumGorevs[0].MTSKurumTanim.Adi" },
+            { data: "MTSKurumGorevs[0].MTSGorevTanim.Adi" },
+            { data: "Unvani" },
+            { data: "Telefon1" },
+            {
+                "data": "Id",
+                "width": "15%",
+                "render": function (data, type, row, meta) {
+                    var button = "";
+                    if (row.MTSKurumGorevs.length < 1) {
+                        button = `
+                        <div class="form-group" role="group">
+                        <a href="/Admin/MTSKurumGorev/Create?kisiId=${data}"
+                        class="btn btn-success "> <i class="bi bi-pencil-square"></i> Kurum/Görev Seç</a>
+					    </div>
+                        `;
+                    } else {
+                        var kurumGorevId = row.MTSKurumGorevs[0].Id;
+                        button = `
+                        <div class="form-group" role="group">
+                        <a  href="/Admin/MTSKurumGorev/Edit?id=${kurumGorevId}"
+                        class="btn btn-danger "> <i class="bi bi-pencil-square"></i> Görev Bitir</a>
+					    </div>
+                        `;
+                    }
+                    return button
+                },
+            },
+            {
+                "data": "Id",
                 "width": "15%",
                 "render": function (data) {
                     return `
-                        <div class="form-group" role="group">
+                        <div class="form-group" role="group" style="pointer-events: none">
                         <a href="/Admin/Kisi/Edit?id=${data}"
-                        class="btn btn-warning "> <i class="bi bi-pencil-square"></i> Arama/Görüşme</a>
+                        class="btn btn-secondary "> <i class="bi bi-pencil-square"></i> Arama/Görüşme</a>
 					</div>
                         `
                 },
             },
             {
-                "data": "id",
+                "data": "Id",
                 "width": "15%",
                 "render": function (data) {
                     return `
-                        <div class="form-group" role="group">
+                        <div class="form-group" role="group" style="pointer-events:none">
                         <a href="/Admin/Kisi/Edit?id=${data}"
-                        class="btn btn-info "> <i class="bi bi-pencil-square"></i> Kişi Kartı</a>
+                        class="btn btn-secondary "> <i class="bi bi-pencil-square"></i> Kişi Kartı</a>
 					</div>
                         `
                 },
             },
             {
-                "data": "id",
+                "data": "Id",
                 "width": "15%",
                 "render": function (data) {
                     return `
@@ -50,7 +79,7 @@ function loadDataTable() {
                         <a href="/Admin/Kisi/Edit?id=${data}"
                         class="btn btn-primary "> <i class="bi bi-pencil-square"></i> Düzenle</a>
                         <a onClick=Delete('/Admin/Kisi/Delete/${data}')
-                        class="btn btn-danger "> <i class="bi bi-trash-fill"></i> Sil</a>
+                        class="btn btn-secondary " style="pointer-events:none"> <i class="bi bi-trash-fill"></i> Sil</a>
 					</div>
                         `
                 },
@@ -101,7 +130,7 @@ function Delete(url) {
         if (result.isConfirmed) {
             $.ajax({
                 url: url,
-                type: 'DELETE',
+                type: 'POST',
                 success: function (data) {
                     if (data.success) {
                         dataTable.ajax.reload();

@@ -1,0 +1,29 @@
+<div class="container pt-3">
+    <div class="row">
+        <div class="col ">
+            <h4 class="text-primary text-start fw-bold">Ünvan Listesi</h4>
+        </div>
+        <div class="col text-end">
+            <a asp-controller="MTSUnvanTanim" asp-action="Create" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> &nbsp; Yeni Ünvan Oluştur
+            </a>
+        </div>
+    </div>
+    <hr />
+    <div class="pt-3">
+        <table id="tblData" class="table table-bordered table-striped table-sm" style="width:100%">
+            <thead>
+                <tr>
+                    <th>Kurum Adı</th>
+                    <th>Kurum Kısa Adı</th>
+                    <th>Açıklama</th>
+                    <th>Düzenle/Sil</th>
+                </tr>
+            </thead>
+        </table>
+    </div>
+</div>
+
+@section Scripts{
+    <script src="~/js/mtsUnvanTanim.js"></script>
+}

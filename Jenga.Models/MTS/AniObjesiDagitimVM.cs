@@ -8,6 +8,8 @@ namespace Jenga.Models.MTS
     {
         public AniObjesiDagitim AniObjesiDagitim { get; set; }
         [ValidateNever]
+        public IEnumerable<SelectListItem> KatilimciList { get; set; }
+        [ValidateNever]
         public IEnumerable<SelectListItem> AniObjesiTanimList { get; set; }
         [ValidateNever]
         public IEnumerable<SelectListItem> DepoTanimList { get; set; }        

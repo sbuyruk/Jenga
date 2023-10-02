@@ -11,5 +11,11 @@ namespace Jenga.Models.MTS
         public IEnumerable<SelectListItem>? IlList { get; set; }
         [ValidateNever]
         public IEnumerable<SelectListItem>? IlceList { get; set; }
+        [ValidateNever]
+        public IEnumerable<SelectListItem>? MTSUnvanTanimList { get; set; }
+        [ValidateNever]
+        public MTSKurumTanim? MTSKurumu { get; set; }
+        [ValidateNever]
+        public MTSGorevTanim? MTSGorevi { get; set; }
     }
 }

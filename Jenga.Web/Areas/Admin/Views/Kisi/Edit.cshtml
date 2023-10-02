@@ -3,7 +3,7 @@
     <input asp-for="Kisi.Id" hidden />
     <div class="row pt-3">
         <div class="col ">
-            <h4 class="text-primary text-start fw-bold">Kişi (Vakıf Dışı Ziyaretçi) Girişi</h4>
+            <h4 class="text-primary text-start fw-bold">Ziyaretçi Girişi (Vakıf Dışı)</h4>
         </div>
     </div>
     <hr />
@@ -11,9 +11,8 @@
         <div class="row">
             @*<div asp-validation-summary="All"></div>*@
             <div class="col-2 ">
-
                 <div class="form-group">
-                    <label asp-for="Kisi.Adi"></label>
+                    <label asp-for="Kisi.Adi"></label> 
                     <input asp-for="Kisi.Adi" class="form-control" />
                     <span asp-validation-for="Kisi.Adi" class="text-danger"></span>
                 </div>
@@ -33,18 +32,74 @@
 
             </div>
             <div class="col-4">
-
-                <div class="form-group">
-                    <label asp-for="Kisi.Kurumu"></label>
-                    <input asp-for="Kisi.Kurumu" class="form-control" />
-                </div>
-                <div class="form-group">
-                    <label asp-for="Kisi.Unvani"></label>
-                    <input asp-for="Kisi.Unvani" class="form-control" />
-                </div>
-                <div class="form-group">
-                    <label asp-for="Kisi.Gorevi"></label>
-                    <input asp-for="Kisi.Gorevi" type="text" class="form-control" />
+                <div class="row" >
+                    <div class="col-6">
+                        <div class="form-group">
+                            <label asp-for="Kisi.Kurumu"></label>
+                            <input asp-for="Kisi.Kurumu" class="form-control" disabled />
+                        </div>
+                        <div class="form-group">
+                            <label asp-for="Kisi.Unvani"></label>
+                            <input asp-for="Kisi.Unvani" class="form-control" disabled />
+                        </div>
+                        <div class="form-group">
+                            <label asp-for="Kisi.Gorevi"></label>
+                            <input asp-for="Kisi.Gorevi" type="text" class="form-control" disabled/>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="form-group">
+                            @if ((@Model.MTSKurumu != null) && (@Model.MTSKurumu.Adi != null))
+                            {
+                                <label asp-for="MTSKurumu.Adi"></label>
+                                <input asp-for="MTSKurumu.Adi" class="form-control" readonly />
+                            }
+                            else
+                            {
+                                <label>Kurum</label>
+                                <input class="form-control" readonly />
+                            }
+                            
+                        </div>
+                        <div class="form-group">
+                            <label asp-for="Kisi.MTSUnvanTanimId">MTSÜnvan</label>
+                            <select asp-for="Kisi.MTSUnvanTanimId" asp-items="@Model.MTSUnvanTanimList" class="form-select" id="MTSUnvanTanimId">
+                                <option disabled selected>--Ünvan seçiniz--</option>
+                            </select>
+                            <span asp-validation-for="Kisi.MTSUnvanTanimId" class="text-danger"></span>
+                        </div>
+                        <div class="form-group">
+                            @if ((@Model.MTSGorevi != null) && (@Model.MTSGorevi.Adi != null))
+                            {
+                                <label asp-for="MTSGorevi.Adi"></label>
+                                <input asp-for="MTSGorevi.Adi" class="form-control" readonly />
+                            }
+                            else
+                            {
+                                <label>Görev</label>
+                                <input class="form-control" readonly />
+                            }
+                            
+                        </div>
+                        <div class="form-group">
+@*                             <label></label>
+                            @if ((@Model.MTSGorevi != null) && (@Model.MTSGorevi.Adi != null))
+                            {
+                                <label>Kurum/Görev</label>
+                                <a asp-controller="MTSKurumGorev" asp-action="Edit" asp-route-kisiId="@Model.Kisi.Id" class="btn btn-danger" style="width:150px">
+                                    Düzelt/Sil
+                                </a>
+                            }
+                            else
+                            {
+                                <label>Kurum/Görev</label>
+                                <a asp-controller="MTSKurumGorev" asp-action="Create" asp-route-kisiId="@Model.Kisi.Id" class="btn btn-success" style="width:150px">
+                                    Seç
+                                </a>
+                            } *@
+                            
+                        </div>
+                    </div>
                 </div>
 
             </div>
@@ -143,11 +198,11 @@
         <partial name="_ValidationScriptsPartial" />
     }
     <script>
-        tinymce.init({
-            selector: 'textarea',
-            plugins: 'advlist autolink lists link image charmap print preview hr anchor pagebreak',
-            toolbar_mode: 'floating',
-        });
+        // tinymce.init({
+        //     selector: 'textarea',
+        //     plugins: 'advlist autolink lists link image charmap print preview hr anchor pagebreak',
+        //     toolbar_mode: 'floating',
+        // });
         $(document).ready(function () {
             //ilceDDLDoldur(); // kapandı çünkü tekrar doldurmaya gerek yok, ayrıca seçili olanı değiştiriyor
         })

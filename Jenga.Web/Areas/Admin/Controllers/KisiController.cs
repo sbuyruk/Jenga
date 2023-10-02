@@ -3,6 +3,8 @@ using Jenga.Models.MTS;
 using Jenga.Utility;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Newtonsoft.Json;
+using Newtonsoft.Json;
 
 namespace Jenga.Web.Areas.Admin.Controllers
 {
@@ -20,18 +22,38 @@ namespace Jenga.Web.Areas.Admin.Controllers
         
         public IActionResult GetAll()
         {
-            var objKisiList = _unitOfWork.Kisi.GetAll();
-            //var settings = new JsonSerializerSettings
-            //{
-            //    NullValueHandling = NullValueHandling.Ignore
-            //};
-            //return Json(new { data = objKisiList }, settings);
+            //var objKisiList = _unitOfWork.Kisi.GetAll(includeProperties: "MTSKurumGorevs");
+            var objKisiList = _unitOfWork.Kisi.IncludeIt();
+
             foreach (var item in objKisiList)
             {
-                item.Kutlama= item.Kutlama == null ? item.Kutlama = false : item.Kutlama;
-                item.DogumTarihi= item.DogumTarihi== null ? item.DogumTarihi = DateTime.MinValue : item.DogumTarihi;
+                var list = new List<MTSKurumGorev>();
+                item.Kutlama = item.Kutlama == null ? item.Kutlama = false : item.Kutlama;
+                item.DogumTarihi = item.DogumTarihi == null ? item.DogumTarihi = DateTime.MinValue : item.DogumTarihi;
+                if (item.MTSKurumGorevs != null)
+                {
+
+                    foreach (var kurumGorev in item.MTSKurumGorevs)
+                    {
+                        if ((kurumGorev.Durum !=null) && (kurumGorev.Durum.Equals(ProjectConstants.MTSGOREVDURUMU_GOREVDE)))
+                        {
+                            list.Add(kurumGorev);
+                            break;
+                        }
+                    }
+
+                }
+                item.MTSKurumGorevs = list;
             }
-            return Json(new { data = objKisiList });
+            var aa = JsonConvert.SerializeObject(objKisiList, Formatting.None,
+                        new JsonSerializerSettings()
+                        {
+                            ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+                        });
+            var result = new JsonResult(JsonConvert.DeserializeObject(aa));
+
+            //return Json(new { data = objKisiList });// result.Value });
+            return Json(new { data = result.Value });
         }
         //GET
         [HttpGet]
@@ -42,6 +64,9 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 return NotFound();
             }
             var kisiFromDb = _unitOfWork.Kisi.GetFirstOrDefault(u => u.Id == id);
+            var mtsKurumGorevDb = _unitOfWork.MTSKurumGorev.GetFirstOrDefault(
+                u => u.KisiId == id && !string.IsNullOrEmpty(u.Durum) && u.Durum.Equals(ProjectConstants.MTSGOREVDURUMU_GOREVDE),
+                includeProperties:"MTSKurumTanim,MTSGorevTanim");
             if (kisiFromDb == null)
             {
                 return NotFound();
@@ -59,6 +84,14 @@ namespace Jenga.Web.Areas.Admin.Controllers
                     Text = i.IlceAdi,
                     Value = i.Id.ToString()
                 }),
+                
+                MTSUnvanTanimList = _unitOfWork.MTSUnvanTanim.GetAll().Select(i => new SelectListItem
+                {
+                    Text = i.KisaAdi,
+                    Value = i.Id.ToString()
+                }),
+                MTSKurumu = mtsKurumGorevDb != null ? mtsKurumGorevDb.MTSKurumTanim:null,
+                MTSGorevi = mtsKurumGorevDb != null ? mtsKurumGorevDb.MTSGorevTanim:null,
             };
             return View(kisiVM);
         }
@@ -72,12 +105,20 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 {
                     Text = i.IlAdi,
                     Value = i.Id.ToString()
-                }),
+                }).OrderBy(a => a.Text),
                 IlceList = _unitOfWork.Ilce.GetAll().Select(i => new SelectListItem
                 {
                     Text = i.IlceAdi,
                     Value = i.Id.ToString()
-                }),
+                }).OrderBy(a=> a.Text),
+               
+                MTSUnvanTanimList = _unitOfWork.MTSUnvanTanim.GetAll().Select(i => new SelectListItem
+                {
+                    Text = i.KisaAdi,
+                    Value = i.Id.ToString()
+                }).OrderBy(a => a.Text),
+                MTSKurumu = null,
+                MTSGorevi = null,
             };
 
             return View(kisiVM);
@@ -123,7 +164,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 obj.Kisi.Degistiren = userName;
                 _unitOfWork.Kisi.Update(obj.Kisi);
                 _unitOfWork.Save();
-                TempData["success"] = "Kisi kaydı güncellendi";
+                TempData["success"] = "Kişi kaydı güncellendi";
                 return RedirectToAction("Index");
             }
             else
@@ -134,7 +175,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
         }
         
        
-        [HttpDelete]
+        [HttpPost]
         public IActionResult Delete(int? id)
         {
             if (id == null || id == 0)

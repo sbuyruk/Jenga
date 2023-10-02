@@ -3,16 +3,26 @@
 $(document).ready(function () {
     loadDataTable();
 });
-
+function format(inputDate) {
+    let date, month, year;
+    date = inputDate;//.getDate();
+    month = inputDate.getMonth() + 1;
+    year = inputDate.getFullYear();
+    date = date.toString().padStart(2, '0');
+    month = month.toString().padStart(2, '0');
+    return `${date}.${month}.${year}`;
+} //const result = format(new Date('2022', '2', '28')); console.log(result); // 28/03/2022
 function loadDataTable() {
+    $.fn.dataTable.moment('DD.MM.YYYY');
     dataTable = $('#tblData').DataTable({
         "ajax": {
             "url": "/Admin/AniObjesiDagitim/GetAll"
         },
+        "order": [[3, "desc"]] ,
         "columns": [
             {
                 "data": "katilimci",
-                "width": "20%",
+                "width": "15%",
                 "render": function (data) {
                     var retval = "";
                     if (data) {
@@ -21,24 +31,43 @@ function loadDataTable() {
                     return retval;
                 },
             },
-            { "data": "aniObjesiTanim.adi", "width": "10%" },
+            { "data": "aniObjesiTanim.adi", "width": "15%" },
             { "data": "adet", "width": "5%" },
-            { "data": "aniObjesiTanim.stokluMu", "width": "10%" },
             {
-                "data": "depoTanim",
-                "width": "15%",
-                "render": function (data) {
+                "data": "verilisTarihi",
+                "type": "date",
+                "width": "10%",
+                "render": function (data, type, row, meta) {
                     var retval = "";
-                    if (data) {
-                        retval = data.adi;
+                    if (data != null) {
+
+
+                        retval = data;
+                    }
+                    else if ((data == null) && (row.randevu != null)) {
+                        retval = row.randevu.baslangicTarihi;
+                    } else {
+                        retval = "";
                     }
                     return retval;
                 },
             },
-            { "data": "aciklama", "width": "20%" },
+            //{
+            //    "data": "depoTanim",
+            //    "width": "15%",
+            //    "render": function (data) {
+            //        var retval = "";
+            //        if (data) {
+            //            retval = data.adi;
+            //        }
+            //        return retval;
+            //    },
+            //},
+            { "data": "katilimci.kurumu", "width": "15%" },
+            { "data": "katilimci.gorevi", "width": "15%" },
             {
                 "data": "id",
-                "width": "20%",
+                "width": "15%",
                 "render": function (data) {
                     return `
                         <div class="btn-group" role="group">
@@ -96,7 +125,7 @@ function Delete(url) {
         if (result.isConfirmed) {
             $.ajax({
                 url: url,
-                type: 'DELETE',
+                type: 'POST',
                 success: function (data) {
                     if (data.success) {
                         dataTable.ajax.reload();
