@@ -10,6 +10,7 @@ function loadDataTable() {
             "url": "/Admin/MTSGorevTanim/GetAll"
         },
         "columns": [
+            { "data": "mtsKurumTanim.adi", "width": "20%" },
             { "data": "adi", "width": "20%" },
             { "data": "kisaAdi", "width": "10%" },
             { "data": "aciklama", "width": "30%" },

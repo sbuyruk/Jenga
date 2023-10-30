@@ -21,7 +21,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
         }
         public JsonResult GetMTSGorevTanimList(int mtsKurumTanimId)
         {
-            List<MTSGorevTanim> list = _unitOfWork.MTSGorevTanim.GetAll().ToList();
+            List<MTSGorevTanim> list = _unitOfWork.MTSGorevTanim.GetByFilter(u => u.MTSKurumTanimId == mtsKurumTanimId).ToList();
             return Json(list);
         }
         [HttpGet]
@@ -86,6 +86,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             else
             {
                 //update 
+                mtsKurumGorevVM.Kisi = mtsKurumGorevDb.Kisi;//ekranda kişi bilgilerini görmek için
                 mtsKurumGorevVM.MTSKurumGorev = mtsKurumGorevDb;//_unitOfWork.MTSKurumGorev.GetFirstOrDefault(u => u.Id == mtsKurumGorevDb.Id, includeProperties: "MTSKurumTanim,MTSGorevTanim,Kisi");
                 return View(mtsKurumGorevVM);
             }

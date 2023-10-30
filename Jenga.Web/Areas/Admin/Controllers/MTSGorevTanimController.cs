@@ -1,5 +1,6 @@
 ﻿using Jenga.DataAccess.Repository.IRepository;
 using Jenga.Models.MTS;
+using Jenga.Utility;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
@@ -21,18 +22,29 @@ namespace Jenga.Web.Areas.Admin.Controllers
 
         public IActionResult Create()
         {
-            return View();
+            MTSGorevTanimVM mTSGorevTanimVM = new()
+            {
+                MTSGorevTanim = new(),
+                MTSKurumTanimList = _unitOfWork.MTSKurumTanim.GetAll().Select(i => new SelectListItem
+                {
+                    Text = i.Adi,
+                    Value = i.Id.ToString()
+                }),
+            };
+            return View(mTSGorevTanimVM);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Create(MTSGorevTanim obj)
+        public IActionResult Create(MTSGorevTanimVM obj)
         {
             if (ModelState.IsValid)
             {
-                if (obj.Id == 0)
+                if (obj.MTSGorevTanim.Id == 0)
                 {
-                    _unitOfWork.MTSGorevTanim.Add(obj);
+                    string? userName = HttpContext.User.Identity.Name;
+                    obj.MTSGorevTanim.Olusturan = userName;
+                    _unitOfWork.MTSGorevTanim.Add(obj.MTSGorevTanim);
                     TempData["success"] = "Görev oluşturuldu";
                 }
                 else
@@ -56,25 +68,32 @@ namespace Jenga.Web.Areas.Admin.Controllers
             }
             else
             {
-                //update 
-                MTSGorevTanim? mTSGorevTanim = _unitOfWork.MTSGorevTanim.GetFirstOrDefault(u => u.Id == id);
-                return View(mTSGorevTanim);
+                MTSGorevTanimVM mTSGorevTanimVM = new()
+                {
+                    MTSKurumTanimList = _unitOfWork.MTSKurumTanim.GetAll().Select(i => new SelectListItem
+                    {
+                        Text = i.Adi,
+                        Value = i.Id.ToString()
+                    }),
+                };
+                mTSGorevTanimVM.MTSGorevTanim= _unitOfWork.MTSGorevTanim.GetFirstOrDefault(u => u.Id == id);
+                return View(mTSGorevTanimVM);
             }
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Edit(MTSGorevTanim obj)
+        public IActionResult Edit(MTSGorevTanimVM obj)
         {
             if (ModelState.IsValid)
             {
-                if (obj.Id == 0)
+                if (obj.MTSGorevTanim.Id == 0)
                 {
                     TempData["success"] = "Görev bulunamadı";
                 }
                 else
                 {
-                    _unitOfWork.MTSGorevTanim.Update(obj);
+                    _unitOfWork.MTSGorevTanim.Update(obj.MTSGorevTanim);
                     TempData["success"] = "Görev güncellendi";
                 }
 
@@ -91,7 +110,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
         [HttpGet]
         public IActionResult GetAll()
         {
-            List<MTSGorevTanim> objMTSGorevTanimListesi = _unitOfWork.MTSGorevTanim.GetAll().ToList();
+            List<MTSGorevTanim> objMTSGorevTanimListesi = _unitOfWork.MTSGorevTanim.GetAll(includeProperties:"MTSKurumTanim").ToList();
             return Json(new { data = objMTSGorevTanimListesi });
         }
 

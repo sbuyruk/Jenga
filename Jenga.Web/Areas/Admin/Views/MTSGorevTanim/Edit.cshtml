@@ -1,45 +1,114 @@
-@model MTSGorevTanim
+@model MTSGorevTanimVM
 
 <form method="post" asp-action="Edit" enctype="multipart/form-data">
-    <input asp-for="Id" hidden />
+    <input asp-for="MTSGorevTanim.Id" hidden />
     <div class="row pt-3">
         <div class="col ">
             <h4 class="text-primary text-start fw-bold">Görev Oluşturma</h4>
         </div>
     </div>
     <hr />
-    <div class="p-3 mt-4 row">
+    <div class="mt-4 row">
         @*<div asp-validation-summary="All"></div>*@
-        <div class="mb-3">
-            <label asp-for="Adi"></label>
-            <input asp-for="Adi" class="form-control" />
-            <span asp-validation-for="Adi" class="text-danger"></span>
+        <div class="mb-3 col">
+            <label asp-for="MTSGorevTanim.MTSKurumTanimId">Kurum</label>
+            <select asp-for="MTSGorevTanim.MTSKurumTanimId" asp-items="@Model.MTSKurumTanimList" class="form-select">
+                <option disabled selected>--Kurum seçiniz--</option>
+            </select>
+            <span asp-validation-for="MTSGorevTanim.MTSKurumTanimId" class="text-danger"></span>
         </div>
-        <div class="mb-3">
-            <label asp-for="KisaAdi"></label>
-            <input asp-for="KisaAdi" class="form-control" />
-            <span asp-validation-for="KisaAdi" class="text-danger"></span>
+        <div class="mb-3 col">
+            <label asp-for="MTSGorevTanim.Adi"></label>
+            <input asp-for="MTSGorevTanim.Adi" class="form-control" />
+            <span asp-validation-for="MTSGorevTanim.Adi" class="text-danger"></span>
         </div>
-
-        <div class="mb-3">
-            <label asp-for="Aciklama"></label>
-            <textarea asp-for="Aciklama" rows="3" class="form-control"></textarea>
-            <span asp-validation-for="Aciklama" class="text-danger"></span>
-        </div>
-        <div class="col-12">
-            @if (Model.Id != 0)
-            {
-                <button type="submit" class="btn btn-primary" style="width:150px">Güncelle</button>
-            }
-            else
-            {
-                <button type="submit" class="btn btn-primary" style="width:150px">Kaydet</button>
-            }
-            <a asp-controller="MTSGorevTanim" asp-action="Index" class="btn btn-secondary" style="width:150px">
-                Listeye Dön
-            </a>
+        <div class="mb-3 col">
+            <label asp-for="MTSGorevTanim.KisaAdi"></label>
+            <input asp-for="MTSGorevTanim.KisaAdi" class="form-control" />
+            <span asp-validation-for="MTSGorevTanim.KisaAdi" class="text-danger"></span>
         </div>
     </div>
+    <div class="row">
+        <div class="col-2">
+            <div class="form-floating py-2 col-12">
+                <input asp-for="MTSGorevTanim.Telefon1" class="form-control shadow" />
+                <label asp-for="MTSGorevTanim.Telefon1" class="ms-2"></label>
+                <span asp-validation-for="MTSGorevTanim.Telefon1" class="text-danger"></span>
+            </div>
+            <div class="form-floating py-2 col-12">
+                <input asp-for="MTSGorevTanim.TelAciklama1" class="form-control shadow" />
+                <label asp-for="MTSGorevTanim.TelAciklama1" class="ms-2"></label>
+                <span asp-validation-for="MTSGorevTanim.TelAciklama1" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="col-2">
+            <div class="form-floating py-2 col-12">
+                <input asp-for="MTSGorevTanim.Telefon2" class="form-control shadow" />
+                <label asp-for="MTSGorevTanim.Telefon2" class="ms-2"></label>
+                <span asp-validation-for="MTSGorevTanim.Telefon2" class="text-danger"></span>
+            </div>
+            <div class="form-floating py-2 col-12">
+                <input asp-for="MTSGorevTanim.TelAciklama2" class="form-control shadow" />
+                <label asp-for="MTSGorevTanim.TelAciklama2" class="ms-2"></label>
+                <span asp-validation-for="MTSGorevTanim.TelAciklama2" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="col-2">
+            <div class="form-floating py-2 col-12">
+                <input asp-for="MTSGorevTanim.Telefon3" class="form-control shadow" />
+                <label asp-for="MTSGorevTanim.Telefon3" class="ms-2"></label>
+                <span asp-validation-for="MTSGorevTanim.Telefon3" class="text-danger"></span>
+            </div>
+            <div class="form-floating py-2 col-12">
+                <input asp-for="MTSGorevTanim.TelAciklama3" class="form-control shadow" />
+                <label asp-for="MTSGorevTanim.TelAciklama3" class="ms-2"></label>
+                <span asp-validation-for="MTSGorevTanim.TelAciklama3" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="col-2">
+            <div class="form-floating py-2 col-12">
+                <input asp-for="MTSGorevTanim.Telefon4" class="form-control shadow" />
+                <label asp-for="MTSGorevTanim.Telefon4" class="ms-2"></label>
+                <span asp-validation-for="MTSGorevTanim.Telefon4" class="text-danger"></span>
+            </div>
+            <div class="form-floating py-2 col-12">
+                <input asp-for="MTSGorevTanim.TelAciklama4" class="form-control shadow" />
+                <label asp-for="MTSGorevTanim.TelAciklama4" class="ms-4"></label>
+                <span asp-validation-for="MTSGorevTanim.TelAciklama4" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="col-2">
+            <div class="form-floating py-2 col-12">
+                <input asp-for="MTSGorevTanim.Telefon5" class="form-control shadow" />
+                <label asp-for="MTSGorevTanim.Telefon5" class="ms-2"></label>
+                <span asp-validation-for="MTSGorevTanim.Telefon5" class="text-danger"></span>
+            </div>
+            <div class="form-floating py-2 col-12">
+                <input asp-for="MTSGorevTanim.TelAciklama5" class="form-control shadow" />
+                <label asp-for="MTSGorevTanim.TelAciklama5" class="ms-4"></label>
+                <span asp-validation-for="MTSGorevTanim.TelAciklama5" class="text-danger"></span>
+            </div>
+        </div>
+    </div>
+    <div class="mb-3">
+        <label asp-for="MTSGorevTanim.Aciklama"></label>
+        <textarea asp-for="MTSGorevTanim.Aciklama" rows="3" class="form-control"></textarea>
+        <span asp-validation-for="MTSGorevTanim.Aciklama" class="text-danger"></span>
+    </div>
+    <div class="col-12">
+        @if (Model.MTSGorevTanim.Id != 0)
+        {
+            <button type="submit" class="btn btn-primary" style="width:150px">Güncelle</button>
+        }
+        else
+        {
+            <button type="submit" class="btn btn-primary" style="width:150px">Kaydet</button>
+        }
+        <a asp-controller="MTSGorevTanim" asp-action="Index" class="btn btn-secondary" style="width:150px">
+            Listeye Dön
+        </a>
+    </div>
+    
 </form>
 
 @section Scripts{
@@ -47,10 +116,6 @@
         <partial name="_ValidationScriptsPartial" />
     }
     <script>
-        tinymce.init({
-            selector: 'textarea',
-            plugins: 'advlist autolink lists link image charmap print preview hr anchor pagebreak',
-            toolbar_mode: 'floating',
-        });      
+       
     </script>
 }

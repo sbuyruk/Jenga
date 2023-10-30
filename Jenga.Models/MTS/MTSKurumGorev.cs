@@ -31,6 +31,7 @@ namespace Jenga.Models.MTS
         [ForeignKey("KisiId")]
         [ValidateNever]
         public Kisi? Kisi { get; set; }
+
         [DisplayName("Görev Durumu")]
         [Required(ErrorMessage = "Görev Durumu boş olamaz.")]
         public string? Durum { get; set; } = ProjectConstants.MTSGOREVDURUMU_GOREVDE;

@@ -2,11 +2,12 @@
 
 <form method="post" asp-action="Edit" enctype="multipart/form-data">
     <input asp-for="MTSKurumGorev.Id" hidden />
+    <input asp-for="MTSKurumGorev.KisiId" hidden />
     <input asp-for="MTSKurumGorev.MTSKurumTanim.Id" hidden />
     <input asp-for="MTSKurumGorev.MTSGorevTanim.Id" hidden />
-    <input asp-for="MTSKurumGorev.KisiId" hidden />
     <input asp-for="MTSKurumGorev.MTSKurumTanim.KisaAdi" hidden />
     <input asp-for="MTSKurumGorev.MTSGorevTanim.KisaAdi" hidden />
+
     <div class="row pt-3">
         <div class="col ">
             <h4 class="text-primary text-start fw-bold">Görev Bitirme</h4>
@@ -17,12 +18,12 @@
         @*<div asp-validation-summary="All"></div>*@
         <div class="row">
             <div class="col-3">
-                <label asp-for="MTSKurumGorev.Kisi.Adi"></label>
-                <input asp-for="MTSKurumGorev.Kisi.Adi" class="form-control" readonly />
+                <label asp-for="Kisi.Adi"></label>
+                <input asp-for="Kisi.Adi" class="form-control" readonly />
             </div>
             <div class="col-3">
-                <label asp-for="MTSKurumGorev.Kisi.Soyadi"></label>
-                <input asp-for="MTSKurumGorev.Kisi.Soyadi" class="form-control" readonly />
+                <label asp-for="Kisi.Soyadi"></label>
+                <input asp-for="Kisi.Soyadi" class="form-control" readonly />
             </div>
             <div class="col-3" >
                 <label asp-for="MTSKurumGorev.BaslamaTarihi" class="control-label">Başlama Tarihi</label>

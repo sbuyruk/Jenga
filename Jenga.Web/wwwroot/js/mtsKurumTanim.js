@@ -11,12 +11,35 @@ function loadDataTable() {
         },
         "columns": [
             { "data": "adi", "width": "20%" },
-            { "data": "kisaAdi", "width": "10%" },
-            { "data": "aciklama", "width": "20%" },
-
+            { "data": "kisaAdi", "width": "20%" },
+            { "data": "aciklama", "width": "10%" },
             {
                 "data": "id",
-                "width": "25%",
+                "width": "15%",
+                "render": function (data) {
+                    return `
+                        <div class="form-group" >                        
+                            <button type="button" class="form-control btn btn-outline-info" onclick=OpenModal(${data});>
+                                Kurumdaki Kişiler
+                            </button>
+					    </div>
+                        `
+                },
+            },
+            {
+                "data": "id",
+                "width": "15%",
+                "render": function (data) {
+                    return `
+                        <div class="form-group" >                        
+                            <a class="btn btn-outline-warning" onclick=OpenModal(${data});> Kurumdaki Görevler </a>
+					    </div>
+                        `
+                },
+            },
+            {
+                "data": "id",
+                "width": "20%",
                 "render": function (data) {
                     return `
                         <div class="btn-group" role="group">
@@ -28,7 +51,6 @@ function loadDataTable() {
                         `
                 },
             },
-
         ],
         dom: 'Bfrtip',
         buttons: [
@@ -59,6 +81,7 @@ function loadDataTable() {
             , 'pageLength', "colvis"
         ],
     });
+
 }
 function Delete(url) {
     Swal.fire({
