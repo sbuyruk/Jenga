@@ -113,6 +113,8 @@ namespace Jenga.Web.Areas.Admin.Controllers
             {
                 if (obj.PersonelMenu.Id == 0)
                 {
+                    string? userName = HttpContext.User.Identity.Name;
+                    obj.Personel.Olusturan = userName;
                     _unitOfWork.PersonelMenu.Add(obj.PersonelMenu);
                     TempData["success"] = "Menu işlemi gerçekleşti";
                 }
@@ -162,7 +164,8 @@ namespace Jenga.Web.Areas.Admin.Controllers
                                 Olusturan="ben",
                                 OlusturmaTarihi= DateTime.Now,
                             };
-
+                            string? userName = HttpContext.User.Identity.Name;
+                            obj.Personel.Olusturan = userName;
                             _unitOfWork.PersonelMenu.Add(personelMenuNew);
                             TempData["success"] = "Yetki işlemi güncellendi";
                         }

@@ -128,15 +128,9 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 return Json(new {success=false, message="Kayıt silmede hata"});
             }
 
-            _unitOfWork.GonderiPaketi.Remove(obj);
-            GonderiPaketiVM gonderiPaketiVM = new()
-            {
-                GonderiPaketi = obj
-               
-            };
-
             string? userName = HttpContext.User.Identity.Name;
             obj.Degistiren = userName;
+            _unitOfWork.GonderiPaketi.Remove(obj);
             _unitOfWork.Save();
             return Json(new { success = true, message = "Gönderi paketi silindi" });
         }

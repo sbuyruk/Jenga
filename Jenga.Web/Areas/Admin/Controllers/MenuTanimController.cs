@@ -132,6 +132,8 @@ namespace Jenga.Web.Areas.Admin.Controllers
             {
                 if (obj.MenuTanim.Id == 0)
                 {
+                    string? userName = HttpContext.User.Identity.Name;
+                    obj.MenuTanim.Olusturan = userName;
                     _unitOfWork.MenuTanim.Add(obj.MenuTanim);
                     TempData["success"] = "Menü oluşturuldu";
                 }
@@ -156,6 +158,8 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 }
                 else
                 {
+                    string? userName = HttpContext.User.Identity.Name;
+                    obj.MenuTanim.Degistiren = userName;
                     _unitOfWork.MenuTanim.Update(obj.MenuTanim);
                     TempData["success"] = "Menü kaydı güncellendi";
                 }

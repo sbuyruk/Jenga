@@ -30,6 +30,8 @@ namespace Jenga.Web.Areas.Admin.Controllers
         {
             if (ModelState.IsValid)
             {
+                string? userName = HttpContext.User.Identity.Name;
+                obj.Olusturan = userName;
                 _unitOfWork.MTSUnvanTanim.Add(obj);
                 _unitOfWork.Save();
                 TempData["success"] = "Ünvan başarıyla oluşturuldu.";
@@ -59,6 +61,8 @@ namespace Jenga.Web.Areas.Admin.Controllers
         {
             if (ModelState.IsValid)
             {
+                string? userName = HttpContext.User.Identity.Name;
+                obj.Degistiren = userName;
                 _unitOfWork.MTSUnvanTanim.Update(obj);
                 _unitOfWork.Save();
                 TempData["success"] = "Ünvan başarıyla güncellendi.";

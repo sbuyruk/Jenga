@@ -4,6 +4,7 @@ using Jenga.Models.Ortak;
 using Jenga.Utility;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Newtonsoft.Json;
 
 namespace Jenga.Web.Areas.Admin.Controllers
 {
@@ -100,6 +101,8 @@ namespace Jenga.Web.Areas.Admin.Controllers
             {
                 if (obj.MTSKurumGorev.Id == 0)
                 {
+                    string? userName = HttpContext.User.Identity.Name;
+                    obj.MTSKurumGorev.Olusturan = userName;
                     _unitOfWork.MTSKurumGorev.Add(obj.MTSKurumGorev);
                     TempData["success"] = "Görev oluşturuldu";
                 }
@@ -127,6 +130,8 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 }
                 else
                 {
+                    string? userName = HttpContext.User.Identity.Name;
+                    obj.MTSKurumGorev.Degistiren = userName;
                     _unitOfWork.MTSKurumGorev.Update(obj.MTSKurumGorev);
                     TempData["success"] = "Görev güncellendi";
                 }
@@ -147,7 +152,20 @@ namespace Jenga.Web.Areas.Admin.Controllers
             List<MTSKurumGorev> objMTSKurumGorevListesi = _unitOfWork.MTSKurumGorev.GetAll(includeProperties: "MTSKurumTanim,MTSGorevTanim,Kisi").ToList();
             return Json(new { data = objMTSKurumGorevListesi });
         }
-
+        [HttpGet]
+        public IActionResult GetAllByMTSKurumTanimId(int mtsKurumTanimId)
+        {
+            List<MTSKurumGorev> list = _unitOfWork.MTSKurumGorev.GetByFilter(u => (u.MTSKurumTanimId == mtsKurumTanimId) && 
+                (u.Durum.Equals(ProjectConstants.MTSGOREVDURUMU_GOREVDE)), includeProperties: "Kisi,MTSGorevTanim").ToList();
+            var aa = JsonConvert.SerializeObject(list, Formatting.None,
+                        new JsonSerializerSettings()
+                        {
+                            ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+                        });
+            var result = new JsonResult(JsonConvert.DeserializeObject(aa));
+            //return Json(new { data = list });
+            return Json(new { data = result.Value });
+        }
         [HttpPost]
         public IActionResult Delete(int? id)
         {

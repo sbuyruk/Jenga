@@ -19,7 +19,7 @@ function loadDataTable() {
                 "render": function (data) {
                     return `
                         <div class="form-group" >                        
-                            <button type="button" class="form-control btn btn-outline-info" onclick=OpenModal(${data});>
+                            <button type="button" class="form-control btn btn-outline-info" onclick=OpenModalKisi(${data});>
                                 Kurumdaki Kişiler
                             </button>
 					    </div>
@@ -32,7 +32,7 @@ function loadDataTable() {
                 "render": function (data) {
                     return `
                         <div class="form-group" >                        
-                            <a class="btn btn-outline-warning" onclick=OpenModal(${data});> Kurumdaki Görevler </a>
+                            <a class="btn btn-outline-warning" onclick=OpenModalKurum(${data});> Kurumdaki Görevler </a>
 					    </div>
                         `
                 },
@@ -80,6 +80,55 @@ function loadDataTable() {
             },
             , 'pageLength', "colvis"
         ],
+    });
+
+}
+function loadModalDataTable(mtsKurumTanimId) {
+    if (jQuery.fn.DataTable.isDataTable('#tblDataModal')) {
+        jQuery('#tblDataModal').DataTable().destroy();
+    }
+    jQuery('#tblDataModal tbody').empty();
+    dataTable = $('#tblDataModal').DataTable({
+        "ajax": {
+            "url": "/Admin/MTSGorevTanim/GetAllByMTSKurumTanimId",
+            type: 'GET', 
+            data: {
+                mtsKurumTanimId: mtsKurumTanimId,
+            },
+        },
+        "columns": [
+            { "data": "adi", "width": "60%" },
+            { "data": "kisaAdi", "width": "40%" },
+
+        ],
+        destroy: true,
+        dom: 'frtip',
+      
+    });
+
+}
+function loadModalDataTableKisi(mtsKurumTanimId) {
+    if (jQuery.fn.DataTable.isDataTable('#tblDataModalKisi')) {
+        jQuery('#tblDataModalKisi').DataTable().destroy();
+    }
+    jQuery('#tblDataModalKisi tbody').empty();
+    dataTable = $('#tblDataModalKisi').DataTable({
+        "ajax": {
+            "url": "/Admin/MTSKurumGorev/GetAllByMTSKurumTanimId",
+            type: 'GET',
+            data: {
+                mtsKurumTanimId: mtsKurumTanimId,
+            },
+        },
+        "columns": [
+            { "data": "Kisi.Adi", "width": "30%" },
+            { "data": "Kisi.Soyadi", "width": "30%" },
+            { "data": "MTSGorevTanim.Adi", "width": "40%" },
+
+        ],
+        destroy: true,
+        dom: 'frtip',
+
     });
 
 }

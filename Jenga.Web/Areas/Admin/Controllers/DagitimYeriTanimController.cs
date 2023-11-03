@@ -17,11 +17,26 @@ namespace Jenga.Web.Areas.Admin.Controllers
             IEnumerable<DagitimYeriTanim> objDagitimYeriTanimList = _unitOfWork.DagitimYeriTanim.GetAll();
             return View(objDagitimYeriTanimList);
         }
-        //POST
         public IActionResult Create()
         {
             return View();
         }
+        public IActionResult Edit(int? id)
+        {
+            if (id == null || id == 0)
+            {
+                return NotFound();
+            }
+            var obj = _unitOfWork.DagitimYeriTanim.GetFirstOrDefault(u => u.Id == id);
+            if (obj == null)
+            {
+                return NotFound();
+            }
+            string? userName = HttpContext.User.Identity.Name;
+            obj.Olusturan = userName;
+            return View(obj);
+        }
+        //POST
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -43,21 +58,6 @@ namespace Jenga.Web.Areas.Admin.Controllers
             return View(obj);
         }
         //GET
-        public IActionResult Edit(int? id)
-        {
-            if (id == null || id == 0)
-            {
-                return NotFound();
-            }
-            var obj = _unitOfWork.DagitimYeriTanim.GetFirstOrDefault(u => u.Id == id);
-            if (obj == null)
-            {
-                return NotFound();
-            }
-            string? userName = HttpContext.User.Identity.Name;
-            obj.Olusturan = userName;
-            return View(obj);
-        }
 
         [HttpPost]
         [ValidateAntiForgeryToken]

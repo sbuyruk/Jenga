@@ -154,6 +154,8 @@ namespace Jenga.Web.Areas.Admin.Controllers
             {
                 if (obj.AniObjesiDagitim.Id == 0)
                 {
+                    string? userName = HttpContext.User.Identity.Name;
+                    obj.AniObjesiDagitim.Olusturan = userName;
                     _unitOfWork.AniObjesiDagitim.Add(obj.AniObjesiDagitim);
                     TempData["success"] = "Anı Objesi Dağıtım oluşturuldu";
                 }
@@ -161,7 +163,6 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 {
                     TempData["error"] = "Anı Objesi Dağıtım oluşturulamadı";
                 }
-
                 _unitOfWork.Save();
 
                 return RedirectToAction("Index");
@@ -180,10 +181,11 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 }
                 else
                 {
+                    string? userName = HttpContext.User.Identity.Name;
+                    obj.AniObjesiDagitim.Degistiren = userName;
                     _unitOfWork.AniObjesiDagitim.Update(obj.AniObjesiDagitim);
                     TempData["success"] = "Anı Objesi Dağıtımı güncellendi";
                 }
-
                 _unitOfWork.Save();
 
                 return RedirectToAction("Index");

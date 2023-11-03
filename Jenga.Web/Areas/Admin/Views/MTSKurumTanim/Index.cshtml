@@ -31,11 +31,42 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h1 class="modal-title fs-5" id="exampleModalLabel">Kurumdaki Personel</h1>
+                <h1 class="modal-title fs-5" id="exampleModalLabel">Kurumdaki Görevler</h1>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <label id="mtsKurumIdLbl">XX</label>
+                <table id="tblDataModal" class="table table-bordered table-striped table-sm small" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>Görev </th>
+                            <th>Kısaltması</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="tblDataModalKisiDiv" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5">Kurumdaki Kişiler</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <table id="tblDataModalKisi" class="table table-bordered table-striped table-sm small" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>Adı </th>
+                            <th>Soyadı</th>
+                            <th>Görevi</th>
+                        </tr>
+                    </thead>
+                </table>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -46,21 +77,33 @@
 @section Scripts{
     <script src="~/js/mtsKurumTanim.js"></script>
     <script>
-        function OpenModal(mtsKurumId) {
+        function OpenModalKurum(mtsKurumTanimId) {
+            loadModalDataTable(mtsKurumTanimId);
             // $("#OpenModalDiv").modal({ backdrop: false });
             var myModal = document.getElementById('OpenModalDiv');
             // Open the modal
             var modal = new bootstrap.Modal(myModal);
             modal.show();
         }
-        function OpenModal1(mtsKurumId) {
+        function OpenModalKisi(mtsKurumTanimId) {
+            loadModalDataTableKisi(mtsKurumTanimId);
+            // $("#OpenModalDiv").modal({ backdrop: false });
+            var myModal = document.getElementById('tblDataModalKisiDiv');
+            // Open the modal
+            var modal = new bootstrap.Modal(myModal);
+            modal.show();
+        }
+        function OpenModal1(mtsKurumTanimId) {
             $.ajax({
-                url: '/MTSKurumTanim/YourAction', // Replace with your controller and action
+                url: '/Admin/MTSGorevTanim/GetAllByMTSKurumTanimId', // Replace with your controller and action
                 type: 'GET', // or 'POST' depending on your needs
+                data: {
+                    mtsKurumTanimId: mtsKurumTanimId,
+                },
                 success: function (data) {
                     // Handle the response from the controller if needed
                     // Assuming your controller returns HTML content for the modal
-                    $('#modalContent').html(data);
+                    $('#OpenModalDiv').html(data);
 
                     // Display the modal after the AJAX request is complete
                     var myModal = new bootstrap.Modal(document.getElementById('OpenModalDiv'));

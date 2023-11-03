@@ -32,76 +32,57 @@
 
             </div>
             <div class="col-4">
-                <div class="row" >
-                    <div class="col-6">
-                        <div class="form-group">
-                            <label asp-for="Kisi.Kurumu"></label>
-                            <input asp-for="Kisi.Kurumu" class="form-control" disabled />
-                        </div>
-                        <div class="form-group">
-                            <label asp-for="Kisi.Unvani"></label>
-                            <input asp-for="Kisi.Unvani" class="form-control" disabled />
-                        </div>
-                        <div class="form-group">
-                            <label asp-for="Kisi.Gorevi"></label>
-                            <input asp-for="Kisi.Gorevi" type="text" class="form-control" disabled/>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="form-group">
-                            @if ((@Model.MTSKurumu != null) && (@Model.MTSKurumu.Adi != null))
-                            {
-                                <label asp-for="MTSKurumu.Adi"></label>
-                                <input asp-for="MTSKurumu.Adi" class="form-control" readonly />
-                            }
-                            else
-                            {
-                                <label>Kurum</label>
-                                <input class="form-control" readonly />
-                            }
-                            
-                        </div>
-                        <div class="form-group">
-                            <label asp-for="Kisi.MTSUnvanTanimId">MTSÜnvan</label>
-                            <select asp-for="Kisi.MTSUnvanTanimId" asp-items="@Model.MTSUnvanTanimList" class="form-select" id="MTSUnvanTanimId">
-                                <option disabled selected>--Ünvan seçiniz--</option>
-                            </select>
-                            <span asp-validation-for="Kisi.MTSUnvanTanimId" class="text-danger"></span>
-                        </div>
-                        <div class="form-group">
-                            @if ((@Model.MTSGorevi != null) && (@Model.MTSGorevi.Adi != null))
-                            {
-                                <label asp-for="MTSGorevi.Adi"></label>
-                                <input asp-for="MTSGorevi.Adi" class="form-control" readonly />
-                            }
-                            else
-                            {
-                                <label>Görev</label>
-                                <input class="form-control" readonly />
-                            }
-                            
-                        </div>
-                        <div class="form-group">
-@*                             <label></label>
-                            @if ((@Model.MTSGorevi != null) && (@Model.MTSGorevi.Adi != null))
-                            {
-                                <label>Kurum/Görev</label>
-                                <a asp-controller="MTSKurumGorev" asp-action="Edit" asp-route-kisiId="@Model.Kisi.Id" class="btn btn-danger" style="width:150px">
-                                    Düzelt/Sil
-                                </a>
-                            }
-                            else
-                            {
-                                <label>Kurum/Görev</label>
-                                <a asp-controller="MTSKurumGorev" asp-action="Create" asp-route-kisiId="@Model.Kisi.Id" class="btn btn-success" style="width:150px">
-                                    Seç
-                                </a>
-                            } *@
-                            
-                        </div>
-                    </div>
-                </div>
+                <div class="form-group">
+                    @if ((@Model.MTSKurumu != null) && (@Model.MTSKurumu.Adi != null))
+                    {
+                        <label asp-for="MTSKurumu.Adi"></label>
+                        <input asp-for="MTSKurumu.Adi" class="form-control" readonly />
+                    }
+                    else
+                    {
+                        <label>Kurum</label>
+                        <input class="form-control" readonly />
+                    }
 
+                </div>
+                <div class="form-group">
+                    <label asp-for="Kisi.MTSUnvanTanimId">MTSÜnvan</label>
+                    <select asp-for="Kisi.MTSUnvanTanimId" asp-items="@Model.MTSUnvanTanimList" class="form-select" id="MTSUnvanTanimId">
+                        <option disabled selected>--Ünvan seçiniz--</option>
+                    </select>
+                    <span asp-validation-for="Kisi.MTSUnvanTanimId" class="text-danger"></span>
+                </div>
+                <div class="form-group">
+                    @if ((@Model.MTSGorevi != null) && (@Model.MTSGorevi.Adi != null))
+                    {
+                        <label asp-for="MTSGorevi.Adi"></label>
+                        <input asp-for="MTSGorevi.Adi" class="form-control" readonly />
+                    }
+                    else
+                    {
+                        <label>Görev</label>
+                        <input class="form-control" readonly />
+                    }
+
+                </div>
+                <div class="form-group">
+                    @*                             <label></label>
+                    @if ((@Model.MTSGorevi != null) && (@Model.MTSGorevi.Adi != null))
+                    {
+                    <label>Kurum/Görev</label>
+                    <a asp-controller="MTSKurumGorev" asp-action="Edit" asp-route-kisiId="@Model.Kisi.Id" class="btn btn-danger" style="width:150px">
+                    Düzelt/Sil
+                    </a>
+                    }
+                    else
+                    {
+                    <label>Kurum/Görev</label>
+                    <a asp-controller="MTSKurumGorev" asp-action="Create" asp-route-kisiId="@Model.Kisi.Id" class="btn btn-success" style="width:150px">
+                    Seç
+                    </a>
+                    } *@
+
+                </div>
             </div>
             <div class="col-2 ">
 
@@ -174,6 +155,154 @@
                 <label asp-for="Kisi.Aciklama"></label>
                 <textarea asp-for="Kisi.Aciklama" rows="2" class="form-control"></textarea>
             </div>
+        </div>
+        <hr />
+        <div class="form-group">
+            @if (@Model.MTSKurumu != null)
+            {
+                <label class="col-form-label fw-bold">Kurum Telefonları</label>
+                <div class="row">
+                    <div class="col-2">
+                        <div class="form-floating py-2 col-12">
+                            <input asp-for="MTSKurumu.Telefon1" class="form-control shadow" disabled  />
+                            <label asp-for="MTSKurumu.Telefon1" class="ms-2"></label>
+                            <span asp-validation-for="MTSKurumu.Telefon1" class="text-danger"></span>
+                        </div>
+                        <div class="form-floating py-2 col-12">
+                            <input asp-for="MTSKurumu.TelAciklama1" class="form-control shadow" disabled  />
+                            <label asp-for="MTSKurumu.TelAciklama1" class="ms-2"></label>
+                            <span asp-validation-for="MTSKurumu.TelAciklama1" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-2">
+                        <div class="form-floating py-2 col-12">
+                            <input asp-for="MTSKurumu.Telefon2" class="form-control shadow" disabled  />
+                            <label asp-for="MTSKurumu.Telefon2" class="ms-2"></label>
+                            <span asp-validation-for="MTSKurumu.Telefon1" class="text-danger"></span>
+                        </div>
+                        <div class="form-floating py-2 col-12">
+                            <input asp-for="MTSKurumu.TelAciklama2" class="form-control shadow" disabled  />
+                            <label asp-for="MTSKurumu.TelAciklama2" class="ms-2"></label>
+                            <span asp-validation-for="MTSKurumu.TelAciklama2" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-2">
+                        <div class="form-floating py-2 col-12">
+                            <input asp-for="MTSKurumu.Telefon3" class="form-control shadow" disabled  />
+                            <label asp-for="MTSKurumu.Telefon3" class="ms-2"></label>
+                            <span asp-validation-for="MTSKurumu.Telefon1" class="text-danger"></span>
+                        </div>
+                        <div class="form-floating py-2 col-12">
+                            <input asp-for="MTSKurumu.TelAciklama3" class="form-control shadow" disabled  />
+                            <label asp-for="MTSKurumu.TelAciklama3" class="ms-2"></label>
+                            <span asp-validation-for="MTSKurumu.TelAciklama3" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-2">
+                        <div class="form-floating py-2 col-12">
+                            <input asp-for="MTSKurumu.Telefon4" class="form-control shadow" disabled  />
+                            <label asp-for="MTSKurumu.Telefon4" class="ms-2"></label>
+                            <span asp-validation-for="MTSKurumu.Telefon1" class="text-danger"></span>
+                        </div>
+                        <div class="form-floating py-2 col-12">
+                            <input asp-for="MTSKurumu.TelAciklama4" class="form-control shadow" disabled  />
+                            <label asp-for="MTSKurumu.TelAciklama4" class="ms-4"></label>
+                            <span asp-validation-for="MTSKurumu.TelAciklama4" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-2">
+                        <div class="form-floating py-2 col-12">
+                            <input asp-for="MTSKurumu.Telefon5" class="form-control shadow" disabled  />
+                            <label asp-for="MTSKurumu.Telefon5" class="ms-2"></label>
+                            <span asp-validation-for="MTSKurumu.Telefon1" class="text-danger"></span>
+                        </div>
+                        <div class="form-floating py-2 col-12">
+                            <input asp-for="MTSKurumu.TelAciklama5" class="form-control shadow" disabled  />
+                            <label asp-for="MTSKurumu.TelAciklama5" class="ms-4"></label>
+                            <span asp-validation-for="MTSKurumu.TelAciklama5" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-2">
+                        <a asp-controller="MTSKurumTanim" asp-action="Edit" asp-route-id="@Model.MTSKurumu.Id" class="form-control btn btn-secondary mt-2">
+                            Kuruma Git
+                        </a>
+                    </div>
+                </div>
+            }
+        </div>
+        <hr />
+        <div class="form-group">
+            @if (@Model.MTSGorevi != null)
+            {
+                <label class="col-form-label fw-bold">Görev/Makam Telefonları</label>
+                <div class="row">
+                    <div class="col-2">
+                        <div class="form-floating py-2 col-12">
+                            <input asp-for="MTSGorevi.Telefon1" class="form-control shadow" disabled  />
+                            <label asp-for="MTSGorevi.Telefon1" class="ms-2"></label>
+                            <span asp-validation-for="MTSGorevi.Telefon1" class="text-danger"></span>
+                        </div>
+                        <div class="form-floating py-2 col-12">
+                            <input asp-for="MTSGorevi.TelAciklama1" class="form-control shadow" disabled  />
+                            <label asp-for="MTSGorevi.TelAciklama1" class="ms-2"></label>
+                            <span asp-validation-for="MTSGorevi.TelAciklama1" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-2">
+                        <div class="form-floating py-2 col-12">
+                            <input asp-for="MTSGorevi.Telefon2" class="form-control shadow" disabled  />
+                            <label asp-for="MTSGorevi.Telefon2" class="ms-2"></label>
+                            <span asp-validation-for="MTSGorevi.Telefon1" class="text-danger"></span>
+                        </div>
+                        <div class="form-floating py-2 col-12">
+                            <input asp-for="MTSGorevi.TelAciklama2" class="form-control shadow" disabled  />
+                            <label asp-for="MTSGorevi.TelAciklama2" class="ms-2"></label>
+                            <span asp-validation-for="MTSGorevi.TelAciklama2" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-2">
+                        <div class="form-floating py-2 col-12">
+                            <input asp-for="MTSGorevi.Telefon3" class="form-control shadow" disabled  />
+                            <label asp-for="MTSGorevi.Telefon3" class="ms-2"></label>
+                            <span asp-validation-for="MTSGorevi.Telefon1" class="text-danger"></span>
+                        </div>
+                        <div class="form-floating py-2 col-12">
+                            <input asp-for="MTSGorevi.TelAciklama3" class="form-control shadow" disabled  />
+                            <label asp-for="MTSGorevi.TelAciklama3" class="ms-2"></label>
+                            <span asp-validation-for="MTSGorevi.TelAciklama3" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-2">
+                        <div class="form-floating py-2 col-12">
+                            <input asp-for="MTSGorevi.Telefon4" class="form-control shadow" disabled  />
+                            <label asp-for="MTSGorevi.Telefon4" class="ms-2"></label>
+                            <span asp-validation-for="MTSGorevi.Telefon1" class="text-danger"></span>
+                        </div>
+                        <div class="form-floating py-2 col-12">
+                            <input asp-for="MTSGorevi.TelAciklama4" class="form-control shadow" disabled  />
+                            <label asp-for="MTSGorevi.TelAciklama4" class="ms-4"></label>
+                            <span asp-validation-for="MTSGorevi.TelAciklama4" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-2">
+                        <div class="form-floating py-2 col-12">
+                            <input asp-for="MTSGorevi.Telefon5" class="form-control shadow" disabled  />
+                            <label asp-for="MTSGorevi.Telefon5" class="ms-2"></label>
+                            <span asp-validation-for="MTSGorevi.Telefon1" class="text-danger"></span>
+                        </div>
+                        <div class="form-floating py-2 col-12">
+                            <input asp-for="MTSGorevi.TelAciklama5" class="form-control shadow" disabled  />
+                            <label asp-for="MTSGorevi.TelAciklama5" class="ms-4"></label>
+                            <span asp-validation-for="MTSGorevi.TelAciklama5" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-2">
+                        <a asp-controller="MTSGorevTanim" asp-action="Edit" asp-route-id="@Model.MTSGorevi.Id" class="form-control btn btn-secondary mt-2">
+                            Göreve Git
+                        </a>
+                    </div>
+                </div>
+            }
         </div>
     </div>
 

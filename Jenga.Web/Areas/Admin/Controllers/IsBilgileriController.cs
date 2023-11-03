@@ -74,6 +74,8 @@ namespace Jenga.Web.Areas.Admin.Controllers
             {
                 if (obj.Id == 0)
                 {
+                    string? userName = HttpContext.User.Identity.Name;
+                    obj.Olusturan = userName;
                     _unitOfWork.IsBilgileri.Add(obj);
                     TempData["success"] = "IsBilgileri oluşturuldu";
                 }
@@ -81,8 +83,6 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 {
                     TempData["error"] = "IsBilgileri oluşturulamadı";
                 }
-                string? userName = HttpContext.User.Identity.Name;
-                obj.Olusturan = userName;
                 _unitOfWork.Save();
 
                 return RedirectToAction("Index");
@@ -101,6 +101,8 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 }
                 else
                 {
+                    string? userName = HttpContext.User.Identity.Name;
+                    obj.Degistiren = userName;
                     _unitOfWork.IsBilgileri.Update(obj);
                     TempData["success"] = "IsBilgileri güncellendi";
                 }

@@ -3,6 +3,7 @@ using Jenga.Models.MTS;
 using Jenga.Utility;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Newtonsoft.Json;
 
 namespace Jenga.Web.Areas.Admin.Controllers
 {
@@ -93,6 +94,8 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 }
                 else
                 {
+                    string? userName = HttpContext.User.Identity.Name;
+                    obj.MTSGorevTanim.Degistiren = userName;
                     _unitOfWork.MTSGorevTanim.Update(obj.MTSGorevTanim);
                     TempData["success"] = "Görev güncellendi";
                 }
@@ -113,7 +116,18 @@ namespace Jenga.Web.Areas.Admin.Controllers
             List<MTSGorevTanim> objMTSGorevTanimListesi = _unitOfWork.MTSGorevTanim.GetAll(includeProperties:"MTSKurumTanim").ToList();
             return Json(new { data = objMTSGorevTanimListesi });
         }
-
+        [HttpGet]
+        public IActionResult GetAllByMTSKurumTanimId(int mtsKurumTanimId)
+        {
+            List<MTSGorevTanim> list = _unitOfWork.MTSGorevTanim.GetByFilter(u => u.MTSKurumTanimId == mtsKurumTanimId, includeProperties: "MTSKurumTanim").ToList();
+            var aa = JsonConvert.SerializeObject(list, Formatting.None,
+                        new JsonSerializerSettings()
+                        {
+                            ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+                        });
+            var result = new JsonResult(JsonConvert.DeserializeObject(aa));
+            return Json(new { data = list });
+        }
         [HttpPost]
         public IActionResult Delete(int? id)
         {

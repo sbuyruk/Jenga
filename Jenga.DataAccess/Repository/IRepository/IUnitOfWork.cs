@@ -24,6 +24,7 @@ namespace Jenga.DataAccess.Repository.IRepository
         IMTSGorevTanimRepository MTSGorevTanim { get; }
         IMTSUnvanTanimRepository MTSUnvanTanim { get; }
         IMTSKurumGorevRepository MTSKurumGorev { get; }
+        IFaaliyetYeriRepository FaaliyetYeri { get; }
         //Ortak
         IIlRepository Il { get; }
         IIlceRepository Ilce { get; }

@@ -392,11 +392,12 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 }
                 else
                 {
-                   
+
+                    string? userName = HttpContext.User.Identity.Name;
+                    obj.DepoHareket.Degistiren = userName;
                     _unitOfWork.DepoHareket.Update(obj.DepoHareket);
                     TempData["success"] = "Depo işlemi güncellendi";
                 }
-
                 _unitOfWork.Save();
 
                 return RedirectToAction("Index");
