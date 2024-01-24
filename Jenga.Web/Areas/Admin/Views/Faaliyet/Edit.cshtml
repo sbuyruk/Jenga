@@ -1,4 +1,4 @@
-@model FaaliyetYeri
+@model Faaliyet
 
 <form method="post" asp-action="Edit" enctype="multipart/form-data">
     <input asp-for="Id" hidden />
@@ -12,14 +12,14 @@
         @*<div asp-validation-summary="All"></div>*@
         <div class="row">
             <div class="form-floating py-2 col-4">
-                <input asp-for="Adi" class="form-control shadow fw-bold" />
-                <label asp-for="Adi" class="ms-2"></label>
-                <span asp-validation-for="Adi" class="text-danger"></span>
+                <input asp-for="FaaliyetKonusu" class="form-control shadow fw-bold" />
+                <label asp-for="FaaliyetKonusu" class="ms-2"></label>
+                <span asp-validation-for="FaaliyetKonusu" class="text-danger"></span>
             </div>
             <div class="form-floating py-2 col-4">
-                <input asp-for="Sira" class="form-control shadow" type="number" />
-                <label asp-for="Sira" class="ms-2"></label>
-                <span asp-validation-for="Sira" class="text-danger"></span>
+                <input asp-for="FaaliyetAmaci" class="form-control shadow" type="number" />
+                <label asp-for="FaaliyetAmaci" class="ms-2"></label>
+                <span asp-validation-for="FaaliyetAmaci" class="text-danger"></span>
             </div>
         </div>
         <div class="form-floating py-2 col-12">
@@ -32,7 +32,7 @@
                 <button type="submit" class="btn btn-primary form-control">Güncelle</button>
             </div>
             <div class="col-2">
-                <a asp-controller="FaaliyetYeri" asp-action="Index" class="btn btn-outline-primary border form-control">
+                <a asp-controller="Faaliyet" asp-action="Index" class="btn btn-outline-primary border form-control">
                     Listeye Geri Dön
                 </a>
             </div>

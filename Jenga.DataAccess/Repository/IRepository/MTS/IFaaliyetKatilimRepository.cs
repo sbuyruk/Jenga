@@ -7,9 +7,10 @@ using System.Threading.Tasks;
 
 namespace Jenga.DataAccess.Repository.IRepository.MTS
 {
-    public interface IFaaliyetYeriRepository : IRepository<FaaliyetYeri>
+    public interface IFaaliyetKatilimRepository : IRepository<FaaliyetKatilim>
     {
-        void Update(FaaliyetYeri obj);
+        IEnumerable<FaaliyetKatilim> IncludeIt();
+        void Update(FaaliyetKatilim obj);
 
     }
 }

@@ -5,6 +5,7 @@ namespace Jenga.Utility
     {
         //ORTAK
         public const int SIFIR = 0;
+        public static DateTime ILK_TARIH = new DateTime(1900,1,1);
 
         //MTS
         public const string MTS_ANIOBJESISTOKLU= "Stoklu";

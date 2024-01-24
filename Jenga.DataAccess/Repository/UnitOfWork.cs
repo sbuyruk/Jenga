@@ -31,14 +31,13 @@ namespace Jenga.DataAccess.Repository
             UnvanTanim = new UnvanTanimRepository(_db);
             DagitimYeriTanim = new DagitimYeriTanimRepository(_db);
             GonderiPaketi = new GonderiPaketiRepository(_db);
-            Randevu = new RandevuRepository(_db);
-            RandevuKatilim = new RandevuKatilimRepository(_db);
             AniObjesiDagitim = new AniObjesiDagitimRepository(_db);
             MTSKurumTanim = new MTSKurumTanimRepository(_db);
             MTSGorevTanim = new MTSGorevTanimRepository(_db);
             MTSUnvanTanim = new MTSUnvanTanimRepository(_db);
             MTSKurumGorev = new MTSKurumGorevRepository(_db);
-            FaaliyetYeri = new FaaliyetYeriRepository(_db);
+            FaaliyetKatilim = new FaaliyetKatilimRepository(_db);
+            Faaliyet = new FaaliyetRepository(_db);
             //Ortak
             Il = new IlRepository(_db);
             Ilce = new IlceRepository(_db);
@@ -64,14 +63,13 @@ namespace Jenga.DataAccess.Repository
         public IGonderiPaketiRepository GonderiPaketi{ get; private set; }        
         public IDagitimYeriTanimRepository DagitimYeriTanim { get; private set; }        
         public IKisiRepository Kisi { get; private set; }        
-        public IRandevuRepository Randevu { get; private set; }        
-        public IRandevuKatilimRepository RandevuKatilim { get; private set; }        
         public IAniObjesiDagitimRepository AniObjesiDagitim { get; private set; }        
         public IMTSKurumTanimRepository MTSKurumTanim { get; private set; }        
         public IMTSGorevTanimRepository MTSGorevTanim { get; private set; }        
         public IMTSUnvanTanimRepository MTSUnvanTanim { get; private set; }        
         public IMTSKurumGorevRepository MTSKurumGorev { get; private set; }        
-        public IFaaliyetYeriRepository FaaliyetYeri { get; private set; }        
+        public IFaaliyetKatilimRepository FaaliyetKatilim { get; private set; }        
+        public IFaaliyetRepository Faaliyet { get; private set; }        
         
         //Ortak
         public IIlRepository Il{ get; private set; }        

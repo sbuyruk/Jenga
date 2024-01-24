@@ -41,11 +41,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
                     Text = i.Adi,
                     Value = i.Id.ToString()
                 }),
-                //KatilimciList = _aniObjesiService.GetKatilimciList().Select(i => new SelectListItem
-                //{
-                //    Text = i.Adi,
-                //    Value = i.Id.ToString()
-                //}),
+
                 DepoTanimList = _unitOfWork.DepoTanim.GetAll().Select(i => new SelectListItem
                 {
                     Text = i.Adi,
@@ -96,30 +92,30 @@ namespace Jenga.Web.Areas.Admin.Controllers
         [HttpGet]
         public IActionResult GetAll()
         {
-            var aniObjesiList = _unitOfWork.AniObjesiDagitim.GetAll(includeProperties: "AniObjesiTanim,Randevu,DepoTanim,DagitimYeriTanim");
+            var aniObjesiList = _unitOfWork.AniObjesiDagitim.GetAll(includeProperties: "AniObjesiTanim,Faaliyet,DepoTanim,DagitimYeriTanim");
             foreach (var item in aniObjesiList)
             {
                 if (item.KatilimciTipi == ProjectConstants.RANDEVU_KATILIMCI_DIS_INT)
                 {
-                    Katilimci katilimci = _aniObjesiService.GetKatilimci(item.KatilimciId, ProjectConstants.RANDEVU_KATILIMCI_DIS_INT);
+                    Katilimci katilimci = _aniObjesiService.GetKatilimci(item.RandevuId, item.KatilimciId, ProjectConstants.RANDEVU_KATILIMCI_DIS_INT);
                     item.Katilimci = katilimci;
 
                 }
                 else if (item.KatilimciTipi == ProjectConstants.RANDEVU_KATILIMCI_IC_INT)
                 {
-                    Katilimci katilimci = _aniObjesiService.GetKatilimci(item.KatilimciId, ProjectConstants.RANDEVU_KATILIMCI_IC_INT);
+                    Katilimci katilimci = _aniObjesiService.GetKatilimci(item.RandevuId, item.KatilimciId, ProjectConstants.RANDEVU_KATILIMCI_IC_INT);
                     item.Katilimci = katilimci;
 
                 }
                 else if (item.KatilimciTipi == ProjectConstants.RANDEVU_KATILIMCI_NAKITBAGISCI_INT)
                 {
-                    Katilimci katilimci = _aniObjesiService.GetKatilimci(item.KatilimciId, ProjectConstants.RANDEVU_KATILIMCI_NAKITBAGISCI_INT);
+                    Katilimci katilimci = _aniObjesiService.GetKatilimci(item.RandevuId, item.KatilimciId, ProjectConstants.RANDEVU_KATILIMCI_NAKITBAGISCI_INT);
                     item.Katilimci = katilimci;
 
                 }
                 else if (item.KatilimciTipi == ProjectConstants.RANDEVU_KATILIMCI_TASINMAZBAGISCI_INT)
                 {
-                    Katilimci katilimci = _aniObjesiService.GetKatilimci(item.KatilimciId, ProjectConstants.RANDEVU_KATILIMCI_TASINMAZBAGISCI_INT);
+                    Katilimci katilimci = _aniObjesiService.GetKatilimci(item.RandevuId, item.KatilimciId, ProjectConstants.RANDEVU_KATILIMCI_TASINMAZBAGISCI_INT);
                     item.Katilimci = katilimci;
 
                 }

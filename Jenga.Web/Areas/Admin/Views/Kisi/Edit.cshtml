@@ -66,22 +66,8 @@
 
                 </div>
                 <div class="form-group">
-                    @*                             <label></label>
-                    @if ((@Model.MTSGorevi != null) && (@Model.MTSGorevi.Adi != null))
-                    {
-                    <label>Kurum/Görev</label>
-                    <a asp-controller="MTSKurumGorev" asp-action="Edit" asp-route-kisiId="@Model.Kisi.Id" class="btn btn-danger" style="width:150px">
-                    Düzelt/Sil
-                    </a>
-                    }
-                    else
-                    {
-                    <label>Kurum/Görev</label>
-                    <a asp-controller="MTSKurumGorev" asp-action="Create" asp-route-kisiId="@Model.Kisi.Id" class="btn btn-success" style="width:150px">
-                    Seç
-                    </a>
-                    } *@
-
+                    <label asp-for="Kisi.EPosta"></label>
+                    <input asp-for="Kisi.EPosta" type="" class="form-control" />
                 </div>
             </div>
             <div class="col-2 ">

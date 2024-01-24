@@ -5,11 +5,11 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace Jenga.Web.Areas.Admin.Controllers
 {
-    public class FaaliyetYeriController : Controller
+    public class FaaliyetKatilimController : Controller
     {
         private readonly IUnitOfWork _unitOfWork;
         
-        public FaaliyetYeriController(IUnitOfWork unitOfWork)
+        public FaaliyetKatilimController(IUnitOfWork unitOfWork)
         {
             _unitOfWork = unitOfWork;
         }
@@ -28,7 +28,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             {
                 return NotFound();
             }
-            FaaliyetYeri? faaliyetYeriFromDb = _unitOfWork.FaaliyetYeri.GetFirstOrDefault(u => u.Id == id);
+            FaaliyetKatilim? faaliyetYeriFromDb = _unitOfWork.FaaliyetKatilim.GetFirstOrDefault(u => u.Id == id);
  
             if (faaliyetYeriFromDb == null)
             {
@@ -39,13 +39,13 @@ namespace Jenga.Web.Areas.Admin.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Create(FaaliyetYeri obj)
+        public IActionResult Create(FaaliyetKatilim obj)
         {
             if (ModelState.IsValid)
             {
                 string? userName = HttpContext.User.Identity.Name;
                 obj.Olusturan = userName;
-                _unitOfWork.FaaliyetYeri.Add(obj);
+                _unitOfWork.FaaliyetKatilim.Add(obj);
                 _unitOfWork.Save();
                 TempData["success"] = "Faaliyet Yeri  başarıyla oluşturuldu.";
                 return RedirectToAction("Index");
@@ -56,13 +56,13 @@ namespace Jenga.Web.Areas.Admin.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Edit(FaaliyetYeri obj)
+        public IActionResult Edit(FaaliyetKatilim obj)
         {
             if (ModelState.IsValid)
             {
                 string? userName = HttpContext.User.Identity.Name;
                 obj.Degistiren = userName;
-                _unitOfWork.FaaliyetYeri.Update(obj);
+                _unitOfWork.FaaliyetKatilim.Update(obj);
                 _unitOfWork.Save();
                 TempData["success"] = "Faaliyet Yeri başarıyla güncellendi.";
                 return RedirectToAction("Index");
@@ -75,14 +75,14 @@ namespace Jenga.Web.Areas.Admin.Controllers
         [HttpGet]
         public IActionResult GetAll()
         {
-            List<FaaliyetYeri> list = _unitOfWork.FaaliyetYeri.GetAll().ToList();
+            List<FaaliyetKatilim> list = _unitOfWork.FaaliyetKatilim.GetAll().ToList();
             return Json(new { data = list });
         }
 
         [HttpPost]
         public IActionResult Delete(int? id)
         {
-            var faaliyetYeriToBeDeleted = _unitOfWork.FaaliyetYeri.GetFirstOrDefault(u => u.Id == id);
+            var faaliyetYeriToBeDeleted = _unitOfWork.FaaliyetKatilim.GetFirstOrDefault(u => u.Id == id);
             //var faaliyetYeriKullanimi = _unitOfWork.Faaliyet.GetFirstOrDefault(u => u.FaaliyetYeriId == id);
             
             if (faaliyetYeriToBeDeleted == null)
@@ -96,7 +96,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             //}
             //else 
             {
-                _unitOfWork.FaaliyetYeri.Remove(faaliyetYeriToBeDeleted);
+                _unitOfWork.FaaliyetKatilim.Remove(faaliyetYeriToBeDeleted);
                 _unitOfWork.Save();
 
                 return Json(new { success = true, message = "Faaliyet Yeri  başarıyla silindi." }); 

@@ -187,16 +187,16 @@ namespace Jenga.Web.Areas.Admin.Controllers
             {
                 return Json(new { success = false, message = "Kayıt silmede hata" });
             }
-            var randevuKatilim = _unitOfWork.RandevuKatilim.GetByFilter(r => r.KatilimciId.Equals(obj.Id) && r.KatilimciTipi == ProjectConstants.RANDEVU_KATILIMCI_DIS_INT);
-            if (randevuKatilim.Count > 0)
+            var faaliyetKatilim = _unitOfWork.FaaliyetKatilim.GetByFilter(r => r.KatilimciId.Equals(obj.Id) && r.KatilimciTipi == ProjectConstants.RANDEVU_KATILIMCI_DIS_INT);
+            if (faaliyetKatilim.Count > 0)
             {
-                return Json(new { success = false, message = "Kayıt silinemez, randevu katılımı kaydı bulundu" });
+                return Json(new { success = false, message = "Kayıt silinemez, faaliyet katılımı kaydı bulundu" });
 
             }
             else
             {
                 //RandevuKatilim  kaydı varsa silinmesin       
-                var disIrtibat = _unitOfWork.Randevu.GetByFilter(u => u.DisIrtibatId == obj.Id);
+                var disIrtibat = _unitOfWork.Faaliyet.GetByFilter(u => u.DisIrtibatId == obj.Id);
                 if (disIrtibat.Count > 0)
                 {
                     return Json(new { success = false, message = "Kayıt silinemez, Dış irtibat kaydı bulundu" });
@@ -223,15 +223,15 @@ namespace Jenga.Web.Areas.Admin.Controllers
         {
             bool silinebilirMi = true;
             //RandevuKatilim  kaydı varsa silinmesin          
-            var randevuKatilim = _unitOfWork.RandevuKatilim.GetByFilter(r => r.KatilimciId.Equals(obj.Id) && r.KatilimciTipi==ProjectConstants.RANDEVU_KATILIMCI_DIS_INT);
-            if (randevuKatilim.Count > 0)
+            var faaliyetKatilim = _unitOfWork.FaaliyetKatilim.GetByFilter(r => r.KatilimciId.Equals(obj.Id) && r.KatilimciTipi==ProjectConstants.RANDEVU_KATILIMCI_DIS_INT);
+            if (faaliyetKatilim.Count > 0)
             {
                 silinebilirMi = false;
             }
             else
             {
                 //RandevuKatilim  kaydı varsa silinmesin       
-                var disIrtibat = _unitOfWork.Randevu.GetByFilter(u => u.DisIrtibatId==obj.Id );
+                var disIrtibat = _unitOfWork.Faaliyet.GetByFilter(u => u.DisIrtibatId==obj.Id );
                 if (disIrtibat.Count > 0)
                 {
                     silinebilirMi = false;

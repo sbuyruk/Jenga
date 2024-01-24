@@ -1,0 +1,52 @@
+<div class="container pt-3">
+    <div class="row">
+        <div class="col ">
+            <h4 class="text-primary text-start fw-bold">Faaliyet Listesi</h4>
+        </div>
+        <div class="col text-end">
+            <a asp-controller="Faaliyet" asp-action="Create" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> &nbsp; Yeni Faaliyet Oluştur
+            </a>
+        </div>
+    </div>
+    <hr />
+    <div class="form-group">
+        <div class="col-2 form-group">
+            <label class="control-label">Başlama Tarihi</label>
+            <input id="BaslangicTarihiTxt" class="form-control" type="date" value="@DateTime.Today.AddMonths(-3).ToString("yyyy-MM-dd")" />
+        </div>
+    </div>
+    <div class="pt-3">
+        <table id="tblData" class="table table-bordered table-striped table-sm small" style="width:100%">
+            <thead>
+                <tr>
+                    <th>F.No</th>
+                    <th>Başlangıç</th>
+                    <th>Bitiş</th>
+                    <th>Faaliyet Yeri</th>
+                    <th>Faaliyet Konusu</th>
+                    @* <th>Faaliyet Tipi</th>
+                       <th>Faaliyet Amacı</th>
+                       <th>Faaliyet Durumu</th> *@
+                    <th>Katılımcılar</th>
+                    <th>Düzenle/Sil</th>
+                </tr>
+            </thead>
+        </table>
+    </div>
+</div>
+
+@section Scripts{
+    <script src="~/js/faaliyet.js"></script>
+    <script>
+
+
+        $("#BaslangicTarihiTxt").change(function () {
+            FaaliyetListesiniDoldur();
+        })
+        //Tarih değişince tabloyu doldur
+        var FaaliyetListesiniDoldur = function () {
+            loadDataTable(BaslangicTarihiTxt.value);
+        }
+    </script>
+}

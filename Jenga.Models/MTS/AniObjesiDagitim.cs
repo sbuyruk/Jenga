@@ -19,10 +19,10 @@ namespace Jenga.Models.MTS
         public int Adet { get; set; }
 
         public int? RandevuId { get; set; }
-        [DisplayName("Rendevu Id")]
+        [DisplayName("Faaliyet Id")]
         [ForeignKey("RandevuId")]
         [ValidateNever]
-        public Randevu? Randevu { get; set; }
+        public Faaliyet? Faaliyet { get; set; }
         public int KatilimciTipi { get; set; }
         public int KatilimciId { get; set; }
         public Katilimci? Katilimci { get; set; }

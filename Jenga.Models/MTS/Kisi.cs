@@ -48,6 +48,9 @@ public class Kisi : BaseModel
     [DisplayName("Ünvanı")]
     public string? Unvani { get; set; }
     [ValidateNever]
+    [DisplayName("EPosta")]
+    public string? EPosta { get; set; }
+    [ValidateNever]
     [DisplayName("Telefon 1")]
     public string? Telefon1 { get; set; }
     [ValidateNever]

@@ -17,14 +17,13 @@ namespace Jenga.DataAccess.Repository.IRepository
         IDagitimYeriTanimRepository DagitimYeriTanim { get; }
         IGonderiPaketiRepository GonderiPaketi { get; }
         IKisiRepository Kisi { get; }
-        IRandevuRepository Randevu { get; }
-        IRandevuKatilimRepository RandevuKatilim { get; }
         IAniObjesiDagitimRepository AniObjesiDagitim { get; }
         IMTSKurumTanimRepository MTSKurumTanim { get; }
         IMTSGorevTanimRepository MTSGorevTanim { get; }
         IMTSUnvanTanimRepository MTSUnvanTanim { get; }
         IMTSKurumGorevRepository MTSKurumGorev { get; }
-        IFaaliyetYeriRepository FaaliyetYeri { get; }
+        IFaaliyetKatilimRepository FaaliyetKatilim { get; }
+        IFaaliyetRepository Faaliyet { get; }
         //Ortak
         IIlRepository Il { get; }
         IIlceRepository Ilce { get; }

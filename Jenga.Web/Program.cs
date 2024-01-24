@@ -31,6 +31,7 @@ builder.Services.AddControllers()
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<MenuService>();
 builder.Services.AddScoped<AniObjesiService>();
+builder.Services.AddScoped<FaaliyetService>();
 
 builder.Services.AddAuthentication(NegotiateDefaults.AuthenticationScheme)
    .AddNegotiate();

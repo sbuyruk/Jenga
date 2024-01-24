@@ -32,14 +32,13 @@ namespace Jenga.DataAccess.Data
         public DbSet<DagitimYeriTanim> DagitimYeriTanim_Table { get; set; }
         public DbSet<GonderiPaketi> GonderiPaketi_Table { get; set; }
         public DbSet<Kisi> Kisi_Table { get; set; }
-        public DbSet<Randevu> Randevu_Table { get; set; }
-        public DbSet<RandevuKatilim> RandevuKatilim_Table { get; set; }
         public DbSet<AniObjesiDagitim> AniObjesiDagitim_Table { get; set; }
         public DbSet<MTSKurumTanim> MTSKurumTanim_Table { get; set; }
         public DbSet<MTSGorevTanim> MTSGorevTanim_Table { get; set; }
         public DbSet<MTSUnvanTanim> MTSUnvanTanim_Table { get; set; }
         public DbSet<MTSKurumGorev> MTSKurumGorev_Table { get; set; }
-        public DbSet<FaaliyetYeri> FaaliyetYeri_Table { get; set; }
+        public DbSet<FaaliyetKatilim> FaaliyetKatilim_Table { get; set; }
+        public DbSet<Faaliyet> Faaliyet_Table { get; set; }
         //TBYS
         public DbSet<TasinmazBagisci> TasinmazBagisci_Table { get; set; }
         //NBYS

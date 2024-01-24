@@ -97,9 +97,18 @@ function loadModalDataTable(mtsKurumTanimId) {
             },
         },
         "columns": [
-            { "data": "adi", "width": "60%" },
+            {
+                "data": "Id",
+                "width": "60%",
+                "render": function (data, type, row, meta) {
+                    return `
+                        <div class="form-group" >                        
+                            <p><a class="link-opacity-50" href="/Admin/MTSGorevTanim/Edit?id=${row.id}">${row.adi}</a></p>
+					    </div>
+                        `
+                },
+            },
             { "data": "kisaAdi", "width": "40%" },
-
         ],
         destroy: true,
         dom: 'frtip',
@@ -121,10 +130,18 @@ function loadModalDataTableKisi(mtsKurumTanimId) {
             },
         },
         "columns": [
-            { "data": "Kisi.Adi", "width": "30%" },
-            { "data": "Kisi.Soyadi", "width": "30%" },
+            {
+                "data": "Kisi.Adi",
+                "width": "60%",
+                "render": function (data, type, row, meta) {
+                    return `
+                        <div class="form-group" >                        
+                            <p><a class="link-opacity-50" href="/Admin/Kisi/Edit?id=${row.Kisi.Id}">${row.Kisi.Adi} ${row.Kisi.Soyadi}</a></p>
+					    </div>
+                        `
+                },
+            },
             { "data": "MTSGorevTanim.Adi", "width": "40%" },
-
         ],
         destroy: true,
         dom: 'frtip',
@@ -146,7 +163,7 @@ function Delete(url) {
         if (result.isConfirmed) {
             $.ajax({
                 url: url,
-                type: 'DELETE',
+                type: 'POST',
                 success: function (data) {
                     if (data.success) {
                         dataTable.ajax.reload();
