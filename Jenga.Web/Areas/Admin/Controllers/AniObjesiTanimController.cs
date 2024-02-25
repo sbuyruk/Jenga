@@ -1,5 +1,6 @@
 ﻿using Jenga.DataAccess.Repository.IRepository;
 using Jenga.Models.MTS;
+using Jenga.Utility;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Extensions.Caching.Memory;
@@ -25,8 +26,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
         //GET
         public IActionResult Create()
         {
-
-            var stokDurumuList = new List<SelectListItem> {
+            var gorusmeSekliList = new List<SelectListItem> {
               new SelectListItem { Text = "Stoklu", Value = "Stoklu" },
               new SelectListItem { Text = "Stoksuz", Value = "Stoksuz" }
             };
@@ -38,7 +38,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
                     Text = i.Adi,
                     Value = i.Id.ToString()
                 }),
-                StokDurumuList = stokDurumuList
+                StokDurumuList = gorusmeSekliList
 
             };
 

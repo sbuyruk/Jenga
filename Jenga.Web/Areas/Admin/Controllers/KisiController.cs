@@ -187,7 +187,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             {
                 return Json(new { success = false, message = "Kayıt silmede hata" });
             }
-            var faaliyetKatilim = _unitOfWork.FaaliyetKatilim.GetByFilter(r => r.KatilimciId.Equals(obj.Id) && r.KatilimciTipi == ProjectConstants.RANDEVU_KATILIMCI_DIS_INT);
+            var faaliyetKatilim = _unitOfWork.FaaliyetKatilim.GetByFilter(r => r.KatilimciId.Equals(obj.Id) && r.KatilimciTipi == ProjectConstants.FAALIYET_KATILIMCI_DIS_INT);
             if (faaliyetKatilim.Count > 0)
             {
                 return Json(new { success = false, message = "Kayıt silinemez, faaliyet katılımı kaydı bulundu" });
@@ -223,7 +223,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
         {
             bool silinebilirMi = true;
             //RandevuKatilim  kaydı varsa silinmesin          
-            var faaliyetKatilim = _unitOfWork.FaaliyetKatilim.GetByFilter(r => r.KatilimciId.Equals(obj.Id) && r.KatilimciTipi==ProjectConstants.RANDEVU_KATILIMCI_DIS_INT);
+            var faaliyetKatilim = _unitOfWork.FaaliyetKatilim.GetByFilter(r => r.KatilimciId.Equals(obj.Id) && r.KatilimciTipi==ProjectConstants.FAALIYET_KATILIMCI_DIS_INT);
             if (faaliyetKatilim.Count > 0)
             {
                 silinebilirMi = false;

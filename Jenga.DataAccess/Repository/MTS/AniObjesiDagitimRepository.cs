@@ -27,7 +27,7 @@ namespace Jenga.DataAccess.Repository.MTS
             var objFromDb = _db.AniObjesiDagitim_Table.FirstOrDefault(u => u.Id == obj.Id);
             if (objFromDb != null)
             {
-                objFromDb.RandevuId = obj.RandevuId;
+                objFromDb.FaaliyetId = obj.FaaliyetId;
                 objFromDb.Aciklama = obj.Aciklama;
                 objFromDb.Adet= obj.Adet;
                 objFromDb.AniObjesiId = obj.AniObjesiId;

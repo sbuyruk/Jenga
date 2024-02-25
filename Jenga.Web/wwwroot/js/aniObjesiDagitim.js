@@ -43,9 +43,9 @@ function loadDataTable() {
 
 
                         retval = data;
-                    }
-                    else if ((data == null) && (row.randevu != null)) {
-                        retval = row.randevu.baslangicTarihi;
+                    //}
+                    //else if ((data == null) && (row.faaliyet != null)) {
+                    //    retval = row.faaliyet.baslangicTarihi;
                     } else {
                         retval = "";
                     }

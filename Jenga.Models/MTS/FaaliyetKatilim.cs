@@ -37,14 +37,6 @@ namespace Jenga.Models.MTS
 
         [NotMapped]
         public Katilimci? Katilimci { get; set; }
-        //{
-        //    get {
-        //        return _FaaliyetService.GetKatilimci(KatilimciId, KatilimciTipi);
-        //    }
-        //    set
-        //    {
-        //        Katilimci = value;
-        //    }
-        //}
+
     }
 }

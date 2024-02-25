@@ -57,5 +57,6 @@ namespace Jenga.Models.NBYS
         [ValidateNever]
         [DisplayName("Dergi Gönderilmesin")]
         public bool DergiGonderilmesin { get; set; }
+
     }
 }

@@ -1,0 +1,136 @@
+@model AramaGorusmeVM
+
+<form method="post">
+    <div class="row pt-3">
+        <div class="col ">
+            <h4 class="text-primary text-start fw-bold">Arama/Görüşme Kaydı Oluşturma</h4>
+        </div>
+    </div>
+    <hr />
+    <div class="">
+        @*<div asp-validation-summary="All"></div>*@
+        <div id="HiddenDiv" style="visibility: hidden;">
+            <input asp-for="AramaGorusme.ArayanId" class="form-control shadow" type="text" style="visibility:hidden" />
+            <input asp-for="AramaGorusme.KatilimciTipi" class="form-control shadow" type="text" style="visibility:hidden" />
+        </div>
+
+        <div class="row">
+            <div class="form-group mb-3 col-8">
+                <label asp-for="KatilimciBilgisi" class="fw-bold">Görüşülen Kişi</label>
+                <input asp-for="KatilimciBilgisi" class="form-control shadow" type="text" readonly />
+                <span asp-validation-for="AramaGorusme.ArayanId" class="text-danger"></span>
+            </div>
+            <div class="form-group col-3">
+                <label class="fw-bold"></label>
+                <button type="button" class="form-control btn btn-outline-info" onclick=OpenModalKisi();>
+                    Görüşülen Kişi Seç
+                </button>
+            </div>
+        </div>
+        <div class="row">
+            <div class="form-group mb-3  ">
+                <label asp-for="AramaGorusme.Konu" class="fw-bold"></label>
+                <input asp-for="AramaGorusme.Konu" class="form-control shadow fw-bold" />
+                <span asp-validation-for="AramaGorusme.Konu" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="row">
+            <div class="form-group mb-3 col-3">
+                <label asp-for="AramaGorusme.GorusmeSekli" class="fw-bold"></label>
+                <select asp-for="AramaGorusme.GorusmeSekli" asp-items="@Model.GorusmeSekliList" class="form-select">
+                </select>
+                <span asp-validation-for="AramaGorusme.GorusmeSekli" class="text-danger"></span>
+            </div>
+            <div class="form-group mb-3 col-2">
+                <label asp-for="AramaGorusme.Tarih" class="fw-bold">Görüşme Tarihi</label>
+                <input asp-for="AramaGorusme.Tarih" class="form-control" type="datetime-local" />
+                <span asp-validation-for="AramaGorusme.Tarih" class="text-danger"></span>
+            </div>
+            
+
+
+        </div>
+        <div class="form-floating py-2 col-12">
+            <label asp-for="AramaGorusme.Aciklama" class="fw-bold"></label>
+            <textarea asp-for="AramaGorusme.Aciklama" rows="6" class="form-control" style="height:150px"></textarea>
+            <span asp-validation-for="AramaGorusme.Aciklama" class="text-danger"></span>
+        </div>
+        <div class="row pt-2">
+            <div class="col-2">
+                <button type="submit" class="btn btn-primary form-control">Kaydet</button>
+            </div>
+            <div class="col-2">
+                <a asp-controller="AramaGorusme" asp-action="Index" class="btn btn-outline-primary border form-control">
+                    Arama/Görüşme Listesi
+                </a>
+            </div>
+        </div>
+    </div>
+</form>
+<!-- Modal -->
+<div class="modal fade" id="OpenModalDiv" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog ">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">Kurumdaki Görevler</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <table id="tblDataModal" class="table table-bordered table-striped table-sm small" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>Görev </th>
+                            <th>Kısaltması</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="tblDataModalKatilimciDiv" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5">Görüşülen Kişi</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <table id="tblDataModalKatilimci" class="table table-bordered table-striped table-sm small" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>Adı Soyadı</th>
+                            <th>Kurumu/Görevi</th>
+                            <th>Seç</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts{
+    @{
+        <partial name="_ValidationScriptsPartial" />
+    }
+    <script src="~/js/aramaGorusme.js"></script>
+    <script>
+       
+        function OpenModalKisi() {
+            loadModalDataTableKisi();
+            // $("#OpenModalDiv").modal({ backdrop: false });
+            var myModal = document.getElementById('tblDataModalKatilimciDiv');
+            // Open the modal
+            var modal = new bootstrap.Modal(myModal);
+            modal.show();
+        }
+       
+    </script>  
+
+}

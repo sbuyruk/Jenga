@@ -1,0 +1,46 @@
+@model AramaGorusme
+
+<form method="post" asp-action="Edit" enctype="multipart/form-data">
+    <input asp-for="Id" hidden />
+    <div class="row pt-3">
+        <div class="col ">
+            <h4 class="text-primary text-start fw-bold">Arama/Görüşme Kaydı Düzenleme</h4>
+        </div>
+    </div>
+    <hr />
+    <div class="">
+        @*<div asp-validation-summary="All"></div>*@
+        <div class="row">
+            <div class="form-floating py-2 col-4">
+                <input asp-for="Konu" class="form-control shadow fw-bold" />
+                <label asp-for="Konu" class="ms-2"></label>
+                <span asp-validation-for="Konu" class="text-danger"></span>
+            </div>
+            <div class="form-floating py-2 col-4">
+                <input asp-for="ArayanId" class="form-control shadow" type="number" />
+                <label asp-for="ArayanId" class="ms-2"></label>
+                <span asp-validation-for="ArayanId" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-floating py-2 col-12">
+            <label asp-for="Aciklama"></label>
+            <textarea asp-for="Aciklama" class="form-control" style="height:150px"></textarea>
+            <span asp-validation-for="Aciklama" class="text-danger"></span>
+        </div>
+        <div class="row pt-2">
+            <div class="col-2">
+                <button type="submit" class="btn btn-primary form-control">Güncelle</button>
+            </div>
+            <div class="col-2">
+                <a asp-controller="AramaGorusme" asp-action="Index" class="btn btn-outline-primary border form-control">
+                    Listeye Geri Dön
+                </a>
+            </div>
+        </div>
+    </div>
+</form>
+@section scripts{
+    @{
+    <partial name="_ValidationScriptsPartial" />
+    }
+}

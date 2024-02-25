@@ -31,7 +31,10 @@
                     <label asp-for="Kisi.DogumTarihi" class="control-label">Doğum Tarihi</label>
                     <input asp-for="Kisi.DogumTarihi" class="form-control" type="date" />
                 </div>
-
+                <div class="checkbox">
+                    <label asp-for="Kisi.Kutlama" class="control-label">Kutlama </label>
+                    <input asp-for="Kisi.Kutlama" class="form-check" type="checkbox" />
+                </div>
             </div>
             <div class="col-4 row">
                 
@@ -70,6 +73,10 @@
                 <div class="form-group">
                     <label asp-for="Kisi.EPosta"></label>
                     <input asp-for="Kisi.EPosta" type="" class="form-control"  />
+                </div>
+                <div class="checkbox">
+                    <label asp-for="Kisi.RandevuKisiti" class="control-label">Randevu Kısıtı </label>
+                    <input asp-for="Kisi.RandevuKisiti" class="form-check" type="checkbox" />
                 </div>
             </div>
             <div class="col-2 ">

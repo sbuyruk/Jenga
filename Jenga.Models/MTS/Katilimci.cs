@@ -7,9 +7,9 @@ namespace Jenga.Models.MTS;
 
 public class Katilimci : BaseModel
 {
-    [Required]
-    [DisplayName("Katılımcı Tipi")]
-    public int? FaaliyetId { get; set; }
+    //[Required]
+    //[DisplayName("FaaliyetId")]
+    //public int? FaaliyetId { get; set; }
     [Required]
     [DisplayName("Katılımcı Tipi")]
     public int? KatilimciTipi { get; set; }
@@ -74,10 +74,11 @@ public class Katilimci : BaseModel
      [ValidateNever]
     [DisplayName("Kutlama")]
     public bool? Kutlama { get; set; }=false;
+    [ValidateNever]
+    [DisplayName("Randevu Kısıtı")]
+    public bool? RandevuKisiti { get; set; } = false;
+    [ValidateNever]
+    [DisplayName("Eposta")]
+    public string? Eposta { get; set; }
 
-    //public Katilimci(int katilimciTipi, int katilimciId)
-    //{
-    //    KatilimciTipi = katilimciTipi;
-    //    Id = katilimciId;
-    //}
 }

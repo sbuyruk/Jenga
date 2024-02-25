@@ -13,12 +13,12 @@ namespace Jenga.Web.Areas.Admin.Controllers
     public class FaaliyetController : Controller
     {
         private readonly IUnitOfWork _unitOfWork;
-        private readonly FaaliyetService _faaliyetService;
+        private readonly KatilimciService _katilimciService;
 
-        public FaaliyetController(IUnitOfWork unitOfWork, FaaliyetService faaliyetService)
+        public FaaliyetController(IUnitOfWork unitOfWork, KatilimciService katilimciService)
         {
             _unitOfWork = unitOfWork;
-            _faaliyetService = faaliyetService;
+            _katilimciService = katilimciService;
         }
         public IActionResult Index()
         {
@@ -110,7 +110,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             var objFaaliyetList = _unitOfWork.Faaliyet.IncludeIt(DateTime.Today.AddMonths(-3));
             foreach (var item in objFaaliyetList)
             {
-                _faaliyetService.FillKatilimciIntoFaaliyetKatilim(item.FaaliyetKatilims);
+                _katilimciService.FillKatilimciIntoFaaliyetKatilim(item.FaaliyetKatilims);
             }
             var aa = JsonConvert.SerializeObject(objFaaliyetList, Formatting.None,
                         new JsonSerializerSettings()
@@ -129,7 +129,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 baslangicTarihi = DateTime.Today.AddMonths(-3);
             }
             var faaliyet = _unitOfWork.Faaliyet.IncludeIt(baslangicTarihi);
-            var katilimciList = _faaliyetService.GetAllFaaliyetWithKatilimci(faaliyet.ToList());
+            var katilimciList = _katilimciService.GetAllFaaliyetWithKatilimci(faaliyet.ToList());
 
             //var faaliyetKatilimList = faaliyet
             //    .GroupJoin(katilimciList,
@@ -147,7 +147,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
                           Faaliyet = f,
                           Katilimcilar = f.FaaliyetKatilims == null ? null :
                           (
-                            string.Join("<br> ", f.FaaliyetKatilims.Select(t => t.Katilimci).Select(k => k.Adi +" "+ k.Soyadi +"("+")"))
+                            string.Join("<br> ", f.FaaliyetKatilims.Select(t => t.Katilimci).Select(k => k.Adi +" "+ k.Soyadi +" ("+k.Kurumu+ " - "+k.Gorevi+")"))
                             )
 
                       });

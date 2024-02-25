@@ -30,10 +30,22 @@ namespace Jenga.DataAccess.Repository.MTS
             //return list;
 
             //IEnumerable<Kisi> list = _db.Kisi_Table.Where(a=> a.MTSKurumGorevs !=null).Include(m => m.MTSKurumGorevs.Where(n=>n.Durum.Equals("Görevde")));
-            IEnumerable<Kisi> list = _db.Kisi_Table.Include(m => m.MTSKurumGorevs).ThenInclude(n=>n.MTSKurumTanim)
+            IEnumerable<Kisi> list = _db.Kisi_Table.Include(m => m.MTSKurumGorevs).ThenInclude(n => n.MTSKurumTanim)
                 .Include(m => m.MTSKurumGorevs).ThenInclude(n => n.MTSGorevTanim);//.Where(n=>n.Durum.Equals("Görevde")));
             return list.ToList();
-            
+
+        }
+        public Kisi? IncludeThis(int? kisiId)
+        {
+            if (kisiId == null)
+            {
+                return null;
+            }
+            IEnumerable<Kisi> list  = _db.Kisi_Table.Include(m => m.MTSKurumGorevs).ThenInclude(n => n.MTSKurumTanim)
+                .Include(m => m.MTSKurumGorevs).ThenInclude(n => n.MTSGorevTanim).Where(a=> a.Id == kisiId).ToList();
+            Kisi kisi = list.FirstOrDefault();
+            return kisi;
+
         }
     }
 }

@@ -38,6 +38,7 @@ namespace Jenga.DataAccess.Repository
             MTSKurumGorev = new MTSKurumGorevRepository(_db);
             FaaliyetKatilim = new FaaliyetKatilimRepository(_db);
             Faaliyet = new FaaliyetRepository(_db);
+            AramaGorusme = new AramaGorusmeRepository(_db);
             //Ortak
             Il = new IlRepository(_db);
             Ilce = new IlceRepository(_db);
@@ -70,6 +71,7 @@ namespace Jenga.DataAccess.Repository
         public IMTSKurumGorevRepository MTSKurumGorev { get; private set; }        
         public IFaaliyetKatilimRepository FaaliyetKatilim { get; private set; }        
         public IFaaliyetRepository Faaliyet { get; private set; }        
+        public IAramaGorusmeRepository AramaGorusme { get; private set; }        
         
         //Ortak
         public IIlRepository Il{ get; private set; }        

@@ -18,13 +18,13 @@ namespace Jenga.Models.MTS
         [ValidateNever]
         public int Adet { get; set; }
 
-        public int? RandevuId { get; set; }
+        public int? FaaliyetId { get; set; }
         [DisplayName("Faaliyet Id")]
-        [ForeignKey("RandevuId")]
+        [ForeignKey("FaaliyetId")]
         [ValidateNever]
         public Faaliyet? Faaliyet { get; set; }
         public int KatilimciTipi { get; set; }
-        public int KatilimciId { get; set; }
+        public int? KatilimciId { get; set; }
         public Katilimci? Katilimci { get; set; }
 
         [DisplayName("Veriliş Tarihi")]

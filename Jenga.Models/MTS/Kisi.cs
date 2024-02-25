@@ -38,12 +38,12 @@ public class Kisi : BaseModel
     [ValidateNever]
     public MTSUnvanTanim? MTSUnvanTanim { get; set; }
 
-    [ValidateNever]
-    [DisplayName("Kurumu")]
-    public string? Kurumu { get; set; }
-    [ValidateNever]
-    [DisplayName("Görevi")]
-    public string? Gorevi { get; set; }
+    //[ValidateNever]
+    //[DisplayName("Kurumu")]
+    //public string? Kurumu { get; set; }
+    //[ValidateNever]
+    //[DisplayName("Görevi")]
+    //public string? Gorevi { get; set; }
     [ValidateNever]
     [DisplayName("Ünvanı")]
     public string? Unvani { get; set; }
@@ -91,5 +91,9 @@ public class Kisi : BaseModel
     public DateTime? DogumTarihi { get; set; }
     [ValidateNever]
     [DisplayName("Kutlama")]
-    public bool? Kutlama { get; set; }=false;
+    public bool Kutlama { get; set; }=false;
+    [ValidateNever]
+    [DisplayName("Randevu Kısıtı")]
+    public bool RandevuKisiti { get; set; } = false;
+    //Kutlama ve RandevuKisiti bool? olmalıydı ancak efcore bunu bool istiyor aksi halde hata veriyor
 }
