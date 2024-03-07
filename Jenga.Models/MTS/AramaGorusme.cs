@@ -31,9 +31,9 @@ namespace Jenga.Models.MTS
         public Faaliyet? Faaliyet { get; set; }
 
         [Required(ErrorMessage = "Lütfen Tarih giriniz.")]
-        [DisplayFormat(ApplyFormatInEditMode = true, DataFormatString = "{0:yyyy-MM-dd HH:mm}")]
+        //[DisplayFormat(ApplyFormatInEditMode = true, DataFormatString = "{0:yyyy-MM-dd HH:mm}")]
         [DisplayName("Tarih")]
-        public DateTime Tarih { get; set; }
+        public DateTime Tarih { get; set; }=DateTime.Now;
         [ValidateNever]
         [DisplayName("Görüşme Şekli")]
         public string? GorusmeSekli { get; set; }

@@ -10,6 +10,5 @@ namespace Jenga.DataAccess.Repository.IRepository.MTS
     public interface IAramaGorusmeRepository : IRepository<AramaGorusme>
     {
         void Update(AramaGorusme obj);
-
     }
 }

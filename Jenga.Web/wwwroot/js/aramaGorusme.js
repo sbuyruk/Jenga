@@ -41,7 +41,7 @@ function loadDataTable(bastar) {
             { "data": "aramaGorusme.konu", "width": "20%" },
             {
                 "data": "katilimci",
-                "width": "25%",
+                "width": "20%",
                 "render": function (data) {
                     var retval = "";
                     if (data) {
@@ -59,27 +59,42 @@ function loadDataTable(bastar) {
                         return''
                     }
                     else {
-                        var acik = row.aramaGorusme.faaliyet.acikTarih ? ' (Açık) ' : '';
+                        var faaliyet = row.aramaGorusme.faaliyet;
+                        var acik = faaliyet == null ? '' : (row.aramaGorusme.faaliyet.acikTarih ? '(Açık)' : '');
                         var retval = `
                         <div class="btn-group" role="group">
                             <a href="http://tskgv-portal/Sayfalar/FaaliyetGirisi.aspx?FaaliyetId=${data}&"
                             class="btn btn-warning mx-2"> <i class="bi bi-pencil-square"></i> Faaliyet ` + acik +`</a>
 					    </div>
                         `;
+
                         return retval;
                     }
                 },
             },
             {
                 "data": "aramaGorusme.id",
-                "width": "10%",
+                "width": "9%",
                 "render": function (data) {
-                    return `
-                        <div class="btn-group" role="group">
-                        <a href="http://tskgv-portal/Sayfalar/AramaGorusmeGirisi.aspx?AramaGorusmeId=${data}" 
-                        class="btn btn-primary mx-2"> <i class="bi bi-pencil-square"></i> Düzenle</a>
-					</div>
-                        `
+                    var button = `
+                        <div class="form-group" role="group">
+                        <a  href="/Admin/AramaGorusme/Edit?id=${data}"
+                        class="btn btn-primary "> <i class="bi bi-pencil-square"></i> Düzenle </a>
+                        `;
+                    return button;
+                },
+            },
+            {
+                "data": "aramaGorusme.id",
+                "width": "7%",
+                "render": function (data) {
+                    var button = `
+                        <div class="form-group" role="group">
+                        <a onClick=Delete('/Admin/AramaGorusme/Delete/${data}')
+                        class="btn btn-danger mx-2"> <i class="bi bi-trash-fill"></i>Sil</a>
+					    </div>
+                        `;
+                    return button;
                 },
             },
         ],
@@ -87,7 +102,10 @@ function loadDataTable(bastar) {
         order: [
             [2, 'desc']  // Sort by the third column (date time) in descending order
         ],
-        destroy:true,
+        destroy: true,
+        "columnDefs": [
+            { "className": "dt-center", "targets": [5,6,7] }
+        ],
         buttons: [
             {
                 extend: 'print',
@@ -118,7 +136,7 @@ function loadDataTable(bastar) {
     });
 
 }
-function loadModalDataTableKisi() {
+function loadModalDataTableKisi(actionType) {
     if (jQuery.fn.DataTable.isDataTable('#tblDataModalKatilimci')) {
         jQuery('#tblDataModalKatilimci').DataTable().destroy();
     }
@@ -146,12 +164,23 @@ function loadModalDataTableKisi() {
                 "data": "arayanId",
                 "width": "60%",
                 "render": function (data, type, row, meta) {
-                    var retval =
-                        `
+                    if (actionType == "Edit") {
+                        var retval =
+                            `
                         <div class="form-group" >                        
-                            <p><a class="btn btn-primary" href="/Admin/AramaGorusme/Create?katilimciId=${row.id}&KatilimciTipi=${row.katilimciTipi}">SEÇ</a></p>
+                            <p><a class="btn btn-primary"  <a href='javascript:;' onclick='ReplaceKisi(${row.id},"${row.adi}${row.soyadi}","${row.kurumu}/${row.gorevi}");'>DEĞİŞTİR</a></p>
 					    </div>
                         `;
+
+                    } else {
+
+                        var retval =
+                            `
+                        <div class="form-group" >                        
+                            <p><a class="btn btn-success" href="/Admin/AramaGorusme/Create?katilimciId=${row.id}&KatilimciTipi=${row.katilimciTipi}">SEÇ</a></p>
+					    </div>
+                        `;
+                    }
                 return retval;
                 },
             },

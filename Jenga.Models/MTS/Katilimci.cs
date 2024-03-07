@@ -12,7 +12,7 @@ public class Katilimci : BaseModel
     //public int? FaaliyetId { get; set; }
     [Required]
     [DisplayName("Katılımcı Tipi")]
-    public int? KatilimciTipi { get; set; }
+    public int KatilimciTipi { get; set; }
 
     [Required]
     [DisplayName("Adı")]

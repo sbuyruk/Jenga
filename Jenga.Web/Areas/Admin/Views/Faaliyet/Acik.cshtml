@@ -1,0 +1,37 @@
+<div class="container pt-3">
+    <div class="row">
+        <div class="col ">
+            <h4 class="text-primary text-start fw-bold">Açık Tarihli Faaliyet Listesi</h4>
+        </div>
+
+    </div>
+    <hr />
+
+    <div class="pt-3">
+        <table id="tblDataAcik" class="table table-bordered table-striped table-sm small" style="width:100%">
+            <thead>
+                <tr>
+                    <th>F.No</th>
+                    <th>Başlangıç</th>
+                    <th>Bitiş</th>
+                    <th>Faaliyet Yeri</th>
+                    <th>Faaliyet Konusu</th>
+                    @* <th>Faaliyet Tipi</th>
+                       <th>Faaliyet Amacı</th>
+                       <th>Faaliyet Durumu</th> *@
+                    <th>Katılımcılar</th>
+                    <th>Düzenle/Sil</th>
+                </tr>
+            </thead>
+        </table>
+    </div>
+</div>
+
+@section Scripts{
+    <script src="~/js/faaliyet.js"></script>
+    <script>
+        $(document).ready(function () {
+            loadDataTableAcik();
+        });
+    </script>
+}

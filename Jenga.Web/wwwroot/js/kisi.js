@@ -31,7 +31,7 @@ function loadDataTable() {
                         button = `
                         <div class="form-group" role="group">
                         <a href="/Admin/MTSKurumGorev/Create?kisiId=${data}"
-                        class="btn btn-success "> <i class="bi bi-pencil-square"></i> Kurum/Görev Seç</a>
+                        class="btn btn-success "> Kurum/Görev Seç</a>
 					    </div>
                         `;
                     } else {
@@ -39,7 +39,7 @@ function loadDataTable() {
                         button = `
                         <div class="form-group" role="group">
                         <a  href="/Admin/MTSKurumGorev/Edit?id=${kurumGorevId}"
-                        class="btn btn-danger "> <i class="bi bi-pencil-square"></i> Görev Bitir</a>
+                        class="btn btn-danger "> Görev Bitir</a>
 					    </div>
                         `;
                     }
@@ -49,23 +49,23 @@ function loadDataTable() {
             {
                 "data": "Id",
                 "width": "15%",
-                "render": function (data) {
+                "render": function (data) {//style="pointer-events: none"
                     return `
-                        <div class="form-group" role="group" style="pointer-events: none">
-                        <a href="/Admin/Kisi/Edit?id=${data}"
-                        class="btn btn-secondary "> <i class="bi bi-pencil-square"></i> Arama/Görüşme</a>
+                        <div class="form-group" role="group" >
+                        <a href="/Admin/AramaGorusme/Create?katilimciId=${data}&KatilimciTipi=2"
+                        class="btn btn-outline-success"> Yeni Arama/Görüşme</a>
 					</div>
                         `
                 },
             },
             {
                 "data": "Id",
-                "width": "15%",
+                "width": "10%",
                 "render": function (data) {
                     return `
-                        <div class="form-group" role="group" style="pointer-events:none">
+                        <div class="form-group" role="group" style="pointer-events: none">
                         <a href="/Admin/Kisi/Edit?id=${data}"
-                        class="btn btn-secondary "> <i class="bi bi-pencil-square"></i> Kişi Kartı</a>
+                        class="btn btn-secondary "></i> Kişi Kartı</a>
 					</div>
                         `
                 },
@@ -79,13 +79,16 @@ function loadDataTable() {
                         <a href="/Admin/Kisi/Edit?id=${data}"
                         class="btn btn-primary "> <i class="bi bi-pencil-square"></i> Düzenle</a>
                         <a onClick=Delete('/Admin/Kisi/Delete/${data}')
-                        class="btn btn-secondary " style="pointer-events:none"> <i class="bi bi-trash-fill"></i> Sil</a>
+                        class="btn btn-danger " > <i class="bi bi-trash-fill"></i> Sil</a>
 					</div>
                         `
                 },
             },
         ],    
         dom: 'Bfrtip',
+        "columnDefs": [
+            { "className": "dt-center", "targets": [6, 7,8,9] }
+        ],
         buttons: [
             {
                 extend: 'print',

@@ -69,6 +69,7 @@ namespace Jenga.Web.Areas.Admin.Services
                     KatilimciTipi = ProjectConstants.FAALIYET_KATILIMCI_IC_INT,
                     Soyadi = personel.Personel.Soyadi,
                     //Unvani = personel.Unvani,
+                    RandevuKisiti = false,
                 };
                 retVal = katilimci;
 
@@ -96,6 +97,7 @@ namespace Jenga.Web.Areas.Admin.Services
                         KatilimciTipi = ProjectConstants.FAALIYET_KATILIMCI_NAKITBAGISCI_INT,
                         Soyadi = nakitBagisci.Soyadi,
                         //Unvani = personel.Unvani,
+                        RandevuKisiti = false,
                     };
                     retVal = katilimci;
                 }
@@ -127,6 +129,7 @@ namespace Jenga.Web.Areas.Admin.Services
                     KatilimciTipi = ProjectConstants.FAALIYET_KATILIMCI_TASINMAZBAGISCI_INT,
                     Soyadi = tasinmazBagisci.Soyadi,
                     //Unvani = personel.Unvani,
+                    RandevuKisiti = false,
                 };
                 retVal = katilimci;
 

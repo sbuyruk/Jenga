@@ -27,6 +27,5 @@ namespace Jenga.DataAccess.Repository.MTS
         {
             _db.AramaGorusme_Table.Update(obj);
         }
-
     }
 }

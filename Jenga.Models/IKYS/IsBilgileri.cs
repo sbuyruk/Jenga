@@ -14,36 +14,36 @@ public class IsBilgileri : BaseModel
     [ValidateNever]
     public Personel Personel { get; set; }
     
-    [Required]
-    public int UnvanId { get; set; }
+    //[Required]
+    public int? UnvanId { get; set; }
     [DisplayName("Ünvan")]
     [ForeignKey("UnvanId")]
     [ValidateNever]
-    public UnvanTanim  UnvanTanim { get; set; }
-    [Required]
-    public int GorevId { get; set; }
+    public UnvanTanim?  UnvanTanim { get; set; }
+    //[Required]
+    public int? GorevId { get; set; }
     [DisplayName("Görev")]
     [ForeignKey("GorevId")]
     [ValidateNever]
-    public GorevTanim GorevTanim { get; set; }
-    [Required]
-    public int BirimId { get; set; }
+    public GorevTanim? GorevTanim { get; set; }
+    //[Required]
+    public int? BirimId { get; set; }
     [DisplayName("Birim")]
     [ForeignKey("BirimId")]
     public BirimTanim BirimTanim { get; set; }
-    [Required]
+    //[Required]
     [DisplayName("Başlama Tarihi")]
-    public DateTime BaslamaTar { get; set; }
+    public DateTime? BaslamaTar { get; set; }
     [Required]
     [DisplayName("Çalışma Durumu")]
-    public string CalismaDurumu { get; set; }
+    public string? CalismaDurumu { get; set; }
     [ValidateNever]
     [DisplayName("Ayrılma Tarihi")]
     public DateTime? AyrilmaTar { get; set; }
     [ValidateNever]
     [DisplayName("Ayrilma Sebebi")]
-    public string AyrilmaSebebi { get; set; }
-    [Required]
+    public string? AyrilmaSebebi { get; set; }
+    //[Required]
     [DisplayName("SGK Sicil No")]
     public string? SGKSicilNo { get; set; }
     [ValidateNever]
@@ -55,7 +55,7 @@ public class IsBilgileri : BaseModel
     [ValidateNever]
     [DisplayName("Emeklilik Tarihi")] 
     public DateTime? EmeklilikTarihi { get; set; }
-    [Required]
+    //[Required]
     [DisplayName("İzin Dönemi Başlama Tarihi")]
-    public DateTime IzinDonemiBasTar { get; set; }
+    public DateTime? IzinDonemiBasTar { get; set; }
 }

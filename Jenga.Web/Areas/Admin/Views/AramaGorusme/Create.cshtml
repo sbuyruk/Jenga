@@ -9,28 +9,33 @@
     <hr />
     <div class="">
         @*<div asp-validation-summary="All"></div>*@
-        <div id="HiddenDiv" style="visibility: hidden;">
-            <input asp-for="AramaGorusme.ArayanId" class="form-control shadow" type="text" style="visibility:hidden" />
-            <input asp-for="AramaGorusme.KatilimciTipi" class="form-control shadow" type="text" style="visibility:hidden" />
-        </div>
+
 
         <div class="row">
-            <div class="form-group mb-3 col-8">
+            <div class="form-group mb-3 col-10">
                 <label asp-for="KatilimciBilgisi" class="fw-bold">Görüşülen Kişi</label>
-                <input asp-for="KatilimciBilgisi" class="form-control shadow" type="text" readonly />
+                <input asp-for="KatilimciBilgisi" class="form-control " type="text" readonly />
                 <span asp-validation-for="AramaGorusme.ArayanId" class="text-danger"></span>
             </div>
-            <div class="form-group col-3">
+
+            <div class="form-group col-2">
                 <label class="fw-bold"></label>
-                <button type="button" class="form-control btn btn-outline-info" onclick=OpenModalKisi();>
+                <button type="button" class="form-control btn btn-success" onclick=OpenModalKisi();>
                     Görüşülen Kişi Seç
                 </button>
             </div>
         </div>
         <div class="row">
+            <div class="form-group mb-3 col-10">
+                <label asp-for="KurumGorev" class="fw-bold">Kurum/Görev</label>
+                <input asp-for="KurumGorev" class="form-control " type="text" readonly />
+            </div>
+        </div>
+        <div class="row">
             <div class="form-group mb-3  ">
                 <label asp-for="AramaGorusme.Konu" class="fw-bold"></label>
-                <input asp-for="AramaGorusme.Konu" class="form-control shadow fw-bold" />
+                @* <input asp-for="AramaGorusme.Konu" class="form-control  fw-bold" /> *@
+                <textarea asp-for="AramaGorusme.Konu" rows="3" class="form-control" ></textarea>
                 <span asp-validation-for="AramaGorusme.Konu" class="text-danger"></span>
             </div>
         </div>
@@ -43,21 +48,35 @@
             </div>
             <div class="form-group mb-3 col-2">
                 <label asp-for="AramaGorusme.Tarih" class="fw-bold">Görüşme Tarihi</label>
-                <input asp-for="AramaGorusme.Tarih" class="form-control" type="datetime-local" />
+                <input asp-for="AramaGorusme.Tarih" class="form-control" />
                 <span asp-validation-for="AramaGorusme.Tarih" class="text-danger"></span>
             </div>
-            
 
-
+            <div class="checkbox m-3 col-2 border ">
+                <label asp-for="AramaGorusme.GorusmeSaglandi" class="control-label">Görüşme Sağlandı </label>
+                <input asp-for="AramaGorusme.GorusmeSaglandi" class="form-check" type="checkbox" />
+            </div>
+            <div class="checkbox m-3 col-2 border">
+                <label asp-for="AramaGorusme.RandevuIstendi" class="control-label">Randevu İstendi </label>
+                <input asp-for="AramaGorusme.RandevuIstendi" class="form-check" type="checkbox" id="RandevuIstendiChk" />
+            </div>
+            <div class="checkbox m-3 col-2 border">
+                <label asp-for="GorusulenKatilimci.RandevuKisiti.Value" class="control-label">Randevu Kısıtı </label>
+                <input asp-for="GorusulenKatilimci.RandevuKisiti.Value" class="form-check" type="checkbox" disabled/>
+            </div>
         </div>
-        <div class="form-floating py-2 col-12">
+        <div class="form-group mb-3 col-12">
             <label asp-for="AramaGorusme.Aciklama" class="fw-bold"></label>
             <textarea asp-for="AramaGorusme.Aciklama" rows="6" class="form-control" style="height:150px"></textarea>
             <span asp-validation-for="AramaGorusme.Aciklama" class="text-danger"></span>
         </div>
+        <div id="HiddenDiv" style="visibility: hidden;">
+            <input asp-for="AramaGorusme.ArayanId" class="form-control" type="text" style="visibility:hidden" />
+            <input asp-for="AramaGorusme.KatilimciTipi" class="form-control" type="text" style="visibility:hidden" />
+        </div>
         <div class="row pt-2">
             <div class="col-2">
-                <button type="submit" class="btn btn-primary form-control">Kaydet</button>
+                <button type="submit" class="btn btn-success form-control">Kaydet</button>
             </div>
             <div class="col-2">
                 <a asp-controller="AramaGorusme" asp-action="Index" class="btn btn-outline-primary border form-control">
@@ -65,32 +84,10 @@
                 </a>
             </div>
         </div>
-    </div>
+    </div>        
 </form>
 <!-- Modal -->
-<div class="modal fade" id="OpenModalDiv" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-    <div class="modal-dialog ">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h1 class="modal-title fs-5" id="exampleModalLabel">Kurumdaki Görevler</h1>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <table id="tblDataModal" class="table table-bordered table-striped table-sm small" style="width:100%">
-                    <thead>
-                        <tr>
-                            <th>Görev </th>
-                            <th>Kısaltması</th>
-                        </tr>
-                    </thead>
-                </table>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
+
 <div class="modal fade" id="tblDataModalKatilimciDiv" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -115,6 +112,7 @@
         </div>
     </div>
 </div>
+
 @section Scripts{
     @{
         <partial name="_ValidationScriptsPartial" />
@@ -123,14 +121,13 @@
     <script>
        
         function OpenModalKisi() {
-            loadModalDataTableKisi();
+            loadModalDataTableKisi("Create");
             // $("#OpenModalDiv").modal({ backdrop: false });
             var myModal = document.getElementById('tblDataModalKatilimciDiv');
             // Open the modal
             var modal = new bootstrap.Modal(myModal);
             modal.show();
         }
-       
     </script>  
 
 }

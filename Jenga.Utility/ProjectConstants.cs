@@ -33,5 +33,51 @@ namespace Jenga.Utility
         public static string ARAMAGORUSME_YUZYUZEGORUSME = "Yüzyüze Görüşme";
         public static string ARAMAGORUSME_YONETICIDIREKTIFI = "Yönetici Direktifi";
 
+        public const string FAALIYET_AMACI_TOPLANTI = "Toplantı";
+        public const string FAALIYET_AMACI_ZIYARET = "Ziyaret";
+        public const string FAALIYET_AMACI_DAVET = "Davet";
+        public const string FAALIYET_AMACI_YILDONUMU = "Yildönümü";
+        public const string FAALIYET_AMACI_DOGUMGUNU = "Doğum Günü";
+        public const string FAALIYET_AMACI_OZELCALISMA = "Özel Çalışma";
+        public const string FAALIYET_AMACI_IZIN = "İzin";
+        public const string FAALIYET_AMACI_RESMITATIL = "Resmi Tatil";
+        public const string FAALIYET_AMACI_SEYAHAT = "Seyahat";
+        public const string FAALIYET_AMACI_GORUSME = "Görüşme";
+        public const string FAALIYET_AMACI_BILGI = "Bilgi";
+
+        public const string FAALIYET_AMACI_TOPLANTI_INT = "1";
+        public const string FAALIYET_AMACI_ZIYARET_INT = "2";
+        public const string FAALIYET_AMACI_DAVET_INT = "3";
+        public const string FAALIYET_AMACI_YILDONUMU_INT = "4";
+        public const string FAALIYET_AMACI_DOGUMGUNU_INT = "5";
+        public const string FAALIYET_AMACI_OZELCALISMA_INT = "6";
+        public const string FAALIYET_AMACI_IZIN_INT = "7";
+        public const string FAALIYET_AMACI_RESMITATIL_INT = "8";
+        public const string FAALIYET_AMACI_GORUSME_INT = "9";
+        public const string FAALIYET_AMACI_SEYAHAT_INT = "10";
+        public const string FAALIYET_AMACI_BILGI_INT = "11";
+
+
+        public const string FAALIYET_YERI_GMMAKAMI = "G.M. Makamı";
+        public const string FAALIYET_YERI_ZEHRAURGA = "Zehra Urga";
+        public const string FAALIYET_YERI_ILHANBASAR = "İlhan Başar";
+        public const string FAALIYET_YERI_MAKAMTOPLANTIODASI = "Makam Toplantı Odası";
+        public const string FAALIYET_YERI_ASELSAN = "ASELSAN";
+        public const string FAALIYET_YERI_TUSAS = "TUSAŞ";
+        public const string FAALIYET_YERI_HAVELSAN = "HAVELSAN";
+        public const string FAALIYET_YERI_ROKETSAN = "ROKETSAN";
+        public const string FAALIYET_YERI_ASPILSAN = "ASPILSAN";
+        public const string FAALIYET_YERI_ISBIR = "ISBIR";
+        public const string FAALIYET_YERI_DIGER = "Diğer";
+        public static string RANDEVU_VERILEN = "Verilen Randevu";
+        public static string RANDEVU_ALINAN = "Alınan Randevu";
+        
+        public static string FAALIYET_DURUMU_PLANLANDI = "Planlandı";
+        public static string FAALIYET_DURUMU_ONAYLANDI = "Onaylandı";
+        public static string FAALIYET_DURUMU_IPTALEDILDI = "İptal Edildi";
+        public const int FAALIYET_DURUMU_PLANLANDI_INT = 1;
+        public const int FAALIYET_DURUMU_ONAYLANDI_INT = 2;
+        public const int FAALIYET_DURUMU_IPTALEDILDI_INT = 3;
+
     }
 }

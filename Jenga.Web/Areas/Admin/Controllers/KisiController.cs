@@ -15,47 +15,13 @@ namespace Jenga.Web.Areas.Admin.Controllers
         {
             _unitOfWork = unitOfWork;
         }
+        //GET
+        [HttpGet]
         public IActionResult Index()
         {            
             return View();
-        }
+        }        
         
-        public IActionResult GetAll()
-        {
-            //var objKisiList = _unitOfWork.Kisi.GetAll(includeProperties: "MTSKurumGorevs");
-            var objKisiList = _unitOfWork.Kisi.IncludeIt();
-
-            foreach (var item in objKisiList)
-            {
-                var list = new List<MTSKurumGorev>();
-                item.Kutlama = item.Kutlama == null ? item.Kutlama = false : item.Kutlama;
-                item.DogumTarihi = item.DogumTarihi == null ? item.DogumTarihi = DateTime.MinValue : item.DogumTarihi;
-                if (item.MTSKurumGorevs != null)
-                {
-
-                    foreach (var kurumGorev in item.MTSKurumGorevs)
-                    {
-                        if ((kurumGorev.Durum !=null) && (kurumGorev.Durum.Equals(ProjectConstants.MTSGOREVDURUMU_GOREVDE)))
-                        {
-                            list.Add(kurumGorev);
-                            break;
-                        }
-                    }
-
-                }
-                item.MTSKurumGorevs = list;
-            }
-            var aa = JsonConvert.SerializeObject(objKisiList, Formatting.None,
-                        new JsonSerializerSettings()
-                        {
-                            ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-                        });
-            var result = new JsonResult(JsonConvert.DeserializeObject(aa));
-
-            //return Json(new { data = objKisiList });// result.Value });
-            return Json(new { data = result.Value });
-        }
-        //GET
         [HttpGet]
         public IActionResult Edit(int? id)
         {
@@ -123,7 +89,11 @@ namespace Jenga.Web.Areas.Admin.Controllers
 
             return View(kisiVM);
         }
-
+        [HttpGet]
+        public IActionResult Acik(int? id)
+        {
+            return View();
+        }
         //POST
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -203,21 +173,81 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 }
                 else
                 {
-                    _unitOfWork.Kisi.Remove(obj);
-                    KisiVM kisiVM = new()
+                    var kurum= _unitOfWork.MTSKurumGorev.GetByFilter(u => u.KisiId == obj.Id && u.Durum.Equals(ProjectConstants.MTSGOREVDURUMU_GOREVDE));
+                    if (kurum.Count > 0)
                     {
-                        Kisi = obj
+                        return Json(new { success = false, message = "Kayıt silinemez, Kişinin kurum/görev bağlantısı bulunmaktadır." });
+                    }
+                    else
+                    {
+                        var aramagorusme = _unitOfWork.AramaGorusme.GetByFilter(u => u.ArayanId == obj.Id );
+                        if (aramagorusme.Count > 0)
+                        {
+                            return Json(new { success = false, message = "Kayıt silinemez, Arama/Görüşme kaydı bulunmaktadır." });
+                        }
+                        else
+                        {
+                            var aniObjesiDagitim = _unitOfWork.AniObjesiDagitim.GetByFilter(u => u.KatilimciId == obj.Id && u.KatilimciTipi == ProjectConstants.FAALIYET_KATILIMCI_DIS_INT);
+                            if (aniObjesiDagitim.Count > 0)
+                            {
+                                return Json(new { success = false, message = "Kayıt silinemez, Anı Objesi dağıtım kaydı bulunmaktadır." });
+                            }
+                            else
+                            {
+                                _unitOfWork.Kisi.Remove(obj);
+                                KisiVM kisiVM = new()
+                                {
+                                    Kisi = obj
 
-                    };
+                                };
 
-                    string? userName = HttpContext.User.Identity.Name;
-                    obj.Olusturan = userName;
-                    _unitOfWork.Save();
-                    return Json(new { success = true, message = "Kişi kaydı silindi" });
+                                string? userName = HttpContext.User.Identity.Name;
+                                obj.Olusturan = userName;
+                                _unitOfWork.Save();
+                                return Json(new { success = true, message = "Kişi kaydı silindi" });
+                            }
+                        }
+                    }
                 }
                 
             }
 
+        }
+        //APIs
+        public IActionResult GetAll()
+        {
+            //var objKisiList = _unitOfWork.Kisi.GetAll(includeProperties: "MTSKurumGorevs");
+            var objKisiList = _unitOfWork.Kisi.IncludeIt();
+
+            foreach (var item in objKisiList)
+            {
+                var list = new List<MTSKurumGorev>();
+                item.Kutlama = item.Kutlama == null ? item.Kutlama = false : item.Kutlama;
+                item.DogumTarihi = item.DogumTarihi == null ? item.DogumTarihi = DateTime.MinValue : item.DogumTarihi;
+                if (item.MTSKurumGorevs != null)
+                {
+
+                    foreach (var kurumGorev in item.MTSKurumGorevs)
+                    {
+                        if ((kurumGorev.Durum !=null) && (kurumGorev.Durum.Equals(ProjectConstants.MTSGOREVDURUMU_GOREVDE)))
+                        {
+                            list.Add(kurumGorev);
+                            break;
+                        }
+                    }
+
+                }
+                item.MTSKurumGorevs = list;
+            }
+            var aa = JsonConvert.SerializeObject(objKisiList, Formatting.None,
+                        new JsonSerializerSettings()
+                        {
+                            ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+                        });
+            var result = new JsonResult(JsonConvert.DeserializeObject(aa));
+
+            //return Json(new { data = objKisiList });// result.Value });
+            return Json(new { data = result.Value });
         }
         private bool SilinebilirMi(Kisi obj)
         {

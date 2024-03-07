@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Jenga.Models.MTS;
 using Jenga.DataAccess.Repository.IRepository.MTS;
 using Microsoft.EntityFrameworkCore;
+using Jenga.Utility;
 
 namespace Jenga.DataAccess.Repository.MTS
 {
@@ -29,7 +30,15 @@ namespace Jenga.DataAccess.Repository.MTS
         }
         public IEnumerable<Faaliyet> IncludeIt(DateTime? baslangicTarihi)
         {
-            IEnumerable<Faaliyet> list = _db.Faaliyet_Table.Where(o => o.BaslangicTarihi> baslangicTarihi).Include(m => m.FaaliyetKatilims);
+            IEnumerable<Faaliyet> list;
+            if (baslangicTarihi == null || baslangicTarihi < ProjectConstants.ILK_TARIH)
+            {
+                list = _db.Faaliyet_Table.Include(m => m.FaaliyetKatilims);
+            }
+            else
+            {
+                list = _db.Faaliyet_Table.Where(o => o.BaslangicTarihi> baslangicTarihi).Include(m => m.FaaliyetKatilims);
+            }
                
             return list.ToList();
 

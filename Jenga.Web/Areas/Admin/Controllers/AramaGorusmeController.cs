@@ -1,3 +1,4 @@
+using Jenga.DataAccess.Repository;
 using Jenga.DataAccess.Repository.IRepository;
 using Jenga.Models.IKYS;
 using Jenga.Models.MTS;
@@ -24,7 +25,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
         {
             return View();
         }
-
+        [HttpGet]
         public IActionResult Create(int katilimciId, int katilimciTipi)
         {
 
@@ -42,7 +43,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 AramaGorusme = new() {
                     Tarih = DateTime.Now,
                     ArayanId = gorusulenKatilimci==null?0:gorusulenKatilimci.Id,
-                    KatilimciTipi = gorusulenKatilimci==null?0:gorusulenKatilimci.KatilimciTipi.Value,
+                    KatilimciTipi = gorusulenKatilimci==null?0:gorusulenKatilimci.KatilimciTipi,
                 },
                 GorusmeSekliList = gorusmeSekliList,
                 GorusulenKatilimci = gorusulenKatilimci,
@@ -53,6 +54,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             
 
         }
+        [HttpGet]
         public IActionResult Edit(int? id)
         {
             if (id == null || id == 0)
@@ -65,7 +67,24 @@ namespace Jenga.Web.Areas.Admin.Controllers
             {
                 return NotFound();
             }
-            return View(aramaGorusmeFromDb);
+            var gorusmeSekliList = new List<SelectListItem> {
+              new SelectListItem { Text = ProjectConstants.ARAMAGORUSME_GELENTELEFON, Value = ProjectConstants.ARAMAGORUSME_GELENTELEFON },
+              new SelectListItem { Text = ProjectConstants.ARAMAGORUSME_GIDENTELEFON, Value = ProjectConstants.ARAMAGORUSME_GIDENTELEFON },
+              new SelectListItem { Text = ProjectConstants.ARAMAGORUSME_YONETICIDIREKTIFI, Value = ProjectConstants.ARAMAGORUSME_YONETICIDIREKTIFI },
+              new SelectListItem { Text = ProjectConstants.ARAMAGORUSME_YUZYUZEGORUSME, Value = ProjectConstants.ARAMAGORUSME_YUZYUZEGORUSME }
+            };
+            Katilimci gorusulenKatilimci = _katilimciService.GetKatilimci(aramaGorusmeFromDb.ArayanId, aramaGorusmeFromDb.KatilimciTipi);
+            string katilimciBilgisi = gorusulenKatilimci != null ? gorusulenKatilimci.Adi + " " + gorusulenKatilimci.Soyadi + " " + gorusulenKatilimci.Kurumu + " " + gorusulenKatilimci.Gorevi : "";
+            AramaGorusmeVM aramaGorusmeVM = new()
+            {
+
+                AramaGorusme = aramaGorusmeFromDb,
+                GorusmeSekliList = gorusmeSekliList,
+                GorusulenKatilimci = gorusulenKatilimci,
+                KatilimciBilgisi = katilimciBilgisi,
+            };
+            
+            return View(aramaGorusmeVM);
         }
 
         [HttpPost]
@@ -97,15 +116,15 @@ namespace Jenga.Web.Areas.Admin.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Edit(AramaGorusme obj)
+        public IActionResult Edit(AramaGorusmeVM obj)
         {
             if (ModelState.IsValid)
             {
                 string? userName = HttpContext.User.Identity.Name;
-                obj.Degistiren = userName;
-                _unitOfWork.AramaGorusme.Update(obj);
+                obj.AramaGorusme.Degistiren = userName;
+                _unitOfWork.AramaGorusme.Update(obj.AramaGorusme);
                 _unitOfWork.Save();
-                TempData["success"] = "Arama/Gorusme başarıyla güncellendi.";
+                TempData["success"] = "Arama/Görüşme başarıyla güncellendi.";
                 return RedirectToAction("Index");
             }
             return View();
@@ -124,7 +143,10 @@ namespace Jenga.Web.Areas.Admin.Controllers
         public IActionResult Delete(int? id)
         {
             var aramaGorusmeToBeDeleted = _unitOfWork.AramaGorusme.GetFirstOrDefault(u => u.Id == id);
-            
+            if (aramaGorusmeToBeDeleted.FaaliyetId > 0)
+            {
+                return Json(new { success = false, message = "Bu arama/görüşme ile ilişkilendirilmiş bir faaliyet bulunmaktadır." });
+            }
             if (aramaGorusmeToBeDeleted == null)
             {
                 return Json(new { success = false, message = "AramaGorusme  Bulunamadı." });
@@ -137,6 +159,46 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 return Json(new { success = true, message = "AramaGorusme  başarıyla silindi." }); 
             }
 
+        }
+        //[HttpPost]
+        public IActionResult CreateFaaliyet(int id)
+        {
+            if (ModelState.IsValid)
+            {
+                AramaGorusme aramaGorusme = _unitOfWork.AramaGorusme.GetFirstOrDefault(u => u.Id == id);
+                if (aramaGorusme == null)
+                {
+                    TempData["error"] = "Arama/Görüşme kaydı bulunamadığından Faaliyet oluşturulamadı.";
+                    return RedirectToAction("Index");
+                }
+                string? userName = HttpContext.User.Identity.Name;
+                Faaliyet faaliyet = new()
+                {
+                    Aciklama = id + " numaralı Arama/Görşme kaydı ile otomatik oluşturuldu.<br>" + aramaGorusme.Aciklama,
+                    AcikTarih = true,
+                    BaslangicTarihi = DateTime.Now,
+                    BitisTarihi = DateTime.Now.AddMinutes(30),
+
+                    DisIrtibatId = aramaGorusme.ArayanId,
+                    FaaliyetAmaci = int.Parse(ProjectConstants.FAALIYET_AMACI_GORUSME_INT),
+                    FaaliyetYeriStr = ProjectConstants.FAALIYET_YERI_GMMAKAMI,
+                    FaaliyetTipi = ProjectConstants.RANDEVU_VERILEN,
+                    FaaliyetDurumu = ProjectConstants.FAALIYET_DURUMU_PLANLANDI,
+                    FaaliyetKonusu = aramaGorusme.Konu,
+                    Olusturan = userName,
+                    TakvimeIslendi = false,
+                    TumGun = false,
+
+                };
+                _unitOfWork.Faaliyet.Add(faaliyet);
+                TempData["success"] = "Arama/Görüşme bağlantılı faaliyet kaydı oluşturuldu";
+                _unitOfWork.Save();
+                aramaGorusme.FaaliyetId=faaliyet.Id;
+                _unitOfWork.AramaGorusme.Update(aramaGorusme);
+                _unitOfWork.Save();
+                return RedirectToAction("Index");
+            }
+            return View();
         }
 
         public IActionResult GetAllByDate(DateTime tarih)
@@ -160,15 +222,28 @@ namespace Jenga.Web.Areas.Admin.Controllers
             {
                 baslangicTarihi = DateTime.Today.AddMonths(-5);
             }
-            var aramaGorusme = _unitOfWork.AramaGorusme.GetByFilter(a=> a.Tarih >= baslangicTarihi, includeProperties: "Faaliyet");
+
+            // select all the AramaGorusme rows from the database into a list
+            //var aramaGorusme = _unitOfWork.AramaGorusme.GetByFilter(a=> a.Tarih >= baslangicTarihi, includeProperties: "Faaliyet");
+
             //var aramaGorusme = _katilimciService.GetAllAramaGorusmeWithKatilimci();
 
-            var list = aramaGorusme
+            var aramaGorusmeList = _unitOfWork.AramaGorusme.GetByFilter(a => a.Tarih >= baslangicTarihi);
+            var faaliyetList = _unitOfWork.Faaliyet.GetAll();
+
+            var list1 = from aramaGorusme in aramaGorusmeList
+                         join faaliyet in faaliyetList
+                         on aramaGorusme.FaaliyetId equals faaliyet.Id into childGroup
+                         from child in childGroup.DefaultIfEmpty()
+                         select new { aramaGorusme = aramaGorusme };
+
+
+            var list = list1
                       .Select(a => new
                       {
-                          AramaGorusme = a,
-                          Katilimci = _katilimciService.GetKatilimci(a.ArayanId,(int)a.KatilimciTipi)
-                            
+                          AramaGorusme = a.aramaGorusme,
+                          Katilimci = _katilimciService.GetKatilimci(a.aramaGorusme.ArayanId, (int)a.aramaGorusme.KatilimciTipi)
+
 
                       }); ;
 

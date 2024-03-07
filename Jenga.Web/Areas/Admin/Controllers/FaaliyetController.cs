@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
+using System.Collections.Generic;
+using System.Drawing;
 
 namespace Jenga.Web.Areas.Admin.Controllers
 {
@@ -20,14 +22,55 @@ namespace Jenga.Web.Areas.Admin.Controllers
             _unitOfWork = unitOfWork;
             _katilimciService = katilimciService;
         }
+        [HttpGet]
         public IActionResult Index()
         {
             return View();
         }
-
+        [HttpGet]        
         public IActionResult Create()
         {
             return View();
+        }
+        [HttpGet]
+        public IActionResult Acik()
+        {
+            return View();
+        }
+        public IActionResult FaaliyetTakvimi()
+        {
+            return View();
+        }
+        [HttpPost]
+        public IActionResult GetEvents()
+        {
+            var form= HttpContext.Request.Form;
+            var startDate = DateTime.Parse(form["start"]);
+            var endDate = DateTime.Parse(form["end"]);
+
+            List<CalendarEvent> Events = new List<CalendarEvent>();
+            var faaliyetList = _unitOfWork.Faaliyet.GetByFilter(a => startDate <= a.BaslangicTarihi && a.BitisTarihi <= endDate);
+            foreach (var faaliyet in faaliyetList)
+            {
+                CalendarEvent anEvent = new CalendarEvent();
+                anEvent.state = faaliyet.FaaliyetDurumu;
+
+                anEvent.id = faaliyet.Id;
+                int faaliyetAmaci = faaliyet.FaaliyetAmaci;
+                anEvent.purpose = faaliyetAmaci.ToString();
+                anEvent.title = faaliyet.FaaliyetKonusu;
+                //item.description = item.title;
+                anEvent.start = string.Format("{0:s}", faaliyet.BaslangicTarihi);
+                anEvent.end = string.Format("{0:s}", faaliyet.BitisTarihi);
+                anEvent.url = "http://tskgv-portal/Sayfalar/FaaliyetGirisi.aspx?DestinationApp=Duzenle&FaaliyetId=" + anEvent.id;
+                anEvent.allDay = faaliyet.TumGun.Value;
+                anEvent.startEditable = true;
+                anEvent.description = faaliyet.Aciklama;
+                RenkBelirle(anEvent);
+                //item.className = "iptal-edildi";
+                Events.Add(item: anEvent);
+            }
+            return Json(Events);
         }
         public IActionResult Edit(int? id)
         {
@@ -128,20 +171,11 @@ namespace Jenga.Web.Areas.Admin.Controllers
             {
                 baslangicTarihi = DateTime.Today.AddMonths(-3);
             }
-            var faaliyet = _unitOfWork.Faaliyet.IncludeIt(baslangicTarihi);
-            var katilimciList = _katilimciService.GetAllFaaliyetWithKatilimci(faaliyet.ToList());
+            var faaliyetler = _unitOfWork.Faaliyet.IncludeIt(baslangicTarihi);
+            var katilimciList = _katilimciService.GetAllFaaliyetWithKatilimci(faaliyetler.ToList());
 
-            //var faaliyetKatilimList = faaliyet
-            //    .GroupJoin(katilimciList,
-            //        f => f.Id,
-            //        fk => fk.FaaliyetId,
-            //        (f, fk) => new
-            //        {
-            //            Faaliyet = f,
-            //            //Katilimci = fk.Select(fk => fk.Katilimci),
-            //            Katilimcilar = string.Join(", ", fk.Select(t => t.Adi + t.Soyadi))
-            //        });
-            var faaliyetKatilimList = faaliyet
+           
+            var faaliyetKatilimList = faaliyetler
                       .Select(f => new
                       {
                           Faaliyet = f,
@@ -154,8 +188,116 @@ namespace Jenga.Web.Areas.Admin.Controllers
 
             return Json(new { data = faaliyetKatilimList });
         }
-        
-        #endregion
+        public IActionResult GetAllAcikTarihliFaaliyetsWithKatilimci()
+        {
+            
+            List<Faaliyet> faaliyetler = _unitOfWork.Faaliyet.IncludeIt(null).Where(u => u.AcikTarih == true).ToList();
+            var katilimciList = _katilimciService.GetAllFaaliyetWithKatilimci(faaliyetler);
 
+            var faaliyetKatilimList = faaliyetler
+                      .Select(f => new
+                      {
+                          Faaliyet = f,
+                          Katilimcilar = f.FaaliyetKatilims == null ? null :
+                          (
+                            string.Join("<br> ", f.FaaliyetKatilims.Select(t => t.Katilimci).Select(k => k.Adi + " " + k.Soyadi + " (" + k.Kurumu + " - " + k.Gorevi + ")"))
+                            )
+
+                      });
+
+            return Json(new { data = faaliyetKatilimList });
+        }
+        public void RenkBelirle(CalendarEvent item)
+        {
+
+            switch (item.purpose)
+            {
+                case ProjectConstants.FAALIYET_AMACI_TOPLANTI_INT:
+                    {
+                        item.color = Color.Red.Name;
+                        item.textColor = Color.White.Name;
+                        item.purpose = ProjectConstants.FAALIYET_AMACI_TOPLANTI;
+                        break;
+                    }
+                case ProjectConstants.FAALIYET_AMACI_ZIYARET_INT:
+                    {
+                        item.color = Color.Blue.Name;
+                        item.textColor = Color.White.Name;
+                        item.purpose = ProjectConstants.FAALIYET_AMACI_ZIYARET;
+                        break;
+                    }
+                case ProjectConstants.FAALIYET_AMACI_DAVET_INT:
+                    {
+                        item.color = Color.Green.Name;
+                        item.textColor = Color.White.Name;
+                        break;
+                    }
+                case ProjectConstants.FAALIYET_AMACI_YILDONUMU_INT:
+                    {
+                        item.color = Color.Aqua.Name;
+                        item.textColor = Color.Black.Name;
+                        item.purpose = ProjectConstants.FAALIYET_AMACI_YILDONUMU;
+                        break;
+                    }
+                case ProjectConstants.FAALIYET_AMACI_DOGUMGUNU_INT:
+                    {
+                        item.color = Color.Aquamarine.Name;
+                        item.textColor = Color.Black.Name;
+                        item.purpose = ProjectConstants.FAALIYET_AMACI_DOGUMGUNU;
+                        break;
+                    }
+                case ProjectConstants.FAALIYET_AMACI_OZELCALISMA_INT:
+                    {
+                        item.color = Color.LightBlue.Name;
+                        item.textColor = Color.White.Name;
+                        item.purpose = ProjectConstants.FAALIYET_AMACI_OZELCALISMA;
+                        break;
+                    }
+                case ProjectConstants.FAALIYET_AMACI_IZIN_INT:
+                    {
+                        item.color = Color.DarkViolet.Name;
+                        item.textColor = Color.White.Name;
+                        item.purpose = ProjectConstants.FAALIYET_AMACI_IZIN;
+                        break;
+                    }
+                case ProjectConstants.FAALIYET_AMACI_RESMITATIL_INT:
+                    {
+                        item.color = Color.Purple.Name;
+                        item.textColor = Color.White.Name;
+                        item.purpose = ProjectConstants.FAALIYET_AMACI_RESMITATIL;
+                        break;
+                    }
+                case ProjectConstants.FAALIYET_AMACI_GORUSME_INT:
+                    {
+                        item.color = Color.DeepSkyBlue.Name;
+                        item.textColor = Color.White.Name;
+                        item.purpose = ProjectConstants.FAALIYET_AMACI_GORUSME;
+                        break;
+                    }
+                case ProjectConstants.FAALIYET_AMACI_SEYAHAT_INT:
+                    {
+                        item.color = Color.Coral.Name;
+                        item.textColor = Color.White.Name;
+                        item.purpose = ProjectConstants.FAALIYET_AMACI_SEYAHAT;
+                        break;
+                    }
+                case ProjectConstants.FAALIYET_AMACI_BILGI_INT:
+                    {
+                        item.color = Color.DimGray.Name;
+                        item.textColor = Color.White.Name;
+                        item.purpose = ProjectConstants.FAALIYET_AMACI_BILGI;
+                        break;
+                    }
+                default:
+                    break;
+            }
+            if (item.state.Equals(ProjectConstants.FAALIYET_DURUMU_PLANLANDI_INT))
+            {
+                item.color = Color.LightGray.Name;
+                item.textColor = Color.Black.Name;
+            }
+
+        }
+        #endregion
     }
 }

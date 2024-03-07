@@ -1,10 +1,5 @@
 var dataTable;
 
-
-$(document).ready(function () {
-    loadDataTable(null);
-
-});
 function loadDataTable(bastar) {
     var baslangicTarihi;
     if (bastar == null) {
@@ -47,6 +42,69 @@ function loadDataTable(bastar) {
         ],
         dom: 'Bfrtip',
         destroy:true,
+        buttons: [
+            {
+                extend: 'print',
+                exportOptions: {
+                    columns: ':visible'
+                }
+            },
+            {
+                extend: 'excel',
+                exportOptions: {
+                    columns: ':visible'
+                }
+            },
+            {
+                extend: 'pdf',
+                exportOptions: {
+                    columns: ':visible'
+                }
+            },
+            {
+                extend: 'copy',
+                exportOptions: {
+                    columns: ':visible'
+                }
+            },
+            , 'pageLength', "colvis"
+        ],
+    });
+
+}
+function loadDataTableAcik() {
+    
+   
+    dataTable = $('#tblDataAcik').DataTable({
+        "ajax": {
+            "url": "/Admin/Faaliyet/GetAllAcikTarihliFaaliyetsWithKatilimci",
+           
+        },
+        "columns": [
+            { "data": "faaliyet.id", "width": "4%" },
+            { "data": "faaliyet.baslangicTarihi", "width": "10%" },
+            { "data": "faaliyet.bitisTarihi", "width": "10%" },
+            { "data": "faaliyet.faaliyetYeriStr", "width": "10%" },
+            { "data": "faaliyet.faaliyetKonusu", "width": "20%" },
+            //{ "data": "faaliyet.faaliyetTipi", "width": "8%" },
+            //{ "data": "faaliyet.faaliyetAmaci", "width": "7%" },
+            //{ "data": "faaliyet.faaliyetDurumu", "width": "8%" },
+            { "data": "katilimcilar", "width": "28%" },
+            {
+                "data": "faaliyet.id",
+                "width": "20%",
+                "render": function (data) {
+                    return `
+                        <div class="btn-group" role="group">
+                        <a href="http://tskgv-portal/Sayfalar/FaaliyetGirisi.aspx?FaaliyetId=${data}" 
+                        class="btn btn-primary mx-2"> <i class="bi bi-pencil-square"></i> Düzenle</a>
+					</div>
+                        `
+                },
+            },
+        ],
+        dom: 'Bfrtip',
+        destroy: true,
         buttons: [
             {
                 extend: 'print',

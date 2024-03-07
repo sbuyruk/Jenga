@@ -20,5 +20,13 @@ namespace Jenga.Models.MTS
             set { }
 
         }
+        public string KurumGorev { //custom get method
+            get
+            {
+                return GorusulenKatilimci?.Kurumu + " / " + GorusulenKatilimci?.Gorevi;
+            } 
+            set { }
+
+        }
     }
 }

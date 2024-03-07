@@ -1,0 +1,159 @@
+<div class="container pt-3">
+    <div class="row">
+        <div class="col ">
+            <h4 class="text-primary text-start fw-bold">Faaliyet Takvimi</h4>
+        </div>
+        <div class="col text-end">
+            <a asp-controller="Faaliyet" asp-action="Create" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> &nbsp; Yeni Faaliyet Oluştur
+            </a>
+        </div>
+    </div>
+    <hr />
+
+    <div class="pt-3">
+        <div id='calendar'></div>
+    </div>
+    <div class="row">
+        <ul class="legend">
+            <li><span class="toplanti"></span> Toplantı</li>
+            <li><span class="ziyaret"></span> Ziyaret</li>
+            <li><span class="davet"></span> Davet</li>
+            <li><span class="yildonumu"></span> Yıldönümü</li>
+            <li><span class="dogumGunu"></span> Doğum Günü</li>
+            <li><span class="ozelCalisma"></span> Özel Çalışma</li>
+            <li><span class="izin"></span> İzin</li>
+            <li><span class="resmiTatil"></span> Resmi Tatil</li>
+            <li><span class="seyahat"></span> Seyahat</li>
+            <li><span class="gorusme"></span> Görüşme</li>
+            <li><span class="bilgi"></span> Bilgi</li>
+        </ul>
+
+    </div>
+</div>
+
+@section Scripts{
+    @* <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script> *@
+    <script src="~/lib/FullCalendar/fullcalendar-6.1.11/dist/index.global.min.js"></script>
+    <script src="~/lib/FullCalendar/fullcalendar-6.1.11/dist/tr.global.js"></script>
+    
+    <script>
+
+        var calenderView = 'dayGridMonth';
+        var viewDate = '2024-03-01';
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var calendarEl = document.getElementById('calendar');
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+                locale: 'tr',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'multiMonthYear,dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+                },
+                dayMaxEvents: true,
+                initialView: calenderView,
+                initialDate: viewDate,
+                eventDidMount: function (info) {
+                    const dt = info.event.start;
+                    const et = info.event.end;
+                    const padL = (nr, len = 2, chr = `0`) => `${nr}`.padStart(2, chr);
+
+                    var startDateTime = `${padL(dt.getDate())}.${padL(dt.getMonth() + 1)}.${dt.getFullYear()} ${padL(dt.getHours())}:${padL(dt.getMinutes())}`;
+                    var endDateTime = `${padL(et.getDate())}.${padL(et.getMonth() + 1)}.${et.getFullYear()} ${padL(et.getHours())}:${padL(et.getMinutes())}`;
+                    $(info.el).popover({
+                        title: info.event.title,
+                        placement: 'bottom',
+                        trigger: 'hover',
+                        content: startDateTime + " - " + endDateTime + "\n" + "\n" + info.event.extendedProps.description,
+                        container: 'body'
+                    });
+                },
+                eventSources: [
+                    {
+                        url: '/Admin/Faaliyet/GetEvents',
+                        method: 'POST',
+                        success: function (response) {
+                            console.log(response);
+                            return response;
+                        },
+                        failure: function () {
+                            alert('There was an error');
+                        }
+                    }
+                ]
+                
+            });
+            calendar.render();
+        });
+
+    </script>
+    <script src="~/js/faaliyet.js"></script>
+    <script>
+
+
+        $("#BaslangicTarihiTxt").change(function () {
+            FaaliyetListesiniDoldur();
+        })
+        //Tarih değişince tabloyu doldur
+        var FaaliyetListesiniDoldur = function () {
+            loadDataTable(BaslangicTarihiTxt.value);
+        }
+    </script>
+    <style>
+        /* basic positioning */
+        .legend {
+            list-style: none;
+        }
+
+            .legend li {
+                float: left;
+                margin-right: 10px;
+            }
+
+            .legend span {
+                border: 1px solid #ccc;
+                float: left;
+                width: 12px;
+                height: 12px;
+                margin: 2px;
+            }
+            /* your colors */
+            .legend .toplanti {
+                background-color: red;
+            }
+
+            .legend .ziyaret {
+                background-color: blue;
+            }
+
+            .legend .davet {
+                background-color: green;
+            }
+
+            .legend .yildonumu {
+                background-color: aqua;
+            }
+            .legend .dogumGunu {
+                background-color: aquamarine;
+            }
+            .legend .ozelCalisma {
+                background-color: lightblue;
+            }
+            .legend .izin {
+                background-color: darkviolet;
+            }
+            .legend .resmiTatil {
+                background-color: purple;
+            }
+            .legend .gorusme {
+                background-color: deepskyblue;
+            }
+            .legend .seyahat {
+                background-color: coral;
+            }
+            .legend .bilgi {
+                background-color: dimgrey;
+            }
+    </style>
+}
