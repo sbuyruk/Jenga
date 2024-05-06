@@ -14,8 +14,8 @@
 
         <div class="row">
             <div class="form-group mb-3 col-10">
-                <label asp-for="KatilimciBilgisi" class="fw-bold">Görüşülen Kişi</label>
-                <input asp-for="KatilimciBilgisi" class="form-control " type="text" readonly id="KatilimciBilgisi" />
+                <label asp-for="KisiBilgisi" class="fw-bold">Görüşülen Kişi</label>
+                <input asp-for="KisiBilgisi" class="form-control " type="text" readonly id="KisiBilgisi" />
                 <span asp-validation-for="AramaGorusme.ArayanId" class="text-danger"></span>
             </div>
 
@@ -67,8 +67,8 @@
                 }
             </div>
             <div class="checkbox m-3 col-2 border">
-                <label asp-for="GorusulenKatilimci.RandevuKisiti.Value" class="control-label">Randevu Kısıtı </label>
-                <input asp-for="GorusulenKatilimci.RandevuKisiti.Value" class="form-check" type="checkbox" disabled />
+                <label asp-for="GorusulenKisi.RandevuKisiti" class="control-label">Randevu Kısıtı </label>
+                <input asp-for="GorusulenKisi.RandevuKisiti" class="form-check" type="checkbox" disabled />
             </div>
         </div>
         <div class="form-group mb-3 col-12">
@@ -78,7 +78,6 @@
         </div>
         <div id="HiddenDiv" style="visibility: hidden;">
             <input asp-for="AramaGorusme.ArayanId" class="form-control" type="text" style="visibility:hidden" id="ArayanId" />
-            <input asp-for="AramaGorusme.KatilimciTipi" class="form-control" type="text" style="visibility:hidden" />
         </div>
         <div class="row pt-2">
             <div class="col-2">
@@ -133,7 +132,7 @@
         </div>
     </div>
 </div>
-<div class="modal fade" id="tblDataModalKatilimciDiv" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="tblDataModalKisiDiv" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
@@ -141,7 +140,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <table id="tblDataModalKatilimci" class="table table-bordered table-striped table-sm small" style="width:100%">
+                <table id="tblDataModalKisi" class="table table-bordered table-striped table-sm small" style="width:100%">
                     <thead>
                         <tr>
                             <th>Adı Soyadı</th>
@@ -182,16 +181,16 @@
         function OpenModalKisi() {
             loadModalDataTableKisi("Edit");
             // $("#OpenModalDiv").modal({ backdrop: false });
-            var myModal = document.getElementById('tblDataModalKatilimciDiv');
+            var myModal = document.getElementById('tblDataModalKisiDiv');
             // Open the modal
             var modal = new bootstrap.Modal(myModal);
             modal.show();
         }
         function ReplaceKisi(kisiId,kisi,gorev) {
             $("#ArayanId").val(kisiId);
-            $("#KatilimciBilgisi").val(kisi);
+            $("#KisiBilgisi").val(kisi);
             $("#KurumGorev").val(gorev);
-            $("#tblDataModalKatilimciDiv").modal('hide');
+            $("#tblDataModalKisiDiv").modal('hide');
 
         }
 

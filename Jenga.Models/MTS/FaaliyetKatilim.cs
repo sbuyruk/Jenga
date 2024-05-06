@@ -22,8 +22,13 @@ namespace Jenga.Models.MTS
         //public Faaliyet Faaliyet{ get; set; }
         [DisplayName("Katilimci Id")]
         [Required(ErrorMessage = "Katilimci Id boş olamaz.")]
-        [ForeignKey("KatilimciId")]
         public int KatilimciId { get; set; }
+        
+        [ForeignKey("KatilimciId")]
+        [ValidateNever]
+        public Kisi? Kisi { get; set; }
+
+
         [DisplayName("Katilimci Tipi")]
         [Required(ErrorMessage = "Katilimci Tipi boş olamaz.")]
         [ForeignKey("KatilimciTipi")]

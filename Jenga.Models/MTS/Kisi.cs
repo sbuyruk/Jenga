@@ -20,30 +20,12 @@ public class Kisi : BaseModel
     public long? TCKimlikNo { get; set; }
 
     public virtual List<MTSKurumGorev>? MTSKurumGorevs { get; set; }
-    //public int? MTSKurumTanimId { get; set; }
-    //[DisplayName("MTSKurum Id")]
-    //[ForeignKey("MTSKurumTanimId")]
-    //[ValidateNever]
-    //public MTSKurumTanim? MTSKurumTanim { get; set; }
-
-    //public int? MTSGorevTanimId { get; set; }
-    //[DisplayName("MTSGorev Id")]
-    //[ForeignKey("MTSGorevTanimId")]
-    //[ValidateNever]
-    //public MTSGorevTanim? MTSGorevTanim { get; set; }
 
     public int? MTSUnvanTanimId { get; set; }
     [DisplayName("MTSUnvan Id")]
     [ForeignKey("MTSUnvanTanimId")]
     [ValidateNever]
     public MTSUnvanTanim? MTSUnvanTanim { get; set; }
-
-    //[ValidateNever]
-    //[DisplayName("Kurumu")]
-    //public string? Kurumu { get; set; }
-    //[ValidateNever]
-    //[DisplayName("Görevi")]
-    //public string? Gorevi { get; set; }
     [ValidateNever]
     [DisplayName("Ünvanı")]
     public string? Unvani { get; set; }
@@ -95,5 +77,12 @@ public class Kisi : BaseModel
     [ValidateNever]
     [DisplayName("Randevu Kısıtı")]
     public bool RandevuKisiti { get; set; } = false;
-    //Kutlama ve RandevuKisiti bool? olmalıydı ancak efcore bunu bool istiyor aksi halde hata veriyor
+    //SB Kutlama ve RandevuKisiti bool? (yani nullable) olmalıydı ancak efcore bunu bool istiyor aksi halde hata veriyor
+
+    [ValidateNever]
+    [DisplayName("KatilimciTipi")]
+    public int? KatilimciTipi { get; set; }
+    [ValidateNever]
+    [DisplayName("KatilimciId")]
+    public int? KatilimciId { get; set; }
 }

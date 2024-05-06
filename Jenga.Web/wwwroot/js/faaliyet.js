@@ -1,21 +1,21 @@
 var dataTable;
 
-function loadDataTable(bastar) {
+function loadDataTable() {
     var baslangicTarihi;
-    if (bastar == null) {
-        let d = new Date();
-        d.setMonth(d.getMonth() - 3)
-        baslangicTarihi = d.toLocaleDateString("tr-TR");
-    } else {
-        baslangicTarihi= bastar ;
-    }
-
+    //if (bastar == null) {
+    //    let d = new Date();
+    //    d.setMonth(d.getMonth() - 3)
+    //    baslangicTarihi = d.toLocaleDateString("tr-TR");
+    //} else {
+    //    baslangicTarihi= bastar ;
+    //}
+    $.fn.dataTable.moment('DD.MM.YYYY HH:mm'); // Date format
     dataTable = $('#tblData').DataTable({
         "ajax": {
-            "url": "/Admin/Faaliyet/GetAllFaaliyetsWithKatilimci",
-            "data": {
-                BaslangicTarihi: baslangicTarihi,
-            },
+            "url": "/Admin/Faaliyet/GetFaaliyetList",
+            //"data": {
+            //    BaslangicTarihi: baslangicTarihi,
+            //},
         },
         "columns": [
             { "data": "faaliyet.id", "width": "4%" },
@@ -26,7 +26,7 @@ function loadDataTable(bastar) {
             //{ "data": "faaliyet.faaliyetTipi", "width": "8%" },
             //{ "data": "faaliyet.faaliyetAmaci", "width": "7%" },
             //{ "data": "faaliyet.faaliyetDurumu", "width": "8%" },
-            { "data": "katilimcilar", "width": "28%" },
+            { "data": "kisiler", "width": "28%" },
             {
                 "data": "faaliyet.id",
                 "width": "20%",
@@ -74,10 +74,10 @@ function loadDataTable(bastar) {
 }
 function loadDataTableAcik() {
     
-   
+    $.fn.dataTable.moment('DD.MM.YYYY HH:mm'); // Date format
     dataTable = $('#tblDataAcik').DataTable({
         "ajax": {
-            "url": "/Admin/Faaliyet/GetAllAcikTarihliFaaliyetsWithKatilimci",
+            "url": "/Admin/Faaliyet/GetAllAcikTarihliFaaliyetList",
            
         },
         "columns": [
@@ -89,7 +89,7 @@ function loadDataTableAcik() {
             //{ "data": "faaliyet.faaliyetTipi", "width": "8%" },
             //{ "data": "faaliyet.faaliyetAmaci", "width": "7%" },
             //{ "data": "faaliyet.faaliyetDurumu", "width": "8%" },
-            { "data": "katilimcilar", "width": "28%" },
+            { "data": "kisiler", "width": "28%" },
             {
                 "data": "faaliyet.id",
                 "width": "20%",

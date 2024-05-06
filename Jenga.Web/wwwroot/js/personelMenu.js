@@ -10,11 +10,11 @@ function loadDataTable() {
             "url": "/Admin/PersonelMenu/GetPersonelAll"
         },
         "columns": [
-            { "data": "personel.personel.adi", "width": "20%" },
-            { "data": "personel.personel.soyadi", "width": "20%" },
-            { "data": "menuTanim", "width": "20%" },
+            { "data": "Personel.Adi", "width": "20%" },
+            { "data": "Personel.Soyadi", "width": "20%" },
+            { "data": "MenuTanim", "width": "20%" },
             {
-                "data": "personel.id",
+                "data": "Personel.Id",
                 "width": "20%",
                 "render": function (data) {
                     return `

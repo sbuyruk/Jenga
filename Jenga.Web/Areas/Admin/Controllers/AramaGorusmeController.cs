@@ -6,8 +6,8 @@ using Jenga.Utility;
 using Jenga.Web.Areas.Admin.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
+
 
 namespace Jenga.Web.Areas.Admin.Controllers
 {
@@ -15,6 +15,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly KatilimciService _katilimciService;
+
 
         public AramaGorusmeController(IUnitOfWork unitOfWork, KatilimciService katilimciService)
         {
@@ -26,7 +27,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             return View();
         }
         [HttpGet]
-        public IActionResult Create(int katilimciId, int katilimciTipi)
+        public IActionResult Create(int kisiId)
         {
 
             var gorusmeSekliList = new List<SelectListItem> {
@@ -35,24 +36,54 @@ namespace Jenga.Web.Areas.Admin.Controllers
               new SelectListItem { Text = ProjectConstants.ARAMAGORUSME_YONETICIDIREKTIFI, Value = ProjectConstants.ARAMAGORUSME_YONETICIDIREKTIFI },
               new SelectListItem { Text = ProjectConstants.ARAMAGORUSME_YUZYUZEGORUSME, Value = ProjectConstants.ARAMAGORUSME_YUZYUZEGORUSME }
             };
-            Katilimci gorusulenKatilimci = _katilimciService.GetKatilimci(katilimciId, katilimciTipi);
-            string katilimciBilgisi = gorusulenKatilimci != null ? gorusulenKatilimci.Adi + " " + gorusulenKatilimci.Soyadi + " " + gorusulenKatilimci.Kurumu + " " + gorusulenKatilimci.Gorevi : "";
-            AramaGorusmeVM aramaGorusmeVM = new()
+            Kisi gorusulenKisi = _unitOfWork.Kisi.IncludeThis(kisiId);
+            if (gorusulenKisi != null)
             {
-                
-                AramaGorusme = new() {
-                    Tarih = DateTime.Now,
-                    ArayanId = gorusulenKatilimci==null?0:gorusulenKatilimci.Id,
-                    KatilimciTipi = gorusulenKatilimci==null?0:gorusulenKatilimci.KatilimciTipi,
-                },
-                GorusmeSekliList = gorusmeSekliList,
-                GorusulenKatilimci = gorusulenKatilimci,
-                KatilimciBilgisi = katilimciBilgisi,
-            };
+                var kurum = string.Empty;
+                if (gorusulenKisi.MTSKurumGorevs != null && gorusulenKisi.MTSKurumGorevs.Count > 0
+                    && gorusulenKisi.MTSKurumGorevs[0].MTSKurumTanim != null && gorusulenKisi.MTSKurumGorevs[0].MTSKurumTanim.Adi != null)
+                {
+                    kurum = gorusulenKisi.MTSKurumGorevs[0].MTSKurumTanim.Adi;
+                }
+                var gorev = string.Empty;
+                if (gorusulenKisi.MTSKurumGorevs != null && gorusulenKisi.MTSKurumGorevs.Count > 0
+                    && gorusulenKisi.MTSKurumGorevs[0].MTSGorevTanim != null && gorusulenKisi.MTSKurumGorevs[0].MTSGorevTanim.Adi != null)
+                {
+                    gorev = gorusulenKisi.MTSKurumGorevs[0].MTSGorevTanim.Adi;
+                }
+                string kisiBilgisi = gorusulenKisi != null ? gorusulenKisi.Adi + " " + gorusulenKisi.Soyadi + " " + kurum + " " + gorev : "";
+                AramaGorusmeVM aramaGorusmeVM = new()
+                {
 
-            return View(aramaGorusmeVM);
-            
+                    AramaGorusme = new()
+                    {
+                        Tarih = DateTime.Now,
+                        ArayanId = gorusulenKisi == null ? 0 : gorusulenKisi.Id,
+                    },
+                    GorusmeSekliList = gorusmeSekliList,
+                    GorusulenKisi = gorusulenKisi,
+                    KisiBilgisi = kisiBilgisi,
+                    KurumGorev = (kurum + " " + gorev).Trim(),
+                };
+                return View(aramaGorusmeVM);
+            }
+            else
+            {
+                AramaGorusmeVM aramaGorusmeVM = new()
+                {
 
+                    AramaGorusme = new()
+                    {
+                        Tarih = DateTime.Now,
+                        ArayanId = gorusulenKisi == null ? 0 : gorusulenKisi.Id,
+                    },
+                    GorusmeSekliList = gorusmeSekliList,
+                    GorusulenKisi = gorusulenKisi,
+                    KisiBilgisi = string.Empty,
+                    KurumGorev = string.Empty,
+                };
+                return View(aramaGorusmeVM);
+            }
         }
         [HttpGet]
         public IActionResult Edit(int? id)
@@ -73,18 +104,38 @@ namespace Jenga.Web.Areas.Admin.Controllers
               new SelectListItem { Text = ProjectConstants.ARAMAGORUSME_YONETICIDIREKTIFI, Value = ProjectConstants.ARAMAGORUSME_YONETICIDIREKTIFI },
               new SelectListItem { Text = ProjectConstants.ARAMAGORUSME_YUZYUZEGORUSME, Value = ProjectConstants.ARAMAGORUSME_YUZYUZEGORUSME }
             };
-            Katilimci gorusulenKatilimci = _katilimciService.GetKatilimci(aramaGorusmeFromDb.ArayanId, aramaGorusmeFromDb.KatilimciTipi);
-            string katilimciBilgisi = gorusulenKatilimci != null ? gorusulenKatilimci.Adi + " " + gorusulenKatilimci.Soyadi + " " + gorusulenKatilimci.Kurumu + " " + gorusulenKatilimci.Gorevi : "";
-            AramaGorusmeVM aramaGorusmeVM = new()
+            Kisi gorusulenKisi = _unitOfWork.Kisi.IncludeThis(aramaGorusmeFromDb.ArayanId);
+            if (gorusulenKisi!=null)
             {
+                var kurum = string.Empty;
+                if (gorusulenKisi.MTSKurumGorevs!=null && gorusulenKisi.MTSKurumGorevs.Count >0 
+                    && gorusulenKisi.MTSKurumGorevs[0].MTSKurumTanim != null && gorusulenKisi.MTSKurumGorevs[0].MTSKurumTanim.Adi != null)
+                {
+                    kurum = gorusulenKisi.MTSKurumGorevs[0].MTSKurumTanim.Adi;
+                }
+                var gorev = string.Empty;
+                if (gorusulenKisi.MTSKurumGorevs != null && gorusulenKisi.MTSKurumGorevs.Count > 0 
+                    && gorusulenKisi.MTSKurumGorevs[0].MTSGorevTanim != null && gorusulenKisi.MTSKurumGorevs[0].MTSGorevTanim.Adi != null)
+                {
+                    gorev = gorusulenKisi.MTSKurumGorevs[0].MTSGorevTanim.Adi;
+                }
+                string kisiBilgisi = gorusulenKisi != null ? gorusulenKisi.Adi + " " + gorusulenKisi.Soyadi + " " + kurum + " " + gorev : "";
+                AramaGorusmeVM aramaGorusmeVM = new()
+                {
 
-                AramaGorusme = aramaGorusmeFromDb,
-                GorusmeSekliList = gorusmeSekliList,
-                GorusulenKatilimci = gorusulenKatilimci,
-                KatilimciBilgisi = katilimciBilgisi,
-            };
-            
+                    AramaGorusme = aramaGorusmeFromDb,
+                    GorusmeSekliList = gorusmeSekliList,
+                    GorusulenKisi = gorusulenKisi,
+                    KisiBilgisi = kisiBilgisi,
+                    KurumGorev = (kurum + " " + gorev).Trim(),
+                }; 
             return View(aramaGorusmeVM);
+            }
+            else
+            {
+                return NotFound();
+            }
+            
         }
 
         [HttpPost]
@@ -183,7 +234,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
                     FaaliyetAmaci = int.Parse(ProjectConstants.FAALIYET_AMACI_GORUSME_INT),
                     FaaliyetYeriStr = ProjectConstants.FAALIYET_YERI_GMMAKAMI,
                     FaaliyetTipi = ProjectConstants.RANDEVU_VERILEN,
-                    FaaliyetDurumu = ProjectConstants.FAALIYET_DURUMU_PLANLANDI,
+                    FaaliyetDurumu = ProjectConstants.FAALIYET_DURUMU_PLANLANDI_INT,
                     FaaliyetKonusu = aramaGorusme.Konu,
                     Olusturan = userName,
                     TakvimeIslendi = false,
@@ -200,7 +251,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             }
             return View();
         }
-
+        [HttpGet]
         public IActionResult GetAllByDate(DateTime tarih)
         {
             tarih= tarih<ProjectConstants.ILK_TARIH? tarih:DateTime.Today.AddMonths(-3);
@@ -215,47 +266,58 @@ namespace Jenga.Web.Areas.Admin.Controllers
 
             return Json(new { data = result.Value });
         }
-
-        public IActionResult GetAllAramaGorusmeWithKatilimci(DateTime? baslangicTarihi)
+        //[HttpGet]
+        public IActionResult GetAllAramaGorusmeList()
         {
-            if (baslangicTarihi == null || baslangicTarihi < ProjectConstants.ILK_TARIH)
-            {
-                baslangicTarihi = DateTime.Today.AddMonths(-5);
-            }
+            //if (baslangicTarihi == null || baslangicTarihi < ProjectConstants.ILK_TARIH)
+            //{
+            //    baslangicTarihi = DateTime.Today.AddMonths(-5);
+            //}
 
             // select all the AramaGorusme rows from the database into a list
             //var aramaGorusme = _unitOfWork.AramaGorusme.GetByFilter(a=> a.Tarih >= baslangicTarihi, includeProperties: "Faaliyet");
 
             //var aramaGorusme = _katilimciService.GetAllAramaGorusmeWithKatilimci();
 
-            var aramaGorusmeList = _unitOfWork.AramaGorusme.GetByFilter(a => a.Tarih >= baslangicTarihi);
+            //var aramaGorusmeList = _unitOfWork.AramaGorusme.GetByFilter(a => a.Tarih >= baslangicTarihi);
+            //var faaliyetList = _unitOfWork.Faaliyet.GetAll();
+
+            //var list1 = from aramaGorusme in aramaGorusmeList
+            //             join faaliyet in faaliyetList
+            //             on aramaGorusme.FaaliyetId equals faaliyet.Id into childGroup
+            //             from child in childGroup.DefaultIfEmpty()
+            //             select new { aramaGorusme };
+            //var list = list1
+            //          .Select(a => new
+            //          {
+            //              AramaGorusme = a.aramaGorusme,
+            //              Katilimci = _katilimciService.GetKatilimci(a.aramaGorusme.ArayanId, a.aramaGorusme.KatilimciTipi)
+
+
+            //          });
             var faaliyetList = _unitOfWork.Faaliyet.GetAll();
-
+            var kisiList = _unitOfWork.Kisi.IncludeIt();
+            var aramaGorusmeList = _unitOfWork.AramaGorusme.GetAll();///includeProperties: "Kisi");
             var list1 = from aramaGorusme in aramaGorusmeList
-                         join faaliyet in faaliyetList
-                         on aramaGorusme.FaaliyetId equals faaliyet.Id into childGroup
-                         from child in childGroup.DefaultIfEmpty()
-                         select new { aramaGorusme = aramaGorusme };
+                        join faaliyet in faaliyetList
+                        on aramaGorusme.FaaliyetId equals faaliyet.Id into childGroup
+                        from child in childGroup.DefaultIfEmpty()
+                        join kisi in kisiList
+                        on aramaGorusme.ArayanId equals kisi.Id into childGroup1
+                        from child1 in childGroup1.DefaultIfEmpty()
+                        select new { aramaGorusme };
 
+            var aa = JsonConvert.SerializeObject(list1, Formatting.None,
+                        new JsonSerializerSettings()
+                        {
+                            ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+                        });
+            var result = new JsonResult(JsonConvert.DeserializeObject(aa));
 
-            var list = list1
-                      .Select(a => new
-                      {
-                          AramaGorusme = a.aramaGorusme,
-                          Katilimci = _katilimciService.GetKatilimci(a.aramaGorusme.ArayanId, (int)a.aramaGorusme.KatilimciTipi)
-
-
-                      }); ;
-
-            return Json(new { data = list });
+            return Json(new { data = result.Value });
         }
-        public IActionResult GetAllKatilimci()
-        {
-
-            var list = _katilimciService.GetAllKatilimci();            
-            return Json(new { data = list });
-        }
+       
         #endregion
-
+        
     }
 }

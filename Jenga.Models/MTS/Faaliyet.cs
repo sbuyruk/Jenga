@@ -27,7 +27,7 @@ public class Faaliyet : BaseModel
     public string FaaliyetYeriStr { get; set; }
     [Required]
     [DisplayName("Faaliyet Durumu")]
-    public string FaaliyetDurumu { get; set; }
+    public int FaaliyetDurumu { get; set; }
     [ValidateNever]
     [DisplayName("Tüm Gün")]
     public bool? TumGun { get; set; }

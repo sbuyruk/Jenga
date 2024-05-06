@@ -6,7 +6,11 @@ namespace Jenga.Utility
         //ORTAK
         public const int SIFIR = 0;
         public static DateTime ILK_TARIH = new DateTime(1900,1,1);
-
+        //IKYS
+        public static int PER_CALISIYOR_INT = 1;
+        public static string PER_CALISIYOR = "Çalışıyor";
+        public static int PER_AYRILDI_INT = 0;
+        public static string PER_AYRILDI = "Ayrıldı";
         //MTS
         public const string MTS_ANIOBJESISTOKLU= "Stoklu";
         public const string MTS_ANIOBJESISTOKSUZ = "Stoksuz";
@@ -16,10 +20,13 @@ namespace Jenga.Utility
         public const int FAALIYET_KATILIMCI_DIS_INT = 2;
         public const int FAALIYET_KATILIMCI_NAKITBAGISCI_INT = 3;
         public const int FAALIYET_KATILIMCI_TASINMAZBAGISCI_INT = 4;
+        public const int FAALIYET_KATILIMCI_FTK_INT = 5;
         public const string FAALIYET_KATILIMCI_IC = "Vakıf Personeli";
+        public const string FAALIYET_KATILIMCI_IC_ESKI = "Vakıf Personeli (Eski)";
         public const string FAALIYET_KATILIMCI_DIS = "Vakıf Dışı";
         public const string FAALIYET_KATILIMCI_NAKITBAGISCI = "Nakit Bağışçı";
         public const string FAALIYET_KATILIMCI_TASINMAZBAGISCI="Taşınmaz Bağışçı";
+        public const string FAALIYET_KATILIMCI_FTK="Fahri Tanıtım Kurulu";
         public const string MTSGOREVDURUMU_GOREVDE="Görevde";
         public const string MTSGOREVDURUMU_AYRILDI="Ayrıldı";
         public const string MTSAYRILMASEBEBI_BOS = "";

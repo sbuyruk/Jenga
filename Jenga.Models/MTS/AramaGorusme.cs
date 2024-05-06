@@ -17,10 +17,13 @@ namespace Jenga.Models.MTS
         [Range(1, int.MaxValue, ErrorMessage = "Lütfen Görüşülen Kişi seçiniz.")]
         [DisplayName("Arayan Id")]
         public int ArayanId { get; set; }
-        [Required]
-        [Range(1, int.MaxValue, ErrorMessage = "Görüşülen Kişi Tpi belirlenemedi.")]
+
+        [ForeignKey("ArayanId")]
+        [ValidateNever]
+        public Kisi? Kisi { get; set; }
+
         [DisplayName("Katılımcı Tipi")]
-        public int KatilimciTipi { get; set; }
+        public int KatilimciTipi { get; set; } = 2;
 
         [ValidateNever]
         [DisplayName("Faaliyet Id")]

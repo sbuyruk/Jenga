@@ -9,6 +9,8 @@ using Jenga.Models.IKYS;
 using Jenga.DataAccess.Repository;
 using Jenga.Web.Areas.Admin.Services;
 using System.Linq;
+using Newtonsoft.Json;
+using System.Collections.Generic;
 
 namespace Jenga.Web.Areas.Admin.Controllers
 {
@@ -204,19 +206,39 @@ namespace Jenga.Web.Areas.Admin.Controllers
         public IActionResult GetPersonelAll()
         {
             var personelMenus = _unitOfWork.PersonelMenu.GetAll(includeProperties: "Personel,MenuTanim");
-            //var personel = _unitOfWork.Personel.GetAll();
-            var personel = _unitOfWork.IsBilgileri.GetAll(includeProperties: "Personel").Where(ib=>ib.CalismaDurumu.Equals("1"));
+            ////var personel = _unitOfWork.Personel.GetAll();
+            //var personel = _unitOfWork.IsBilgileri.GetAll(includeProperties: "Personel").Where(ib=>ib.CalismaDurumu.Equals("1"));
 
-            var personelMenuList = personel
+            //var personelMenuList = personel
+            //    .GroupJoin(personelMenus,
+            //        p => p.Id,
+            //        pm => pm.PersonelId,
+            //        (p, pm) => new {
+            //            Personel = p,
+            //            MenuTanim = string.Join(", ", pm.Select(t => t.MenuTanim.Adi))
+            //        });
+            //return Json(new { data = personel });
+
+            var personelList = _unitOfWork.Personel.GetByFilter(u => u.IsBilgileri.CalismaDurumu == "1", includeProperties: "Kimlik,IsBilgileri,PersonelMenu");
+
+            var personelMenuList = personelList
                 .GroupJoin(personelMenus,
                     p => p.Id,
                     pm => pm.PersonelId,
-                    (p, pm) => new {
+                    (p, pm) => new
+                    {
                         Personel = p,
                         MenuTanim = string.Join(", ", pm.Select(t => t.MenuTanim.Adi))
                     });
 
-            return Json(new { data = personelMenuList });
+            var aa = JsonConvert.SerializeObject(personelMenuList, Formatting.None,
+            new JsonSerializerSettings()
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            });
+            var result = new JsonResult(JsonConvert.DeserializeObject(aa));
+
+            return Json(new { data = result.Value });
         }
         #endregion
 

@@ -53,7 +53,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             foreach (var faaliyet in faaliyetList)
             {
                 CalendarEvent anEvent = new CalendarEvent();
-                anEvent.state = faaliyet.FaaliyetDurumu;
+                anEvent.state = faaliyet.FaaliyetDurumu.ToString();
 
                 anEvent.id = faaliyet.Id;
                 int faaliyetAmaci = faaliyet.FaaliyetAmaci;
@@ -147,65 +147,54 @@ namespace Jenga.Web.Areas.Admin.Controllers
             }
 
         }
-
-        public IActionResult GetAllFormatted()
+       
+        public IActionResult GetFaaliyetList()
         {
-            var objFaaliyetList = _unitOfWork.Faaliyet.IncludeIt(DateTime.Today.AddMonths(-3));
-            foreach (var item in objFaaliyetList)
-            {
-                _katilimciService.FillKatilimciIntoFaaliyetKatilim(item.FaaliyetKatilims);
-            }
-            var aa = JsonConvert.SerializeObject(objFaaliyetList, Formatting.None,
-                        new JsonSerializerSettings()
-                        {
-                            ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-                        });
-            var result = new JsonResult(JsonConvert.DeserializeObject(aa));
+            var faaliyetList = _unitOfWork.Faaliyet.GetAll();//GetByFilter(a=>a.BaslangicTarihi>=baslangicTarihi);
 
-            return Json(new { data = result.Value });
-        }
-        
-        public IActionResult GetAllFaaliyetsWithKatilimci(DateTime? baslangicTarihi)
-        {
-            if (baslangicTarihi==null|| baslangicTarihi < ProjectConstants.ILK_TARIH)
-            {
-                baslangicTarihi = DateTime.Today.AddMonths(-3);
-            }
-            var faaliyetler = _unitOfWork.Faaliyet.IncludeIt(baslangicTarihi);
-            var katilimciList = _katilimciService.GetAllFaaliyetWithKatilimci(faaliyetler.ToList());
+            var faaliyetKatilimList = _unitOfWork.FaaliyetKatilim.GetAll(includeProperties: "Kisi");
+            var list1 = from faaliyet in faaliyetList
+                        join faaliyetKatilim in faaliyetKatilimList
+                        on faaliyet.Id equals faaliyetKatilim.FaaliyetId into childGroup
+                        from child in childGroup.DefaultIfEmpty()
+                        select new { faaliyet };
 
-           
-            var faaliyetKatilimList = faaliyetler
+            var result = list1
                       .Select(f => new
                       {
-                          Faaliyet = f,
-                          Katilimcilar = f.FaaliyetKatilims == null ? null :
+                          Faaliyet = f.faaliyet,
+                          Kisiler = f.faaliyet.FaaliyetKatilims == null ? null :
                           (
-                            string.Join("<br> ", f.FaaliyetKatilims.Select(t => t.Katilimci).Select(k => k.Adi +" "+ k.Soyadi +" ("+k.Kurumu+ " - "+k.Gorevi+")"))
+                            string.Join("<br> ", f.faaliyet.FaaliyetKatilims.Select(t => t.Kisi).Select(k => k.Adi + " " + k.Soyadi))
                             )
 
-                      });
+                      }).GroupBy(x => x.Faaliyet.Id).Select(x => x.First()).ToList(); //remove dublicates SB
 
-            return Json(new { data = faaliyetKatilimList });
+            return Json(new { data = result });
         }
-        public IActionResult GetAllAcikTarihliFaaliyetsWithKatilimci()
+        public IActionResult GetAllAcikTarihliFaaliyetList()
         {
             
-            List<Faaliyet> faaliyetler = _unitOfWork.Faaliyet.IncludeIt(null).Where(u => u.AcikTarih == true).ToList();
-            var katilimciList = _katilimciService.GetAllFaaliyetWithKatilimci(faaliyetler);
-
-            var faaliyetKatilimList = faaliyetler
+            List<Faaliyet> faaliyetList = _unitOfWork.Faaliyet.GetAll().Where(u => u.AcikTarih == true).ToList();
+            var faaliyetKatilimList = _unitOfWork.FaaliyetKatilim.GetAll(includeProperties: "Kisi");
+            var list1 = from faaliyet in faaliyetList
+                        join faaliyetKatilim in faaliyetKatilimList
+                        on faaliyet.Id equals faaliyetKatilim.FaaliyetId into childGroup
+                        from child in childGroup.DefaultIfEmpty()
+                        select new { faaliyet };
+            var result = list1
                       .Select(f => new
                       {
-                          Faaliyet = f,
-                          Katilimcilar = f.FaaliyetKatilims == null ? null :
+                          Faaliyet = f.faaliyet,
+                          Kisiler = f.faaliyet.FaaliyetKatilims == null ? null :
                           (
-                            string.Join("<br> ", f.FaaliyetKatilims.Select(t => t.Katilimci).Select(k => k.Adi + " " + k.Soyadi + " (" + k.Kurumu + " - " + k.Gorevi + ")"))
+                            string.Join("<br> ", f.faaliyet.FaaliyetKatilims.Select(t => t.Kisi).Select(k => k.Adi + " " + k.Soyadi))
                             )
 
-                      });
+                      }).GroupBy(x => x.Faaliyet.Id).Select(x => x.First()).ToList(); //remove dublicates SB
 
-            return Json(new { data = faaliyetKatilimList });
+
+            return Json(new { data = result });
         }
         public void RenkBelirle(CalendarEvent item)
         {

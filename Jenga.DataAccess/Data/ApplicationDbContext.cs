@@ -14,7 +14,15 @@ namespace Jenga.DataAccess.Data
 
         }
         //Test
-
+        //IKYS
+        public DbSet<Personel> Personel_Table { get; set; }
+        public DbSet<PersonelMenu> PersonelMenu_Table { get; set; }
+        public DbSet<IsBilgileri> IsBilgileri_Table { get; set; }
+        public DbSet<GorevTanim> GorevTanim_Table { get; set; }
+        public DbSet<BirimTanim> BirimTanim_Table { get; set; }
+        public DbSet<UnvanTanim> UnvanTanim_Table { get; set; }
+        public DbSet<Kimlik> Kimlik_Table { get; set; }
+        public DbSet<IletisimBilgileri> IletisimBilgileri_Table { get; set; }
         //MTS
         public DbSet<DepoTanim> DepoTanim_Table { get; set; }
         public DbSet<KaynakTanim> KaynakTanim_Table { get; set; }
@@ -23,12 +31,6 @@ namespace Jenga.DataAccess.Data
         public DbSet<DepoStok> DepoStok_Table { get; set; }
         public DbSet<ModulTanim> ModulTanim_Table { get; set; }
         public DbSet<MenuTanim> MenuTanim_Table { get; set; }
-        public DbSet<Personel> Personel_Table { get; set; }
-        public DbSet<PersonelMenu> PersonelMenu_Table { get; set; }
-        public DbSet<IsBilgileri> IsBilgileri_Table { get; set; }
-        public DbSet<GorevTanim> GorevTanim_Table { get; set; }
-        public DbSet<BirimTanim> BirimTanim_Table { get; set; }
-        public DbSet<UnvanTanim> UnvanTanim_Table { get; set; }
         public DbSet<DagitimYeriTanim> DagitimYeriTanim_Table { get; set; }
         public DbSet<GonderiPaketi> GonderiPaketi_Table { get; set; }
         public DbSet<Kisi> Kisi_Table { get; set; }

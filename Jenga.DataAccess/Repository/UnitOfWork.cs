@@ -50,11 +50,14 @@ namespace Jenga.DataAccess.Repository
             IsBilgileri = new IsBilgileriRepository(_db);
             GorevTanim = new GorevTanimRepository(_db);
             BirimTanim = new BirimTanimRepository(_db);
+            Kimlik = new KimlikRepository(_db);
+            IletisimBilgileri = new IletisimBilgileriRepository(_db);
             //TBYS
             TasinmazBagisci = new TasinmazBagisciRepository(_db);
             //NBYS
             NakitBagisci = new NakitBagisciRepository(_db);
         }
+
         //MTS
         public IDepoTanimRepository DepoTanim { get; private set; }
         public IKaynakTanimRepository KaynakTanim { get; private set; }        
@@ -86,6 +89,8 @@ namespace Jenga.DataAccess.Repository
         public IGorevTanimRepository GorevTanim { get; private set; }        
         public IBirimTanimRepository BirimTanim { get; private set; }        
         public IUnvanTanimRepository UnvanTanim { get; private set; }
+        public IKimlikRepository Kimlik { get; private set; }
+        public IIletisimBilgileriRepository IletisimBilgileri { get; private set; }
         //TBYS
         public ITasinmazBagisciRepository TasinmazBagisci { get; private set; }
         //NBYS

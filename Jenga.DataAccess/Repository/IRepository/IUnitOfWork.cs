@@ -37,6 +37,8 @@ namespace Jenga.DataAccess.Repository.IRepository
         IGorevTanimRepository GorevTanim { get; }
         IBirimTanimRepository BirimTanim { get; }
         IUnvanTanimRepository UnvanTanim { get; }
+        IKimlikRepository Kimlik { get; }
+        IIletisimBilgileriRepository IletisimBilgileri { get; }
         //TBYS
         ITasinmazBagisciRepository TasinmazBagisci { get; }
         //NBYS

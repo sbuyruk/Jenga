@@ -97,6 +97,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             {
                 if (item.KatilimciTipi == ProjectConstants.FAALIYET_KATILIMCI_DIS_INT)
                 {
+
                     Katilimci katilimci = _katilimciService.GetKatilimci(item.KatilimciId, ProjectConstants.FAALIYET_KATILIMCI_DIS_INT);
                     item.Katilimci = katilimci;
 

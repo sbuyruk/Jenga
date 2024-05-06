@@ -24,7 +24,7 @@ namespace Jenga.Models.MTS
         [ValidateNever]
         public Faaliyet? Faaliyet { get; set; }
         public int KatilimciTipi { get; set; }
-        public int? KatilimciId { get; set; }
+        public int KatilimciId { get; set; }
         public Katilimci? Katilimci { get; set; }
 
         [DisplayName("Veriliş Tarihi")]

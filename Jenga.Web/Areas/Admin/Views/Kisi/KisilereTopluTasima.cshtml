@@ -1,0 +1,93 @@
+﻿<div class="container pt-3">
+    <div class="row">
+        <div class="col ">
+            <h4 class="text-primary text-start fw-bold">Kişilere Toplu Taşıma</h4>
+
+        </div>
+    </div>
+    <hr />
+
+    <div class="row">
+        <div class="col-2">
+            <label class="fw-bold"></label>
+            <input type="button" class="btn btn-success form-control" value="Personelleri Taşı " onclick="OpenModalOnay(1)" />
+        </div>
+        <div class="col-2">
+            <label class="fw-bold"></label>
+            <input type="button" class="btn btn-danger form-control" value="Nakit Bağışçıları Taşı" onclick="OpenModalOnay(3)" />
+        </div>
+        <div class="col-2">
+            <label class="fw-bold"></label>
+            <input type="button" class="btn btn-primary form-control" value="Taşınmaz Bağışçıları Taşı" onclick="OpenModalOnay(4)" />
+        </div>
+    </div>
+
+</div>
+<div class="modal fade" id="OpenModalOnayDiv" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog ">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel"></h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <input id="KatilimciTipiInp" hidden />
+                    <h3 id="KisiName" class="text-primary fs-5">
+                        Kişi Taşıma İşlemi...
+                    </h3>
+                    <label ID="MessageLbl" runat="server" class="col-form-label">
+                        İşlemi onaylıyor musunuz?
+                    </label>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+
+                <button type="button" class="btn btn-primary" id="modalSubmitBtn">Taşı</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts {
+
+    <script src="~/js/kisi.js"></script>
+    <script>
+
+        function OpenModalOnay(katilimciTipi) {
+            document.getElementById('KatilimciTipiInp').value = katilimciTipi;
+            if (katilimciTipi == 1) {
+                document.getElementById("exampleModalLabel").innerHTML = "Vakıf Personeli Kişiler arasına taşınacak";
+                document.getElementById("KisiName").innerHTML = "Tüm Personel";
+            } else if (katilimciTipi == 3) {
+                document.getElementById("exampleModalLabel").innerHTML = "Nakit Bağışçılar Kişiler arasına taşınacak";
+                document.getElementById("KisiName").innerHTML = "Yüksek Bağış Yapan Nakit Bağışçılar";
+            } else if (katilimciTipi == 4) {
+                document.getElementById("exampleModalLabel").innerHTML = "Taşınmaz Bağışçılar Kişiler arasına taşınacak";
+                document.getElementById("KisiName").innerHTML = "Taşınmaz Bağışçılar";
+            }
+            var myModal = document.getElementById('OpenModalOnayDiv');
+            // Open the modal
+            var modal = new bootstrap.Modal(myModal);
+            modal.show();
+
+        }
+        $('#modalSubmitBtn').click(function () {
+            var katilimciTipi = document.getElementById('KatilimciTipiInp').value;
+            $.ajax({
+                url: '/Admin/Kisi/KisilereTopluTasima',
+                type: 'POST',
+                data: {
+                    katilimciTipi: katilimciTipi,
+                },
+                success: function (data) {
+                    alert("Taşıma işlemi başarılı");
+                },
+                error: function (xhr, status, error) {
+                    alert("Taşıma başarısız oldu");
+                }
+            });
+        });
+    </script>
+}

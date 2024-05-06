@@ -1,0 +1,132 @@
+﻿<div class="container pt-3">
+    <div class="row">
+        <div class="col ">
+            <h4 class="text-primary text-start fw-bold">Katılımcı Bul</h4>
+
+        </div>
+    </div>
+    <hr />
+
+    <input id="KisiId" hidden />
+
+    <div class="row">
+        <div class="col-3">
+            <label class="fw-bold">Ad,Soyad </label>
+            <input id="text" class="form-control" />
+        </div>
+
+        <div class="col-2">
+            <label class="fw-bold"></label>
+            <input type="button" class="btn btn-primary form-control" value="Ara" onclick="TabloyuDoldur()" />
+
+        </div>
+    </div>
+    <div class="pt-3">
+        <table id="tblDataKisibul" class="table table-bordered table-striped table-sm small" style="width:100%">
+            <thead>
+                <tr>
+                    <th>No</th>
+                    <th>Adı Soyadı</th>
+                    <th>Kurumu</th>
+                    <th>Görevi</th>
+                    <th>Ünvanı</th>
+                    <th>Telefon</th>
+                    <th>Kişi Tipi</th>
+                    <th>MTS'ye Taşı</th>
+                </tr>
+            </thead>
+        </table>
+
+    </div>
+</div>
+<div class="modal fade" id="OpenModalOnayDiv" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog ">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">Katılımcı Kişiler arasına taşınacak</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input id="KatilimciIdInp" name="KatilimciIdInp" hidden />
+                <input id="KatilimciTipiInp" hidden />
+                <div class="form-group">
+                    <h3 id="KisiName" class="text-primary fs-5">
+                        Kişi Taşıma İşlemi...
+                    </h3>
+                    <label ID="MessageLbl" runat="server" class="col-form-label">
+                        Kişiler arasına taşınacak ve ilgili tablolar güncellenecek, işlemi onaylıyor musunuz?
+                    </label>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+
+                <button type="button" class="btn btn-primary" id="modalSubmitBtn">Taşı</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts {
+
+    <script src="~/js/kisi.js"></script>
+    <script>
+        function TabloyuDoldur() {
+            var text = $("#text").val();
+            if (text === null || text.length === 0) {
+                console.log("The string is empty");
+            } else {
+                loadDataTableKisiBul(text);
+            }
+
+        }
+
+        function OpenModalOnay(katilimciId,katilimciTipi) {
+            $.ajax({
+                url: '/Admin/Kisi/GetKatilimci', // Replace with your controller and action
+                type: 'GET', // or 'POST' depending on your needs
+                data: {
+                    katilimciId: katilimciId,
+                    katilimciTipi: katilimciTipi,
+                },
+                success: function (data) {
+                    document.getElementById('KisiName').innerHTML = data.adi+" "+data.soyadi;
+                    document.getElementById('KatilimciIdInp').value=data.id;
+                    document.getElementById('KatilimciTipiInp').value = data.katilimciTipi;
+
+                    var myModal = document.getElementById('OpenModalOnayDiv');
+                    // Open the modal
+                    var modal = new bootstrap.Modal(myModal);
+                    modal.show();
+                },
+                error: function (error) {
+                    // Handle any errors that occur during the AJAX request
+                    console.error(error);
+                }
+            });
+
+        }
+        $('#modalSubmitBtn').click(function () {
+            var katilimciId = document.getElementById('KatilimciIdInp').value;
+            var katilimciTipi = document.getElementById('KatilimciTipiInp').value;
+            $.ajax({
+                url: '/Admin/Kisi/KisiBul',
+                type: 'POST',
+                data: {
+                    katilimciId: katilimciId,
+                    katilimciTipi: katilimciTipi,
+                },
+                // success: function (data) {
+                //     $("#OpenModalOnayDiv").modal('hide');
+                //     TabloyuDoldur();
+                // },
+                // error: function (xhr, status, error) {
+                //     $("#OpenModalOnayDiv").modal('hide');
+                // }
+                success: function (response) {
+                    window.location.replace(response.redirectUrl);
+                }
+            });
+        });
+    </script>
+}

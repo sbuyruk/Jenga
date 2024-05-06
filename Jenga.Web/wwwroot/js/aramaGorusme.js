@@ -1,66 +1,69 @@
 var dataTable;
 
 
-$(document).ready(function () {
-    loadDataTable(null);
 
-});
-function loadDataTable(bastar) {
-    var baslangicTarihi;
-    if (bastar == null) {
-        let d = new Date();
-        d.setMonth(d.getMonth() - 3)
-        baslangicTarihi = d.toLocaleDateString("tr-TR");
-    } else {
-        baslangicTarihi= bastar ;
-    }
+function loadDataTable() {
+    //var baslangicTarihi;
+    //if (bastar == null) {
+    //    let d = new Date();
+    //    d.setMonth(d.getMonth() - 3)
+    //    baslangicTarihi = d.toLocaleDateString("tr-TR");
+    //} else {
+    //    baslangicTarihi= bastar ;
+    //}
     $.fn.dataTable.moment('DD.MM.YYYY HH:mm'); // Date format
 
     dataTable = $('#tblData').DataTable({
         "ajax": {
-            "url": "/Admin/AramaGorusme/GetAllAramaGorusmeWithKatilimci",
-            "data": {
-                BaslangicTarihi: baslangicTarihi,
-            },
+            "url": "/Admin/AramaGorusme/GetAllAramaGorusmeList",
+            //"data": {
+            //    BaslangicTarihi: baslangicTarihi,
+            //},
+        },
+        "initComplete": function (settings, json) {
+            console.log(json);
+            // call your function here
         },
         "columns": [
-            { "data": "aramaGorusme.id", "width": "4%" },
+            { "data": "aramaGorusme.Id", "width": "4%" },
             {
-                "data": "katilimci",
+                "data": "aramaGorusme.Kisi",
                 "width": "15%",
                 "render": function (data) {
                     var retval = "";
                     if (data) {
-                        retval = (data.adi == null ? '' : data.adi) + ' ' + (data.soyadi == null ? '' : data.soyadi)  ;
+                        retval = (data.Adi == null ? '' : data.Adi) + ' ' + (data.Soyadi == null ? '' : data.Soyadi)  ;
 
                     }
                     return retval;
                 },
             },
-            { "data": "aramaGorusme.tarih", "width": "10%" },
-            { "data": "aramaGorusme.konu", "width": "20%" },
+            { "data": "aramaGorusme.Tarih", "width": "10%" },
+            { "data": "aramaGorusme.Konu", "width": "20%" },
             {
-                "data": "katilimci",
+                "data": "aramaGorusme.Kisi",
                 "width": "20%",
                 "render": function (data) {
                     var retval = "";
                     if (data) {
-                        retval = (data.kurumu == null ? '' : data.kurumu) + '  ' + (data.gorevi == null ? '' : data.gorevi).trim();
+                        var kurumu = (data.MTSKurumGorevs == null) || (data.MTSKurumGorevs.length == 0) ? "" : data.MTSKurumGorevs[0].MTSKurumTanim.Adi;
+                        var gorevi = (data.MTSKurumGorevs == null) || (data.MTSKurumGorevs.length == 0) ? "" : data.MTSKurumGorevs[0].MTSGorevTanim.Adi;
+                        retval = (data.MTSKurumGorevs == null ? '' : kurumu) + '  ' + (gorevi == null ? '' : gorevi).trim();
 
                     }
                     return retval;
                 },
             },
             {
-                "data": "aramaGorusme.faaliyetId",
+                "data": "aramaGorusme.FaaliyetId",
                 "width": "15%",
                 "render": function (data, type, row, meta) {
                     if (data ==0) {
                         return''
                     }
                     else {
-                        var faaliyet = row.aramaGorusme.faaliyet;
-                        var acik = faaliyet == null ? '' : (row.aramaGorusme.faaliyet.acikTarih ? '(Açık)' : '');
+                        var faaliyet = row.aramaGorusme.Faaliyet;
+                        var acik = faaliyet == null ? '' : (row.aramaGorusme.Faaliyet.AcikTarih ? '(Açık)' : '');
                         var retval = `
                         <div class="btn-group" role="group">
                             <a href="http://tskgv-portal/Sayfalar/FaaliyetGirisi.aspx?FaaliyetId=${data}&"
@@ -73,7 +76,7 @@ function loadDataTable(bastar) {
                 },
             },
             {
-                "data": "aramaGorusme.id",
+                "data": "aramaGorusme.Id",
                 "width": "9%",
                 "render": function (data) {
                     var button = `
@@ -85,7 +88,7 @@ function loadDataTable(bastar) {
                 },
             },
             {
-                "data": "aramaGorusme.id",
+                "data": "aramaGorusme.Id",
                 "width": "7%",
                 "render": function (data) {
                     var button = `
@@ -137,47 +140,91 @@ function loadDataTable(bastar) {
 
 }
 function loadModalDataTableKisi(actionType) {
-    if (jQuery.fn.DataTable.isDataTable('#tblDataModalKatilimci')) {
-        jQuery('#tblDataModalKatilimci').DataTable().destroy();
+    if (jQuery.fn.DataTable.isDataTable('#tblDataModalKisi')) {
+        jQuery('#tblDataModalKisi').DataTable().destroy();
     }
-    jQuery('#tblDataModalKatilimci tbody').empty();
-    dataTable = $('#tblDataModalKatilimci').DataTable({
+    jQuery('#tblDataModalKisi tbody').empty();
+    dataTable = $('#tblDataModalKisi').DataTable({
         "ajax": {
-            "url": "/Admin/AramaGorusme/GetAllKatilimci",
+            "url": "/Admin/Kisi/GetAll",// GetAllKatilimci",
             type: 'GET',
 
         },
         "columns": [
             {
-                "data": "adi",
-                "width": "60%",
+                "data": "Adi",
+                "width": "30%",
                 "render": function (data, type, row, meta) {
                     return `
                         <div class="form-group" >                        
-                            <p><a class="link-opacity-50" href="/Admin/Kisi/Edit?id=${row.id}">${row.adi} ${row.soyadi}</a></p>
+                            <p><a class="link-opacity-50" href="/Admin/Kisi/Edit?id=${row.Id}">${row.Adi} ${row.Soyadi}</a></p>
 					    </div>
                         `
                 },
             },
-            { "data": "kurumu", "width": "40%" },
+            {
+                "data": "Id",
+                "width": "70%",
+                "render": function (data, type, row, meta) {
+                    var kurum = "";
+                    var gorev = "";
+                    var kurumGorev = "";
+
+                    if (row.MTSKurumGorevs != null && row.MTSKurumGorevs[0] != null) {
+                        if (row.MTSKurumGorevs[0].MTSKurumTanim != null && row.MTSKurumGorevs[0].MTSKurumTanim.Adi != null) {
+                            kurum = row.MTSKurumGorevs[0].MTSKurumTanim.Adi;
+                        }
+                        if (row.MTSKurumGorevs[0].MTSGorevTanim != null && row.MTSKurumGorevs[0].MTSGorevTanim.Adi != null) {
+                            gorev = row.MTSKurumGorevs[0].MTSGorevTanim.Adi;
+                        }
+                    }
+
+                    kurumGorev = kurum + " - " + gorev;
+                    return `
+                        <div class="form-group" >
+                            <p class="">${kurumGorev}</p>
+                            
+					    </div>
+                        `
+                },
+            },
             {
                 "data": "arayanId",
                 "width": "60%",
                 "render": function (data, type, row, meta) {
+                        var adiSoyadi = "";
+                        var kurum = "";
+                        var gorev = "";
+                        var kurumGorev = "";
+
+                        if (row.Adi != null && row.Soyadi != null) {
+                            adiSoyadi = row.Adi + " " + row.Soyadi;
+                        }
+                        if (row.MTSKurumGorevs != null && row.MTSKurumGorevs[0] != null) {
+                            if (row.MTSKurumGorevs[0].MTSKurumTanim != null && row.MTSKurumGorevs[0].MTSKurumTanim.Adi != null) {
+                                kurum = row.MTSKurumGorevs[0].MTSKurumTanim.Adi;
+                            }
+                            if (row.MTSKurumGorevs[0].MTSGorevTanim != null && row.MTSKurumGorevs[0].MTSGorevTanim.Adi != null) {
+                                gorev = row.MTSKurumGorevs[0].MTSGorevTanim.Adi;
+                            }
+                        }
+
+                        kurumGorev = kurum + " / " + gorev;
                     if (actionType == "Edit") {
+
                         var retval =
                             `
                         <div class="form-group" >                        
-                            <p><a class="btn btn-primary"  <a href='javascript:;' onclick='ReplaceKisi(${row.id},"${row.adi}${row.soyadi}","${row.kurumu}/${row.gorevi}");'>DEĞİŞTİR</a></p>
+                            <p><a class="btn btn-primary" href='javascript:;' onclick='ReplaceKisi(${row.Id},"${adiSoyadi}","${kurumGorev}");'>DEĞİŞTİR</a></p>
 					    </div>
                         `;
 
                     } else {
-
                         var retval =
                             `
                         <div class="form-group" >                        
-                            <p><a class="btn btn-success" href="/Admin/AramaGorusme/Create?katilimciId=${row.id}&KatilimciTipi=${row.katilimciTipi}">SEÇ</a></p>
+                            
+                            <p><a class="btn btn-success" href="/Admin/AramaGorusme/Create?kisiId=`+ row.Id +`">SEÇ</a></p>
 					    </div>
                         `;
                     }

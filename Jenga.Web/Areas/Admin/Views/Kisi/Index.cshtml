@@ -24,7 +24,7 @@
                     <th>Kurum/Görev</th>
                     <th>Ara./ Gör.</th>
                     <th>Kişi Kartı</th>
-                    <th>Düz.</th>
+                    <th>Düzenle/Sil</th>
                 </tr>
             </thead>
         </table>
@@ -34,5 +34,9 @@
 
 @section Scripts{
     <script src="~/js/kisi.js"></script>
-
+    <script>
+        $(document).ready(function () {
+            loadDataTable();
+        });
+    </script>
 }

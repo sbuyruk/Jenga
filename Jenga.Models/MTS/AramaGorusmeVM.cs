@@ -11,11 +11,11 @@ namespace Jenga.Models.MTS
         [ValidateNever]
         public IEnumerable<SelectListItem> GorusmeSekliList { get; set; }
         [ValidateNever]
-        public Katilimci? GorusulenKatilimci { get; set; }
-        public string KatilimciBilgisi { //custom get method
+        public Kisi? GorusulenKisi { get; set; }
+        public string KisiBilgisi { //custom get method
             get
             {
-                return GorusulenKatilimci?.Adi + " " + GorusulenKatilimci?.Soyadi;
+                return GorusulenKisi?.Adi + " " + GorusulenKisi?.Soyadi;
             } 
             set { }
 
@@ -23,7 +23,22 @@ namespace Jenga.Models.MTS
         public string KurumGorev { //custom get method
             get
             {
-                return GorusulenKatilimci?.Kurumu + " / " + GorusulenKatilimci?.Gorevi;
+                var kurum = string.Empty;
+                var gorev = string.Empty;
+                if (GorusulenKisi!=null)
+                {
+                    if (GorusulenKisi.MTSKurumGorevs != null && GorusulenKisi.MTSKurumGorevs.Count>0
+                        && GorusulenKisi.MTSKurumGorevs[0].MTSKurumTanim != null && GorusulenKisi.MTSKurumGorevs[0].MTSKurumTanim.Adi != null)
+                    {
+                        kurum = GorusulenKisi.MTSKurumGorevs[0].MTSKurumTanim.Adi;
+                    }
+                    if (GorusulenKisi.MTSKurumGorevs != null && GorusulenKisi.MTSKurumGorevs.Count > 0
+                        && GorusulenKisi.MTSKurumGorevs[0].MTSGorevTanim != null && GorusulenKisi.MTSKurumGorevs[0].MTSGorevTanim.Adi != null)
+                    {
+                        gorev = GorusulenKisi.MTSKurumGorevs[0].MTSGorevTanim.Adi;
+                    } 
+                }
+                return (kurum + " " + gorev).Trim();// GorusulenKisi?.Kurumu + " / " + GorusulenKisi?.Gorevi;
             } 
             set { }
 

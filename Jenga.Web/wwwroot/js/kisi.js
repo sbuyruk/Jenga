@@ -1,8 +1,5 @@
 ﻿var dataTable;
 
-$(document).ready(function () {
-    loadDataTable();
-});
 
 function loadDataTable() {
     dataTable = $('#tblData').DataTable({
@@ -89,6 +86,89 @@ function loadDataTable() {
         "columnDefs": [
             { "className": "dt-center", "targets": [6, 7,8,9] }
         ],
+        buttons: [
+            {
+                extend: 'print',
+                exportOptions: {
+                    columns: ':visible'
+                }
+            },
+            {
+                extend: 'excel',
+                exportOptions: {
+                    columns: ':visible'
+                }
+            },
+            {
+                extend: 'pdf',
+                exportOptions: {
+                    columns: ':visible'
+                }
+            },
+            {
+                extend: 'copy',
+                exportOptions: {
+                    columns: ':visible'
+                }
+            },
+            , 'pageLength', "colvis"
+        ],
+    });
+}
+function loadDataTableKisiBul(text) {
+    dataTable = $('#tblDataKisibul').DataTable({
+        "ajax": {
+            "url": "/Admin/Kisi/GetKisiListByFilter",
+             "data": {
+                Text: text,
+            },
+        },
+        "columns": [
+            { data: "Id", "width": "4%" },
+            {
+                "data": "Id",
+                "width": "15%",
+                "render": function (data, type, row, meta) {
+                    return row.Adi + ' ' + row.Soyadi;
+                },
+            },
+            { data: "Kurumu" },
+            { data: "Gorevi" },
+            { data: "Unvani" },
+            { data: "Telefon1" },
+            { data: "TCKimlikNo" },
+            {
+                "data": "Id",
+                "width": "15%",
+                "render": function (data, type, row, meta) {
+                    var button = "";
+                    if (row.KatilimciTipi == 2) {
+                        button = ` 
+                        <div class="form-group" role="group" >
+                            <a href="/Admin/Kisi/Edit?id=${row.Id}" class="btn btn-primary "></i> Kişi Bilgileri</a>
+					    </div>
+                        `;
+                    } else {
+
+                        if (row.TCKimlikNo.length < 11 || row.TCKimlikNo < 1) {
+                            button = `TC Kimlik No Eksik`;
+                        } else {
+
+                            button = `
+                                <div class="form-group" role="group">
+                                    <button type="button" class="btn btn-danger form-control" id="MTSyeTasiBtn" onclick="OpenModalOnay(${row.Id},${row.KatilimciTipi})"> MTS ye Taşı</button>
+					            </div>
+                            `;
+                        }
+                    }
+                    return button
+                },
+            },
+            
+        ],
+        destroy: true,
+        dom: 'Bfrtip',
+
         buttons: [
             {
                 extend: 'print',
