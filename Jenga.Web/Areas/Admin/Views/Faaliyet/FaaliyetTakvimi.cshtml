@@ -10,13 +10,30 @@
         </div>
     </div>
     <hr />
-
-    <div class="pt-3">
-        <div id='calendar'></div>
+    <div class="m-1 border border-light row">
+        <div class="checkbox col-2">
+            <label class="m-2"> 
+                <input  type="checkbox"  id="ResmiTatillerChk" checked="checked"/>
+                Resmi Tatiller
+            </label>
+        </div>
+        <div class="checkbox col-2">
+            <label class="m-2">  
+                <input type="checkbox" id="VakifToplantilariChk" checked="checked" />
+                Vakıf Toplantıları
+            </label>
+        </div>
+        <div class="checkbox col-3">
+            <label class="m-2">
+                <input  type="checkbox" disabled/>
+                Doğum Günleri
+            </label>
+        </div>
     </div>
-    <div class="row">
-        <ul class="legend">
+    <div class="m-1 border border-light row">
+        <ul class="legand m-0">
             <li><span class="toplanti"></span> Toplantı</li>
+            <li><span class="vakifToplantisi"></span> Vakıf içi Toplantı</li>
             <li><span class="ziyaret"></span> Ziyaret</li>
             <li><span class="davet"></span> Davet</li>
             <li><span class="yildonumu"></span> Yıldönümü</li>
@@ -27,9 +44,13 @@
             <li><span class="seyahat"></span> Seyahat</li>
             <li><span class="gorusme"></span> Görüşme</li>
             <li><span class="bilgi"></span> Bilgi</li>
+            <li><span class="planlandi"></span> Planlandı (Onaylanmadı)</li>
         </ul>
-
     </div>
+    <div class="pt-3">
+        <div id='calendar'></div>
+    </div>
+    
 </div>
 
 @section Scripts{
@@ -37,123 +58,191 @@
     <script src="~/lib/FullCalendar/fullcalendar-6.1.11/dist/index.global.min.js"></script>
     <script src="~/lib/FullCalendar/fullcalendar-6.1.11/dist/tr.global.js"></script>
     
-    <script>
-
-        var calenderView = 'dayGridMonth';
-        var viewDate = '2024-03-01';
-
-        document.addEventListener('DOMContentLoaded', function () {
-            var calendarEl = document.getElementById('calendar');
-            var calendar = new FullCalendar.Calendar(calendarEl, {
-                locale: 'tr',
-                headerToolbar: {
-                    left: 'prev,next today',
-                    center: 'title',
-                    right: 'multiMonthYear,dayGridMonth,timeGridWeek,timeGridDay,listWeek'
-                },
-                dayMaxEvents: true,
-                initialView: calenderView,
-                initialDate: viewDate,
-                eventDidMount: function (info) {
-                    const dt = info.event.start;
-                    const et = info.event.end;
-                    const padL = (nr, len = 2, chr = `0`) => `${nr}`.padStart(2, chr);
-
-                    var startDateTime = `${padL(dt.getDate())}.${padL(dt.getMonth() + 1)}.${dt.getFullYear()} ${padL(dt.getHours())}:${padL(dt.getMinutes())}`;
-                    var endDateTime = `${padL(et.getDate())}.${padL(et.getMonth() + 1)}.${et.getFullYear()} ${padL(et.getHours())}:${padL(et.getMinutes())}`;
-                    $(info.el).popover({
-                        title: info.event.title,
-                        placement: 'bottom',
-                        trigger: 'hover',
-                        content: startDateTime + " - " + endDateTime + "\n" + "\n" + info.event.extendedProps.description,
-                        container: 'body'
-                    });
-                },
-                eventSources: [
-                    {
-                        url: '/Admin/Faaliyet/GetEvents',
-                        method: 'POST',
-                        success: function (response) {
-                            console.log(response);
-                            return response;
-                        },
-                        failure: function () {
-                            alert('There was an error');
-                        }
-                    }
-                ]
-                
-            });
-            calendar.render();
-        });
-
-    </script>
     <script src="~/js/faaliyet.js"></script>
     <script>
+        const rtCheckbox = document.getElementById('ResmiTatillerChk');
+        const vtCheckbox = document.getElementById('VakifToplantilariChk');
+        $(document).ready(function () {
+            //SB to maintain client side persistency
+            const rtCheckboxState = localStorage.getItem('rtCheckboxState');
+            const vtCheckboxState = localStorage.getItem('vtCheckboxState');
+            // If there is, set the checkbox state accordingly
+            if (rtCheckboxState === 'checked') {
+                rtCheckbox.checked = true;
+            } else {
+                rtCheckbox.checked = false;
+            }
+            if (vtCheckboxState === 'checked') {
+                vtCheckbox.checked = true;
+            } else {
+                vtCheckbox.checked = false;
+            }
+            StartCalendar();
+        });
+        
 
-
-        $("#BaslangicTarihiTxt").change(function () {
-            FaaliyetListesiniDoldur();
+        $("#ResmiTatillerChk").change(function () {
+            if (rtCheckbox.checked) {
+                localStorage.setItem('rtCheckboxState', 'checked');
+            } else {
+                localStorage.setItem('rtCheckboxState', 'unchecked');
+            }
+            StartCalendar();
         })
-        //Tarih değişince tabloyu doldur
-        var FaaliyetListesiniDoldur = function () {
-            loadDataTable(BaslangicTarihiTxt.value);
+        $("#VakifToplantilariChk").change(function () {
+            if (vtCheckbox.checked) {
+                localStorage.setItem('vtCheckboxState', 'checked');
+            } else {
+                localStorage.setItem('vtCheckboxState', 'unchecked');
+            }
+            StartCalendar();
+        })
+        //
+        function StartCalendar() {
+            
+            var resmiTatillerChecked = rtCheckbox.checked;
+            var vakifToplantilariChecked = vtCheckbox.checked;
+            LoadCalendar(resmiTatillerChecked, vakifToplantilariChecked);
         }
+        window.addEventListener('popstate', function (event) {
+            // Code to handle the navigation event
+            StartCalendar();
+        });
     </script>
     <style>
         /* basic positioning */
-        .legend {
+        .legand {
             list-style: none;
+            font-size: 12px !important;
+            font-weight: normal !important;
+        }
+        .legand li {
+            float: left;
+            margin-right: 10px;
         }
 
-            .legend li {
-                float: left;
-                margin-right: 10px;
-            }
+        .legand span {
+            border: 1px solid #ccc;
+            float: left;
+            width: 12px;
+            height: 12px;
+            margin: 2px;
+        }
+        /*  //your colors 
+        .toplanti {
+            background-color: darkorange;
+            border-color: darkorange;
+            color: black;
+            font-weight: normal;
+        }
 
-            .legend span {
-                border: 1px solid #ccc;
-                float: left;
-                width: 12px;
-                height: 12px;
-                margin: 2px;
-            }
-            /* your colors */
-            .legend .toplanti {
-                background-color: red;
-            }
+        .vakifToplantisi {
+            background-color: red;
+            border-color: red;
+            color:white;
+            font-weight: normal;
+        }
 
-            .legend .ziyaret {
-                background-color: blue;
-            }
+        .ziyaret {
+            background-color: blue;
+            border-color: blue;
+            color: white;
+            font-weight: normal;
+        }
 
-            .legend .davet {
-                background-color: green;
-            }
+        .davet {
+            background-color: green;
+            border-color: green;
+            color: white;
+            font-weight: normal;
+        }
 
-            .legend .yildonumu {
-                background-color: aqua;
-            }
-            .legend .dogumGunu {
-                background-color: aquamarine;
-            }
-            .legend .ozelCalisma {
-                background-color: lightblue;
-            }
-            .legend .izin {
-                background-color: darkviolet;
-            }
-            .legend .resmiTatil {
-                background-color: purple;
-            }
-            .legend .gorusme {
-                background-color: deepskyblue;
-            }
-            .legend .seyahat {
-                background-color: coral;
-            }
-            .legend .bilgi {
-                background-color: dimgrey;
-            }
+        .yildonumu {
+            background-color: aqua;
+            border-color: aqua;
+            color: black;
+            font-weight: normal;
+        }
+
+        .dogumGunu {
+            background-color: aquamarine;
+            border-color: aquamarine;
+            color: black;
+            font-weight: normal;
+        }
+
+        .ozelCalisma {
+            background-color: lightblue;
+            border-color: lightblue;
+            color: black;
+            font-weight: normal;
+        }
+
+        .izin {
+            background-color: yellow;
+            border-color: yellow;
+            color: black;
+            font-weight: normal;
+        }
+
+        .resmiTatil {
+            background-color: purple;
+            border-color: purple;
+            color: white;
+            font-weight: normal;
+        }
+
+        .gorusme {
+            background-color: deepskyblue;
+            border-color: deepskyblue;
+            color: white;
+            font-weight: normal;
+        }
+
+        .seyahat {
+            background-color: coral;
+            border-color: coral;
+            color: white;
+            font-weight: normal;
+        }
+
+        .bilgi {
+            background-color: silver;
+            border-color: silver;
+            color: black;
+            font-weight: normal;
+        } */
+        .fc-event-title {
+            /* color: black; */
+            font-size: 14px;
+            font-weight: normal !important;
+        }
+
+        .fc-h-event .fc-event-time {
+            /* color: black; */
+            font-size: 12px;
+            font-weight: normal !important;
+            overflow: visible !important;
+        }
+        .mtsEvent {
+/*             background-color: aliceblue;
+            border-color: lightgrey;
+            color: black; */
+            font-weight: normal !important;
+        }
+
+        .planlandi {
+            background-color: lightgrey !important;
+            font-weight: normal;
+        }
+        .iptalEdildi {
+            text-decoration: line-through !important;
+            color: dimgray !important;
+            background-color: lightgrey !important;
+            border-color: lightgrey !important;
+            font-weight: normal;
+        }
+
+
     </style>
 }

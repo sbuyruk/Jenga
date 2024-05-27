@@ -21,5 +21,8 @@ namespace Jenga.Models.Ortak
         [ValidateNever]
         [DisplayName("Bölge")]
         public string? Bolge { get; set; }
+        [ValidateNever]
+        [DisplayName("Bölge Id")]
+        public int? BolgeId { get; set; }
     }
 }

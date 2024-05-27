@@ -135,6 +135,67 @@ function loadDataTableAcik() {
     });
 
 }
+function LoadCalendar(resmiTatiller, vakifToplantilari) {
+    const date = new Date();
+
+    var day = ""+date.getDate();
+    var month = ""+ (date.getMonth() + 1);
+    var year = ""+date.getFullYear();
+    if (month.length < 2)
+        month = '0' + month;
+    if (day.length < 2)
+        day = '0' + day;
+    // This arrangement can be altered based on how we want the date's format to appear.
+    let currentDate = [year, month, day].join('-');
+
+    var calenderView = 'dayGridMonth';
+    var viewDate = currentDate;
+
+    var calendarEl = document.getElementById('calendar');
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+        locale: 'tr',
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'multiMonthYear,dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+        },
+        dayMaxEvents: true,
+        initialView: calenderView,
+        initialDate: viewDate,
+        eventDidMount: function (info) {
+            const dt = info.event.start;
+            const et = info.event.end;
+
+            const padL = (nr, len = 2, chr = `0`) => `${nr}`.padStart(2, chr);
+
+            var startDateTime = `${padL(dt.getDate())}.${padL(dt.getMonth() + 1)}.${dt.getFullYear()} ${padL(dt.getHours())}:${padL(dt.getMinutes())}`;
+            var endDateTime = "";
+            if (et != null)
+                endDateTime = `${padL(et.getDate())}.${padL(et.getMonth() + 1)}.${et.getFullYear()} ${padL(et.getHours())}:${padL(et.getMinutes())}`;
+            $(info.el).popover({
+                title: info.event.title,
+                placement: 'bottom',
+                trigger: 'hover',
+                content: startDateTime + " - " + endDateTime + "\n" + "\n" + info.event.extendedProps.description,
+                container: 'body',
+                
+            });
+        },
+        events: {
+            url: '/Admin/Faaliyet/GetEvents',
+            method: 'POST',
+            extraParams: function () {
+                return {
+                    resmiTatiller: resmiTatiller,
+                    vakifToplantilari: vakifToplantilari,
+                };
+            }
+        }
+        
+
+    });
+    calendar.render();
+}
 function Delete(url) {
     Swal.fire({
         title: 'Silmek istediğinize emin misiniz?',

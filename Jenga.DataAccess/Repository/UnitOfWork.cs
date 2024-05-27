@@ -4,13 +4,16 @@ using Jenga.DataAccess.Repository.IRepository.IKYS;
 using Jenga.DataAccess.Repository.IRepository.MTS;
 using Jenga.DataAccess.Repository.IRepository.NBYS;
 using Jenga.DataAccess.Repository.IRepository.TBYS;
+using Jenga.DataAccess.Repository.IRepository.TYS;
 using Jenga.DataAccess.Repository.IRepository.Ortak;
 using Jenga.DataAccess.Repository.IKYS;
 using Jenga.DataAccess.Repository.MTS;
 using Jenga.DataAccess.Repository.TBYS;
+using Jenga.DataAccess.Repository.TYS;
 using Jenga.DataAccess.Repository.NBYS;
 using Jenga.DataAccess.Repository.Ortak;
 using Jenga.Models.MTS;
+using Jenga.Models.IKYS;
 
 namespace Jenga.DataAccess.Repository
 {
@@ -40,6 +43,7 @@ namespace Jenga.DataAccess.Repository
             Faaliyet = new FaaliyetRepository(_db);
             AramaGorusme = new AramaGorusmeRepository(_db);
             //Ortak
+            Bolge = new BolgeRepository(_db);
             Il = new IlRepository(_db);
             Ilce = new IlceRepository(_db);
             ModulTanim = new ModulTanimRepository(_db);
@@ -52,10 +56,15 @@ namespace Jenga.DataAccess.Repository
             BirimTanim = new BirimTanimRepository(_db);
             Kimlik = new KimlikRepository(_db);
             IletisimBilgileri = new IletisimBilgileriRepository(_db);
+            ResmiTatil = new ResmiTatilRepository(_db);
             //TBYS
             TasinmazBagisci = new TasinmazBagisciRepository(_db);
             //NBYS
             NakitBagisci = new NakitBagisciRepository(_db);
+            NakitBagisHareket = new NakitBagisHareketRepository(_db);
+            //TYS
+            Toplanti = new ToplantiRepository(_db);
+            ToplantiKatilim = new ToplantiKatilimRepository(_db);
         }
 
         //MTS
@@ -77,6 +86,7 @@ namespace Jenga.DataAccess.Repository
         public IAramaGorusmeRepository AramaGorusme { get; private set; }        
         
         //Ortak
+        public IBolgeRepository Bolge{ get; private set; }        
         public IIlRepository Il{ get; private set; }        
         public IIlceRepository Ilce { get; private set; }        
         public IModulTanimRepository ModulTanim { get; private set; }        
@@ -91,10 +101,15 @@ namespace Jenga.DataAccess.Repository
         public IUnvanTanimRepository UnvanTanim { get; private set; }
         public IKimlikRepository Kimlik { get; private set; }
         public IIletisimBilgileriRepository IletisimBilgileri { get; private set; }
+        public IResmiTatilRepository ResmiTatil { get; private set; }
         //TBYS
         public ITasinmazBagisciRepository TasinmazBagisci { get; private set; }
         //NBYS
         public INakitBagisciRepository NakitBagisci { get; private set; }
+        public INakitBagisHareketRepository NakitBagisHareket { get; private set; }
+        //NBYS
+        public IToplantiRepository Toplanti { get; private set; }
+        public IToplantiKatilimRepository ToplantiKatilim { get; private set; }
         public void Save()
         {
             _db.SaveChanges();

@@ -3,6 +3,7 @@ using Jenga.Models.MTS;
 using Jenga.Models.NBYS;
 using Jenga.Models.Ortak;
 using Jenga.Models.TBYS;
+using Jenga.Models.TYS;
 using Microsoft.EntityFrameworkCore;
 
 namespace Jenga.DataAccess.Data
@@ -13,7 +14,6 @@ namespace Jenga.DataAccess.Data
         {
 
         }
-        //Test
         //IKYS
         public DbSet<Personel> Personel_Table { get; set; }
         public DbSet<PersonelMenu> PersonelMenu_Table { get; set; }
@@ -23,6 +23,7 @@ namespace Jenga.DataAccess.Data
         public DbSet<UnvanTanim> UnvanTanim_Table { get; set; }
         public DbSet<Kimlik> Kimlik_Table { get; set; }
         public DbSet<IletisimBilgileri> IletisimBilgileri_Table { get; set; }
+        public DbSet<ResmiTatil> ResmiTatil_Table { get; set; }
         //MTS
         public DbSet<DepoTanim> DepoTanim_Table { get; set; }
         public DbSet<KaynakTanim> KaynakTanim_Table { get; set; }
@@ -46,7 +47,12 @@ namespace Jenga.DataAccess.Data
         public DbSet<TasinmazBagisci> TasinmazBagisci_Table { get; set; }
         //NBYS
         public DbSet<NakitBagisci> NakitBagisci_Table { get; set; }
+        public DbSet<NakitBagisHareket> NakitBagisHareket_Table { get; set; }
+        //TYS
+        public DbSet<Toplanti> Toplanti_Table { get; set; }
+        public DbSet<ToplantiKatilim> ToplantiKatilim_Table { get; set; }
         //ortak
+        public DbSet<Bolge> Bolge_Table { get; set; }
         public DbSet<Il> Il_Table { get; set; }
         public DbSet<Ilce> Ilce_Table { get; set; }
         

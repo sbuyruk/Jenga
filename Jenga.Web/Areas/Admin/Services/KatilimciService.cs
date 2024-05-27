@@ -401,8 +401,39 @@ namespace Jenga.Web.Areas.Admin.Services
 
         internal int? CreateUnvan(int katilimciTipi)
         {
-            // katilimci tipine göre ünvan döndür
-            return 0;
+            int unvan = 0;
+            switch (katilimciTipi)
+            {
+                case ProjectConstants.FAALIYET_KATILIMCI_IC_INT:
+                    {
+                        
+                        break;
+                    }
+                case ProjectConstants.FAALIYET_KATILIMCI_DIS_INT:
+                    {
+                        
+                        break;
+                    }
+                case ProjectConstants.FAALIYET_KATILIMCI_NAKITBAGISCI_INT:
+                    {
+                        unvan = ProjectConstants.MTSUNVAN_NAKITBAGISCI_INT;
+                        break;
+                    }
+                case ProjectConstants.FAALIYET_KATILIMCI_TASINMAZBAGISCI_INT:
+                    {
+                        unvan = ProjectConstants.MTSUNVAN_TASINMAZBAGISCI_INT;
+                        break;
+                    }
+                case ProjectConstants.FAALIYET_KATILIMCI_FTK_INT:
+                    {
+
+                        break;
+                    }
+
+                default:
+                    break;
+            }
+            return unvan;
         }
     }
 

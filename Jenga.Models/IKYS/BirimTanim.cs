@@ -26,4 +26,7 @@ public class BirimTanim: BaseModel
     [Required]
     [DisplayName("Aktif mi")]
     public bool? Aktif { get; set; }
+    [Required]
+    [DisplayName("BolgeId")]
+    public int? BolgeId { get; set; }
 }

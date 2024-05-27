@@ -3,6 +3,7 @@ using Jenga.DataAccess.Repository.IRepository.MTS;
 using Jenga.DataAccess.Repository.IRepository.NBYS;
 using Jenga.DataAccess.Repository.IRepository.Ortak;
 using Jenga.DataAccess.Repository.IRepository.TBYS;
+using Jenga.DataAccess.Repository.IRepository.TYS;
 
 namespace Jenga.DataAccess.Repository.IRepository
 {
@@ -26,6 +27,7 @@ namespace Jenga.DataAccess.Repository.IRepository
         IFaaliyetRepository Faaliyet { get; }
         IAramaGorusmeRepository AramaGorusme { get; }
         //Ortak
+        IBolgeRepository Bolge { get; }
         IIlRepository Il { get; }
         IIlceRepository Ilce { get; }
         IModulTanimRepository ModulTanim { get; }
@@ -39,10 +41,15 @@ namespace Jenga.DataAccess.Repository.IRepository
         IUnvanTanimRepository UnvanTanim { get; }
         IKimlikRepository Kimlik { get; }
         IIletisimBilgileriRepository IletisimBilgileri { get; }
+        IResmiTatilRepository ResmiTatil { get; }
         //TBYS
         ITasinmazBagisciRepository TasinmazBagisci { get; }
         //NBYS
         INakitBagisciRepository NakitBagisci { get; }
+        INakitBagisHareketRepository NakitBagisHareket { get; }
+        //TYS
+        IToplantiRepository Toplanti { get; }
+        IToplantiKatilimRepository ToplantiKatilim { get; }
         void Save();
     }
 }

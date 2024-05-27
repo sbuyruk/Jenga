@@ -6,6 +6,7 @@ namespace Jenga.Utility
         //ORTAK
         public const int SIFIR = 0;
         public static DateTime ILK_TARIH = new DateTime(1900,1,1);
+        public const int GENELMUDUR_PERSONELID = 1184;
         //IKYS
         public static int PER_CALISIYOR_INT = 1;
         public static string PER_CALISIYOR = "Çalışıyor";
@@ -33,7 +34,11 @@ namespace Jenga.Utility
         public const string MTSAYRILMASEBEBI_ATAMA = "Atama";
         public const string MTSAYRILMASEBEBI_EMEKLILIK = "Emeklilik";
         public const string MTSAYRILMASEBEBI_ISTIFA = "İstifa";
-
+        //Unvan
+        public const int MTSUNVAN_NAKITBAGISCI_INT = 29;
+        public const int MTSUNVAN_TASINMAZBAGISCI_INT = 30;
+        public const string MTSUNVAN_NAKITBAGISCI = "Nakit Bağışçı";
+        public const string MTSUNVAN_TASINMAZBAGISCI = "Taşınmaz Bağışçı";
 
         public static string ARAMAGORUSME_GELENTELEFON = "Gelen Telefon Araması";
         public static string ARAMAGORUSME_GIDENTELEFON = "Giden Telefon Araması";
@@ -51,6 +56,20 @@ namespace Jenga.Utility
         public const string FAALIYET_AMACI_SEYAHAT = "Seyahat";
         public const string FAALIYET_AMACI_GORUSME = "Görüşme";
         public const string FAALIYET_AMACI_BILGI = "Bilgi";
+        public const string FAALIYET_AMACI_VAKIF_TOPLANISI = "Vakıf Toplantısı";
+
+        public const string FAALIYET_AMACI_TOPLANTI_CLASS = "toplanti";
+        public const string FAALIYET_AMACI_ZIYARET_CLASS = "ziyaret";
+        public const string FAALIYET_AMACI_DAVET_CLASS = "davet";
+        public const string FAALIYET_AMACI_YILDONUMU_CLASS = "yildonumu";
+        public const string FAALIYET_AMACI_DOGUMGUNU_CLASS = "dogumGunu";
+        public const string FAALIYET_AMACI_OZELCALISMA_CLASS = "ozelCalisma";
+        public const string FAALIYET_AMACI_IZIN_CLASS = "izin";
+        public const string FAALIYET_AMACI_RESMITATIL_CLASS = "resmiTatil";
+        public const string FAALIYET_AMACI_SEYAHAT_CLASS = "seyahat";
+        public const string FAALIYET_AMACI_GORUSME_CLASS = "gorusme";
+        public const string FAALIYET_AMACI_BILGI_CLASS = "bilgi";
+        public const string FAALIYET_AMACI_VAKIF_TOPLANISI_CLASS = "vakifToplantisi";
 
         public const string FAALIYET_AMACI_TOPLANTI_INT = "1";
         public const string FAALIYET_AMACI_ZIYARET_INT = "2";
@@ -63,7 +82,7 @@ namespace Jenga.Utility
         public const string FAALIYET_AMACI_GORUSME_INT = "9";
         public const string FAALIYET_AMACI_SEYAHAT_INT = "10";
         public const string FAALIYET_AMACI_BILGI_INT = "11";
-
+        public const string FAALIYET_AMACI_VAKIF_TOPLANISI_INT = "12";
 
         public const string FAALIYET_YERI_GMMAKAMI = "G.M. Makamı";
         public const string FAALIYET_YERI_ZEHRAURGA = "Zehra Urga";
@@ -85,6 +104,25 @@ namespace Jenga.Utility
         public const int FAALIYET_DURUMU_PLANLANDI_INT = 1;
         public const int FAALIYET_DURUMU_ONAYLANDI_INT = 2;
         public const int FAALIYET_DURUMU_IPTALEDILDI_INT = 3;
+        public static string FAALIYET_DURUMU_PLANLANDI_CLASS = "planlandi";
+        public static string FAALIYET_DURUMU_ONAYLANDI_CLASS = "onaylandi";
+        public static string FAALIYET_DURUMU_IPTALEDILDI_CLASS = "iptalEdildi";
 
+        //Bolgeler
+        public const string BOLGE_ANKARA = "Ankara";
+        public const string BOLGE_ISTANBUL = "İstanbul";
+        public const string BOLGE_IZMIR = "İzmir";
+        public const string BOLGE_MERSIN = "Mersin";
+        public const string BOLGE_YURTDISI = "Yurtdışı";
+        public const string BOLGE_HEPSI = "Hepsi";
+        public const string BOLGE_GENELMUDURLUK = "Genel Md.lük";
+        public const string BOLGE_TEMSILCILIGI = "Bölge Temsilciliği";
+
+        public const int BOLGE_ANKARA_INT = 1;
+        public const int BOLGE_ISTANBUL_INT = 2;
+        public const int BOLGE_IZMIR_INT = 3;
+        public const int BOLGE_MERSIN_INT = 4;
+        public const int BOLGE_HEPSI_INT = 5;
+        public const int BOLGE_GENELMUDURLUK_INT = 8;
     }
 }

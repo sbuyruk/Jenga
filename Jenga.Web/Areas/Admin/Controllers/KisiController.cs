@@ -1,12 +1,12 @@
 ﻿using Azure;
 using Jenga.DataAccess.Repository.IRepository;
-using Jenga.Models.IKYS;
 using Jenga.Models.MTS;
 using Jenga.Utility;
 using Jenga.Web.Areas.Admin.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Newtonsoft.Json;
+using System.Collections;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Jenga.Web.Areas.Admin.Controllers
@@ -309,12 +309,13 @@ namespace Jenga.Web.Areas.Admin.Controllers
         {
 
             List<Kisi> list= YeniKisiYarat(katilimciTipi);
-            foreach (var item in list) {
+            foreach (var item in list)
+            {
                 AramaGorusmeKayitlariniGuncelle(item);
                 FaaliyetKatilimKayitlariniGuncelle(item);
                 AniObjesiDagitimKayitlariniGuncelle(item);
             }
-        
+
 
             return View();
         }
@@ -361,6 +362,13 @@ namespace Jenga.Web.Areas.Admin.Controllers
             }
 
         }
+        public class YourResultDto
+        {
+            public int Id { get; set; }
+            public string Adi { get; set; }
+            public decimal? TotalBagisMiktari { get; set; }
+            public DateTime? MaxBagisTarihi { get; set; }
+        }
         private List<Kisi> YeniKisiYarat(int katilimciTipi)
         {
             //Katilimciyi bul,
@@ -372,65 +380,102 @@ namespace Jenga.Web.Areas.Admin.Controllers
             // AramaGorusme_Table'da Bu katilimciya ait IDleri YeniKisiId olacak şekilde update et
             // AniObjesiDagitim_Table'da Bu katilimciya ait IDleri YeniKisiId olacak şekilde update et
             //
-            List<Kisi> list= new List<Kisi>();
+            List<Kisi> returnList= new List<Kisi>();
+            var searchList= Enumerable.Empty<int>();
             if (katilimciTipi == ProjectConstants.FAALIYET_KATILIMCI_IC_INT)
             {
-                var personelList = _unitOfWork.Personel.GetAll();
-                foreach (var personel in personelList)
-                {
-                    Kisi kisi = _unitOfWork.Kisi.GetFirstOrDefault(u => u.KatilimciId == personel.Id && u.KatilimciTipi == katilimciTipi);
-                    if (kisi == null)
-                    {
-                        Katilimci katilimci = _katilimciService.GetKatilimci(personel.Id, katilimciTipi);
-                        if (katilimci != null)
-                        {
-                            string? userName = HttpContext.User.Identity.Name;
-                            Kisi yeniKisi = new Kisi()
-                            {
-                                Aciklama = personel.Aciklama,
-                                Adi = katilimci.Adi,
-                                Adres = katilimci.Adres,
-                                Dahili1 = katilimci.Dahili1,
-                                Dahili2 = katilimci.Dahili2,
-                                Dahili3 = katilimci.Dahili3,
-                                Degistiren = userName,
-                                DegistirmeTarihi = DateTime.Now,
-                                DogumTarihi = katilimci.DogumTarihi,
-                                EPosta = katilimci.Eposta,
-                                Ilcesi = katilimci.Ilcesi,
-                                Ili = katilimci.Ili,
-                                KatilimciId = personel.Id,
-                                KatilimciTipi = katilimciTipi,
-                                Kutlama = katilimci.Kutlama.Value,
+                searchList= _unitOfWork.Personel.GetAll().Select(u=>u.Id);
+            }else if (katilimciTipi == ProjectConstants.FAALIYET_KATILIMCI_NAKITBAGISCI_INT)
+            {
 
-                                MTSUnvanTanimId = _katilimciService.CreateUnvan(katilimciTipi),
-                                Olusturan = userName,
-                                OlusturmaTarihi = DateTime.Now,
-                                RandevuKisiti = false,
-                                Soyadi = katilimci.Soyadi,
-                                TCKimlikNo = katilimci.TCKimlikNo,
-                                TelAciklama1 = katilimci.TelAciklama1,
-                                TelAciklama2 = katilimci.TelAciklama2,
-                                TelAciklama3 = katilimci.TelAciklama3,
-                                Telefon1 = katilimci.Telefon1,
-                                Telefon2 = katilimci.Telefon2,
-                                Telefon3 = katilimci.Telefon3,
-                                Unvani = katilimci.Unvani,
-                            };
-                            
-                            _unitOfWork.Kisi.Add(yeniKisi);
-                            _unitOfWork.Save();
-                            List<MTSKurumGorev> mTSKurumGorevs = _katilimciService.CreateKurumGorev(yeniKisi);
-                            yeniKisi.MTSKurumGorevs = mTSKurumGorevs;
-                            _unitOfWork.Kisi.Update(yeniKisi);
-                            _unitOfWork.Save();
-                            list.Add(yeniKisi);
-                            Console.WriteLine(personel.Adi + " " + personel.Soyadi);
-                        }
+                var ids = new List<int>
+                {
+                     40110,  65943,  69656,  80026,  80522, 113381, 114595, 117064,
+                    122963, 124131, 124355, 125310, 125346, 125600, 132762, 
+                    133277, 133535, 134472, 134898, 137207, 138085, 148104
+                };
+                var idList = Enumerable.Empty<int>();
+                //var result = from a in _unitOfWork.NakitBagisci.GetByFilter(u=>u.Sag==true && u.TCKimlikNo!=null && u.TCKimlikNo>0)
+                var result = from a in _unitOfWork.NakitBagisci.GetAll().Where(bagisci => ids.Contains(bagisci.Id)).ToList()
+                             join b in _unitOfWork.NakitBagisHareket.GetAll() on a.Id equals b.BagisciId into gj
+                             from subBagis in gj.DefaultIfEmpty()
+                             where subBagis != null && subBagis.BagisTarihi > new DateTime(2005, 1, 1)
+                             group subBagis by new { a.Id, a.Adi } into grouped
+                             let totalBagisMiktari = grouped.Sum(g => g.BagisMiktari)
+                             let maxBagisTarihi = grouped.Max(g => g.BagisTarihi)
+                             where totalBagisMiktari > 1 && maxBagisTarihi > new DateTime(2005, 1, 1)
+                             select new YourResultDto
+                             {
+                                 Id = grouped.Key.Id,
+                                 Adi = grouped.Key.Adi,
+                                 TotalBagisMiktari = totalBagisMiktari,
+                                 MaxBagisTarihi = maxBagisTarihi
+                             };
+
+                var xx= result.ToList();
+                searchList = xx.Select(u => u.Id);
+
+            }
+            else if (katilimciTipi == ProjectConstants.FAALIYET_KATILIMCI_TASINMAZBAGISCI_INT)
+            {
+                searchList = _unitOfWork.TasinmazBagisci.GetByFilter(u => u.Sag_vefat == "Sağ" && u.TCKimlikNo != null && u.TCKimlikNo > 0).Select(u => u.Id);
+            }
+
+
+            foreach (var itemId in searchList)
+            {
+                //Kayıtlı ise ekleme!
+                Kisi kisi = _unitOfWork.Kisi.GetFirstOrDefault(u => u.KatilimciId == itemId && u.KatilimciTipi == katilimciTipi);
+                if (kisi == null)
+                {
+                    Katilimci katilimci = _katilimciService.GetKatilimci(itemId, katilimciTipi);
+                    if (katilimci != null)
+                    {
+                        string? userName = HttpContext.User.Identity.Name;
+                        Kisi yeniKisi = new Kisi()
+                        {
+                            Adi = katilimci.Adi,
+                            Adres = katilimci.Adres,
+                            Dahili1 = katilimci.Dahili1,
+                            Dahili2 = katilimci.Dahili2,
+                            Dahili3 = katilimci.Dahili3,
+                            Degistiren = userName,
+                            DegistirmeTarihi = DateTime.Now,
+                            DogumTarihi = katilimci.DogumTarihi,
+                            EPosta = katilimci.Eposta,
+                            Ilcesi = katilimci.Ilcesi,
+                            Ili = katilimci.Ili,
+                            KatilimciId = itemId,
+                            KatilimciTipi = katilimciTipi,
+                            Kutlama = katilimci.Kutlama.Value,
+
+                            MTSUnvanTanimId = _katilimciService.CreateUnvan(katilimciTipi),
+                            Olusturan = userName,
+                            OlusturmaTarihi = DateTime.Now,
+                            RandevuKisiti = false,
+                            Soyadi = katilimci.Soyadi,
+                            TCKimlikNo = katilimci.TCKimlikNo,
+                            TelAciklama1 = katilimci.TelAciklama1,
+                            TelAciklama2 = katilimci.TelAciklama2,
+                            TelAciklama3 = katilimci.TelAciklama3,
+                            Telefon1 = katilimci.Telefon1,
+                            Telefon2 = katilimci.Telefon2,
+                            Telefon3 = katilimci.Telefon3,
+                            Unvani = katilimci.Unvani,
+                        };
+
+                        _unitOfWork.Kisi.Add(yeniKisi);
+                        _unitOfWork.Save();
+                        List<MTSKurumGorev> mTSKurumGorevs = _katilimciService.CreateKurumGorev(yeniKisi);
+                        yeniKisi.MTSKurumGorevs = mTSKurumGorevs;
+                        _unitOfWork.Kisi.Update(yeniKisi);
+                        _unitOfWork.Save();
+                        returnList.Add(yeniKisi);
                     }
                 }
             }
-            return list;
+
+            return returnList;
         }
 
         public IActionResult GetKisiListByFilter(string text)
