@@ -21,10 +21,6 @@ namespace Jenga.Models.MTS
         [ForeignKey("ArayanId")]
         [ValidateNever]
         public Kisi? Kisi { get; set; }
-
-        [DisplayName("Katılımcı Tipi")]
-        public int KatilimciTipi { get; set; } = 2;
-
         [ValidateNever]
         [DisplayName("Faaliyet Id")]
         public int FaaliyetId { get; set; }

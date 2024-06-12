@@ -42,6 +42,7 @@ namespace Jenga.DataAccess.Data
         public DbSet<MTSKurumGorev> MTSKurumGorev_Table { get; set; }
         public DbSet<FaaliyetKatilim> FaaliyetKatilim_Table { get; set; }
         public DbSet<Faaliyet> Faaliyet_Table { get; set; }
+        public DbSet<FaaliyetAmaci> FaaliyetAmaci_Table { get; set; }
         public DbSet<AramaGorusme> AramaGorusme_Table { get; set; }
         //TBYS
         public DbSet<TasinmazBagisci> TasinmazBagisci_Table { get; set; }

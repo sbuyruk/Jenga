@@ -17,8 +17,11 @@ public class Faaliyet : BaseModel
     [DisplayName("Faaliyet Tipi")]
     public string FaaliyetTipi { get; set; }
     [Required]
-    [DisplayName("Faaliyet Amacı")]
-    public int FaaliyetAmaci { get; set; }
+    [DisplayName("Faaliyet Amacı Id")]
+    [ForeignKey("FaaliyetAmaciId")]
+    public int FaaliyetAmaciId { get; set; }
+    [ValidateNever]
+    public FaaliyetAmaci FaaliyetAmaci { get; set; }
     [Required]
     [DisplayName("Faaliyet Konusu")]
     public string FaaliyetKonusu { get; set; }

@@ -231,7 +231,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
                     BitisTarihi = DateTime.Now.AddMinutes(30),
 
                     DisIrtibatId = aramaGorusme.ArayanId,
-                    FaaliyetAmaci = int.Parse(ProjectConstants.FAALIYET_AMACI_GORUSME_INT),
+                    FaaliyetAmaciId = int.Parse(ProjectConstants.FAALIYET_AMACI_GORUSME_INT),
                     FaaliyetYeriStr = ProjectConstants.FAALIYET_YERI_GMMAKAMI,
                     FaaliyetTipi = ProjectConstants.RANDEVU_VERILEN,
                     FaaliyetDurumu = ProjectConstants.FAALIYET_DURUMU_PLANLANDI_INT,

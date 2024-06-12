@@ -25,6 +25,7 @@ namespace Jenga.DataAccess.Repository.IRepository
         IMTSKurumGorevRepository MTSKurumGorev { get; }
         IFaaliyetKatilimRepository FaaliyetKatilim { get; }
         IFaaliyetRepository Faaliyet { get; }
+        IFaaliyetAmaciRepository FaaliyetAmaci { get; }
         IAramaGorusmeRepository AramaGorusme { get; }
         //Ortak
         IBolgeRepository Bolge { get; }

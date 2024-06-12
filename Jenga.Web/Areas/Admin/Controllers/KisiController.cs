@@ -311,28 +311,13 @@ namespace Jenga.Web.Areas.Admin.Controllers
             List<Kisi> list= YeniKisiYarat(katilimciTipi);
             foreach (var item in list)
             {
-                AramaGorusmeKayitlariniGuncelle(item);
+                //AramaGorusmeKayitlariniGuncelle(item);
                 FaaliyetKatilimKayitlariniGuncelle(item);
                 AniObjesiDagitimKayitlariniGuncelle(item);
             }
 
 
             return View();
-        }
-
-        private void AramaGorusmeKayitlariniGuncelle(Kisi yeniKisi)
-        {
-            var aramaGorusmeList = _unitOfWork.AramaGorusme.GetByFilter(a=> a.KatilimciTipi==yeniKisi.KatilimciTipi && a.ArayanId==yeniKisi.KatilimciId);
-            if (aramaGorusmeList!=null)
-            {
-                foreach (var item in aramaGorusmeList)
-                {
-                    item.ArayanId = yeniKisi.Id;
-                    _unitOfWork.AramaGorusme.Update(item);
-                }
-                _unitOfWork.Save();
-            }
-           
         }
         private void FaaliyetKatilimKayitlariniGuncelle(Kisi yeniKisi)
         {
@@ -389,11 +374,12 @@ namespace Jenga.Web.Areas.Admin.Controllers
             {
 
                 var ids = new List<int>
-                {
-                     40110,  65943,  69656,  80026,  80522, 113381, 114595, 117064,
-                    122963, 124131, 124355, 125310, 125346, 125600, 132762, 
-                    133277, 133535, 134472, 134898, 137207, 138085, 148104
-                };
+                { 27298,74187,102883,113146,113147,113316,120835}; //arama gorusme bacağı
+                //{
+                //     40110,  65943,  69656,  80026,  80522, 113381, 114595, 117064,
+                //    122963, 124131, 124355, 125310, 125346, 125600, 132762, 
+                //    133277, 133535, 134472, 134898, 137207, 138085, 148104
+                //};
                 var idList = Enumerable.Empty<int>();
                 //var result = from a in _unitOfWork.NakitBagisci.GetByFilter(u=>u.Sag==true && u.TCKimlikNo!=null && u.TCKimlikNo>0)
                 var result = from a in _unitOfWork.NakitBagisci.GetAll().Where(bagisci => ids.Contains(bagisci.Id)).ToList()
@@ -418,7 +404,19 @@ namespace Jenga.Web.Areas.Admin.Controllers
             }
             else if (katilimciTipi == ProjectConstants.FAALIYET_KATILIMCI_TASINMAZBAGISCI_INT)
             {
-                searchList = _unitOfWork.TasinmazBagisci.GetByFilter(u => u.Sag_vefat == "Sağ" && u.TCKimlikNo != null && u.TCKimlikNo > 0).Select(u => u.Id);
+                //searchList = _unitOfWork.TasinmazBagisci.GetByFilter(u => u.Sag_vefat == "Sağ" && u.TCKimlikNo != null && u.TCKimlikNo > 0).Select(u => u.Id);
+                var ids = new List<int>
+                {
+                     292,304,306,1338,1349,
+                    1351,1357,1358,1360,1370,1372
+                };
+                var idList = Enumerable.Empty<int>();
+                //var result = from a in _unitOfWork.NakitBagisci.GetByFilter(u=>u.Sag==true && u.TCKimlikNo!=null && u.TCKimlikNo>0)
+                var result =  _unitOfWork.TasinmazBagisci.GetAll().Where(bagisci => ids.Contains(bagisci.Id)).ToList();
+                             
+
+                var xx = result.ToList();
+                searchList = xx.Select(u => u.Id);
             }
 
 

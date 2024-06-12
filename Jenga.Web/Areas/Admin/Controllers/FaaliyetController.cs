@@ -3,6 +3,7 @@ using Jenga.Models.TYS;
 using Jenga.Models.MTS;
 using Jenga.Web.Areas.Admin.Services;
 using Microsoft.AspNetCore.Mvc;
+using Jenga.Utility;
 
 
 namespace Jenga.Web.Areas.Admin.Controllers
@@ -131,9 +132,9 @@ namespace Jenga.Web.Areas.Admin.Controllers
 
         }
        
-        public IActionResult GetFaaliyetList()
+        public IActionResult GetFaaliyetList(bool acikTarihliChecked)
         {
-            var faaliyetList = _unitOfWork.Faaliyet.GetAll();//GetByFilter(a=>a.BaslangicTarihi>=baslangicTarihi);
+            var faaliyetList = acikTarihliChecked ? _unitOfWork.Faaliyet.GetAll() : _unitOfWork.Faaliyet.GetByFilter(a=>a.AcikTarih!=true);
 
             var faaliyetKatilimList = _unitOfWork.FaaliyetKatilim.GetAll(includeProperties: "Kisi");
             var list1 = from faaliyet in faaliyetList
@@ -155,10 +156,51 @@ namespace Jenga.Web.Areas.Admin.Controllers
 
             return Json(new { data = result });
         }
-        public IActionResult GetAllAcikTarihliFaaliyetList()
+        public IActionResult GetAllAcikTarihliFaaliyetList(bool toplantiChecked, bool ziyaretChecked, bool gorusmeChecked, bool seyahatChecked, bool davetChecked)
         {
-            
-            List<Faaliyet> faaliyetList = _unitOfWork.Faaliyet.GetAll().Where(u => u.AcikTarih == true).ToList();
+
+            List<Faaliyet> faaliyetList = new List<Faaliyet>();// _unitOfWork.Faaliyet.GetAll(includeProperties:"FaaliyetAmaci").Where(u => u.AcikTarih == true).ToList();
+            if (toplantiChecked)
+            {
+                int x = 0;
+
+                Int32.TryParse(ProjectConstants.FAALIYET_AMACI_TOPLANTI_INT, out x);
+                var list= _unitOfWork.Faaliyet.GetAll(includeProperties: "FaaliyetAmaci").Where(u => u.AcikTarih == true &&  u.FaaliyetAmaciId==x).ToList();
+                faaliyetList.AddRange(list);
+            }
+            if (ziyaretChecked)
+            {
+                int x = 0;
+
+                Int32.TryParse(ProjectConstants.FAALIYET_AMACI_ZIYARET_INT, out x);
+                var list = _unitOfWork.Faaliyet.GetAll(includeProperties: "FaaliyetAmaci").Where(u => u.AcikTarih == true && u.FaaliyetAmaciId == x).ToList();
+                faaliyetList.AddRange(list);
+            }
+            if (gorusmeChecked)
+            {
+                int x = 0;
+
+                Int32.TryParse(ProjectConstants.FAALIYET_AMACI_GORUSME_INT, out x);
+                var list = _unitOfWork.Faaliyet.GetAll(includeProperties: "FaaliyetAmaci").Where(u => u.AcikTarih == true && u.FaaliyetAmaciId == x).ToList();
+                faaliyetList.AddRange(list);
+            }
+            if (seyahatChecked)
+            {
+                int x = 0;
+
+                Int32.TryParse(ProjectConstants.FAALIYET_AMACI_SEYAHAT_INT, out x);
+                var list = _unitOfWork.Faaliyet.GetAll(includeProperties: "FaaliyetAmaci").Where(u => u.AcikTarih == true && u.FaaliyetAmaciId == x).ToList();
+                faaliyetList.AddRange(list);
+            }
+            if (davetChecked)
+            {
+                int x = 0;
+
+                Int32.TryParse(ProjectConstants.FAALIYET_AMACI_DAVET_INT, out x);
+                var list = _unitOfWork.Faaliyet.GetAll(includeProperties: "FaaliyetAmaci").Where(u => u.AcikTarih == true && u.FaaliyetAmaciId == x).ToList();
+                faaliyetList.AddRange(list);
+            }
+
             var faaliyetKatilimList = _unitOfWork.FaaliyetKatilim.GetAll(includeProperties: "Kisi");
             var list1 = from faaliyet in faaliyetList
                         join faaliyetKatilim in faaliyetKatilimList

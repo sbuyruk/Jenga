@@ -16,6 +16,14 @@
             <input id="BaslangicTarihiTxt" class="form-control" type="date" value="@DateTime.Today.AddYears(-2).ToString("yyyy-MM-dd")" />
         </div>
     </div> *@
+    <div class="m-1 border border-light row">
+        <div class="checkbox col-4">
+            <label class="m-2">
+                <input type="checkbox" id="AcikTarihliChk" checked="false" />
+                Açık Tarihli faaliyetleri listede göster.
+            </label>
+        </div>
+    </div>
     <div class="pt-3">
         <table id="tblData" class="table table-bordered table-striped table-sm small" style="width:100%">
             <thead>
@@ -38,21 +46,49 @@
 
 @section Scripts{
     <script src="~/js/faaliyet.js"></script>
+
     <script>
+        const atCheckbox = document.getElementById('AcikTarihliChk');
+        localStorage.setItem('acikTarihliChkState', 'unchecked')
         $(document).ready(function () {
-            loadDataTable(null);
+            //SB to maintain client side persistency
+            const acikTarihliChkState = localStorage.getItem('acikTarihliChkState');
+            // If there is, set the checkbox state accordingly
+            if (acikTarihliChkState === 'checked') {
+                atCheckbox.checked = true;
+            } else {
+                atCheckbox.checked = false;
+            }
+           
+            StartList();
         });
-    </script>
-    <script>
 
 
+        $("#AcikTarihliChk").change(function () {
+            if (atCheckbox.checked) {
+                localStorage.setItem('acikTarihliChkState', 'checked');
+            } else {
+                localStorage.setItem('acikTarihliChkState', 'unchecked');
+            }
+            StartList();
+        })
+        
+        //
+        function StartList() {
+
+            var acikTarihliChecked = atCheckbox.checked;
+            loadDataTable(acikTarihliChecked);
+        }
+        window.addEventListener('popstate', function (event) {
+            // Code to handle the navigation event
+            StartList();
+        });
         // $("#BaslangicTarihiTxt").change(function () {
         //     FaaliyetListesiniDoldur();
         // })
         //Tarih değişince tabloyu doldur
         var FaaliyetListesiniDoldur = function () {
-            // loadDataTable(BaslangicTarihiTxt.value);
-            loadDataTable();
+            StartList();
         }
     </script>
 }

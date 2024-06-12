@@ -1,6 +1,6 @@
 var dataTable;
 
-function loadDataTable() {
+function loadDataTable(acikTarihliChecked) {
     var baslangicTarihi;
     //if (bastar == null) {
     //    let d = new Date();
@@ -13,9 +13,9 @@ function loadDataTable() {
     dataTable = $('#tblData').DataTable({
         "ajax": {
             "url": "/Admin/Faaliyet/GetFaaliyetList",
-            //"data": {
-            //    BaslangicTarihi: baslangicTarihi,
-            //},
+            "data": {
+                acikTarihliChecked: acikTarihliChecked,
+            },
         },
         "columns": [
             { "data": "faaliyet.id", "width": "4%" },
@@ -72,13 +72,19 @@ function loadDataTable() {
     });
 
 }
-function loadDataTableAcik() {
+function loadDataTableAcik(toplantiChecked,ziyaretChecked,gorusmeChecked,seyahatChecked,davetChecked) {
     
     $.fn.dataTable.moment('DD.MM.YYYY HH:mm'); // Date format
     dataTable = $('#tblDataAcik').DataTable({
         "ajax": {
             "url": "/Admin/Faaliyet/GetAllAcikTarihliFaaliyetList",
-           
+            "data": {
+                'toplantiChecked': toplantiChecked,
+                'ziyaretChecked': ziyaretChecked,
+                'gorusmeChecked': gorusmeChecked,
+                'seyahatChecked': seyahatChecked,
+                'davetChecked': davetChecked,
+            },
         },
         "columns": [
             { "data": "faaliyet.id", "width": "4%" },
@@ -87,7 +93,7 @@ function loadDataTableAcik() {
             { "data": "faaliyet.faaliyetYeriStr", "width": "10%" },
             { "data": "faaliyet.faaliyetKonusu", "width": "20%" },
             //{ "data": "faaliyet.faaliyetTipi", "width": "8%" },
-            //{ "data": "faaliyet.faaliyetAmaci", "width": "7%" },
+            { "data": "faaliyet.faaliyetAmaci.adi", "width": "10%" },
             //{ "data": "faaliyet.faaliyetDurumu", "width": "8%" },
             { "data": "kisiler", "width": "28%" },
             {
@@ -103,6 +109,7 @@ function loadDataTableAcik() {
                 },
             },
         ],
+        "order": [[0, "desc"]],
         dom: 'Bfrtip',
         destroy: true,
         buttons: [

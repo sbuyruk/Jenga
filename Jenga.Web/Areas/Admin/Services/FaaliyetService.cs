@@ -30,8 +30,8 @@ namespace Jenga.Web.Areas.Admin.Services
                 anEvent.state = faaliyet.FaaliyetDurumu.ToString();
 
                 anEvent.id = faaliyet.Id;
-                int faaliyetAmaci = faaliyet.FaaliyetAmaci;
-                anEvent.purpose = faaliyetAmaci.ToString();
+                int faaliyetAmaciId = faaliyet.FaaliyetAmaciId;
+                anEvent.purpose = faaliyetAmaciId.ToString();
                 anEvent.title = faaliyet.FaaliyetKonusu;
                 //item.description = item.title;
                 anEvent.start = string.Format("{0:s}", faaliyet.BaslangicTarihi);
@@ -299,8 +299,8 @@ namespace Jenga.Web.Areas.Admin.Services
                     {
                         //item.className = ProjectConstants.FAALIYET_AMACI_BILGI_CLASS;
                         item.purpose = ProjectConstants.FAALIYET_AMACI_BILGI;
-                        item.borderColor = Color.Silver.Name;
-                        item.backgroundColor = Color.Silver.Name;
+                        item.borderColor = Color.GreenYellow.Name;
+                        item.backgroundColor = Color.GreenYellow.Name;
                         item.textColor = Color.Black.Name;
                         break;
                     }
