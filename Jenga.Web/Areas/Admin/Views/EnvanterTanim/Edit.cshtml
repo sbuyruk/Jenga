@@ -1,0 +1,32 @@
+﻿@model EnvanterTanim
+<div class="container-sm shadow">
+    <form method="post" asp-action="Edit">
+        <div class="row pt-3">
+            <div class="col ">
+                <h4 class="text-primary text-start fw-bold">Envanter Tanımı Düzenle</h4>
+            </div>
+        </div>
+        <hr />
+        <div class="border p-3 mt-4">
+            <div asp-validation-summary="All"></div>
+
+            <div class="col-8 mb-3">
+                <label asp-for="Adi"></label>
+                <input asp-for="Adi" class="form-control" />
+                <span asp-validation-for="Adi" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Aciklama"></label>
+                <textarea asp-for="Aciklama" rows="2" class="form-control"></textarea>
+                <span asp-validation-for="Aciklama" class="text-danger"></span>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width=150px">Güncelle</button>
+            <a asp-controller="EnvanterTanim" asp-action="Index" class="btn btn-secondary" style="width:150px">Listeye Dön</a>
+        </div>
+    </form>
+</div>
+@section scripts{
+    @{
+    <partial name="_ValidationScriptsPartial" />
+    }
+}

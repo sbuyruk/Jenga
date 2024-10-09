@@ -1,88 +1,88 @@
 ﻿@model GonderiPaketiVM
-
-<form method="post" asp-action="Create" enctype="multipart/form-data">
-    <input asp-for="GonderiPaketi.Id" hidden />
-    <div class="row pt-3">
-        <div class="col ">
-            <h4 class="text-primary text-start fw-bold">Gönderi Paketi Oluşturma</h4>
-        </div>
-    </div>
-    <hr />
-    <div class="row">
-        @*<div asp-validation-summary="All"></div>*@
-        <div class="mb-3 col-3">
-            <label asp-for="GonderiPaketi.Etiket">Etiket</label>
-            <input asp-for="GonderiPaketi.Etiket" class="form-control" />
-            <span asp-validation-for="GonderiPaketi.Etiket" class="text-danger"></span>
-        </div>
-        <div class="mb-3 col-3">
-            <label asp-for="GonderiPaketi.DagitimYeriTanimId">Dağıtım Yeri</label>
-            <select asp-for="GonderiPaketi.DagitimYeriTanimId" asp-items="@Model.DagitimYeriList" class="form-select">
-                <option disabled selected>--Dağıtım Yeri seçiniz--</option>
-            </select>
-            <span asp-validation-for="GonderiPaketi.DagitimYeriTanimId" class="text-danger"></span>
-        </div>
-        <div class="mb-3 col-3">
-            <label asp-for="GonderiPaketi.GondermeAraci">Gönderme Aracı</label>
-            <select asp-for="GonderiPaketi.GondermeAraci" asp-items="@Model.GondermeAraciList" class="form-select">
-                <option disabled selected>--Gönderme Aracı seçiniz--</option>
-            </select>
-            <span asp-validation-for="GonderiPaketi.GondermeAraci" class="text-danger"></span>
-        </div>
-        <div class="mb-3 col-2">
-            <div class="form-group">
-                <label asp-for="GonderiPaketi.GondermeTarihi" class="control-label">Gönderme Tarihi</label>
-                <input asp-for="GonderiPaketi.GondermeTarihi" class="form-control" type="date" />
-                <span asp-validation-for="GonderiPaketi.GondermeTarihi" class="text-danger"></span>
+<div class="container shadow p-3">
+    <form method="post" asp-action="Create" enctype="multipart/form-data">
+        <input asp-for="GonderiPaketi.Id" hidden />
+        <div class="row pt-3">
+            <div class="col ">
+                <h4 class="text-primary text-start fw-bold">Gönderi Paketi Oluşturma</h4>
             </div>
         </div>
-        <div class="mb-3 col-3">
-            <label asp-for="GonderiPaketi.GonderiTakipNo">Gönderi Takip No</label>
-            <input asp-for="GonderiPaketi.GonderiTakipNo" class="form-control" />
-            <span asp-validation-for="GonderiPaketi.GonderiTakipNo" class="text-danger"></span>
+        <hr />
+        <div class="row">
+            @*<div asp-validation-summary="All"></div>*@
+            <div class="mb-3 col-3">
+                <label asp-for="GonderiPaketi.Etiket">Etiket</label>
+                <input asp-for="GonderiPaketi.Etiket" class="form-control" />
+                <span asp-validation-for="GonderiPaketi.Etiket" class="text-danger"></span>
+            </div>
+            <div class="mb-3 col-3">
+                <label asp-for="GonderiPaketi.DagitimYeriTanimId">Dağıtım Yeri</label>
+                <select asp-for="GonderiPaketi.DagitimYeriTanimId" asp-items="@Model.DagitimYeriList" class="form-select">
+                    <option disabled selected>--Dağıtım Yeri seçiniz--</option>
+                </select>
+                <span asp-validation-for="GonderiPaketi.DagitimYeriTanimId" class="text-danger"></span>
+            </div>
+            <div class="mb-3 col-3">
+                <label asp-for="GonderiPaketi.GondermeAraci">Gönderme Aracı</label>
+                <select asp-for="GonderiPaketi.GondermeAraci" asp-items="@Model.GondermeAraciList" class="form-select">
+                    <option disabled selected>--Gönderme Aracı seçiniz--</option>
+                </select>
+                <span asp-validation-for="GonderiPaketi.GondermeAraci" class="text-danger"></span>
+            </div>
+            <div class="mb-3 col-2">
+                <div class="form-group">
+                    <label asp-for="GonderiPaketi.GondermeTarihi" class="control-label">Gönderme Tarihi</label>
+                    <input asp-for="GonderiPaketi.GondermeTarihi" class="form-control" type="date" />
+                    <span asp-validation-for="GonderiPaketi.GondermeTarihi" class="text-danger"></span>
+                </div>
+            </div>
+            <div class="mb-3 col-3">
+                <label asp-for="GonderiPaketi.GonderiTakipNo">Gönderi Takip No</label>
+                <input asp-for="GonderiPaketi.GonderiTakipNo" class="form-control" />
+                <span asp-validation-for="GonderiPaketi.GonderiTakipNo" class="text-danger"></span>
+            </div>
+            <div class="mb-3 col-3">
+                <label asp-for="GonderiPaketi.IlId">İl</label>
+                <select asp-for="GonderiPaketi.IlId" asp-items="@Model.IlList" class="form-select" id="ilId">
+                    <option disabled selected>--İl seçiniz--</option>
+                </select>
+                <span asp-validation-for="GonderiPaketi.IlId" class="text-danger"></span>
+            </div>
+            <div class="mb-3 col-3">
+                <label asp-for="GonderiPaketi.IlceId">İlçe</label>
+                <select asp-for="GonderiPaketi.IlceId" asp-items="@Model.IlceList" class="form-select" id="ilceId">
+                    <option disabled selected>--İlçe seçiniz--</option>
+                </select>
+                <span asp-validation-for="GonderiPaketi.IlId" class="text-danger"></span>
+            </div>
         </div>
-        <div class="mb-3 col-3">
-            <label asp-for="GonderiPaketi.IlId">İl</label>
-            <select asp-for="GonderiPaketi.IlId" asp-items="@Model.IlList" class="form-select" id="ilId">
-                <option disabled selected>--İl seçiniz--</option>
-            </select>
-            <span asp-validation-for="GonderiPaketi.IlId" class="text-danger"></span>
-        </div>       
-        <div class="mb-3 col-3">
-            <label asp-for="GonderiPaketi.IlceId">İlçe</label>
-            <select asp-for="GonderiPaketi.IlceId" asp-items="@Model.IlceList" class="form-select" id="ilceId">
-                <option disabled selected>--İlçe seçiniz--</option>
-            </select>
-            <span asp-validation-for="GonderiPaketi.IlId" class="text-danger"></span>
+        <div class="row">
+            <div class="mb-3">
+                <label asp-for="GonderiPaketi.Adres"></label>
+                <input asp-for="GonderiPaketi.Adres" class="form-control" />
+                <span asp-validation-for="GonderiPaketi.Adres" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="GonderiPaketi.Aciklama">Açıklama</label>
+                <textarea asp-for="GonderiPaketi.Aciklama" rows="2" class="form-control"></textarea>
+                <span asp-validation-for="GonderiPaketi.Aciklama" class="text-danger"></span>
+            </div>
         </div>
-    </div>
-    <div class="row">
-    <div class="mb-3">
-        <label asp-for="GonderiPaketi.Adres"></label>
-        <input asp-for="GonderiPaketi.Adres" class="form-control"/>
-        <span asp-validation-for="GonderiPaketi.Adres" class="text-danger"></span>
-    </div>
-        <div class="mb-3">
-            <label asp-for="GonderiPaketi.Aciklama">Açıklama</label>
-            <textarea asp-for="GonderiPaketi.Aciklama" rows="2" class="form-control"></textarea>
-            <span asp-validation-for="GonderiPaketi.Aciklama" class="text-danger"></span>
+        <div class="col-12">
+            @if (Model.GonderiPaketi.Id != 0)
+            {
+                <button type="submit" class="btn btn-primary" style="width:150px">Güncelle</button>
+            }
+            else
+            {
+                <button type="submit" class="btn btn-primary" style="width:150px">Kaydet</button>
+            }
+            <a asp-controller="GonderiPaketi" asp-action="Index" class="btn btn-secondary" style="width:150px">
+                Listeye Dön
+            </a>
         </div>
-    </div>
-    <div class="col-12">
-        @if (Model.GonderiPaketi.Id != 0)
-        {
-            <button type="submit" class="btn btn-primary" style="width:150px">Güncelle</button>
-        }
-        else
-        {
-            <button type="submit" class="btn btn-primary" style="width:150px">Kaydet</button>
-        }
-        <a asp-controller="GonderiPaketi" asp-action="Index" class="btn btn-secondary" style="width:150px">
-            Listeye Dön
-        </a>
-    </div>
-</form>
-
+    </form>
+</div>
 @section Scripts{
     @{
         <partial name="_ValidationScriptsPartial" />

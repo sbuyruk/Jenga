@@ -1,65 +1,65 @@
 ﻿@model Jenga.Models.Ortak.MenuTanimVM
+<div class="container shadow p-3">
+    <form method="post" asp-action="Create" enctype="multipart/form-data">
+        <input asp-for="MenuTanim.Id" hidden />
+        <div class="row pt-3">
+            <div class="col ">
+                <h4 class="text-primary text-start fw-bold">Menü Oluşturma</h4>
+            </div>
+        </div>
+        <hr />
+        <div class="row">
+            @*<div asp-validation-summary="All"></div>*@
 
-<form method="post" asp-action="Create" enctype="multipart/form-data">
-    <input asp-for="MenuTanim.Id" hidden />
-    <div class="row pt-3">
-        <div class="col ">
-            <h4 class="text-primary text-start fw-bold">Menü Oluşturma</h4>
-        </div>
-    </div>
-    <hr />
-    <div class="row">
-        @*<div asp-validation-summary="All"></div>*@
+            <div class="mb-3 col-2">
+                <label asp-for="MenuTanim.UstMenuId"></label>
+                <select asp-for="MenuTanim.UstMenuId" asp-items="@Model.UstMenuSelectList" class="form-select">
+                    <option disabled selected>--Üst Menü seçiniz--</option>
+                </select>
+                <span asp-validation-for="MenuTanim.UstMenuId" class="text-danger"></span>
+            </div>
 
-        <div class="mb-3 col-2">
-            <label asp-for="MenuTanim.UstMenuId"></label>
-            <select asp-for="MenuTanim.UstMenuId" asp-items="@Model.UstMenuSelectList" class="form-select">
-                <option disabled selected>--Üst Menü seçiniz--</option>
-            </select>
-            <span asp-validation-for="MenuTanim.UstMenuId" class="text-danger"></span>
+            <div class="mb-3  col-2">
+                <label asp-for="MenuTanim.Adi"></label>
+                <input asp-for="MenuTanim.Adi" class="form-control" />
+                <span asp-validation-for="MenuTanim.Adi" class="text-danger"></span>
+            </div>
+            <div class="mb-3  col-3">
+                <label asp-for="MenuTanim.Url"></label>
+                <input asp-for="MenuTanim.Url" class="form-control" />
+                <span asp-validation-for="MenuTanim.Url" class="text-danger"></span>
+            </div>
+            <div class="mb-3  col-3">
+                <label asp-for="MenuTanim.Webpart"></label>
+                <input asp-for="MenuTanim.Webpart" class="form-control" />
+                <span asp-validation-for="MenuTanim.Webpart" class="text-danger"></span>
+            </div>
+            <div class="mb-3  col-1">
+                <label asp-for="MenuTanim.Sira"></label>
+                <input asp-for="MenuTanim.Sira" class="form-control" />
+                <span asp-validation-for="MenuTanim.Sira" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="MenuTanim.Aciklama"></label>
+                <textarea asp-for="MenuTanim.Aciklama" rows="3" class="form-control"></textarea>
+                <span asp-validation-for="MenuTanim.Aciklama" class="text-danger"></span>
+            </div>
+            <div class="col-12">
+                @if (Model.MenuTanim.Id != 0)
+                {
+                    <button type="submit" class="btn btn-primary" style="width:150px">Güncelle</button>
+                }
+                else
+                {
+                    <button type="submit" class="btn btn-primary" style="width:150px">Kaydet</button>
+                }
+                <a asp-controller="MenuTanim" asp-action="Index" class="btn btn-secondary" style="width:150px">
+                    Listeye Dön
+                </a>
+            </div>
         </div>
-        
-        <div class="mb-3  col-2">
-            <label asp-for="MenuTanim.Adi"></label>
-            <input asp-for="MenuTanim.Adi" class="form-control" />
-            <span asp-validation-for="MenuTanim.Adi" class="text-danger"></span>
-        </div>
-        <div class="mb-3  col-3">
-            <label asp-for="MenuTanim.Url"></label>
-            <input asp-for="MenuTanim.Url" class="form-control" />
-            <span asp-validation-for="MenuTanim.Url" class="text-danger"></span>
-        </div>
-        <div class="mb-3  col-3">
-            <label asp-for="MenuTanim.Webpart"></label>
-            <input asp-for="MenuTanim.Webpart" class="form-control" />
-            <span asp-validation-for="MenuTanim.Webpart" class="text-danger"></span>
-        </div>
-        <div class="mb-3  col-1">
-            <label asp-for="MenuTanim.Sira"></label>
-            <input asp-for="MenuTanim.Sira" class="form-control" />
-            <span asp-validation-for="MenuTanim.Sira" class="text-danger"></span>
-        </div>
-        <div class="mb-3">
-            <label asp-for="MenuTanim.Aciklama"></label>
-            <textarea asp-for="MenuTanim.Aciklama" rows="3" class="form-control"></textarea>
-            <span asp-validation-for="MenuTanim.Aciklama" class="text-danger"></span>
-        </div>
-        <div class="col-12">
-            @if (Model.MenuTanim.Id != 0)
-            {
-                <button type="submit" class="btn btn-primary" style="width:150px">Güncelle</button>
-            }
-            else
-            {
-                <button type="submit" class="btn btn-primary" style="width:150px">Kaydet</button>
-            }
-            <a asp-controller="MenuTanim" asp-action="Index" class="btn btn-secondary" style="width:150px">
-                Listeye Dön
-            </a>
-        </div>
-    </div>
-</form>
-
+    </form>
+</div>
 @section Scripts{
     @{
         <partial name="_ValidationScriptsPartial" />

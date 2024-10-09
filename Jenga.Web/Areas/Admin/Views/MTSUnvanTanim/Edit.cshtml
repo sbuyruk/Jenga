@@ -1,34 +1,35 @@
 @model MTSUnvanTanim
-
-<form method="post" asp-action="Edit" enctype="multipart/form-data">
-    <input asp-for="Id" hidden />
-    <div class="row pt-3">
-        <div class="col ">
-            <h4 class="text-primary text-start fw-bold">Ünvan Düzenle</h4>
+<div class="container-sm shadow p-3">
+    <form method="post" asp-action="Edit" enctype="multipart/form-data">
+        <input asp-for="Id" hidden />
+        <div class="row pt-3">
+            <div class="col ">
+                <h4 class="text-primary text-start fw-bold">Ünvan Düzenle</h4>
+            </div>
         </div>
-    </div>
-    <hr />
-    <div class="border p-3 mt-4">
-        @*<div asp-validation-summary="All"></div>*@
-        <div class="form-floating py-2 col-12">
-            <input asp-for="Adi" class="form-control border-0 shadow" />
-            <label asp-for="Adi" class="ms-2"></label>
-            <span asp-validation-for="Adi" class="text-danger"></span>
+        <hr />
+        <div class="border p-3 mt-4">
+            @*<div asp-validation-summary="All"></div>*@
+            <div class="form-floating py-2 col-12">
+                <input asp-for="Adi" class="form-control border-0 shadow" />
+                <label asp-for="Adi" class="ms-2"></label>
+                <span asp-validation-for="Adi" class="text-danger"></span>
+            </div>
+            <div class="form-floating py-2 col-12">
+                <input asp-for="KisaAdi" class="form-control border-0 shadow" />
+                <label asp-for="KisaAdi" class="ms-2"></label>
+                <span asp-validation-for="KisaAdi" class="text-danger"></span>
+            </div>
+            <div class="form-floating py-2 col-12">
+                <label asp-for="Aciklama"></label>
+                <textarea asp-for="Aciklama" rows="3" class="form-control"></textarea>
+                <span asp-validation-for="Aciklama" class="text-danger"></span>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width=150px">Güncelle</button>
+            <a asp-controller="MTSUnvanTanim" asp-action="Index" class="btn btn-secondary" style="width:150px">Listeye Dön</a>
         </div>
-        <div class="form-floating py-2 col-12">
-            <input asp-for="KisaAdi" class="form-control border-0 shadow" />
-            <label asp-for="KisaAdi" class="ms-2"></label>
-            <span asp-validation-for="KisaAdi" class="text-danger"></span>
-        </div>
-        <div class="form-floating py-2 col-12">
-            <label asp-for="Aciklama"></label>
-            <textarea asp-for="Aciklama" rows="3" class="form-control"></textarea>
-            <span asp-validation-for="Aciklama" class="text-danger"></span>
-        </div>
-        <button type="submit" class="btn btn-primary" style="width=150px">Güncelle</button>
-        <a asp-controller="MTSUnvanTanim" asp-action="Index" class="btn btn-secondary" style="width:150px">Listeye Dön</a>
-    </div>
-</form>
+    </form>
+</div>
 @section scripts{
     @{
     <partial name="_ValidationScriptsPartial" />

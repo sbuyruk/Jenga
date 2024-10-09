@@ -1,109 +1,112 @@
 @model AramaGorusmeVM
+<div class="container shadow p-3">
+    <form method="post" asp-action="Edit" enctype="multipart/form-data">
+        <input asp-for="AramaGorusme.Id" hidden />
+        <div class="row pt-3">
+            <div class="col ">
+                <h4 class="text-primary text-start fw-bold">Arama/Görüşme Kaydı Düzenleme</h4>
+            </div>
+        </div>
+        <hr />
+        <div class="">
+            @*<div asp-validation-summary="All"></div>*@
 
-<form method="post" asp-action="Edit" enctype="multipart/form-data">
-    <input asp-for="AramaGorusme.Id" hidden />
-    <div class="row pt-3">
-        <div class="col ">
-            <h4 class="text-primary text-start fw-bold">Arama/Görüşme Kaydı Düzenleme</h4>
-        </div>
-    </div>
-    <hr />
-    <div class="">
-        @*<div asp-validation-summary="All"></div>*@
 
+            <div class="row">
+                <div class="form-group mb-3 col-10">
+                    <label asp-for="KisiBilgisi" class="fw-bold">Görüşülen Kişi</label>
+                    <input asp-for="KisiBilgisi" class="form-control " type="text" readonly id="KisiBilgisi" />
+                    <span asp-validation-for="AramaGorusme.ArayanId" class="text-danger"></span>
+                </div>
 
-        <div class="row">
-            <div class="form-group mb-3 col-10">
-                <label asp-for="KisiBilgisi" class="fw-bold">Görüşülen Kişi</label>
-                <input asp-for="KisiBilgisi" class="form-control " type="text" readonly id="KisiBilgisi" />
-                <span asp-validation-for="AramaGorusme.ArayanId" class="text-danger"></span>
+                <div class="form-group col-2">
+                    <label class="fw-bold"></label>
+                    <button type="button" class="form-control btn btn-success" onclick=OpenModalKisi();>
+                        Görüşülen Kişi Seç
+                    </button>
+                </div>
             </div>
+            <div class="row">
+                <div class="form-group mb-3 col-10">
+                    <label asp-for="KurumGorev" class="fw-bold">Kurum/Görev</label>
+                    <input asp-for="KurumGorev" class="form-control " type="text" readonly id="KurumGorev" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="form-group mb-3  ">
+                    <label asp-for="AramaGorusme.Konu" class="fw-bold"></label>
+                    @* <input asp-for="AramaGorusme.Konu" class="form-control  fw-bold" /> *@
+                    <textarea asp-for="AramaGorusme.Konu" rows="3" class="form-control"></textarea>
+                    <span asp-validation-for="AramaGorusme.Konu" class="text-danger"></span>
+                </div>
+            </div>
+            <div class="row">
+                <div class="form-group mb-3 col-3">
+                    <label asp-for="AramaGorusme.GorusmeSekli" class="fw-bold"></label>
+                    <select asp-for="AramaGorusme.GorusmeSekli" asp-items="@Model.GorusmeSekliList" class="form-select">
+                    </select>
+                    <span asp-validation-for="AramaGorusme.GorusmeSekli" class="text-danger"></span>
+                </div>
+                <div class="form-group mb-3 col-2">
+                    <label asp-for="AramaGorusme.Tarih" class="fw-bold">Görüşme Tarihi</label>
+                    <input asp-for="AramaGorusme.Tarih" class="form-control" />
+                    <span asp-validation-for="AramaGorusme.Tarih" class="text-danger"></span>
+                </div>
 
-            <div class="form-group col-2">
-                <label class="fw-bold"></label>
-                <button type="button" class="form-control btn btn-success" onclick=OpenModalKisi();>
-                    Görüşülen Kişi Seç
-                </button>
+                <div class="checkbox m-3 col-2 border ">
+                    <label asp-for="AramaGorusme.GorusmeSaglandi" class="control-label">Görüşme Sağlandı </label>
+                    <input asp-for="AramaGorusme.GorusmeSaglandi" class="form-check" type="checkbox" />
+                </div>
+                <div class="checkbox m-3 col-2 border">
+                    <label asp-for="AramaGorusme.RandevuIstendi" class="control-label">Randevu İstendi </label>
+                    @if ((Model.AramaGorusme.RandevuIstendi) && (Model.AramaGorusme.FaaliyetId > 0))
+                    {
+                        <input asp-for="AramaGorusme.RandevuIstendi" class="form-check" type="checkbox" id="RandevuIstendiChk" disabled />
+                    }
+                    else
+                    {
+                        <input asp-for="AramaGorusme.RandevuIstendi" class="form-check" type="checkbox" id="RandevuIstendiChk" onclick="SetFaaliyetBtnVisibility()" />
+                    }
+                </div>
+                <div class="checkbox m-3 col-2 border">
+                    <label asp-for="GorusulenKisi.RandevuKisiti" class="control-label">Randevu Kısıtı </label>
+                    <input asp-for="GorusulenKisi.RandevuKisiti" class="form-check" type="checkbox" disabled />
+                </div>
             </div>
-        </div>
-        <div class="row">
-            <div class="form-group mb-3 col-10">
-                <label asp-for="KurumGorev" class="fw-bold">Kurum/Görev</label>
-                <input asp-for="KurumGorev" class="form-control " type="text" readonly id="KurumGorev" />
+            <div class="form-group mb-3 col-12">
+                <label asp-for="AramaGorusme.Aciklama" class="fw-bold"></label>
+                <textarea asp-for="AramaGorusme.Aciklama" rows="6" class="form-control" style="height:150px"></textarea>
+                <span asp-validation-for="AramaGorusme.Aciklama" class="text-danger"></span>
             </div>
-        </div>
-        <div class="row">
-            <div class="form-group mb-3  ">
-                <label asp-for="AramaGorusme.Konu" class="fw-bold"></label>
-                @* <input asp-for="AramaGorusme.Konu" class="form-control  fw-bold" /> *@
-                <textarea asp-for="AramaGorusme.Konu" rows="3" class="form-control"></textarea>
-                <span asp-validation-for="AramaGorusme.Konu" class="text-danger"></span>
+            <div id="HiddenDiv" style="visibility: hidden;">
+                <input asp-for="AramaGorusme.ArayanId" class="form-control" type="text" style="visibility:hidden" id="ArayanId" />
             </div>
-        </div>
-        <div class="row">
-            <div class="form-group mb-3 col-3">
-                <label asp-for="AramaGorusme.GorusmeSekli" class="fw-bold"></label>
-                <select asp-for="AramaGorusme.GorusmeSekli" asp-items="@Model.GorusmeSekliList" class="form-select">
-                </select>
-                <span asp-validation-for="AramaGorusme.GorusmeSekli" class="text-danger"></span>
-            </div>
-            <div class="form-group mb-3 col-2">
-                <label asp-for="AramaGorusme.Tarih" class="fw-bold">Görüşme Tarihi</label>
-                <input asp-for="AramaGorusme.Tarih" class="form-control" />
-                <span asp-validation-for="AramaGorusme.Tarih" class="text-danger"></span>
-            </div>
+            <div class="row pt-2">
+                <div class="col-2">
+                    <button type="submit" class="btn btn-primary form-control">Güncelle</button>
+                </div>
+                <div class="col-2">
+                    <a asp-controller="AramaGorusme" asp-action="Index" class="btn btn-outline-primary border form-control">
+                        Arama/Görüşme Listesi
+                    </a>
+                </div>
+                <div class="col-2">
+                    @if ((Model.AramaGorusme.RandevuIstendi) && (Model.AramaGorusme.FaaliyetId > 0))
+                    {
+                        @* <button type="button" class="btn btn-warning form-control" id="FaaliyetBtn" onclick="OpenModalFaaliyet()"> Faaliyeti Aç</button> *@
+                        <a href="http://tskgv-portal/Sayfalar/FaaliyetGirisi.aspx?FaaliyetId=@Model.AramaGorusme.FaaliyetId" class="btn btn-warning form-control"> <i class="bi bi-pencil-square"></i> Faaliyeti Aç</a>
 
-            <div class="checkbox m-3 col-2 border ">
-                <label asp-for="AramaGorusme.GorusmeSaglandi" class="control-label">Görüşme Sağlandı </label>
-                <input asp-for="AramaGorusme.GorusmeSaglandi" class="form-check" type="checkbox" />
-            </div>
-            <div class="checkbox m-3 col-2 border">
-                <label asp-for="AramaGorusme.RandevuIstendi" class="control-label">Randevu İstendi </label>
-                @if ((Model.AramaGorusme.RandevuIstendi) && (Model.AramaGorusme.FaaliyetId>0))
-                {
-                    <input asp-for="AramaGorusme.RandevuIstendi" class="form-check" type="checkbox" id="RandevuIstendiChk" disabled />
-                }else{
-                    <input asp-for="AramaGorusme.RandevuIstendi" class="form-check" type="checkbox" id="RandevuIstendiChk" onclick="SetFaaliyetBtnVisibility()" />
-                }
-            </div>
-            <div class="checkbox m-3 col-2 border">
-                <label asp-for="GorusulenKisi.RandevuKisiti" class="control-label">Randevu Kısıtı </label>
-                <input asp-for="GorusulenKisi.RandevuKisiti" class="form-check" type="checkbox" disabled />
-            </div>
-        </div>
-        <div class="form-group mb-3 col-12">
-            <label asp-for="AramaGorusme.Aciklama" class="fw-bold"></label>
-            <textarea asp-for="AramaGorusme.Aciklama" rows="6" class="form-control" style="height:150px"></textarea>
-            <span asp-validation-for="AramaGorusme.Aciklama" class="text-danger"></span>
-        </div>
-        <div id="HiddenDiv" style="visibility: hidden;">
-            <input asp-for="AramaGorusme.ArayanId" class="form-control" type="text" style="visibility:hidden" id="ArayanId" />
-        </div>
-        <div class="row pt-2">
-            <div class="col-2">
-                <button type="submit" class="btn btn-primary form-control">Güncelle</button>
-            </div>
-            <div class="col-2">
-                <a asp-controller="AramaGorusme" asp-action="Index" class="btn btn-outline-primary border form-control">
-                    Arama/Görüşme Listesi
-                </a>
-            </div>
-            <div class="col-2">
-                @if ((Model.AramaGorusme.RandevuIstendi) && (Model.AramaGorusme.FaaliyetId > 0))
-                {
-                    @* <button type="button" class="btn btn-warning form-control" id="FaaliyetBtn" onclick="OpenModalFaaliyet()"> Faaliyeti Aç</button> *@
-                    <a href="http://tskgv-portal/Sayfalar/FaaliyetGirisi.aspx?FaaliyetId=@Model.AramaGorusme.FaaliyetId" class="btn btn-warning form-control"> <i class="bi bi-pencil-square"></i> Faaliyeti Aç</a>
+                    }
+                    else if (Model.AramaGorusme.RandevuIstendi)
+                    {
+                        <button type="button" class="btn btn-success form-control" id="FaaliyetBtn" onclick="OpenModalFaaliyet()"> Faaliyet Oluştur</button>
+                    }
 
-                }
-                else if (Model.AramaGorusme.RandevuIstendi)
-                {
-                    <button type="button" class="btn btn-success form-control" id="FaaliyetBtn" onclick="OpenModalFaaliyet()"> Faaliyet Oluştur</button>
-                }
-                
+                </div>
             </div>
         </div>
-    </div>
-</form>
+    </form>
+</div>
 <div class="modal fade" id="OpenFaaliyetModalDiv" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
     <div class="modal-dialog ">
         <div class="modal-content">

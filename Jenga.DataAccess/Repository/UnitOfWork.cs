@@ -6,14 +6,14 @@ using Jenga.DataAccess.Repository.IRepository.NBYS;
 using Jenga.DataAccess.Repository.IRepository.TBYS;
 using Jenga.DataAccess.Repository.IRepository.TYS;
 using Jenga.DataAccess.Repository.IRepository.Ortak;
+using Jenga.DataAccess.Repository.IRepository.DYS;
 using Jenga.DataAccess.Repository.IKYS;
 using Jenga.DataAccess.Repository.MTS;
 using Jenga.DataAccess.Repository.TBYS;
 using Jenga.DataAccess.Repository.TYS;
 using Jenga.DataAccess.Repository.NBYS;
 using Jenga.DataAccess.Repository.Ortak;
-using Jenga.Models.MTS;
-using Jenga.Models.IKYS;
+using Jenga.DataAccess.Repository.DYS;
 
 namespace Jenga.DataAccess.Repository
 {
@@ -66,6 +66,15 @@ namespace Jenga.DataAccess.Repository
             //TYS
             Toplanti = new ToplantiRepository(_db);
             ToplantiKatilim = new ToplantiKatilimRepository(_db);
+            //DYS
+            EnvanterTanim = new EnvanterTanimRepository(_db);
+            MalzemeGrubu = new MalzemeGrubuRepository(_db);
+            MalzemeCinsi = new MalzemeCinsiRepository(_db);
+            MarkaTanim = new MarkaTanimRepository(_db);
+            ModelTanim = new ModelTanimRepository(_db);
+            Ozellik = new OzellikRepository(_db);
+            MalzemeOzellik = new MalzemeOzellikRepository(_db);
+            Malzeme = new MalzemeRepository(_db);
         }
 
         //MTS
@@ -112,6 +121,15 @@ namespace Jenga.DataAccess.Repository
         //NBYS
         public IToplantiRepository Toplanti { get; private set; }
         public IToplantiKatilimRepository ToplantiKatilim { get; private set; }
+        //DYS
+        public IEnvanterTanimRepository EnvanterTanim { get; private set; }
+        public IMalzemeGrubuRepository MalzemeGrubu { get; private set; }
+        public IMalzemeCinsiRepository MalzemeCinsi { get; private set; }
+        public IMarkaTanimRepository MarkaTanim { get; private set; }
+        public IModelTanimRepository ModelTanim { get; private set; }
+        public IOzellikRepository Ozellik { get; private set; }
+        public IMalzemeOzellikRepository MalzemeOzellik { get; private set; }
+        public IMalzemeRepository Malzeme { get; private set; }
         public void Save()
         {
             _db.SaveChanges();

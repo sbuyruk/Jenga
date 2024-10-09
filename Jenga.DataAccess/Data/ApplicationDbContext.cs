@@ -1,4 +1,5 @@
-﻿using Jenga.Models.IKYS;
+﻿using Jenga.Models.DYS;
+using Jenga.Models.IKYS;
 using Jenga.Models.MTS;
 using Jenga.Models.NBYS;
 using Jenga.Models.Ortak;
@@ -56,7 +57,15 @@ namespace Jenga.DataAccess.Data
         public DbSet<Bolge> Bolge_Table { get; set; }
         public DbSet<Il> Il_Table { get; set; }
         public DbSet<Ilce> Ilce_Table { get; set; }
-        
+        //DYS
+        public DbSet<EnvanterTanim> EnvanterTanim_Table { get; set; }
+        public DbSet<MalzemeGrubu> MalzemeGrubu_Table { get; set; }
+        public DbSet<MalzemeCinsi> MalzemeCinsi_Table { get; set; }
+        public DbSet<MarkaTanim> MarkaTanim_Table { get; set; }
+        public DbSet<ModelTanim> ModelTanim_Table { get; set; }
+        public DbSet<Ozellik> Ozellik_Table { get; set; }
+        public DbSet<MalzemeOzellik> MalzemeOzellik_Table { get; set; }
+        public DbSet<Malzeme> Malzeme_Table { get; set; }
 
     }
 }

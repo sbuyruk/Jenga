@@ -1,72 +1,72 @@
 ﻿@model AniObjesiDagitimVM
-
-<form method="post" asp-action="Create" enctype="multipart/form-data">
-    <input asp-for="AniObjesiDagitim.Id" hidden />
-    <input asp-for="AniObjesiDagitim.DepoTanim.Id" hidden />
-    <div class="row pt-3">
-        <div class="col ">
-            <h4 class="text-primary text-start fw-bold">Anı Objesi Verme</h4>
-        </div>
-    </div>
-    <hr />
-    <div class="row">
-        @*<div asp-validation-summary="All"></div>*@
-
-        <div class="mb-3 col-3">
-            <label asp-for="AniObjesiDagitim.Katilimci.Adi">Verilen Kişi</label>
-            <select asp-for="AniObjesiDagitim.Katilimci.Adi" asp-items="@Model.KatilimciList" class="form-select">
-                <option disabled selected>--Katilimci seçiniz--</option>
-            </select>
-            <span asp-validation-for="AniObjesiDagitim.Katilimci.Id" class="text-danger"></span>
-        </div>
-        <div class="mb-3 col-3">
-            <label asp-for="AniObjesiDagitim.AniObjesiId">Anı Objesi</label>
-            <select asp-for="AniObjesiDagitim.AniObjesiId" asp-items="@Model.AniObjesiTanimList" class="form-select">
-                <option disabled selected>--Anı Objesi seçiniz--</option>
-            </select>
-            <span asp-validation-for="AniObjesiDagitim.AniObjesiId" class="text-danger"></span>
-        </div>
-        <div class="mb-3 col-3">
-            <label asp-for="AniObjesiDagitim.DepoTanim.Id">Çıkış Deposu</label>
-            <select asp-for="AniObjesiDagitim.DepoTanim.Id" asp-items="@Model.DepoTanimList" class="form-select" id="cikisDepoId">
-                <option disabled selected>--Çıkış Deposu seçiniz--</option>
-            </select>
-            <span asp-validation-for="AniObjesiDagitim.DepoTanim.Id" class="text-danger"></span>
-        </div>
-
-        <div class="mb-3 col-1">
-            <label asp-for="AniObjesiDagitim.Adet"></label>
-            <input asp-for="AniObjesiDagitim.Adet" class="form-control" />
-            <span asp-validation-for="AniObjesiDagitim.Adet" class="text-danger"></span>
-        </div>
-        <div class="mb-3 col-2">
-            <div class="form-group">
-                <label asp-for="AniObjesiDagitim.VerilisTarihi" class="control-label">Veriliş Tarihi</label>
-                <input asp-for="AniObjesiDagitim.VerilisTarihi" class="form-control" type="date" />
-                <span asp-validation-for="AniObjesiDagitim.VerilisTarihi" class="text-danger"></span>
+<div class="container shadow p-3">
+    <form method="post" asp-action="Create" enctype="multipart/form-data">
+        <input asp-for="AniObjesiDagitim.Id" hidden />
+        <input asp-for="AniObjesiDagitim.DepoTanim.Id" hidden />
+        <div class="row pt-3">
+            <div class="col ">
+                <h4 class="text-primary text-start fw-bold">Anı Objesi Verme</h4>
             </div>
         </div>
-    </div>
-    <div class="mb-3">
-        <label asp-for="AniObjesiDagitim.Aciklama"></label>
-        <textarea asp-for="AniObjesiDagitim.Aciklama" rows="3" class="form-control"></textarea>
-        <span asp-validation-for="AniObjesiDagitim.Aciklama" class="text-danger"></span>
-    </div>
-    <div class="col-12">
-        @if (Model.AniObjesiDagitim.Id != 0)
-        {
-            <button type="submit" class="btn btn-primary" style="width:150px">Güncelle</button>
-        }
-        else
-        {
-            <button type="submit" class="btn btn-primary" style="width:150px">Kaydet</button>
-        }
-        <a asp-controller="AniObjesiDagitim" asp-action="Index" class="btn btn-secondary" style="width:150px">
-            Listeye Dön
-        </a>
-    </div>
-</form>
+        <hr />
+        <div class="row">
+            @*<div asp-validation-summary="All"></div>*@
 
+            <div class="mb-3 col-3">
+                <label asp-for="AniObjesiDagitim.Katilimci.Adi">Verilen Kişi</label>
+                <select asp-for="AniObjesiDagitim.Katilimci.Adi" asp-items="@Model.KatilimciList" class="form-select">
+                    <option disabled selected>--Katilimci seçiniz--</option>
+                </select>
+                <span asp-validation-for="AniObjesiDagitim.Katilimci.Id" class="text-danger"></span>
+            </div>
+            <div class="mb-3 col-3">
+                <label asp-for="AniObjesiDagitim.AniObjesiId">Anı Objesi</label>
+                <select asp-for="AniObjesiDagitim.AniObjesiId" asp-items="@Model.AniObjesiTanimList" class="form-select">
+                    <option disabled selected>--Anı Objesi seçiniz--</option>
+                </select>
+                <span asp-validation-for="AniObjesiDagitim.AniObjesiId" class="text-danger"></span>
+            </div>
+            <div class="mb-3 col-3">
+                <label asp-for="AniObjesiDagitim.DepoTanim.Id">Çıkış Deposu</label>
+                <select asp-for="AniObjesiDagitim.DepoTanim.Id" asp-items="@Model.DepoTanimList" class="form-select" id="cikisDepoId">
+                    <option disabled selected>--Çıkış Deposu seçiniz--</option>
+                </select>
+                <span asp-validation-for="AniObjesiDagitim.DepoTanim.Id" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3 col-1">
+                <label asp-for="AniObjesiDagitim.Adet"></label>
+                <input asp-for="AniObjesiDagitim.Adet" class="form-control" />
+                <span asp-validation-for="AniObjesiDagitim.Adet" class="text-danger"></span>
+            </div>
+            <div class="mb-3 col-2">
+                <div class="form-group">
+                    <label asp-for="AniObjesiDagitim.VerilisTarihi" class="control-label">Veriliş Tarihi</label>
+                    <input asp-for="AniObjesiDagitim.VerilisTarihi" class="form-control" type="date" />
+                    <span asp-validation-for="AniObjesiDagitim.VerilisTarihi" class="text-danger"></span>
+                </div>
+            </div>
+        </div>
+        <div class="mb-3">
+            <label asp-for="AniObjesiDagitim.Aciklama"></label>
+            <textarea asp-for="AniObjesiDagitim.Aciklama" rows="3" class="form-control"></textarea>
+            <span asp-validation-for="AniObjesiDagitim.Aciklama" class="text-danger"></span>
+        </div>
+        <div class="col-12">
+            @if (Model.AniObjesiDagitim.Id != 0)
+            {
+                <button type="submit" class="btn btn-primary" style="width:150px">Güncelle</button>
+            }
+            else
+            {
+                <button type="submit" class="btn btn-primary" style="width:150px">Kaydet</button>
+            }
+            <a asp-controller="AniObjesiDagitim" asp-action="Index" class="btn btn-secondary" style="width:150px">
+                Listeye Dön
+            </a>
+        </div>
+    </form>
+</div>
 @section Scripts{
     @{
         <partial name="_ValidationScriptsPartial" />

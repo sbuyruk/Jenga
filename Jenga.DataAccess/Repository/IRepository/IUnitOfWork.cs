@@ -1,4 +1,5 @@
-﻿using Jenga.DataAccess.Repository.IRepository.IKYS;
+﻿using Jenga.DataAccess.Repository.IRepository.DYS;
+using Jenga.DataAccess.Repository.IRepository.IKYS;
 using Jenga.DataAccess.Repository.IRepository.MTS;
 using Jenga.DataAccess.Repository.IRepository.NBYS;
 using Jenga.DataAccess.Repository.IRepository.Ortak;
@@ -51,6 +52,15 @@ namespace Jenga.DataAccess.Repository.IRepository
         //TYS
         IToplantiRepository Toplanti { get; }
         IToplantiKatilimRepository ToplantiKatilim { get; }
+        //DYS
+        IEnvanterTanimRepository EnvanterTanim { get; }
+        IMalzemeGrubuRepository MalzemeGrubu { get; }
+        IMalzemeCinsiRepository MalzemeCinsi { get; }
+        IMarkaTanimRepository MarkaTanim { get; }
+        IModelTanimRepository ModelTanim { get; }
+        IOzellikRepository Ozellik { get; }
+        IMalzemeOzellikRepository MalzemeOzellik { get; }
+        IMalzemeRepository Malzeme { get; }
         void Save();
     }
 }

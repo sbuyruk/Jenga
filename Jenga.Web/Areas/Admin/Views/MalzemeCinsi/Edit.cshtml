@@ -1,0 +1,50 @@
+﻿@model MalzemeCinsiVM
+<div class="container-sm shadow p-3">
+    <form method="post" asp-action="Edit" enctype="multipart/form-data">
+        <input asp-for="MalzemeCinsi.Id" hidden />
+        <div class="row pt-3">
+            <div class="col ">
+                <h4 class="text-primary text-start fw-bold">Malzeme Cinsi Düzenleme</h4>
+            </div>
+        </div>
+        <hr />
+        <div class="border p-3 mt-4">
+            <div asp-validation-summary="All"></div>
+            <div class="row">
+                <div class="col-6 mb-3">
+                    <label asp-for="MalzemeCinsi.Adi"></label>
+                    <input asp-for="MalzemeCinsi.Adi" class="form-control" />
+                    <span asp-validation-for="MalzemeCinsi.Adi" class="text-danger"></span>
+                </div>
+                <div class="col-6 mb-3 ">
+                    <label asp-for="MalzemeCinsi.MalzemeGrubuId"></label>
+                    <select asp-for="MalzemeCinsi.MalzemeGrubuId" asp-items="@Model.MalzemeGrubuSelectList" class="form-select">
+                        <option disabled selected>--Malzeme Grubunu seçiniz--</option>
+                    </select>
+                    <span asp-validation-for="MalzemeCinsi.MalzemeGrubuId" class="text-danger"></span>
+                </div>
+
+            </div>
+            <div class="col-6 mb-3 ">
+                <label asp-for="MalzemeCinsi.UstMalzemeCinsiId"></label>
+                <select asp-for="MalzemeCinsi.UstMalzemeCinsiId" asp-items="@Model.UstMalzemeSelectList" class="form-select">
+                    <option disabled selected>--Malzeme Cinsi seçiniz--</option>
+                </select>
+                <span asp-validation-for="MalzemeCinsi.UstMalzemeCinsiId" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="MalzemeCinsi.Aciklama"></label>
+                <textarea asp-for="MalzemeCinsi.Aciklama" rows="2" class="form-control"></textarea>
+                <span asp-validation-for="MalzemeCinsi.Aciklama" class="text-danger"></span>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width=150px">Güncelle</button>
+            <a asp-controller="MalzemeCinsi" asp-action="Index" class="btn btn-secondary" style="width:150px">Listeye Dön</a>
+        </div>
+    </form>
+</div>
+@section Scripts{
+    @{
+        <partial name="_ValidationScriptsPartial" />
+    }
+
+}

@@ -12,7 +12,8 @@ namespace Jenga.Models.MTS
         public IEnumerable<SelectListItem> GorusmeSekliList { get; set; }
         [ValidateNever]
         public Kisi? GorusulenKisi { get; set; }
-        public string KisiBilgisi { //custom get method
+        [ValidateNever]
+        public string? KisiBilgisi { //custom get method
             get
             {
                 return GorusulenKisi?.Adi + " " + GorusulenKisi?.Soyadi;
@@ -20,7 +21,8 @@ namespace Jenga.Models.MTS
             set { }
 
         }
-        public string KurumGorev { //custom get method
+        [ValidateNever]
+        public string? KurumGorev { //custom get method
             get
             {
                 var kurum = string.Empty;
