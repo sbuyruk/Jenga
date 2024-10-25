@@ -124,5 +124,12 @@ namespace Jenga.Utility
         public const int BOLGE_MERSIN_INT = 4;
         public const int BOLGE_HEPSI_INT = 5;
         public const int BOLGE_GENELMUDURLUK_INT = 8;
+        //Malzeme
+        public const string MALZEMEHAREKETI_GIRIS = "Giriş";
+        public const string MALZEMEHAREKETI_CIKIS = "Çıkış";
+        public const string MALZEMEHAREKETI_AKTARMA = "Aktarma";
+        
+        public const int MALZEMENINGELDIGI_YER_BOS_INT = 1;
+        public const int MALZEMENINGITTIGI_YER_BOS_INT = 1;
     }
 }

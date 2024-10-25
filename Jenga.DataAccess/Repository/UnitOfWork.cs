@@ -14,6 +14,8 @@ using Jenga.DataAccess.Repository.TYS;
 using Jenga.DataAccess.Repository.NBYS;
 using Jenga.DataAccess.Repository.Ortak;
 using Jenga.DataAccess.Repository.DYS;
+using Jenga.Models.DYS;
+using Microsoft.EntityFrameworkCore;
 
 namespace Jenga.DataAccess.Repository
 {
@@ -75,6 +77,9 @@ namespace Jenga.DataAccess.Repository
             Ozellik = new OzellikRepository(_db);
             MalzemeOzellik = new MalzemeOzellikRepository(_db);
             Malzeme = new MalzemeRepository(_db);
+            MalzemeYeriTanim = new MalzemeYeriTanimRepository(_db);
+            MalzemeDagilim = new MalzemeDagilimRepository(_db);
+            MalzemeHareket = new MalzemeHareketRepository(_db);
         }
 
         //MTS
@@ -130,6 +135,10 @@ namespace Jenga.DataAccess.Repository
         public IOzellikRepository Ozellik { get; private set; }
         public IMalzemeOzellikRepository MalzemeOzellik { get; private set; }
         public IMalzemeRepository Malzeme { get; private set; }
+        public IMalzemeYeriTanimRepository MalzemeYeriTanim { get; private set; }
+        public IMalzemeDagilimRepository MalzemeDagilim { get; private set; }
+        public IMalzemeHareketRepository MalzemeHareket { get; private set; }
+        public IZimmetRepository Zimmet { get; private set; }
         public void Save()
         {
             _db.SaveChanges();

@@ -92,5 +92,12 @@ namespace Jenga.DataAccess.Repository
         {
             dbSet.RemoveRange(entity);
         }
+        public void Update(T entity)
+        {
+            dbSet.Entry(entity).Property(x => x.Id).IsModified = false;
+            dbSet.Attach(entity);  // Attach to DbContext
+            dbSet.Entry(entity).State = EntityState.Modified;
+            dbSet.Update(entity);  // Mark the entity as Modified
+        }
     }
 }

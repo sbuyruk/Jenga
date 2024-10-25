@@ -11,5 +11,6 @@ namespace Jenga.DataAccess.Repository.IRepository
         void Remove(T entity);
         void RemoveRange(IEnumerable<T> entity);
         Task<IEnumerable<T>> GetAllAsync();
+        void Update(T entity); //SB
     }
 }

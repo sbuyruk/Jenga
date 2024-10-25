@@ -66,6 +66,24 @@ namespace Jenga.DataAccess.Data
         public DbSet<Ozellik> Ozellik_Table { get; set; }
         public DbSet<MalzemeOzellik> MalzemeOzellik_Table { get; set; }
         public DbSet<Malzeme> Malzeme_Table { get; set; }
+        public DbSet<MalzemeYeriTanim> MalzemeYeriTanim_Table { get; set; }
+        public DbSet<MalzemeDagilim> MalzemeDagilim_Table { get; set; }
+        public DbSet<MalzemeHareket> MalzemeHareket_Table { get; set; }
+        public DbSet<Zimmet> Zimmet_Table { get; set; }
 
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+
+            //composite primary key 
+            //modelBuilder.Entity<MalzemeDagilim>()
+            //    .HasKey(od => new { od.MalzemeId, od.MalzemeYeriTanimId });
+            modelBuilder.Entity<MalzemeDagilim>()
+                .Property(m => m.Id)
+                .ValueGeneratedOnAdd(); // Ensures EF Core knows that Id is auto-generated
+            modelBuilder.Entity<MalzemeHareket>()
+                .Property(m => m.Id)
+                .ValueGeneratedOnAdd(); // Ensures EF Core knows that Id is auto-generated
+
+        }
     }
 }

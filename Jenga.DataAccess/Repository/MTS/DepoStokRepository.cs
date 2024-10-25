@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Jenga.Models.MTS;
 using Jenga.DataAccess.Repository.IRepository.MTS;
 using Jenga.DataAccess.Repository.IRepository.NBYS;
+using Jenga.Models.DYS;
 
 namespace Jenga.DataAccess.Repository.MTS
 {

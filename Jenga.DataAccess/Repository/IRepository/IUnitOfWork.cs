@@ -5,6 +5,7 @@ using Jenga.DataAccess.Repository.IRepository.NBYS;
 using Jenga.DataAccess.Repository.IRepository.Ortak;
 using Jenga.DataAccess.Repository.IRepository.TBYS;
 using Jenga.DataAccess.Repository.IRepository.TYS;
+using Jenga.Models.DYS;
 
 namespace Jenga.DataAccess.Repository.IRepository
 {
@@ -61,6 +62,10 @@ namespace Jenga.DataAccess.Repository.IRepository
         IOzellikRepository Ozellik { get; }
         IMalzemeOzellikRepository MalzemeOzellik { get; }
         IMalzemeRepository Malzeme { get; }
+        IMalzemeYeriTanimRepository MalzemeYeriTanim { get; }
+        IMalzemeDagilimRepository MalzemeDagilim { get; }
+        IMalzemeHareketRepository MalzemeHareket { get; }
+        IZimmetRepository Zimmet{ get; }
         void Save();
     }
 }

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace Jenga.Models.DYS;
 public class Malzeme : BaseModel
@@ -26,4 +27,6 @@ public class Malzeme : BaseModel
     public int ModelTanimId { get; set; }
     [ValidateNever]
     public ModelTanim? ModelTanim { get; set; }
+    [JsonIgnore]
+    public ICollection<MalzemeHareket> MalzemeHarekets { get; set; } = new List<MalzemeHareket>();
 }

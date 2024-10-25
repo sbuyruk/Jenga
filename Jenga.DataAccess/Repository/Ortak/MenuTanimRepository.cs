@@ -17,22 +17,6 @@ namespace Jenga.DataAccess.Repository.Ortak
             _db.SaveChanges();
         }
 
-        public void Update(MenuTanim obj)
-        {
-            var objFromDb = _db.MenuTanim_Table.FirstOrDefault(u => u.Id == obj.Id);
-            if (objFromDb != null)
-            {
-                objFromDb.Adi = obj.Adi;
-                objFromDb.UstMenuId = obj.UstMenuId;
-                objFromDb.Url = obj.Url;
-                objFromDb.Webpart = obj.Webpart;
-                objFromDb.Sira = obj.Sira;
-                objFromDb.Aciklama = obj.Aciklama;
-                objFromDb.Degistiren = obj.Degistiren;
-                objFromDb.DegistirmeTarihi = obj.DegistirmeTarihi;
-
-            }
-        }
         public List<MenuTanimVM> GetSubMenuMenuListByParentId(int? parentId)
         {
             IQueryable<MenuTanim> query = _db.MenuTanim_Table;

@@ -12,6 +12,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<Content Update="Areas\Admin\Views\MalzemeHareket\Edit.cshtml">
+		  <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+		  <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+		</Content>
 		<Content Update="Views\Shared\_Layout.cshtml">
 			<ExcludeFromSingleFile>true</ExcludeFromSingleFile>
 			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
