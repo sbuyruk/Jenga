@@ -9,7 +9,6 @@ namespace Jenga.DataAccess.Repository.IRepository.MTS
 {
     public interface IAniObjesiDagitimRepository : IRepository<AniObjesiDagitim>
     {
-        void Update(AniObjesiDagitim obj);
 
     }
 }

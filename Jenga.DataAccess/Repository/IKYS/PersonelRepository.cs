@@ -17,9 +17,5 @@ namespace Jenga.DataAccess.Repository.IKYS
             _db.SaveChanges();
         }
 
-        public void Update(Personel obj)
-        {
-            _db.Personel_Table.Update(obj);
-        }
     }
 }

@@ -6,7 +6,6 @@ namespace Jenga.DataAccess.Repository.IRepository.MTS
     {
         IEnumerable<Kisi> IncludeIt();
         Kisi IncludeThis(int? kisiId);
-        void Update(Kisi obj);
 
     }
 }

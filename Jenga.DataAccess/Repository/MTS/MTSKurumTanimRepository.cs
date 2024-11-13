@@ -21,11 +21,5 @@ namespace Jenga.DataAccess.Repository.MTS
         {
             _db.SaveChanges();
         }
-
-        public void Update(MTSKurumTanim obj)
-        {
-            _db.MTSKurumTanim_Table.Update(obj);
-        }
-
     }
 }

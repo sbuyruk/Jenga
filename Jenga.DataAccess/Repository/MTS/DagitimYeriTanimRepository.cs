@@ -22,9 +22,5 @@ namespace Jenga.DataAccess.Repository.MTS
             _db.SaveChanges();
         }
 
-        public void Update(DagitimYeriTanim obj)
-        {
-            _db.DagitimYeriTanim_Table.Update(obj);
-        }
     }
 }

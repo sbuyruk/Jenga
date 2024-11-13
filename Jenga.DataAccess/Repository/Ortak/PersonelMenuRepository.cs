@@ -26,19 +26,6 @@ namespace Jenga.DataAccess.Repository.Ortak
             _db.SaveChanges();
         }
 
-        public void Update(PersonelMenu obj)
-        {
-            var objFromDb = _db.PersonelMenu_Table.FirstOrDefault(u => u.Id == obj.Id);
-            if (objFromDb != null)
-            {
-                objFromDb.PersonelId = obj.PersonelId;
-                objFromDb.MenuTanimId = obj.MenuTanimId;
-                objFromDb.Aciklama = obj.Aciklama;
-                objFromDb.Degistiren = obj.Degistiren;
-                objFromDb.DegistirmeTarihi = obj.DegistirmeTarihi;
-
-            }
-        }
         public List<PersonelMenu> GetPersonelMenuByPersonelId(int? personelId)
         {
             return _db.Set<PersonelMenu>()

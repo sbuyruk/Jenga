@@ -17,9 +17,5 @@ namespace Jenga.DataAccess.Repository.IKYS
             _db.SaveChanges();
         }
 
-        public void Update(BirimTanim obj)
-        {
-            _db.BirimTanim_Table.Update(obj);
-        }
     }
 }

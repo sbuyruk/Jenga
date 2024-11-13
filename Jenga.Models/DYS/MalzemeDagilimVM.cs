@@ -9,7 +9,7 @@ namespace Jenga.Models.DYS
     {
         public MalzemeDagilim MalzemeDagilim { get; set; }
         [ValidateNever]
-        public IEnumerable<SelectListItem> MalzemeList { get; set; }
+        public IEnumerable<SelectListItem> MalzemeList { get; set;}
         [ValidateNever]
         public IEnumerable<SelectListItem> MalzemeYeriList { get; set; }
         [ValidateNever]

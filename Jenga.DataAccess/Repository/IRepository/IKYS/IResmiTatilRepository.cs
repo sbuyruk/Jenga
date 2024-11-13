@@ -10,7 +10,6 @@ namespace Jenga.DataAccess.Repository.IRepository.IKYS
 {
     public interface IResmiTatilRepository : IRepository<ResmiTatil>
     {
-        void Update(ResmiTatil obj);
 
     }
 }

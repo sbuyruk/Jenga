@@ -22,17 +22,6 @@ namespace Jenga.DataAccess.Repository.MTS
             _db.SaveChanges();
         }
 
-        public void Update(AniObjesiTanim obj)
-        {
-            var objFromDb = _db.AniObjesiTanim_Table.FirstOrDefault(u => u.Id == obj.Id);
-            if (objFromDb != null)
-            {
-                objFromDb.Adi = obj.Adi;
-                objFromDb.Aciklama = obj.Aciklama;
-                objFromDb.KaynakId = obj.KaynakId;
-                objFromDb.StokluMu = obj.StokluMu;
-            }
-        }
 
     }
 }

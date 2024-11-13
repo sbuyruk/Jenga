@@ -26,10 +26,5 @@ namespace Jenga.DataAccess.Repository.Ortak
             _db.SaveChanges();
         }
 
-        public bool Update(Bolge obj)
-        {
-            return false;
-        }
-
     }
 }

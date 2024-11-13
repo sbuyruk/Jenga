@@ -23,9 +23,5 @@ namespace Jenga.DataAccess.Repository.Ortak
             _db.SaveChanges();
         }
 
-        public void Update(ModulTanim obj)
-        {
-            _db.ModulTanim_Table.Update(obj);
-        }
     }
 }

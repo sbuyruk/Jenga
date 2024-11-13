@@ -10,7 +10,6 @@ namespace Jenga.DataAccess.Repository.IRepository.MTS
     public interface IFaaliyetKatilimRepository : IRepository<FaaliyetKatilim>
     {
         IEnumerable<FaaliyetKatilim> IncludeIt();
-        void Update(FaaliyetKatilim obj);
 
     }
 }

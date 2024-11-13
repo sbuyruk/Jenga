@@ -1,0 +1,31 @@
+﻿@model Zimmet
+
+@{
+    ViewData["Title"] = "Delete Zimmet";
+}
+
+<h2>Delete Zimmet</h2>
+
+<div>
+    <h3>Are you sure you want to delete this zimmet?</h3>
+    <div>
+        <h4>@Model.Personel?.Adi</h4>
+        <hr />
+        <dl class="row">
+            <dt class="col-sm-2">Malzeme</dt>
+            <dd class="col-sm-10">@Model.Malzeme?.Adi</dd>
+
+            <dt class="col-sm-2">Adet</dt>
+            <dd class="col-sm-10">@Model.Adet</dd>
+
+            <dt class="col-sm-2">Tarih</dt>
+            <dd class="col-sm-10">@Model.Tarih.ToString("dd/MM/yyyy")</dd>
+        </dl>
+
+        <form asp-action="DeleteConfirmed" method="post">
+            <input type="hidden" asp-for="Id" />
+            <button type="submit" class="btn btn-danger">Delete</button>
+            <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+        </form>
+    </div>
+</div>

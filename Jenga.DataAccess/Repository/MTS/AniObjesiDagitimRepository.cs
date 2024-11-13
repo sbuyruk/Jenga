@@ -22,23 +22,6 @@ namespace Jenga.DataAccess.Repository.MTS
             _db.SaveChanges();
         }
 
-        public void Update(AniObjesiDagitim obj)
-        {
-            var objFromDb = _db.AniObjesiDagitim_Table.FirstOrDefault(u => u.Id == obj.Id);
-            if (objFromDb != null)
-            {
-                objFromDb.FaaliyetId = obj.FaaliyetId;
-                objFromDb.Aciklama = obj.Aciklama;
-                objFromDb.Adet= obj.Adet;
-                objFromDb.AniObjesiId = obj.AniObjesiId;
-                objFromDb.CikisDepoId = obj.CikisDepoId;
-                objFromDb.DagitimYeriTanimId = obj.DagitimYeriTanimId;
-                objFromDb.KatilimciTipi = obj.KatilimciTipi;
-                objFromDb.KatilimciId = obj.KatilimciId;
-                objFromDb.GetirilenAniObjesi = obj.GetirilenAniObjesi;
-                objFromDb.VerilenAlinan = obj.VerilenAlinan;
-            }
-        }
 
     }
 }

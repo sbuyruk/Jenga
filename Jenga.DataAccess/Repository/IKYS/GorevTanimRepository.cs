@@ -17,9 +17,5 @@ namespace Jenga.DataAccess.Repository.IKYS
             _db.SaveChanges();
         }
 
-        public void Update(GorevTanim obj)
-        {
-            _db.GorevTanim_Table.Update(obj);
-        }
     }
 }

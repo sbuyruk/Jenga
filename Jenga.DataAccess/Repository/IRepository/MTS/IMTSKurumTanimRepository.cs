@@ -9,7 +9,6 @@ namespace Jenga.DataAccess.Repository.IRepository.MTS
 {
     public interface IMTSKurumTanimRepository : IRepository<MTSKurumTanim>
     {
-        void Update(MTSKurumTanim obj);
 
     }
 }

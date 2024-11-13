@@ -23,10 +23,6 @@ namespace Jenga.DataAccess.Repository.DYS
         {
             _db.SaveChanges();
         }
-
-        public void Update(Ozellik obj)
-        {
-            _db.Ozellik_Table.Update(obj);
-        }
+       
     }
 }

@@ -10,7 +10,6 @@ namespace Jenga.DataAccess.Repository.IRepository.MTS
 {
     public interface IDepoTanimRepository : IRepository<DepoTanim>
     {
-        void Update(DepoTanim obj);
 
     }
 }

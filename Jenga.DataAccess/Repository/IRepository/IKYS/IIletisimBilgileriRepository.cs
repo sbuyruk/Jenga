@@ -10,7 +10,6 @@ namespace Jenga.DataAccess.Repository.IRepository.IKYS
 {
     public interface IIletisimBilgileriRepository : IRepository<IletisimBilgileri>
     {
-        void Update(IletisimBilgileri obj);
 
     }
 }

@@ -11,7 +11,6 @@ namespace Jenga.DataAccess.Repository.IRepository.Ortak
     public interface IPersonelMenuRepository : IRepository<PersonelMenu>
     {
         List<PersonelMenu> GetPersonelMenuByPersonelId(int? personnelId);
-        void Update(PersonelMenu obj);
 
     }
 }

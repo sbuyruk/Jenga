@@ -25,11 +25,6 @@ namespace Jenga.DataAccess.Repository.Ortak
         {
             _db.SaveChanges();
         }
-
-        public bool Update(Il obj)
-        {
-            return false;
-        }
         public List<Il> GetPersonelMenuByPersonelId(int? personelId)
         {
             return _db.Set<Il>()

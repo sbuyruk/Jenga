@@ -67,5 +67,6 @@ namespace Jenga.DataAccess.Repository.IRepository
         IMalzemeHareketRepository MalzemeHareket { get; }
         IZimmetRepository Zimmet{ get; }
         void Save();
+        Task<int> CommitAsync();
     }
 }

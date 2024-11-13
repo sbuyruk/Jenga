@@ -22,11 +22,6 @@ namespace Jenga.DataAccess.Repository.NBYS
             _db.SaveChanges();
         }
 
-        public bool Update(NakitBagisHareket obj)
-        {
-            var updated = _db.NakitBagisHareket_Table.Update(obj);
-            return updated != null;
-        }
-
+       
     }
 }

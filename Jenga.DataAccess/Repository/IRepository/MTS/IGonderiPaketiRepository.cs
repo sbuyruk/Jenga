@@ -9,7 +9,6 @@ namespace Jenga.DataAccess.Repository.IRepository.MTS
 {
     public interface IGonderiPaketiRepository : IRepository<GonderiPaketi>
     {
-        bool Update(GonderiPaketi obj);
 
     }
 }

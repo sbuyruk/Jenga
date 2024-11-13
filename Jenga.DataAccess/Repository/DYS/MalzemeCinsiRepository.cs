@@ -23,10 +23,5 @@ namespace Jenga.DataAccess.Repository.DYS
         {
             _db.SaveChanges();
         }
-
-        public void Update(MalzemeCinsi obj)
-        {
-            _db.MalzemeCinsi_Table.Update(obj);
-        }
     }
 }

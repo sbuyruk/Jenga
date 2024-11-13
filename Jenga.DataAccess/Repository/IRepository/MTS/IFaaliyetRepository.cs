@@ -10,7 +10,6 @@ namespace Jenga.DataAccess.Repository.IRepository.MTS
     public interface IFaaliyetRepository : IRepository<Faaliyet>
     {
         IEnumerable<Faaliyet> IncludeIt(DateTime? baslangicTarihi);
-        void Update(Faaliyet obj);
 
     }
 }

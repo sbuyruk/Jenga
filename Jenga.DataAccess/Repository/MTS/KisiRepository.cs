@@ -20,10 +20,6 @@ namespace Jenga.DataAccess.Repository.MTS
             _db.SaveChanges();
         }
 
-        public void Update(Kisi obj)
-        {
-            _db.Kisi_Table.Update(obj);
-        }
         public IEnumerable<Kisi> IncludeIt()
         {
             //IEnumerable<Kisi> list = _db.Kisi_Table.Include(m => m.MTSKurumGorevs);

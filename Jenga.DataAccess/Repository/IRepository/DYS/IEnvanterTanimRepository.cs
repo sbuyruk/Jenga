@@ -11,7 +11,6 @@ namespace Jenga.DataAccess.Repository.IRepository.DYS
 {
     public interface IEnvanterTanimRepository : IRepository<EnvanterTanim>
     {
-        void Update(EnvanterTanim obj);
 
     }
 }

@@ -23,10 +23,6 @@ namespace Jenga.DataAccess.Repository.MTS
         {
             _db.SaveChanges();
         }
-
-        public void Update(KaynakTanim obj)
-        {
-            _db.KaynakTanim_Table.Update(obj);
-        }
+               
     }
 }

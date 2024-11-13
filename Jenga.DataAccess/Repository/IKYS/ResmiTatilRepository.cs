@@ -17,9 +17,5 @@ namespace Jenga.DataAccess.Repository.IKYS
             _db.SaveChanges();
         }
 
-        public void Update(ResmiTatil obj)
-        {
-            _db.ResmiTatil_Table.Update(obj);
-        }
     }
 }

@@ -26,13 +26,20 @@ namespace Jenga.Web.Areas.Admin.Controllers
         public IActionResult Create()
         {
             // Fetch the list of available Malzeme items from the database
-            var malzemeList = _unitOfWork.Malzeme.GetAll()
-                .Select(m => new SelectListItem
-                {
-                    Value = m.Id.ToString(),
-                    Text = m.Adi // Adjust according to your Malzeme model's properties
-                }).ToList();
+            var malzemeList = _unitOfWork.Malzeme.GetAll().ToList().Select(m => new
+            {
+                MalzemeId = m.Id,
+                AdiWithAdet = m.Adi + " (" + _unitOfWork.MalzemeDagilim.GetAll()
+                    .Where(md => md.MalzemeId == m.Id)
+                    .Sum(md => md.Adet) + ")"
+            }).ToList();
+            var malzemeDropdownList = malzemeList.Select(m => new SelectListItem
+            {
+                Value = m.MalzemeId.ToString(),
+                Text = m.AdiWithAdet
+            }).ToList();
 
+            
             // Fetch the list of available MalzemeYeri 
             var malzemeYeriList = _unitOfWork.MalzemeYeriTanim.GetAll()
                 .Select(y => new SelectListItem
@@ -48,21 +55,27 @@ namespace Jenga.Web.Areas.Admin.Controllers
             };
             var viewModel = new MalzemeDagilimVM
             {
-                MalzemeDagilim = new MalzemeDagilim { },
-                MalzemeList = malzemeList,
+                MalzemeDagilim = new MalzemeDagilim { Adet = 1, Tarih = DateTime.Now },
+                MalzemeList = malzemeDropdownList,
                 MalzemeYeriList = malzemeYeriList, 
                 IslemList= islemList,
             };
 
             return View(viewModel);
         }
+
+        public HttpContext GetHttpContext()
+        {
+            return HttpContext;
+        }
+
         [HttpPost]
-        public IActionResult Create(MalzemeDagilimVM obj)
+        public IActionResult Create(MalzemeDagilimVM obj)//, HttpContext httpContext)
         {
 
             if (ModelState.IsValid)
             {
-                string? userName = HttpContext.User.Identity.Name;
+                string? userName = HttpContext?.User?.Identity?.Name;
                 //MalzemeHarekete kaydet
                 MalzemeHareket mh = new MalzemeHareket
                 {
@@ -88,6 +101,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 {
                     // Modify the entity's properties
                     entity.Adet += obj.MalzemeDagilim.Adet;
+                    entity.Tarih=DateTime.Now;
                     entity.Aciklama =obj.MalzemeDagilim.Aciklama;
                     obj.MalzemeDagilim.Degistiren = userName;
                     // Update entity
@@ -108,10 +122,11 @@ namespace Jenga.Web.Areas.Admin.Controllers
             return View(obj);
         }
         #region API CALLS
+
+        
         [HttpGet]
         public IActionResult GetAll()
         {
-            //var malzemeDagilimList = _unitOfWork.MalzemeDagilim.GetAll(includeProperties:"Malzeme,MalzemeYeriTanim,MalzemeCinsi");
             var malzemeDagilimList = _unitOfWork.MalzemeDagilim.GetMalzemeDagilimWithDetails();
 
             return Json(new { data = malzemeDagilimList });

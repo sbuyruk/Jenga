@@ -23,10 +23,6 @@ namespace Jenga.DataAccess.Repository.DYS
         {
             _db.SaveChanges();
         }
-
-        public void Update(MalzemeGrubu obj)
-        {
-            _db.MalzemeGrubu_Table.Update(obj);
-        }
+       
     }
 }

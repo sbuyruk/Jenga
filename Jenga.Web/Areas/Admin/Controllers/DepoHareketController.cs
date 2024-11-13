@@ -195,7 +195,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
         //    }
             
         //}
-        private bool DepoStoktanCikisAdediDus(DepoHareketVM obj)
+        private void DepoStoktanCikisAdediDus(DepoHareketVM obj)
         {
             bool isSuccess = false;
             //DepoStok_table'daki sonAdedi bul
@@ -227,14 +227,11 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 
 
                 //DepoStok_Table'da güncelle
-                isSuccess=_unitOfWork.DepoStok.Update(depoStokTabledakiCikisDepoKaydi);
+                _unitOfWork.DepoStok.Update(depoStokTabledakiCikisDepoKaydi);
             }
-            return isSuccess;
         }
-        private bool DepoStokaGirisAdediEkle(DepoHareketVM obj)
+        private void DepoStokaGirisAdediEkle(DepoHareketVM obj)
         {
-            bool isSuccess = false;
-
             //DepoStok_table'daki sonAdedi bul
             var girisDepoStok = _unitOfWork.DepoStok.GetFirstOrDefault(dh => ((dh.DepoId == obj.DepoHareket.HedefDepoId) && (dh.AniObjesiId == obj.DepoHareket.AniObjesiId)));
             // eğer DepoStok_Table'da bu depoda&&buAniObjesi kaydı yoksa hata ver
@@ -250,7 +247,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
                     SonIslemTarihi = DateTime.Now,
                     SonIslemYapan= HttpContext.User?.Identity?.Name?.Split('\\')[1],
                 };
-                isSuccess = _unitOfWork.DepoStok.Update(yeniDepoStok);
+                _unitOfWork.DepoStok.Update(yeniDepoStok);
             }
             else
             {
@@ -274,9 +271,8 @@ namespace Jenga.Web.Areas.Admin.Controllers
 
 
                 //DepoStok_Table'da güncelle
-                isSuccess=_unitOfWork.DepoStok.Update(girisDepoStok);
+                _unitOfWork.DepoStok.Update(girisDepoStok);
             }
-            return isSuccess;
         }
         private bool DepoHareketeCikisKaydiGir(DepoHareketVM obj)
         {
@@ -414,9 +410,9 @@ namespace Jenga.Web.Areas.Admin.Controllers
             if (ModelState.IsValid)
             {
 
-                bool depoStoktanCikisAdediDusuldu=DepoStoktanCikisAdediDus(obj);
-                bool depoStokaGirisAdediEklendi = DepoStokaGirisAdediEkle(obj);
-                bool depoHareketeCikisKaydiGirildi = DepoHareketeCikisKaydiGir(obj);
+                DepoStoktanCikisAdediDus(obj);
+                DepoStokaGirisAdediEkle(obj);
+                DepoHareketeCikisKaydiGir(obj);
                 //bool depoHareketeGirisKaydiGirildi = DepoHareketeGirisKaydiGir(obj);
                 //if (obj.DepoHareket.Id == 0)
                 //{

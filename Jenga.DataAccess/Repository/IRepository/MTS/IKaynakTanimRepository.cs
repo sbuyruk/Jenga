@@ -10,7 +10,6 @@ namespace Jenga.DataAccess.Repository.IRepository.MTS
 {
     public interface IKaynakTanimRepository : IRepository<KaynakTanim>
     {
-        void Update(KaynakTanim obj);
 
     }
 }

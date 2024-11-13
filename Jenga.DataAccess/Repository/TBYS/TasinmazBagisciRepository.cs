@@ -17,11 +17,5 @@ namespace Jenga.DataAccess.Repository.TBYS
             _db.SaveChanges();
         }
 
-        public bool Update(TasinmazBagisci obj)
-        {
-            var updated = _db.TasinmazBagisci_Table.Update(obj);
-            return updated != null;
-        }
-
     }
 }

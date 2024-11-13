@@ -17,9 +17,5 @@ namespace Jenga.DataAccess.Repository.IKYS
             _db.SaveChanges();
         }
 
-        public void Update(UnvanTanim obj)
-        {
-            _db.UnvanTanim_Table.Update(obj);
-        }
     }
 }

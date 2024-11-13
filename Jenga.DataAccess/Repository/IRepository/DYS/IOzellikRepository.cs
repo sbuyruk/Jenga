@@ -11,7 +11,6 @@ namespace Jenga.DataAccess.Repository.IRepository.DYS
 {
     public interface IOzellikRepository : IRepository<Ozellik>
     {
-        void Update(Ozellik obj);
 
     }
 }

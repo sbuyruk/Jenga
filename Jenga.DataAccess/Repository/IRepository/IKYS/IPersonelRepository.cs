@@ -10,7 +10,6 @@ namespace Jenga.DataAccess.Repository.IRepository.IKYS
 {
     public interface IPersonelRepository : IRepository<Personel>
     {
-        void Update(Personel obj);
 
     }
 }

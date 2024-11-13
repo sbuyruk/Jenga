@@ -24,11 +24,6 @@ namespace Jenga.DataAccess.Repository.MTS
             _db.SaveChanges();
         }
 
-        public bool Update(DepoStok obj)
-        {
-            var updated = _db.DepoStok_Table.Update(obj);
-            return updated!=null;
-        }
 
     }
 }

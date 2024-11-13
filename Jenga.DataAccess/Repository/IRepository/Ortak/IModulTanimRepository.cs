@@ -9,7 +9,6 @@ namespace Jenga.DataAccess.Repository.IRepository.Ortak
 {
     public interface IModulTanimRepository : IRepository<ModulTanim>
     {
-        void Update(ModulTanim obj);
 
     }
 }

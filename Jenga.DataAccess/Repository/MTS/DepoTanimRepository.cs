@@ -23,9 +23,5 @@ namespace Jenga.DataAccess.Repository.MTS
             _db.SaveChanges();
         }
 
-        public void Update(DepoTanim obj)
-        {
-            _db.DepoTanim_Table.Update(obj);
-        }
     }
 }

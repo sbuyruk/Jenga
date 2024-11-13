@@ -22,10 +22,5 @@ namespace Jenga.DataAccess.Repository.MTS
             _db.SaveChanges();
         }
 
-        public void Update(MTSGorevTanim obj)
-        {
-            _db.MTSGorevTanim_Table.Update(obj);
-        }
-
     }
 }

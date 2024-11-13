@@ -20,12 +20,6 @@ namespace Jenga.DataAccess.Repository.TYS
         public void Save()
         {
             _db.SaveChanges();
-        }
-
-        public void Update(Toplanti obj)
-        {
-            _db.Toplanti_Table.Update(obj);
-        }
-        
+        }       
     }
 }

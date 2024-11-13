@@ -24,10 +24,6 @@ namespace Jenga.DataAccess.Repository.MTS
             _db.SaveChanges();
         }
 
-        public void Update(Faaliyet obj)
-        {
-            _db.Faaliyet_Table.Update(obj);
-        }
         public IEnumerable<Faaliyet> IncludeIt(DateTime? baslangicTarihi)
         {
             IEnumerable<Faaliyet> list;

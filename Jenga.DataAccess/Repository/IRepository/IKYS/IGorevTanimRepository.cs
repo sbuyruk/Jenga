@@ -10,7 +10,6 @@ namespace Jenga.DataAccess.Repository.IRepository.IKYS
 {
     public interface IGorevTanimRepository : IRepository<GorevTanim>
     {
-        void Update(GorevTanim obj);
 
     }
 }

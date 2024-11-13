@@ -21,6 +21,13 @@ public class Zimmet : BaseModel
     public int MalzemeId { get; set; }
     [ValidateNever]
     public Malzeme? Malzeme { get; set; }
+    
+    [DisplayName("Malzeme Çıkış Yeri")]
+    [ForeignKey("MalzemeYeriTanimId")]
+    [ValidateNever]
+    public int MalzemeYeriTanimId { get; set; }
+    [ValidateNever]
+    public MalzemeYeriTanim? MalzemeYeriTanim { get; set; }
 
     [DisplayName("Adet")]
     [ValidateNever]

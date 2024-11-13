@@ -10,7 +10,6 @@ namespace Jenga.DataAccess.Repository.IRepository.Ortak
 {
     public interface IBolgeRepository : IRepository<Bolge>
     {
-        bool Update(Bolge obj);
 
     }
 }

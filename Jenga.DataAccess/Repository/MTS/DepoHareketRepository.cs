@@ -24,27 +24,5 @@ namespace Jenga.DataAccess.Repository.MTS
             _db.SaveChanges();
         }
 
-        public bool Update(DepoHareket obj)
-        {
-            var objFromDb = _db.DepoHareket_Table.FirstOrDefault(u => u.Id == obj.Id);
-            if (objFromDb != null)
-            {
-                objFromDb.AniObjesiId = obj.AniObjesiId;
-                objFromDb.KaynakDepoId = obj.KaynakDepoId;
-                objFromDb.HedefDepoId = obj.HedefDepoId;
-                objFromDb.Adet = obj.Adet;
-                objFromDb.GirisCikis = obj.GirisCikis;
-                objFromDb.IslemYapan = obj.IslemYapan;
-                objFromDb.IslemTarihi = obj.IslemTarihi;
-                objFromDb.Aciklama = obj.Aciklama;
-                objFromDb.Degistiren = obj.Degistiren;
-                objFromDb.DegistirmeTarihi = obj.DegistirmeTarihi;
-
-                var updated = _db.DepoHareket_Table.Update(objFromDb);
-                return updated != null;
-            }
-            return false;
-        }
-
     }
 }

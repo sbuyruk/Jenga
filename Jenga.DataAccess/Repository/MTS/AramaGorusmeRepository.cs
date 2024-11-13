@@ -23,9 +23,5 @@ namespace Jenga.DataAccess.Repository.MTS
             _db.SaveChanges();
         }
 
-        public void Update(AramaGorusme obj)
-        {
-            _db.AramaGorusme_Table.Update(obj);
-        }
     }
 }

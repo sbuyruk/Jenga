@@ -23,10 +23,5 @@ namespace Jenga.DataAccess.Repository.TYS
             _db.SaveChanges();
         }
 
-        public void Update(ToplantiKatilim obj)
-        {
-            _db.ToplantiKatilim_Table.Update(obj);
-        }
-
     }
 }

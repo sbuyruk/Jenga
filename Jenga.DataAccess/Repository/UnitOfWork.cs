@@ -80,6 +80,7 @@ namespace Jenga.DataAccess.Repository
             MalzemeYeriTanim = new MalzemeYeriTanimRepository(_db);
             MalzemeDagilim = new MalzemeDagilimRepository(_db);
             MalzemeHareket = new MalzemeHareketRepository(_db);
+            Zimmet = new ZimmetRepository(_db);
         }
 
         //MTS
@@ -142,6 +143,11 @@ namespace Jenga.DataAccess.Repository
         public void Save()
         {
             _db.SaveChanges();
+        }
+
+        public async Task<int> CommitAsync()
+        {
+            return await _db.SaveChangesAsync();
         }
     }
 }

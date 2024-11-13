@@ -19,13 +19,15 @@ namespace Jenga.Models.DYS
         [ForeignKey("MalzemeId")]
         [ValidateNever]
         public Malzeme Malzeme { get; set; }
-        public int MalzemeYeriTanimId { get; set; }
         [DisplayName("Malzeme Yeri")]
+        public int MalzemeYeriTanimId { get; set; }
         [ForeignKey("MalzemeYeriTanimId")]
         [ValidateNever]
         public MalzemeYeriTanim MalzemeYeriTanim { get; set; }
         [Required]
         public int Adet { get; set; }
-
+        [ValidateNever]
+        [DisplayName("Tarih")]
+        public DateTime Tarih { get; set; } = DateTime.Now;
     }
 }

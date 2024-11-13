@@ -5,7 +5,6 @@ namespace Jenga.DataAccess.Repository.IRepository.IKYS
 {
     public interface IUnvanTanimRepository : IRepository<UnvanTanim>
     {
-        void Update(UnvanTanim obj);
 
     }
 }

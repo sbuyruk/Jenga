@@ -10,7 +10,6 @@ namespace Jenga.DataAccess.Repository.IRepository.MTS
 {
     public interface IDepoStokRepository : IRepository<DepoStok>
     {
-        bool Update(DepoStok obj);
 
     }
 }

@@ -24,9 +24,5 @@ namespace Jenga.DataAccess.Repository.DYS
             _db.SaveChanges();
         }
 
-        public void Update(EnvanterTanim obj)
-        {
-            _db.EnvanterTanim_Table.Update(obj);
-        }
     }
 }

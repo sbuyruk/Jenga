@@ -11,7 +11,6 @@ namespace Jenga.DataAccess.Repository.IRepository.DYS
 {
     public interface IMarkaTanimRepository : IRepository<MarkaTanim>
     {
-        void Update(MarkaTanim obj);
 
     }
 }

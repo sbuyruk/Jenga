@@ -48,12 +48,7 @@ namespace Jenga.DataAccess.Repository
                 throw e;
             }
         }
-        public async Task<IEnumerable<T>> GetAllAsync()
-        {
-            IQueryable<T> query = dbSet;
-            return await query.ToListAsync<T>();
-        }
-
+        
         public T GetFirstOrDefault(Expression<Func<T, bool>> filter, string? includeProperties = null)
         {
             IQueryable<T> query = dbSet;
@@ -94,10 +89,61 @@ namespace Jenga.DataAccess.Repository
         }
         public void Update(T entity)
         {
+            entity.DegistirmeTarihi = DateTime.Now;
             dbSet.Entry(entity).Property(x => x.Id).IsModified = false;
             dbSet.Attach(entity);  // Attach to DbContext
             dbSet.Entry(entity).State = EntityState.Modified;
             dbSet.Update(entity);  // Mark the entity as Modified
         }
+
+        //async methods
+        public async Task AddAsync(T entity)
+        {
+            entity.OlusturmaTarihi = DateTime.Now;
+            await dbSet.AddAsync(entity);
+        }
+        // Unlike AddAsync, the Update method doesn’t need to be awaited since it doesn’t perform asynchronous work. It simply marks the entity as modified in the context.
+        public async Task<T?> GetAsync(int id)
+        {
+            return await dbSet.FindAsync(id);
+        }
+        public async Task<IEnumerable<T>> GetAllAsync()
+        {
+            IQueryable<T> query = dbSet;
+            return await query.ToListAsync<T>();
+        }
+        public async Task<T?> GetFirstOrDefaultAsync(Expression<Func<T, bool>> filter, string? includeProperties = null, bool trackChanges = true)
+        {
+            IQueryable<T> query = dbSet;
+            if (!trackChanges) //If you only need to read the data without modifying it, using AsNoTracking() is an effective way to avoid tracking the entity:
+            {
+                query = query.AsNoTracking();
+            }
+            if (includeProperties != null)
+            {
+                foreach (var includeProp in includeProperties.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    query = query.Include(includeProp);
+                }
+            }
+
+            query = query.Where(filter);
+            return await query.FirstOrDefaultAsync();
+        }
+        public async Task<IEnumerable<T>> GetAllAsync(string? includeProperties = null)
+        {
+            IQueryable<T> query = dbSet;
+
+            if (includeProperties != null)
+            {
+                foreach (var includeProp in includeProperties.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    query = query.Include(includeProp);
+                }
+            }
+
+            return await query.ToListAsync();
+        }
+        
     }
 }

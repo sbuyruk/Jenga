@@ -24,9 +24,5 @@ namespace Jenga.DataAccess.Repository.DYS
             _db.SaveChanges();
         }
 
-        public void Update(Malzeme obj)
-        {
-            _db.Malzeme_Table.Update(obj);
-        }
     }
 }

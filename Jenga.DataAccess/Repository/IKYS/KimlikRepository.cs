@@ -17,9 +17,5 @@ namespace Jenga.DataAccess.Repository.IKYS
             _db.SaveChanges();
         }
 
-        public void Update(Kimlik obj)
-        {
-            _db.Kimlik_Table.Update(obj);
-        }
     }
 }

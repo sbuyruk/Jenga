@@ -8,6 +8,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace Jenga.DataAccess.Repository.DYS
 {
@@ -24,9 +26,7 @@ namespace Jenga.DataAccess.Repository.DYS
             _db.SaveChanges();
         }
 
-        public void Update(MalzemeYeriTanim obj)
-        {
-            _db.MalzemeYeriTanim_Table.Update(obj);
-        }
+       
+
     }
 }

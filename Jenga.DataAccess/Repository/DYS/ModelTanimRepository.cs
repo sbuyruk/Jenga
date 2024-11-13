@@ -24,9 +24,5 @@ namespace Jenga.DataAccess.Repository.DYS
             _db.SaveChanges();
         }
 
-        public void Update(ModelTanim obj)
-        {
-            _db.ModelTanim_Table.Update(obj);
-        }
     }
 }

@@ -17,9 +17,5 @@ namespace Jenga.DataAccess.Repository.IKYS
             _db.SaveChanges();
         }
 
-        public void Update(IsBilgileri obj)
-        {
-            _db.IsBilgileri_Table.Update(obj);
-        }
     }
 }

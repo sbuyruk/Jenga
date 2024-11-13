@@ -10,7 +10,5 @@ namespace Jenga.DataAccess.Repository.IRepository.MTS
     public interface IFaaliyetAmaciRepository : IRepository<FaaliyetAmaci>
     {
         
-        void Update(FaaliyetAmaci obj);
-
     }
 }

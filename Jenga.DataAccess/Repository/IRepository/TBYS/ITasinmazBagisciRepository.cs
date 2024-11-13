@@ -4,7 +4,6 @@ namespace Jenga.DataAccess.Repository.IRepository.TBYS
 {
     public interface ITasinmazBagisciRepository : IRepository<TasinmazBagisci>
     {
-        bool Update(TasinmazBagisci obj);
 
     }
 }

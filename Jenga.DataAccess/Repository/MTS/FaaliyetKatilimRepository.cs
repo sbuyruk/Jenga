@@ -23,10 +23,6 @@ namespace Jenga.DataAccess.Repository.MTS
             _db.SaveChanges();
         }
 
-        public void Update(FaaliyetKatilim obj)
-        {
-            _db.FaaliyetKatilim_Table.Update(obj);
-        }
         public IEnumerable<FaaliyetKatilim> IncludeIt()
         {
             IEnumerable<FaaliyetKatilim> list = _db.FaaliyetKatilim_Table.Include(m => m.Katilimci);
