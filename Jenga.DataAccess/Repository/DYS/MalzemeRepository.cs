@@ -8,6 +8,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Jenga.DataAccess.Repository.IRepository;
 
 namespace Jenga.DataAccess.Repository.DYS
 {
@@ -23,6 +25,36 @@ namespace Jenga.DataAccess.Repository.DYS
         {
             _db.SaveChanges();
         }
+        public async Task<IEnumerable<SelectListItem>> GetMalzemeDDL(bool onlyExistingMalzeme = false)
+        {
+            var malzemeList = _db.Malzeme_Table
+                .Select(m => new
+                {
+                    Id = m.Id,
+                    Adi = m.Adi,
+                    AdetSum = _db.MalzemeDagilim_Table.Where(md => md.MalzemeId == m.Id)
+                        .Sum(a => (int?)a.Adet) ?? 0 // If no records found, default to 0
+                })
+                .ToList();
+            if (onlyExistingMalzeme)
+            {
+                var malzemeDropdownList = malzemeList.Where(m => m.AdetSum > 0).Select(m => new SelectListItem
+                {
+                    Value = m.Id.ToString(),
+                    Text = m.Adi + " (" + m.AdetSum + ")",
+                }).ToList();
+                return malzemeDropdownList;
+            }
+            else
+            {
+                var malzemeDropdownList = malzemeList.Select(m => new SelectListItem
+                {
+                    Value = m.Id.ToString(),
+                    Text = m.Adi + " (" + m.AdetSum + ")",
+                }).ToList();
+                return malzemeDropdownList;
+            }
 
+        }
     }
 }

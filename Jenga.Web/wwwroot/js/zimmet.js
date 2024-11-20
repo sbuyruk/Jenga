@@ -1,33 +1,44 @@
 ﻿$(document).ready(function () {
+    var selectedMalzemeId = 0;
     $('#MalzemeDropdown').change(function () {
-        var malzemeId = $(this).val();
+        selectedMalzemeId = $(this).val();
         $.ajax({
-            url: '@Url.Action("GetMalzemeYeri", "MalzemeYeriTanim")',
+            //url: '@Url.Action("GetMalzemeYeri", "MalzemeYeriTanim")',
+            url: '/Admin/MalzemeYeriTanim/GetMalzemeYeri',
             type: 'GET',
-            data: { malzemeId: malzemeId },
+            data: {
+                onlyExistingMalzeme: true,
+                malzemeId: selectedMalzemeId,
+            },
             success: function (data) {
                 var malzemeYeriDropdown = $('#MalzemeYeriDropdown');
                 malzemeYeriDropdown.empty(); // Clear the existing options
                 malzemeYeriDropdown.append('<option value="">Select a MalzemeYeri</option>');
                 $.each(data, function (index, item) {
-                    malzemeYeriDropdown.append('<option value="' + item.id + '" data-adet="' + item.adetSum + '">' + item.adi + ' (' + item.adetSum + ')</option>');
+                    malzemeYeriDropdown.append('<option value="' + item.Value + '">' + item.text + '</option>');
+                    //malzemeYeriDropdown.append('<option value="' + item.id + '" data-adet="' + item.adetSum + '">' + item.adi + ' (' + item.adetSum + ')</option>');
                 });
             }
         });
+
         // Refill Personel dropdown
         $.ajax({
-            url: '@Url.Action("GetPersonelByMalzeme", "Zimmet")',
+            url: '/Admin/Personel/GetPersonel',
             type: 'GET',
-            data: { malzemeId: malzemeId },
+            data: {
+                onlyWorkingPersonel:false,
+                malzemeId: selectedMalzemeId,
+            },
             success: function (data) {
                 var personelDropdown = $('#PersonelDropdown');
                 personelDropdown.empty();
                 personelDropdown.append('<option value="">Select a Personel</option>');
                 $.each(data, function (index, item) {
-                    var adet = "";
-                    if (item.adetSum > 0)
-                        adet = ' (' + item.adetSum + ')';
-                    personelDropdown.append('<option value="' + item.id + '">' + item.adi + adet + '</option>');
+                    //var adet = "";
+                    //if (item.adetSum > 0)
+                    //    adet = ' (' + item.adetSum + ')';
+                    //personelDropdown.append('<option value="' + item.id + '">' + item.adi + adet + '</option>');
+                    personelDropdown.append('<option value="' + item.value + '">' + item.text + '</option>');
                 });
             }
         });

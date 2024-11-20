@@ -48,7 +48,11 @@ namespace Jenga.Web.Areas.Admin.Controllers
             var personelList = _unitOfWork.Personel.GetAll(includeProperties: "IsBilgileri,GorevTanim");
             return Json(new { data = personelList });
         }
-
+        public async Task<JsonResult> GetPersonel(bool onlyWorkingPersonel, int malzemeId)
+        {
+            var personelList = await _unitOfWork.Personel.GetPersonelDDL(onlyWorkingPersonel, malzemeId);
+            return Json(personelList);
+        }
         //Delete
         [HttpPost]
         public IActionResult Delete(int? id)

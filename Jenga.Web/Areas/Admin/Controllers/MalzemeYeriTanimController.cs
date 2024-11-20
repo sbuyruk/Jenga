@@ -82,17 +82,9 @@ namespace Jenga.Web.Areas.Admin.Controllers
 
             return Json(malzemeYeriDropdownList);
         }
-        public async Task<JsonResult> GetMalzemeYeri(int malzemeId)
+        public async Task<JsonResult> GetMalzemeYeri(bool onlyExistingMalzeme,int malzemeId)
         {
-            var malzemeYeriList = _unitOfWork.MalzemeDagilim.GetByFilter(md => md.MalzemeId == malzemeId).GroupBy(md => md.MalzemeYeriTanimId)
-                .Select(g => new
-                {
-                    Id = g.Key,
-                    Adi = _unitOfWork.MalzemeYeriTanim.GetFirstOrDefault(my => my.Id == g.Key).Adi,
-                    AdetSum = g.Sum(md => md.Adet)
-                })
-                .Distinct()
-                .ToList();
+            var malzemeYeriList = await _unitOfWork.MalzemeYeriTanim.GetMalzemeYeriDDL(onlyExistingMalzeme, malzemeId);
             return Json(malzemeYeriList);
         }
         //Delete

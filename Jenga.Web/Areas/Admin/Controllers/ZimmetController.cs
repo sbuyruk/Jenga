@@ -1,13 +1,7 @@
-﻿using Jenga.DataAccess.Data;
-using Jenga.DataAccess.Repository.IRepository;
-using Jenga.Models;
+﻿using Jenga.DataAccess.Repository.IRepository;
 using Jenga.Models.DYS;
-using Jenga.Models.MTS;
-using Jenga.Utility;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Hosting;
 
 namespace Jenga.Web.Areas.Admin.Controllers
 {
@@ -28,27 +22,9 @@ namespace Jenga.Web.Areas.Admin.Controllers
             var zimmetList = _unitOfWork.Zimmet.GetAll(includeProperties: "Personel,Malzeme,MalzemeYeriTanim");
             return View(zimmetList);
         }
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            var malzemeList = _unitOfWork.Malzeme.GetAll().ToList().Select(m => new
-            {
-                MalzemeId = m.Id,
-                AdiWithAdet = m.Adi + " (" + _unitOfWork.MalzemeDagilim.GetAll()
-                    .Where(md => md.MalzemeId == m.Id)
-                    .Sum(md => md.Adet) + ")"
-            }).ToList();
-            var malzemeDropdownList = malzemeList.Select(m => new SelectListItem
-            {
-                Value = m.MalzemeId.ToString(),
-                Text = m.AdiWithAdet
-            }).ToList();
-            // Fetch the list of available MalzemeYeri 
-            var malzemeYeriList = _unitOfWork.MalzemeYeriTanim.GetAll()
-                .Select(y => new SelectListItem
-                {
-                    Value = y.Id.ToString(),
-                    Text = y.Adi
-                }).ToList();
+            
             var personelList = _unitOfWork.Personel.GetByFilter(u => u.IsBilgileri.CalismaDurumu == "1", includeProperties: "Kimlik,IsBilgileri,PersonelMenu")
                 .Select(y => new SelectListItem
                 {
@@ -58,9 +34,9 @@ namespace Jenga.Web.Areas.Admin.Controllers
             var viewModel = new ZimmetVM
             {
                 Zimmet = new Zimmet { Adet=1,Tarih=DateTime.Now},
-                MalzemeList = malzemeDropdownList,
-                MalzemeYeriList = malzemeYeriList,
-                PersonelList = personelList,
+                MalzemeList = await _unitOfWork.Malzeme.GetMalzemeDDL(true),
+                MalzemeYeriList = await _unitOfWork.MalzemeYeriTanim.GetMalzemeYeriDDL(true), //malzemeYeriList,
+                PersonelList = await _unitOfWork.Personel.GetPersonelDDL(true),
             };
 
             return View(viewModel);
@@ -78,37 +54,13 @@ namespace Jenga.Web.Areas.Admin.Controllers
             if (zimmet == null)
                 return NotFound();
 
-            var malzemeList = _unitOfWork.Malzeme.GetAll().ToList().Select(m => new
-            {
-                MalzemeId = m.Id,
-                AdiWithAdet = m.Adi + " (" + _unitOfWork.MalzemeDagilim.GetAll()
-                    .Where(md => md.MalzemeId == m.Id)
-                    .Sum(md => md.Adet) + ")"
-            }).ToList();
-            var malzemeDropdownList = malzemeList.Select(m => new SelectListItem
-            {
-                Value = m.MalzemeId.ToString(),
-                Text = m.AdiWithAdet
-            }).ToList();
-            // Fetch the list of available MalzemeYeri 
-            var malzemeYeriList = _unitOfWork.MalzemeYeriTanim.GetAll()
-                .Select(y => new SelectListItem
-                {
-                    Value = y.Id.ToString(),
-                    Text = y.Adi
-                }).ToList();
-            var personelList = _unitOfWork.Personel.GetByFilter(u => u.IsBilgileri.CalismaDurumu == "1", includeProperties: "Kimlik,IsBilgileri,PersonelMenu")
-                .Select(y => new SelectListItem
-                {
-                    Value = y.Id.ToString(),
-                    Text = y.Adi + " " + y.Soyadi
-                }).ToList();
+
             var viewModel = new ZimmetVM
             {
                 Zimmet = zimmet,
-                MalzemeList = malzemeDropdownList,
-                MalzemeYeriList = malzemeYeriList,
-                PersonelList = personelList,
+                MalzemeList = await _unitOfWork.Malzeme.GetMalzemeDDL(true),
+                MalzemeYeriList = await _unitOfWork.MalzemeYeriTanim.GetMalzemeYeriDDL(true), //malzemeYeriList,
+                PersonelList = await _unitOfWork.Personel.GetPersonelDDL(true),
             };
             return View(viewModel);
         }
@@ -308,7 +260,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 {
                     malzemeDagilim.Adet += entity.Adet;
                     malzemeDagilim.Aciklama += entity.Aciklama;
-                    string? userName = HttpContext.User.Identity.Name;
+                    string? userName = HttpContext?.User?.Identity?.Name;
                     
                     malzemeDagilim.Degistiren=userName;
                     _unitOfWork.MalzemeDagilim.Update(malzemeDagilim); ;
@@ -327,9 +279,6 @@ namespace Jenga.Web.Areas.Admin.Controllers
             }
         }
         #endregion
-
-
-
 
         #region API CALLS
         [HttpGet]
@@ -359,6 +308,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
 
             return Json(personelList);
         }
+        
         #endregion
     }
 

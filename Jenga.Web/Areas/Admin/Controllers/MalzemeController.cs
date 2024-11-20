@@ -187,7 +187,8 @@ namespace Jenga.Web.Areas.Admin.Controllers
             var malzemeCinsiList = _unitOfWork.Ozellik.GetAll(includeProperties: "MalzemeCinsi");
             return malzemeCinsiList;
         }
+
         #endregion
-       
+
     }
 }

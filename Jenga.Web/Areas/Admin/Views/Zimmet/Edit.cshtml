@@ -11,14 +11,14 @@
         <div class="row">
             <div class="mb-3 col-3">
                 <label asp-for="Zimmet.MalzemeId"></label>
-                <select asp-for="Zimmet.MalzemeId" asp-items="@Model.MalzemeList" class="form-select">
+                <select asp-for="Zimmet.MalzemeId" asp-items="@Model.MalzemeList" class="form-select" id="MalzemeDropdown">
                     <option disabled selected>--Seçiniz--</option>
                 </select>
                 <span asp-validation-for="Zimmet.MalzemeId" class="text-danger"></span>
             </div>
             <div class="mb-3 col-4">
                 <label asp-for="Zimmet.PersonelId"></label>
-                <select asp-for="Zimmet.PersonelId" asp-items="@Model.PersonelList" class="form-select">
+                <select asp-for="Zimmet.PersonelId" asp-items="@Model.PersonelList" class="form-select" id="PersonelDropdown">
                     <option disabled selected>--Seçiniz--</option>
                 </select>
                 <span asp-validation-for="Zimmet.PersonelId" class="text-danger"></span>
@@ -40,7 +40,7 @@
         <div class="row">
             <div class="mb-3 col-3">
                 <label asp-for="Zimmet.MalzemeYeriTanimId"></label>
-                <select asp-for="Zimmet.MalzemeYeriTanimId" asp-items="@Model.MalzemeYeriList" class="form-select">
+                <select asp-for="Zimmet.MalzemeYeriTanimId" asp-items="@Model.MalzemeYeriList" class="form-select" id="MalzemeYeriDropdown">
                     <option disabled selected>--Seçiniz--</option>
                 </select>
                 <span asp-validation-for="Zimmet.MalzemeYeriTanimId" class="text-danger"></span>
