@@ -3,12 +3,6 @@ using Jenga.DataAccess.Repository.IRepository;
 using Jenga.DataAccess.Repository;
 using Microsoft.AspNetCore.Authentication.Negotiate;
 using Microsoft.EntityFrameworkCore;
-using System.ComponentModel;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI;
-using Jenga.Models.IKYS;
 using Jenga.Web.Areas.Admin.Services;
 
 var builder = WebApplication.CreateBuilder(args);

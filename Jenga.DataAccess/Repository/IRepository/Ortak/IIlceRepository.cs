@@ -10,6 +10,6 @@ namespace Jenga.DataAccess.Repository.IRepository.Ortak
 {
     public interface IIlceRepository : IRepository<Ilce>
     {
-
+        Task<List<Ilce>> GetByIlIdAsync(int ilId);
     }
 }

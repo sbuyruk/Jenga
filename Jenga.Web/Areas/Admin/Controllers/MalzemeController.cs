@@ -1,18 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using Jenga.DataAccess.Data;
 using Jenga.Models.DYS;
 using Jenga.DataAccess.Repository.IRepository;
-using Jenga.DataAccess.Repository;
-using Microsoft.Extensions.Hosting;
-using Jenga.Models.MTS;
-using Jenga.Utility;
-using Newtonsoft.Json;
+
 
 namespace Jenga.Web.Areas.Admin.Controllers
 {

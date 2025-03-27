@@ -1,0 +1,117 @@
+﻿@model TasinmazBagisciVM
+<div class="container shadow p-3">
+    <form method="post" asp-action="Create" enctype="multipart/form-data">
+        <div class="row pt-3">
+            <div class="col ">
+                <h4 class="text-primary text-start fw-bold">Taşınmaz Bağışçı Girişi</h4>
+            </div>
+        </div>
+        <hr />
+        <div class="row">
+            <div class="mb-3 col-10">
+                <div class="row">
+                    <div class="form-group col">
+                        <div class="form-group">
+                            <label asp-for="TasinmazBagisci.Adi"></label>
+                            <input asp-for="TasinmazBagisci.Adi" class="form-control" />
+                            <span asp-validation-for="TasinmazBagisci.Adi" class="text-danger"></span>
+                        </div>
+                        <div class="form-group ">
+                            <label asp-for="TasinmazBagisci.Soyadi"></label>
+                            <input asp-for="TasinmazBagisci.Soyadi" class="form-control" />
+                            <span asp-validation-for="TasinmazBagisci.Soyadi" class="text-danger"></span>
+                        </div>
+                        <div class="form-group ">
+                            <label asp-for="TasinmazBagisci.TCKimlikNo"></label>
+                            <input asp-for="TasinmazBagisci.TCKimlikNo" class="form-control" />
+                            <span asp-validation-for="TasinmazBagisci.TCKimlikNo" class="text-danger"></span>
+                        </div>
+@*                         <div class="checkbox">
+                            <label asp-for="TasinmazBagisci.Gizli" class="control-label text-bold text-danger">Bağışım Gizli Kalsın </label>
+                            <input asp-for="TasinmazBagisci.Gizli" class="form-check" type="checkbox" />
+                        </div> *@
+                    </div>
+                    <div class="form-group col">
+                        <div class="form-group">
+                            <label asp-for="TasinmazBagisci.DogumYeri"></label>
+                            <input asp-for="TasinmazBagisci.DogumYeri" class="form-control" />
+                            <span asp-validation-for="TasinmazBagisci.DogumYeri" class="text-danger"></span>
+                        </div>
+                        <div class="form-group ">
+                            <label asp-for="TasinmazBagisci.DogumTarihi" class="control-label"></label>
+                            <input asp-for="TasinmazBagisci.DogumTarihi" class="form-control" type="date" />
+                            <span asp-validation-for="TasinmazBagisci.DogumTarihi" class="text-danger"></span>
+                        </div>
+                        <div class="form-group ">
+                            <label asp-for="TasinmazBagisci.Meslegi"></label>
+                            <input asp-for="TasinmazBagisci.Meslegi " class="form-control" />
+                            <span asp-validation-for="TasinmazBagisci.Meslegi" class="text-danger"></span>
+                        </div>
+                        
+                        <div class="form-group ">
+                            <div>
+                                @Html.Partial("_IlVeIlceDropdown", Model.IlVeIlceVM)
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group col">
+                        <div class="form-group">
+                            <label asp-for="TasinmazBagisci.SosyalGuvence"></label>
+                            <select asp-for="TasinmazBagisci.SosyalGuvence" asp-items="@Model.SosyalGuvenceList" class="form-select" id="SosyalGuvenceDropdown">
+                                <option disabled selected>--Seçiniz--</option>
+                            </select>
+                            <span asp-validation-for="TasinmazBagisci.SosyalGuvence" class="text-danger"></span>
+                        </div>
+                        <div class="form-group ">
+                            <label asp-for="TasinmazBagisci.Telefon1" class="control-label"></label>
+                            <input asp-for="TasinmazBagisci.Telefon1" class="form-control" type="tel" />
+                            <span asp-validation-for="TasinmazBagisci.Telefon1" class="text-danger"></span>
+                        </div>
+                        <div class="form-group ">
+                            <label asp-for="TasinmazBagisci.Telefon2"></label>
+                            <input asp-for="TasinmazBagisci.Telefon2 " class="form-control" />
+                            <span asp-validation-for="TasinmazBagisci.Telefon2" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="form-group col">
+                        <div class="form-group">
+                            <label asp-for="TasinmazBagisci.Sag_vefat"></label>
+                            <select asp-for="TasinmazBagisci.Sag_vefat" asp-items="@Model.SagVefatList" class="form-select" id="SsgVefatDropdown">
+                                <option disabled selected>--Seçiniz--</option>
+                            </select>
+                            <span asp-validation-for="TasinmazBagisci.Sag_vefat" class="text-danger"></span>
+                        </div>
+                        
+                    </div>
+                </div>
+                <div class="row">
+
+                </div>
+            </div>
+            <div class="mb-3 col-2">
+            </div>
+           
+
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="TasinmazBagisci.Aciklama"></label>
+            <textarea asp-for="TasinmazBagisci.Aciklama" rows="3" class="form-control"></textarea>
+            <span asp-validation-for="TasinmazBagisci.Aciklama" class="text-danger"></span>
+        </div>
+        <div class="col-12">
+
+            <button type="submit" class="btn btn-primary" style="width:150px">Kaydet</button>
+
+            <a asp-controller="TasinmazBagisci" asp-action="Index" class="btn btn-secondary" style="width:150px">
+                Listeye Dön
+            </a>
+        </div>
+    </form>
+</div>
+@section Scripts {
+    @{
+            <partial name="_ValidationScriptsPartial" />
+    }
+    <script src="~/js/ilVeIlce.js"></script>
+}

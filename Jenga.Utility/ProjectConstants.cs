@@ -7,6 +7,20 @@ namespace Jenga.Utility
         public const int SIFIR = 0;
         public static DateTime ILK_TARIH = new DateTime(1900,1,1);
         public const int GENELMUDUR_PERSONELID = 1184;
+
+        public static string BAGISCI_SAG = "Sağ";
+        public static string BAGISCI_VEFAT = "Vefat";
+        public static string BAGISCI_BILINMIYOR = "Bilinmiyor";
+        public static string BAGISCI_MULGA = "Mülga";
+        public static string BAGISCI_KURULUS = "Kuruluş";
+        public static string BAGISCI_TASFIYE = "Tasfiye";
+        public static string BAGISCI_LAGV = "Lağv";
+
+        public static string SOSYALGUVENCE_YOK = "Yok";
+        public static string SOSYALGUVENCE_SGK = "SGK";
+        public static string SOSYALGUVENCE_EMEKLISANDIGI= "Emekli Sandığı";
+        public static string SOSYALGUVENCE_SSK = "SSK";
+        public static string SOSYALGUVENCE_BAGKUR= "Bağkur";
         //IKYS
         public static int PER_CALISIYOR_INT = 1;
         public static string PER_CALISIYOR = "Çalışıyor";

@@ -1,5 +1,6 @@
 ﻿using Jenga.DataAccess.Repository.IRepository;
 using Jenga.Models.DYS;
+using Jenga.Models.TBYS;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 

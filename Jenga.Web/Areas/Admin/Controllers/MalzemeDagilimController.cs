@@ -1,12 +1,8 @@
-﻿using Jenga.DataAccess.Data;
-using Jenga.DataAccess.Repository.IRepository;
-using Jenga.Models;
+﻿using Jenga.DataAccess.Repository.IRepository;
 using Jenga.Models.DYS;
-using Jenga.Models.MTS;
 using Jenga.Utility;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.Extensions.Hosting;
 
 namespace Jenga.Web.Areas.Admin.Controllers
 {

@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Newtonsoft.Json;
 
 
+
 namespace Jenga.Web.Areas.Admin.Controllers
 {
     public class AramaGorusmeController : Controller

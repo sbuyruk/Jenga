@@ -102,7 +102,7 @@ namespace Jenga.DataAccess.Repository
             entity.OlusturmaTarihi = DateTime.Now;
             await dbSet.AddAsync(entity);
         }
-        // Unlike AddAsync, the Update method doesn’t need to be awaited since it doesn’t perform asynchronous work. It simply marks the entity as modified in the context.
+        // SB Unlike AddAsync, the Update method doesn’t need to be awaited since it doesn’t perform asynchronous work. It simply marks the entity as modified in the context.
         public async Task<T?> GetAsync(int id)
         {
             return await dbSet.FindAsync(id);

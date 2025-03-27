@@ -1,0 +1,24 @@
+﻿@model IlVeIlceVM
+
+<div>
+    <div class="form-group">
+        <label asp-for="SelectedIlId">@Model.IlLabel</label>
+        <select name="IlVeIlceVM.SelectedIlId" asp-for="SelectedIlId" asp-items="@Model.Iller" class="form-select" id="SelectedIlIdDropDown">
+            <option value="" disabled selected>-- @Model.IlLabel Seçiniz --</option>
+        </select>
+        <span asp-validation-for="SelectedIlId" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="SelectedIlceId">@Model.IlceLabel</label>
+        <select name="IlVeIlceVM.SelectedIlceId" asp-for="SelectedIlceId" asp-items="@Model.Ilceler" class="form-select" id="SelectedIlceIdDropDown">
+            <option value="" disabled selected>-- @Model.IlceLabel Seçiniz --</option>
+        </select>
+        <span asp-validation-for="SelectedIlceId" class="text-danger"></span>
+    </div>
+</div>
+
+
+@section Scripts {
+    <script src="~/js/ilVeIlce.js"></script>
+}

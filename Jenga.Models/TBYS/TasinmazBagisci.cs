@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+using Jenga.Models.Attributes;
 
 namespace Jenga.Models.TBYS
 {
@@ -32,15 +33,23 @@ namespace Jenga.Models.TBYS
         public string? Ili { get; set; }
         [ValidateNever]
         [DisplayName("İlçesi")]
-        public string? Ilcesi { get; set; }
+        public string? Ilcesi { get; set; }        
+        [ValidateNever]
+        [DisplayName("İl Id")]
+        public int? IlId { get; set; }
+        [ValidateNever]
+        [DisplayName("İlçe Id")]
+        public int? IlceId { get; set; }
         [ValidateNever]
         [DisplayName("Adres")]
         public string? Adres { get; set; }
         [ValidateNever]
         [DisplayName("Telefon 1")]
+        [TelefonValidation]
         public string? Telefon1 { get; set; }
         [ValidateNever]
         [DisplayName("Telefon 2")]
+        [TelefonValidation]
         public string? Telefon2 { get; set; }
         [ValidateNever]
         [DisplayName("Mesleği")]

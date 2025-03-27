@@ -25,7 +25,10 @@ namespace Jenga.DataAccess.Repository.Ortak
         {
             _db.SaveChanges();
         }
-
+        public async Task<List<Ilce>> GetByIlIdAsync(int ilId)
+        {
+            return await _db.Ilce_Table.Where(x => x.IlId == ilId).ToListAsync();
+        }
         public List<Ilce> GetPersonelMenuByPersonelId(int? ilId)
         {
             return _db.Set<Ilce>()
