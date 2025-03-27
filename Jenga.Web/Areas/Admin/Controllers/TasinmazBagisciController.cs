@@ -5,6 +5,9 @@ using Jenga.Models.TBYS;
 using Jenga.Utility;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.SharePoint.Client;
+using System.Net;
+using System.Security;
 
 namespace Jenga.Web.Areas.Admin.Controllers
 {
@@ -48,7 +51,8 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 TasinmazBagisci = new TasinmazBagisci { },
                 SosyalGuvenceList = sosyalGuvenceList,
                 SagVefatList = sagVefatList,
-                
+                DefinIliList = await _unitOfWork.Il.GetIlDDL(),
+
                 IlVeIlceVM = new IlVeIlceVM
                 {
                     Iller = (await _unitOfWork.Il.GetAllAsync())
@@ -62,16 +66,11 @@ namespace Jenga.Web.Areas.Admin.Controllers
 
             return View(viewModel);
         }
-        //public IActionResult Create()
-        //{
-        //    ViewBag.PersonelList = new SelectList(_unitOfWork.Personel.GetAll(), "Id", "Adi");
-        //    ViewBag.MalzemeList = new SelectList(_unitOfWork.Malzeme.GetAll(), "Id", "Adi");
-        //    return View();
-        //}
+
         // GET: TasinmazBagisci/Edit/5
         public async Task<IActionResult> Edit(int id)
         {
-            var tasinmazBagisci = await _unitOfWork.TasinmazBagisci.GetFirstOrDefaultAsync(m=> m.Id==id, includeProperties:"Malzeme,Personel,MalzemeYeriTanim");
+            var tasinmazBagisci = await _unitOfWork.TasinmazBagisci.GetFirstOrDefaultAsync(m=> m.Id==id);
             if (tasinmazBagisci == null)
                 return NotFound();
             var sosyalGuvenceList = new List<SelectListItem> {
@@ -127,6 +126,9 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 await _unitOfWork.TasinmazBagisci.AddAsync(model.TasinmazBagisci);
                
                 await _unitOfWork.CommitAsync();
+
+
+                ResimYükle();
                 TempData["success"] = "TasinmazBagisci işlemi gerçekleşti";
                 return View(model);
                 //return RedirectToAction(nameof(Index));
@@ -139,10 +141,143 @@ namespace Jenga.Web.Areas.Admin.Controllers
                     .Select(il => new SelectListItem { Value = il.Id.ToString(), Text = il.IlAdi })
                     .ToList();
                 model.IlVeIlceVM.Ilceler = new List<SelectListItem>();
-
+                ResimYükle();
                 return View(model);
             }
         }
+
+        private void ResimYükle()
+        {
+
+            var helper = new SharePointHelper();
+
+            string siteUrl = "http://tskgv-portal";///YonetimBirimleri/InsaatVeEmlakYonetimiSubesi/"; // SharePoint site URL
+            string libraryName = "BagisciResimleri";          // Resim kütüphanesi adı
+            string filePath = @"C:\Home\Resim.jpg";       // Yüklenecek dosyanın yolu
+            string username = "asbuyruk";            // Domain kullanıcı adı
+            string password = "Tagstags777";                       // Kullanıcı parolası
+
+            SharePointHelper.UploadFileToSharePoint(siteUrl, libraryName, filePath, username, password);
+        }
+        [HttpPost]
+        public async Task<IActionResult> UploadCroppedImage(IFormFile croppedImage)
+        {
+            if (croppedImage == null || croppedImage.Length == 0)
+            {
+                return BadRequest("No image uploaded.");
+            }
+
+            try
+            {
+                string siteUrl = "http://tskgv-portal/YonetimBirimleri/InsaatVeEmlakYonetimiSubesi/";
+                string username = "asbuyruk";
+                string password = "Tagstags777";
+
+                string domain = "tskgv"; // Leave empty if not using a domain
+
+                    try
+                    {
+                // Create network credentials
+                NetworkCredential credentials = new NetworkCredential(username, password);
+
+                // Connect to SharePoint
+                using (ClientContext context = new ClientContext(siteUrl))
+                {
+
+                    context.Credentials = credentials;
+                    
+
+                    // Access the SharePoint web
+                    Microsoft.SharePoint.Client.Web web = context.Web;
+
+                    //Read the image stream
+                    using (var stream = croppedImage.OpenReadStream())
+                    {
+                        // Convert the stream to a byte array
+                        using (var memoryStream = new MemoryStream())
+                        {
+                            await stream.CopyToAsync(memoryStream);
+                            byte[] imageBytes = memoryStream.ToArray();
+
+                            // Call SharePoint upload method
+                            await UploadImageToSharePoint(imageBytes, croppedImage.FileName,context);
+                        }
+                    }
+
+                    context.Load(web, w => w.Title);
+                    context.ExecuteQuery();
+
+                    Console.WriteLine($"Site Title: {web.Title}");
+                }
+
+                }
+                catch (MissingMethodException ex)
+                {
+                    Console.WriteLine($"Exception: {ex.Message}");
+                    Console.WriteLine($"StackTrace: {ex.StackTrace}");
+                }
+
+                return Ok("Image uploaded successfully.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error: {ex.Message}");
+            }
+        }
+
+        private async Task UploadImageToSharePoint(byte[] imageBytes, string fileName, ClientContext context)
+        {
+
+
+                var folder = context.Web.GetFolderByServerRelativeUrl("YonetimBirimleri/InsaatVeEmlakYonetimiSubesi/BagisciResimleri");
+
+                using (var memoryStream = new MemoryStream(imageBytes))
+                {
+                    var fileCreationInfo = new FileCreationInformation
+                    {
+                        ContentStream = memoryStream,
+                        Url = fileName,
+                        Overwrite = true
+                    };
+
+                    var uploadFile = folder.Files.Add(fileCreationInfo);
+                    context.Load(uploadFile);
+                    await context.ExecuteQueryAsync();
+                }
+        }
+
+        //[HttpPost]
+        //public async Task<IActionResult> UploadCroppedImage(IFormFile croppedImage)
+        //{
+            
+        //    if (croppedImage != null && croppedImage.Length > 0)
+        //    {
+        //        var networkPath = @"http://tskgv-dev3/YonetimBirimleri/InsaatVeEmlakYonetimiSubesi/BagisciResimleri/";//@"\\TSKGV-DEV3\home\images";
+        //        var fileName = $"{Guid.NewGuid()}.png";
+        //        var filePath = Path.Combine(networkPath, fileName);
+
+        //        try
+        //        {
+        //            if (!Directory.Exists(networkPath))
+        //            {
+        //                Directory.CreateDirectory(networkPath);
+        //            }
+
+        //            using (var stream = new FileStream(filePath, FileMode.Create))
+        //            {
+        //                await croppedImage.CopyToAsync(stream);
+        //            }
+
+        //            return Json(new { success = true, message = "Image uploaded successfully." });
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            return Json(new { success = false, message = $"Error: {ex.Message}" });
+        //        }
+        //    }
+        //    return Json(new { success = false, message = "No file selected." });
+        //}
+
         // POST: TasinmazBagisci/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]

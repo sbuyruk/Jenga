@@ -1,15 +1,8 @@
 ﻿using Jenga.DataAccess.Data;
-using Jenga.DataAccess.Repository.IRepository;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Jenga.Models.MTS;
 using Jenga.Models.Ortak;
 using Jenga.DataAccess.Repository.IRepository.Ortak;
-using Jenga.DataAccess.Repository.IRepository.IKYS;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc.Rendering;
+
 
 namespace Jenga.DataAccess.Repository.Ortak
 {
@@ -25,11 +18,36 @@ namespace Jenga.DataAccess.Repository.Ortak
         {
             _db.SaveChanges();
         }
-        public List<Il> GetPersonelMenuByPersonelId(int? personelId)
+        public async Task<IEnumerable<SelectListItem>> GetIlDDL(int bolgeId = 0)
         {
-            return _db.Set<Il>()
-                .Where(pt => pt.Id == personelId)
-                .ToList();
+            var ilList = _db.Il_Table
+                 .Select(m => new
+                 {
+                     Id = m.Id,
+                     Adi = m.IlAdi,
+                     Bolge = m.BolgeId
+                 })
+                 .ToList();
+            if (bolgeId > 0)
+            {
+                ilList = _db.Il_Table.Where(i => i.BolgeId == bolgeId)
+                 .Select(m => new
+                 {
+                     Id = m.Id,
+                     Adi = m.IlAdi,
+                     Bolge = m.BolgeId
+                 })
+                 .ToList();
+            }
+            var ilDropdownList = ilList
+                .Select(m => new SelectListItem
+            {
+                Value = m.Id.ToString(),
+                Text = m.Adi,
+            }).ToList();
+            return ilDropdownList;
         }
+
+       
     }
 }

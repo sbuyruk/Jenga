@@ -6,4 +6,9 @@
 		<Nullable>enable</Nullable>
 	</PropertyGroup>
 
+	<ItemGroup>
+	  <PackageReference Include="Microsoft.SharePointOnline.CSOM" Version="16.1.25814.12000" />
+	  <PackageReference Include="System.Drawing.Common" Version="9.0.3" />
+	</ItemGroup>
+
 </Project>

@@ -32,9 +32,12 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="Microsoft.AspNetCore.Authentication.Negotiate" Version="9.0.0" />
-	  <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="9.0.0" />
-	  <PackageReference Include="System.DirectoryServices.AccountManagement" Version="9.0.0" />
+	  <PackageReference Include="Microsoft.AspNetCore.Authentication.Negotiate" Version="9.0.3" />
+	  <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="9.0.3" />
+	  <PackageReference Include="Microsoft.SharePointOnline.CSOM" Version="16.1.25814.12000" />
+	  <PackageReference Include="System.DirectoryServices.AccountManagement" Version="9.0.3" />
 	</ItemGroup>
+
+	<ProjectExtensions><VisualStudio><UserProperties appsettings_1json__JsonSchema="https://json.schemastore.org/aspire-8.0.json" /></VisualStudio></ProjectExtensions>
 
 </Project>

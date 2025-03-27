@@ -31,6 +31,7 @@ html {
     margin-bottom: 0.5rem;
     font-weight: 500;
     line-height: 1.2;
+    text-align:center;
 }
 
 /*Menu icon bar*/
@@ -89,7 +90,7 @@ html {
 }
 
     .sidebar a {
-        padding: 0px 0px 2px 20px;
+        padding: 0px 0px 2px 1px;
         text-decoration: none;
         font-size: 15px;
         color: #a8a8a8;
@@ -112,7 +113,7 @@ ul {
     /*background-color: #AAAFAB;*/
     border-radius: 5px;
     padding: 3px;
-    padding-left: 25px;
+    padding-left: 1px;
     color: white;
 }
 
@@ -196,6 +197,7 @@ li {
         -moz-transition: all 1s ease;
         -o-transition: all 1s ease;
         transition: all 1s ease;
+        padding-left:0;
     }
 
     .menuInput:checked ~ ul {
@@ -255,4 +257,19 @@ li {
     background-color: lightgray;
     color: white;
     text-align: center;
+}
+
+.navbar.reverse-gradient {
+    --bs-bg-opacity: 0.7;
+    background-image: linear-gradient(340deg, black, transparent);
+    filter: none;
+    border: none;
+}
+.sidebar.gradient {
+    --bs-bg-opacity: 0.7;
+    background-image: linear-gradient(20deg, black, transparent);
+}
+.footer.gradient {
+    --bs-bg-opacity: 0.7;
+    background-image: linear-gradient(20deg, black, transparent);
 }

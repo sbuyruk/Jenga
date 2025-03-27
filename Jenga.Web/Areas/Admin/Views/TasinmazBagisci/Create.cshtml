@@ -1,14 +1,14 @@
 ﻿@model TasinmazBagisciVM
 <div class="container shadow p-3">
-    <form method="post" asp-action="Create" enctype="multipart/form-data">
-        <div class="row pt-3">
-            <div class="col ">
-                <h4 class="text-primary text-start fw-bold">Taşınmaz Bağışçı Girişi</h4>
-            </div>
+    <div class="row pt-3">
+        <div class="col ">
+            <h4 class="text-primary text-start fw-bold">Taşınmaz Bağışçı Girişi</h4>
         </div>
-        <hr />
-        <div class="row">
-            <div class="mb-3 col-10">
+    </div>
+    <div class="row">
+        <div class="mb-3 col-10">
+            <form method="post" asp-action="Create" enctype="multipart/form-data">
+                <hr />
                 <div class="row">
                     <div class="form-group col">
                         <div class="form-group">
@@ -26,7 +26,7 @@
                             <input asp-for="TasinmazBagisci.TCKimlikNo" class="form-control" />
                             <span asp-validation-for="TasinmazBagisci.TCKimlikNo" class="text-danger"></span>
                         </div>
-@*                         <div class="checkbox">
+                        @*                         <div class="checkbox">
                             <label asp-for="TasinmazBagisci.Gizli" class="control-label text-bold text-danger">Bağışım Gizli Kalsın </label>
                             <input asp-for="TasinmazBagisci.Gizli" class="form-check" type="checkbox" />
                         </div> *@
@@ -47,7 +47,7 @@
                             <input asp-for="TasinmazBagisci.Meslegi " class="form-control" />
                             <span asp-validation-for="TasinmazBagisci.Meslegi" class="text-danger"></span>
                         </div>
-                        
+
                         <div class="form-group ">
                             <div>
                                 @Html.Partial("_IlVeIlceDropdown", Model.IlVeIlceVM)
@@ -72,6 +72,11 @@
                             <input asp-for="TasinmazBagisci.Telefon2 " class="form-control" />
                             <span asp-validation-for="TasinmazBagisci.Telefon2" class="text-danger"></span>
                         </div>
+                        <div class="form-group ">
+                            <label asp-for="TasinmazBagisci.EPosta"></label>
+                            <input asp-for="TasinmazBagisci.EPosta " class="form-control" />
+                            <span asp-validation-for="TasinmazBagisci.EPosta" class="text-danger"></span>
+                        </div>
                     </div>
                     <div class="form-group col">
                         <div class="form-group">
@@ -81,37 +86,191 @@
                             </select>
                             <span asp-validation-for="TasinmazBagisci.Sag_vefat" class="text-danger"></span>
                         </div>
-                        
+                        <div class="form-group ">
+                            <label asp-for="TasinmazBagisci.VefatTarihi" class="control-label"></label>
+                            <input asp-for="TasinmazBagisci.VefatTarihi" class="form-control" type="date" />
+                            <span asp-validation-for="TasinmazBagisci.VefatTarihi" class="text-danger"></span>
+                        </div>
+                        <div class="form-group ">
+                            <label asp-for="TasinmazBagisci.DefinYeri">Defin Yeri (Mezarlık)</label>
+                            <input asp-for="TasinmazBagisci.DefinYeri " class="form-control" />
+                            <span asp-validation-for="TasinmazBagisci.DefinYeri" class="text-danger"></span>
+                        </div>
+                        <div class="form-group">
+                            <label asp-for="TasinmazBagisci.DefinIli"></label>
+                            <select asp-for="TasinmazBagisci.DefinIli" asp-items="@Model.DefinIliList" class="form-select" id="DefinIliDropdown">
+                                <option disabled selected>--Seçiniz--</option>
+                            </select>
+                            <span asp-validation-for="TasinmazBagisci.DefinIli" class="text-danger"></span>
+                        </div>
+                        <div class="form-group">
+                            <label asp-for="TasinmazBagisci.DefinIlcesi"></label>
+                            <select asp-for="TasinmazBagisci.DefinIlcesi" asp-items="@Model.DefinIlcesiList" class="form-select" id="DefinIlcesiDropdown">
+                                <option disabled selected>--Seçiniz--</option>
+                            </select>
+                            <span asp-validation-for="TasinmazBagisci.DefinIlcesi" class="text-danger"></span>
+                        </div>
                     </div>
                 </div>
                 <div class="row">
+                </div>
+                <div class="mb-3">
+                    <label asp-for="TasinmazBagisci.Aciklama"></label>
+                    <textarea asp-for="TasinmazBagisci.Aciklama" rows="3" class="form-control"></textarea>
+                    <span asp-validation-for="TasinmazBagisci.Aciklama" class="text-danger"></span>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary" style="width:150px">Kaydet</button>
 
+                    <a asp-controller="TasinmazBagisci" asp-action="Index" class="btn btn-secondary" style="width:150px">
+                        Listeye Dön
+                    </a>
+                </div>
+            </form>
+        </div>
+        <div class="mb-3 col-2">
+
+            
+            <div>
+                <div>
+                    
+                    <input type="file" id="fileInput" accept="image/*">
+                </div>
+                <div>
+                    @* <img id="image" style="max-width: 200px; max-height:300px; display: none;" /> *@
+                    <img id="imagePreview"
+                     src="/images/default-placeholder.png"
+                     alt="Placeholder Image"
+                     style="max-width: 200px; max-height: 300px;" />
+                </div>
+                <div>
+                    <button id="cropButton" style="display: none;">Crop and Upload</button>
                 </div>
             </div>
-            <div class="mb-3 col-2">
-            </div>
-           
-
         </div>
-
-        <div class="mb-3">
-            <label asp-for="TasinmazBagisci.Aciklama"></label>
-            <textarea asp-for="TasinmazBagisci.Aciklama" rows="3" class="form-control"></textarea>
-            <span asp-validation-for="TasinmazBagisci.Aciklama" class="text-danger"></span>
-        </div>
-        <div class="col-12">
-
-            <button type="submit" class="btn btn-primary" style="width:150px">Kaydet</button>
-
-            <a asp-controller="TasinmazBagisci" asp-action="Index" class="btn btn-secondary" style="width:150px">
-                Listeye Dön
-            </a>
-        </div>
-    </form>
+    </div>
+    
 </div>
 @section Scripts {
     @{
-            <partial name="_ValidationScriptsPartial" />
+        <partial name="_ValidationScriptsPartial" />
     }
+
+
     <script src="~/js/ilVeIlce.js"></script>
+        <script>
+        let cropper;
+
+        // File input change event
+        document.getElementById('fileInput').addEventListener('change', function (event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const image = document.getElementById('imagePreview');
+                    image.src = e.target.result;
+                    image.style.display = 'block';
+
+                    // Initialize Cropper.js
+                    if (cropper) {
+                        cropper.destroy(); // Destroy previous instance
+                    }
+                    cropper = new Cropper(image, {
+                        aspectRatio: 1, // Example: Square crop
+                        viewMode: 2,
+                    });
+
+                    document.getElementById('cropButton').style.display = 'inline-block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+            
+        // Crop and upload button click event
+        document.getElementById('cropButton').addEventListener('click', function () {
+            if (cropper) {
+                // Get cropped image as a blob
+                cropper.getCroppedCanvas().toBlob(async function (blob) {
+                    const formData = new FormData();
+                    formData.append('croppedImage', blob, 'cropped-image.jpg');
+
+                    // Send cropped image to the server
+                            const response = await fetch('/Admin/TasinmazBagisci/UploadCroppedImage', {
+                            method: 'POST',
+                            body: formData,
+                        });
+
+                    if (response.ok) {
+                        alert('Image uploaded successfully!');
+                    } else {
+                        alert('Error uploading image.XX');
+                    }
+                }, 'image/jpeg');
+            }
+        });
+    </script>
+
+    @* <script>
+
+            document.addEventListener('DOMContentLoaded', function () {
+            const image = document.getElementById('image');
+            const uploadImage = document.getElementById('uploadImage');
+            const cropButton = document.getElementById('cropButton');
+            let cropper;
+
+            // Resim yüklendiğinde Cropper başlatılır
+            uploadImage.addEventListener('change', function (event) {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        image.src = e.target.result;
+                        image.style.display = 'block';
+                        cropButton.style.display = 'block';
+
+                        // Eski Cropper'ı temizle
+                        if (cropper) {
+                            cropper.destroy();
+                        }
+
+                        // Cropper.js başlat
+                        cropper = new Cropper(image, {
+                            aspectRatio: 1, // 1:1 en-boy oranı
+                            viewMode: 1,
+                        });
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            // Kırpma ve Sunucuya Yükleme
+            cropButton.addEventListener('click', function () {
+                const canvas = cropper.getCroppedCanvas({
+                    width: 200, // İstenen genişlik
+                    height: 200, // İstenen yükseklik
+                });
+
+                // Canvas'ı base64'e çevirip AJAX ile gönderme
+                canvas.toBlob(function (blob) {
+                    const formData = new FormData();
+                    formData.append('croppedImage', blob);
+
+                    fetch('/Admin/TasinmazBagisci/UploadCroppedImage', {
+                        method: 'POST',
+                        body: formData,
+                    })
+                        .then((response) => response.json())
+                        .then((data) => {
+                            alert('Image uploaded successfully!');
+                        })
+                        .catch((error) => {
+                            console.error('Error:', error);
+                        });
+                });
+            });
+        });
+
+    </script> *@
+
 }
