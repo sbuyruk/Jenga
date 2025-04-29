@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Extensions.Caching.Memory;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Jenga.Web.Areas.Admin.Controllers
 {
@@ -96,19 +97,51 @@ namespace Jenga.Web.Areas.Admin.Controllers
         public IActionResult GetAllByMalzemeCinsiId(int malzemeCinsiId, int malzemeId)
         {
             List<Ozellik> returnList = new List<Ozellik>();
-            List<Ozellik> olist = _unitOfWork.Ozellik.GetByFilter(u => u.MalzemeCinsiId == malzemeCinsiId, includeProperties: "MalzemeCinsi").ToList();
+            //List<Ozellik> olist = _unitOfWork.Ozellik.GetByFilter(u => u.MalzemeCinsiId == malzemeCinsiId, includeProperties: "MalzemeCinsi").ToList();
+
+            // Seçilen malzeme cinsi ve tüm üst malzeme cinslerini al
+            HashSet<int> malzemeCinsiIdSet = new HashSet<int> { malzemeCinsiId };
+
+            // Üst malzemeleri bul (tekrar eklememek için HashSet kullanıyoruz)
+            int? currentId = malzemeCinsiId;
+            while (currentId != null)
+            {
+                var parent = _unitOfWork.MalzemeCinsi.GetByFilter(m => m.Id == currentId).FirstOrDefault();
+                if (parent != null )
+                {
+                    List<int> childIds = _unitOfWork.MalzemeCinsi
+                        .GetByFilter(m => m.UstMalzemeCinsiId == currentId)
+                        .Select(m => m.Id)
+                        .ToList();
+
+                    malzemeCinsiIdSet.UnionWith(childIds);
+                    currentId = parent.UstMalzemeCinsiId;
+                    malzemeCinsiIdSet.Add(parent.UstMalzemeCinsiId);
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            // Şimdi bu listeye dahil olan tüm malzeme cinslerine ait özellikleri getir
+            List<Ozellik> olist = _unitOfWork.Ozellik.GetByFilter(
+                u => malzemeCinsiIdSet.Contains(u.MalzemeCinsiId),
+                includeProperties: "MalzemeCinsi"
+            ).ToList();
+
             List<MalzemeOzellik> molist = _unitOfWork.MalzemeOzellik.GetByFilter(u => u.MalzemeId == malzemeId, includeProperties: "Malzeme,Ozellik").ToList();
             List<Ozellik> filteredList =olist.Where(o => !molist.Select(m => m.OzellikId).Contains(o.Id)).ToList();
             returnList.AddRange(filteredList);
             MalzemeCinsi malzemeCinsi = _unitOfWork.MalzemeCinsi.GetFirstOrDefault(u => u.Id == malzemeCinsiId);
 
-            while (malzemeCinsi.UstMalzemeCinsiId >0 ) 
-            {
+            //while (malzemeCinsi.UstMalzemeCinsiId >0 ) 
+            //{
 
-                List<Ozellik> list = _unitOfWork.Ozellik.GetByFilter(u => u.MalzemeCinsiId == malzemeCinsi.UstMalzemeCinsiId, includeProperties: "MalzemeCinsi").ToList().Where(o => !molist.Select(m => m.OzellikId).Contains(o.Id)).ToList(); ;
-                returnList.AddRange(list);
-                malzemeCinsi = _unitOfWork.MalzemeCinsi.GetFirstOrDefault(u => u.Id == malzemeCinsi.UstMalzemeCinsiId);
-            } 
+            //    List<Ozellik> list = _unitOfWork.Ozellik.GetByFilter(u => u.MalzemeCinsiId == malzemeCinsi.UstMalzemeCinsiId, includeProperties: "MalzemeCinsi").ToList().Where(o => !molist.Select(m => m.OzellikId).Contains(o.Id)).ToList(); ;
+            //    returnList.AddRange(list);
+            //    malzemeCinsi = _unitOfWork.MalzemeCinsi.GetFirstOrDefault(u => u.Id == malzemeCinsi.UstMalzemeCinsiId);
+            //} 
 
             return Json(new { data = returnList });
         }
