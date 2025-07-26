@@ -1,11 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Jenga.Models.Sistem
 {
@@ -19,7 +14,7 @@ namespace Jenga.Models.Sistem
         [ValidateNever]
         public string? Olusturan { get; set; }
         [ValidateNever]
-        public DateTime? OlusturmaTarihi { get; set; } 
+        public DateTime? OlusturmaTarihi { get; set; }
         [ValidateNever]
         public string? Degistiren { get; set; }
         [ValidateNever]

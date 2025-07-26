@@ -1,7 +1,5 @@
-﻿using Jenga.DataAccess.Repository.IRepository;
-using Jenga.Models.DYS;
+﻿using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.Models.MTS;
-using Jenga.Utility;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Extensions.Caching.Memory;
@@ -103,7 +101,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             // Code to fetch the data from the data source
             // ...
             var aniObjesiList = _unitOfWork.AniObjesiTanim.GetAll(includeProperties: "KaynakTanim");
-            return  aniObjesiList;
+            return aniObjesiList;
         }
         //Delete
         [HttpPost]
@@ -116,7 +114,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             var obj = _unitOfWork.AniObjesiTanim.GetFirstOrDefault(u => u.Id == id);
             if (obj == null)
             {
-                return Json(new {success=false, message="Kayıt silmede hata"});
+                return Json(new { success = false, message = "Kayıt silmede hata" });
             }
             _unitOfWork.AniObjesiTanim.Remove(obj);
             _unitOfWork.Save();

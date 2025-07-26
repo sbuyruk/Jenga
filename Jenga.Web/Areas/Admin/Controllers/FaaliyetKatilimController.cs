@@ -1,14 +1,13 @@
-using Jenga.DataAccess.Repository.IRepository;
+using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.Models.MTS;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace Jenga.Web.Areas.Admin.Controllers
 {
     public class FaaliyetKatilimController : Controller
     {
         private readonly IUnitOfWork _unitOfWork;
-        
+
         public FaaliyetKatilimController(IUnitOfWork unitOfWork)
         {
             _unitOfWork = unitOfWork;
@@ -29,7 +28,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 return NotFound();
             }
             FaaliyetKatilim? faaliyetYeriFromDb = _unitOfWork.FaaliyetKatilim.GetFirstOrDefault(u => u.Id == id);
- 
+
             if (faaliyetYeriFromDb == null)
             {
                 return NotFound();
@@ -84,7 +83,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
         {
             var faaliyetYeriToBeDeleted = _unitOfWork.FaaliyetKatilim.GetFirstOrDefault(u => u.Id == id);
             //var faaliyetYeriKullanimi = _unitOfWork.Faaliyet.GetFirstOrDefault(u => u.FaaliyetYeriId == id);
-            
+
             if (faaliyetYeriToBeDeleted == null)
             {
                 return Json(new { success = false, message = "Faaliyet Yeri  Bulunamadı." });
@@ -99,7 +98,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 _unitOfWork.FaaliyetKatilim.Remove(faaliyetYeriToBeDeleted);
                 _unitOfWork.Save();
 
-                return Json(new { success = true, message = "Faaliyet Yeri  başarıyla silindi." }); 
+                return Json(new { success = true, message = "Faaliyet Yeri  başarıyla silindi." });
             }
 
         }

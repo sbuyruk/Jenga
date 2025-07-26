@@ -1,5 +1,4 @@
-﻿using Jenga.Models.Ortak;
-using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+﻿using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
 
@@ -11,7 +10,7 @@ namespace Jenga.Models.MTS
         [ValidateNever]
         public IEnumerable<SelectListItem>? DagitimYeriList { get; set; }
         [ValidateNever]
-        public IEnumerable<SelectListItem>? GondermeAraciList { get; set; } 
+        public IEnumerable<SelectListItem>? GondermeAraciList { get; set; }
         [ValidateNever]
         public IEnumerable<SelectListItem>? IlList { get; set; }
         [ValidateNever]

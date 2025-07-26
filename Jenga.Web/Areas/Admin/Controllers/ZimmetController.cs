@@ -1,6 +1,5 @@
-﻿using Jenga.DataAccess.Repository.IRepository;
+﻿using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.Models.DYS;
-using Jenga.Models.TBYS;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
@@ -25,7 +24,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
         }
         public async Task<IActionResult> Create()
         {
-            
+
             var personelList = _unitOfWork.Personel.GetByFilter(u => u.IsBilgileri.CalismaDurumu == "1", includeProperties: "Kimlik,IsBilgileri,PersonelMenu")
                 .Select(y => new SelectListItem
                 {
@@ -34,7 +33,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 }).ToList();
             var viewModel = new ZimmetVM
             {
-                Zimmet = new Zimmet { Adet=1,Tarih=DateTime.Now},
+                Zimmet = new Zimmet { Adet = 1, Tarih = DateTime.Now },
                 MalzemeList = await _unitOfWork.Malzeme.GetMalzemeDDL(true),
                 MalzemeYeriList = await _unitOfWork.MalzemeYeriTanim.GetMalzemeYeriDDL(true), //malzemeYeriList,
                 PersonelList = await _unitOfWork.Personel.GetPersonelDDL(true),
@@ -51,7 +50,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
         // GET: Zimmet/Edit/5
         public async Task<IActionResult> Edit(int id)
         {
-            var zimmet = await _unitOfWork.Zimmet.GetFirstOrDefaultAsync(m=> m.Id==id, includeProperties:"Malzeme,Personel,MalzemeYeriTanim");
+            var zimmet = await _unitOfWork.Zimmet.GetFirstOrDefaultAsync(m => m.Id == id, includeProperties: "Malzeme,Personel,MalzemeYeriTanim");
             if (zimmet == null)
                 return NotFound();
 
@@ -79,7 +78,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 string? userName = HttpContext?.User?.Identity?.Name;
                 zimmetVM.Zimmet.Olusturan = userName;
                 await _unitOfWork.Zimmet.AddAsync(zimmetVM.Zimmet);
-                MalzemeDagilim? malzemeDagilim = await _unitOfWork.MalzemeDagilim.GetFirstOrDefaultAsync(a=>a.MalzemeId== zimmetVM.Zimmet.MalzemeId && a.MalzemeYeriTanimId== zimmetVM.Zimmet.MalzemeYeriTanimId);
+                MalzemeDagilim? malzemeDagilim = await _unitOfWork.MalzemeDagilim.GetFirstOrDefaultAsync(a => a.MalzemeId == zimmetVM.Zimmet.MalzemeId && a.MalzemeYeriTanimId == zimmetVM.Zimmet.MalzemeYeriTanimId);
                 if (malzemeDagilim == null)
                 {
                     TempData["error"] = "Zimmet işlemi yapılamadı. Seçilen yerde yeterli miktarda malzeme yok.";
@@ -87,29 +86,30 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 }
                 else
                 {
-                    
+
                     if (malzemeDagilim.Adet - zimmetVM.Zimmet.Adet >= 0)
                     {
                         malzemeDagilim.Adet -= zimmetVM.Zimmet.Adet;
                         malzemeDagilim.Degistiren = userName;
                         _unitOfWork.MalzemeDagilim.Update(malzemeDagilim);
-                        MalzemeHareket malzemeHareket = new() 
+                        MalzemeHareket malzemeHareket = new()
                         {
-                            Aciklama= "Personele Zimmet yapıldı. PersonelId="+ zimmetVM.Zimmet.PersonelId+ " Açıklama= " +zimmetVM.Zimmet.Aciklama,
-                            Adet= zimmetVM.Zimmet.Adet,
-                            GirisCikis="Çıkış",
-                            HedefYeriId= zimmetVM.Zimmet.PersonelId,
-                            IslemTipi="Zimmet",
-                            IslemTarihi=DateTime.Now,
-                            KaynakYeriId= zimmetVM.Zimmet.MalzemeYeriTanimId,
-                            MalzemeId= zimmetVM.Zimmet.MalzemeId,
-                            Olusturan= userName,
-                            
+                            Aciklama = "Personele Zimmet yapıldı. PersonelId=" + zimmetVM.Zimmet.PersonelId + " Açıklama= " + zimmetVM.Zimmet.Aciklama,
+                            Adet = zimmetVM.Zimmet.Adet,
+                            GirisCikis = "Çıkış",
+                            HedefYeriId = zimmetVM.Zimmet.PersonelId,
+                            IslemTipi = "Zimmet",
+                            IslemTarihi = DateTime.Now,
+                            KaynakYeriId = zimmetVM.Zimmet.MalzemeYeriTanimId,
+                            MalzemeId = zimmetVM.Zimmet.MalzemeId,
+                            Olusturan = userName,
+
                         };
 
                         _unitOfWork.MalzemeHareket.Add(malzemeHareket);
-                        
-                    }else
+
+                    }
+                    else
                     {
                         TempData["error"] = "Zimmet işlemi yapılamadı. Seçilen yerde yeterli miktarda malzeme yok.";
                         return RedirectToAction(nameof(Index));
@@ -163,7 +163,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             {
                 Zimmet guncellenenZimmet = zimmetVM.Zimmet;
                 //Kayıtlı Zimmeti bul
-                Zimmet? oncekiZimmet = await _unitOfWork.Zimmet.GetFirstOrDefaultAsync(z=> z.Id==zimmetVM.Zimmet.Id, trackChanges: false);
+                Zimmet? oncekiZimmet = await _unitOfWork.Zimmet.GetFirstOrDefaultAsync(z => z.Id == zimmetVM.Zimmet.Id, trackChanges: false);
                 if (oncekiZimmet == null)
                 {
                     TempData["error"] = "Zimmet işlemi yapılamadı";
@@ -172,8 +172,8 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 {
                     string? userName = HttpContext.User.Identity.Name;
                     zimmetVM.Zimmet.Degistiren = userName;
-                    
-                    MalzemeDagilim oncekiMalzemeDagilim = _unitOfWork.MalzemeDagilim.GetFirstOrDefault(d=>d.MalzemeId==oncekiZimmet.MalzemeId && d.MalzemeYeriTanimId==oncekiZimmet.MalzemeYeriTanimId); 
+
+                    MalzemeDagilim oncekiMalzemeDagilim = _unitOfWork.MalzemeDagilim.GetFirstOrDefault(d => d.MalzemeId == oncekiZimmet.MalzemeId && d.MalzemeYeriTanimId == oncekiZimmet.MalzemeYeriTanimId);
                     if (oncekiMalzemeDagilim == null)
                     {
                         TempData["error"] = "MalzemeDagilim'da kayyıt bulnamadı yapılamadı";
@@ -183,7 +183,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
                         //MalzemeDagilim'da mevcut malzemeId'nin adedini mevcut Çıkış Yerine ekle
                         oncekiMalzemeDagilim.Adet += oncekiZimmet.Adet;
                         oncekiMalzemeDagilim.Degistiren = userName;
-                        oncekiMalzemeDagilim.Aciklama = oncekiMalzemeDagilim.Aciklama?.Trim() + " (" + "Zimmet Güncellemesi yapıldı."+DateTime.Now;
+                        oncekiMalzemeDagilim.Aciklama = oncekiMalzemeDagilim.Aciklama?.Trim() + " (" + "Zimmet Güncellemesi yapıldı." + DateTime.Now;
                         _unitOfWork.MalzemeDagilim.Update(oncekiMalzemeDagilim);
                         //MalzemeDagilim'da yeni adedi, yeni çıkış yerinden düş
                         MalzemeDagilim guncellenenMalzemeDagilim = _unitOfWork.MalzemeDagilim.GetFirstOrDefault(d => d.MalzemeId == guncellenenZimmet.MalzemeId && d.MalzemeYeriTanimId == guncellenenZimmet.MalzemeYeriTanimId);
@@ -232,9 +232,9 @@ namespace Jenga.Web.Areas.Admin.Controllers
                             }
                         }
 
-                      
+
                     }
-                    
+
                 }
             }
             else
@@ -255,15 +255,15 @@ namespace Jenga.Web.Areas.Admin.Controllers
                     return NotFound();
                 }
                 MalzemeDagilim? malzemeDagilim = await _unitOfWork.MalzemeDagilim.GetFirstOrDefaultAsync(
-                    m => m.MalzemeId == entity.MalzemeId 
-                    && m.MalzemeYeriTanimId==entity.MalzemeYeriTanimId);
+                    m => m.MalzemeId == entity.MalzemeId
+                    && m.MalzemeYeriTanimId == entity.MalzemeYeriTanimId);
                 if (malzemeDagilim != null)
                 {
                     malzemeDagilim.Adet += entity.Adet;
                     malzemeDagilim.Aciklama += entity.Aciklama;
                     string? userName = HttpContext?.User?.Identity?.Name;
-                    
-                    malzemeDagilim.Degistiren=userName;
+
+                    malzemeDagilim.Degistiren = userName;
                     _unitOfWork.MalzemeDagilim.Update(malzemeDagilim); ;
                 }
                 _unitOfWork.Zimmet.Remove(entity);
@@ -294,7 +294,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             List<MalzemeDagilim> malzemeDagilimList = _unitOfWork.MalzemeDagilim.GetByFilter(u => u.MalzemeYeriTanimId == malzemeYeriTanimId, includeProperties: "Malzeme,MalzemeYeriTanim").ToList();
             return Json(malzemeDagilimList);
         }
-        
+
         public async Task<JsonResult> GetPersonelByMalzeme(int malzemeId)
         {
             var personelList = _unitOfWork.Personel.GetByFilter(u => u.IsBilgileri.CalismaDurumu == "1", includeProperties: "Kimlik,IsBilgileri")
@@ -309,7 +309,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
 
             return Json(personelList);
         }
-        
+
         #endregion
     }
 

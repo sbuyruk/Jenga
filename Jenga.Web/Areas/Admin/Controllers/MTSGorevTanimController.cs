@@ -1,6 +1,5 @@
-﻿using Jenga.DataAccess.Repository.IRepository;
+﻿using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.Models.MTS;
-using Jenga.Utility;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Newtonsoft.Json;
@@ -77,7 +76,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
                         Value = i.Id.ToString()
                     }),
                 };
-                mTSGorevTanimVM.MTSGorevTanim= _unitOfWork.MTSGorevTanim.GetFirstOrDefault(u => u.Id == id);
+                mTSGorevTanimVM.MTSGorevTanim = _unitOfWork.MTSGorevTanim.GetFirstOrDefault(u => u.Id == id);
                 return View(mTSGorevTanimVM);
             }
         }
@@ -113,7 +112,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
         [HttpGet]
         public IActionResult GetAll()
         {
-            List<MTSGorevTanim> objMTSGorevTanimListesi = _unitOfWork.MTSGorevTanim.GetAll(includeProperties:"MTSKurumTanim").ToList();
+            List<MTSGorevTanim> objMTSGorevTanimListesi = _unitOfWork.MTSGorevTanim.GetAll(includeProperties: "MTSKurumTanim").ToList();
             return Json(new { data = objMTSGorevTanimListesi });
         }
         [HttpGet]

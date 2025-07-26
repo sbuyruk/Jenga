@@ -1,10 +1,8 @@
-﻿using Jenga.DataAccess.Repository.IRepository;
+﻿using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.Models.DYS;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Extensions.Caching.Memory;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace Jenga.Web.Areas.Admin.Controllers
 {
@@ -91,7 +89,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             // Code to fetch the data from the data source
             // ...
             var malzemeCinsiList = _unitOfWork.Ozellik.GetAll(includeProperties: "MalzemeCinsi");
-            return  malzemeCinsiList;
+            return malzemeCinsiList;
         }
         [HttpGet]
         public IActionResult GetAllByMalzemeCinsiId(int malzemeCinsiId, int malzemeId)
@@ -107,7 +105,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             while (currentId != null)
             {
                 var parent = _unitOfWork.MalzemeCinsi.GetByFilter(m => m.Id == currentId).FirstOrDefault();
-                if (parent != null )
+                if (parent != null)
                 {
                     List<int> childIds = _unitOfWork.MalzemeCinsi
                         .GetByFilter(m => m.UstMalzemeCinsiId == currentId)
@@ -131,7 +129,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             ).ToList();
 
             List<MalzemeOzellik> molist = _unitOfWork.MalzemeOzellik.GetByFilter(u => u.MalzemeId == malzemeId, includeProperties: "Malzeme,Ozellik").ToList();
-            List<Ozellik> filteredList =olist.Where(o => !molist.Select(m => m.OzellikId).Contains(o.Id)).ToList();
+            List<Ozellik> filteredList = olist.Where(o => !molist.Select(m => m.OzellikId).Contains(o.Id)).ToList();
             returnList.AddRange(filteredList);
             MalzemeCinsi malzemeCinsi = _unitOfWork.MalzemeCinsi.GetFirstOrDefault(u => u.Id == malzemeCinsiId);
 
@@ -156,7 +154,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             var obj = _unitOfWork.Ozellik.GetFirstOrDefault(u => u.Id == id);
             if (obj == null)
             {
-                return Json(new {success=false, message="Kayıt silmede hata"});
+                return Json(new { success = false, message = "Kayıt silmede hata" });
             }
             _unitOfWork.Ozellik.Remove(obj);
             _unitOfWork.Save();

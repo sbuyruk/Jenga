@@ -9,5 +9,5 @@ public class MarkaTanim : BaseModel
     [DisplayName("Marka Tanımı")]
     public string Adi { get; set; }
     public bool Aktif { get; set; }
-    
+
 }

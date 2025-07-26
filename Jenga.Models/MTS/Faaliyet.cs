@@ -1,6 +1,5 @@
 ﻿using Jenga.Models.Sistem;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
-using Microsoft.Extensions.Hosting;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -9,7 +8,7 @@ namespace Jenga.Models.MTS;
 
 public class Faaliyet : BaseModel
 {
-   
+
     [ValidateNever]
     [DisplayName("Unique Id")]
     public Guid? UniqueId { get; set; }
@@ -62,5 +61,5 @@ public class Faaliyet : BaseModel
     [DisplayName("Özel Kalem Takvimine İşlensin")]
     public bool? TakvimeIslendi { get; set; }
     public virtual List<FaaliyetKatilim>? FaaliyetKatilims { get; set; }
-    
+
 }

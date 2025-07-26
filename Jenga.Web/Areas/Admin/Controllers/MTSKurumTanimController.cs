@@ -1,14 +1,13 @@
-using Jenga.DataAccess.Repository.IRepository;
+using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.Models.MTS;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace Jenga.Web.Areas.Admin.Controllers
 {
     public class MTSKurumTanimController : Controller
     {
         private readonly IUnitOfWork _unitOfWork;
-        
+
         public MTSKurumTanimController(IUnitOfWork unitOfWork)
         {
             _unitOfWork = unitOfWork;
@@ -46,7 +45,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 return NotFound();
             }
             MTSKurumTanim? mtsKurumTanimFromDb = _unitOfWork.MTSKurumTanim.GetFirstOrDefault(u => u.Id == id);
- 
+
             if (mtsKurumTanimFromDb == null)
             {
                 return NotFound();
@@ -84,22 +83,22 @@ namespace Jenga.Web.Areas.Admin.Controllers
         {
             var mtsKurumTanimToBeDeleted = _unitOfWork.MTSKurumTanim.GetFirstOrDefault(u => u.Id == id);
             var kurumlaIliskiliKisi = _unitOfWork.MTSKurumGorev.GetFirstOrDefault(u => u.MTSKurumTanimId == id);
-            
+
             if (mtsKurumTanimToBeDeleted == null)
             {
                 return Json(new { success = false, message = "Kurum Bulunamadı." });
             }
             else
-            if(kurumlaIliskiliKisi != null)
+            if (kurumlaIliskiliKisi != null)
             {
                 return Json(new { success = false, message = "Bu Kurum ile bağlantılı ziyaretçi kayıt vardır." });
             }
-            else 
+            else
             {
                 _unitOfWork.MTSKurumTanim.Remove(mtsKurumTanimToBeDeleted);
                 _unitOfWork.Save();
 
-                return Json(new { success = true, message = "Kurum başarıyla silindi." }); 
+                return Json(new { success = true, message = "Kurum başarıyla silindi." });
             }
 
         }

@@ -1,5 +1,4 @@
-﻿using Jenga.DataAccess.Repository.IRepository;
-using Jenga.Models.IKYS;
+﻿using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.Models.MTS;
 using Jenga.Utility;
 using Jenga.Web.Areas.Admin.Services;
@@ -48,7 +47,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
                     Value = i.Id.ToString()
                 }),
             };
-            
+
             return View(aniObjesiDagitimVM);
 
         }
@@ -122,9 +121,9 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 }
             }
             return Json(new { data = aniObjesiList });
-            
+
         }
-        
+
         //Delete
         [HttpPost]
         public IActionResult Delete(int? id)
@@ -136,7 +135,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             var obj = _unitOfWork.AniObjesiDagitim.GetFirstOrDefault(u => u.Id == id);
             if (obj == null)
             {
-                return Json(new {success=false, message="Kayıt silmede hata"});
+                return Json(new { success = false, message = "Kayıt silmede hata" });
             }
             _unitOfWork.AniObjesiDagitim.Remove(obj);
             _unitOfWork.Save();

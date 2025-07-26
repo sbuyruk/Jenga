@@ -1,11 +1,5 @@
-﻿using Jenga.Models.Ortak;
-using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+﻿using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Jenga.Models.MTS
 {
@@ -19,7 +13,7 @@ namespace Jenga.Models.MTS
         [ValidateNever]
         public IEnumerable<SelectListItem> HedefDepoList { get; set; }
         [ValidateNever]
-        public IEnumerable<SelectListItem> AniObjesiList { get; set; } 
+        public IEnumerable<SelectListItem> AniObjesiList { get; set; }
         [ValidateNever]
         public IEnumerable<SelectListItem> GirisCikisList { get; set; }
     }

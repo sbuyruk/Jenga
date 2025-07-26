@@ -1,12 +1,7 @@
 ﻿using Jenga.Models.Sistem;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Jenga.Models.MTS
@@ -32,7 +27,7 @@ namespace Jenga.Models.MTS
         [Required(ErrorMessage = "Lütfen Tarih giriniz.")]
         //[DisplayFormat(ApplyFormatInEditMode = true, DataFormatString = "{0:yyyy-MM-dd HH:mm}")]
         [DisplayName("Tarih")]
-        public DateTime Tarih { get; set; }=DateTime.Now;
+        public DateTime Tarih { get; set; } = DateTime.Now;
         [ValidateNever]
         [DisplayName("Görüşme Şekli")]
         public string? GorusmeSekli { get; set; }
@@ -41,9 +36,9 @@ namespace Jenga.Models.MTS
         public string? Konu { get; set; }
         [ValidateNever]
         [DisplayName("Görüşme Sağlandı")]
-        public bool GorusmeSaglandi { get; set; }=false;
+        public bool GorusmeSaglandi { get; set; } = false;
         [ValidateNever]
         [DisplayName("Randevu istendi")]
-        public bool RandevuIstendi { get; set; }=false; 
+        public bool RandevuIstendi { get; set; } = false;
     }
 }

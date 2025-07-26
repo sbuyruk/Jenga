@@ -1,11 +1,11 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using Jenga.Models.Sistem;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using System.ComponentModel;
-using Jenga.Models.Sistem;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Jenga.Models.MTS
 {
-    public class AniObjesiDagitim :BaseModel
+    public class AniObjesiDagitim : BaseModel
     {
 
         public int AniObjesiId { get; set; }

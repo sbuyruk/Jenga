@@ -1,4 +1,4 @@
-﻿using Jenga.DataAccess.Repository.IRepository;
+﻿using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.Models.MTS;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,7 +11,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
         {
             _unitOfWork = unitOfWork;
         }
-        
+
         public IActionResult Index()
         {
             IEnumerable<DagitimYeriTanim> objDagitimYeriTanimList = _unitOfWork.DagitimYeriTanim.GetAll();

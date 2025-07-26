@@ -1,7 +1,6 @@
-﻿using Jenga.DataAccess.Repository.IRepository;
+﻿using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.Models.IKYS;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace Jenga.Web.Areas.Admin.Controllers
 {

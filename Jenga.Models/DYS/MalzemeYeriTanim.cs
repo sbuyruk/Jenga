@@ -8,5 +8,5 @@ public class MalzemeYeriTanim : BaseModel
     [Required]
     [DisplayName("Malzeme Yeri Tanımı")]
     public string Adi { get; set; }
-    
+
 }

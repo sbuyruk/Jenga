@@ -1,9 +1,8 @@
-using Jenga.DataAccess.Repository.IRepository;
-using Jenga.Models.TYS;
+using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.Models.MTS;
+using Jenga.Utility;
 using Jenga.Web.Areas.Admin.Services;
 using Microsoft.AspNetCore.Mvc;
-using Jenga.Utility;
 
 
 namespace Jenga.Web.Areas.Admin.Controllers
@@ -27,7 +26,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
         {
             return View();
         }
-        [HttpGet]        
+        [HttpGet]
         public IActionResult Create()
         {
             return View();
@@ -42,9 +41,9 @@ namespace Jenga.Web.Areas.Admin.Controllers
             return View();
         }
         [HttpPost]
-        public IActionResult GetEvents(bool resmiTatiller,bool vakifToplantilari)
+        public IActionResult GetEvents(bool resmiTatiller, bool vakifToplantilari)
         {
-            var form= HttpContext.Request.Form;
+            var form = HttpContext.Request.Form;
             var startDate = DateTime.Parse(form["start"]);
             var endDate = DateTime.Parse(form["end"]);
             List<CalendarEvent> Events = new List<CalendarEvent>();
@@ -63,7 +62,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 return NotFound();
             }
             Faaliyet? faaliyetFromDb = _unitOfWork.Faaliyet.GetFirstOrDefault(u => u.Id == id);
- 
+
             if (faaliyetFromDb == null)
             {
                 return NotFound();
@@ -117,7 +116,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
         public IActionResult Delete(int? id)
         {
             var faaliyetToBeDeleted = _unitOfWork.Faaliyet.GetFirstOrDefault(u => u.Id == id);
-            
+
             if (faaliyetToBeDeleted == null)
             {
                 return Json(new { success = false, message = "Faaliyet  Bulunamadı." });
@@ -127,14 +126,14 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 _unitOfWork.Faaliyet.Remove(faaliyetToBeDeleted);
                 _unitOfWork.Save();
 
-                return Json(new { success = true, message = "Faaliyet  başarıyla silindi." }); 
+                return Json(new { success = true, message = "Faaliyet  başarıyla silindi." });
             }
 
         }
-       
+
         public IActionResult GetFaaliyetList(bool acikTarihliChecked)
         {
-            var faaliyetList = acikTarihliChecked ? _unitOfWork.Faaliyet.GetAll() : _unitOfWork.Faaliyet.GetByFilter(a=>a.AcikTarih!=true);
+            var faaliyetList = acikTarihliChecked ? _unitOfWork.Faaliyet.GetAll() : _unitOfWork.Faaliyet.GetByFilter(a => a.AcikTarih != true);
 
             var faaliyetKatilimList = _unitOfWork.FaaliyetKatilim.GetAll(includeProperties: "Kisi");
             var list1 = from faaliyet in faaliyetList
@@ -165,7 +164,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 int x = 0;
 
                 Int32.TryParse(ProjectConstants.FAALIYET_AMACI_TOPLANTI_INT, out x);
-                var list= _unitOfWork.Faaliyet.GetAll(includeProperties: "FaaliyetAmaci").Where(u => u.AcikTarih == true &&  u.FaaliyetAmaciId==x).ToList();
+                var list = _unitOfWork.Faaliyet.GetAll(includeProperties: "FaaliyetAmaci").Where(u => u.AcikTarih == true && u.FaaliyetAmaciId == x).ToList();
                 faaliyetList.AddRange(list);
             }
             if (ziyaretChecked)
@@ -221,7 +220,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
 
             return Json(new { data = result });
         }
-        
+
         #endregion
     }
 }

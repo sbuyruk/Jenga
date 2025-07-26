@@ -1,19 +1,13 @@
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Jenga.Models.Sistem;
+using Jenga.Models.TYS;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using System.ComponentModel;
-using Jenga.Models.Sistem;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-using Jenga.Models.TYS;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Jenga.Models.MTS
 {
-    public class ToplantiKatilim :BaseModel
+    public class ToplantiKatilim : BaseModel
     {
         public int ToplantiId { get; set; }
         [DisplayName("Toplantı")]
@@ -23,7 +17,7 @@ namespace Jenga.Models.MTS
 
         [DisplayName("Katilimci Id")]
         [Required(ErrorMessage = "Katilimci Id boş olamaz.")]
-        public int KatilimciId { get; set; }       
+        public int KatilimciId { get; set; }
         [ForeignKey("KatilimciId")]
         [ValidateNever]
         public Kisi? Kisi { get; set; }

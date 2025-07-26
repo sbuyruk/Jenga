@@ -1,16 +1,11 @@
 ﻿using Jenga.Models.Sistem;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 
 namespace Jenga.Models.NBYS
 {
-    public class NakitBagisHareket:BaseModel
+    public class NakitBagisHareket : BaseModel
     {
         [ValidateNever]
         [DisplayName("Bağış Tarihi")]
@@ -41,10 +36,10 @@ namespace Jenga.Models.NBYS
         public string? Telefon { get; set; }
         [ValidateNever]
         [DisplayName("Armağan Id")]
-        public int ArmaganId { get; set; }=0;
+        public int ArmaganId { get; set; } = 0;
         [ValidateNever]
         [DisplayName("İade Edildi mi")]
-        public bool IadeEdildiMi { get; set; }=false;
+        public bool IadeEdildiMi { get; set; } = false;
         [ValidateNever]
         [DisplayName("İade Miktarı")]
         public decimal? IadeMiktari { get; set; } = 0;

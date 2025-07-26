@@ -1,6 +1,4 @@
-using Jenga.DataAccess.Repository;
-using Jenga.DataAccess.Repository.IRepository;
-using Jenga.Models.IKYS;
+using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.Models.MTS;
 using Jenga.Utility;
 using Jenga.Web.Areas.Admin.Services;
@@ -94,7 +92,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 return NotFound();
             }
             AramaGorusme? aramaGorusmeFromDb = _unitOfWork.AramaGorusme.GetFirstOrDefault(u => u.Id == id);
- 
+
             if (aramaGorusmeFromDb == null)
             {
                 return NotFound();
@@ -106,16 +104,16 @@ namespace Jenga.Web.Areas.Admin.Controllers
               new SelectListItem { Text = ProjectConstants.ARAMAGORUSME_YUZYUZEGORUSME, Value = ProjectConstants.ARAMAGORUSME_YUZYUZEGORUSME }
             };
             Kisi gorusulenKisi = _unitOfWork.Kisi.IncludeThis(aramaGorusmeFromDb.ArayanId);
-            if (gorusulenKisi!=null)
+            if (gorusulenKisi != null)
             {
                 var kurum = string.Empty;
-                if (gorusulenKisi.MTSKurumGorevs!=null && gorusulenKisi.MTSKurumGorevs.Count >0 
+                if (gorusulenKisi.MTSKurumGorevs != null && gorusulenKisi.MTSKurumGorevs.Count > 0
                     && gorusulenKisi.MTSKurumGorevs[0].MTSKurumTanim != null && gorusulenKisi.MTSKurumGorevs[0].MTSKurumTanim.Adi != null)
                 {
                     kurum = gorusulenKisi.MTSKurumGorevs[0].MTSKurumTanim.Adi;
                 }
                 var gorev = string.Empty;
-                if (gorusulenKisi.MTSKurumGorevs != null && gorusulenKisi.MTSKurumGorevs.Count > 0 
+                if (gorusulenKisi.MTSKurumGorevs != null && gorusulenKisi.MTSKurumGorevs.Count > 0
                     && gorusulenKisi.MTSKurumGorevs[0].MTSGorevTanim != null && gorusulenKisi.MTSKurumGorevs[0].MTSGorevTanim.Adi != null)
                 {
                     gorev = gorusulenKisi.MTSKurumGorevs[0].MTSGorevTanim.Adi;
@@ -129,14 +127,14 @@ namespace Jenga.Web.Areas.Admin.Controllers
                     GorusulenKisi = gorusulenKisi,
                     KisiBilgisi = kisiBilgisi,
                     KurumGorev = (kurum + " " + gorev).Trim(),
-                }; 
-            return View(aramaGorusmeVM);
+                };
+                return View(aramaGorusmeVM);
             }
             else
             {
                 return NotFound();
             }
-            
+
         }
 
         [HttpPost]
@@ -162,7 +160,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 return RedirectToAction("Index");
             }
             return View(obj);
-            
+
         }
 
 
@@ -208,7 +206,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 _unitOfWork.AramaGorusme.Remove(aramaGorusmeToBeDeleted);
                 _unitOfWork.Save();
 
-                return Json(new { success = true, message = "AramaGorusme  başarıyla silindi." }); 
+                return Json(new { success = true, message = "AramaGorusme  başarıyla silindi." });
             }
 
         }
@@ -245,7 +243,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 _unitOfWork.Faaliyet.Add(faaliyet);
                 TempData["success"] = "Arama/Görüşme bağlantılı faaliyet kaydı oluşturuldu";
                 _unitOfWork.Save();
-                aramaGorusme.FaaliyetId=faaliyet.Id;
+                aramaGorusme.FaaliyetId = faaliyet.Id;
                 _unitOfWork.AramaGorusme.Update(aramaGorusme);
                 _unitOfWork.Save();
                 return RedirectToAction("Index");
@@ -255,8 +253,8 @@ namespace Jenga.Web.Areas.Admin.Controllers
         [HttpGet]
         public IActionResult GetAllByDate(DateTime tarih)
         {
-            tarih= tarih<ProjectConstants.ILK_TARIH? tarih:DateTime.Today.AddMonths(-3);
-            var objAramaGorusmeList = _unitOfWork.AramaGorusme.GetByFilter(t=>t.Tarih>= tarih);
+            tarih = tarih < ProjectConstants.ILK_TARIH ? tarih : DateTime.Today.AddMonths(-3);
+            var objAramaGorusmeList = _unitOfWork.AramaGorusme.GetByFilter(t => t.Tarih >= tarih);
 
             var aa = JsonConvert.SerializeObject(objAramaGorusmeList, Formatting.None,
                         new JsonSerializerSettings()
@@ -317,8 +315,8 @@ namespace Jenga.Web.Areas.Admin.Controllers
 
             return Json(new { data = result.Value });
         }
-       
+
         #endregion
-        
+
     }
 }

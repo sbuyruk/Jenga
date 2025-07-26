@@ -1,7 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
-using System.ComponentModel.DataAnnotations;
+﻿using Jenga.Models.Sistem;
 using System.ComponentModel;
-using Jenga.Models.Sistem;
+using System.ComponentModel.DataAnnotations;
 
 namespace Jenga.Models.Ortak
 {
@@ -14,7 +13,7 @@ namespace Jenga.Models.Ortak
         [DisplayName("Bölge Kısa Adı")]
         public string KisaAdi { get; set; }
 
-        
+
 
     }
 }

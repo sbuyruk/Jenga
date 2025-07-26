@@ -71,9 +71,9 @@ public class Katilimci : BaseModel
     [ValidateNever]
     [DisplayName("Doğum Tarihi")]
     public DateTime? DogumTarihi { get; set; }
-     [ValidateNever]
+    [ValidateNever]
     [DisplayName("Kutlama")]
-    public bool? Kutlama { get; set; }=false;
+    public bool? Kutlama { get; set; } = false;
     [ValidateNever]
     [DisplayName("Randevu Kısıtı")]
     public bool? RandevuKisiti { get; set; } = false;

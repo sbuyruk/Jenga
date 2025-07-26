@@ -1,0 +1,32 @@
+﻿@using Jenga.Models.Common
+
+<ul class="tree-menu">
+    @foreach (var item in Items!)
+    {
+        <li class="menu-item @(item.IsExpanded ? "open" : "")">
+            <a href="#"
+               @onclick="() => Toggle(item)"
+               title="@item.Aciklama">
+                @item.Title
+                @if (item.Children?.Any() == true)
+                {
+                    <span class="toggle-icon">▶</span>
+                }
+            </a>
+
+            @if (item.IsExpanded && item.Children?.Any() == true)
+            {
+                <RecursiveMenu Items="item.Children" />
+            }
+        </li>
+    }
+</ul>
+
+@code {
+    [Parameter] public List<MenuItem>? Items { get; set; }
+
+    private void Toggle(MenuItem item)
+    {
+        item.IsExpanded = !item.IsExpanded;
+    }
+}

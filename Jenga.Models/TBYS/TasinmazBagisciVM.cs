@@ -13,11 +13,12 @@ namespace Jenga.Models.TBYS
         [ValidateNever]
         public IEnumerable<SelectListItem> SagVefatList { get; set; }
         [ValidateNever]
-        public IEnumerable<SelectListItem> DefinIliList { get; set; }        
+        public IEnumerable<SelectListItem> DefinIliList { get; set; }
         [ValidateNever]
         public IEnumerable<SelectListItem> DefinIlcesiList { get; set; }
         [ValidateNever]
 
         public IlVeIlceVM IlVeIlceVM { get; set; } = new IlVeIlceVM();
+
     }
 }

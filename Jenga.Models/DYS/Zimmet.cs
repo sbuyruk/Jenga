@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Text.Json.Serialization;
 
 namespace Jenga.Models.DYS;
 public class Zimmet : BaseModel
@@ -14,14 +13,14 @@ public class Zimmet : BaseModel
     [ForeignKey("PersonelId")]
     public int PersonelId { get; set; }
     public Personel? Personel { get; set; }
-    
+
     [DisplayName("Malzeme")]
     [ForeignKey("MalzemeId")]
     [ValidateNever]
     public int MalzemeId { get; set; }
     [ValidateNever]
     public Malzeme? Malzeme { get; set; }
-    
+
     [DisplayName("Malzeme Çıkış Yeri")]
     [ForeignKey("MalzemeYeriTanimId")]
     [ValidateNever]
@@ -35,5 +34,5 @@ public class Zimmet : BaseModel
 
     [ValidateNever]
     public DateTime Tarih { get; set; }
-    
+
 }

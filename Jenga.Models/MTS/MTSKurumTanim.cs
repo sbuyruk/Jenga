@@ -1,22 +1,16 @@
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Jenga.Models.Sistem;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using System.ComponentModel;
-using Jenga.Models.Sistem;
+using System.ComponentModel.DataAnnotations;
 
 namespace Jenga.Models.MTS
 {
-    public class MTSKurumTanim :BaseModel
+    public class MTSKurumTanim : BaseModel
     {
         [DisplayName("Kurum Adı")]
-        [Required(ErrorMessage = "Kurum Adı boş olamaz.")]    
+        [Required(ErrorMessage = "Kurum Adı boş olamaz.")]
         public string? Adi { get; set; }
-        
+
         [DisplayName("Kurum Kısa Adı")]
         [Required(ErrorMessage = "Kurum Kısa Adı boş olamaz.")]
         public string? KisaAdi { get; set; }

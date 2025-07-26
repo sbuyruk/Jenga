@@ -1,14 +1,13 @@
-using Jenga.DataAccess.Repository.IRepository;
+using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.Models.MTS;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace Jenga.Web.Areas.Admin.Controllers
 {
     public class MTSUnvanTanimController : Controller
     {
         private readonly IUnitOfWork _unitOfWork;
-        
+
         public MTSUnvanTanimController(IUnitOfWork unitOfWork)
         {
             _unitOfWork = unitOfWork;
@@ -47,7 +46,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 return NotFound();
             }
             MTSUnvanTanim? mtsUnvanTanimFromDb = _unitOfWork.MTSUnvanTanim.GetFirstOrDefault(u => u.Id == id);
- 
+
             if (mtsUnvanTanimFromDb == null)
             {
                 return NotFound();
@@ -84,18 +83,18 @@ namespace Jenga.Web.Areas.Admin.Controllers
         public IActionResult Delete(int? id)
         {
             var mtsUnvanTanimToBeDeleted = _unitOfWork.MTSUnvanTanim.GetFirstOrDefault(u => u.Id == id);
-            
-            
+
+
             if (mtsUnvanTanimToBeDeleted == null)
             {
                 return Json(new { success = false, message = "Ünvan silinemedi." });
             }
-            else 
+            else
             {
                 _unitOfWork.MTSUnvanTanim.Remove(mtsUnvanTanimToBeDeleted);
                 _unitOfWork.Save();
 
-                return Json(new { success = true, message = "Ünvan başarıyla silindi." }); 
+                return Json(new { success = true, message = "Ünvan başarıyla silindi." });
             }
 
         }

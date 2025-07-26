@@ -1,7 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
+﻿using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.Models.DYS;
-using Jenga.DataAccess.Repository.IRepository;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 
 namespace Jenga.Web.Areas.Admin.Controllers
@@ -12,7 +12,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
         private readonly IUnitOfWork _unitOfWork;
         private readonly IWebHostEnvironment _hostEnvironment;
         // GET: Admin/Malzeme
-        
+
         public IActionResult Index()
         {
 
@@ -169,7 +169,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             return Json(new { data = malzemeList });
             //return Json(new { data = cachedObject });
         }
-        
+
         private IEnumerable<Ozellik> GetDataFromDataSource()
         {
             // Code to fetch the data from the data source

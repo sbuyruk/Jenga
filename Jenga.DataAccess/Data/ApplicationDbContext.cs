@@ -1,4 +1,5 @@
-﻿using Jenga.Models.DYS;
+﻿using Jenga.Models.Common;
+using Jenga.Models.DYS;
 using Jenga.Models.IKYS;
 using Jenga.Models.MTS;
 using Jenga.Models.NBYS;
@@ -15,6 +16,8 @@ namespace Jenga.DataAccess.Data
         {
 
         }
+        //Common
+        public DbSet<MenuItem> MenuItem_Table { get; set; }
         //IKYS
         public DbSet<Personel> Personel_Table { get; set; }
         public DbSet<PersonelMenu> PersonelMenu_Table { get; set; }
@@ -83,6 +86,13 @@ namespace Jenga.DataAccess.Data
             modelBuilder.Entity<MalzemeHareket>()
                 .Property(m => m.Id)
                 .ValueGeneratedOnAdd(); // Ensures EF Core knows that Id is auto-generated
+
+            //Latest
+            base.OnModelCreating(modelBuilder);
+
+            // Common 
+            //modelBuilder.Entity<MenuItem>()
+            //    .ToTable("MenuItem");
 
         }
     }

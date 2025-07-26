@@ -1,12 +1,10 @@
 ﻿using Jenga.Models.Sistem;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 
 namespace Jenga.Models.IKYS;
-public class UnvanTanim: BaseModel
+public class UnvanTanim : BaseModel
 {
     [Required]
     [DisplayName("Görev Id")]

@@ -18,7 +18,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\Jenga.Utility\Jenga.Utility.csproj" />
+	  <ProjectReference Include="..\Jenga.Utility\Jenga.Utility.csproj" />
 	</ItemGroup>
 
 </Project>

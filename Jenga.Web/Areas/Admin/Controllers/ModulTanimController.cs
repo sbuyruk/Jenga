@@ -1,5 +1,4 @@
-﻿using Jenga.DataAccess.Repository.IRepository;
-using Jenga.Models.MTS;
+﻿using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.Models.Ortak;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,7 +11,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
         {
             _unitOfWork = unitOfWork;
         }
-        
+
         public IActionResult Index()
         {
             IEnumerable<ModulTanim> objModulTanimList = _unitOfWork.ModulTanim.GetAll();

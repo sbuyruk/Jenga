@@ -1,5 +1,4 @@
-﻿using Jenga.DataAccess.Repository.IRepository;
-using Jenga.Models.MTS;
+﻿using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.Models.Ortak;
 using Microsoft.AspNetCore.Mvc;
 

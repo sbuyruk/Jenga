@@ -1,13 +1,8 @@
-﻿using Jenga.Models.Sistem;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Jenga.Models.Attributes;
+using Jenga.Models.Sistem;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
-using Jenga.Models.Attributes;
+using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 
 namespace Jenga.Models.TBYS
 {
@@ -33,7 +28,7 @@ namespace Jenga.Models.TBYS
         public string? Ili { get; set; }
         [ValidateNever]
         [DisplayName("İlçesi")]
-        public string? Ilcesi { get; set; }        
+        public string? Ilcesi { get; set; }
         [ValidateNever]
         [DisplayName("İl Id")]
         public int? IlId { get; set; }

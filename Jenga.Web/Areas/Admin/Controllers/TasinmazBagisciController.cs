@@ -1,5 +1,4 @@
-﻿using Jenga.DataAccess.Repository.IRepository;
-using Jenga.Models.DYS;
+﻿using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.Models.Ortak;
 using Jenga.Models.TBYS;
 using Jenga.Utility;
@@ -7,7 +6,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.SharePoint.Client;
 using System.Net;
-using System.Security;
 
 namespace Jenga.Web.Areas.Admin.Controllers
 {
@@ -70,7 +68,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
         // GET: TasinmazBagisci/Edit/5
         public async Task<IActionResult> Edit(int id)
         {
-            var tasinmazBagisci = await _unitOfWork.TasinmazBagisci.GetFirstOrDefaultAsync(m=> m.Id==id);
+            var tasinmazBagisci = await _unitOfWork.TasinmazBagisci.GetFirstOrDefaultAsync(m => m.Id == id);
             if (tasinmazBagisci == null)
                 return NotFound();
             var sosyalGuvenceList = new List<SelectListItem> {
@@ -110,7 +108,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
         #endregion
 
         #region POST Index Create Edit Delete
-        
+
         // POST: TasinmazBagisci/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -124,7 +122,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 model.TasinmazBagisci.Olusturan = userName;
 
                 await _unitOfWork.TasinmazBagisci.AddAsync(model.TasinmazBagisci);
-               
+
                 await _unitOfWork.CommitAsync();
 
 
@@ -175,40 +173,40 @@ namespace Jenga.Web.Areas.Admin.Controllers
 
                 string domain = "tskgv"; // Leave empty if not using a domain
 
-                    try
-                    {
-                // Create network credentials
-                NetworkCredential credentials = new NetworkCredential(username, password);
-
-                // Connect to SharePoint
-                using (ClientContext context = new ClientContext(siteUrl))
+                try
                 {
+                    // Create network credentials
+                    NetworkCredential credentials = new NetworkCredential(username, password);
 
-                    context.Credentials = credentials;
-                    
-
-                    // Access the SharePoint web
-                    Microsoft.SharePoint.Client.Web web = context.Web;
-
-                    //Read the image stream
-                    using (var stream = croppedImage.OpenReadStream())
+                    // Connect to SharePoint
+                    using (ClientContext context = new ClientContext(siteUrl))
                     {
-                        // Convert the stream to a byte array
-                        using (var memoryStream = new MemoryStream())
+
+                        context.Credentials = credentials;
+
+
+                        // Access the SharePoint web
+                        Microsoft.SharePoint.Client.Web web = context.Web;
+
+                        //Read the image stream
+                        using (var stream = croppedImage.OpenReadStream())
                         {
-                            await stream.CopyToAsync(memoryStream);
-                            byte[] imageBytes = memoryStream.ToArray();
+                            // Convert the stream to a byte array
+                            using (var memoryStream = new MemoryStream())
+                            {
+                                await stream.CopyToAsync(memoryStream);
+                                byte[] imageBytes = memoryStream.ToArray();
 
-                            // Call SharePoint upload method
-                            await UploadImageToSharePoint(imageBytes, croppedImage.FileName,context);
+                                // Call SharePoint upload method
+                                await UploadImageToSharePoint(imageBytes, croppedImage.FileName, context);
+                            }
                         }
+
+                        context.Load(web, w => w.Title);
+                        context.ExecuteQuery();
+
+                        Console.WriteLine($"Site Title: {web.Title}");
                     }
-
-                    context.Load(web, w => w.Title);
-                    context.ExecuteQuery();
-
-                    Console.WriteLine($"Site Title: {web.Title}");
-                }
 
                 }
                 catch (MissingMethodException ex)
@@ -229,27 +227,27 @@ namespace Jenga.Web.Areas.Admin.Controllers
         {
 
 
-                var folder = context.Web.GetFolderByServerRelativeUrl("YonetimBirimleri/InsaatVeEmlakYonetimiSubesi/BagisciResimleri");
+            var folder = context.Web.GetFolderByServerRelativeUrl("YonetimBirimleri/InsaatVeEmlakYonetimiSubesi/BagisciResimleri");
 
-                using (var memoryStream = new MemoryStream(imageBytes))
+            using (var memoryStream = new MemoryStream(imageBytes))
+            {
+                var fileCreationInfo = new FileCreationInformation
                 {
-                    var fileCreationInfo = new FileCreationInformation
-                    {
-                        ContentStream = memoryStream,
-                        Url = fileName,
-                        Overwrite = true
-                    };
+                    ContentStream = memoryStream,
+                    Url = fileName,
+                    Overwrite = true
+                };
 
-                    var uploadFile = folder.Files.Add(fileCreationInfo);
-                    context.Load(uploadFile);
-                    await context.ExecuteQueryAsync();
-                }
+                var uploadFile = folder.Files.Add(fileCreationInfo);
+                context.Load(uploadFile);
+                await context.ExecuteQueryAsync();
+            }
         }
 
         //[HttpPost]
         //public async Task<IActionResult> UploadCroppedImage(IFormFile croppedImage)
         //{
-            
+
         //    if (croppedImage != null && croppedImage.Length > 0)
         //    {
         //        var networkPath = @"http://tskgv-dev3/YonetimBirimleri/InsaatVeEmlakYonetimiSubesi/BagisciResimleri/";//@"\\TSKGV-DEV3\home\images";
@@ -287,7 +285,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             //MalzemeDagilim'da yeni adedi, yeni çıkış yerinden düş
             if (ModelState.IsValid)
             {
-                
+
             }
             else
             {
@@ -330,8 +328,8 @@ namespace Jenga.Web.Areas.Admin.Controllers
 
             return Json(new { data = list });
         }
-        
-        
+
+
         #endregion
     }
 

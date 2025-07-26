@@ -1,5 +1,4 @@
-﻿using Azure;
-using Jenga.DataAccess.Repository.IRepository;
+﻿using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.Models.MTS;
 using Jenga.Utility;
 using Jenga.Web.Areas.Admin.Services;
@@ -22,10 +21,10 @@ namespace Jenga.Web.Areas.Admin.Controllers
         //GET
         [HttpGet]
         public IActionResult Index()
-        {            
+        {
             return View();
-        }        
-        
+        }
+
         [HttpGet]
         public IActionResult Edit(int? id)
         {
@@ -36,7 +35,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             var kisiFromDb = _unitOfWork.Kisi.GetFirstOrDefault(u => u.Id == id);
             var mtsKurumGorevDb = _unitOfWork.MTSKurumGorev.GetFirstOrDefault(
                 u => u.KisiId == id && !string.IsNullOrEmpty(u.Durum) && u.Durum.Equals(ProjectConstants.MTSGOREVDURUMU_GOREVDE),
-                includeProperties:"MTSKurumTanim,MTSGorevTanim");
+                includeProperties: "MTSKurumTanim,MTSGorevTanim");
             if (kisiFromDb == null)
             {
                 return NotFound();
@@ -54,14 +53,14 @@ namespace Jenga.Web.Areas.Admin.Controllers
                     Text = i.IlceAdi,
                     Value = i.Id.ToString()
                 }),
-                
+
                 MTSUnvanTanimList = _unitOfWork.MTSUnvanTanim.GetAll().Select(i => new SelectListItem
                 {
                     Text = i.KisaAdi,
                     Value = i.Id.ToString()
                 }),
-                MTSKurumu = mtsKurumGorevDb != null ? mtsKurumGorevDb.MTSKurumTanim:null,
-                MTSGorevi = mtsKurumGorevDb != null ? mtsKurumGorevDb.MTSGorevTanim:null,
+                MTSKurumu = mtsKurumGorevDb != null ? mtsKurumGorevDb.MTSKurumTanim : null,
+                MTSGorevi = mtsKurumGorevDb != null ? mtsKurumGorevDb.MTSGorevTanim : null,
             };
             return View(kisiVM);
         }
@@ -80,8 +79,8 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 {
                     Text = i.IlceAdi,
                     Value = i.Id.ToString()
-                }).OrderBy(a=> a.Text),
-               
+                }).OrderBy(a => a.Text),
+
                 MTSUnvanTanimList = _unitOfWork.MTSUnvanTanim.GetAll().Select(i => new SelectListItem
                 {
                     Text = i.KisaAdi,
@@ -115,7 +114,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
         {
 
 
-            if ((obj==null)|| (obj.Kisi==null) || string.IsNullOrEmpty(obj.Kisi.Adi.Trim()))
+            if ((obj == null) || (obj.Kisi == null) || string.IsNullOrEmpty(obj.Kisi.Adi.Trim()))
             {
                 ModelState.AddModelError("adi", "Lütfen Kisi Adını boş bırakmayınız");
             }
@@ -185,14 +184,14 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 }
                 else
                 {
-                    var kurum= _unitOfWork.MTSKurumGorev.GetByFilter(u => u.KisiId == obj.Id && u.Durum.Equals(ProjectConstants.MTSGOREVDURUMU_GOREVDE));
+                    var kurum = _unitOfWork.MTSKurumGorev.GetByFilter(u => u.KisiId == obj.Id && u.Durum.Equals(ProjectConstants.MTSGOREVDURUMU_GOREVDE));
                     if (kurum.Count > 0)
                     {
                         return Json(new { success = false, message = "Kayıt silinemez, Kişinin kurum/görev bağlantısı bulunmaktadır." });
                     }
                     else
                     {
-                        var aramagorusme = _unitOfWork.AramaGorusme.GetByFilter(u => u.ArayanId == obj.Id );
+                        var aramagorusme = _unitOfWork.AramaGorusme.GetByFilter(u => u.ArayanId == obj.Id);
                         if (aramagorusme.Count > 0)
                         {
                             return Json(new { success = false, message = "Kayıt silinemez, Arama/Görüşme kaydı bulunmaktadır." });
@@ -221,13 +220,13 @@ namespace Jenga.Web.Areas.Admin.Controllers
                         }
                     }
                 }
-                
+
             }
 
         }
         [HttpPost]
-       
-        public IActionResult KisiBul(int katilimciId,int katilimciTipi)
+
+        public IActionResult KisiBul(int katilimciId, int katilimciTipi)
         {
             //Katilimciyi bul,
             //Kisi tablosunda var mı? 
@@ -238,8 +237,8 @@ namespace Jenga.Web.Areas.Admin.Controllers
             // AramaGorusme_Table'da Bu katilimciya ait IDleri YeniKisiId olacak şekilde update et
             // AniObjesiDagitim_Table'da Bu katilimciya ait IDleri YeniKisiId olacak şekilde update et
             //End transaction
-            Kisi kisi = _unitOfWork.Kisi.GetFirstOrDefault(u=> u.KatilimciId == katilimciId && u.KatilimciTipi==katilimciTipi);
-            if (kisi==null)
+            Kisi kisi = _unitOfWork.Kisi.GetFirstOrDefault(u => u.KatilimciId == katilimciId && u.KatilimciTipi == katilimciTipi);
+            if (kisi == null)
             {
                 Katilimci katilimci = _katilimciService.GetKatilimci(katilimciId, katilimciTipi);
                 if (katilimci == null)
@@ -278,9 +277,9 @@ namespace Jenga.Web.Areas.Admin.Controllers
                             TelAciklama1 = katilimci.TelAciklama1,
                             TelAciklama2 = katilimci.TelAciklama2,
                             TelAciklama3 = katilimci.TelAciklama3,
-                            Telefon1= katilimci.Telefon1,
-                            Telefon2= katilimci.Telefon2,
-                            Telefon3= katilimci.Telefon3,
+                            Telefon1 = katilimci.Telefon1,
+                            Telefon2 = katilimci.Telefon2,
+                            Telefon3 = katilimci.Telefon3,
                             Unvani = katilimci.Unvani,
                         };
                         _unitOfWork.Kisi.Add(yeniKisi);
@@ -298,7 +297,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
                         TempData["error"] = "Kisi taşınamadı.";
                     }
 
-                } 
+                }
             }
             return View();
         }
@@ -307,7 +306,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
         public IActionResult KisilereTopluTasima(int katilimciTipi)
         {
 
-            List<Kisi> list= YeniKisiYarat(katilimciTipi);
+            List<Kisi> list = YeniKisiYarat(katilimciTipi);
             foreach (var item in list)
             {
                 //AramaGorusmeKayitlariniGuncelle(item);
@@ -364,12 +363,13 @@ namespace Jenga.Web.Areas.Admin.Controllers
             // AramaGorusme_Table'da Bu katilimciya ait IDleri YeniKisiId olacak şekilde update et
             // AniObjesiDagitim_Table'da Bu katilimciya ait IDleri YeniKisiId olacak şekilde update et
             //
-            List<Kisi> returnList= new List<Kisi>();
-            var searchList= Enumerable.Empty<int>();
+            List<Kisi> returnList = new List<Kisi>();
+            var searchList = Enumerable.Empty<int>();
             if (katilimciTipi == ProjectConstants.FAALIYET_KATILIMCI_IC_INT)
             {
-                searchList= _unitOfWork.Personel.GetAll().Select(u=>u.Id);
-            }else if (katilimciTipi == ProjectConstants.FAALIYET_KATILIMCI_NAKITBAGISCI_INT)
+                searchList = _unitOfWork.Personel.GetAll().Select(u => u.Id);
+            }
+            else if (katilimciTipi == ProjectConstants.FAALIYET_KATILIMCI_NAKITBAGISCI_INT)
             {
 
                 var ids = new List<int>
@@ -397,7 +397,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
                                  MaxBagisTarihi = maxBagisTarihi
                              };
 
-                var xx= result.ToList();
+                var xx = result.ToList();
                 searchList = xx.Select(u => u.Id);
 
             }
@@ -411,8 +411,8 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 };
                 var idList = Enumerable.Empty<int>();
                 //var result = from a in _unitOfWork.NakitBagisci.GetByFilter(u=>u.Sag==true && u.TCKimlikNo!=null && u.TCKimlikNo>0)
-                var result =  _unitOfWork.TasinmazBagisci.GetAll().Where(bagisci => ids.Contains(bagisci.Id)).ToList();
-                             
+                var result = _unitOfWork.TasinmazBagisci.GetAll().Where(bagisci => ids.Contains(bagisci.Id)).ToList();
+
 
                 var xx = result.ToList();
                 searchList = xx.Select(u => u.Id);
@@ -491,8 +491,8 @@ namespace Jenga.Web.Areas.Admin.Controllers
             List<Katilimci> KatilimciTasinmazBagisciList = _katilimciService.GetKatilimciList(ProjectConstants.FAALIYET_KATILIMCI_TASINMAZBAGISCI_INT);
             List<Katilimci> KatilimciNakitBagisciList = _katilimciService.GetKatilimciList(ProjectConstants.FAALIYET_KATILIMCI_NAKITBAGISCI_INT);
 
-            var foundPersonel = KatilimciPersonelList.Where((a => (a != null && !string.IsNullOrEmpty(a.Adi) && (a.Adi.ToLower()+" " +a.Soyadi.ToLower()).Contains(lowerText))));
-            var foundKisi= KatilimciKisiList.Where((a => (a != null && !string.IsNullOrEmpty(a.Adi) && (a.Adi.ToLower() + " " + a.Soyadi.ToLower()).Contains(lowerText))));
+            var foundPersonel = KatilimciPersonelList.Where((a => (a != null && !string.IsNullOrEmpty(a.Adi) && (a.Adi.ToLower() + " " + a.Soyadi.ToLower()).Contains(lowerText))));
+            var foundKisi = KatilimciKisiList.Where((a => (a != null && !string.IsNullOrEmpty(a.Adi) && (a.Adi.ToLower() + " " + a.Soyadi.ToLower()).Contains(lowerText))));
             var foundTasinmazBagisci = KatilimciTasinmazBagisciList.Where((a => (a != null && !string.IsNullOrEmpty(a.Adi) && (a.Adi.ToLower() + " " + a.Soyadi.ToLower()).Contains(lowerText))));
             var foundNakitBagisci = KatilimciNakitBagisciList.Where((a => (a != null && !string.IsNullOrEmpty(a.Adi) && (a.Adi.ToLower() + " " + a.Soyadi.ToLower()).Contains(lowerText))));
 
@@ -535,7 +535,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
 
                     foreach (var kurumGorev in item.MTSKurumGorevs)
                     {
-                        if ((kurumGorev.Durum !=null) && (kurumGorev.Durum.Equals(ProjectConstants.MTSGOREVDURUMU_GOREVDE)))
+                        if ((kurumGorev.Durum != null) && (kurumGorev.Durum.Equals(ProjectConstants.MTSGOREVDURUMU_GOREVDE)))
                         {
                             list.Add(kurumGorev);
                             break;
@@ -555,7 +555,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             //return Json(new { data = objKisiList });// result.Value });
             return Json(new { data = result.Value });
         }
-        public IActionResult GetKatilimci(int katilimciId,int katilimciTipi)
+        public IActionResult GetKatilimci(int katilimciId, int katilimciTipi)
         {
             Katilimci katilimci = _katilimciService.GetKatilimci(katilimciId, katilimciTipi);
             return new JsonResult(katilimci);
@@ -564,7 +564,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
         {
             bool silinebilirMi = true;
             //RandevuKatilim  kaydı varsa silinmesin          
-            var faaliyetKatilim = _unitOfWork.FaaliyetKatilim.GetByFilter(r => r.KatilimciId.Equals(obj.Id) && r.KatilimciTipi==ProjectConstants.FAALIYET_KATILIMCI_DIS_INT);
+            var faaliyetKatilim = _unitOfWork.FaaliyetKatilim.GetByFilter(r => r.KatilimciId.Equals(obj.Id) && r.KatilimciTipi == ProjectConstants.FAALIYET_KATILIMCI_DIS_INT);
             if (faaliyetKatilim.Count > 0)
             {
                 silinebilirMi = false;
@@ -572,7 +572,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             else
             {
                 //RandevuKatilim  kaydı varsa silinmesin       
-                var disIrtibat = _unitOfWork.Faaliyet.GetByFilter(u => u.DisIrtibatId==obj.Id );
+                var disIrtibat = _unitOfWork.Faaliyet.GetByFilter(u => u.DisIrtibatId == obj.Id);
                 if (disIrtibat.Count > 0)
                 {
                     silinebilirMi = false;
@@ -582,7 +582,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
 
                 }
             }
-           
+
             //Arama kaydı varsa silinmesin
             //Anı Objesi verilmişse silinmesin
             return silinebilirMi;

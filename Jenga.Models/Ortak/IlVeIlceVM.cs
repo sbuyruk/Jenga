@@ -1,5 +1,4 @@
-﻿using Jenga.Models.DYS;
-using Microsoft.AspNetCore.Mvc.Rendering;
+﻿using Microsoft.AspNetCore.Mvc.Rendering;
 
 
 namespace Jenga.Models.Ortak

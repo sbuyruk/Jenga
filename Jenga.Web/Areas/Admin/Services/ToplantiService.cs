@@ -1,14 +1,7 @@
-﻿using Jenga.DataAccess.Repository;
-using Jenga.DataAccess.Repository.IRepository;
-using Jenga.Models.IKYS;
+﻿using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.Models.MTS;
 using Jenga.Models.TYS;
 using Jenga.Utility;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using System.Diagnostics;
-using System.Drawing;
-using System.Reflection.Emit;
 
 namespace Jenga.Web.Areas.Admin.Services
 {
@@ -17,7 +10,7 @@ namespace Jenga.Web.Areas.Admin.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly FaaliyetService _faaliyetService;
 
-        public ToplantiService(IUnitOfWork unitOfWork,FaaliyetService faaliyetService)
+        public ToplantiService(IUnitOfWork unitOfWork, FaaliyetService faaliyetService)
         {
             _unitOfWork = unitOfWork;
             _faaliyetService = faaliyetService;
@@ -30,7 +23,7 @@ namespace Jenga.Web.Areas.Admin.Services
             //var toplantiList = _unitOfWork.Toplanti.GetAll();//GetByFilter(a=>a.BaslangicTarihi>=baslangicTarihi);
 
             var list = GetToplantiList(ProjectConstants.GENELMUDUR_PERSONELID);
-            if (list!=null)
+            if (list != null)
             {
                 foreach (var item in list)
                 {
@@ -48,7 +41,7 @@ namespace Jenga.Web.Areas.Admin.Services
                     _faaliyetService.RenkBelirle(anEvent);
                     //item.className = "iptal-edildi";
                     events.Add(item: anEvent);
-                } 
+                }
             }
         }
         private List<Toplanti> GetToplantiList(int kisiId)

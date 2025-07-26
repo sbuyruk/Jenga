@@ -1,9 +1,9 @@
 using Jenga.DataAccess.Data;
-using Jenga.DataAccess.Repository.IRepository;
-using Jenga.DataAccess.Repository;
+using Jenga.DataAccess.Repositories;
+using Jenga.DataAccess.Repositories.IRepository;
+using Jenga.Web.Areas.Admin.Services;
 using Microsoft.AspNetCore.Authentication.Negotiate;
 using Microsoft.EntityFrameworkCore;
-using Jenga.Web.Areas.Admin.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 

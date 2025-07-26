@@ -1,14 +1,8 @@
-﻿using Jenga.DataAccess.Repository;
-using Jenga.DataAccess.Repository.IRepository;
-using Jenga.Models.IKYS;
+﻿using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.Models.MTS;
 using Jenga.Models.TYS;
 using Jenga.Utility;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using System.Diagnostics;
 using System.Drawing;
-using System.Reflection.Emit;
 
 namespace Jenga.Web.Areas.Admin.Services
 {
@@ -45,7 +39,7 @@ namespace Jenga.Web.Areas.Admin.Services
                 events.Add(item: anEvent);
             }
         }
-        
+
         internal void GetResmiTatilList(DateTime startDate, DateTime endDate, List<CalendarEvent> events)
         {
             var resmiTatilList = _unitOfWork.ResmiTatil.GetAll();

@@ -1,6 +1,5 @@
-﻿using Jenga.DataAccess.Repository.IRepository;
+﻿using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.Models.IKYS;
-using Microsoft.EntityFrameworkCore;
 
 namespace Jenga.Web.Areas.Admin.Services
 {

@@ -1,12 +1,12 @@
-using System.ComponentModel.DataAnnotations.Schema;
-using System.ComponentModel.DataAnnotations;
+using Jenga.Models.Sistem;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using System.ComponentModel;
-using Jenga.Models.Sistem;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Jenga.Models.MTS
 {
-    public class FaaliyetKatilim :BaseModel
+    public class FaaliyetKatilim : BaseModel
     {
         [DisplayName("Faaliyet Id")]
         [Required(ErrorMessage = "Faaliyet Id boş olamaz.")]
@@ -16,7 +16,7 @@ namespace Jenga.Models.MTS
         //public Faaliyet Faaliyet{ get; set; }
         [DisplayName("Katilimci Id")]
         [Required(ErrorMessage = "Katilimci Id boş olamaz.")]
-        public int KatilimciId { get; set; }        
+        public int KatilimciId { get; set; }
         [ForeignKey("KatilimciId")]
         [ValidateNever]
         public Kisi? Kisi { get; set; }

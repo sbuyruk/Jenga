@@ -1,4 +1,4 @@
-﻿using Jenga.DataAccess.Repository.IRepository;
+﻿using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.Models.IKYS;
 using Microsoft.AspNetCore.Mvc;
 

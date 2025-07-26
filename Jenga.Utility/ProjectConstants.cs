@@ -5,7 +5,7 @@ namespace Jenga.Utility
     {
         //ORTAK
         public const int SIFIR = 0;
-        public static DateTime ILK_TARIH = new DateTime(1900,1,1);
+        public static DateTime ILK_TARIH = new DateTime(1900, 1, 1);
         public const int GENELMUDUR_PERSONELID = 1184;
 
         public static string BAGISCI_SAG = "Sağ";
@@ -18,16 +18,16 @@ namespace Jenga.Utility
 
         public static string SOSYALGUVENCE_YOK = "Yok";
         public static string SOSYALGUVENCE_SGK = "SGK";
-        public static string SOSYALGUVENCE_EMEKLISANDIGI= "Emekli Sandığı";
+        public static string SOSYALGUVENCE_EMEKLISANDIGI = "Emekli Sandığı";
         public static string SOSYALGUVENCE_SSK = "SSK";
-        public static string SOSYALGUVENCE_BAGKUR= "Bağkur";
+        public static string SOSYALGUVENCE_BAGKUR = "Bağkur";
         //IKYS
         public static int PER_CALISIYOR_INT = 1;
         public static string PER_CALISIYOR = "Çalışıyor";
         public static int PER_AYRILDI_INT = 0;
         public static string PER_AYRILDI = "Ayrıldı";
         //MTS
-        public const string MTS_ANIOBJESISTOKLU= "Stoklu";
+        public const string MTS_ANIOBJESISTOKLU = "Stoklu";
         public const string MTS_ANIOBJESISTOKSUZ = "Stoksuz";
         public const string MTS_GIRIS = "Giriş";
         public const string MTS_CIKIS = "Çıkış";
@@ -40,10 +40,10 @@ namespace Jenga.Utility
         public const string FAALIYET_KATILIMCI_IC_ESKI = "Vakıf Personeli (Eski)";
         public const string FAALIYET_KATILIMCI_DIS = "Vakıf Dışı";
         public const string FAALIYET_KATILIMCI_NAKITBAGISCI = "Nakit Bağışçı";
-        public const string FAALIYET_KATILIMCI_TASINMAZBAGISCI="Taşınmaz Bağışçı";
-        public const string FAALIYET_KATILIMCI_FTK="Fahri Tanıtım Kurulu";
-        public const string MTSGOREVDURUMU_GOREVDE="Görevde";
-        public const string MTSGOREVDURUMU_AYRILDI="Ayrıldı";
+        public const string FAALIYET_KATILIMCI_TASINMAZBAGISCI = "Taşınmaz Bağışçı";
+        public const string FAALIYET_KATILIMCI_FTK = "Fahri Tanıtım Kurulu";
+        public const string MTSGOREVDURUMU_GOREVDE = "Görevde";
+        public const string MTSGOREVDURUMU_AYRILDI = "Ayrıldı";
         public const string MTSAYRILMASEBEBI_BOS = "";
         public const string MTSAYRILMASEBEBI_ATAMA = "Atama";
         public const string MTSAYRILMASEBEBI_EMEKLILIK = "Emeklilik";
@@ -111,7 +111,7 @@ namespace Jenga.Utility
         public const string FAALIYET_YERI_DIGER = "Diğer";
         public static string RANDEVU_VERILEN = "Verilen Randevu";
         public static string RANDEVU_ALINAN = "Alınan Randevu";
-        
+
         public static string FAALIYET_DURUMU_PLANLANDI = "Planlandı";
         public static string FAALIYET_DURUMU_ONAYLANDI = "Onaylandı";
         public static string FAALIYET_DURUMU_IPTALEDILDI = "İptal Edildi";
@@ -142,7 +142,7 @@ namespace Jenga.Utility
         public const string MALZEMEHAREKETI_GIRIS = "Giriş";
         public const string MALZEMEHAREKETI_CIKIS = "Çıkış";
         public const string MALZEMEHAREKETI_AKTARMA = "Aktarma";
-        
+
         public const int MALZEMENINGELDIGI_YER_BOS_INT = 1;
         public const int MALZEMENINGITTIGI_YER_BOS_INT = 1;
     }

@@ -1,16 +1,11 @@
 ﻿using Jenga.Models.Sistem;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 
 namespace Jenga.Models.NBYS
 {
-    public class NakitBagisci:BaseModel
+    public class NakitBagisci : BaseModel
     {
         [Required]
         [DisplayName("Adı")]

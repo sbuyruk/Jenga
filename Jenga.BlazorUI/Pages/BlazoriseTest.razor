@@ -1,0 +1,29 @@
+﻿@page "/blazorise-test"
+@using Blazorise
+
+<PageTitle>Blazorise Test</PageTitle>
+
+<Heading Size="HeadingSize.Is3">Blazorise Çalışıyor</Heading>
+
+<TextEdit Placeholder="Adınızı yazın" @bind-Value="name" />
+
+<Button Color="Color.Primary" Clicked="@ToggleGoster">
+    @(goster ? "Gizle" : "Göster")
+</Button>
+
+@if (goster)
+{
+    <Alert Color="Color.Success" Dismissible>
+        Merhaba, @name! Blazorise başarıyla çalışıyor 🎉
+    </Alert>
+}
+
+@code {
+    private string name;
+    private bool goster = true;
+
+    private void ToggleGoster()
+    {
+        goster = !goster;
+    }
+}

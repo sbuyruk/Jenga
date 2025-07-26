@@ -1,16 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Jenga.Models.MTS
+﻿namespace Jenga.Models.MTS
 {
     public class KatilimciEqualityComparer : IEqualityComparer<Katilimci>
     {
         public bool Equals(Katilimci x, Katilimci y)
         {
-            return x.TCKimlikNo!=0 && x.TCKimlikNo == y.TCKimlikNo;
+            return x.TCKimlikNo != 0 && x.TCKimlikNo == y.TCKimlikNo;
         }
 
         public int GetHashCode(Katilimci obj)

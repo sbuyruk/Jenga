@@ -1,17 +1,14 @@
 ﻿using Microsoft.SharePoint.Client;
-using System;
-using System.IO;
 using System.Net;
-using System.Security;
 
 public class SharePointHelper
 {
 
-    public static void UploadFileToSharePoint(string siteUrl, string libraryName, string filePath,string username,string password)
+    public static void UploadFileToSharePoint(string siteUrl, string libraryName, string filePath, string username, string password)
     {
         using (var context = new ClientContext(siteUrl))
         {
-            context.Credentials=new NetworkCredential(username, password, "TSKGV");
+            context.Credentials = new NetworkCredential(username, password, "TSKGV");
             // Windows Authentication kullanımı
             context.Credentials = System.Net.CredentialCache.DefaultNetworkCredentials;
             Console.WriteLine("----------------------------------------------------------------");

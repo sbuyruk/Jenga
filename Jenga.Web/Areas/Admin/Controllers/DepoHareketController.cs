@@ -1,12 +1,8 @@
-﻿using Jenga.DataAccess.Data;
-using Jenga.DataAccess.Repository.IRepository;
-using Jenga.Models;
-using Jenga.Models.DYS;
+﻿using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.Models.MTS;
 using Jenga.Utility;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.Extensions.Hosting;
 
 namespace Jenga.Web.Areas.Admin.Controllers
 {
@@ -36,11 +32,11 @@ namespace Jenga.Web.Areas.Admin.Controllers
               new SelectListItem { Text = "Giriş", Value = "Giriş" },
               //new SelectListItem { Text = "Çıkış", Value = "Çıkış" } Depoya sadece giriş olsun
             };
-            
+
             DepoHareketVM depoHareketVM = new()
             {
                 DepoHareket = new(),
-                AniObjesiList = _unitOfWork.AniObjesiTanim.GetByFilter(u=> u.StokluMu==ProjectConstants.MTS_ANIOBJESISTOKLU).Select(i => new SelectListItem
+                AniObjesiList = _unitOfWork.AniObjesiTanim.GetByFilter(u => u.StokluMu == ProjectConstants.MTS_ANIOBJESISTOKLU).Select(i => new SelectListItem
                 {
                     Text = i.Adi,
                     Value = i.Id.ToString()
@@ -65,7 +61,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             };
 
             return View(depoHareketVM);
-            
+
         }
         public IActionResult Transfer()
         {
@@ -193,7 +189,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
         //        //DepoStok_Table'da güncelle
         //        _unitOfWork.DepoStok.Update(depoStokTabledakiKayit);
         //    }
-            
+
         //}
         private void DepoStoktanCikisAdediDus(DepoHareketVM obj)
         {
@@ -207,7 +203,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             }
             else
             {
-                
+
                 //DepoStok_table'daki sonAdede farkı ekle
                 int dbDeKayitliDepoStokAdedi = depoStokTabledakiCikisDepoKaydi.SonAdet;
                 int aktarilanAdet = obj.DepoHareket.Adet;
@@ -224,7 +220,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
                     depoStokTabledakiCikisDepoKaydi.Degistiren = " burası Identity den gelecek";
                     depoStokTabledakiCikisDepoKaydi.DegistirmeTarihi = DateTime.Now;
                 }
-                
+
 
                 //DepoStok_Table'da güncelle
                 _unitOfWork.DepoStok.Update(depoStokTabledakiCikisDepoKaydi);
@@ -245,7 +241,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
                     Olusturan = HttpContext.User?.Identity?.Name,
                     SonAdet = obj.DepoHareket.Adet,
                     SonIslemTarihi = DateTime.Now,
-                    SonIslemYapan= HttpContext.User?.Identity?.Name?.Split('\\')[1],
+                    SonIslemYapan = HttpContext.User?.Identity?.Name?.Split('\\')[1],
                 };
                 _unitOfWork.DepoStok.Update(yeniDepoStok);
             }
@@ -276,7 +272,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
         }
         private bool DepoHareketeCikisKaydiGir(DepoHareketVM obj)
         {
-            bool isSuccess=false;
+            bool isSuccess = false;
             if (ModelState.IsValid)
             {
                 if (obj.DepoHareket.Id == 0)
@@ -289,7 +285,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
 
                     _unitOfWork.DepoHareket.Add(obj.DepoHareket);
                     TempData["success"] = "Depo işlemi gerçekleşti";
-                    isSuccess=true;
+                    isSuccess = true;
                 }
                 else
                 {
@@ -298,7 +294,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
 
                 //_unitOfWork.Save();
 
-                
+
             }
             return isSuccess;
         }
@@ -314,12 +310,12 @@ namespace Jenga.Web.Areas.Admin.Controllers
         [HttpGet]
         public IActionResult GetAll()
         {
-            var depoHareketList = _unitOfWork.DepoHareket.GetAll(includeProperties:"DepoTanim,AniObjesiTanim");
+            var depoHareketList = _unitOfWork.DepoHareket.GetAll(includeProperties: "DepoTanim,AniObjesiTanim");
             return Json(new { data = depoHareketList });
         }
         public IActionResult GetTransfers()
         {
-            var depoHareketList = _unitOfWork.DepoHareket.GetByFilter(u=>u.KaynakId==0 ,includeProperties: "DepoTanim,KaynakDepoTanim,AniObjesiTanim");
+            var depoHareketList = _unitOfWork.DepoHareket.GetByFilter(u => u.KaynakId == 0, includeProperties: "DepoTanim,KaynakDepoTanim,AniObjesiTanim");
             return Json(new { data = depoHareketList });
         }
 
@@ -334,14 +330,14 @@ namespace Jenga.Web.Areas.Admin.Controllers
             var obj = _unitOfWork.DepoHareket.GetFirstOrDefault(u => u.Id == id);
             if (obj == null)
             {
-                return Json(new {success=false, message="Kayıt silmede hata"});
+                return Json(new { success = false, message = "Kayıt silmede hata" });
             }
 
             _unitOfWork.DepoHareket.Remove(obj);
             DepoHareketVM depoHareketVM = new()
             {
                 DepoHareket = obj
-               
+
             };
             DepoStoktanCikisAdediDus(depoHareketVM);
 
@@ -406,7 +402,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
         public IActionResult Transfer(DepoHareketVM obj)
         {
             //Buraya 2 tane DepoHareketVM gelmeli ya da bişey
-            
+
             if (ModelState.IsValid)
             {
 

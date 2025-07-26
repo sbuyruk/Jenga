@@ -1,16 +1,10 @@
-﻿using Jenga.DataAccess.Data;
-using Jenga.DataAccess.Repository.IRepository;
-using Jenga.Models.MTS;
+﻿using Jenga.DataAccess.Repositories.IRepository;
+using Jenga.Models.IKYS;
+using Jenga.Models.Ortak;
+using Jenga.Web.Areas.Admin.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.Extensions.Hosting;
-using Jenga.Models.Ortak;
-using Jenga.Models.IKYS;
-using Jenga.DataAccess.Repository;
-using Jenga.Web.Areas.Admin.Services;
-using System.Linq;
 using Newtonsoft.Json;
-using System.Collections.Generic;
 
 namespace Jenga.Web.Areas.Admin.Controllers
 {
@@ -81,7 +75,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 return View(personelMenuVM);
             }
 
-        }       
+        }
         #endregion
         #region POST
         //Delete
@@ -135,7 +129,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Edit(PersonelMenuVM obj)
         {
-            if (obj!=null && obj.Personel != null && obj.Personel.Id > 0)
+            if (obj != null && obj.Personel != null && obj.Personel.Id > 0)
             {
                 Personel personel = _unitOfWork.Personel.GetFirstOrDefault(u => u.Id == obj.Personel.Id);
                 List<MenuTanim> assignedMenuList = _menuService.GetMenuListByPersonelId(personel.Id);
@@ -162,9 +156,9 @@ namespace Jenga.Web.Areas.Admin.Controllers
                             {
                                 MenuTanimId = menuTanim.Id,
                                 PersonelId = personel.Id,
-                                Aciklama="Eklendi",
-                                Olusturan="ben",
-                                OlusturmaTarihi= DateTime.Now,
+                                Aciklama = "Eklendi",
+                                Olusturan = "ben",
+                                OlusturmaTarihi = DateTime.Now,
                             };
                             string? userName = HttpContext.User.Identity.Name;
                             obj.Personel.Olusturan = userName;
@@ -175,7 +169,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
                     //bir de cheked iken unchecked olanlar varsa loop içinde onlara bakalım
                     foreach (var item in assignedMenuList)
                     {
-                        if (item.Id>1 && !selectedMenuIds.ToList().Contains(item.Id.ToString())) //bu demekki silindi
+                        if (item.Id > 1 && !selectedMenuIds.ToList().Contains(item.Id.ToString())) //bu demekki silindi
                         {
                             MenuTanim menuTanim = _unitOfWork.MenuTanim.GetFirstOrDefault(m => m.Id == item.Id);
                             PersonelMenu personelMenu = _unitOfWork.PersonelMenu.GetFirstOrDefault(pm => pm.MenuTanimId == item.Id && pm.PersonelId == personel.Id);
@@ -194,7 +188,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 TempData["error"] = "PersonelMenu Id bulunamadı";
             }
             return RedirectToAction("Index");
-        } 
+        }
         #endregion
         #region API CALLS
         [HttpGet]

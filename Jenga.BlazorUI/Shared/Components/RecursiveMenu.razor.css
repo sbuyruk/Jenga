@@ -1,0 +1,32 @@
+﻿.tree-menu {
+    list-style: none;
+    margin: 0;
+    padding-left: 1rem;
+}
+
+.menu-item > a {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem;
+    color: #333;
+    text-decoration: none;
+    transition: background-color 0.2s ease;
+}
+
+    .menu-item > a:hover {
+        background-color: #e9ecef;
+    }
+
+.menu-item.open > a {
+    background-color: #007bff;
+    color: #fff;
+}
+
+.toggle-icon {
+    margin-left: auto;
+    transition: transform 0.2s ease;
+}
+
+.menu-item.open > a .toggle-icon {
+    transform: rotate(90deg);
+}

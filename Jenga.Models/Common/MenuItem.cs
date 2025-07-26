@@ -1,0 +1,34 @@
+﻿using Jenga.Models.Sistem;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace Jenga.Models.Common
+{
+
+    [Table("MenuItem_Table")]
+    public class MenuItem : BaseModel
+    {
+        [Column("Adi")]
+        public string? Title { get; set; }
+
+        [Column("UstMenuId")]
+        public int? ParentId { get; set; }
+
+        [Column("Url")]
+        public string? Url { get; set; }
+
+        [Column("Sira")]
+        public int? DisplayOrder { get; set; }
+
+        [Column("IsVisible")]
+        public bool? IsVisible { get; set; }
+
+        [NotMapped]
+        public List<MenuItem>? Children { get; set; }
+        [NotMapped]
+        public bool IsExpanded { get; set; }   // ← new
+
+    }
+
+
+
+}

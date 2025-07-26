@@ -1,11 +1,7 @@
-﻿using Jenga.DataAccess.Data;
-using Jenga.DataAccess.Repository.IRepository;
-using Jenga.Models;
+﻿using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.Models.MTS;
-using Jenga.Utility;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.Extensions.Hosting;
 
 namespace Jenga.Web.Areas.Admin.Controllers
 {
@@ -36,9 +32,9 @@ namespace Jenga.Web.Areas.Admin.Controllers
               new SelectListItem { Text = "Kargo", Value = "Kargo" },
               new SelectListItem { Text = "Vakıf Aracı ile Ulaştırma", Value = "Vakıf Aracı" },
               new SelectListItem { Text = "Elden Teslim", Value = "Vakıf Aracı" } ,
-              new SelectListItem { Text = "Gn.Md. Ziyaretinde Teslim", Value = "Gn.Md. Ziyareti" } 
+              new SelectListItem { Text = "Gn.Md. Ziyaretinde Teslim", Value = "Gn.Md. Ziyareti" }
             };
-            
+
             GonderiPaketiVM gonderiPaketiVM = new()
             {
                 GonderiPaketi = new(),
@@ -61,7 +57,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             };
 
             return View(gonderiPaketiVM);
-            
+
         }
         public IActionResult Edit(int? id)
         {
@@ -109,7 +105,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
         [HttpGet]
         public IActionResult GetAll()
         {
-            var gonderiPaketiList = _unitOfWork.GonderiPaketi.GetAll(includeProperties:"DagitimYeriTanim");
+            var gonderiPaketiList = _unitOfWork.GonderiPaketi.GetAll(includeProperties: "DagitimYeriTanim");
             return Json(new { data = gonderiPaketiList });
         }
 
@@ -125,7 +121,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             var obj = _unitOfWork.GonderiPaketi.GetFirstOrDefault(u => u.Id == id);
             if (obj == null)
             {
-                return Json(new {success=false, message="Kayıt silmede hata"});
+                return Json(new { success = false, message = "Kayıt silmede hata" });
             }
 
             string? userName = HttpContext.User.Identity.Name;
@@ -170,7 +166,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 }
                 else
                 {
-                   
+
                     _unitOfWork.GonderiPaketi.Update(obj.GonderiPaketi);
                     TempData["success"] = "Gönderi paketi güncellendi";
                 }
@@ -181,7 +177,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             }
             return View(obj);
         }
-        
+
         #endregion
 
     }

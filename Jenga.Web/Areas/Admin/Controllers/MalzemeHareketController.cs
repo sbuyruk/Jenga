@@ -1,12 +1,7 @@
-﻿using Jenga.DataAccess.Data;
-using Jenga.DataAccess.Repository.IRepository;
-using Jenga.Models;
+﻿using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.Models.DYS;
-using Jenga.Models.MTS;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
 
 namespace Jenga.Web.Areas.Admin.Controllers
@@ -57,22 +52,22 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 HedefYeriList = malzemeYeriList,
                 GirisCikisList = girisCikisList,
             };
-           
+
             return View(viewModel);
         }
 
         [HttpPost]
         public IActionResult Create(MalzemeHareketVM obj)
         {
-            
+
             if (ModelState.IsValid)
             {
                 //if (obj.MalzemeHareket.Id == 0)
                 //{
-                    string? userName = HttpContext.User.Identity.Name;
-                    obj.MalzemeHareket.Olusturan = userName;
-                    _unitOfWork.MalzemeHareket.Add(obj.MalzemeHareket);
-                    TempData["success"] = "Malzeme Kaydedildi";
+                string? userName = HttpContext.User.Identity.Name;
+                obj.MalzemeHareket.Olusturan = userName;
+                _unitOfWork.MalzemeHareket.Add(obj.MalzemeHareket);
+                TempData["success"] = "Malzeme Kaydedildi";
                 //}
                 //else
                 //{

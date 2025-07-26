@@ -1,6 +1,5 @@
 ﻿using Jenga.Models.Sistem;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
-using Microsoft.Extensions.Hosting;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -73,7 +72,7 @@ public class Kisi : BaseModel
     public DateTime? DogumTarihi { get; set; }
     [ValidateNever]
     [DisplayName("Kutlama")]
-    public bool Kutlama { get; set; }=false;
+    public bool Kutlama { get; set; } = false;
     [ValidateNever]
     [DisplayName("Randevu Kısıtı")]
     public bool RandevuKisiti { get; set; } = false;

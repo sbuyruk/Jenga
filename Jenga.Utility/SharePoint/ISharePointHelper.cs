@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Jenga.Utility.SharePoint
+﻿namespace Jenga.Utility.SharePoint
 {
 
     public interface ISharePointHelper

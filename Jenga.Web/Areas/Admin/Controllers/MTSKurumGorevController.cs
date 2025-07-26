@@ -1,6 +1,5 @@
-﻿using Jenga.DataAccess.Repository.IRepository;
+﻿using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.Models.MTS;
-using Jenga.Models.Ortak;
 using Jenga.Utility;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -41,7 +40,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             MTSKurumGorevVM mtsKurumGorevVM = new()
             {
                 MTSKurumGorev = new(),
-               
+
                 DurumList = durumList,
                 MTSKurumTanimList = mtsKurumTanimList.Select(i => new SelectListItem
                 {
@@ -56,22 +55,22 @@ namespace Jenga.Web.Areas.Admin.Controllers
             };
             mtsKurumGorevVM.Kisi = kisi;//ekranda kişi bilgilerini görmek için
             mtsKurumGorevVM.MTSKurumGorev.KisiId = kisiId;
-            return View(mtsKurumGorevVM); 
+            return View(mtsKurumGorevVM);
         }
         [HttpGet]
         public IActionResult Edit(int? id)
         {
-            
+
             var mtsKurumGorevDb = _unitOfWork.MTSKurumGorev.GetFirstOrDefault(
-                u => u.Id == id && !string.IsNullOrEmpty(u.Durum) && 
-                u.Durum.Equals(ProjectConstants.MTSGOREVDURUMU_GOREVDE),includeProperties: "MTSKurumTanim,MTSGorevTanim,Kisi");
+                u => u.Id == id && !string.IsNullOrEmpty(u.Durum) &&
+                u.Durum.Equals(ProjectConstants.MTSGOREVDURUMU_GOREVDE), includeProperties: "MTSKurumTanim,MTSGorevTanim,Kisi");
 
             var durumList = new List<SelectListItem> {
               new SelectListItem { Text = ProjectConstants.MTSGOREVDURUMU_GOREVDE, Value = ProjectConstants.MTSGOREVDURUMU_GOREVDE},
               new SelectListItem { Text = ProjectConstants.MTSGOREVDURUMU_AYRILDI, Value = ProjectConstants.MTSGOREVDURUMU_AYRILDI}
             };
-            var mtsKurumIdList = _unitOfWork.MTSKurumGorev.GetByFilter(u => u.Durum == ProjectConstants.MTSGOREVDURUMU_GOREVDE).Select(k=>k.MTSKurumTanimId).ToList();
-            var mtsKurumTanimList = _unitOfWork.MTSKurumTanim.GetAll().Where (u => !mtsKurumIdList.Contains(u.Id));
+            var mtsKurumIdList = _unitOfWork.MTSKurumGorev.GetByFilter(u => u.Durum == ProjectConstants.MTSGOREVDURUMU_GOREVDE).Select(k => k.MTSKurumTanimId).ToList();
+            var mtsKurumTanimList = _unitOfWork.MTSKurumTanim.GetAll().Where(u => !mtsKurumIdList.Contains(u.Id));
             MTSKurumGorevVM mtsKurumGorevVM = new()
             {
                 MTSKurumGorev = new(),
@@ -113,7 +112,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
 
                 _unitOfWork.Save();
 
-                return RedirectToAction("Index","Kisi");
+                return RedirectToAction("Index", "Kisi");
             }
             return View(obj);
         }
@@ -138,7 +137,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
 
                 _unitOfWork.Save();
 
-                return RedirectToAction("Index","Kisi");
+                return RedirectToAction("Index", "Kisi");
             }
             return View(obj);
         }
@@ -155,7 +154,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
         [HttpGet]
         public IActionResult GetAllByMTSKurumTanimId(int mtsKurumTanimId)
         {
-            List<MTSKurumGorev> list = _unitOfWork.MTSKurumGorev.GetByFilter(u => (u.MTSKurumTanimId == mtsKurumTanimId) && 
+            List<MTSKurumGorev> list = _unitOfWork.MTSKurumGorev.GetByFilter(u => (u.MTSKurumTanimId == mtsKurumTanimId) &&
                 (u.Durum.Equals(ProjectConstants.MTSGOREVDURUMU_GOREVDE)), includeProperties: "Kisi,MTSGorevTanim").ToList();
             var aa = JsonConvert.SerializeObject(list, Formatting.None,
                         new JsonSerializerSettings()

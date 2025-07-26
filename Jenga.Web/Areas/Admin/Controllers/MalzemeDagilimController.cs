@@ -1,4 +1,4 @@
-﻿using Jenga.DataAccess.Repository.IRepository;
+﻿using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.Models.DYS;
 using Jenga.Utility;
 using Microsoft.AspNetCore.Mvc;
@@ -35,7 +35,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 Text = m.AdiWithAdet
             }).ToList();
 
-            
+
             // Fetch the list of available MalzemeYeri 
             var malzemeYeriList = _unitOfWork.MalzemeYeriTanim.GetAll()
                 .Select(y => new SelectListItem
@@ -47,14 +47,14 @@ namespace Jenga.Web.Areas.Admin.Controllers
               new SelectListItem { Text = "Sayım", Value = "Sayım" },
               new SelectListItem { Text = "Satınalma", Value = "Satınalma" },
               new SelectListItem { Text = "Sayım Düzeltme", Value = "Sayım Düzeltme" },
-              
+
             };
             var viewModel = new MalzemeDagilimVM
             {
                 MalzemeDagilim = new MalzemeDagilim { Adet = 1, Tarih = DateTime.Now },
                 MalzemeList = malzemeDropdownList,
-                MalzemeYeriList = malzemeYeriList, 
-                IslemList= islemList,
+                MalzemeYeriList = malzemeYeriList,
+                IslemList = islemList,
             };
 
             return View(viewModel);
@@ -75,14 +75,14 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 //MalzemeHarekete kaydet
                 MalzemeHareket mh = new MalzemeHareket
                 {
-                    MalzemeId=obj.MalzemeDagilim.MalzemeId,
-                    KaynakYeriId= ProjectConstants.MALZEMENINGELDIGI_YER_BOS_INT,
-                    HedefYeriId=obj.MalzemeDagilim.MalzemeYeriTanimId,
-                    Adet=obj.MalzemeDagilim.Adet,
-                    IslemTarihi=DateTime.Now,
-                    IslemTipi=obj.Islem,
-                    Aciklama=obj.MalzemeDagilim.Aciklama,
-                    GirisCikis=ProjectConstants.MALZEMEHAREKETI_GIRIS,
+                    MalzemeId = obj.MalzemeDagilim.MalzemeId,
+                    KaynakYeriId = ProjectConstants.MALZEMENINGELDIGI_YER_BOS_INT,
+                    HedefYeriId = obj.MalzemeDagilim.MalzemeYeriTanimId,
+                    Adet = obj.MalzemeDagilim.Adet,
+                    IslemTarihi = DateTime.Now,
+                    IslemTipi = obj.Islem,
+                    Aciklama = obj.MalzemeDagilim.Aciklama,
+                    GirisCikis = ProjectConstants.MALZEMEHAREKETI_GIRIS,
                     Olusturan = userName,
                 };
                 _unitOfWork.MalzemeHareket.Add(mh);
@@ -90,15 +90,15 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 //varsa update et
                 //yoksa insert et
 
-                var entity = _unitOfWork.MalzemeDagilim.GetFirstOrDefault(m =>m.MalzemeId== obj.MalzemeDagilim.MalzemeId 
-                    && m.MalzemeYeriTanimId==obj.MalzemeDagilim.MalzemeYeriTanimId);
+                var entity = _unitOfWork.MalzemeDagilim.GetFirstOrDefault(m => m.MalzemeId == obj.MalzemeDagilim.MalzemeId
+                    && m.MalzemeYeriTanimId == obj.MalzemeDagilim.MalzemeYeriTanimId);
 
                 if (entity != null)
                 {
                     // Modify the entity's properties
                     entity.Adet += obj.MalzemeDagilim.Adet;
-                    entity.Tarih=DateTime.Now;
-                    entity.Aciklama =obj.MalzemeDagilim.Aciklama;
+                    entity.Tarih = DateTime.Now;
+                    entity.Aciklama = obj.MalzemeDagilim.Aciklama;
                     obj.MalzemeDagilim.Degistiren = userName;
                     // Update entity
                     _unitOfWork.MalzemeDagilim.Update(entity);
@@ -119,7 +119,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
         }
         #region API CALLS
 
-        
+
         [HttpGet]
         public IActionResult GetAll()
         {

@@ -1,4 +1,4 @@
-﻿using Jenga.DataAccess.Repository.IRepository;
+﻿using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.Models.DYS;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -15,7 +15,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             _unitOfWork = unitOfWork;
             _hostEnvironment = hostEnvironment;
         }
-        
+
         public IActionResult Index()
         {
             return View();
@@ -155,7 +155,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             var obj = _unitOfWork.MalzemeCinsi.GetFirstOrDefault(u => u.Id == id);
             if (obj == null)
             {
-                return Json(new {success=false, message="Kayıt silmede hata"});
+                return Json(new { success = false, message = "Kayıt silmede hata" });
             }
             _unitOfWork.MalzemeCinsi.Remove(obj);
             _unitOfWork.Save();

@@ -1,12 +1,6 @@
-﻿using Jenga.DataAccess.Repository;
-using Jenga.DataAccess.Repository.IRepository;
-using Jenga.Models.IKYS;
+﻿using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.Models.MTS;
 using Jenga.Utility;
-using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Linq.Expressions;
 
 
 namespace Jenga.Web.Areas.Admin.Services
@@ -52,14 +46,14 @@ namespace Jenga.Web.Areas.Admin.Services
                             KatilimciTipi = ProjectConstants.FAALIYET_KATILIMCI_DIS_INT,
                             Soyadi = kisi.Soyadi,
                             Unvani = kisi.Unvani,
-                            TCKimlikNo=kisi.TCKimlikNo,
-                            Telefon1= kisi.Telefon1,
+                            TCKimlikNo = kisi.TCKimlikNo,
+                            Telefon1 = kisi.Telefon1,
                             Telefon2 = kisi.Telefon2,
                             Telefon3 = kisi.Telefon3,
                             TelAciklama1 = kisi.TelAciklama1,
-                            TelAciklama2 = kisi.TelAciklama2,   
+                            TelAciklama2 = kisi.TelAciklama2,
                             TelAciklama3 = kisi.TelAciklama3,
-                            Eposta =kisi.EPosta,
+                            Eposta = kisi.EPosta,
 
                         };
                         retVal = katilimci;
@@ -86,21 +80,21 @@ namespace Jenga.Web.Areas.Admin.Services
                             //Dahili2 = personel.Dahili2,
                             //Dahili3 = personel.Dahili3,
                             DogumTarihi = personel.Kimlik.DogumTar,
-                            Eposta= personel.IletisimBilgileri.InternetEPosta,
+                            Eposta = personel.IletisimBilgileri.InternetEPosta,
                             //Gorevi = personel.Gorevi,
-                            Ilcesi= personel.IletisimBilgileri.Ilcesi,
-                            Ili=personel.IletisimBilgileri.Ili,
-                            Kutlama= personel.Kimlik.DogumGunuKutlama,
+                            Ilcesi = personel.IletisimBilgileri.Ilcesi,
+                            Ili = personel.IletisimBilgileri.Ili,
+                            Kutlama = personel.Kimlik.DogumGunuKutlama,
                             KatilimciTipi = ProjectConstants.FAALIYET_KATILIMCI_IC_INT,
                             Kurumu = ProjectConstants.FAALIYET_KATILIMCI_IC,
                             Telefon1 = personel.IletisimBilgileri.CepTelefonu,
                             Telefon2 = personel.IletisimBilgileri.CepTelefonu2,
                             Telefon3 = personel.IletisimBilgileri.EvTelefonu,
-                            Unvani= personel.IsBilgileri==null|| personel.IsBilgileri.UnvanTanim==null?string.Empty: personel.IsBilgileri.UnvanTanim.Adi,
+                            Unvani = personel.IsBilgileri == null || personel.IsBilgileri.UnvanTanim == null ? string.Empty : personel.IsBilgileri.UnvanTanim.Adi,
                             RandevuKisiti = false,
                             Soyadi = personel.Soyadi,
-                            TCKimlikNo= personel.Kimlik.TCKimlikNo,
-                            
+                            TCKimlikNo = personel.Kimlik.TCKimlikNo,
+
                         };
                         retVal = katilimci;
                     }
@@ -126,9 +120,9 @@ namespace Jenga.Web.Areas.Admin.Services
                             //DogumTarihi = personel.DogumTarihi,
                             //Gorevi = personel.Gorevi,
                             Eposta = nakitBagisci.Eposta,
-                            TCKimlikNo= nakitBagisci.TCKimlikNo,
+                            TCKimlikNo = nakitBagisci.TCKimlikNo,
                             Telefon1 = nakitBagisci.Telefon1,
-                            Telefon2= nakitBagisci.Telefon2,
+                            Telefon2 = nakitBagisci.Telefon2,
                             Ilcesi = nakitBagisci.Ilcesi,
                             Ili = nakitBagisci.Ili,
                             Kurumu = ProjectConstants.FAALIYET_KATILIMCI_NAKITBAGISCI,
@@ -161,9 +155,9 @@ namespace Jenga.Web.Areas.Admin.Services
                             Eposta = tasinmazBagisci.EPosta,
                             Ili = GetIliByName(tasinmazBagisci.Ili),
                             Ilcesi = GetIlcesiiByName(tasinmazBagisci.Ilcesi),
-                            TCKimlikNo= tasinmazBagisci.TCKimlikNo,
-                            Telefon1=tasinmazBagisci.Telefon1,
-                            Telefon2=tasinmazBagisci.Telefon2,
+                            TCKimlikNo = tasinmazBagisci.TCKimlikNo,
+                            Telefon1 = tasinmazBagisci.Telefon1,
+                            Telefon2 = tasinmazBagisci.Telefon2,
                             Kurumu = ProjectConstants.FAALIYET_KATILIMCI_TASINMAZBAGISCI,
                             //Kutlama = personel.Kutlama,
                             KatilimciTipi = ProjectConstants.FAALIYET_KATILIMCI_TASINMAZBAGISCI_INT,
@@ -189,7 +183,7 @@ namespace Jenga.Web.Areas.Admin.Services
 
         private int? GetIlcesiiByName(string? ilceAdi)
         {
-            var ilcesi = _unitOfWork.Ilce.GetFirstOrDefault(u=>u.IlceAdi==ilceAdi);
+            var ilcesi = _unitOfWork.Ilce.GetFirstOrDefault(u => u.IlceAdi == ilceAdi);
             return ilcesi == null ? 0 : ilcesi.Id;
         }
 
@@ -207,7 +201,7 @@ namespace Jenga.Web.Areas.Admin.Services
                 case ProjectConstants.FAALIYET_KATILIMCI_IC_INT:
                     {
                         var personeller = _unitOfWork.Personel.GetAll(includeProperties: "Kimlik");
-                        List <Katilimci> katilimciPersonelList = personeller.Select(a => new Katilimci()
+                        List<Katilimci> katilimciPersonelList = personeller.Select(a => new Katilimci()
                         {
                             Id = a.Id,
                             Adi = a.Adi,
@@ -215,7 +209,7 @@ namespace Jenga.Web.Areas.Admin.Services
                             KatilimciTipi = ProjectConstants.FAALIYET_KATILIMCI_IC_INT,
                             Kurumu = ProjectConstants.FAALIYET_KATILIMCI_IC,
                             Aciklama = a.Aciklama,
-                            TCKimlikNo=a.Kimlik.TCKimlikNo,
+                            TCKimlikNo = a.Kimlik.TCKimlikNo,
 
                         }).ToList();
                         KatilimciList = katilimciPersonelList;
@@ -323,13 +317,13 @@ namespace Jenga.Web.Areas.Admin.Services
                         kurumAdi = ProjectConstants.FAALIYET_KATILIMCI_IC;
                         gorevAdi = ProjectConstants.FAALIYET_KATILIMCI_IC;
                         var personel = _unitOfWork.Personel.GetFirstOrDefault(u => u.Id == kisi.KatilimciId, includeProperties: "IsBilgileri");
-                        if (personel != null && personel.IsBilgileri!=null && personel.IsBilgileri.CalismaDurumu != null)
+                        if (personel != null && personel.IsBilgileri != null && personel.IsBilgileri.CalismaDurumu != null)
                         {
-                            gorevAdi = (int.Parse(personel.IsBilgileri.CalismaDurumu)==ProjectConstants.PER_CALISIYOR_INT) 
-                                ? ProjectConstants.FAALIYET_KATILIMCI_IC 
+                            gorevAdi = (int.Parse(personel.IsBilgileri.CalismaDurumu) == ProjectConstants.PER_CALISIYOR_INT)
+                                ? ProjectConstants.FAALIYET_KATILIMCI_IC
                                 : ProjectConstants.FAALIYET_KATILIMCI_IC_ESKI;
                         }
-                            
+
                         break;
                     }
                 case ProjectConstants.FAALIYET_KATILIMCI_TASINMAZBAGISCI_INT:
@@ -396,7 +390,7 @@ namespace Jenga.Web.Areas.Admin.Services
             //Gorev yarat
             //KurumGoreve kayıt ekle
             //geriye list dondur
-            
+
         }
 
         internal int? CreateUnvan(int katilimciTipi)
@@ -406,12 +400,12 @@ namespace Jenga.Web.Areas.Admin.Services
             {
                 case ProjectConstants.FAALIYET_KATILIMCI_IC_INT:
                     {
-                        
+
                         break;
                     }
                 case ProjectConstants.FAALIYET_KATILIMCI_DIS_INT:
                     {
-                        
+
                         break;
                     }
                 case ProjectConstants.FAALIYET_KATILIMCI_NAKITBAGISCI_INT:

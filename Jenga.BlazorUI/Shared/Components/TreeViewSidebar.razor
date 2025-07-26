@@ -1,0 +1,23 @@
+﻿@using Jenga.BlazorUI.Services.Menu
+@using Jenga.Models.Common
+@inject IMenuService MenuService
+
+<aside class="treeview-sidebar">
+    @if (menuItems is null)
+    {
+        <p>Yükleniyor…</p>
+    }
+    else
+    {
+        <RecursiveMenu Items="menuItems" />
+    }
+</aside>
+
+@code {
+    private List<MenuItem> menuItems;
+
+    protected override async Task OnInitializedAsync()
+    {
+        menuItems = await MenuService.GetRecursiveMenuAsync();
+    }
+}

@@ -6,7 +6,7 @@ namespace Jenga.Models.MTS
 {
     public class MTSKurumGorevVM
     {
-        
+
         public MTSKurumGorev MTSKurumGorev { get; set; }
         [ValidateNever]
         public Kisi Kisi { get; set; }

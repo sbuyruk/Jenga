@@ -12,7 +12,7 @@ namespace Jenga.Models.MTS
         [ValidateNever]
         public IEnumerable<SelectListItem> AniObjesiTanimList { get; set; }
         [ValidateNever]
-        public IEnumerable<SelectListItem> DepoTanimList { get; set; }        
+        public IEnumerable<SelectListItem> DepoTanimList { get; set; }
         [ValidateNever]
         public IEnumerable<SelectListItem> DagitimYeriTanimList { get; set; }
         public IEnumerable<SelectListItem> VerilenAlinanList { get; set; }

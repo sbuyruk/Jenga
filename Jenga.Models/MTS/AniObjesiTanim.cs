@@ -1,19 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Jenga.Models.Sistem;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using System.ComponentModel;
-using Jenga.Models.Sistem;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Jenga.Models.MTS
 {
-    public class AniObjesiTanim :BaseModel
+    public class AniObjesiTanim : BaseModel
     {
-       
+
         [Required]
         [DisplayName("Anı Objesinin Adı")]
         public string Adi { get; set; }
@@ -24,7 +19,7 @@ namespace Jenga.Models.MTS
         [ForeignKey("KaynakId")]
         [ValidateNever]
         public KaynakTanim KaynakTanim { get; set; }
-       
-        
+
+
     }
 }

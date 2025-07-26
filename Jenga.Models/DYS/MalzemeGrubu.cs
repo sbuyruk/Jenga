@@ -8,5 +8,5 @@ public class MalzemeGrubu : BaseModel
     [Required]
     [DisplayName("Malzeme Grubu")]
     public string Adi { get; set; }
-    
+
 }

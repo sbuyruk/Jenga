@@ -1,4 +1,4 @@
-﻿using Jenga.DataAccess.Repository.IRepository;
+﻿using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.Models.IKYS;
 using Jenga.Models.Ortak;
 using System.Text.Json;
@@ -40,7 +40,7 @@ namespace Jenga.Web.Areas.Admin.Services
         }
         public List<MenuTanimVM> GetAllMenus()
         {
-            List<MenuTanim> menuTanims = _unitOfWork.MenuTanim.GetByFilter(x=>x.Id>1).ToList();
+            List<MenuTanim> menuTanims = _unitOfWork.MenuTanim.GetByFilter(x => x.Id > 1).ToList();
             List<MenuTanimVM> menuTanimVMs = new List<MenuTanimVM>();
 
             foreach (var menuTanim in menuTanims)
@@ -98,7 +98,7 @@ namespace Jenga.Web.Areas.Admin.Services
         {
             try
             {
-                Personel personel = _unitOfWork.Personel.GetFirstOrDefault(p=>p.KullaniciAdi==userName) ;
+                Personel personel = _unitOfWork.Personel.GetFirstOrDefault(p => p.KullaniciAdi == userName);
 
                 List<MenuTree> menuTreeList = new List<MenuTree>();
                 menuTreeList = MenuTreeJsonGetir(personel.Id, menuTreeList, ustMenuId);
@@ -135,9 +135,9 @@ namespace Jenga.Web.Areas.Admin.Services
 
             return menuTreeList;
         }
-        private List<MenuTree> MenuTreeJsonGetir(int personelId,List<MenuTree> menuTreeList, int ustMenuId)
+        private List<MenuTree> MenuTreeJsonGetir(int personelId, List<MenuTree> menuTreeList, int ustMenuId)
         {
-            List<int> menuIds = _unitOfWork.PersonelMenu.GetByFilter(u => u.PersonelId == personelId).Select(m =>m.MenuTanimId).ToList();
+            List<int> menuIds = _unitOfWork.PersonelMenu.GetByFilter(u => u.PersonelId == personelId).Select(m => m.MenuTanimId).ToList();
 
             List<MenuTanim> menuTanimList = _unitOfWork.MenuTanim.GetByFilter(u => u.UstMenuId == ustMenuId);
             var menuTanimSortedList = menuTanimList.OrderBy(x => x.Sira).ThenBy(x => x.UstMenuId);

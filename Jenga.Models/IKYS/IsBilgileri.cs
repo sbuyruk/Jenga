@@ -13,13 +13,13 @@ public class IsBilgileri : BaseModel
     [ForeignKey("PersonelId")]
     [ValidateNever]
     public Personel Personel { get; set; }
-    
+
     //[Required]
     public int? UnvanId { get; set; }
     [DisplayName("Ünvan")]
     [ForeignKey("UnvanId")]
     [ValidateNever]
-    public UnvanTanim?  UnvanTanim { get; set; }
+    public UnvanTanim? UnvanTanim { get; set; }
     //[Required]
     public int? GorevId { get; set; }
     [DisplayName("Görev")]
@@ -53,7 +53,7 @@ public class IsBilgileri : BaseModel
     [DisplayName("Vakıf Öncesi Prim GünSayısı")]
     public int VakifOncesiPrimGunSayisi { get; set; }
     [ValidateNever]
-    [DisplayName("Emeklilik Tarihi")] 
+    [DisplayName("Emeklilik Tarihi")]
     public DateTime? EmeklilikTarihi { get; set; }
     //[Required]
     [DisplayName("İzin Dönemi Başlama Tarihi")]

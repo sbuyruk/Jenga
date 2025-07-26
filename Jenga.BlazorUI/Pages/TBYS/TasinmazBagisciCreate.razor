@@ -1,0 +1,52 @@
+﻿@page "/tbys/tasinmazbagiscicreate"
+@using Blazorise
+@using Jenga.BlazorUI.Shared.Components
+@using Jenga.DataAccess
+@using Jenga.DataAccess.Repositories.IRepository
+@using Jenga.Models.Ortak
+@using Jenga.Models.TBYS
+@using Microsoft.EntityFrameworkCore
+@inject IUnitOfWork UnitofWork
+@inject NavigationManager Navigation
+
+<EditForm Model="@bagisci" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <Validations />
+
+    <div class="mb-3">
+        <Label>Adı</Label>
+        <TextEdit @bind-Text="bagisci.Adi" />
+        <ValidationMessage For="@(() => bagisci.Adi)" />
+    </div>
+
+    <div class="mb-3">
+        <Label>Soyadı</Label>
+        <TextEdit @bind-Text="bagisci.Soyadi" />
+        <ValidationMessage For="@(() => bagisci.Soyadi)" />
+    </div>
+
+    <div class="mb-3">
+        <Label>İl</Label>
+        <IlDropdown @bind-Value="bagisci.IlId" />
+        <ValidationMessage For="@(() => bagisci.IlId)" />
+    </div>
+
+    <div class="mb-3">
+        <Label>İlçe</Label>
+        <IlceDropdown @bind-Value="bagisci.IlceId" IlId="bagisci.IlId" />
+        <ValidationMessage For="@(() => bagisci.IlceId)" />
+    </div>
+    <Button Color="Color.Primary" Type="ButtonType.Submit">Kaydet</Button>
+</EditForm>
+
+@code {
+
+    private TasinmazBagisci bagisci = new();
+
+    private async Task HandleValidSubmit()
+    {
+        await UnitofWork.TasinmazBagisci.AddAsync(bagisci);
+        await UnitofWork.CommitAsync();
+        Navigation.NavigateTo("/tbys/tasinmazbagiscicreate");
+    }
+}

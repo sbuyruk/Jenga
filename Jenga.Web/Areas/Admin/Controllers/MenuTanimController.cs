@@ -1,10 +1,8 @@
-﻿using Jenga.DataAccess.Repository.IRepository;
+﻿using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.Models.Ortak;
 using Jenga.Web.Areas.Admin.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
 
 namespace Jenga.Web.Areas.Admin.Controllers
 {
@@ -21,10 +19,10 @@ namespace Jenga.Web.Areas.Admin.Controllers
         }
         public IActionResult Index()
         {
-            
+
             return View();
         }
-        
+
         //GET
         public IActionResult Create()
         {
@@ -37,10 +35,10 @@ namespace Jenga.Web.Areas.Admin.Controllers
                     Value = i.Id.ToString()
                 }),
             };
-            
+
             return View(menuTanimVM);
-   
-            
+
+
         }
         public IActionResult Edit(int? id)
         {
@@ -52,7 +50,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
                     Text = i.Adi,
                     Value = i.Id.ToString()
                 }),
-                
+
             };
 
             if (id == null || id == 0)
@@ -67,7 +65,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
                 return View(menuTanimVM);
             }
         }
-       
+
         #region API CALLS
         [HttpGet]
         public IActionResult GetAll()
@@ -112,14 +110,14 @@ namespace Jenga.Web.Areas.Admin.Controllers
             var obj = _unitOfWork.MenuTanim.GetFirstOrDefault(u => u.Id == id);
             if (obj == null)
             {
-                return Json(new {success=false, message="Kayıt silmede hata"});
+                return Json(new { success = false, message = "Kayıt silmede hata" });
             }
 
             _unitOfWork.MenuTanim.Remove(obj);
             MenuTanimVM menuTanimVM = new()
             {
                 MenuTanim = obj
-               
+
             };
             _unitOfWork.Save();
             return Json(new { success = true, message = "Menü kaydı silindi" });

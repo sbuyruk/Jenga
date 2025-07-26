@@ -1,8 +1,4 @@
-﻿using Jenga.DataAccess.Repository.IRepository;
-using Jenga.Models.MTS;
-using Jenga.Models.Ortak;
-using Microsoft.AspNetCore.Mvc;
-using System.Text.Json;
+﻿using Jenga.DataAccess.Repositories.IRepository;
 
 namespace Jenga.Web.Areas.Admin.Services
 {
@@ -14,9 +10,9 @@ namespace Jenga.Web.Areas.Admin.Services
         {
             _unitOfWork = unitOfWork;
         }
-        
-       
-       
+
+
+
     }
 
 }

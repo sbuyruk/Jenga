@@ -1,7 +1,5 @@
-﻿using Jenga.DataAccess.Repository.IRepository;
+﻿using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.Models.DYS;
-using Jenga.Models.MTS;
-using Jenga.Utility;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Extensions.Caching.Memory;
@@ -31,7 +29,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             ModelVM modelVM = new()
             {
                 ModelTanim = new(),
-               
+
                 MarkaTanimList = _unitOfWork.MarkaTanim.GetAll().Select(i => new SelectListItem
                 {
                     Text = i.Adi,
@@ -84,7 +82,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             // Code to fetch the data from the data source
             // ...
             var modelList = _unitOfWork.ModelTanim.GetAll(includeProperties: "MarkaTanim");
-            return  modelList;
+            return modelList;
         }
         //Delete
         [HttpPost]
@@ -97,7 +95,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             var obj = _unitOfWork.ModelTanim.GetFirstOrDefault(u => u.Id == id);
             if (obj == null)
             {
-                return Json(new {success=false, message="Kayıt silmede hata"});
+                return Json(new { success = false, message = "Kayıt silmede hata" });
             }
             _unitOfWork.ModelTanim.Remove(obj);
             _unitOfWork.Save();

@@ -1,6 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.Models.DYS;
-using Jenga.DataAccess.Repository.IRepository;
+using Microsoft.AspNetCore.Mvc;
 
 
 namespace Jenga.Web.Areas.Admin.Controllers
@@ -11,7 +11,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
         private readonly IUnitOfWork _unitOfWork;
         private readonly IWebHostEnvironment _hostEnvironment;
         // GET: Admin/Malzeme
-        
+
         public IActionResult Index()
         {
 
@@ -23,7 +23,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             _hostEnvironment = hostEnvironment;
         }
         #region CreateEditDelete
-        
+
         [HttpPost]
         public IActionResult SaveSelectedRows([FromBody] SaveRowsViewModel model1)
         {
@@ -36,7 +36,7 @@ namespace Jenga.Web.Areas.Admin.Controllers
             // You can loop over the selectedIds to save them to the database
             foreach (var id in model1.SelectedIds)
             {
-                MalzemeOzellik malzemeOzellik= _unitOfWork.MalzemeOzellik.GetFirstOrDefault(e => e.MalzemeId== model1.MalzemeId && e.OzellikId == id);
+                MalzemeOzellik malzemeOzellik = _unitOfWork.MalzemeOzellik.GetFirstOrDefault(e => e.MalzemeId == model1.MalzemeId && e.OzellikId == id);
                 if (malzemeOzellik == null)
                 {
 
