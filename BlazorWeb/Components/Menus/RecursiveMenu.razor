@@ -1,0 +1,83 @@
+﻿@inject NavigationManager Nav
+@using Jenga.Models.Common
+@inject ILogger<RecursiveMenu> Logger
+@implements IDisposable
+
+<ul class="recursive-menu">
+    @foreach (var item in Items!)
+    {
+        var url = item.Url ?? string.Empty;
+        <li class="menu-item @(item.IsExpanded ? "open" : "") @(item.IsActive ? "active" : "")">
+            <div class="menu-header" @onclick="() => Toggle(item)">
+                <span class="menu-title">@item.Title</span>
+
+                @if (item.Children?.Any() == true)
+                {
+                    <span class="toggle-icon @(item.IsExpanded ? "rotated" : "")">
+                        <svg class="menu-icon" width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M8 5v14l11-7z" />
+                        </svg>
+                    </span>
+                }
+            </div>
+
+            @if (item.IsExpanded && item.Children?.Any() == true)
+            {
+                <ul class="submenu show">
+                    <RecursiveMenu Items="item.Children" />
+                </ul>
+            }
+        </li>
+    }
+</ul>
+
+@code {
+    [Parameter]
+    public List<MenuItem>? Items { get; set; }
+
+    protected override void OnInitialized()
+    {
+        Nav.LocationChanged += OnLocationChanged;
+        Logger.LogInformation("Current URL: {url}", $"Full URI: {Nav.Uri}");
+        Logger.LogInformation($"Base Relative Path: {Nav.ToBaseRelativePath(Nav.Uri)}");
+        SetActiveRecursive(Items!);
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        SetActiveRecursive(Items!);
+        Logger.LogInformation("Current URL: {url}", $"Full URI: {Nav.Uri}");
+        Logger.LogInformation($"Base Relative Path: {Nav.ToBaseRelativePath(Nav.Uri)}");
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        Nav.LocationChanged -= OnLocationChanged;
+    }
+
+    private void Toggle(MenuItem item)
+    {
+        item.IsExpanded = !item.IsExpanded;
+    }
+
+    private void SetActiveRecursive(List<MenuItem> items)
+    {
+        var fullUri = Nav.Uri.ToLowerInvariant();
+        var currentUrl = Nav.ToBaseRelativePath(Nav.Uri).TrimStart('/').ToLowerInvariant();
+
+        foreach (var item in items)
+        {
+            var normalizedItemUrl = item.Url?.TrimStart('/').ToLowerInvariant();
+            item.IsActive = (!string.IsNullOrWhiteSpace(normalizedItemUrl)
+                             && (currentUrl == normalizedItemUrl || fullUri.EndsWith(normalizedItemUrl)));
+
+            if (item.Children?.Any() == true)
+            {
+                SetActiveRecursive(item.Children);
+                if (item.Children.Any(c => c.IsActive))
+                    item.IsActive = true;
+            }
+        }
+    }
+}

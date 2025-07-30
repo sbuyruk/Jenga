@@ -8,24 +8,26 @@ namespace Jenga.Models.Common
     public class MenuItem : BaseModel
     {
         [Column("Adi")]
-        public string? Title { get; set; }
+        public string? Title { get; set; }="Menu Başlığı";
 
         [Column("UstMenuId")]
         public int? ParentId { get; set; }
 
         [Column("Url")]
-        public string? Url { get; set; }
+        public string? Url { get; set; } = "#";
 
         [Column("Sira")]
         public int? DisplayOrder { get; set; }
 
         [Column("IsVisible")]
-        public bool? IsVisible { get; set; }
+        public bool? IsVisible { get; set; } = true;
 
         [NotMapped]
         public List<MenuItem>? Children { get; set; }
         [NotMapped]
-        public bool IsExpanded { get; set; }   // ← new
+        public bool IsExpanded { get; set; }
+        [NotMapped]
+        public bool IsActive { get; set; }  
 
     }
 

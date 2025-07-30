@@ -13,6 +13,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Jenga.Models", "Jenga.Model
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Jenga.BlazorUI", "Jenga.BlazorUI\Jenga.BlazorUI.csproj", "{B0C1C50E-40D2-A650-305F-FB731C9C5464}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorWeb", "BlazorWeb\BlazorWeb.csproj", "{59D34E59-C0BB-4FB0-B097-8621BE101053}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{B0C1C50E-40D2-A650-305F-FB731C9C5464}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B0C1C50E-40D2-A650-305F-FB731C9C5464}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B0C1C50E-40D2-A650-305F-FB731C9C5464}.Release|Any CPU.Build.0 = Release|Any CPU
+		{59D34E59-C0BB-4FB0-B097-8621BE101053}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{59D34E59-C0BB-4FB0-B097-8621BE101053}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{59D34E59-C0BB-4FB0-B097-8621BE101053}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{59D34E59-C0BB-4FB0-B097-8621BE101053}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

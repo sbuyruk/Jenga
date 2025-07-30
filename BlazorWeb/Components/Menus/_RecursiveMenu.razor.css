@@ -1,0 +1,41 @@
+﻿.recursive-menu {
+    list-style: none;
+    padding-left: 0;
+    margin: 0;
+    font-family: sans-serif;
+}
+
+.menu-item {
+    padding: 4px 8px;
+    border-left: 2px solid transparent;
+    transition: background-color 0.2s ease;
+}
+
+    .menu-item:hover {
+        background-color: #f0f0f0;
+        border-left-color: #007bff;
+    }
+
+.menu-header {
+    display: flex;
+    justify-content: space-between;
+    cursor: pointer;
+    padding: 6px 12px;
+    background-color: #fff;
+    color: #333;
+    border-radius: 4px;
+}
+
+.menu-item.open > .menu-header {
+    background-color: #007bff;
+    color: white;
+}
+
+.toggle-icon {
+    margin-left: auto;
+    transition: transform 0.3s ease;
+}
+
+.menu-item.open .toggle-icon {
+    transform: rotate(90deg);
+}

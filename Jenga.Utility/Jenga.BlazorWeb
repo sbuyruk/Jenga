@@ -1,0 +1,47 @@
+/Jenga.BlazorWeb
+│
+├── Components
+│   ├── Menus
+│   │   ├── RecursiveMenu.razor
+│   │   ├── MenuItemCard.razor
+│   │   ├── _RecursiveMenu.scss       ⬅ Scoped stil dosyası
+│   ├── Sidebar
+│   │   ├── TreeViewSidebar.razor
+│   │   ├── TreeNodeItem.razor
+│   │   ├── _TreeViewSidebar.scss
+│   ├── Modals
+│   │   ├── ConfirmDialog.razor
+│   │   ├── InfoToast.razor
+    │
+    ├── Layout
+    │   ├── MainLayout.razor
+    │   ├── AuthLayout.razor
+    │   ├── _Layout.scss
+    │
+    ├── Shared
+    │   ├── LoadingIndicator.razor
+    │   ├── ThemeToggle.razor
+    │   ├── ApiStatusBanner.razor
+    │
+    ├── Pages
+    │   ├── Home.razor
+    │   ├── Dashboard.razor
+    │
+├── Services
+│   ├── ThemeProvider.cs
+│   ├── NavigationService.cs
+│
+├── Utilities
+│   ├── ExtensionMethods.cs
+│   ├── CssClassBuilder.cs
+├── Tests
+│   ├── RecursiveMenuTests.cs
+│   ├── SidebarIntegrationTests.cs
+
+├── Docs
+│   ├── ComponentGuidelines.md
+│   ├── MenuSchema.png
+
+├── Themes
+│   ├── LightTheme.scss
+│   ├── DarkTheme.scss

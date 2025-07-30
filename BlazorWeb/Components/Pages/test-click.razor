@@ -1,0 +1,17 @@
+﻿@page "/test-click"
+@rendermode InteractiveServer
+<h3>Buton Testi</h3>
+
+<button class="btn btn-primary" @onclick="HandleClick">Tıkla Beni</button>
+
+<p>@mesaj</p>
+
+@code {
+
+    string mesaj = "Henüz tıklanmadı.";
+
+    void HandleClick()
+    {
+        mesaj = "Butona tıklandı!";
+    }
+}

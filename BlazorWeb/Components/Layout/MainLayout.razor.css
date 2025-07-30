@@ -1,0 +1,119 @@
+﻿.page-layout {
+    display: grid;
+    grid-template-columns: 250px 1fr;
+    grid-template-rows: auto 1fr;
+    min-height: 100vh;
+    background-color: #fafafa;
+}
+
+.sidebar-area {
+    background: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    padding: 12px;
+    overflow-y: auto;
+}
+
+/* İçerik alanı */
+.main-area {
+    display: flex;
+    flex-direction: column;
+    background-color: #fff;
+}
+
+.top-row {
+    background-color: #f7f7f7;
+    border-bottom: 1px solid #d6d5d5;
+    justify-content: flex-end;
+    height: 3.5rem;
+    display: flex;
+    align-items: center;
+    padding: 0 1.5rem;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+    /* Link biçimleri */
+    .top-row ::deep a,
+    .top-row ::deep .btn-link {
+        white-space: nowrap;
+        margin-left: 1.5rem;
+        text-decoration: none;
+        color: #333;
+    }
+
+        .top-row ::deep a:hover,
+        .top-row ::deep .btn-link:hover {
+            text-decoration: underline;
+        }
+
+/* Responsive görünüm */
+@media (max-width: 640.98px) {
+    .top-row {
+        justify-content: space-between;
+        padding: 0 1rem;
+    }
+
+        .top-row ::deep a,
+        .top-row ::deep .btn-link {
+            margin-left: 0;
+        }
+}
+
+/* Ana içerik */
+.content {
+    flex-grow: 1;
+    padding: 1.5rem 2rem;
+    overflow-y: auto;
+}
+
+/* Blazor error UI */
+#blazor-error-ui {
+    background: lightyellow;
+    bottom: 0;
+    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
+    display: none;
+    padding: 0.6rem 1.25rem;
+    position: fixed;
+    width: 100%;
+    z-index: 1000;
+    color-scheme: light only;
+}
+
+    #blazor-error-ui .dismiss {
+        cursor: pointer;
+        position: absolute;
+        right: 0.75rem;
+        top: 0.5rem;
+    }
+
+/* Karanlık tema desteği */
+@media (prefers-color-scheme: dark) {
+    .page-layout {
+        background-color: #111;
+    }
+
+    .main-area {
+        background-color: #181818;
+    }
+
+    .top-row {
+        background-color: #222;
+        border-bottom-color: #444;
+    }
+
+        .top-row ::deep a {
+            color: #ddd;
+        }
+
+    .content {
+        color: #eee;
+    }
+
+    #blazor-error-ui {
+        background-color: #333;
+        color: #fff;
+    }
+}
