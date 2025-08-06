@@ -31,6 +31,4 @@ namespace Jenga.Models.Common
 
     }
 
-
-
 }

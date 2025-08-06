@@ -1,5 +1,5 @@
 ﻿@rendermode InteractiveServer
-@using Jenga.BlazorUI.Services.Menu
+@using Jenga.BlazorWeb.Services.Menu
 @using Jenga.Models.Common
 @inject IMenuService MenuService
 
@@ -19,6 +19,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        menuItems = await MenuService.GetRecursiveMenuAsync();
+        menuItems = await MenuService.GetAuthorizedMenuAsync(127);
     }
 }

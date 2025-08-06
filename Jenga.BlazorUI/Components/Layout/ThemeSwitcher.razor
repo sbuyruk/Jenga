@@ -1,0 +1,16 @@
+﻿@rendermode InteractiveServer
+@inject IJSRuntime JS
+
+<select @onchange="OnThemeChanged" class="form-select w-auto">
+    <option value="light">Light</option>
+    <option value="dark">Dark</option>
+</select>
+
+@code {
+    private async Task OnThemeChanged(ChangeEventArgs e)
+    {
+        var theme = e.Value?.ToString() ?? "light";
+        await JS.InvokeVoidAsync("setBootstrapTheme", theme);
+    }
+}
+    

@@ -1,24 +1,47 @@
-﻿@using BlazorWeb.Components.Menus
+﻿@using Jenga.BlazorWeb.Components.Menus
+@using Jenga.BlazorWeb.Services.Theme
+@using Jenga.BlazorWeb.Components.Shared
 @inherits LayoutComponentBase
+@inject ThemeService ThemeService
+@inject ILogger<RecursiveMenu> Logger
 
-<div class="page-layout">
+<div class="page-layout @(ThemeService.CurrentTheme ?? "light")">
+    <!-- Tema sınıfını ekledik -->
     <aside class="sidebar-area">
         <TreeViewSidebar />
     </aside>
 
     <main class="main-area">
         <header class="top-row px-4">
+            <ToggleTheme />
+
             <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
         </header>
 
         <section class="content px-4">
-            @Body
+            <p>Aktif tema: @ThemeService.CurrentTheme</p>
+
+            <CascadingValue Value="ThemeService.CurrentTheme">
+                @Body
+            </CascadingValue>
         </section>
     </main>
 </div>
 
-<div id="blazor-error-ui" data-nosnippet>
-    An unhandled error has occurred.
-    <a href="." class="reload">Reload</a>
-    <span class="dismiss">🗙</span>
-</div>
+@code {
+    protected override void OnInitialized()
+    {
+        ThemeService.OnThemeChanged += OnThemeChangedHandler;
+    }
+
+    private void OnThemeChangedHandler()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        ThemeService.OnThemeChanged -= OnThemeChangedHandler;
+       
+    }
+}

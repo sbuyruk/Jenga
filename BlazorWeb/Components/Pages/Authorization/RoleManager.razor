@@ -1,0 +1,77 @@
+﻿@page "/authorization/roleManager"
+@rendermode InteractiveServer
+@using Jenga.Models.Common
+@using Jenga.DataAccess.Repositories
+@using Jenga.DataAccess.Repositories.IRepository
+@using Jenga.BlazorWeb.Services.Menu
+@inject IUnitOfWork UnitOfWork
+@inject IRolService RolService
+
+<h3>Roller</h3>
+
+@if (roller == null)
+{
+    <p>Yükleniyor...</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr><th>ID</th><th>Ad</th><th>İşlemler</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var rol in roller)
+            {
+                <tr>
+                    <td>@rol.Id</td>
+                    <td>@rol.Adi</td>
+                    <td>
+                        <button @onclick="() => EditRol(rol)">Düzenle</button>
+                        <button @onclick="() => DeleteRol(rol.Id)">Sil</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <button @onclick="NewRol">Yeni Rol Ekle</button>
+}
+
+@code {
+    private List<Rol>? roller;
+    private Rol currentRol = new();
+    private bool isEditing = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        roller = await RolService.GetAllAsync();
+    }
+
+    private void EditRol(Rol rol)
+    {
+        currentRol = rol;
+        isEditing = true;
+    }
+
+    private void NewRol()
+    {
+        currentRol = new();
+        isEditing = true;
+    }
+
+    private async Task SaveRol()
+    {
+        if (currentRol.Id == 0)
+            await RolService.AddAsync(currentRol);
+        else
+            await RolService.UpdateAsync(currentRol);
+
+        roller = await RolService.GetAllAsync();
+        isEditing = false;
+    }
+
+    private async Task DeleteRol(int id)
+    {
+        await RolService.DeleteAsync(id);
+        roller = await RolService.GetAllAsync();
+    }
+}

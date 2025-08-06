@@ -13,6 +13,9 @@ namespace Jenga.DataAccess.Repositories.IRepository
     {
         // Menu
         IMenuItemRepository MenuItem { get; }
+        IRolRepository Rol { get; }
+        IRolMenuRepository RolMenu { get; }
+        IPersonelRolRepository PersonelRol { get; }
         //MTS
         IDepoTanimRepository DepoTanim { get; }
         IKaynakTanimRepository KaynakTanim { get; }

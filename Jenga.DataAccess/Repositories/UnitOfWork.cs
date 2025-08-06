@@ -25,8 +25,12 @@ namespace Jenga.DataAccess.Repositories
         public UnitOfWork(ApplicationDbContext db)
         {
             _db = db;
-            // Menu
+            // Common //Menu
             MenuItem = new MenuItemRepository(db);
+            Rol = new RolRepository(db);
+            RolMenu = new RolMenuRepository(db);
+            PersonelRol = new PersonelRolRepository(db);
+
             //MTS
             DepoTanim = new DepoTanimRepository(_db);
             KaynakTanim = new KaynakTanimRepository(_db);
@@ -84,6 +88,11 @@ namespace Jenga.DataAccess.Repositories
             MalzemeHareket = new MalzemeHareketRepository(_db);
             Zimmet = new ZimmetRepository(_db);
         }
+        //Common
+        public IMenuItemRepository MenuItem { get; private set; }
+        public IRolRepository Rol { get; private set; }
+        public IRolMenuRepository RolMenu { get; private set; }
+        public IPersonelRolRepository PersonelRol { get; private set; }
 
         //MTS
         public IDepoTanimRepository DepoTanim { get; private set; }
@@ -142,7 +151,7 @@ namespace Jenga.DataAccess.Repositories
         public IMalzemeDagilimRepository MalzemeDagilim { get; private set; }
         public IMalzemeHareketRepository MalzemeHareket { get; private set; }
         public IZimmetRepository Zimmet { get; private set; }
-        public IMenuItemRepository MenuItem { get; private set; }
+        
         public void Save()
         {
             _db.SaveChanges();

@@ -20,8 +20,4 @@
 		<ProjectReference Include="..\Jenga.Utility\Jenga.Utility.csproj" />
 	</ItemGroup>
 
-	<ItemGroup>
-	  <Folder Include="Repository\" />
-	</ItemGroup>
-
 </Project>

@@ -18,6 +18,10 @@ namespace Jenga.DataAccess.Data
         }
         //Common
         public DbSet<MenuItem> MenuItem_Table { get; set; }
+        public DbSet<Rol> Rol_Table { get; set; }
+        public DbSet<PersonelRol> PersonelRol_Table{ get; set; }
+        public DbSet<RolMenu> RolMenu_Table{ get; set; }
+        public DbSet<PersonelMenu> PersonelMenuleri { get; set; }
         //IKYS
         public DbSet<Personel> Personel_Table { get; set; }
         public DbSet<PersonelMenu> PersonelMenu_Table { get; set; }

@@ -3,28 +3,29 @@
     grid-template-columns: 250px 1fr;
     grid-template-rows: auto 1fr;
     min-height: 100vh;
-    background-color: #fafafa;
+    background-color: var(--bg-page);
 }
 
 .sidebar-area {
-    background: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);
+    background: linear-gradient(180deg, var(--sidebar-gradient-top) 0%, var(--sidebar-gradient-bottom) 70%);
     position: sticky;
     top: 0;
     height: 100vh;
     padding: 12px;
     overflow-y: auto;
+    color: var(--menu-text);
 }
 
-/* İçerik alanı */
 .main-area {
     display: flex;
     flex-direction: column;
-    background-color: #fff;
+    background-color: var(--bg-surface);
+    color: var(--fg-body);
 }
 
 .top-row {
-    background-color: #f7f7f7;
-    border-bottom: 1px solid #d6d5d5;
+    background-color: var(--bg-header);
+    border-bottom: 1px solid var(--border-header);
     justify-content: flex-end;
     height: 3.5rem;
     display: flex;
@@ -33,23 +34,23 @@
     position: sticky;
     top: 0;
     z-index: 1;
+    color: var(--fg-body);
 }
 
-    /* Link biçimleri */
     .top-row ::deep a,
     .top-row ::deep .btn-link {
         white-space: nowrap;
         margin-left: 1.5rem;
         text-decoration: none;
-        color: #333;
+        color: var(--fg-link);
     }
 
         .top-row ::deep a:hover,
         .top-row ::deep .btn-link:hover {
             text-decoration: underline;
+            color: var(--fg-link-hover);
         }
 
-/* Responsive görünüm */
 @media (max-width: 640.98px) {
     .top-row {
         justify-content: space-between;
@@ -62,16 +63,16 @@
         }
 }
 
-/* Ana içerik */
 .content {
     flex-grow: 1;
     padding: 1.5rem 2rem;
     overflow-y: auto;
+    background-color: var(--bg-surface);
+    color: var(--fg-body);
 }
 
-/* Blazor error UI */
 #blazor-error-ui {
-    background: lightyellow;
+    background-color: var(--bg-error);
     bottom: 0;
     box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
     display: none;
@@ -79,7 +80,7 @@
     position: fixed;
     width: 100%;
     z-index: 1000;
-    color-scheme: light only;
+    color: var(--fg-body);
 }
 
     #blazor-error-ui .dismiss {
@@ -89,31 +90,25 @@
         top: 0.5rem;
     }
 
-/* Karanlık tema desteği */
-@media (prefers-color-scheme: dark) {
-    .page-layout {
-        background-color: #111;
-    }
+/* 🌑 Dark Tema için ekstra stil desteği — gerekirse */
 
-    .main-area {
-        background-color: #181818;
-    }
+.dark .sidebar-area {
+    background: linear-gradient(180deg, var(--sidebar-alt-gradient-top) 0%, var(--sidebar-alt-gradient-bottom) 70%);
+    color: var(--menu-text);
+}
 
-    .top-row {
-        background-color: #222;
-        border-bottom-color: #444;
-    }
+.dark .main-area,
+.dark .content,
+.dark .top-row {
+    background-color: var(--bg-surface);
+    color: var(--fg-body);
+}
 
-        .top-row ::deep a {
-            color: #ddd;
-        }
+.dark .top-row {
+    border-bottom: 1px solid var(--border-header);
+}
 
-    .content {
-        color: #eee;
-    }
-
-    #blazor-error-ui {
-        background-color: #333;
-        color: #fff;
-    }
+.dark #blazor-error-ui {
+    background-color: var(--bg-error);
+    color: var(--fg-body);
 }
