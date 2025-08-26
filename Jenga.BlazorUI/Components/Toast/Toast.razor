@@ -1,0 +1,94 @@
+﻿@rendermode InteractiveServer
+@using Jenga.Utility.Toast
+@inject IToastService ToastService
+
+<div class="toast-container">
+    @if (_activeToasts.Count > 0)
+    {
+        @foreach (var item in _activeToasts)
+        {
+            <div @key="item.Id"
+                 class="toast-message toast-@item.Type.ToString().ToLower()"
+                 @onmouseenter="@(() => Pause(item.Id))"
+                 @onmouseleave="@(() => Resume(item.Id))">
+                @item.Message
+            </div>
+        }
+
+    }
+</div>
+
+@code {
+    private List<ToastModel> _activeToasts = new();
+    private Dictionary<Guid, CancellationTokenSource> _ctsMap = new();
+    private HashSet<Guid> _pausedToasts = new();
+
+    protected override void OnInitialized()
+    {
+        ToastService.OnShow += ShowToast;
+    }
+
+    private async void ShowToast(ToastModel model)
+    {
+        model.Id = Guid.NewGuid();
+        _activeToasts.Add(model);
+        StateHasChanged();
+
+        var cts = new CancellationTokenSource();
+        _ctsMap[model.Id] = cts;
+
+        try
+        {
+            await WaitWithPauseSupport(model.Duration, cts.Token, model.Id);
+        }
+        catch (TaskCanceledException) { }
+
+        _activeToasts.RemoveAll(t => t.Id == model.Id);
+        _ctsMap.Remove(model.Id);
+        StateHasChanged();
+    }
+
+    private async Task WaitWithPauseSupport(int duration, CancellationToken token, Guid id)
+    {
+        var elapsed = 0;
+        const int interval = 100;
+
+        while (elapsed < duration)
+        {
+            if (token.IsCancellationRequested) break;
+            if (!_pausedToasts.Contains(id))
+            {
+                await Task.Delay(interval, token);
+                elapsed += interval;
+            }
+            else
+            {
+                await Task.Delay(interval, token);
+            }
+        }
+    }
+
+    private void Pause(Guid id) => _pausedToasts.Add(id);
+
+    private void Resume(Guid id) => _pausedToasts.Remove(id);
+
+    private string GetToastClass(ToastType type) => type switch
+    {
+        ToastType.Success => "toast-success",
+        ToastType.Error => "toast-error",
+        ToastType.Info => "toast-info",
+        ToastType.Warning => "toast-warning",
+        _ => ""
+    };
+
+    public void Dispose()
+    {
+        ToastService.OnShow -= ShowToast;
+        foreach (var cts in _ctsMap.Values)
+        {
+            cts.Cancel();
+            cts.Dispose();
+        }
+        _ctsMap.Clear();
+    }
+}

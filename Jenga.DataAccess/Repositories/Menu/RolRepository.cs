@@ -19,8 +19,5 @@ namespace Jenga.DataAccess.Repositories.Menu
         {
             _db.SaveChanges();
         }
-
-
     }
-
 }

@@ -1,11 +1,58 @@
-using Jenga.BlazorUI.Components;
+﻿using Jenga.BlazorUI.Components;
+using Jenga.BlazorUI.Services.Menu;
+using Jenga.DataAccess.Data;
+using Jenga.DataAccess.Repositories;
+using Jenga.DataAccess.Repositories.IRepository;
+using Jenga.Utility.Error;
+using Jenga.Utility.Logging;
+using Jenga.Utility.Modal;
+using Jenga.Utility.Toast;
+using Microsoft.EntityFrameworkCore;
+using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 var builder = WebApplication.CreateBuilder(args);
-
+var logger = builder.Services.BuildServiceProvider()
+    .GetRequiredService<ILogger<ApplicationDbContext>>();
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+/*SB*/
+//builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
+//    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")),
+//           ServiceLifetime.Transient);
+builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
+{
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+    options.EnableSensitiveDataLogging();
 
+    options.LogTo(
+        message => logger.LogInformation(message), // EF logları buraya akar
+        new[] { DbLoggerCategory.Database.Command.Name },
+        LogLevel.Information
+    );
+}, ServiceLifetime.Transient);
+
+/*SB UnitOfWork */
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+/*SB Menu Servisi*/
+builder.Services.AddScoped<IMenuService, MenuService>();
+builder.Services.AddScoped<MenuStateService>();
+
+builder.Services.AddRazorComponents()
+    .AddInteractiveServerComponents();
+// Toast Service
+builder.Services.AddScoped<IToastService, ToastService>();
+//Logging Services
+builder.Services.AddScoped<ILogService, LogService>();
+builder.Services.AddScoped<ILogWriter, FileLogWriter>();
+//Error Handling 
+builder.Services.AddScoped<IErrorService, ErrorService>();
+//Modal Service
+builder.Services.AddScoped<IModalService, ModalService>();
+//DetailedErrors ayarını aç
+builder.Services.AddServerSideBlazor()
+    .AddCircuitOptions(options => { options.DetailedErrors = true; });
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -24,5 +71,11 @@ app.UseAntiforgery();
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+/*SB Hata Sayfası*/
+app.MapFallback(context =>
+{
+    context.Response.Redirect($"/error?url={Uri.EscapeDataString(context.Request.Path)}");
+    return Task.CompletedTask;
+});
 
 app.Run();

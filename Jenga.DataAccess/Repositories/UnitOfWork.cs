@@ -16,78 +16,84 @@ using Jenga.DataAccess.Repositories.NBYS;
 using Jenga.DataAccess.Repositories.Ortak;
 using Jenga.DataAccess.Repositories.TBYS;
 using Jenga.DataAccess.Repositories.TYS;
+using Microsoft.EntityFrameworkCore;
 
 namespace Jenga.DataAccess.Repositories
 {
-    public class UnitOfWork : IUnitOfWork
+    public class UnitOfWork : IUnitOfWork, IAsyncDisposable
     {
-        private readonly ApplicationDbContext _db;
-        public UnitOfWork(ApplicationDbContext db)
+        private readonly ApplicationDbContext _context;
+        private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
+
+
+        public UnitOfWork(IDbContextFactory<ApplicationDbContext> contextFactory)
         {
-            _db = db;
-            // Common //Menu
-            MenuItem = new MenuItemRepository(db);
-            Rol = new RolRepository(db);
-            RolMenu = new RolMenuRepository(db);
-            PersonelRol = new PersonelRolRepository(db);
+            _contextFactory = contextFactory;
+            _context = _contextFactory.CreateDbContext();
+
+            MenuItem = new MenuItemRepository(_context);
+            Rol = new RolRepository(_context);
+            RolMenu = new RolMenuRepository(_context);
+            PersonelRol = new PersonelRolRepository(_context);
 
             //MTS
-            DepoTanim = new DepoTanimRepository(_db);
-            KaynakTanim = new KaynakTanimRepository(_db);
-            AniObjesiTanim = new AniObjesiTanimRepository(_db);
-            DepoHareket = new DepoHareketRepository(_db);
-            DepoStok = new DepoStokRepository(_db);
-            GonderiPaketi = new GonderiPaketiRepository(_db);
-            Kisi = new KisiRepository(_db);
-            UnvanTanim = new UnvanTanimRepository(_db);
-            DagitimYeriTanim = new DagitimYeriTanimRepository(_db);
-            GonderiPaketi = new GonderiPaketiRepository(_db);
-            AniObjesiDagitim = new AniObjesiDagitimRepository(_db);
-            MTSKurumTanim = new MTSKurumTanimRepository(_db);
-            MTSGorevTanim = new MTSGorevTanimRepository(_db);
-            MTSUnvanTanim = new MTSUnvanTanimRepository(_db);
-            MTSKurumGorev = new MTSKurumGorevRepository(_db);
-            FaaliyetKatilim = new FaaliyetKatilimRepository(_db);
-            Faaliyet = new FaaliyetRepository(_db);
-            FaaliyetAmaci = new FaaliyetAmaciRepository(_db);
-            AramaGorusme = new AramaGorusmeRepository(_db);
+            DepoTanim = new DepoTanimRepository(_context);
+            KaynakTanim = new KaynakTanimRepository(_context);
+            AniObjesiTanim = new AniObjesiTanimRepository(_context);
+            DepoHareket = new DepoHareketRepository(_context);
+            DepoStok = new DepoStokRepository(_context);
+            GonderiPaketi = new GonderiPaketiRepository(_context);
+            Kisi = new KisiRepository(_context);
+            UnvanTanim = new UnvanTanimRepository(_context);
+            DagitimYeriTanim = new DagitimYeriTanimRepository(_context);
+            GonderiPaketi = new GonderiPaketiRepository(_context);
+            AniObjesiDagitim = new AniObjesiDagitimRepository(_context);
+            MTSKurumTanim = new MTSKurumTanimRepository(_context);
+            MTSGorevTanim = new MTSGorevTanimRepository(_context);
+            MTSUnvanTanim = new MTSUnvanTanimRepository(_context);
+            MTSKurumGorev = new MTSKurumGorevRepository(_context);
+            FaaliyetKatilim = new FaaliyetKatilimRepository(_context);
+            Faaliyet = new FaaliyetRepository(_context);
+            FaaliyetAmaci = new FaaliyetAmaciRepository(_context);
+            AramaGorusme = new AramaGorusmeRepository(_context);
             //Ortak
-            Bolge = new BolgeRepository(_db);
-            Il = new IlRepository(_db);
-            Ilce = new IlceRepository(_db);
-            ModulTanim = new ModulTanimRepository(_db);
-            MenuTanim = new MenuTanimRepository(_db);
+            Bolge = new BolgeRepository(_context);
+            Il = new IlRepository(_context);
+            Ilce = new IlceRepository(_context);
+            ModulTanim = new ModulTanimRepository(_context);
+            MenuTanim = new MenuTanimRepository(_context);
             //IKYS
-            Personel = new PersonelRepository(_db);
-            PersonelMenu = new PersonelMenuRepository(_db);
-            IsBilgileri = new IsBilgileriRepository(_db);
-            GorevTanim = new GorevTanimRepository(_db);
-            BirimTanim = new BirimTanimRepository(_db);
-            Kimlik = new KimlikRepository(_db);
-            IletisimBilgileri = new IletisimBilgileriRepository(_db);
-            ResmiTatil = new ResmiTatilRepository(_db);
+            Personel = new PersonelRepository(_context);
+            PersonelMenu = new PersonelMenuRepository(_context);
+            IsBilgileri = new IsBilgileriRepository(_context);
+            GorevTanim = new GorevTanimRepository(_context);
+            BirimTanim = new BirimTanimRepository(_context);
+            Kimlik = new KimlikRepository(_context);
+            IletisimBilgileri = new IletisimBilgileriRepository(_context);
+            ResmiTatil = new ResmiTatilRepository(_context);
             //TBYS
-            TasinmazBagisci = new TasinmazBagisciRepository(_db);
+            TasinmazBagisci = new TasinmazBagisciRepository(_context);
             //NBYS
-            NakitBagisci = new NakitBagisciRepository(_db);
-            NakitBagisHareket = new NakitBagisHareketRepository(_db);
+            NakitBagisci = new NakitBagisciRepository(_context);
+            NakitBagisHareket = new NakitBagisHareketRepository(_context);
             //TYS
-            Toplanti = new ToplantiRepository(_db);
-            ToplantiKatilim = new ToplantiKatilimRepository(_db);
+            Toplanti = new ToplantiRepository(_context);
+            ToplantiKatilim = new ToplantiKatilimRepository(_context);
             //DYS
-            EnvanterTanim = new EnvanterTanimRepository(_db);
-            MalzemeGrubu = new MalzemeGrubuRepository(_db);
-            MalzemeCinsi = new MalzemeCinsiRepository(_db);
-            MarkaTanim = new MarkaTanimRepository(_db);
-            ModelTanim = new ModelTanimRepository(_db);
-            Ozellik = new OzellikRepository(_db);
-            MalzemeOzellik = new MalzemeOzellikRepository(_db);
-            Malzeme = new MalzemeRepository(_db);
-            MalzemeYeriTanim = new MalzemeYeriTanimRepository(_db);
-            MalzemeDagilim = new MalzemeDagilimRepository(_db);
-            MalzemeHareket = new MalzemeHareketRepository(_db);
-            Zimmet = new ZimmetRepository(_db);
+            EnvanterTanim = new EnvanterTanimRepository(_context);
+            MalzemeGrubu = new MalzemeGrubuRepository(_context);
+            MalzemeCinsi = new MalzemeCinsiRepository(_context);
+            MarkaTanim = new MarkaTanimRepository(_context);
+            ModelTanim = new ModelTanimRepository(_context);
+            Ozellik = new OzellikRepository(_context);
+            MalzemeOzellik = new MalzemeOzellikRepository(_context);
+            Malzeme = new MalzemeRepository(_context);
+            MalzemeYeriTanim = new MalzemeYeriTanimRepository(_context);
+            MalzemeDagilim = new MalzemeDagilimRepository(_context);
+            MalzemeHareket = new MalzemeHareketRepository(_context);
+            Zimmet = new ZimmetRepository(_context);
         }
+
         //Common
         public IMenuItemRepository MenuItem { get; private set; }
         public IRolRepository Rol { get; private set; }
@@ -154,16 +160,21 @@ namespace Jenga.DataAccess.Repositories
         
         public void Save()
         {
-            _db.SaveChanges();
+            _context.SaveChanges();
         }
 
         public async Task<int> CommitAsync()
         {
-            return await _db.SaveChangesAsync();
+            return await _context.SaveChangesAsync();
         }
         public void Dispose()
         {
-            _db.Dispose();
+            _context.Dispose();
+        }
+
+        public ValueTask DisposeAsync()
+        {
+            return _context?.DisposeAsync() ?? ValueTask.CompletedTask;
         }
     }
 }

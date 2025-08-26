@@ -1,4 +1,52 @@
-﻿<component type="typeof(NavMenu)" render-mode="InteractiveServer" />
+﻿@rendermode InteractiveServer
+@using Jenga.BlazorUI.Components.Menus
+@using Jenga.Models.Common
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <NavLink class="navbar-brand" href="/">Jenga.BlazorUI</NavLink>
+    </div>
+</div>
+
+<div class="nav-scrollable"
+     onclick="
+       // Sadece .treeview-sidebar dışında tıklanırsa toggler click
+       if (!event.target.closest('.treeview-sidebar')) {
+         document.querySelector('.navbar-toggler').click();
+       }
+     ">
+    <nav class="nav flex-column">
+        <aside class="treeview-sidebar">
+            <NavLink class="navbar-brand" href="/menu/menu-item-manager">
+                Menu
+            </NavLink>
+
+            @if (Items == null || !Items.Any())
+            {
+                <p>Yükleniyor…</p>
+            }
+            else
+            {
+                <RecursiveMenu Items="Items" />
+            }
+        </aside>
+    </nav>
+</div>
+
+@code {
+    [Parameter]
+    public List<MenuItem>? Items { get; set; }
+}
+
+
+@* @using Jenga.BlazorUI.Components.Menus
+@using Jenga.BlazorUI.Services.Menu
+@using Jenga.Models.Common
+@inject IMenuService MenuService
+
+@inject IMenuService MenuService
+@inject MenuStateService MenuState
+
+<component type="typeof(NavMenu)" render-mode="InteractiveServer" />
 
 <div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
@@ -10,23 +58,30 @@
 
 <div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
     <nav class="nav flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
+        <aside class="treeview-sidebar">
+            @if (MenuState.MenuItems is null)
+            {
+                <p>Yükleniyor…</p>
+            }
+            else
+            {
+                <RecursiveMenu Items="MenuState.MenuItems" />
+            }
+        </aside>
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
-            </NavLink>
-        </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="weather">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
-            </NavLink>
-        </div>
     </nav>
 </div>
 
+@code {
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (MenuState.MenuItems is null || !MenuState.MenuItems.Any())
+        {
+            MenuState.MenuItems = await MenuService.GetAuthorizedMenuAsync(127);
+        }
+    }
+
+
+}
+ *@

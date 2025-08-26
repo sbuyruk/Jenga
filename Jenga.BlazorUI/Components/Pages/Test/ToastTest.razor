@@ -1,0 +1,23 @@
+﻿@page "/test/toast"
+@rendermode InteractiveServer
+@using Jenga.Utility.Toast
+@inject IToastService ToastService
+
+<h3>Toast Test Sayfası</h3>
+
+<div class="d-flex flex-column gap-2 mt-3">
+    <button class="btn btn-info" @onclick="@(() => ShowToast("Bilgilendirme mesajı", ToastType.Info))">Info</button>
+    <button class="btn btn-success" @onclick="@(() => ShowToast("İşlem başarılı!", ToastType.Success))">Success</button>
+    <button class="btn btn-warning" @onclick="@(() => ShowToast("Dikkat edilmesi gereken durum", ToastType.Warning))">Warning</button>
+    <button class="btn btn-danger" @onclick="@(() => ShowToast("Hata oluştu!", ToastType.Error))">Error</button>
+
+
+</div>
+
+@code {
+    private void ShowToast(string message, ToastType type)
+    {
+        ToastService.ShowToast(message, type, 3000);
+    }
+
+}

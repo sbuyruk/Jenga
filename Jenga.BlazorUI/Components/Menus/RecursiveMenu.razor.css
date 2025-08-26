@@ -1,0 +1,109 @@
+﻿.recursive-menu {
+    list-style: none;
+    padding-left: 0;
+    margin: 0;
+}
+
+.menu-item {
+    border-radius: 6px;
+    transition: background-color 0.3s ease, padding 0.2s ease;
+    border-radius: 4px;
+}
+
+.menu-header {
+    background: linear-gradient(90deg, var(--menu-gradient-start), var(--menu-gradient-end));
+    color: var(--menu-text);
+    font-weight: 500;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.4s ease, color 0.4s ease;
+}
+
+    .menu-header:hover {
+        background: linear-gradient(90deg, var(--menu-gradient-hover-start), var(--menu-gradient-hover-end));
+        color: var(--menu-text-hover);
+    }
+
+.toggle-icon {
+    display: inline-block;
+    transition: transform 0.3s ease;
+    margin-left: 8px;
+}
+
+    .toggle-icon.rotated {
+        transform: rotate(90deg);
+    }
+
+.menu-icon {
+    fill: var(--menu-icon);
+    transition: fill 0.3s ease;
+}
+
+.menu-header:hover .menu-icon {
+    fill: var(--menu-icon-hover);
+}
+
+.submenu {
+    list-style: none;
+    margin-left: 1rem;
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    transform: scaleY(0.95);
+    transition: max-height 0.3s ease, opacity 0.3s ease, transform 0.3s ease;
+    background-color: var(--submenu-bg);
+    padding-left: 16px;
+    margin-top: 4px;
+}
+
+    .submenu.show {
+        max-height: 500px;
+        opacity: 1;
+        transform: scaleY(1) translateY(0);
+        transition: all 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+    }
+
+    .submenu li {
+        padding: 4px 0;
+        font-size: 0.9em;
+        color: var(--submenu-text);
+    }
+
+.menu-item.active {
+    border-left: 4px solid var(--border-active);
+    background-color: var(--active-bg);
+}
+
+.menu-item.open {
+    background-color: var(--open-bg);
+}
+
+
+
+
+.treeview-sidebar {
+    width: 220px;
+    background: linear-gradient(180deg, #f0f0f0, #e0e0e0);
+    padding: 12px;
+    border-right: 1px solid #ccc;
+    overflow-y: auto;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+/* Başlık */
+.menu-title {
+    width: 100%;
+    font-weight: 600;
+    font-size: 0.95em;
+    text-align: left;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px 4px;
+    color: #333;
+}
+

@@ -1,0 +1,38 @@
+﻿@page "/test/log"
+@rendermode InteractiveServer
+@using System
+@using System.IO
+@using Jenga.Utility.Logging
+@using Jenga.Utility.Toast
+@inject IToastService ToastService
+
+<h3>Log Test</h3>
+
+<div class="d-flex flex-column gap-2 mt-3"> 
+    <button class="btn btn-info" @onclick="@(() => WriteLog(LogLevel.Information, "Bilgilendirme logu"))">Info</button> 
+    <button class="btn btn-success" @onclick="@(() => WriteLog(LogLevel.Information, "İşlem başarılı logu"))">Success</button> 
+    <button class="btn btn-warning" @onclick="@(() => WriteLog(LogLevel.Warning, "Uyarı logu"))">Warning</button> 
+    <button class="btn btn-danger" @onclick="@(() => WriteLog(LogLevel.Error, "Hata logu"))">Error</button> </div>
+
+<p class="mt-3">@statusMessage</p>
+
+
+@code {
+    private string statusMessage = ""; 
+
+    private void WriteLog(LogLevel level, string message)
+    {
+        try
+        {
+            var logger = new FileLogWriter();
+            logger.Write(level, message);
+            statusMessage = $"Log ({level}) written successfully.";
+            ToastService.ShowToast(message, ToastType.Success, 3000);
+        }
+        catch (Exception ex)
+        {
+            statusMessage = $"Error writing log: {ex.Message}";
+        }
+    }
+
+}

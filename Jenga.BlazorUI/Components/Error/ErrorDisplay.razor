@@ -1,0 +1,40 @@
+﻿@rendermode InteractiveServer
+@using Jenga.Utility.Error
+@inject IErrorService ErrorService
+
+<div class="error-container">
+    @foreach (var error in _errors)
+    {
+        <div @key="error.Id" class="error-message error-@error.Severity.ToString().ToLower()">
+            <strong>@error.Message</strong>
+            @if (!string.IsNullOrEmpty(error.Detail))
+            {
+                <div class="error-detail">@error.Detail</div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<ErrorModel> _errors = new();
+
+    protected override void OnInitialized()
+    {
+        ErrorService.OnError += HandleError;
+    }
+
+    private async void HandleError(ErrorModel model)
+    {
+        _errors.Add(model);
+        StateHasChanged();
+
+        await Task.Delay(model.Duration);
+        _errors.RemoveAll(e => e.Id == model.Id);
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        ErrorService.OnError -= HandleError;
+    }
+}

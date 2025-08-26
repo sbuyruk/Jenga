@@ -21,17 +21,6 @@ namespace Jenga.DataAccess.Repositories.IKYS
         public async Task<IEnumerable<SelectListItem>> GetPersonelDDL(bool onlyWorkingPersonel = true, int malzemeId = 0)
         {
             IQueryable<Personel> query = dbSet;
-
-            //var personelList = await query.Where(u => u.IsBilgileri.CalismaDurumu == "1")
-            //                .Select(y => new SelectListItem
-            //                {
-            //                    Value = y.Id.ToString(),
-            //                    Text = y.Adi + " " + y.Soyadi
-            //                }).ToListAsync();
-            //return  personelList;
-
-
-
             var personelList = await query.Where(u => u.IsBilgileri.CalismaDurumu == "1")
                .Select(p => new
                {

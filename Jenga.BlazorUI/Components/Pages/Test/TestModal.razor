@@ -1,0 +1,27 @@
+﻿@page "/test/modal"
+@rendermode InteractiveServer
+@using Jenga.Utility.Modal
+@using Jenga.Utility.Toast
+@inject IModalService ModalService
+@inject IToastService ToastService
+
+<h3>Modal Test Sayfası</h3>
+
+<div class="button-group">
+    <button @onclick="@(() => ShowModal(" Sil", "Bu öğeyi silmek istediğinize emin misiniz?" ))">Sil</button>
+    <button @onclick="@(() => ShowModal(" Kaydet", "Değişiklikleri kaydetmek istiyor musunuz?" ))">Kaydet</button>
+    <button @onclick="@(() => ShowModal(" Güncelle", "Bu öğeyi güncellemek istediğinize emin misiniz?" ))">Güncelle</button>
+</div>
+
+@code {
+    private void ShowModal(string action, string message)
+    {
+        ModalService.ShowConfirmation(action, message, result =>
+        {
+            if (result)
+                ToastService.ShowSuccess($"{action} işlemi onaylandı.");
+            else
+                ToastService.ShowWarning($"{action} işlemi iptal edildi.");
+        });
+    }
+}
