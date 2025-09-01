@@ -1,0 +1,44 @@
+﻿@page "/test/rol"
+@rendermode InteractiveServer
+@using Jenga.DataAccess.Services.Menu
+@using Jenga.Models.Common
+@using Jenga.DataAccess.Repositories.IRepository
+@using Jenga.BlazorUI.Services.Menu
+@inject IUnitOfWork UnitOfWork
+@inject IRolService RolService
+
+<h5>Rol Listesi</h5>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Adi</th>
+            <th>Açıklama</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in ExistingItems)
+        {
+            <tr>
+                <td>@item.Adi</td>
+                <td>@item.Aciklama</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    private IEnumerable<Rol> ExistingItems = new List<Rol>();
+
+    private bool _dataLoaded;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_dataLoaded)
+        {
+            ExistingItems = await RolService.GetAllAsync();
+            _dataLoaded = true;
+            StateHasChanged();
+            
+        }
+    }
+}

@@ -167,6 +167,13 @@ namespace Jenga.DataAccess.Repositories
         {
             return await _context.SaveChangesAsync();
         }
+
+        public async Task<bool> SaveAsync(CancellationToken cancellationToken = default)
+        {
+            var changes = await _context.SaveChangesAsync(cancellationToken);
+            return changes > 0;
+        }
+
         public void Dispose()
         {
             _context.Dispose();

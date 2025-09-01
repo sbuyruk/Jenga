@@ -3,6 +3,7 @@ using Jenga.BlazorUI.Services.Menu;
 using Jenga.DataAccess.Data;
 using Jenga.DataAccess.Repositories;
 using Jenga.DataAccess.Repositories.IRepository;
+using Jenga.DataAccess.Services.Menu;
 using Jenga.Utility.Error;
 using Jenga.Utility.Logging;
 using Jenga.Utility.Modal;
@@ -50,6 +51,8 @@ builder.Services.AddScoped<ILogWriter, FileLogWriter>();
 builder.Services.AddScoped<IErrorService, ErrorService>();
 //Modal Service
 builder.Services.AddScoped<IModalService, ModalService>();
+//Rol Service
+builder.Services.AddScoped<IRolService, RolService>();
 //DetailedErrors ayarını aç
 builder.Services.AddServerSideBlazor()
     .AddCircuitOptions(options => { options.DetailedErrors = true; });

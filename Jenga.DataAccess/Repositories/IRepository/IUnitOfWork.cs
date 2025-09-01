@@ -73,5 +73,6 @@ namespace Jenga.DataAccess.Repositories.IRepository
         IZimmetRepository Zimmet { get; }
         void Save();
         Task<int> CommitAsync();
+        Task<bool> SaveAsync(CancellationToken cancellationToken = default);
     }
 }

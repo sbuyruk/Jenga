@@ -38,10 +38,14 @@ namespace Jenga.BlazorUI.Services.Menu
                 .GetAllByFilterAsync(x => x.PersonelId == personelId);
             var roleIds = roles.Select(r => r.RolId).ToList();
 
+            await Task.Delay(1); // context flush için mikro gecikme
+
             // 2. Rollerle ilişkilendirilmiş menü ID'lerini al
             var roleMenus = await _unitOfWork.RolMenu
                 .GetAllByFilterAsync(x => roleIds.Contains(x.RolId));
             var menuIds = roleMenus.Select(rm => rm.MenuId).ToList();
+
+            await Task.Delay(1); // context flush için mikro gecikme
 
             // 3. İlgili ve görünür menü öğelerini al
             var allMenus = await _unitOfWork.MenuItem

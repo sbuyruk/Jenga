@@ -1,0 +1,29 @@
+﻿@page "/test/roller"
+@rendermode InteractiveServer
+@using Jenga.BlazorUI.Components.Menus
+@using Jenga.DataAccess.Services.Menu
+@using Jenga.Models.Common
+@using Jenga.Utility.Error
+@inject IRolService RolService
+@inject IErrorService ErrorService
+@inject IJSRuntime JS
+
+<RolListComponent Roller="@roller" />
+
+@code {
+    private List<Rol> roller = new();
+
+
+    private bool _dataLoaded;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_dataLoaded)
+        {
+            roller = await RolService.GetAllAsync();
+            _dataLoaded = true;
+            StateHasChanged();
+            await JS.InvokeVoidAsync("initRolTableWithExport", roller);
+        }
+    }
+}
