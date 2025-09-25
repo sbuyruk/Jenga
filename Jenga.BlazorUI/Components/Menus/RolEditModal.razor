@@ -1,0 +1,148 @@
+﻿@using Jenga.BlazorUI.Components.Shared
+@using Jenga.Models.Common
+@using Jenga.Models.IKYS
+@using Jenga.Models.Sistem
+@inject IJSRuntime JS
+
+@if (IsOpen)
+{
+    <div class="modal-backdrop show"></div>
+    <div class="modal show d-block" tabindex="-1" style="display:block;">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <EditForm Model="@Rol" OnValidSubmit="HandleValidSubmit">
+                    <div class="modal-header">
+                        <h5 class="modal-title">@((Rol.Id == 0) ? "Rol Ekle" : "Rol Düzenle")</h5>
+                        <button type="button" class="btn-close" @onclick="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label>Adı</label>
+                            <InputText class="form-control" @bind-Value="Rol.Adi" />
+                        </div>
+                        <div class="mb-3">
+                            <label>Açıklama</label>
+                            <InputText class="form-control" @bind-Value="Rol.Aciklama" />
+                        </div>
+                        
+                        <br />
+                        <div class="row">
+
+                            <div class="mb-3 border m-1 col">
+                                <AddRemoveListComponent TItem="PersonelRol"
+                                                        TSelect="Personel"
+                                                        Title="Rolün Verildiği Kişiler"
+                                                        SelectPlaceholder="Personel Seçiniz"
+                                                        ListHeader="Adı Soyadı"
+                                                        SelectList="PersonelList"
+                                                        Items="@(Rol.PersonelRoller?.ToList() ?? new List<PersonelRol>())"
+                                                        GetId="@(p => p.Id)"
+                                                        GetDisplay="@(p => p.Adi + " " + p.Soyadi)"
+                                                        GetListDisplay="@(pr => pr.Personel?.Adi + " " + pr.Personel?.Soyadi)"
+                                                        OnAdd="AddPersonelRol"
+                                                        OnRemove="RemovePersonelRol" />
+
+                            </div>
+                            <div class="mb-3 border m-1 col">
+                                <AddRemoveListComponent TItem="RolMenu"
+                                                        TSelect="MenuItem"
+                                                        Title="Rol Kapsamındaki Menüler"
+                                                        SelectPlaceholder="Menü Seçiniz"
+                                                        ListHeader="Menü Adı"
+                                                        SelectList="MenuList"
+                                                        Items="@(Rol.RolMenuleri?.ToList() ?? new List<RolMenu>())"
+                                                        GetId="@(m => m.Id)"
+                                                        GetDisplay="@(m => m.Title)"
+                                                        GetListDisplay="@(rm => rm.Menu?.Title)"
+                                                        OnAdd="AddRolMenu"
+                                                        OnRemove="RemoveRolMenu" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">Kaydet</button>
+                        <button type="button" class="btn btn-secondary" @onclick="Close">Kapat</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public Rol Rol { get; set; } = new();
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<Rol> OnSave { get; set; }
+
+    [Parameter] public List<Personel> PersonelList { get; set; } = new();
+    [Parameter] public List<MenuItem> MenuList { get; set; } = new();
+
+    [Parameter] public bool IsOpen { get; set; }
+
+    private async Task AddPersonelRol(int? personelId)
+    {
+        if (personelId.HasValue)
+        {
+            var personel = PersonelList.FirstOrDefault(p => p.Id == personelId.Value);
+            if (personel != null && (Rol.PersonelRoller?.All(x => x.PersonelId != personel.Id) ?? true))
+            {
+                Rol.PersonelRoller ??= new List<PersonelRol>();
+                Rol.PersonelRoller.Add(new PersonelRol { PersonelId = personel.Id, Personel = personel });
+
+                PersonelList.Remove(personel);
+                StateHasChanged();
+            }
+        }
+    }
+
+    private async Task RemovePersonelRol(PersonelRol pr)
+    {
+        Rol.PersonelRoller?.Remove(pr);
+        if (pr.Personel != null)
+        {
+            PersonelList.Add(pr.Personel);
+        }
+        StateHasChanged();
+    }
+
+    private void AddRolMenu(int? menuId)
+    {
+        var menu = MenuList.FirstOrDefault(p => p.Id == menuId.Value);
+        if (menu != null && (Rol.RolMenuleri?.All(x => x.MenuId != menu.Id) ?? true))
+        {
+            Rol.RolMenuleri ??= new List<RolMenu>();
+            Rol.RolMenuleri.Add(new RolMenu { MenuId = menu.Id, Menu = menu });
+            StateHasChanged();
+        }
+        
+    }
+
+    private void RemoveRolMenu(RolMenu rm)
+    {
+        Rol.RolMenuleri?.Remove(rm);
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        await OnSave.InvokeAsync(Rol);
+        await Close();
+    }
+
+    private async Task Close()
+    {
+        IsOpen = false;
+        if (OnClose.HasDelegate)
+            await OnClose.InvokeAsync();
+    }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (Rol.RolMenuleri != null )
+        {
+            await JS.InvokeVoidAsync("initCustomDataTable");
+        }
+        if (Rol.PersonelRoller!=null)
+        {
+            // await JS.InvokeVoidAsync("initCustomDataTable1");
+        }
+    }
+}

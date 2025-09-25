@@ -1,7 +1,8 @@
-﻿
-using global::Jenga.DataAccess.Repositories.IRepository;
+﻿using global::Jenga.DataAccess.Repositories.IRepository;
 using global::Jenga.Utility.Logging;
+using Jenga.DataAccess.Repositories;
 using Jenga.Models.Common;
+using Microsoft.EntityFrameworkCore;
 
 namespace Jenga.DataAccess.Services.Menu
 {
@@ -65,6 +66,10 @@ namespace Jenga.DataAccess.Services.Menu
 
             _unitOfWork.Rol.Remove(rol);
             return await _unitOfWork.SaveAsync(cancellationToken);
+        }
+        public async Task<Rol?> GetByIdWithRelationsAsync(int id, CancellationToken cancellationToken = default)
+        {
+            return await _unitOfWork.Rol.GetByIdWithRelationsAsync(id, cancellationToken);
         }
     }
 

@@ -1,0 +1,64 @@
+﻿@typeparam TItem
+@typeparam TSelect
+
+<div class="text-center fw-bold" colspan="2">
+    @Title
+</div>
+<hr />
+<div class="col-6 row m-1">
+    <select class="form-select col" @bind="SelectedId">
+        <option value="">@SelectPlaceholder</option>
+        @foreach (var item in SelectList)
+        {
+            <option value="@GetId(item)">@GetDisplay(item)</option>
+        }
+    </select>
+    <button type="button" class="btn btn-success m-2 col-4" @onclick="AddItem">Ekle</button>
+</div>
+<div style="max-height: 250px; overflow-y: auto; overflow-x: auto;">
+    <table class="table table-striped display">
+        <thead>
+            <tr>
+                <th>@ListHeader</th>
+                <th>İşlem</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Items)
+            {
+                <tr>
+                    <td>@GetListDisplay(item)</td>
+                    <td>
+                        <button type="button" class="btn btn-sm btn-danger ms-2" @onclick="() => RemoveItem(item)">Çıkar</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; }
+    [Parameter] public string SelectPlaceholder { get; set; }
+    [Parameter] public string ListHeader { get; set; }
+    [Parameter] public List<TSelect> SelectList { get; set; }
+    [Parameter] public List<TItem> Items { get; set; }
+    [Parameter] public Func<TSelect, int> GetId { get; set; }
+    [Parameter] public Func<TSelect, string> GetDisplay { get; set; }
+    [Parameter] public Func<TItem, string> GetListDisplay { get; set; }
+    [Parameter] public EventCallback<int?> OnAdd { get; set; }
+    [Parameter] public EventCallback<TItem> OnRemove { get; set; }
+
+    private int? SelectedId { get; set; }
+
+    private async Task AddItem()
+    {
+        await OnAdd.InvokeAsync(SelectedId);
+        SelectedId = null;
+    }
+
+    private async Task RemoveItem(TItem item)
+    {
+        await OnRemove.InvokeAsync(item);
+    }
+}

@@ -23,7 +23,7 @@
             roller = await RolService.GetAllAsync();
             _dataLoaded = true;
             StateHasChanged();
-            await JS.InvokeVoidAsync("initRolTableWithExport", roller);
+            await JS.InvokeVoidAsync("initRolTableWithExport");
         }
     }
 }

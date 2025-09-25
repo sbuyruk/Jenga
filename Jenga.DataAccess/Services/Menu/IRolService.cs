@@ -9,5 +9,6 @@ namespace Jenga.DataAccess.Services.Menu
         Task<bool> AddAsync(Rol rol, CancellationToken cancellationToken = default);
         Task<bool> UpdateAsync(Rol rol, CancellationToken cancellationToken = default);
         Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default);
+        Task<Rol?> GetByIdWithRelationsAsync(int id, CancellationToken cancellationToken = default);
     }
 }

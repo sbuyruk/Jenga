@@ -37,5 +37,15 @@ namespace Jenga.DataAccess.Repositories.Menu
         {
             await _db.Set<Rol>().AddAsync(rol, cancellationToken);
         }
+
+        public async Task<Rol?> GetByIdWithRelationsAsync(int id, CancellationToken cancellationToken = default)
+        {
+            return await _db.Set<Rol>()
+                .Include(r => r.PersonelRoller)
+                    .ThenInclude(pr => pr.Personel)
+                .Include(r => r.RolMenuleri)
+                    .ThenInclude(rm => rm.Menu)
+                .FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
+        }
     }
 }

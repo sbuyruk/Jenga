@@ -1,0 +1,26 @@
+﻿@using Jenga.Models.Common
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.QuickGrid
+
+<div class="page-size-chooser">
+    Items per page:
+    <select @bind="@pagination.ItemsPerPage">
+        <option>5</option>
+        <option>10</option>
+        <option>20</option>
+        <option>50</option>
+    </select>
+</div>
+<div class="grid">
+    <QuickGrid Items="@Data.AsQueryable()" Pagination="@pagination">
+        <PropertyColumn Property="@(x => x.Id)" Title="Id" />
+        <PropertyColumn Property="@(x => x.Adi)" Title="Adı" />
+    </QuickGrid>
+</div>
+<Paginator State="@pagination" />
+@code {
+    [Parameter]
+    public List<ListObj> Data { get; set; } = new();
+
+    PaginationState pagination = new PaginationState { ItemsPerPage = 5 };
+}

@@ -1,5 +1,15 @@
-﻿@using Jenga.Models
+﻿@using Jenga.DataAccess.Repositories.IRepository
+@using Jenga.DataAccess.Services.Menu
+@using Jenga.Models
 @using Jenga.Models.Common
+@using Jenga.Models.IKYS
+@using Jenga.Utility.Modal
+@using Jenga.Utility.Toast
+@inject IModalService ModalService
+@inject IRolService RolService
+@inject IJSRuntime JS
+@inject IUnitOfWork UnitOfWork
+@inject IToastService ToastService
 
 
 @if (Roller?.Any() != true)
@@ -13,6 +23,7 @@ else
             <tr>
                 <th>Ad</th>
                 <th>Açıklama</th>
+                <th>İşlemler</th>
             </tr>
         </thead>
         <tbody>
@@ -21,11 +32,104 @@ else
                 <tr>
                     <td>@rol.Adi</td>
                     <td>@rol.Aciklama</td>
+                    <td>
+                        <button class="btn btn-primary me-2" @onclick="() => OnEditClicked(rol)">Düzenle</button>
+                        <button class="btn btn-danger" @onclick="() => OnDeleteClicked(rol)">Sil</button>
+                    </td>
                 </tr>
             }
         </tbody>
     </table>
 }
+
+@if (showEditModal && selectedRol != null && personelList != null && menuList != null)
+{
+    <RolEditModal Rol="@selectedRol"
+                  PersonelList="@personelList"
+                  MenuList="@menuList"
+                  IsOpen="true"
+                  OnSave="HandleSave"
+                  OnClose="HideModal" />
+}
+
 @code {
     [Parameter] public List<Rol> Roller { get; set; } = new();
+    private Rol? selectedRol { get; set; }
+    private List<Personel>? personelList { get; set; }
+    private List<MenuItem>? menuList { get; set; }
+    private bool showEditModal = false;
+
+    private async Task OnEditClicked(Rol rol)
+    {
+        selectedRol = await RolService.GetByIdWithRelationsAsync(rol.Id);
+        var aktifPersoneller = (await UnitOfWork.Personel.GetAllAsync("IsBilgileri"))
+            .Where(p => p.IsBilgileri != null && p.IsBilgileri.CalismaDurumu == "1")
+            .Where(p => selectedRol?.PersonelRoller == null || !selectedRol.PersonelRoller!.Any(pr => pr.PersonelId == p.Id))
+            .ToList();
+
+        var aktifMenuler = (await UnitOfWork.MenuItem.GetAllAsync())
+            .Where(p => p.IsVisible == true)
+            .Where(p => selectedRol?.RolMenuleri == null || !selectedRol.RolMenuleri!.Any(rm => rm.MenuId == p.Id))
+            .ToList();
+        //GetData<Personel>("personel");
+        personelList = aktifPersoneller;
+        menuList = aktifMenuler;// GetData<MenuItem>("menu");
+        showEditModal = true;
+    }
+    private void OnDeleteClicked(Rol rol)
+    {
+        ModalService.ShowConfirmation(
+            "Silme Onayı",
+            $"'{rol.Adi}' rolünü silmek istediğinizden emin misiniz?",
+            result =>
+            {
+                if (result)
+                {
+                    // Silme işlemini burada başlatabilirsiniz
+                }
+            });
+    }
+
+    private async void HandleSave()
+    {
+        if (selectedRol != null)
+        {
+            var rol = selectedRol.Adi;
+            await RolService.UpdateAsync(selectedRol);
+            // Gerekirse ilişkili personel ve menüleri de güncelleyin
+            showEditModal = false;
+            StateHasChanged();
+            ToastService.ShowToast(rol + " güncellendi", ToastType.Success, 3000);
+
+        }
+    }
+
+    private void HideModal()
+    {
+        selectedRol = null;
+        showEditModal = false;
+    }
+
+    private List<T> GetData<T>(string type)
+    {
+        // Mock data - burayı gerçek veri kaynağınızla değiştirin
+        if (type == "personel")
+        {
+            return new List<T>()
+            {
+                (T)(object)new Personel() { Id = 11111, Adi = "Ali", Soyadi = "Veli" },
+                (T)(object)new Personel() { Id = 22222, Adi = "Ayşe", Soyadi = " Yılmaz" }
+            };
+        }
+        else if (type == "menu")
+        {
+            return new List<T>()
+            {
+                (T)(object)new MenuItem() { Id = 33333,Title  = "Ana Menü", Url = "/ana-menu" },
+                (T)(object)new MenuItem() { Id = 44444, Title = "Hakkımızda", Url = "/hakkimizda" }
+            };
+        }
+
+        return new List<T>();
+    }
 }

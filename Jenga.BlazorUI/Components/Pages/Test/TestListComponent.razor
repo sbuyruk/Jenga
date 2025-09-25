@@ -1,0 +1,28 @@
+﻿@page "/test/test-listComponent"
+@using Jenga.Models.Common
+@using Jenga.BlazorUI.Components.Shared
+
+<h3>ListComponent Test Sayfası</h3>
+
+<ListComponent Data="@testData" />
+
+@code {
+    private List<ListObj> testData = new()
+    {
+        new ListObj { Id = 1, Adi = "Test 1" },
+        new ListObj { Id = 2, Adi = "Test 2" },
+        new ListObj { Id = 3, Adi = "Test 3" },
+        new ListObj { Id = 4, Adi = "Test 4" },
+        new ListObj { Id = 5, Adi = "Test 5" },
+        new ListObj { Id = 6, Adi = "Test 6" },
+        new ListObj { Id = 7, Adi = "Test 7" },
+        new ListObj { Id = 8, Adi = "Test 8" },
+        new ListObj { Id = 9, Adi = "Test 9" },
+        new ListObj { Id = 10, Adi = "Test 10" },
+        new ListObj { Id = 11, Adi = "Test 11" },
+        new ListObj { Id = 12, Adi = "Test 12" },
+        new ListObj { Id = 13, Adi = "Test 13" },
+        new ListObj { Id = 14, Adi = "Test 14" },
+        new ListObj { Id = 15, Adi = "Test 15" }
+    };
+}

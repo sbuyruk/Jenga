@@ -7,6 +7,7 @@ namespace Jenga.DataAccess.Repositories.IRepository.Menu
     {
         Task<List<Rol>> GetAllAsync(CancellationToken cancellationToken = default);
         Task<Rol?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
+        Task<Rol?> GetByIdWithRelationsAsync(int id, CancellationToken cancellationToken = default);
         Task AddAsync(Rol rol, CancellationToken cancellationToken = default);
     }
 
