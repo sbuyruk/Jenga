@@ -1,0 +1,127 @@
+﻿@using Jenga.Models.Inventory
+@using Jenga.DataAccess.Services.Inventory
+@using Jenga.Utility.Modal
+@using Jenga.Utility.Toast
+@inject IToastService ToastService
+@inject IModalService ModalService
+@inject IMaterialBrandService MaterialBrandService
+
+<div class="d-flex justify-content-end mb-2">
+    <button class="btn btn-success" @onclick="OpenNewBrandModal" type="button">
+        <i class="bi bi-plus-lg"></i> Yeni Marka
+    </button>
+</div>
+
+@if (Brands?.Any() != true)
+{
+    <p>Marka bulunamadı.</p>
+}
+else
+{
+    <table class="table table-striped display" id="MaterialBrandListTable">
+        <thead>
+            <tr>
+                <th>Ad</th>
+                <th>Kategori</th>
+                <th>Açıklama</th>
+                <th>İşlemler</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var brand in Brands)
+            {
+                <tr>
+                    <td>@brand.BrandName</td>
+                    <td>@GetCategoryName(brand.CategoryId)</td>
+                    <td>@brand.Aciklama</td>
+                    <td>
+                        <button class="btn btn-primary me-2" @onclick="() => OnEditClicked(brand)">Düzenle</button>
+                        <button class="btn btn-danger" @onclick="() => OnDeleteClicked(brand)">Sil</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (showEditModal && selectedBrand != null)
+{
+    <MaterialBrandEditModal Brand="@selectedBrand"
+                           Categories="@Categories"
+                           IsOpen="true"
+                           OnSave="HandleSave"
+                           OnClose="HideModal" />
+}
+
+@code {
+    [Parameter] public List<MaterialBrand> Brands { get; set; } = new();
+    [Parameter] public List<MaterialCategory> Categories { get; set; } = new();
+    private MaterialBrand? selectedBrand { get; set; }
+    private bool showEditModal = false;
+
+    private string GetCategoryName(int? categoryId)
+    {
+        var cat = Categories.FirstOrDefault(c => c.Id == categoryId);
+        return cat?.CategoryName ?? "";
+    }
+
+    private void OnEditClicked(MaterialBrand brand)
+    {
+        selectedBrand = brand;
+        showEditModal = true;
+    }
+    private async void HandleSave()
+    {
+        if (selectedBrand != null)
+        {
+            if (selectedBrand.Id == 0)
+            {
+                var saved = await MaterialBrandService.AddAsync(selectedBrand);
+                if (saved)
+                {
+                    Brands.Add(selectedBrand);
+                }
+            }
+            else
+            {
+                await MaterialBrandService.UpdateAsync(selectedBrand);
+            }
+            showEditModal = false;
+            StateHasChanged();
+        }
+    }
+    private async Task OnDeleteClicked(MaterialBrand brand)
+    {
+
+        ModalService.ShowConfirmation(
+            "Silme Onayı",
+            $"'{brand.BrandName}' markasını silmek istediğinizden emin misiniz?",
+            async result =>
+            {
+                if (result)
+                {
+                    var deleted = await MaterialBrandService.DeleteAsync(brand);
+                    if (deleted)
+                    {
+                        ToastService.ShowToast($"{brand.BrandName} silindi", ToastType.Success, 3000);
+                        Brands.Remove(brand);
+                        StateHasChanged();
+                    }
+                    else
+                    {
+                        ToastService.ShowToast($"Silme işlemi başarısız oldu", ToastType.Error, 3000);
+                    }
+                }
+            });
+    }
+    private void HideModal()
+    {
+        selectedBrand = null;
+        showEditModal = false;
+    }
+    private async Task OpenNewBrandModal()
+    {
+        selectedBrand = new MaterialBrand();
+        showEditModal = true;
+    }
+}

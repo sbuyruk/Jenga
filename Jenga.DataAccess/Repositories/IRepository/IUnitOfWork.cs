@@ -1,5 +1,6 @@
 ﻿using Jenga.DataAccess.Repositories.IRepository.DYS;
 using Jenga.DataAccess.Repositories.IRepository.IKYS;
+using Jenga.DataAccess.Repositories.IRepository.Inventory;
 using Jenga.DataAccess.Repositories.IRepository.Menu;
 using Jenga.DataAccess.Repositories.IRepository.MTS;
 using Jenga.DataAccess.Repositories.IRepository.NBYS;
@@ -11,6 +12,16 @@ namespace Jenga.DataAccess.Repositories.IRepository
 {
     public interface IUnitOfWork : IDisposable
     {
+        //Inventory
+        IMaterialRepository Material { get; }
+        IMaterialCategoryRepository MaterialCategory { get; }
+        IMaterialBrandRepository MaterialBrand { get; }
+        IMaterialModelRepository MaterialModel { get; }
+        ILocationRepository Location { get; }
+        IMaterialInventoryRepository MaterialInventory { get; }
+        IMaterialMovementRepository MaterialMovement { get; }
+        IMaterialAssignmentRepository MaterialAssignment { get; }
+        IMaterialExitRepository MaterialExit { get; }
         // Menu
         IMenuItemRepository MenuItem { get; }
         IRolRepository Rol { get; }

@@ -11,6 +11,11 @@
 @inject IUnitOfWork UnitOfWork
 @inject IToastService ToastService
 
+<div class="d-flex justify-content-end mb-2">
+    <button class="btn btn-success" @onclick="OpenNewRolModal" type="button">
+        <i class="bi bi-plus-lg"></i> Yeni Rol
+    </button>
+</div>
 
 @if (Roller?.Any() != true)
 {
@@ -81,11 +86,14 @@ else
         ModalService.ShowConfirmation(
             "Silme Onayı",
             $"'{rol.Adi}' rolünü silmek istediğinizden emin misiniz?",
-            result =>
+            async result =>
             {
                 if (result)
                 {
-                    // Silme işlemini burada başlatabilirsiniz
+                    await RolService.DeleteAsync(rol);
+                    Roller.Remove(rol);
+                    StateHasChanged();
+                    ToastService.ShowToast($"{rol.Adi} silindi", ToastType.Success, 3000);
                 }
             });
     }
@@ -94,13 +102,25 @@ else
     {
         if (selectedRol != null)
         {
-            var rol = selectedRol.Adi;
-            await RolService.UpdateAsync(selectedRol);
-            // Gerekirse ilişkili personel ve menüleri de güncelleyin
+            if (selectedRol.Id == 0)
+            {
+                // Yeni rol ekle
+                var savedRol = selectedRol;
+                bool saved= await RolService.AddAsync(selectedRol);
+                if (saved)
+                {
+                    ToastService.ShowToast(savedRol.Adi + " eklendi", ToastType.Success, 3000);
+                    Roller.Add(savedRol);
+                }
+            }
+            else
+            {
+                // Mevcut rolü güncelle
+                ToastService.ShowToast(selectedRol.Adi + " güncellendi", ToastType.Info, 3000);
+                await RolService.UpdateAsync(selectedRol);
+            }
             showEditModal = false;
             StateHasChanged();
-            ToastService.ShowToast(rol + " güncellendi", ToastType.Success, 3000);
-
         }
     }
 
@@ -131,5 +151,23 @@ else
         }
 
         return new List<T>();
+    }
+
+    private async Task OpenNewRolModal()
+    {
+        // Yeni, boş bir rol nesnesi oluştur
+        selectedRol = new Rol();
+        // Aktif personel ve menüleri çek
+        var aktifPersoneller = (await UnitOfWork.Personel.GetAllAsync("IsBilgileri"))
+            .Where(p => p.IsBilgileri != null && p.IsBilgileri.CalismaDurumu == "1")
+            .ToList();
+
+        var aktifMenuler = (await UnitOfWork.MenuItem.GetAllAsync())
+            .Where(p => p.IsVisible == true)
+            .ToList();
+
+        personelList = aktifPersoneller;
+        menuList = aktifMenuler;
+        showEditModal = true;
     }
 }

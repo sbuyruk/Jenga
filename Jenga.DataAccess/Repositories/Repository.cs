@@ -81,13 +81,24 @@ namespace Jenga.DataAccess.Repositories
         {
             dbSet.RemoveRange(entity);
         }
+        //public void Update(T entity)
+        //{
+        //    entity.DegistirmeTarihi = DateTime.Now;
+        //    dbSet.Entry(entity).Property(x => x.Id).IsModified = false;
+        //    dbSet.Attach(entity);  // Attach to DbContext
+        //    dbSet.Entry(entity).State = EntityState.Modified;
+        //    dbSet.Update(entity);  // Mark the entity as Modified
+        //}
         public void Update(T entity)
         {
             entity.DegistirmeTarihi = DateTime.Now;
-            dbSet.Entry(entity).Property(x => x.Id).IsModified = false;
-            dbSet.Attach(entity);  // Attach to DbContext
-            dbSet.Entry(entity).State = EntityState.Modified;
-            dbSet.Update(entity);  // Mark the entity as Modified
+            dbSet.Update(entity);
+        }
+        public async Task UpdateAsync(T entity)
+        {
+            entity.DegistirmeTarihi = DateTime.Now;
+            dbSet.Update(entity);
+            await Task.CompletedTask;
         }
 
         //async methods

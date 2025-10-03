@@ -20,6 +20,21 @@ namespace Jenga.DataAccess.Repositories.Menu
             _db.SaveChanges();
         }
 
+        public async Task<List<MenuItem>> GetAllAsync(CancellationToken cancellationToken = default)
+        {
+            var result = await _db.MenuItem_Table.ToListAsync(cancellationToken);
+            return result;
+        }
+        public async Task<MenuItem?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+        {
+            return await _db.Set<MenuItem>()
+                                 .AsNoTracking()
+                                 .FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
+        }
+        public async Task AddAsync(MenuItem item, CancellationToken cancellationToken = default)
+        {
+            await _db.Set<MenuItem>().AddAsync(item, cancellationToken);
+        }
 
     }
 

@@ -15,6 +15,7 @@ namespace Jenga.DataAccess.Repositories.IRepository
         void Update(T entity); //SB
         //async interfaces //SB
         Task AddAsync(T entity);
+        Task UpdateAsync(T entity);
         Task<T?> GetAsync(int id);
         Task<IEnumerable<T>> GetAllAsync();
         Task<T?> GetFirstOrDefaultAsync(Expression<Func<T, bool>> filter, string? includeProperties = null, bool trackChanges = true);

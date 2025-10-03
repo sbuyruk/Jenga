@@ -1,0 +1,26 @@
+﻿@page "/inventory/material-category-manager"
+@rendermode InteractiveServer
+@using Jenga.BlazorUI.Components.Inventory
+@using Jenga.DataAccess.Services.Inventory
+@using Jenga.Models.Inventory
+@inject IMaterialCategoryService MaterialCategoryService
+@inject IJSRuntime JS
+
+<h3>Malzeme Kategori Yönetimi</h3>
+<MaterialCategoryListComponent Categories="@categories" />
+
+@code {
+    private List<MaterialCategory> categories = new();
+    private bool _dataLoaded;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_dataLoaded)
+        {
+            categories = await MaterialCategoryService.GetAllAsync();
+            _dataLoaded = true;
+            StateHasChanged();
+            await JS.InvokeVoidAsync("initMaterialCategoryTableWithExport");
+        }
+    }
+}

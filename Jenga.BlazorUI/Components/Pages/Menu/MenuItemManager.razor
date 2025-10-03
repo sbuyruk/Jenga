@@ -1,71 +1,19 @@
 ﻿@page "/menu/menu-item-manager"
 @rendermode InteractiveServer
+@using Jenga.BlazorUI.Components.Menus
+@using Jenga.DataAccess.Services.Menu
 @using Jenga.Models.Common
-@using Jenga.DataAccess.Repositories
-@using Jenga.DataAccess.Repositories.IRepository
-@using Jenga.BlazorUI.Services.Menu
-@inject IUnitOfWork UnitOfWork
-@inject IMenuService MenuService
+@using Jenga.Utility.Error
+@inject IMenuItemService MenuItemService
+@inject IErrorService ErrorService
+@inject IJSRuntime JS
 
-<h3>MenuItem Yönetimi</h3>
-<div class="menu-form">
-    <label>Başlık:</label>
-    <input type="text" @bind="NewItem.Title" />
-
-    <label>URL:</label>
-    <input type="text" @bind="NewItem.Url" />
-
-    <label>Görünür mü:</label>
-    <input type="checkbox" @bind="NewItem.IsVisible" />
-
-    <label>Üst Menü:</label>
-    <select @bind="NewItem.ParentId">
-        <option value="">-- Seçiniz --</option>
-        @foreach (var menu in ExistingItems)
-        {
-            <option value="@menu.Id">@menu.Title</option>
-        }
-    </select>
-
-    @* <button @onclick="CreateMenuItem">Oluştur</button> *@
-    <button @onclick="async () => await CreateMenuItem()">Oluştur</button>
-    <button type="button" @onclick="async () => await CreateMenuItem()">Oluştur 2</button>
-</div>
-
-<hr />
-
-<h5>Mevcut Menü Öğeleri</h5>
-<table class="table">
-    <thead>
-        <tr>
-            <th>Başlık</th>
-            <th>URL</th>
-            <th>İkon</th>
-            <th>Görünür</th>
-            <th>Üst Menü</th>
-            <th>İşlemler</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in ExistingItems)
-        {
-            <tr>
-                <td>@item.Title</td>
-                <td>@item.Url</td>
-                <td>@(item.IsVisible == true ? "✔" : "❌")</td>
-                <td>@ExistingItems.FirstOrDefault(m => m.Id == item.ParentId)?.Title</td>
-                <td>
-                    <button @onclick="() => EditItem(item)">Düzenle</button>
-                    <button @onclick="() => DeleteItem(item.Id)">Sil</button>
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
+<h3>Menü Yönetimi</h3>
+<MenuItemListComponent MenuItems="@menuItems" />
 
 @code {
-    private MenuItem NewItem = new();
-    private IEnumerable<MenuItem> ExistingItems = new List<MenuItem>();
+    private List<MenuItem> menuItems = new();
+
 
     private bool _dataLoaded;
 
@@ -73,41 +21,10 @@
     {
         if (firstRender && !_dataLoaded)
         {
-            ExistingItems = await MenuService.GetAllAsync();
+            menuItems = await MenuItemService.GetAllAsync();
             _dataLoaded = true;
             StateHasChanged();
-        }
-    }
-
-    private async Task CreateMenuItem()
-    {
-        await UnitOfWork.MenuItem.AddAsync(NewItem);
-        await UnitOfWork.CommitAsync();
-
-        NewItem = new();
-        ExistingItems = (await UnitOfWork.MenuItem.GetAllAsync()).ToList();
-    }
-
-    private void EditItem(MenuItem item)
-    {
-        NewItem = new MenuItem
-            {
-                Id = item.Id,
-                Title = item.Title,
-                Url = item.Url,
-                IsVisible = item.IsVisible,
-                ParentId = item.ParentId
-            };
-    }
-
-    private async Task DeleteItem(int id)
-    {
-        var item = await UnitOfWork.MenuItem.GetAsync(id);
-        if (item is not null)
-        {
-            UnitOfWork.MenuItem.Remove(item);
-            await UnitOfWork.CommitAsync();
-            ExistingItems = (await UnitOfWork.MenuItem.GetAllAsync()).ToList();
+            await JS.InvokeVoidAsync("initDataTable");
         }
     }
 }

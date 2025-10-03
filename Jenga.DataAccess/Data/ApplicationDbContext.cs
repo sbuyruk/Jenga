@@ -1,6 +1,7 @@
 ﻿using Jenga.Models.Common;
 using Jenga.Models.DYS;
 using Jenga.Models.IKYS;
+using Jenga.Models.Inventory;
 using Jenga.Models.MTS;
 using Jenga.Models.NBYS;
 using Jenga.Models.Ortak;
@@ -22,6 +23,17 @@ namespace Jenga.DataAccess.Data
         public DbSet<PersonelRol> PersonelRol_Table{ get; set; }
         public DbSet<RolMenu> RolMenu_Table{ get; set; }
         public DbSet<PersonelMenu> PersonelMenuleri { get; set; }
+        //Inventory
+        public DbSet<Material> Material_Table { get; set; }
+        public DbSet<MaterialCategory> MaterialCategory_Table { get; set; }
+        public DbSet<MaterialBrand> MaterialBrand_Table { get; set; }
+        public DbSet<MaterialModel> MaterialModel_Table { get; set; }
+        public DbSet<Location> Location_Table { get; set; }
+        public DbSet<MaterialInventory> MaterialInventory_Table { get; set; }
+        public DbSet<MaterialMovement> MaterialMovement_Table { get; set; }
+        public DbSet<MaterialAssignment> MaterialAssignment_Table { get; set; }
+        public DbSet<MaterialExit> MaterialExit_Table { get; set; }
+
         //IKYS
         public DbSet<Personel> Personel_Table { get; set; }
         public DbSet<PersonelMenu> PersonelMenu_Table { get; set; }

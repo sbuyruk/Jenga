@@ -1,0 +1,30 @@
+﻿@page "/test/menuler"
+@rendermode InteractiveServer
+@using Jenga.BlazorUI.Components.Menus
+@using Jenga.BlazorUI.Services.Menu
+@using Jenga.DataAccess.Services.Menu
+@using Jenga.Models.Common
+@using Jenga.Utility.Error
+@inject IMenuService MenuService
+@inject IErrorService ErrorService
+@inject IJSRuntime JS
+
+<MenuItemListComponent MenuItems="@menuItems" />
+
+@code {
+    private List<MenuItem> menuItems = new();
+
+
+    private bool _dataLoaded;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_dataLoaded)
+        {
+            menuItems = await MenuService.GetAllAsync();
+            _dataLoaded = true;
+            StateHasChanged();
+            await JS.InvokeVoidAsync("initCustomDataTable");
+        }
+    }
+}

@@ -1,0 +1,84 @@
+﻿@using Jenga.BlazorUI.Components.Shared
+@using Jenga.Models.Common
+@using Jenga.Models.IKYS
+@using Jenga.Models.Sistem
+@inject IJSRuntime JS
+
+<h3>MenuItemEditModal</h3>
+
+@if (IsOpen)
+{
+    <div class="modal-backdrop show"></div>
+    <div class="modal show d-block" tabindex="-1" style="display:block;">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <EditForm Model="@MenuItem" OnValidSubmit="HandleValidSubmit">
+                    <div class="modal-header">
+                        <h5 class="modal-title">@((MenuItem.Id == 0) ? "Menü Ekle" : "Menü Düzenle")</h5>
+                        <button type="button" class="btn-close" @onclick="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col">
+                                <div class="mb-3">
+                                    <label>Başlık</label>
+                                    <InputText class="form-control" @bind-Value="MenuItem.Title" />
+                                </div>
+                                <div class="mb-3">
+                                    <label>Url</label>
+                                    <InputText class="form-control" @bind-Value="MenuItem.Url" />
+                                </div>
+                                <div class="mb-3">
+                                    <label>Sıra</label>
+                                    <InputNumber class="form-control" @bind-Value="MenuItem.DisplayOrder" />
+                                </div>
+
+                                <div class="mb-3">
+                                    <label>Üst Menü</label>
+                                    <select class="form-select" @bind="MenuItem.ParentId">
+                                        <option value="">-- Üst Menü Seçin --</option>
+                                        @foreach (var item in AllMenuItems.Where(x => x.Id != MenuItem.Id))
+                                        {
+                                            <option value="@item.Id">@item.Title</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        
+               
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">Kaydet</button>
+                        <button type="button" class="btn btn-secondary" @onclick="Close">Kapat</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public MenuItem MenuItem { get; set; } = new();
+    [Parameter] public List<MenuItem> AllMenuItems { get; set; } = new(); // Tüm menüler parenttan gelmeli
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<MenuItem> OnSave { get; set; }
+    [Parameter] public bool IsOpen { get; set; }
+
+    private async Task HandleValidSubmit()
+    {
+        await OnSave.InvokeAsync(MenuItem);
+        await Close();
+    }
+
+    private async Task Close()
+    {
+        IsOpen = false;
+        if (OnClose.HasDelegate)
+            await OnClose.InvokeAsync();
+    }
+
+
+}

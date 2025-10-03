@@ -1,9 +1,11 @@
 ﻿using Jenga.DataAccess.Data;
 using Jenga.DataAccess.Repositories.DYS;
 using Jenga.DataAccess.Repositories.IKYS;
+using Jenga.DataAccess.Repositories.Inventory;
 using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.DataAccess.Repositories.IRepository.DYS;
 using Jenga.DataAccess.Repositories.IRepository.IKYS;
+using Jenga.DataAccess.Repositories.IRepository.Inventory;
 using Jenga.DataAccess.Repositories.IRepository.Menu;
 using Jenga.DataAccess.Repositories.IRepository.MTS;
 using Jenga.DataAccess.Repositories.IRepository.NBYS;
@@ -35,7 +37,16 @@ namespace Jenga.DataAccess.Repositories
             Rol = new RolRepository(_context);
             RolMenu = new RolMenuRepository(_context);
             PersonelRol = new PersonelRolRepository(_context);
-
+            // Inventory
+            Material = new MaterialRepository(_context);
+            MaterialCategory = new MaterialCategoryRepository(_context);
+            MaterialBrand = new MaterialBrandRepository(_context);
+            MaterialModel = new MaterialModelRepository(_context);
+            Location = new LocationRepository(_context);
+            MaterialInventory = new MaterialInventoryRepository(_context);
+            MaterialMovement = new MaterialMovementRepository(_context);
+            MaterialAssignment = new MaterialAssignmentRepository(_context);
+            MaterialExit = new MaterialExitRepository(_context);
             //MTS
             DepoTanim = new DepoTanimRepository(_context);
             KaynakTanim = new KaynakTanimRepository(_context);
@@ -93,13 +104,23 @@ namespace Jenga.DataAccess.Repositories
             MalzemeHareket = new MalzemeHareketRepository(_context);
             Zimmet = new ZimmetRepository(_context);
         }
-
+        
         //Common
         public IMenuItemRepository MenuItem { get; private set; }
         public IRolRepository Rol { get; private set; }
         public IRolMenuRepository RolMenu { get; private set; }
         public IPersonelRolRepository PersonelRol { get; private set; }
 
+        //Inventory
+        public IMaterialRepository Material { get; private set; }
+        public IMaterialCategoryRepository MaterialCategory { get; private set; }
+        public IMaterialBrandRepository MaterialBrand { get; private set; }
+        public IMaterialModelRepository MaterialModel { get; private set; }
+        public ILocationRepository Location { get; private set; }
+        public IMaterialInventoryRepository MaterialInventory { get; private set; }
+        public IMaterialMovementRepository MaterialMovement { get; private set; }
+        public IMaterialAssignmentRepository MaterialAssignment { get; private set; }
+        public IMaterialExitRepository MaterialExit { get; private set; }
         //MTS
         public IDepoTanimRepository DepoTanim { get; private set; }
         public IKaynakTanimRepository KaynakTanim { get; private set; }

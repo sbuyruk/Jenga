@@ -1,0 +1,133 @@
+﻿@using Jenga.Models.Inventory
+@using Jenga.DataAccess.Services.Inventory
+@using Jenga.Utility.Modal
+@using Jenga.Utility.Toast
+@inject IToastService ToastService
+@inject IModalService ModalService
+@inject IMaterialService MaterialService
+@inject IMaterialCategoryService MaterialCategoryService
+
+<div class="d-flex justify-content-end mb-2">
+    <button class="btn btn-success" @onclick="OpenNewMaterialModal" type="button">
+        <i class="bi bi-plus-lg"></i> Yeni Malzeme
+    </button>
+</div>
+
+@if (Materials?.Any() != true)
+{
+    <p>Malzeme bulunamadı.</p>
+}
+else
+{
+    <table class="table table-striped display" id="MaterialListTable">
+        <thead>
+            <tr>
+                <th>Ad</th>
+                <th>Kategori</th>
+                <th>Marka</th>
+                <th>Model</th>
+                <th>Birim</th>
+                <th>Varlık mı</th>
+                <th>Açıklama</th>
+                <th>İşlemler</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var mat in Materials)
+            {
+                <tr>
+                    <td>@mat.MaterialName</td>
+                    <td>
+                        @{
+                            var category = Categories.FirstOrDefault(x => x.Id == mat.CategoryId);
+                        }
+                        @category?.CategoryName
+                    </td>
+                    <td>@mat.BrandId</td>
+                    <td>@mat.ModelId</td>
+                    <td>@mat.Unit</td>
+                    <td>@(mat.IsAsset ? "Evet" : "Hayır")</td>
+                    <td>@mat.Aciklama</td>
+                    <td>
+                        <button class="btn btn-primary me-2" @onclick="() => OnEditClicked(mat)">Düzenle</button>
+                        <button class="btn btn-danger" @onclick="() => OnDeleteClicked(mat)">Sil</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (showEditModal && selectedMaterial != null)
+{
+    <MaterialEditModal Material="@selectedMaterial"
+                      IsOpen="true"
+                      OnSave="HandleSave"
+                      OnClose="HideModal" />
+}
+
+@code {
+    [Parameter] public List<Material> Materials { get; set; } = new();
+    [Parameter] public List<MaterialCategory> Categories { get; set; } = new();
+    private Material? selectedMaterial { get; set; }
+    private bool showEditModal = false;
+
+    private async Task OnEditClicked(Material material)
+    {
+        selectedMaterial = await MaterialService.GetByIdWithRelationsAsync(material.Id);
+        showEditModal = true;
+    }
+    private async void HandleSave()
+    {
+        if (selectedMaterial != null)
+        {
+            if (selectedMaterial.Id == 0)
+            {
+                var saved = await MaterialService.AddAsync(selectedMaterial);
+                if (saved)
+                {
+                    Materials.Add(selectedMaterial);
+                }
+            }
+            else
+            {
+                await MaterialService.UpdateAsync(selectedMaterial);
+            }
+            showEditModal = false;
+            StateHasChanged();
+        }
+    }
+    private async Task OnDeleteClicked(Material material)
+    {
+        ModalService.ShowConfirmation(
+            "Silme Onayı",
+            $"'{material.MaterialName}' malzemesini silmek istediğinizden emin misiniz?",
+            async result =>
+            {
+                if (result)
+                {
+                    var deleted = await MaterialService.DeleteAsync(material);
+                    if (deleted)
+                    {
+                        ToastService.ShowToast($"{material.MaterialName} silindi", ToastType.Success, 3000);
+                        Materials.Remove(material);
+                        StateHasChanged();
+                    }
+                    else
+                    {
+                        ToastService.ShowToast($"Silme işlemi başarısız oldu", ToastType.Error, 3000);
+                    }
+                }
+            });
+    }
+    private void HideModal()
+    {
+        selectedMaterial = null;
+        showEditModal = false;
+    }
+    private async Task OpenNewMaterialModal()
+    {
+        selectedMaterial = new Material();
+        showEditModal = true;
+    }
+}

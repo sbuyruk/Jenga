@@ -1,0 +1,122 @@
+﻿@using Jenga.Models.Inventory
+@using Jenga.DataAccess.Services.Inventory
+@using Jenga.Utility.Modal
+@using Jenga.Utility.Toast
+@inject IToastService ToastService
+@inject IModalService ModalService
+@inject IMaterialModelService MaterialModelService
+
+<div class="d-flex justify-content-end mb-2">
+    <button class="btn btn-success" @onclick="OpenNewModelModal" type="button">
+        <i class="bi bi-plus-lg"></i> Yeni Model
+    </button>
+</div>
+
+@if (Models?.Any() != true)
+{
+    <p>Model bulunamadı.</p>
+}
+else
+{
+    <table class="table table-striped display" id="MaterialModelListTable">
+        <thead>
+            <tr>
+                <th>Ad</th>
+                <th>Marka Id</th>
+                <th>Açıklama</th>
+                <th>İşlemler</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var model in Models)
+            {
+                <tr>
+                    <td>@model.ModelName</td>
+                    <td>@model.BrandId</td>
+                    <td>@model.Aciklama</td>
+                    <td>
+                        <button class="btn btn-primary me-2" @onclick="() => OnEditClicked(model)">Düzenle</button>
+                        <button class="btn btn-danger" @onclick="() => OnDeleteClicked(model)">Sil</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (showEditModal && selectedModel != null)
+{
+    <MaterialModelEditModal Model="@selectedModel"
+                            IsOpen="true"
+                            OnSave="HandleSave"
+                            OnClose="HideModal" />
+}
+
+@code {
+    [Parameter] public List<MaterialModel> Models { get; set; } = new();
+    private MaterialModel? selectedModel { get; set; }
+    private bool showEditModal = false;
+
+    // Remove 'async' since there is no await, or add an await if needed.
+    private void OnEditClicked(MaterialModel model)
+    {
+        selectedModel = model;
+        showEditModal = true;
+    }
+    private async void HandleSave()
+    {
+        if (selectedModel != null)
+        {
+            if (selectedModel.Id == 0)
+            {
+                var saved = await MaterialModelService.AddAsync(selectedModel);
+                if (saved)
+                {
+                    Models.Add(selectedModel);
+                }
+            }
+            else
+            {
+                await MaterialModelService.UpdateAsync(selectedModel);
+            }
+            showEditModal = false;
+            StateHasChanged();
+        }
+    }
+    private async Task OnDeleteClicked(MaterialModel model)
+    {
+        ModalService.ShowConfirmation(
+            "Silme Onayı",
+            $"'{model.ModelName}' modelini silmek istediğinizden emin misiniz?",
+            async result =>
+            {
+                if (result)
+                {
+                    var deleted = await MaterialModelService.DeleteAsync(model);
+                    if (deleted)
+                    {
+                        ToastService.ShowToast($"{model.ModelName} silindi", ToastType.Success, 3000);
+                        Models.Remove(model);
+                        StateHasChanged();
+                    }
+                    else
+                    {
+                        ToastService.ShowToast($"Silme işlemi başarısız oldu", ToastType.Error, 3000);
+                    }
+                }
+            
+            }
+        );
+        
+    }
+    private void HideModal()
+    {
+        selectedModel = null;
+        showEditModal = false;
+    }
+    private async Task OpenNewModelModal()
+    {
+        selectedModel = new MaterialModel();
+        showEditModal = true;
+    }
+}

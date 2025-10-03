@@ -23,7 +23,7 @@ namespace Jenga.Models.Common
         public bool? IsVisible { get; set; } = true;
 
         [NotMapped]
-        public List<MenuItem>? Children { get; set; }
+        public List<MenuItem>? Children { get; set; } = [];//initialized
         [NotMapped]
         public bool IsExpanded { get; set; }
         [NotMapped]

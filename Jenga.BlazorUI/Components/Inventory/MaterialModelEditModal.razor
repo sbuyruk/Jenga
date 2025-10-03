@@ -1,0 +1,42 @@
+﻿@using Jenga.Models.Inventory
+
+@if (IsOpen)
+{
+    <div class="modal show" tabindex="-1" style="display: block;">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Model Düzenle</h5>
+                    <button type="button" class="close" @onclick="OnClose" aria-label="Kapat">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-2">
+                        <label>Ad</label>
+                        <input class="form-control" @bind="Model.ModelName" />
+                    </div>
+                    <div class="mb-2">
+                        <label>Marka Id</label>
+                        <input class="form-control" @bind="Model.BrandId" type="number" />
+                    </div>
+                    <div class="mb-2">
+                        <label>Açıklama</label>
+                        <input class="form-control" @bind="Model.Aciklama" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" @onclick="OnSave">Kaydet</button>
+                    <button class="btn btn-secondary" @onclick="OnClose">Kapat</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public MaterialModel Model { get; set; }
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback OnSave { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+}

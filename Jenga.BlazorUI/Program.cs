@@ -3,6 +3,7 @@ using Jenga.BlazorUI.Services.Menu;
 using Jenga.DataAccess.Data;
 using Jenga.DataAccess.Repositories;
 using Jenga.DataAccess.Repositories.IRepository;
+using Jenga.DataAccess.Services.Inventory;
 using Jenga.DataAccess.Services.Menu;
 using Jenga.Utility.Error;
 using Jenga.Utility.Logging;
@@ -38,6 +39,7 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 /*SB Menu Servisi*/
 builder.Services.AddScoped<IMenuService, MenuService>();
+builder.Services.AddScoped<IMenuItemService, MenuItemService>();
 builder.Services.AddScoped<MenuStateService>();
 
 builder.Services.AddRazorComponents()
@@ -53,11 +55,17 @@ builder.Services.AddScoped<IErrorService, ErrorService>();
 builder.Services.AddScoped<IModalService, ModalService>();
 //Rol Service
 builder.Services.AddScoped<IRolService, RolService>();
+//inventory services
+builder.Services.AddScoped<IMaterialService, MaterialService>();
+builder.Services.AddScoped<IMaterialCategoryService, MaterialCategoryService>();
+builder.Services.AddScoped<IMaterialBrandService, MaterialBrandService>();
+builder.Services.AddScoped<IMaterialModelService, MaterialModelService>();
+
 //DetailedErrors ayarını aç
 builder.Services.AddServerSideBlazor()
     .AddCircuitOptions(options => { options.DetailedErrors = true; });
-var app = builder.Build();
 
+var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {

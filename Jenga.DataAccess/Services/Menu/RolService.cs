@@ -59,9 +59,8 @@ namespace Jenga.DataAccess.Services.Menu
             return await _unitOfWork.SaveAsync(cancellationToken);
         }
 
-        public async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default)
+        public async Task<bool> DeleteAsync(Rol rol, CancellationToken cancellationToken = default)
         {
-            var rol = await _unitOfWork.Rol.GetByIdAsync(id, cancellationToken);
             if (rol is null) return false;
 
             _unitOfWork.Rol.Remove(rol);

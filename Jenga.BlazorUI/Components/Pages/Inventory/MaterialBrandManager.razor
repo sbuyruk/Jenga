@@ -1,0 +1,30 @@
+﻿@page "/inventory/material-brand-manager"
+@rendermode InteractiveServer
+@using Jenga.BlazorUI.Components.Inventory
+@using Jenga.DataAccess.Services.Inventory
+@using Jenga.Models.Inventory
+@inject IMaterialBrandService MaterialBrandService
+@inject IMaterialCategoryService MaterialCategoryService
+@inject IJSRuntime JS
+
+<h3>Malzeme Marka Yönetimi</h3>
+<MaterialBrandListComponent Brands="@brands"
+                           Categories="@categories" />
+
+@code {
+    private List<MaterialBrand> brands = new();
+    private List<MaterialCategory> categories = new();
+    private bool _dataLoaded;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_dataLoaded)
+        {
+            brands = await MaterialBrandService.GetAllAsync();
+            categories = await MaterialCategoryService.GetAllAsync();
+            _dataLoaded = true;
+            StateHasChanged();
+            await JS.InvokeVoidAsync("initMaterialBrandTableWithExport");
+        }
+    }
+}

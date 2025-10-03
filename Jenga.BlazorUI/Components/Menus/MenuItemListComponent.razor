@@ -1,0 +1,159 @@
+﻿@using Jenga.DataAccess.Repositories.IRepository
+@using Jenga.DataAccess.Services.Menu
+@using Jenga.Models
+@using Jenga.Models.Common
+@using Jenga.Utility.Modal
+@using Jenga.Utility.Toast
+@inject IToastService ToastService
+@inject IModalService ModalService
+@inject IMenuItemService MenuItemService
+@inject IUnitOfWork UnitOfWork
+
+
+<div class="d-flex justify-content-end mb-2">
+    <button class="btn btn-success" @onclick="OpenNewMenuModal" type="button">
+        <i class="bi bi-plus-lg"></i> Yeni Menü
+    </button>
+</div>
+
+@if (MenuItems?.Any() != true)
+{
+    <p>Menü bulunamadı.</p>
+}
+else
+{
+    <table class="table table-striped display" id="DataTable">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Başlık</th>
+                <th>Url</th>
+                <th>Üst Menüsü</th>
+                <th>Görünür</th>
+                <th>İşlemler</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in MenuItems)
+            {
+                <tr>
+                    <td>@item.Id</td>
+                    <td>@item.Title</td>
+                    <td>@item.Url</td>
+                    <td>
+                        @{
+                            var parent = MenuItems.FirstOrDefault(m => m.Id == item.ParentId);
+                        }
+                        @parent?.Title
+                    </td>
+                    <td>@(item.IsVisible == true ? "Evet" : "Hayır")</td>
+                    <td>
+                        <button class="btn btn-primary me-2" @onclick="() => OnEditClicked(item)">Düzenle</button>
+                        <button class="btn btn-danger" @onclick="() => OnDeleteClicked(item)">Sil</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (showEditModal && selectedMenuItem != null)
+{
+    <MenuItemEditModal MenuItem="@selectedMenuItem"
+                       IsOpen="true"
+                       AllMenuItems="@MenuItems"
+                       OnSave="HandleSave"
+                       OnClose="HideModal" />
+}
+
+@code {
+    [Parameter] public List<MenuItem> MenuItems { get; set; } = new();
+    private MenuItem? selectedMenuItem { get; set; }
+    private bool showEditModal = false;
+
+    private async Task OnEditClicked(MenuItem item)
+    {
+        selectedMenuItem = item;
+        showEditModal = true;
+    }
+
+    private void OnDeleteClicked(MenuItem item)
+    {
+        if (item == null)
+            return;
+
+        var hasChildren = MenuItems.Any(m => m.ParentId == item.Id);
+        if (hasChildren)
+        {
+            var childTitles = MenuItems
+                .Where(m => m.ParentId == item.Id)
+                .Select(m => m.Title)
+                .Where(title => !string.IsNullOrEmpty(title))
+                .ToList();
+
+            var childList = string.Join(", ", childTitles);
+            var message = "Önce alt menüler silinmelidir.";
+            if (childTitles.Count > 0)
+            {
+                message += $" Alt menüler: {childList}";
+            }
+
+            ToastService.ShowToast(message, ToastType.Error,5000);
+            return;
+        }
+        ModalService.ShowConfirmation(
+            "Silme Onayı",
+            $"'{item.Title}' menüsünü silmek istediğinizden emin misiniz?",
+            async result =>
+            {
+                if (result)
+                {
+                    var deleted = await MenuItemService.DeleteAsync(item);
+                    if (deleted)
+                    {
+                        ToastService.ShowToast($"{item.Title} silindi", ToastType.Success, 3000);
+                        MenuItems.Remove(item);
+                        StateHasChanged();
+                    }
+                    else
+                    {
+                        ToastService.ShowToast($"Silme işlemi başarısız oldu", ToastType.Error, 3000);
+                    }
+                }
+            });
+    }
+
+    private async void HandleSave()
+    {
+        if (selectedMenuItem != null)
+        {
+            if (selectedMenuItem.Id == 0)
+            {
+                // Yeni Menü ekle
+
+                ToastService.ShowToast(selectedMenuItem.Title + " eklendi", ToastType.Success, 3000);
+                await MenuItemService.AddAsync(selectedMenuItem);
+            }
+            else
+            {
+                // Mevcut Menü güncelle
+                ToastService.ShowToast($"{selectedMenuItem.Title} güncellendi", ToastType.Success, 3000);
+                await MenuItemService.UpdateAsync(selectedMenuItem);
+            }
+            showEditModal = false;
+            StateHasChanged();
+        }
+    }
+
+    private void HideModal()
+    {
+        selectedMenuItem = null;
+        showEditModal = false;
+    }
+
+    private void OpenNewMenuModal()
+    {
+        selectedMenuItem = new MenuItem();
+        showEditModal = true;
+    }
+}
