@@ -6,29 +6,23 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Model Düzenle</h5>
+                    <h5 class="modal-title">Birim Düzenle</h5>
                     <button type="button" class="close" @onclick="OnClose" aria-label="Kapat">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-2">
-                        <label>Ad</label>
-                        <input class="form-control" @bind="Model.ModelName" />
+                        <label>Birim Adı</label>
+                        <input class="form-control" @bind="MaterialUnit!.Name" required />
                     </div>
                     <div class="mb-2">
-                        <label>Marka</label>
-                        <select class="form-select form-control" @bind="Model.BrandId">
-                            <option value="">Seçiniz</option>
-                            @foreach (var brand in Brands)
-                            {
-                                <option value="@brand.Id">@brand.BrandName</option>
-                            }
-                        </select>
+                        <label>Sembol</label>
+                        <input class="form-control" @bind="MaterialUnit!.Symbol" />
                     </div>
                     <div class="mb-2">
                         <label>Açıklama</label>
-                        <input class="form-control" @bind="Model.Aciklama" />
+                        <textarea class="form-control" @bind="MaterialUnit!.Aciklama" rows="4"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -41,9 +35,8 @@
 }
 
 @code {
-    [Parameter] public MaterialModel Model { get; set; }
+    [Parameter] public MaterialUnit? MaterialUnit { get; set; }
     [Parameter] public bool IsOpen { get; set; }
     [Parameter] public EventCallback OnSave { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
-    [Parameter] public List<MaterialBrand> Brands { get; set; } = new();
 }

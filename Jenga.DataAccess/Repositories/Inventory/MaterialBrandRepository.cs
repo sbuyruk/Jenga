@@ -13,21 +13,6 @@ namespace Jenga.DataAccess.Repositories.Inventory
             _db = db;
         }
 
-        public async Task<List<MaterialBrand>> GetAllAsync(CancellationToken cancellationToken = default)
-        {
-            return await _db.MaterialBrand_Table.ToListAsync(cancellationToken);
-        }
 
-        public async Task<MaterialBrand?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
-        {
-            return await _db.MaterialBrand_Table
-                .AsNoTracking()
-                .FirstOrDefaultAsync(b => b.Id == id, cancellationToken);
-        }
-
-        public async Task AddAsync(MaterialBrand brand, CancellationToken cancellationToken = default)
-        {
-            await _db.MaterialBrand_Table.AddAsync(brand, cancellationToken);
-        }
     }
 }

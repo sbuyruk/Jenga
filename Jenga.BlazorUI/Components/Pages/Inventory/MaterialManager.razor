@@ -5,14 +5,26 @@
 @using Jenga.Models.Inventory
 @inject IMaterialService MaterialService
 @inject IMaterialCategoryService MaterialCategoryService
+@inject IMaterialBrandService MaterialBrandService
+@inject IMaterialModelService MaterialModelService
+@inject IMaterialUnitService MaterialUnitService
 @inject IJSRuntime JS
 
 <h3>Malzeme Yönetimi</h3>
-<MaterialListComponent Materials="@materials" Categories="@categories" />
+<MaterialListComponent 
+    Materials="@materials" 
+    Categories="@categories" 
+    Brands="@brands" 
+    Models="@models"
+    MaterialUnits="@units"/>
 
 @code {
     private List<Material> materials = new();
     private List<MaterialCategory> categories = new();
+    private List<MaterialBrand> brands = new();
+    private List<MaterialModel> models = new();
+    private List<MaterialUnit> units = new();
+
     private bool _dataLoaded;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -21,6 +33,9 @@
         {
             materials = await MaterialService.GetAllAsync();
             categories = await MaterialCategoryService.GetAllAsync();
+            brands = await MaterialBrandService.GetAllAsync();
+            models = await MaterialModelService.GetAllAsync();
+            units = await MaterialUnitService.GetAllAsync();
             _dataLoaded = true;
             StateHasChanged();
             await JS.InvokeVoidAsync("initMaterialTableWithExport");

@@ -1,4 +1,5 @@
 ﻿using Jenga.Models.Inventory;
+using System.Linq.Expressions;
 
 namespace Jenga.DataAccess.Services.Inventory
 {
@@ -9,5 +10,6 @@ namespace Jenga.DataAccess.Services.Inventory
         Task<bool> AddAsync(MaterialCategory category, CancellationToken cancellationToken = default);
         Task<bool> UpdateAsync(MaterialCategory category, CancellationToken cancellationToken = default);
         Task<bool> DeleteAsync(MaterialCategory category, CancellationToken cancellationToken = default);
+        Task<bool> AnyAsync(Expression<Func<MaterialCategory, bool>> predicate, CancellationToken cancellationToken = default);
     }
 }

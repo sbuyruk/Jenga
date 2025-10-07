@@ -1,0 +1,97 @@
+﻿@using Jenga.Models.Inventory
+@using Jenga.DataAccess.Services.Inventory
+@inject ILocationService LocationService
+
+<div class="d-flex justify-content-end mb-2">
+    <button class="btn btn-success" @onclick="OpenNewLocationModal" type="button">
+        <i class="bi bi-plus-lg"></i> Yeni Lokasyon
+    </button>
+</div>
+
+@if (Locations?.Any() != true)
+{
+    <p>Lokasyon bulunamadı.</p>
+}
+else
+{
+    <table class="table table-striped display" id="LocationListTable">
+        <thead>
+            <tr>
+                <th>Ad</th>
+                <th>Tür</th>
+                <th>İşlemler</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var loc in Locations)
+            {
+                <tr>
+                    <td>@loc.LocationName</td>
+                    <td>@loc.LocationType</td>
+                    <td>
+                        <button class="btn btn-primary me-2" @onclick="() => OnEditClicked(loc)">Düzenle</button>
+                        <button class="btn btn-danger" @onclick="() => OnDeleteClicked(loc)">Sil</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (showEditModal && selectedLocation != null)
+{
+    <LocationEditModal Location="@selectedLocation"
+                      IsOpen="true"
+                      OnSave="HandleSave"
+                      OnClose="HideModal" />
+}
+
+@code {
+    [Parameter] public List<Location> Locations { get; set; } = new();
+    private Location? selectedLocation { get; set; }
+    private bool showEditModal = false;
+
+    private Task OnEditClicked(Location location)
+    {
+        //TODO: MaterialInventory, MaterialAssignment ve MaterialMovement kontrolü ekle
+        selectedLocation = location;
+        showEditModal = true;
+        return Task.CompletedTask;
+    }
+    private async void HandleSave()
+    {
+        if (selectedLocation != null)
+        {
+            if (selectedLocation.Id == 0)
+            {
+                var saved = await LocationService.AddAsync(selectedLocation);
+                if (saved)
+                {
+                    Locations.Add(selectedLocation);
+                }
+            }
+            else
+            {
+                await LocationService.UpdateAsync(selectedLocation);
+            }
+            showEditModal = false;
+            StateHasChanged();
+        }
+    }
+    private async Task OnDeleteClicked(Location location)
+    {
+        await LocationService.DeleteAsync(location);
+        Locations.Remove(location);
+        StateHasChanged();
+    }
+    private void HideModal()
+    {
+        selectedLocation = null;
+        showEditModal = false;
+    }
+    private async Task OpenNewLocationModal()
+    {
+        selectedLocation = new Location();
+        showEditModal = true;
+    }
+}

@@ -4,13 +4,15 @@
 @using Jenga.DataAccess.Services.Inventory
 @using Jenga.Models.Inventory
 @inject IMaterialModelService MaterialModelService
+@inject IMaterialBrandService MaterialBrandService
 @inject IJSRuntime JS
 
 <h3>Malzeme Model Yönetimi</h3>
-<MaterialModelListComponent Models="@models" />
+<MaterialModelListComponent Models="@models" Brands="@brands" />
 
 @code {
     private List<MaterialModel> models = new();
+    private List<MaterialBrand> brands = new();
     private bool _dataLoaded;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -18,6 +20,7 @@
         if (firstRender && !_dataLoaded)
         {
             models = await MaterialModelService.GetAllAsync();
+            brands = await MaterialBrandService.GetAllAsync();
             _dataLoaded = true;
             StateHasChanged();
             await JS.InvokeVoidAsync("initMaterialModelTableWithExport");

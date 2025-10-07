@@ -1,0 +1,26 @@
+﻿@page "/inventory/location-manager"
+@rendermode InteractiveServer
+@using Jenga.BlazorUI.Components.Inventory
+@using Jenga.DataAccess.Services.Inventory
+@using Jenga.Models.Inventory
+@inject ILocationService LocationService
+@inject IJSRuntime JS
+
+<h3>Lokasyon Yönetimi</h3>
+<LocationListComponent Locations="@locations" />
+
+@code {
+    private List<Location> locations = new();
+    private bool _dataLoaded;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_dataLoaded)
+        {
+            locations = await LocationService.GetAllAsync();
+            _dataLoaded = true;
+            StateHasChanged();
+            await JS.InvokeVoidAsync("initLocationTableWithExport");
+        }
+    }
+}

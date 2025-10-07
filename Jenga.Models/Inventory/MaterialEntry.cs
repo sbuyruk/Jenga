@@ -3,23 +3,18 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Jenga.Models.Inventory
 {
-    [Table("MaterialInventory_Table")]
-    public class MaterialInventory : BaseModel
+    [Table("MaterialEntry_Table")]
+    public class MaterialEntry : BaseModel
     {
-        [Column("MaterialId")]
         public int MaterialId { get; set; }
-
-        [Column("LocationId")]
-        public int LocationId { get; set; }
-        [Column("MaterialUnitId")]
-        public int MaterialUnitId { get; set; }
-        [Column("Quantity")]
         public int Quantity { get; set; }
-
-        // Opsiyonel navigation property
+        public int MaterialUnitId { get; set; } 
+        public string? InvoiceNo { get; set; }
+        public DateTime EntryDate { get; set; }
+        public int LocationId { get; set; }
+        // Navigation properties (opsiyonel)
         // public Material? Material { get; set; }
         // public Location? Location { get; set; }
         // public MaterialUnit? MaterialUnit { get; set; }
     }
 }
-

@@ -17,20 +17,44 @@
                         <input class="form-control" @bind="Material.MaterialName" />
                     </div>
                     <div class="mb-2">
-                        <label>Kategori ID</label>
-                        <input class="form-control" @bind="Material.CategoryId" type="number" />
+                        <label>Kategori</label>
+                        <select class="form-select form-control" @bind="Material.CategoryId">
+                            <option value="">Seçiniz</option>
+                            @foreach (var cat in Categories)
+                            {
+                                <option value="@cat.Id">@cat.CategoryName</option>
+                            }
+                        </select>
                     </div>
                     <div class="mb-2">
-                        <label>Marka ID</label>
-                        <input class="form-control" @bind="Material.BrandId" type="number" />
+                        <label>Marka</label>
+                        <select class="form-select form-control" @bind="Material.BrandId">
+                            <option value="">Seçiniz</option>
+                            @foreach (var brand in Brands)
+                            {
+                                <option value="@brand.Id">@brand.BrandName</option>
+                            }
+                        </select>
                     </div>
                     <div class="mb-2">
-                        <label>Model ID</label>
-                        <input class="form-control" @bind="Material.ModelId" type="number" />
+                        <label>Model</label>
+                        <select class="form-select form-control" @bind="Material.ModelId">
+                            <option value="">Seçiniz</option>
+                            @foreach (var model in Models)
+                            {
+                                <option value="@model.Id">@model.ModelName</option>
+                            }
+                        </select>
                     </div>
                     <div class="mb-2">
                         <label>Birim</label>
-                        <input class="form-control" @bind="Material.Unit" />
+                        <select class="form-select" @bind="Material!.MaterialUnitId">
+                            <option value="">Birim seçiniz</option>
+                            @foreach (var unit in MaterialUnits)
+                            {
+                                <option value="@unit.Id">@unit.Name (@unit.Symbol)</option>
+                            }
+                        </select>
                     </div>
                     <div class="mb-2">
                         <label>Varlık mı?</label>
@@ -52,7 +76,11 @@
 
 @code {
     [Parameter] public Material Material { get; set; }
+    [Parameter] public List<MaterialUnit> MaterialUnits { get; set; } = new();
     [Parameter] public bool IsOpen { get; set; }
     [Parameter] public EventCallback OnSave { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public List<MaterialCategory> Categories { get; set; } = new();
+    [Parameter] public List<MaterialBrand> Brands { get; set; } = new();
+    [Parameter] public List<MaterialModel> Models { get; set; } = new();
 }

@@ -5,6 +5,8 @@
 @inject IToastService ToastService
 @inject IModalService ModalService
 @inject IMaterialCategoryService MaterialCategoryService
+@inject IMaterialService MaterialService
+@inject IMaterialBrandService MaterialBrandService
 
 <div class="d-flex justify-content-end mb-2">
     <button class="btn btn-success" @onclick="OpenNewCategoryModal" type="button">
@@ -55,7 +57,7 @@ else
                               IsOpen="true"
                               OnSave="HandleSave"
                               OnClose="HideModal"
-                              ParentCategories="Categories.Where(x => x.Id != selectedCategory.Id).ToList()" />
+                              ParentCategories="Categories?.Where(x => x.Id != selectedCategory.Id).ToList()" />
 }
 
 @code {
@@ -91,9 +93,43 @@ else
     }
     private async Task OnDeleteClicked(MaterialCategory category)
     {
-        await MaterialCategoryService.DeleteAsync(category);
-        Categories.Remove(category);
-        StateHasChanged();
+        // Alt kategori kontrolü
+        if (category == null)
+            return;
+        var hasChildren = Categories.Any(m => m.ParentCategoryId == category.Id);
+        if (hasChildren)
+        {
+            var childTitles = Categories
+                .Where(m => m.ParentCategoryId == category.Id)
+                .Select(m => m.CategoryName)
+                .Where(title => !string.IsNullOrEmpty(title))
+                .ToList();
+
+            var childList = string.Join(", ", childTitles);
+            var message = "Önce alt kategoriler silinmelidir.";
+            if (childTitles.Count > 0)
+            {
+                message += $" Alt Kategoriler: {childList}";
+            }
+
+            ToastService.ShowToast(message, ToastType.Error, 5000);
+            return;
+        }
+        // Material kontrolü
+        var hasMaterial = await MaterialService.AnyAsync(m => m.CategoryId == category.Id);
+        if (hasMaterial)
+        {
+            ToastService.ShowToast("Bu kategoriye bağlı malzemeler var, önce onları silmelisiniz.", ToastType.Error, 5000);
+            return;
+        }
+        // Brand kontrolü yap
+        var hasBrand = await MaterialBrandService.AnyAsync(m => m.CategoryId == category.Id);
+        if (hasBrand)
+        {
+            ToastService.ShowToast("Bu kategoriye bağlı markalar var, önce onları silmelisiniz.", ToastType.Error, 5000);
+            return;
+        }
+
 
         ModalService.ShowConfirmation(
             "Silme Onayı",

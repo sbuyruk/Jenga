@@ -1,0 +1,42 @@
+﻿@page "/inventory/material-entry-manager"
+@rendermode InteractiveServer
+@using Jenga.BlazorUI.Components.Inventory
+@using Jenga.DataAccess.Services.Inventory
+@using Jenga.Models.Inventory
+@inject IMaterialEntryService MaterialEntryService
+@inject IMaterialService MaterialService
+@inject IMaterialUnitService MaterialUnitService
+@inject ILocationService LocationService
+@inject IJSRuntime JS
+
+<h3>Malzeme Girişleri</h3>
+<MaterialEntryListComponent 
+    MaterialEntries="@materialEntries" 
+    Materials="@materials"
+    Locations="@locations"
+    MaterialUnits="@materialUnits"
+ />
+
+@code {
+    private List<MaterialEntry> materialEntries = new();
+    private List<Material> materials = new();
+    private List<MaterialUnit> materialUnits = new();
+    private List<Location> locations = new();
+    private bool _dataLoaded;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_dataLoaded)
+        {
+            materialEntries = await MaterialEntryService.GetAllAsync();
+            materials = await MaterialService.GetAllAsync();
+            locations = await LocationService.GetAllAsync();
+            materialUnits = await MaterialUnitService.GetAllAsync();
+            _dataLoaded = true;
+            StateHasChanged();
+            await JS.InvokeVoidAsync("initMaterialEntryTableWithExport");
+        }
+    }
+
+ 
+}

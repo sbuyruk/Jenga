@@ -14,6 +14,8 @@ namespace Jenga.DataAccess.Repositories.IRepository
     {
         //Inventory
         IMaterialRepository Material { get; }
+        IMaterialUnitRepository MaterialUnit { get; }
+        IMaterialEntryRepository MaterialEntry { get; }
         IMaterialCategoryRepository MaterialCategory { get; }
         IMaterialBrandRepository MaterialBrand { get; }
         IMaterialModelRepository MaterialModel { get; }

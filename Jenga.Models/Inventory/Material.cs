@@ -21,8 +21,8 @@ namespace Jenga.Models.Inventory
         [Column("IsAsset")]
         public bool IsAsset { get; set; }
 
-        [Column("Unit")]
-        public string? Unit { get; set; }
+        [Column("MaterialUnitId")]
+        public int? MaterialUnitId { get; set; }
 
 
         // Navigation properties (isteğe bağlı, ekleyebilirsin)

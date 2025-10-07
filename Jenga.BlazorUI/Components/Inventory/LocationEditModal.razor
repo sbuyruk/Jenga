@@ -6,7 +6,7 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Model Düzenle</h5>
+                    <h5 class="modal-title">Lokasyon Düzenle</h5>
                     <button type="button" class="close" @onclick="OnClose" aria-label="Kapat">
                         <span aria-hidden="true">&times;</span>
                     </button>
@@ -14,21 +14,16 @@
                 <div class="modal-body">
                     <div class="mb-2">
                         <label>Ad</label>
-                        <input class="form-control" @bind="Model.ModelName" />
+                        <input class="form-control" @bind="Location.LocationName" />
                     </div>
                     <div class="mb-2">
-                        <label>Marka</label>
-                        <select class="form-select form-control" @bind="Model.BrandId">
-                            <option value="">Seçiniz</option>
-                            @foreach (var brand in Brands)
-                            {
-                                <option value="@brand.Id">@brand.BrandName</option>
-                            }
+                        <label>Tür</label>
+                        <select class="form-select" @bind="Location.LocationType">
+                            <option value="">Tür seçiniz</option>
+                            <option value="Depo">Depo</option>
+                            <option value="Oda">Oda</option>
+                            <option value="Kişi">Kişi</option>
                         </select>
-                    </div>
-                    <div class="mb-2">
-                        <label>Açıklama</label>
-                        <input class="form-control" @bind="Model.Aciklama" />
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -41,9 +36,8 @@
 }
 
 @code {
-    [Parameter] public MaterialModel Model { get; set; }
+    [Parameter] public Location Location { get; set; }
     [Parameter] public bool IsOpen { get; set; }
     [Parameter] public EventCallback OnSave { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
-    [Parameter] public List<MaterialBrand> Brands { get; set; } = new();
 }

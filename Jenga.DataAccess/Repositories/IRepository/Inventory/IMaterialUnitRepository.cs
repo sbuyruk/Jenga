@@ -2,7 +2,7 @@
 
 namespace Jenga.DataAccess.Repositories.IRepository.Inventory
 {
-    public interface IMaterialMovementRepository : IRepository<MaterialMovement>
+    public interface IMaterialUnitRepository : IRepository<MaterialUnit>
     {
 
     }

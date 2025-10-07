@@ -2,6 +2,7 @@
 using Jenga.DataAccess.Repositories.IRepository.Inventory;
 using Jenga.Models.Inventory;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 namespace Jenga.DataAccess.Repositories.Inventory
 {
@@ -13,23 +14,9 @@ namespace Jenga.DataAccess.Repositories.Inventory
             _db = db;
         }
 
-        public async Task<List<MaterialCategory>> GetAllAsync(CancellationToken cancellationToken = default)
+        public async Task<bool> AnyAsync(Expression<Func<MaterialCategory, bool>> predicate, CancellationToken cancellationToken = default)
         {
-            return await _db.MaterialCategory_Table
-                .AsNoTracking()
-                .ToListAsync(cancellationToken);
-        }
-
-        public async Task<MaterialCategory?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
-        {
-            return await _db.MaterialCategory_Table
-                .AsNoTracking()
-                .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
-        }
-
-        public async Task AddAsync(MaterialCategory category, CancellationToken cancellationToken = default)
-        {
-            await _db.MaterialCategory_Table.AddAsync(category, cancellationToken);
+            return await _db.Set<MaterialCategory>().AnyAsync(predicate, cancellationToken);
         }
     }
 }

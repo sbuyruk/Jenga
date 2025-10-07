@@ -1,6 +1,7 @@
 ﻿using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.DataAccess.Repositories.IRepository.Inventory;
 using Jenga.Models.Inventory;
+using System.Linq.Expressions;
 
 namespace Jenga.DataAccess.Services.Inventory
 {
@@ -38,6 +39,11 @@ namespace Jenga.DataAccess.Services.Inventory
             _unitOfWork.MaterialBrand.Remove(brand);
             await _unitOfWork.SaveAsync(cancellationToken);
             return true;
+        }
+        public async Task<bool> AnyAsync(Expression<Func<MaterialBrand, bool>> predicate, CancellationToken cancellationToken = default)
+        {
+            var brands = await _unitOfWork.MaterialBrand.GetAllAsync(cancellationToken);
+            return brands.Any(predicate.Compile());
         }
     }
 }

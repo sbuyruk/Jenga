@@ -5,6 +5,7 @@
 @inject IToastService ToastService
 @inject IModalService ModalService
 @inject IMaterialBrandService MaterialBrandService
+@inject IMaterialService MaterialService
 
 <div class="d-flex justify-content-end mb-2">
     <button class="btn btn-success" @onclick="OpenNewBrandModal" type="button">
@@ -92,6 +93,13 @@ else
     }
     private async Task OnDeleteClicked(MaterialBrand brand)
     {
+        //TODO : Check if brand is used in any material before deleting
+        var hasMaterial = await MaterialService.AnyAsync(m => m.BrandId == brand.Id);
+        if (hasMaterial)
+        {
+            ToastService.ShowToast("Bu marka bir malzemede kullanılıyor, önce onu silmelisiniz.", ToastType.Error, 5000);
+            return;
+        }
 
         ModalService.ShowConfirmation(
             "Silme Onayı",

@@ -1,0 +1,80 @@
+﻿@using Jenga.DataAccess.Services.Inventory
+@using Jenga.Models.Inventory
+@using Jenga.Utility.Toast
+@inject IMaterialService MaterialService
+@inject IMaterialEntryService MaterialEntryService
+@inject IToastService ToastService
+@if (IsOpen)
+{
+    <div class="modal show" tabindex="-1" style="display: block;">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Malzeme Girişi Düzenle</h5>
+                    <button type="button" class="close" @onclick="OnClose" aria-label="Kapat">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-2">
+                        <label>Malzeme</label>
+                        <select class="form-select" @bind="MaterialEntry!.MaterialId">
+                            <option value="">Malzeme seçiniz</option>
+                            @foreach (var mat in Materials)
+                            {
+                                <option value="@mat.Id">@mat.MaterialName</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label>Miktar</label>
+                        <input class="form-control" @bind="MaterialEntry!.Quantity" type="number" min="1" />
+                    </div>
+                    <div class="mb-2">
+                        <label>Birim</label>
+                        <select class="form-select" @bind="MaterialEntry!.MaterialUnitId">
+                            <option value="">Birim seçiniz</option>
+                            @foreach (var unit in MaterialUnits)
+                            {
+                                <option value="@unit.Id">@unit.Name (@unit.Symbol)</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label>Malzeme Yeri</label>
+                        <select class="form-select" @bind="MaterialEntry!.LocationId">
+                            <option value="">Malzeme Yeri seçiniz</option>
+                            @foreach (var loc in Locations)
+                            {
+                                <option value="@loc.Id">@loc.LocationName</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label>Tarih</label>
+                        <input class="form-control" @bind="MaterialEntry!.EntryDate" type="date" />
+                    </div>
+                    <div class="mb-2">
+                        <label>Belge No</label>
+                        <input class="form-control" @bind="MaterialEntry!.InvoiceNo" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" @onclick="OnSave">Kaydet</button>
+                    <button class="btn btn-secondary" @onclick="OnClose">Kapat</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public MaterialEntry? MaterialEntry { get; set; }
+    [Parameter] public List<MaterialUnit> MaterialUnits { get; set; } = new();
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback OnSave { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public List<Material> Materials { get; set; } = new();
+    [Parameter] public List<Location> Locations { get; set; } = new();
+
+}

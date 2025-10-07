@@ -1,0 +1,154 @@
+﻿@using Jenga.Models.Inventory
+@using Jenga.DataAccess.Services.Inventory
+@using Jenga.Utility.Modal
+@using Jenga.Utility.Toast
+@inject IMaterialEntryService MaterialEntryService
+@inject IModalService ModalService
+@inject IToastService ToastService
+
+<div class="d-flex justify-content-end mb-2">
+    <button class="btn btn-success" @onclick="OpenNewEntryModal" type="button">
+        <i class="bi bi-plus-lg"></i> Yeni Giriş
+    </button>
+</div>
+
+@if (MaterialEntries?.Any() != true)
+{
+    <p>Henüz giriş kaydı yok.</p>
+}
+else
+{
+    <table class="table table-striped display" id="MaterialEntryListTable">
+        <thead>
+            <tr>
+                <th>Malzeme</th>
+                <th>Miktar</th>
+                <th>Birim</th>
+                <th>Lokasyon Adı</th>
+                <th>Tarih</th>
+                <th>Belge No</th>
+                <th>İşlemler</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var entry in MaterialEntries)
+            {
+                <tr>
+                    <td>
+                        @{
+                            var material = Materials.FirstOrDefault(x => x.Id == entry.MaterialId);
+                        }
+                        @material?.MaterialName
+                    </td>
+                    <td>@entry.Quantity</td>
+                    <td>
+                        @{
+                            var unit = MaterialUnits.FirstOrDefault(x => x.Id == entry.MaterialUnitId);
+                        }
+                        @unit?.Name
+                    </td>
+                    <td>@Locations.FirstOrDefault(l => l.Id == entry.LocationId)?.LocationName</td>
+                    <td>@entry.EntryDate.ToString("yyyy-MM-dd")</td>
+                    <td>@entry.InvoiceNo</td>
+                    <td>
+                        <button class="btn btn-primary me-2" @onclick="() => OnEditClicked(entry)">Düzenle</button>
+                        <button class="btn btn-danger" @onclick="() => OnDeleteClicked(entry)">Sil</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (showEditModal && selectedEntry != null)
+{
+    <MaterialEntryEditModal MaterialEntry="@selectedEntry"
+                            IsOpen="true"
+                            OnSave="HandleSave"
+                            OnClose="HideModal"
+                            Materials="@Materials"
+                            Locations="@Locations" 
+                            MaterialUnits="@MaterialUnits"/>
+}
+
+@code {
+    [Parameter] public List<MaterialEntry>  MaterialEntries { get; set; } = new();
+    [Parameter] public List<Material>  Materials { get; set; } = new();
+    [Parameter] public List<MaterialUnit>  MaterialUnits { get; set; } = new();
+    [Parameter] public List<Location>  Locations { get; set; } = new();
+    [Parameter] public EventCallback OnRefresh { get; set; }
+
+    private MaterialEntry? selectedEntry { get; set; }
+    private bool showEditModal = false;
+
+    private void OnEditClicked(MaterialEntry entry)
+    {
+        selectedEntry = entry;
+        showEditModal = true;
+    }
+
+    private async void HandleSave()
+    {
+        if (selectedEntry != null)
+        {
+            if (selectedEntry.Id == 0)
+            {
+                var saved = await MaterialEntryService.AddAsync(selectedEntry);
+                if (saved)
+                {
+                    MaterialEntries.Add(selectedEntry);
+                }
+            }
+            else
+            {
+                await MaterialEntryService.UpdateAsync(selectedEntry);
+            }
+            showEditModal = false;
+            await OnRefresh.InvokeAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnDeleteClicked(MaterialEntry entry)
+    {
+        // The method is marked async and now contains an await, so CS1998 will not be reported.
+        await Task.Yield(); // Ensures the method is truly asynchronous
+
+        ModalService.ShowConfirmation(
+            "Silme Onayı",
+            $"'{entry.Id}' kaydını silmek istediğinizden emin misiniz?",
+            async result =>
+            {
+                if (result)
+                {
+                    var deleted = await MaterialEntryService.DeleteAsync(entry);
+                    if (deleted)
+                    {
+                        ToastService.ShowToast($"{entry.Id} silindi", ToastType.Success, 3000);
+                        MaterialEntries.Remove(entry);
+                        await OnRefresh.InvokeAsync();
+                        StateHasChanged();
+                    }
+                    else
+                    {
+                        ToastService.ShowToast($"Silme işlemi başarısız oldu", ToastType.Error, 3000);
+                    }
+                }
+            });
+    }
+
+    private void HideModal()
+    {
+        selectedEntry = null;
+        showEditModal = false;
+    }
+
+    private async Task OpenNewEntryModal()
+    {
+        selectedEntry = new MaterialEntry
+        {
+            EntryDate = DateTime.Now
+        };
+        showEditModal = true;
+    }
+}

@@ -1,5 +1,6 @@
 ﻿using Jenga.DataAccess.Data;
 using Jenga.DataAccess.Repositories.IRepository;
+using Jenga.Models.Inventory;
 using Jenga.Models.Sistem;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
@@ -18,6 +19,7 @@ namespace Jenga.DataAccess.Repositories
 
         public void Add(T entity)
         {
+            entity.Olusturan = Environment.UserName;
             entity.OlusturmaTarihi = DateTime.Now;
             dbSet.Add(entity);
         }
@@ -91,32 +93,38 @@ namespace Jenga.DataAccess.Repositories
         //}
         public void Update(T entity)
         {
+            entity.Degistiren= Environment.UserName;
             entity.DegistirmeTarihi = DateTime.Now;
             dbSet.Update(entity);
         }
-        public async Task UpdateAsync(T entity)
+        //SB async update CancellationToken kısmı nanay
+        public async Task UpdateAsync(T entity, CancellationToken cancellationToken = default)
         {
+            entity.Degistiren = Environment.UserName;
             entity.DegistirmeTarihi = DateTime.Now;
             dbSet.Update(entity);
             await Task.CompletedTask;
         }
 
         //async methods
-        public async Task AddAsync(T entity)
-        {
+        public async Task AddAsync(T entity, CancellationToken cancellationToken = default)
+        {   entity.Olusturan = Environment.UserName;
             entity.OlusturmaTarihi = DateTime.Now;
-            await dbSet.AddAsync(entity);
+            await dbSet.AddAsync(entity, cancellationToken);
         }
+           
+
         // SB Unlike AddAsync, the Update method doesn’t need to be awaited since it doesn’t perform asynchronous work. It simply marks the entity as modified in the context.
-        public async Task<T?> GetAsync(int id)
+
+        public async Task<T?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
         {
-            return await dbSet.FindAsync(id);
+            return await dbSet.AsNoTracking().FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
         }
-        public async Task<IEnumerable<T>> GetAllAsync()
+        public async Task<List<T>> GetAllAsync(CancellationToken cancellationToken = default)
         {
-            IQueryable<T> query = dbSet;
-            return await query.ToListAsync();
+            return await dbSet.AsNoTracking().ToListAsync(cancellationToken);
         }
+
         public async Task<T?> GetFirstOrDefaultAsync(Expression<Func<T, bool>> filter, string? includeProperties = null, bool trackChanges = true)
         {
             IQueryable<T> query = dbSet;

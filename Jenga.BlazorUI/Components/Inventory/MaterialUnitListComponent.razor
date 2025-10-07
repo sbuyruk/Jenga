@@ -1,0 +1,145 @@
+﻿@using Jenga.Models.Inventory
+@using Jenga.DataAccess.Services.Inventory
+@using Jenga.Utility.Modal
+@using Jenga.Utility.Toast
+@inject IMaterialService MaterialService
+@inject IMaterialEntryService MaterialEntryService
+@inject IMaterialUnitService MaterialUnitService
+@inject IToastService ToastService
+@inject IModalService ModalService
+
+<div class="d-flex justify-content-end mb-2">
+    <button class="btn btn-success" @onclick="OpenNewUnitModal" type="button">
+        <i class="bi bi-plus-lg"></i> Yeni Birim
+    </button>
+</div>
+
+@if (MaterialUnits?.Any() != true)
+{
+    <p>Tanımlı birim yok.</p>
+}
+else
+{
+    <table class="table table-striped" id="MaterialUnitListTable">
+        <thead>
+            <tr>
+                <th>Birim Adı</th>
+                <th>Sembol</th>
+                <th>Açıklama</th>
+                <th>İşlemler</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var unit in MaterialUnits)
+            {
+                <tr>
+                    <td>@unit.Name</td>
+                    <td>@unit.Symbol</td>
+                    <td>@unit.Aciklama</td>
+                    <td>
+                        <button class="btn btn-primary me-2" @onclick="() => OnEditClicked(unit)">Düzenle</button>
+                        <button class="btn btn-danger" @onclick="() => OnDeleteClicked(unit)">Sil</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (showEditModal && selectedUnit != null)
+{
+    <MaterialUnitEditModal MaterialUnit="@selectedUnit"
+                          IsOpen="true"
+                          OnSave="HandleSave"
+                          OnClose="HideModal"/>
+}
+
+@code {
+    [Parameter] public List<MaterialUnit> MaterialUnits { get; set; } = new();
+    [Parameter] public EventCallback OnRefresh { get; set; }
+
+    private MaterialUnit? selectedUnit { get; set; }
+    private bool showEditModal = false;
+
+    private void OnEditClicked(MaterialUnit unit)
+    {
+        selectedUnit = unit;
+        showEditModal = true;
+    }
+
+    private async void HandleSave()
+    {
+        if (selectedUnit != null)
+        {
+            if (selectedUnit.Id == 0)
+            {
+                var saved = await MaterialUnitService.AddAsync(selectedUnit);
+                if (saved)
+                {
+                    MaterialUnits.Add(selectedUnit);
+                }
+            }
+            else
+            {
+                await MaterialUnitService.UpdateAsync(selectedUnit);
+            }
+            showEditModal = false;
+            await OnRefresh.InvokeAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnDeleteClicked(MaterialUnit unit)
+    {
+
+        // Material kontrolü
+        var hasMaterial = await MaterialService.AnyAsync(m => m.MaterialUnitId == unit.Id);
+        if (hasMaterial)
+        {
+            ToastService.ShowToast("Bu birimi kullanan malzemeler var, önce onları silmelisiniz.", ToastType.Error, 5000);
+            return;
+        }
+        // Entry kontrolü yap
+        var hasEntry = await MaterialEntryService.AnyAsync(m => m.MaterialUnitId == unit.Id);
+        if (hasEntry)
+        {
+            ToastService.ShowToast("Bu birime bağlı malzeme girişleri var, önce onları silmelisiniz.", ToastType.Error, 5000);
+            return;
+        }
+
+
+        ModalService.ShowConfirmation(
+            "Silme Onayı",
+            $"'{unit.Name}' birimini silmek istediğinizden emin misiniz?",
+            async result =>
+            {
+                if (result)
+                {
+                    var deleted = await MaterialUnitService.DeleteAsync(unit);
+                    if (deleted)
+                    {
+                        
+                        MaterialUnits.Remove(unit);
+                        await OnRefresh.InvokeAsync();
+                        StateHasChanged();
+                    }
+                    else
+                    {
+                        ToastService.ShowToast($"Silme işlemi başarısız oldu", ToastType.Error, 3000);
+                    }
+                }
+            });
+    }
+
+    private void HideModal()
+    {
+        selectedUnit = null;
+        showEditModal = false;
+    }
+
+    private async Task OpenNewUnitModal()
+    {
+        selectedUnit = new MaterialUnit();
+        showEditModal = true;
+    }
+}

@@ -1,6 +1,7 @@
 ﻿using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.DataAccess.Repositories.IRepository.Inventory;
 using Jenga.Models.Inventory;
+using System.Linq.Expressions;
 
 namespace Jenga.DataAccess.Services.Inventory
 {
@@ -35,9 +36,21 @@ namespace Jenga.DataAccess.Services.Inventory
 
         public async Task<bool> DeleteAsync(MaterialCategory category, CancellationToken cancellationToken = default)
         {
+            // Önce alt kategori var mı kontrolü
+            var hasChildren = await _unitOfWork.MaterialCategory
+                .AnyAsync(m => m.ParentCategoryId == category.Id, cancellationToken);
+
+            if (hasChildren)
+                return false; // Silme işlemi başarısız
+
             _unitOfWork.MaterialCategory.Remove(category);
             await _unitOfWork.SaveAsync(cancellationToken);
             return true;
+        }
+        public async Task<bool> AnyAsync(Expression<Func<MaterialCategory, bool>> predicate, CancellationToken cancellationToken = default)
+        {
+            var items = await _unitOfWork.MaterialCategory.GetAllAsync(cancellationToken);
+            return items.Any(predicate.Compile());
         }
     }
 }

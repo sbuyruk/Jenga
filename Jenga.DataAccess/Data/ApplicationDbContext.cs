@@ -25,6 +25,8 @@ namespace Jenga.DataAccess.Data
         public DbSet<PersonelMenu> PersonelMenuleri { get; set; }
         //Inventory
         public DbSet<Material> Material_Table { get; set; }
+        public DbSet<MaterialEntry> MaterialEntry_Table { get; set; }
+        public DbSet<MaterialUnit> MaterialUnit_Table { get; set; }
         public DbSet<MaterialCategory> MaterialCategory_Table { get; set; }
         public DbSet<MaterialBrand> MaterialBrand_Table { get; set; }
         public DbSet<MaterialModel> MaterialModel_Table { get; set; }

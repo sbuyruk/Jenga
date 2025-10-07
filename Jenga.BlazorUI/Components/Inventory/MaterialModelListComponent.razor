@@ -5,6 +5,7 @@
 @inject IToastService ToastService
 @inject IModalService ModalService
 @inject IMaterialModelService MaterialModelService
+@inject IMaterialService MaterialService    
 
 <div class="d-flex justify-content-end mb-2">
     <button class="btn btn-success" @onclick="OpenNewModelModal" type="button">
@@ -32,7 +33,12 @@ else
             {
                 <tr>
                     <td>@model.ModelName</td>
-                    <td>@model.BrandId</td>
+                    <td>
+                        @{
+                            var brand = Brands.FirstOrDefault(x => x.Id == model.BrandId);
+                        }
+                        @brand?.BrandName
+                    </td>
                     <td>@model.Aciklama</td>
                     <td>
                         <button class="btn btn-primary me-2" @onclick="() => OnEditClicked(model)">Düzenle</button>
@@ -49,11 +55,13 @@ else
     <MaterialModelEditModal Model="@selectedModel"
                             IsOpen="true"
                             OnSave="HandleSave"
-                            OnClose="HideModal" />
+                            OnClose="HideModal"
+                            Brands="Brands" />
 }
 
 @code {
     [Parameter] public List<MaterialModel> Models { get; set; } = new();
+    [Parameter] public List<MaterialBrand> Brands { get; set; } = new();
     private MaterialModel? selectedModel { get; set; }
     private bool showEditModal = false;
 
@@ -85,6 +93,14 @@ else
     }
     private async Task OnDeleteClicked(MaterialModel model)
     {
+        //TODO: Check if model is used in any material before deleting
+        var hasMaterial = await MaterialService.AnyAsync(m => m.ModelId == model.Id);
+        if (hasMaterial)
+        {
+            ToastService.ShowToast("Bu model bir malzemede kullanılıyor, önce onu silmelisiniz.", ToastType.Error, 5000);
+            return;
+        }
+
         ModalService.ShowConfirmation(
             "Silme Onayı",
             $"'{model.ModelName}' modelini silmek istediğinizden emin misiniz?",

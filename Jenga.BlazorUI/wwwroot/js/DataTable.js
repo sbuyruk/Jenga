@@ -41,6 +41,18 @@ function initMaterialBrandTableWithExport() {
         buttons: ['copy', 'csv', 'excel', 'pdf', 'print']
     });
 }
+function initLocationTableWithExport() {
+    $('#LocationListTable').DataTable({
+        dom: 'Bfrtip',
+        buttons: ['copy', 'csv', 'excel', 'pdf', 'print']
+    });
+}
+function initMaterialEntryTableWithExport() {
+    $('#MaterialEntryListTable').DataTable({
+        dom: 'Bfrtip',
+        buttons: ['copy', 'csv', 'excel', 'pdf', 'print']
+    });
+}
 // Custom Tables
 window.initCustomDataTable = (data) => {
     new DataTable('#CustomDataTable', {

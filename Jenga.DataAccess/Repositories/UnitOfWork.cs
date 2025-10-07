@@ -39,6 +39,8 @@ namespace Jenga.DataAccess.Repositories
             PersonelRol = new PersonelRolRepository(_context);
             // Inventory
             Material = new MaterialRepository(_context);
+            MaterialEntry = new MaterialEntryRepository(_context);
+            MaterialUnit = new MaterialUnitRepository(_context);
             MaterialCategory = new MaterialCategoryRepository(_context);
             MaterialBrand = new MaterialBrandRepository(_context);
             MaterialModel = new MaterialModelRepository(_context);
@@ -113,6 +115,8 @@ namespace Jenga.DataAccess.Repositories
 
         //Inventory
         public IMaterialRepository Material { get; private set; }
+        public IMaterialEntryRepository MaterialEntry { get; private set; }
+        public IMaterialUnitRepository MaterialUnit { get; private set; }
         public IMaterialCategoryRepository MaterialCategory { get; private set; }
         public IMaterialBrandRepository MaterialBrand { get; private set; }
         public IMaterialModelRepository MaterialModel { get; private set; }

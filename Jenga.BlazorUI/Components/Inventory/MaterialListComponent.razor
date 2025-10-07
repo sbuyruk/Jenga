@@ -43,9 +43,24 @@ else
                         }
                         @category?.CategoryName
                     </td>
-                    <td>@mat.BrandId</td>
-                    <td>@mat.ModelId</td>
-                    <td>@mat.Unit</td>
+                    <td>
+                        @{
+                            var brand = Brands.FirstOrDefault(x => x.Id == mat.BrandId);
+                        }
+                        @brand?.BrandName
+                    </td>
+                    <td>
+                        @{
+                            var model = Models.FirstOrDefault(x => x.Id == mat.ModelId);
+                        }
+                        @model?.ModelName
+                    </td>
+                    <td>
+                        @{
+                            var unit = MaterialUnits.FirstOrDefault(x => x.Id == mat.MaterialUnitId);
+                        }
+                        @unit?.Name
+                    </td>
                     <td>@(mat.IsAsset ? "Evet" : "Hayır")</td>
                     <td>@mat.Aciklama</td>
                     <td>
@@ -63,12 +78,21 @@ else
     <MaterialEditModal Material="@selectedMaterial"
                       IsOpen="true"
                       OnSave="HandleSave"
-                      OnClose="HideModal" />
+                      OnClose="HideModal"
+                      Categories="Categories"
+                      Brands="Brands"
+                      Models="Models"
+                      MaterialUnits="MaterialUnits" />
 }
 
 @code {
     [Parameter] public List<Material> Materials { get; set; } = new();
+    [Parameter] public List<MaterialUnit> MaterialUnits { get; set; } = new();
     [Parameter] public List<MaterialCategory> Categories { get; set; } = new();
+    [Parameter] public List<MaterialBrand> Brands { get; set; } = new();
+    [Parameter] public List<MaterialModel> Models { get; set; } = new();
+
+
     private Material? selectedMaterial { get; set; }
     private bool showEditModal = false;
 
@@ -99,6 +123,7 @@ else
     }
     private async Task OnDeleteClicked(Material material)
     {
+        //TODO Bu Material Id'si başka bir tabloda kullanılmış mı? mesela MaterialInventory.MaterialId gibi, evetse silme
         ModalService.ShowConfirmation(
             "Silme Onayı",
             $"'{material.MaterialName}' malzemesini silmek istediğinizden emin misiniz?",

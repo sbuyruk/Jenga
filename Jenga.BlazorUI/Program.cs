@@ -60,6 +60,9 @@ builder.Services.AddScoped<IMaterialService, MaterialService>();
 builder.Services.AddScoped<IMaterialCategoryService, MaterialCategoryService>();
 builder.Services.AddScoped<IMaterialBrandService, MaterialBrandService>();
 builder.Services.AddScoped<IMaterialModelService, MaterialModelService>();
+builder.Services.AddScoped<ILocationService, LocationService>();
+builder.Services.AddScoped<IMaterialEntryService, MaterialEntryService>();
+builder.Services.AddScoped<IMaterialUnitService, MaterialUnitService>();
 
 //DetailedErrors ayarını aç
 builder.Services.AddServerSideBlazor()

@@ -10,15 +10,6 @@ namespace Jenga.DataAccess.Repositories.Inventory
         private readonly ApplicationDbContext _db;
         public MaterialRepository(ApplicationDbContext db) : base(db) { _db = db; }
 
-        public async Task<List<Material>> GetAllAsync(CancellationToken cancellationToken = default)
-            => await _db.Material_Table.ToListAsync(cancellationToken);
-
-        public async Task<Material?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
-            => await _db.Material_Table.AsNoTracking().FirstOrDefaultAsync(m => m.Id == id, cancellationToken);
-
-        public async Task AddAsync(Material material, CancellationToken cancellationToken = default)
-            => await _db.Material_Table.AddAsync(material, cancellationToken);
-
         // Eğer navigation property ile ilişkili veri çekmek istersen:
         public async Task<Material?> GetByIdWithRelationsAsync(int id, CancellationToken cancellationToken = default)
         {

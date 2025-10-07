@@ -2,6 +2,8 @@
 using Jenga.DataAccess.Repositories.IRepository.Inventory;
 using Jenga.Models.Inventory;
 using Jenga.Utility.Logging;
+using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 namespace Jenga.DataAccess.Services.Inventory
 {
@@ -42,6 +44,11 @@ namespace Jenga.DataAccess.Services.Inventory
             _unitOfWork.Material.Remove(material);
             await _unitOfWork.SaveAsync(cancellationToken);
             return true;
+        }
+        public async Task<bool> AnyAsync(Expression<Func<Material, bool>> predicate, CancellationToken cancellationToken = default)
+        {
+            var materials = await _unitOfWork.Material.GetAllAsync(cancellationToken);
+            return materials.Any(predicate.Compile());
         }
     }
 }

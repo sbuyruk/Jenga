@@ -1,0 +1,24 @@
+﻿@page "/inventory/material-unit-manager"
+@rendermode InteractiveServer
+@using Jenga.BlazorUI.Components.Inventory
+@using Jenga.Models.Inventory
+@using Jenga.DataAccess.Services.Inventory
+@inject IMaterialUnitService MaterialUnitService
+
+<h3>Malzeme Birimleri</h3>
+<MaterialUnitListComponent MaterialUnits="@materialUnits" />
+
+@code {
+    private List<MaterialUnit> materialUnits = new();
+    private bool _dataLoaded;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_dataLoaded)
+        {
+            materialUnits = await MaterialUnitService.GetAllAsync();
+            StateHasChanged();
+        }
+    }
+
+}

@@ -5,11 +5,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Jenga.DataAccess.Repositories.Inventory
 {
-    public class MaterialInventoryRepository : Repository<MaterialInventory>, IMaterialInventoryRepository
+    public class MaterialUnitRepository : Repository<MaterialUnit>, IMaterialUnitRepository
     {
         private readonly ApplicationDbContext _db;
-        public MaterialInventoryRepository(ApplicationDbContext db) : base(db) { _db = db; }
+        public MaterialUnitRepository(ApplicationDbContext db) : base(db)
+        {
+            _db = db;
+        }
 
-      
     }
 }
