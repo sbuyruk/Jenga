@@ -10,7 +10,7 @@ using Jenga.DataAccess.Repositories.IRepository.TYS;
 
 namespace Jenga.DataAccess.Repositories.IRepository
 {
-    public interface IUnitOfWork : IDisposable
+    public interface IUnitOfWork 
     {
         //Inventory
         IMaterialRepository Material { get; }
@@ -24,6 +24,7 @@ namespace Jenga.DataAccess.Repositories.IRepository
         IMaterialMovementRepository MaterialMovement { get; }
         IMaterialAssignmentRepository MaterialAssignment { get; }
         IMaterialExitRepository MaterialExit { get; }
+        IMaterialTransferRepository MaterialTransfer { get; }
         // Menu
         IMenuItemRepository MenuItem { get; }
         IRolRepository Rol { get; }
@@ -84,8 +85,8 @@ namespace Jenga.DataAccess.Repositories.IRepository
         IMalzemeDagilimRepository MalzemeDagilim { get; }
         IMalzemeHareketRepository MalzemeHareket { get; }
         IZimmetRepository Zimmet { get; }
-        void Save();
-        Task<int> CommitAsync();
-        Task<bool> SaveAsync(CancellationToken cancellationToken = default);
+        //void Save();
+        //Task<int> CommitAsync();
+        //Task<bool> SaveAsync(CancellationToken cancellationToken = default);
     }
 }

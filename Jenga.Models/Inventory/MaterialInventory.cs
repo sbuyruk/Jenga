@@ -10,7 +10,7 @@ namespace Jenga.Models.Inventory
         public int MaterialId { get; set; }
 
         [Column("LocationId")]
-        public int LocationId { get; set; }
+        public int? LocationId { get; set; }
         [Column("MaterialUnitId")]
         public int MaterialUnitId { get; set; }
         [Column("Quantity")]

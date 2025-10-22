@@ -1,4 +1,4 @@
-html, body {
+﻿html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
@@ -57,4 +57,73 @@ h1:focus {
 
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
+}
+
+/*Sağ tık context-menu*/
+
+.context-menu {
+    background: var(--context-menu-bg, #fff);
+    border: 1px solid #b0b0b0;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px #aaa;
+    padding: 4px 0;
+    min-width: 120px;
+}
+
+    .context-menu ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    .context-menu li {
+        padding: 8px 16px;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+        .context-menu li:hover {
+            background: #e3f2fd;
+        }
+.context-menu-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 998; /* context-menu'den bir aşağıda olmalı */
+    background: transparent;
+}
+.treeview-container {
+    max-height: 80vh;
+    overflow-y: auto;
+    background: var(--bs-body-bg);
+    position: relative;
+    /* Daha fazla ve farklı boyutlarda içi boş daireler */
+    background-image: url("data:image/svg+xml;utf8,<svg width='200' height='200' viewBox='0 0 200 200' fill='none' xmlns='http://www.w3.org/2000/svg'><circle cx='40' cy='40' r='18' fill='none' stroke='rgba(80,130,180,0.10)' stroke-width='1'/><circle cx='160' cy='60' r='10' fill='none' stroke='rgba(80,130,180,0.10)' stroke-width='1'/><circle cx='100' cy='160' r='24' fill='none' stroke='rgba(80,130,180,0.10)' stroke-width='1'/><circle cx='60' cy='120' r='8' fill='none' stroke='rgba(80,130,180,0.10)' stroke-width='1'/><circle cx='180' cy='180' r='14' fill='none' stroke='rgba(80,130,180,0.10)' stroke-width='1'/><circle cx='30' cy='170' r='12' fill='none' stroke='rgba(80,130,180,0.10)' stroke-width='1'/><circle cx='120' cy='30' r='16' fill='none' stroke='rgba(80,130,180,0.10)' stroke-width='1'/><circle cx='180' cy='110' r='7' fill='none' stroke='rgba(80,130,180,0.10)' stroke-width='1'/><circle cx='80' cy='80' r='10' fill='none' stroke='rgba(80,130,180,0.10)' stroke-width='1'/><circle cx='150' cy='170' r='9' fill='none' stroke='rgba(80,130,180,0.10)' stroke-width='1'/></svg>");
+    background-size: 300px 300px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(80,130,180,0.08);
+    padding: 8px 8px 8px 0;
+    min-width: 220px;
+    max-width: 100%;
+}
+/* Mobilde daha küçük font ve padding */
+@media (max-width: 768px) {
+    .treeview-container {
+        max-height: 45vh;
+        min-width: 120px;
+        font-size: 14px;
+        padding: 4px 4px 4px 0;
+    }
+
+    .treeview-list {
+        font-size: 13px;
+    }
+}
+
+/* Dark theme için */
+[data-bs-theme="dark"] .context-menu {
+    --context-menu-bg: #23272b;
+    border-color: #444;
 }

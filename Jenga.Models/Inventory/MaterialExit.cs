@@ -11,14 +11,17 @@ namespace Jenga.Models.Inventory
 
         [Column("Quantity")]
         public int Quantity { get; set; }
-
+        [Column("MaterialUnitId")]
+        public int MaterialUnitId { get; set; }
+        [Column("LocationId")]
+        public int LocationId { get; set; }
+        [Column("PersonId")]
+        public int? PersonId { get; set; }
         [Column("ExitDate")]
         public DateTime ExitDate { get; set; }
 
         [Column("ExitType")]
         public string? ExitType { get; set; }
 
-        [Column("Reason")]
-        public string? Reason { get; set; }
     }
 }

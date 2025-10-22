@@ -10,6 +10,15 @@ namespace Jenga.DataAccess.Repositories.Inventory
         private readonly ApplicationDbContext _db;
         public MaterialInventoryRepository(ApplicationDbContext db) : base(db) { _db = db; }
 
-      
+        public async Task<MaterialInventory?> GetByMaterialLocationAsync(int materialId, int locationId, int materialUnitId, CancellationToken cancellationToken = default)
+        {
+            return await _db.MaterialInventory_Table
+                .FirstOrDefaultAsync(mi =>
+                    mi.MaterialId == materialId &&
+                    mi.LocationId == locationId &&
+                    mi.MaterialUnitId == materialUnitId,
+                    cancellationToken
+                );
+        }
     }
 }

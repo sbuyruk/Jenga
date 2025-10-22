@@ -1,8 +1,10 @@
 ﻿@using Jenga.DataAccess.Services.Inventory
+@using Jenga.Models.Enums
 @using Jenga.Models.Inventory
+@using Jenga.Utility.Helpers
 @using Jenga.Utility.Toast
 @inject IMaterialService MaterialService
-@inject IMaterialEntryService MaterialEntryService
+@inject IMaterialExitService MaterialExitService
 @inject IToastService ToastService
 @if (IsOpen)
 {
@@ -10,7 +12,7 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Malzeme Girişi Düzenle</h5>
+                    <h5 class="modal-title">Malzeme Çıkış Düzenle</h5>
                     <button type="button" class="close" @onclick="OnClose" aria-label="Kapat">
                         <span aria-hidden="true">&times;</span>
                     </button>
@@ -28,11 +30,11 @@
                     </div>
                     <div class="mb-2">
                         <label>Miktar</label>
-                        <input class="form-control" @bind="MaterialEntry!.Quantity" type="number" min="1" />
+                        <input class="form-control" type="number" @bind="MaterialExit.Quantity" min="1" />
                     </div>
                     <div class="mb-2">
                         <label>Birim</label>
-                        <select class="form-select" @bind="MaterialEntry!.MaterialUnitId" disabled>
+                        <select class="form-select" @bind="MaterialExit!.MaterialUnitId" disabled>
                             <option value="">Birim seçiniz</option>
                             @foreach (var unit in MaterialUnits)
                             {
@@ -41,28 +43,44 @@
                         </select>
                     </div>
                     <div class="mb-2">
-                        <label>Malzeme Yeri</label>
-                        <select class="form-select" @bind="MaterialEntry!.LocationId">
-                            <option value="">Malzeme Yeri seçiniz</option>
-                            @if (ParentLocations != null)
+                        <label>Lokasyon</label>
+                        @{
+                            // Seçilen malzemenin bulunduğu lokasyonları bul
+                            var availableLocationIds = MaterialInventories
+                                .Where(mi => mi.MaterialId == MaterialExit.MaterialId)
+                                .Select(mi => mi.LocationId)
+                                .Distinct()
+                                .ToList();
+
+                            var availableLocations = Locations
+                                .Where(loc => availableLocationIds.Contains(loc.Id))
+                                .ToList();
+                        }
+                        <select class="form-select" @bind="MaterialExit.LocationId">
+                            <option value="">Lokasyon seçiniz</option>
+                            @foreach (var loc in availableLocations)
                             {
-                                @foreach (var parentLoc in ParentLocations.Where(x => x.IsStoragePlace))
-                                {
-                                    <option value="@parentLoc.Id">
-                                        @GetLocationPath(parentLoc)
-                                    </option>
-                                }
+                                <option value="@loc.Id">@loc.LocationName</option>
                             }
                         </select>
+                    </div>
+                    <div class="mb-2">
+                        <label>Çıkış Tipi</label>
+                        <select class="form-select" @bind="MaterialExit.ExitType">
+                            @foreach (MaterialExitType type in Enum.GetValues(typeof(MaterialExitType)))
+                            {
+                                <option value="@type.ToString()">@EnumHelper.GetEnumDescription(type)</option>
+                            }
 
+                        </select>
                     </div>
                     <div class="mb-2">
                         <label>Tarih</label>
-                        <input class="form-control" @bind="MaterialEntry!.EntryDate" type="date" />
+                        <input class="form-control" type="date" @bind="MaterialExit.ExitDate" />
                     </div>
                     <div class="mb-2">
-                        <label>Belge No</label>
-                        <input class="form-control" @bind="MaterialEntry!.InvoiceNo" />
+                        <label>Açıklama</label>
+                        <input class="form-control" @bind="MaterialExit.Aciklama" />
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -75,55 +93,38 @@
 }
 
 @code {
-    [Parameter] public MaterialEntry? MaterialEntry { get; set; }
+    [Parameter] public MaterialExit MaterialExit { get; set; }
+    [Parameter] public List<Material> Materials { get; set; } = new();
     [Parameter] public List<MaterialUnit> MaterialUnits { get; set; } = new();
+    [Parameter] public List<Location> Locations { get; set; } = new();
+    [Parameter] public List<MaterialInventory> MaterialInventories { get; set; } = new();
     [Parameter] public bool IsOpen { get; set; }
     [Parameter] public EventCallback OnSave { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
-    [Parameter] public List<Material> Materials { get; set; } = new();
-    [Parameter] public List<Location> Locations { get; set; } = new();
 
-    public List<Location>? ParentLocations ;
-    protected override void OnParametersSet()
-    {
-        ParentLocations = Locations;
-    }
     private int _materialId;
     private int MaterialId
     {
-        get => MaterialEntry!.MaterialId;
+        get => MaterialExit!.MaterialId;
         set
         {
-            MaterialEntry!.MaterialId = value;
+            MaterialExit!.MaterialId = value;
             var selectedMaterial = Materials.FirstOrDefault(m => m.Id == value);
             if (selectedMaterial != null)
             {
-                MaterialEntry!.MaterialUnitId = selectedMaterial.MaterialUnitId;
+                MaterialExit!.MaterialUnitId = selectedMaterial.MaterialUnitId;
             }
         }
     }
-
-    private bool IsSaveDisabled => MaterialEntry?.LocationId == 0;
+    private bool IsSaveDisabled => MaterialExit?.LocationId == 0;
 
     private async Task HandleSave()
     {
-        if (MaterialEntry?.LocationId == 0)
+        if (MaterialExit?.LocationId == 0)
         {
             ToastService.ShowWarning("Lütfen Malzeme Yeri seçiniz.");
             return;
         }
         await OnSave.InvokeAsync();
-    }
-    private string GetLocationPath(Location loc)
-    {
-        var names = new List<string>();
-        var current = loc;
-        while (current != null)
-        {
-            // names.Insert(0, $"{current.LocationName} ({current.LocationType})");
-            names.Insert(0, $"{current.LocationName} ");
-            current = ParentLocations?.FirstOrDefault(x => x.Id == current.ParentId);
-        }
-        return string.Join(" > ", names);
     }
 }

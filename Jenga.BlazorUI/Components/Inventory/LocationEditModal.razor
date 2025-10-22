@@ -1,4 +1,8 @@
-﻿@using Jenga.Models.Inventory
+﻿@using Jenga.Models.Enums
+@using Jenga.Models.Inventory
+@using System.ComponentModel
+@using System.Reflection
+@using Jenga.Utility.Helpers
 
 @if (IsOpen)
 {
@@ -20,10 +24,32 @@
                         <label>Tür</label>
                         <select class="form-select" @bind="Location.LocationType">
                             <option value="">Tür seçiniz</option>
-                            <option value="Depo">Depo</option>
-                            <option value="Oda">Oda</option>
-                            <option value="Kişi">Kişi</option>
+                            @foreach (LocationType type in Enum.GetValues(typeof(LocationType)))
+                            {
+                                <option value="@type">@EnumHelper.GetEnumDescription(type)</option>
+                            }
                         </select>
+                    </div>
+                    <div class="mb-2">
+                        <label>Üst Lokasyon</label>
+                        <select class="form-select" @bind="Location.ParentId">
+                            <option value="">(Yok)</option>
+                            @if (ParentLocations != null)
+                            {
+                                @foreach (var parentLoc in ParentLocations.Where(x => x.Id != Location.Id))
+                                {
+                                    <option value="@parentLoc.Id">@GetLocationPath(parentLoc)</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label>Açıklama</label>
+                        <input class="form-control" @bind="Location.Aciklama" />
+                    </div>
+                    <div class="mb-2">
+                        <label>Depolama Alanı mı?</label>
+                        <input type="checkbox" class="form-check-input" @bind="Location.IsStoragePlace" />
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -40,4 +66,19 @@
     [Parameter] public bool IsOpen { get; set; }
     [Parameter] public EventCallback OnSave { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public List<Location>? ParentLocations { get; set; }
+
+    private string GetLocationPath(Location loc)
+    {
+        var names = new List<string>();
+        var current = loc;
+        while (current != null)
+        {
+            // names.Insert(0, $"{current.LocationName} ({current.LocationType})");
+            names.Insert(0, $"{current.LocationName} ");
+            current = ParentLocations?.FirstOrDefault(x => x.Id == current.ParentId);
+        }
+        return string.Join(" > ", names);
+    }
+
 }

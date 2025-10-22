@@ -12,6 +12,9 @@ namespace Jenga.Models.Inventory
         [Column("Quantity")]
         public int Quantity { get; set; }
 
+        [Column("MaterialUnitId")]
+        public int? MaterialUnitId { get; set; }
+
         [Column("FromLocationId")]
         public int? FromLocationId { get; set; }
 
@@ -29,5 +32,16 @@ namespace Jenga.Models.Inventory
 
         [Column("MovementType")]
         public string? MovementType { get; set; }
+
+
+        
+
+        // Opsiyonel Navigation Property'ler
+        // public Material? Material { get; set; }
+        // public Location? FromLocation { get; set; }
+        // public Location? ToLocation { get; set; }
+        // public Person? FromPerson { get; set; }
+        // public Person? ToPerson { get; set; }
+        // public MaterialUnit? MaterialUnit { get; set; }
     }
 }

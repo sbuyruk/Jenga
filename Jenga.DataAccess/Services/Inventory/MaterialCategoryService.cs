@@ -23,14 +23,14 @@ namespace Jenga.DataAccess.Services.Inventory
         public async Task<bool> AddAsync(MaterialCategory category, CancellationToken cancellationToken = default)
         {
             await _unitOfWork.MaterialCategory.AddAsync(category, cancellationToken);
-            await _unitOfWork.SaveAsync(cancellationToken);
+            await _unitOfWork.MaterialCategory.SaveChangesAsync(cancellationToken);
             return true;
         }
 
         public async Task<bool> UpdateAsync(MaterialCategory category, CancellationToken cancellationToken = default)
         {
             await _unitOfWork.MaterialCategory.UpdateAsync(category);
-            await _unitOfWork.SaveAsync(cancellationToken);
+            await _unitOfWork.MaterialCategory.SaveChangesAsync(cancellationToken);
             return true;
         }
 
@@ -44,7 +44,7 @@ namespace Jenga.DataAccess.Services.Inventory
                 return false; // Silme işlemi başarısız
 
             _unitOfWork.MaterialCategory.Remove(category);
-            await _unitOfWork.SaveAsync(cancellationToken);
+            await _unitOfWork.MaterialCategory.SaveChangesAsync(cancellationToken);
             return true;
         }
         public async Task<bool> AnyAsync(Expression<Func<MaterialCategory, bool>> predicate, CancellationToken cancellationToken = default)

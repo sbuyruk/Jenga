@@ -37,13 +37,15 @@ namespace Jenga.DataAccess.Services.Menu
         public async Task<bool> AddAsync(MenuItem menuItem, CancellationToken cancellationToken = default)
         {
             await _unitOfWork.MenuItem.AddAsync(menuItem, cancellationToken);
-            return await _unitOfWork.SaveAsync(cancellationToken);
+            await _unitOfWork.MenuItem.SaveChangesAsync(cancellationToken);
+            return true;
         }
 
         public async Task<bool> UpdateAsync(MenuItem menuItem, CancellationToken cancellationToken = default)
         {
             _unitOfWork.MenuItem.Update(menuItem);
-            return await _unitOfWork.SaveAsync(cancellationToken);
+            await _unitOfWork.MenuItem.SaveChangesAsync(cancellationToken);
+            return true;
         }
 
         public async Task<bool> DeleteAsync(MenuItem menuItem, CancellationToken cancellationToken = default)
@@ -51,7 +53,8 @@ namespace Jenga.DataAccess.Services.Menu
             if (menuItem is null) return false;
 
             _unitOfWork.MenuItem.Remove(menuItem);
-            return await _unitOfWork.SaveAsync(cancellationToken);
+            await _unitOfWork.MenuItem.SaveChangesAsync(cancellationToken);
+            return true;
         }
     }
 }

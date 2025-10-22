@@ -19,6 +19,7 @@ else
             <tr>
                 <th>Ad</th>
                 <th>Tür</th>
+                <th>Üst Lokasyon</th>
                 <th>İşlemler</th>
             </tr>
         </thead>
@@ -28,6 +29,7 @@ else
                 <tr>
                     <td>@loc.LocationName</td>
                     <td>@loc.LocationType</td>
+                    <td>@GetParentLocationName(loc.ParentId)</td>
                     <td>
                         <button class="btn btn-primary me-2" @onclick="() => OnEditClicked(loc)">Düzenle</button>
                         <button class="btn btn-danger" @onclick="() => OnDeleteClicked(loc)">Sil</button>
@@ -41,9 +43,10 @@ else
 @if (showEditModal && selectedLocation != null)
 {
     <LocationEditModal Location="@selectedLocation"
-                      IsOpen="true"
-                      OnSave="HandleSave"
-                      OnClose="HideModal" />
+                       IsOpen="true"
+                       ParentLocations="@Locations.Where(x => x.Id != selectedLocation.Id).ToList()"
+                       OnSave="HandleSave"
+                       OnClose="HideModal" />
 }
 
 @code {
@@ -51,9 +54,21 @@ else
     private Location? selectedLocation { get; set; }
     private bool showEditModal = false;
 
+    private Dictionary<int, string> parentNames = new();
+
+    protected override void OnParametersSet()
+    {
+        // Parent isimlerini cachele
+        parentNames = Locations.ToDictionary(x => x.Id, x => x.LocationName);
+    }
+
+    private string GetParentLocationName(int? parentId)
+        => parentId.HasValue && parentNames.ContainsKey(parentId.Value)
+            ? parentNames[parentId.Value]
+            : "";
+
     private Task OnEditClicked(Location location)
     {
-        //TODO: MaterialInventory, MaterialAssignment ve MaterialMovement kontrolü ekle
         selectedLocation = location;
         showEditModal = true;
         return Task.CompletedTask;

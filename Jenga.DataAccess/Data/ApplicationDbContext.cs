@@ -35,6 +35,7 @@ namespace Jenga.DataAccess.Data
         public DbSet<MaterialMovement> MaterialMovement_Table { get; set; }
         public DbSet<MaterialAssignment> MaterialAssignment_Table { get; set; }
         public DbSet<MaterialExit> MaterialExit_Table { get; set; }
+        public DbSet<MaterialTransfer> MaterialTransfer_Table { get; set; }
 
         //IKYS
         public DbSet<Personel> Personel_Table { get; set; }

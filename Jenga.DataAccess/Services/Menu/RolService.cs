@@ -21,7 +21,7 @@ namespace Jenga.DataAccess.Services.Menu
         {
             try
             {
-                var roller = await _unitOfWork.Rol.GetAllAsync();
+                var roller = await _unitOfWork.Rol.GetAllAsync(cancellationToken);
                 var list = roller.ToList();
                 return list;
             }
@@ -49,14 +49,16 @@ namespace Jenga.DataAccess.Services.Menu
         public async Task<bool> AddAsync(Rol rol, CancellationToken cancellationToken = default)
         {
             await _unitOfWork.Rol.AddAsync(rol, cancellationToken);
-            return await _unitOfWork.SaveAsync(cancellationToken);
+            await _unitOfWork.Rol.SaveChangesAsync(cancellationToken);
+            return true;
         }
 
 
         public async Task<bool> UpdateAsync(Rol rol, CancellationToken cancellationToken = default)
         {
             _unitOfWork.Rol.Update(rol);
-            return await _unitOfWork.SaveAsync(cancellationToken);
+            await _unitOfWork.Rol.SaveChangesAsync(cancellationToken);
+            return true;
         }
 
         public async Task<bool> DeleteAsync(Rol rol, CancellationToken cancellationToken = default)
@@ -64,7 +66,8 @@ namespace Jenga.DataAccess.Services.Menu
             if (rol is null) return false;
 
             _unitOfWork.Rol.Remove(rol);
-            return await _unitOfWork.SaveAsync(cancellationToken);
+            await _unitOfWork.Rol.SaveChangesAsync(cancellationToken);
+            return true;
         }
         public async Task<Rol?> GetByIdWithRelationsAsync(int id, CancellationToken cancellationToken = default)
         {

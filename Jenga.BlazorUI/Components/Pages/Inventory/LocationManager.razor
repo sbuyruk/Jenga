@@ -1,26 +1,225 @@
 ﻿@page "/inventory/location-manager"
 @rendermode InteractiveServer
 @using Jenga.BlazorUI.Components.Inventory
+@using Jenga.BlazorUI.Components.Common
 @using Jenga.DataAccess.Services.Inventory
+@using Jenga.Models.Enums
 @using Jenga.Models.Inventory
+@using Jenga.Models.Helper
+@using Jenga.Utility.Modal
+@using Jenga.Utility.Toast
+@using Microsoft.AspNetCore.Http
 @inject ILocationService LocationService
 @inject IJSRuntime JS
+@inject ILocationService LocationService
+@inject IMaterialEntryService MaterialEntryService
+@inject IMaterialExitService MaterialExitService
+@inject IMaterialInventoryService MaterialInventoryService
+@inject IModalService ModalService
+@inject IToastService ToastService
 
-<h3>Lokasyon Yönetimi</h3>
-<LocationListComponent Locations="@locations" />
+<div class="navbar navbar-expand-lg bg-body-tertiary gap-5 mb-3 shadow-sm rounded py-2 px-3" style="min-height:56px;">
+    <h3 class="mb-0 flex-grow-1">Lokasyon Yönetimi</h3>
+    <input class="form-control" style="max-width: 250px;"
+           placeholder="Lokasyon Ara..."
+           @bind="searchTerm"
+           @bind:event="oninput" />
+    <button class="btn btn-success" @onclick="OpenNewLocationModal" type="button">
+        <i class="bi bi-plus-lg"></i> Yeni Lokasyon
+    </button>
+</div>
+<div class="treeview-container">
+    <TreeView TItem="Location"
+              Items="filteredTree"
+              GetChildren="@(loc => loc.Children)"
+              OnItemClick="EditLocation"
+              SelectedItem="selectedLocation"
+              OnDeleteClick="DeleteLocation"
+              OnContextMenu="HandleContextMenu"
+              OnAddChildClick="AddChildLocation">
+        <ItemTemplate Context="loc">
+            <i class="@GetLocationIcon(loc) tree-icon"></i>
+            <span title="@loc.Aciklama">@loc.LocationName</span>
+        </ItemTemplate>
+    </TreeView>
+    <LocationEditModal Location="selectedLocation"
+                       IsOpen="isEditOpen"
+                       ParentLocations="locations"
+                       OnSave="OnModalSave"
+                       OnClose="OnModalClose" />
+</div>
 
+@if (showContextMenu)
+{
+    <div>
+        <div class="context-menu-overlay" @onclick="CloseContextMenu"></div>
+        <div class="context-menu"
+             style="position:fixed;top:@($"{contextMenuY}px");left:@($"{contextMenuX}px");z-index:1001;">
+            <ul>
+                <li @onclick="() => AddChildLocation(contextMenuNode)">Altına Ekle</li>
+                <li @onclick="() => EditLocation(contextMenuNode)">Düzenle</li>
+                <li @onclick="() => DeleteLocation(contextMenuNode)">Sil</li>
+            </ul>
+        </div>
+    </div>
+}
 @code {
-    private List<Location> locations = new();
+    private List<MaterialEntry> materialEntries { get; set; } = new();
+    [Parameter] public EventCallback OnRefresh { get; set; }
     private bool _dataLoaded;
+    List<Location> locations = new();
+    List<Location> tree = new();
+    Location selectedLocation;
+    bool isEditOpen = false;
 
+    string searchTerm = "";
+    List<Location> filteredTree => string.IsNullOrWhiteSpace(searchTerm)
+        ? tree
+        : TreeHelper.FilterTree(tree, searchTerm);
+
+    // Context menu state
+    bool showContextMenu = false;
+    double contextMenuX, contextMenuY;
+    Location contextMenuNode;
+
+    protected override async Task OnInitializedAsync()
+    {
+        locations = await LocationService.GetAllAsync();
+        tree = TreeHelper.BuildTree<Location, int>(
+            locations,
+            loc => loc.Id,
+            loc => loc.ParentId,
+            (loc, children) => loc.Children = children
+        );
+    }
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender && !_dataLoaded)
         {
-            locations = await LocationService.GetAllAsync();
+            materialEntries = await MaterialEntryService.GetAllAsync();
             _dataLoaded = true;
             StateHasChanged();
-            await JS.InvokeVoidAsync("initLocationTableWithExport");
+            await JS.InvokeVoidAsync("initMaterialEntryTableWithExport");
         }
+    }
+    void EditLocation(Location loc)
+    {
+        selectedLocation = loc;
+        isEditOpen = true;
+        CloseContextMenu();
+        StateHasChanged();
+    }
+
+    async Task OnModalSave()
+    {
+        isEditOpen = false;
+        if (selectedLocation != null)
+        {
+            if (selectedLocation.Id == 0)
+            {
+                var saved = await LocationService.AddAsync(selectedLocation);
+                if (saved)
+                {
+                    locations.Add(selectedLocation);
+                }
+            }
+            else
+            {
+                await LocationService.UpdateAsync(selectedLocation);
+            }
+        }
+        locations = await LocationService.GetAllAsync();
+        tree = TreeHelper.BuildTree<Location, int>(
+            locations,
+            loc => loc.Id,
+            loc => loc.ParentId,
+            (loc, children) => loc.Children = children
+        );
+        StateHasChanged();
+    }
+
+    void OnModalClose()
+    {
+        isEditOpen = false;
+    }
+    private async Task OpenNewLocationModal()
+    {
+        selectedLocation = new Location();
+        isEditOpen = true;
+    }
+    string GetLocationIcon(Location loc)
+    {
+        if (loc.LocationType == LocationType.Building)
+            return "bi bi-buildings";
+        if (loc.LocationType == LocationType.Floor)
+            return "bi bi-layers";
+        if (loc.LocationType == LocationType.Warehouse)
+            return "bi bi-box";
+        if (loc.LocationType == LocationType.Room)
+            return "bi bi-door-closed";
+        if (loc.LocationType == LocationType.Cabinet)
+            return "bi bi-window-split";
+        if (loc.LocationType == LocationType.Shelf)
+            return "bi bi-table";
+        if (loc.Children?.Any() == true)
+            return "bi bi-folder";
+        return "bi bi-file-earmark";
+    }
+    private async Task DeleteLocation(Location loc)
+    {
+        await Task.Yield();
+        var (canDelete, reason) = await LocationService.CanDeleteLocationAsync(loc.Id);
+        if (!canDelete)
+        {
+            ToastService.ShowToast(reason ?? "Bilinmeyen bir hata oluştu", ToastType.Error, 5000);
+            return;
+        }
+
+        ModalService.ShowConfirmation(
+            "Silme Onayı",
+            $"'{loc?.LocationName ?? "Konum"}' kaydını silmek istediğinizden emin misiniz?",
+        async result =>
+        {
+            if (result)
+            {
+                var deleted = await LocationService.DeleteAsync(loc);
+                if (deleted)
+                {
+                    ToastService.ShowToast($"{loc?.LocationName ?? "Konum"} silindi", ToastType.Success, 3000);
+                    locations.Remove(loc);
+                    await OnRefresh.InvokeAsync();
+                    StateHasChanged();
+                }
+                else
+                {
+                    ToastService.ShowToast($"Silme işlemi başarısız oldu", ToastType.Error, 3000);
+                }
+            }
+        });
+    }
+
+    // Context menu handler
+    void HandleContextMenu((MouseEventArgs e, Location node) args)
+    {
+        showContextMenu = true;
+        contextMenuX = args.e.ClientX;
+        contextMenuY = args.e.ClientY;
+        contextMenuNode = args.node;
+        StateHasChanged();
+    }
+    void CloseContextMenu()
+    {
+        showContextMenu = false;
+        StateHasChanged();
+    }
+    void AddChildLocation(Location parent)
+    {
+        selectedLocation = new Location
+        {
+            ParentId = parent.Id // Eklenecek konumun parent'ı sağ tıklanan node olsun
+        };
+        isEditOpen = true;
+        CloseContextMenu();
+        StateHasChanged();
     }
 }

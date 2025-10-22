@@ -22,89 +22,90 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Jenga.DataAccess.Repositories
 {
-    public class UnitOfWork : IUnitOfWork, IAsyncDisposable
+    public class UnitOfWork : IUnitOfWork
     {
-        private readonly ApplicationDbContext _context;
+        //private readonly ApplicationDbContext _context;
         private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
 
 
         public UnitOfWork(IDbContextFactory<ApplicationDbContext> contextFactory)
         {
             _contextFactory = contextFactory;
-            _context = _contextFactory.CreateDbContext();
+            //_context = _contextFactory.CreateDbContext();
 
-            MenuItem = new MenuItemRepository(_context);
-            Rol = new RolRepository(_context);
-            RolMenu = new RolMenuRepository(_context);
-            PersonelRol = new PersonelRolRepository(_context);
+            MenuItem = new MenuItemRepository(_contextFactory.CreateDbContext());
+            Rol = new RolRepository(_contextFactory.CreateDbContext());
+            RolMenu = new RolMenuRepository(_contextFactory.CreateDbContext());
+            PersonelRol = new PersonelRolRepository(_contextFactory.CreateDbContext());
             // Inventory
-            Material = new MaterialRepository(_context);
-            MaterialEntry = new MaterialEntryRepository(_context);
-            MaterialUnit = new MaterialUnitRepository(_context);
-            MaterialCategory = new MaterialCategoryRepository(_context);
-            MaterialBrand = new MaterialBrandRepository(_context);
-            MaterialModel = new MaterialModelRepository(_context);
-            Location = new LocationRepository(_context);
-            MaterialInventory = new MaterialInventoryRepository(_context);
-            MaterialMovement = new MaterialMovementRepository(_context);
-            MaterialAssignment = new MaterialAssignmentRepository(_context);
-            MaterialExit = new MaterialExitRepository(_context);
+            Material = new MaterialRepository(_contextFactory.CreateDbContext());
+            MaterialEntry = new MaterialEntryRepository(_contextFactory.CreateDbContext());
+            MaterialUnit = new MaterialUnitRepository(_contextFactory.CreateDbContext());
+            MaterialCategory = new MaterialCategoryRepository(_contextFactory.CreateDbContext());
+            MaterialBrand = new MaterialBrandRepository(_contextFactory.CreateDbContext());
+            MaterialModel = new MaterialModelRepository(_contextFactory.CreateDbContext());
+            Location = new LocationRepository(_contextFactory.CreateDbContext());
+            MaterialInventory = new MaterialInventoryRepository(_contextFactory.CreateDbContext());
+            MaterialMovement = new MaterialMovementRepository(_contextFactory.CreateDbContext());
+            MaterialAssignment = new MaterialAssignmentRepository(_contextFactory.CreateDbContext());
+            MaterialExit = new MaterialExitRepository(_contextFactory.CreateDbContext());
+            MaterialTransfer = new MaterialTransferRepository(_contextFactory.CreateDbContext());
             //MTS
-            DepoTanim = new DepoTanimRepository(_context);
-            KaynakTanim = new KaynakTanimRepository(_context);
-            AniObjesiTanim = new AniObjesiTanimRepository(_context);
-            DepoHareket = new DepoHareketRepository(_context);
-            DepoStok = new DepoStokRepository(_context);
-            GonderiPaketi = new GonderiPaketiRepository(_context);
-            Kisi = new KisiRepository(_context);
-            UnvanTanim = new UnvanTanimRepository(_context);
-            DagitimYeriTanim = new DagitimYeriTanimRepository(_context);
-            GonderiPaketi = new GonderiPaketiRepository(_context);
-            AniObjesiDagitim = new AniObjesiDagitimRepository(_context);
-            MTSKurumTanim = new MTSKurumTanimRepository(_context);
-            MTSGorevTanim = new MTSGorevTanimRepository(_context);
-            MTSUnvanTanim = new MTSUnvanTanimRepository(_context);
-            MTSKurumGorev = new MTSKurumGorevRepository(_context);
-            FaaliyetKatilim = new FaaliyetKatilimRepository(_context);
-            Faaliyet = new FaaliyetRepository(_context);
-            FaaliyetAmaci = new FaaliyetAmaciRepository(_context);
-            AramaGorusme = new AramaGorusmeRepository(_context);
+            DepoTanim = new DepoTanimRepository(_contextFactory.CreateDbContext());
+            KaynakTanim = new KaynakTanimRepository(_contextFactory.CreateDbContext());
+            AniObjesiTanim = new AniObjesiTanimRepository(_contextFactory.CreateDbContext());
+            DepoHareket = new DepoHareketRepository(_contextFactory.CreateDbContext());
+            DepoStok = new DepoStokRepository(_contextFactory.CreateDbContext());
+            GonderiPaketi = new GonderiPaketiRepository(_contextFactory.CreateDbContext());
+            Kisi = new KisiRepository(_contextFactory.CreateDbContext());
+            UnvanTanim = new UnvanTanimRepository(_contextFactory.CreateDbContext());
+            DagitimYeriTanim = new DagitimYeriTanimRepository(_contextFactory.CreateDbContext());
+            GonderiPaketi = new GonderiPaketiRepository(_contextFactory.CreateDbContext());
+            AniObjesiDagitim = new AniObjesiDagitimRepository(_contextFactory.CreateDbContext());
+            MTSKurumTanim = new MTSKurumTanimRepository(_contextFactory.CreateDbContext());
+            MTSGorevTanim = new MTSGorevTanimRepository(_contextFactory.CreateDbContext());
+            MTSUnvanTanim = new MTSUnvanTanimRepository(_contextFactory.CreateDbContext());
+            MTSKurumGorev = new MTSKurumGorevRepository(_contextFactory.CreateDbContext());
+            FaaliyetKatilim = new FaaliyetKatilimRepository(_contextFactory.CreateDbContext());
+            Faaliyet = new FaaliyetRepository(_contextFactory.CreateDbContext());
+            FaaliyetAmaci = new FaaliyetAmaciRepository(_contextFactory.CreateDbContext());
+            AramaGorusme = new AramaGorusmeRepository(_contextFactory.CreateDbContext());
             //Ortak
-            Bolge = new BolgeRepository(_context);
-            Il = new IlRepository(_context);
-            Ilce = new IlceRepository(_context);
-            ModulTanim = new ModulTanimRepository(_context);
-            MenuTanim = new MenuTanimRepository(_context);
+            Bolge = new BolgeRepository(_contextFactory.CreateDbContext());
+            Il = new IlRepository(_contextFactory.CreateDbContext());
+            Ilce = new IlceRepository(_contextFactory.CreateDbContext());
+            ModulTanim = new ModulTanimRepository(_contextFactory.CreateDbContext());
+            MenuTanim = new MenuTanimRepository(_contextFactory.CreateDbContext());
             //IKYS
-            Personel = new PersonelRepository(_context);
-            PersonelMenu = new PersonelMenuRepository(_context);
-            IsBilgileri = new IsBilgileriRepository(_context);
-            GorevTanim = new GorevTanimRepository(_context);
-            BirimTanim = new BirimTanimRepository(_context);
-            Kimlik = new KimlikRepository(_context);
-            IletisimBilgileri = new IletisimBilgileriRepository(_context);
-            ResmiTatil = new ResmiTatilRepository(_context);
+            Personel = new PersonelRepository(_contextFactory.CreateDbContext());
+            PersonelMenu = new PersonelMenuRepository(_contextFactory.CreateDbContext());
+            IsBilgileri = new IsBilgileriRepository(_contextFactory.CreateDbContext());
+            GorevTanim = new GorevTanimRepository(_contextFactory.CreateDbContext());
+            BirimTanim = new BirimTanimRepository(_contextFactory.CreateDbContext());
+            Kimlik = new KimlikRepository(_contextFactory.CreateDbContext());
+            IletisimBilgileri = new IletisimBilgileriRepository(_contextFactory.CreateDbContext());
+            ResmiTatil = new ResmiTatilRepository(_contextFactory.CreateDbContext());
             //TBYS
-            TasinmazBagisci = new TasinmazBagisciRepository(_context);
+            TasinmazBagisci = new TasinmazBagisciRepository(_contextFactory.CreateDbContext());
             //NBYS
-            NakitBagisci = new NakitBagisciRepository(_context);
-            NakitBagisHareket = new NakitBagisHareketRepository(_context);
+            NakitBagisci = new NakitBagisciRepository(_contextFactory.CreateDbContext());
+            NakitBagisHareket = new NakitBagisHareketRepository(_contextFactory.CreateDbContext());
             //TYS
-            Toplanti = new ToplantiRepository(_context);
-            ToplantiKatilim = new ToplantiKatilimRepository(_context);
+            Toplanti = new ToplantiRepository(_contextFactory.CreateDbContext());
+            ToplantiKatilim = new ToplantiKatilimRepository(_contextFactory.CreateDbContext());
             //DYS
-            EnvanterTanim = new EnvanterTanimRepository(_context);
-            MalzemeGrubu = new MalzemeGrubuRepository(_context);
-            MalzemeCinsi = new MalzemeCinsiRepository(_context);
-            MarkaTanim = new MarkaTanimRepository(_context);
-            ModelTanim = new ModelTanimRepository(_context);
-            Ozellik = new OzellikRepository(_context);
-            MalzemeOzellik = new MalzemeOzellikRepository(_context);
-            Malzeme = new MalzemeRepository(_context);
-            MalzemeYeriTanim = new MalzemeYeriTanimRepository(_context);
-            MalzemeDagilim = new MalzemeDagilimRepository(_context);
-            MalzemeHareket = new MalzemeHareketRepository(_context);
-            Zimmet = new ZimmetRepository(_context);
+            EnvanterTanim = new EnvanterTanimRepository(_contextFactory.CreateDbContext());
+            MalzemeGrubu = new MalzemeGrubuRepository(_contextFactory.CreateDbContext());
+            MalzemeCinsi = new MalzemeCinsiRepository(_contextFactory.CreateDbContext());
+            MarkaTanim = new MarkaTanimRepository(_contextFactory.CreateDbContext());
+            ModelTanim = new ModelTanimRepository(_contextFactory.CreateDbContext());
+            Ozellik = new OzellikRepository(_contextFactory.CreateDbContext());
+            MalzemeOzellik = new MalzemeOzellikRepository(_contextFactory.CreateDbContext());
+            Malzeme = new MalzemeRepository(_contextFactory.CreateDbContext());
+            MalzemeYeriTanim = new MalzemeYeriTanimRepository(_contextFactory.CreateDbContext());
+            MalzemeDagilim = new MalzemeDagilimRepository(_contextFactory.CreateDbContext());
+            MalzemeHareket = new MalzemeHareketRepository(_contextFactory.CreateDbContext());
+            Zimmet = new ZimmetRepository(_contextFactory.CreateDbContext());
         }
         
         //Common
@@ -125,6 +126,7 @@ namespace Jenga.DataAccess.Repositories
         public IMaterialMovementRepository MaterialMovement { get; private set; }
         public IMaterialAssignmentRepository MaterialAssignment { get; private set; }
         public IMaterialExitRepository MaterialExit { get; private set; }
+        public IMaterialTransferRepository MaterialTransfer { get; private set; }
         //MTS
         public IDepoTanimRepository DepoTanim { get; private set; }
         public IKaynakTanimRepository KaynakTanim { get; private set; }
@@ -183,30 +185,30 @@ namespace Jenga.DataAccess.Repositories
         public IMalzemeHareketRepository MalzemeHareket { get; private set; }
         public IZimmetRepository Zimmet { get; private set; }
         
-        public void Save()
-        {
-            _context.SaveChanges();
-        }
+        //public void Save()
+        //{
+        //    _context.SaveChanges();
+        //}
 
-        public async Task<int> CommitAsync()
-        {
-            return await _context.SaveChangesAsync();
-        }
+        //public async Task<int> CommitAsync()
+        //{
+        //    return await _context.SaveChangesAsync();
+        //}
 
-        public async Task<bool> SaveAsync(CancellationToken cancellationToken = default)
-        {
-            var changes = await _context.SaveChangesAsync(cancellationToken);
-            return changes > 0;
-        }
+        //public async Task<bool> SaveAsync(CancellationToken cancellationToken = default)
+        //{
+        //    var changes = await _context.SaveChangesAsync(cancellationToken);
+        //    return changes > 0;
+        //}
 
-        public void Dispose()
-        {
-            _context.Dispose();
-        }
+        //public void Dispose()
+        //{
+        //    _context.Dispose();
+        //}
 
-        public ValueTask DisposeAsync()
-        {
-            return _context?.DisposeAsync() ?? ValueTask.CompletedTask;
-        }
+        //public ValueTask DisposeAsync()
+        //{
+        //    return _context?.DisposeAsync() ?? ValueTask.CompletedTask;
+        //}
     }
 }

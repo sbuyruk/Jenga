@@ -1,0 +1,90 @@
+﻿@using Jenga.Models.Inventory
+@using Jenga.DataAccess.Services.Inventory
+@inject IMaterialInventoryService MaterialInventoryService
+@inject IMaterialService MaterialService
+@inject IMaterialUnitService MaterialUnitService
+@inject ILocationService LocationService
+
+@using Jenga.Models.Inventory
+
+
+<input class="form-control mb-2" placeholder="Malzeme adı ile ara..." @bind="searchTerm" @oninput="OnSearchChanged" />
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Malzeme</th>
+            <th>Birim</th>
+            <th>Lokasyon</th>
+            <th>Miktar</th>
+            <th>İşlemler</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var inv in filteredInventories)
+        {
+            <tr>
+                <td>@GetMaterialName(inv.MaterialId)</td>
+                <td>@GetUnitSymbol(inv.MaterialId)</td>
+                <td>@GetLocationName(inv.LocationId ?? 0)</td>
+                <td>@inv.Quantity</td>
+                <td>
+                    <button class="btn btn-info" @onclick="() => ShowMovementHistory(inv.MaterialId, inv.LocationId)">
+                        Hareket Geçmişi
+                    </button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    [Parameter] public List<MaterialInventory> Inventories { get; set; } = new();
+    [Parameter] public List<Material> Materials { get; set; } = new();
+    [Parameter] public List<MaterialUnit> MaterialUnits { get; set; } = new();
+    [Parameter] public List<Location> Locations { get; set; } = new();
+
+    private List<MaterialInventory> filteredInventories = new();
+    private Dictionary<int, string> materialNames = new();
+    private Dictionary<int, string> unitSymbols = new();
+    private Dictionary<int, string> locationNames = new();
+    private string searchTerm = "";
+
+    protected override void OnParametersSet()
+    {
+        // Dictionary'leri oluştur
+        materialNames = Materials.ToDictionary(x => x.Id, x => x.MaterialName);
+        unitSymbols = Materials.ToDictionary(
+            x => x.Id,
+            x => MaterialUnits.FirstOrDefault(u => u.Id == x.MaterialUnitId)?.Symbol ?? ""
+        );
+        locationNames = Locations.ToDictionary(x => x.Id, x => x.LocationName);
+
+        filteredInventories = Inventories;
+    }
+
+    private void OnSearchChanged(ChangeEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm))
+            filteredInventories = Inventories;
+        else
+            filteredInventories = Inventories
+                .Where(x => GetMaterialName(x.MaterialId)
+                    .Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+    }
+
+    private string GetMaterialName(int materialId)
+        => materialNames.TryGetValue(materialId, out var name) ? name : "";
+
+    private string GetUnitSymbol(int materialId)
+        => unitSymbols.TryGetValue(materialId, out var symbol) ? symbol : "";
+
+    private string GetLocationName(int locationId)
+        => locationNames.TryGetValue(locationId, out var name) ? name : "";
+
+    private void ShowMovementHistory(int materialId, int? locationId)
+    {
+        // Hareket geçmişi modalı veya sayfasına yönlendirme kodunu buraya ekle
+    }
+}

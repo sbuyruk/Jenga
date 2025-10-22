@@ -1,0 +1,148 @@
+﻿@using Jenga.Models.Enums
+@using Jenga.Models.Inventory
+@using Jenga.DataAccess.Services.Inventory
+@using Jenga.Utility.Helpers
+@using Jenga.Utility.Modal
+@using Jenga.Utility.Toast
+@inject IToastService ToastService
+@inject IModalService ModalService
+@inject IMaterialExitService MaterialExitService
+
+<div class="d-flex justify-content-end mb-2">
+    <button class="btn btn-success" @onclick="OpenNewExitModal" type="button">
+        <i class="bi bi-plus-lg"></i> Yeni Çıkış
+    </button>
+</div>
+
+@if (MaterialExits?.Any() != true)
+{
+    <p>Malzeme çıkış kaydı bulunamadı.</p>
+}
+else
+{
+    <table class="table table-striped display" id="MaterialExitListTable">
+        <thead>
+            <tr>
+                <th>Tarih</th>
+                <th>Malzeme</th>
+                <th>Miktar</th>
+                <th>Birim</th>
+                <th>Lokasyon</th>
+                <th>Çıkış Tipi</th>
+                <th>Açıklama</th>
+                <th>İşlemler</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var exit in MaterialExits)
+            {
+                <tr>
+                    <td>@exit.ExitDate.ToShortDateString()</td>
+                    <td>
+                        @Materials.FirstOrDefault(x => x.Id == exit.MaterialId)?.MaterialName
+                    </td>
+                    <td>@exit.Quantity</td>
+                    <td>
+                        @MaterialUnits.FirstOrDefault(x => x.Id == exit.MaterialUnitId)?.Name
+                    </td>
+                    <td>@exit.LocationId</td>
+                    <td>
+                        @(Enum.TryParse<MaterialExitType>(exit.ExitType, out var type)
+                                        ? EnumHelper.GetEnumDescription(type)
+                                        : exit.ExitType)
+            </td>
+                    <td>@exit.Aciklama</td>
+                    <td>
+                        <button class="btn btn-primary me-2" @onclick="() => OnEditClicked(exit)">Düzenle</button>
+                        <button class="btn btn-danger" @onclick="() => OnDeleteClicked(exit)">Sil</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (showEditModal && selectedExit != null)
+{
+    <MaterialExitEditModal
+        MaterialExit="@selectedExit"
+        IsOpen="true"
+        Materials="Materials"
+        MaterialUnits="MaterialUnits"
+        Locations="Locations"
+        MaterialInventories="MaterialInventories"
+        OnSave="HandleSave"
+        OnClose="HideModal" />
+}
+
+@code {
+    [Parameter] public List<MaterialExit> MaterialExits { get; set; } = new();
+    [Parameter] public List<Material> Materials { get; set; } = new();
+    [Parameter] public List<MaterialUnit> MaterialUnits { get; set; } = new();
+    [Parameter] public List<Location> Locations { get; set; } = new();
+    [Parameter] public List<MaterialInventory> MaterialInventories { get; set; } = new();
+
+    private MaterialExit? selectedExit { get; set; }
+    private bool showEditModal = false;
+
+    private async Task OnEditClicked(MaterialExit exit)
+    {
+        selectedExit = exit;
+        showEditModal = true;
+    }
+    private async void HandleSave()
+    {
+        if (selectedExit != null)
+        {
+            if (selectedExit.Quantity < 1)
+            {
+                ToastService.ShowError("Miktar 1'den küçük olamaz!", 3000);
+                return;
+            }
+
+            if (selectedExit.Id == 0)
+            {
+                await MaterialExitService.AddAsync(selectedExit);
+                MaterialExits.Add(selectedExit);
+            }
+            else
+            {
+                await MaterialExitService.UpdateAsync(selectedExit);
+            }
+            showEditModal = false;
+            StateHasChanged();
+        }
+    }
+    private async Task OnDeleteClicked(MaterialExit exit)
+    {
+        ModalService.ShowConfirmation(
+            "Silme Onayı",
+            $"'{Materials.FirstOrDefault(x => x.Id == exit.MaterialId)?.MaterialName}' çıkış kaydını silmek istediğinizden emin misiniz?",
+            async result =>
+            {
+                if (result)
+                {
+                    await MaterialExitService.DeleteAsync(exit);
+                    ToastService.ShowToast($"Çıkış kaydı silindi", ToastType.Success, 3000);
+                    MaterialExits.Remove(exit);
+                    StateHasChanged();
+                }
+            });
+    }
+    private void HideModal()
+    {
+        selectedExit = null;
+        showEditModal = false;
+    }
+    private async Task OpenNewExitModal()
+    {
+        selectedExit = new MaterialExit { ExitDate = DateTime.Now };
+        showEditModal = true;
+    }
+    private void OnMaterialChanged(ChangeEventArgs e)
+    {
+        int selectedMaterialId = int.Parse(e.Value.ToString());
+        var selectedMaterial = Materials.FirstOrDefault(m => m.Id == selectedMaterialId);
+        selectedExit.MaterialUnitId = selectedMaterial?.MaterialUnitId ?? 0;
+    }
+}

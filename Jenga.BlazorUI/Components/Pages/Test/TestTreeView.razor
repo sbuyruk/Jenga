@@ -1,0 +1,83 @@
+﻿@page "/treeview-manager"
+@rendermode InteractiveServer
+@using Jenga.BlazorUI.Components.Common
+@using Jenga.BlazorUI.Components.Inventory
+@using Jenga.DataAccess.Services.Inventory
+@using Jenga.Models.Helper
+@using Jenga.Models.Inventory
+@inject ILocationService LocationService
+
+
+<TreeView TItem="Location"
+          Items="tree"
+          GetChildren="@(loc => loc.Children)"
+          OnItemClick="EditLocation"
+          SelectedItem="selectedLocation">
+    <ItemTemplate Context="loc">
+        <span>@loc.LocationName</span>
+    </ItemTemplate>
+</TreeView>
+<LocationEditModal Location="selectedLocation"
+                   IsOpen="isEditOpen"
+                   ParentLocations="locations"
+                   OnSave="OnModalSave"
+                   OnClose="OnModalClose" />
+
+@code {
+    List<Location> locations = new();
+    List<Location> tree = new();
+    Location selectedLocation;
+    bool isEditOpen = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        locations = await LocationService.GetAllAsync();
+        tree = TreeHelper.BuildTree<Location, int>(
+            locations,
+            loc => loc.Id,
+            loc => loc.ParentId,
+            (loc, children) => loc.Children = children
+        );
+    }
+
+    void EditLocation(Location loc)
+    {
+        selectedLocation = loc;
+        isEditOpen = true;
+        StateHasChanged();
+    }
+
+    async Task OnModalSave()
+    {
+        isEditOpen = false;
+        if (selectedLocation != null)
+        {
+            if (selectedLocation.Id == 0)
+            {
+                var saved = await LocationService.AddAsync(selectedLocation);
+                if (saved)
+                {
+                    locations.Add(selectedLocation);
+                }
+            }
+            else
+            {
+                await LocationService.UpdateAsync(selectedLocation);
+            }
+        }
+        locations = await LocationService.GetAllAsync();
+        tree = TreeHelper.BuildTree<Location, int>(
+            locations,
+            loc => loc.Id,
+            loc => loc.ParentId,
+            (loc, children) => loc.Children = children
+        );
+        StateHasChanged();
+    }
+
+    void OnModalClose()
+    {
+        isEditOpen = false;
+    }
+
+}

@@ -1,0 +1,38 @@
+﻿@page "/inventory/material-inventory-manager"
+@rendermode InteractiveServer
+@using Jenga.BlazorUI.Components.Inventory
+@using Jenga.DataAccess.Services.Inventory
+@using Jenga.Models.Inventory
+@inject IMaterialInventoryService MaterialInventoryService
+@inject IMaterialService MaterialService
+@inject IMaterialUnitService MaterialUnitService
+@inject ILocationService LocationService
+@inject IJSRuntime JS
+
+<h3>Stok Durumu (Envanter)</h3>
+<MaterialInventoryListComponent Inventories="@inventories"
+                                Materials="@materials"
+                                MaterialUnits="@units"
+                                Locations="@locations" />
+
+@code {
+    private List<MaterialInventory> inventories = new();
+    private List<Material> materials = new();
+    private List<MaterialUnit> units = new();
+    private List<Location> locations = new();
+    private bool _dataLoaded;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_dataLoaded)
+        {
+            inventories = await MaterialInventoryService.GetAllAsync();
+            materials = await MaterialService.GetAllAsync();
+            units = await MaterialUnitService.GetAllAsync();
+            locations = await LocationService.GetAllAsync();
+            _dataLoaded = true;
+            StateHasChanged();
+            await JS.InvokeVoidAsync("initMaterialTableWithExport");
+        }
+    }
+}

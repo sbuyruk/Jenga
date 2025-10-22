@@ -16,61 +16,6 @@ namespace Jenga.DataAccess.Repositories
             _db = db;
             dbSet = _db.Set<T>();
         }
-
-        public void Add(T entity)
-        {
-            entity.Olusturan = Environment.UserName;
-            entity.OlusturmaTarihi = DateTime.Now;
-            dbSet.Add(entity);
-        }
-        //IncludeProp - "KaynakTanim, DepoTanim, vs"
-        public IEnumerable<T> GetAll(string? includeProperties = null)
-        {
-            try
-            {
-                IQueryable<T> query = dbSet;
-
-                if (includeProperties != null)
-                {
-                    foreach (var includeProp in includeProperties.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
-                    {
-                        query = query.Include(includeProp);
-                    }
-                }
-                return query.ToList();
-            }
-            catch (Exception e)
-            {
-                throw e;
-            }
-        }
-
-        public T GetFirstOrDefault(Expression<Func<T, bool>> filter, string? includeProperties = null)
-        {
-            IQueryable<T> query = dbSet;
-            if (includeProperties != null)
-            {
-                foreach (var includeProp in includeProperties.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
-                {
-                    query = query.Include(includeProp);
-                }
-            }
-            query = query.Where(filter);
-            return query.FirstOrDefault();
-        }
-        public List<T> GetByFilter(Expression<Func<T, bool>> filter, string? includeProperties = null)
-        {
-            IQueryable<T> query = dbSet;
-            if (includeProperties != null)
-            {
-                foreach (var includeProp in includeProperties.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
-                {
-                    query = query.Include(includeProp);
-                }
-            }
-            query = query.Where(filter);
-            return query.ToList();
-        }
         public void Remove(T entity)
         {
             if (entity != null)
@@ -93,26 +38,31 @@ namespace Jenga.DataAccess.Repositories
         //}
         public void Update(T entity)
         {
-            entity.Degistiren= Environment.UserName;
+            entity.Degistiren = Environment.UserName;
             entity.DegistirmeTarihi = DateTime.Now;
             dbSet.Update(entity);
         }
         //SB async update CancellationToken kısmı nanay
-        public async Task UpdateAsync(T entity, CancellationToken cancellationToken = default)
+        public async Task UpdateAsync(T entity, string? modifiedBy = null, CancellationToken cancellationToken = default)
         {
-            entity.Degistiren = Environment.UserName;
+            entity.Degistiren = string.IsNullOrWhiteSpace(modifiedBy) ? Environment.UserName : modifiedBy;
             entity.DegistirmeTarihi = DateTime.Now;
             dbSet.Update(entity);
-            await Task.CompletedTask;
+            await _db.SaveChangesAsync(cancellationToken);
+            _db.Entry(entity).State = EntityState.Detached;
         }
 
         //async methods
         public async Task AddAsync(T entity, CancellationToken cancellationToken = default)
-        {   entity.Olusturan = Environment.UserName;
+        {
+            entity.Olusturan = Environment.UserName;
             entity.OlusturmaTarihi = DateTime.Now;
             await dbSet.AddAsync(entity, cancellationToken);
         }
-           
+        public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            return await _db.SaveChangesAsync(cancellationToken);
+        }
 
         // SB Unlike AddAsync, the Update method doesn’t need to be awaited since it doesn’t perform asynchronous work. It simply marks the entity as modified in the context.
 
@@ -171,6 +121,9 @@ namespace Jenga.DataAccess.Repositories
             query = query.Where(filter);
             return await query.ToListAsync();
         }
-
+        public Task<bool> AnyAsync(Expression<Func<T, bool>> predicate)
+        {
+            return dbSet.AnyAsync(predicate);
+        }
     }
 }

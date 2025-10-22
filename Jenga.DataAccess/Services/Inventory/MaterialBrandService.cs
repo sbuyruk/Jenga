@@ -23,21 +23,21 @@ namespace Jenga.DataAccess.Services.Inventory
         public async Task<bool> AddAsync(MaterialBrand brand, CancellationToken cancellationToken = default)
         {
             await _unitOfWork.MaterialBrand.AddAsync(brand, cancellationToken);
-            await _unitOfWork.SaveAsync(cancellationToken);
+            await _unitOfWork.MaterialBrand.SaveChangesAsync(cancellationToken);
             return true;
         }
 
         public async Task<bool> UpdateAsync(MaterialBrand brand, CancellationToken cancellationToken = default)
         {
             await _unitOfWork.MaterialBrand.UpdateAsync(brand);
-            await _unitOfWork.SaveAsync(cancellationToken);
+            await _unitOfWork.MaterialBrand.SaveChangesAsync(cancellationToken);
             return true;
         }
 
         public async Task<bool> DeleteAsync(MaterialBrand brand, CancellationToken cancellationToken = default)
         {
             _unitOfWork.MaterialBrand.Remove(brand);
-            await _unitOfWork.SaveAsync(cancellationToken);
+            await _unitOfWork.MaterialBrand.SaveChangesAsync(cancellationToken);
             return true;
         }
         public async Task<bool> AnyAsync(Expression<Func<MaterialBrand, bool>> predicate, CancellationToken cancellationToken = default)

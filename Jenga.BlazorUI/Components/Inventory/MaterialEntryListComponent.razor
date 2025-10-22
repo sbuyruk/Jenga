@@ -5,6 +5,7 @@
 @inject IMaterialEntryService MaterialEntryService
 @inject IModalService ModalService
 @inject IToastService ToastService
+@inject IHttpContextAccessor httpContextAccessor
 
 <div class="d-flex justify-content-end mb-2">
     <button class="btn btn-success" @onclick="OpenNewEntryModal" type="button">
@@ -37,8 +38,9 @@ else
                     <td>
                         @{
                             var material = Materials.FirstOrDefault(x => x.Id == entry.MaterialId);
+                            var brand = Brands?.FirstOrDefault(b => b.Id == material?.BrandId);
                         }
-                        @material?.MaterialName
+                        @(material?.MaterialName) @(brand != null ? $"({brand.BrandName})" : "")
                     </td>
                     <td>@entry.Quantity</td>
                     <td>
@@ -47,7 +49,7 @@ else
                         }
                         @unit?.Name
                     </td>
-                    <td>@Locations.FirstOrDefault(l => l.Id == entry.LocationId)?.LocationName</td>
+                    <td>@GetLocationPath(Locations.FirstOrDefault(l => l.Id == entry.LocationId))</td>
                     <td>@entry.EntryDate.ToString("yyyy-MM-dd")</td>
                     <td>@entry.InvoiceNo</td>
                     <td>
@@ -76,6 +78,7 @@ else
     [Parameter] public List<Material>  Materials { get; set; } = new();
     [Parameter] public List<MaterialUnit>  MaterialUnits { get; set; } = new();
     [Parameter] public List<Location>  Locations { get; set; } = new();
+    [Parameter] public List<MaterialBrand>  Brands { get; set; } = new();
     [Parameter] public EventCallback OnRefresh { get; set; }
 
     private MaterialEntry? selectedEntry { get; set; }
@@ -89,11 +92,23 @@ else
 
     private async void HandleSave()
     {
+        string? currentUserName = httpContextAccessor.HttpContext?.User?.Identity?.Name;
         if (selectedEntry != null)
         {
+            if (selectedEntry.Quantity < 1)
+            {
+                ToastService.ShowError("Miktar 1'den küçük olamaz!", 3000);
+                return;
+            }
             if (selectedEntry.Id == 0)
             {
-                var saved = await MaterialEntryService.AddAsync(selectedEntry);
+                
+                var saved = await MaterialEntryService.AddAsync(
+                                selectedEntry,
+                                currentUserName,
+                                CancellationToken.None);
+
+                // var saved = await MaterialEntryService.AddAsync(selectedEntry);
                 if (saved)
                 {
                     MaterialEntries.Add(selectedEntry);
@@ -101,7 +116,8 @@ else
             }
             else
             {
-                await MaterialEntryService.UpdateAsync(selectedEntry);
+                // await MaterialEntryService.UpdateAsync(selectedEntry);
+                await MaterialEntryService.UpdateMaterialEntryAndInventoryAsync(selectedEntry, currentUserName, CancellationToken.None);
             }
             showEditModal = false;
             await OnRefresh.InvokeAsync();
@@ -111,20 +127,22 @@ else
 
     private async Task OnDeleteClicked(MaterialEntry entry)
     {
-        // The method is marked async and now contains an await, so CS1998 will not be reported.
-        await Task.Yield(); // Ensures the method is truly asynchronous
+            await Task.Yield();
 
-        ModalService.ShowConfirmation(
-            "Silme Onayı",
-            $"'{entry.Id}' kaydını silmek istediğinizden emin misiniz?",
+            var material = Materials.FirstOrDefault(x => x.Id == entry.MaterialId);
+
+            ModalService.ShowConfirmation(
+                "Silme Onayı",
+                $"'{material?.MaterialName ?? "Malzeme"}' kaydını silmek istediğinizden emin misiniz?",
             async result =>
             {
                 if (result)
                 {
-                    var deleted = await MaterialEntryService.DeleteAsync(entry);
+                    string? currentUserName = httpContextAccessor.HttpContext?.User?.Identity?.Name;
+                    var deleted = await MaterialEntryService.DeleteMaterialEntryAndUpdateInventoryAsync(entry,currentUserName, CancellationToken.None);
                     if (deleted)
                     {
-                        ToastService.ShowToast($"{entry.Id} silindi", ToastType.Success, 3000);
+                        ToastService.ShowToast($"{material?.MaterialName ?? entry.Id.ToString()} silindi", ToastType.Success, 3000);
                         MaterialEntries.Remove(entry);
                         await OnRefresh.InvokeAsync();
                         StateHasChanged();
@@ -150,5 +168,18 @@ else
             EntryDate = DateTime.Now
         };
         showEditModal = true;
+    }
+
+    private string GetLocationPath(Location? loc)
+    {
+        if (loc == null) return string.Empty;
+        var names = new List<string>();
+        var current = loc;
+        while (current != null)
+        {
+            names.Insert(0, current.LocationName);
+            current = Locations.FirstOrDefault(x => x.Id == current.ParentId);
+        }
+        return string.Join(" > ", names);
     }
 }

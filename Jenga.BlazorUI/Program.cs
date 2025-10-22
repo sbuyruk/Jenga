@@ -60,9 +60,16 @@ builder.Services.AddScoped<IMaterialService, MaterialService>();
 builder.Services.AddScoped<IMaterialCategoryService, MaterialCategoryService>();
 builder.Services.AddScoped<IMaterialBrandService, MaterialBrandService>();
 builder.Services.AddScoped<IMaterialModelService, MaterialModelService>();
-builder.Services.AddScoped<ILocationService, LocationService>();
 builder.Services.AddScoped<IMaterialEntryService, MaterialEntryService>();
 builder.Services.AddScoped<IMaterialUnitService, MaterialUnitService>();
+builder.Services.AddScoped<IMaterialInventoryService, MaterialInventoryService>();
+builder.Services.AddScoped<IMaterialMovementService, MaterialMovementService>();
+builder.Services.AddScoped<IMaterialExitService, MaterialExitService>();
+builder.Services.AddScoped<IMaterialTransferService, MaterialTransferService>();
+builder.Services.AddScoped<ILocationService, LocationService>();
+
+//Currentusername alırken httpContextAcces.. kullanmak için
+builder.Services.AddHttpContextAccessor();
 
 //DetailedErrors ayarını aç
 builder.Services.AddServerSideBlazor()
