@@ -4,6 +4,7 @@ using Jenga.Models.Inventory;
 using Jenga.Models.Sistem;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
+using System.Threading;
 
 namespace Jenga.DataAccess.Repositories
 {
@@ -20,13 +21,24 @@ namespace Jenga.DataAccess.Repositories
         {
             if (entity != null)
             {
-                dbSet.Remove(entity);
+                // Zaten track edilen entity varsa, attach etme!
+                var trackedEntity = dbSet.Local.FirstOrDefault(e => e.Id == entity.Id);
+                if (trackedEntity != null)
+                {
+                    dbSet.Remove(trackedEntity);
+                }
+                else
+                {
+                    dbSet.Attach(entity);
+                    dbSet.Remove(entity);
+                }
             }
         }
 
         public void RemoveRange(IEnumerable<T> entity)
         {
             dbSet.RemoveRange(entity);
+           
         }
         //public void Update(T entity)
         //{
@@ -43,15 +55,35 @@ namespace Jenga.DataAccess.Repositories
             dbSet.Update(entity);
         }
         //SB async update CancellationToken kısmı nanay
+        //public async Task UpdateAsync(T entity, string? modifiedBy = null, CancellationToken cancellationToken = default)
+        //{
+        //    entity.Degistiren = string.IsNullOrWhiteSpace(modifiedBy) ? Environment.UserName : modifiedBy;
+        //    entity.DegistirmeTarihi = DateTime.Now;
+        //    dbSet.Update(entity);
+        //    await _db.SaveChangesAsync(cancellationToken);
+        //    dbSet.Entry(entity).State = EntityState.Detached;
+        //}
         public async Task UpdateAsync(T entity, string? modifiedBy = null, CancellationToken cancellationToken = default)
         {
-            entity.Degistiren = string.IsNullOrWhiteSpace(modifiedBy) ? Environment.UserName : modifiedBy;
-            entity.DegistirmeTarihi = DateTime.Now;
-            dbSet.Update(entity);
-            await _db.SaveChangesAsync(cancellationToken);
-            _db.Entry(entity).State = EntityState.Detached;
-        }
+            // Önce context'ten var olanı bul
+            var trackedEntity = await dbSet.FindAsync(entity.Id);
+            if (trackedEntity != null)
+            {
+                // Tüm property'leri güncelle (otomatik map veya manuel kopyala)
 
+                _db.Entry(trackedEntity).CurrentValues.SetValues(entity);
+                trackedEntity.Degistiren = string.IsNullOrWhiteSpace(modifiedBy) ? Environment.UserName : modifiedBy;
+                trackedEntity.DegistirmeTarihi = DateTime.Now;
+            }
+            else
+            {
+                // Eğer context'te yoksa, attach et ve update et
+                dbSet.Attach(entity);
+                dbSet.Update(entity);
+            }
+
+            await _db.SaveChangesAsync(cancellationToken);
+        }
         //async methods
         public async Task AddAsync(T entity, CancellationToken cancellationToken = default)
         {

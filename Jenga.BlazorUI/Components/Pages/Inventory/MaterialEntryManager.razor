@@ -11,13 +11,11 @@
 @inject IJSRuntime JS
 
 <h3>Malzeme Girişleri</h3>
-<MaterialEntryListComponent 
-    MaterialEntries="@materialEntries" 
-    Materials="@materials"
-    Locations="@locations"
-    MaterialUnits="@materialUnits"
-    Brands="@brands"
- />
+<MaterialEntryListComponent MaterialEntries="@materialEntries"
+                            Materials="@materials"
+                            Locations="@locations"
+                            MaterialUnits="@materialUnits"
+                            Brands="@brands" />
 
 @code {
     private List<MaterialEntry> materialEntries = new();
@@ -42,5 +40,5 @@
         }
     }
 
- 
+
 }

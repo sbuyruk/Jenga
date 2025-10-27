@@ -1,0 +1,357 @@
+﻿@page "/inventory/material-and-category-manager"
+@rendermode InteractiveServer
+@using Jenga.BlazorUI.Components.Common
+@using Jenga.BlazorUI.Components.Inventory
+@using Jenga.DataAccess.Services.Inventory
+@using Jenga.Models.Common
+@using Jenga.Models.Helper
+@using Jenga.Models.Inventory
+@using Jenga.Utility.Modal
+@using Jenga.Utility.Toast
+@inject IToastService ToastService
+@inject IModalService ModalService
+@inject IMaterialEntryService MaterialEntryService
+@inject IMaterialService MaterialService
+@inject IMaterialUnitService MaterialUnitService
+@inject ILocationService LocationService
+@inject IMaterialCategoryService MaterialCategoryService
+@inject IMaterialBrandService MaterialBrandService
+@inject IMaterialModelService MaterialModelService
+@inject IJSRuntime JS
+
+<div class="navbar navbar-expand-lg bg-body-tertiary gap-5 mb-3 shadow-sm rounded py-2 px-3" style="min-height:56px;">
+    <h3 class="mb-0 flex-grow-1">Malzeme ve Kategori Tanımları</h3>
+    <input class="form-control" style="max-width: 250px;"
+           placeholder="Malzeme Ara..."
+           @bind="searchTerm"
+           @bind:event="oninput" />
+    <button class="btn btn-success" @onclick="OpenCreateModal" type="button">
+        <i class="bi bi-plus-lg"></i> Yeni Malzeme Tanımla
+    </button>
+</div>
+<div class="treeview-container">
+    <TreeView T="MaterialCategoryNode"
+              Items="filteredTree"
+              ItemTemplate="CategoryNodeTemplate"
+              OnItemClick="OnCategoryClick"
+              OnDeleteClick="DeleteCategory"
+              OnContextMenu="HandleContextMenu"
+              OnAddChildClick="AddChildCategory"
+              Selectable="false" />
+
+    <MaterialCategoryEditModal Category="selectedCategory"
+                               IsOpen="isCategoryEditOpen"
+                               ParentCategories="categories"
+                               OnSave="OnModalCategorySave"
+                               OnClose="OnModalCategoryClose" />
+
+    <MaterialEditModal Material="selectedMaterial"
+                       Categories="categories"
+                       Brands="brands"
+                       Models="models"
+                       MaterialUnits="materialUnits"
+                       IsOpen="isMaterialEditOpen"
+                       OnSave="OnModalMaterialSave"
+                       OnClose="OnModalMaterialClose" />
+</div>
+@if (showContextMenu)
+{
+    <div>
+        <div class="context-menu-overlay" @onclick="CloseContextMenu"></div>
+        <div class="context-menu"
+             style="position:fixed;top:@($"{contextMenuY}px");left:@($"{contextMenuX}px");z-index:1001;">
+            <ul>
+                @if (contextMenuType == "category" && contextMenuNode is TreeItem<MaterialCategoryNode> catNode)
+                {
+                    <li @onclick="() => AddChildCategory(catNode)">Alt Kategori Yarat</li>
+                    <li @onclick="() => EditCategory(catNode)">Düzenle</li>
+                    <li @onclick="() => DeleteCategory(catNode)">Sil</li>
+                }
+                @if (contextMenuType == "material" && contextMenuNode is Material mat)
+                {
+                    <li @onclick="() => DefineMaterial(mat)">Malzeme Tanımla</li>
+                    <li @onclick="() => EditMaterial(mat)">Düzenle</li>
+                    <li @onclick="() => DeleteMaterial(mat)">Sil</li>
+                }
+            </ul>
+        </div>
+    </div>
+}
+@code {
+    private List<MaterialCategory> categories = new();
+    private List<Material> materials = new();
+    private List<TreeItem<MaterialCategoryNode>> categoryTree = new();
+    private bool _dataLoaded;
+    private List<MaterialBrand> brands = new();
+    private List<MaterialModel> models = new();
+    private List<MaterialUnit> materialUnits = new();
+
+    MaterialCategory? selectedCategory;
+    Material? selectedMaterial;
+    bool isCategoryEditOpen = false;
+    bool isMaterialEditOpen = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_dataLoaded)
+        {
+            categories = await MaterialCategoryService.GetAllAsync();
+            materials = await MaterialService.GetAllAsync();
+            brands = await MaterialBrandService.GetAllAsync();
+            models = await MaterialModelService.GetAllAsync();
+            materialUnits = await MaterialUnitService.GetAllAsync();
+            categoryTree = BuildCategoryTree(categories, materials);
+            _dataLoaded = true;
+            StateHasChanged();
+        }
+    }
+
+    public class MaterialCategoryNode
+    {
+        public MaterialCategory? Category { get; set; }
+        public List<Material> Materials { get; set; } = new();
+    }
+    // Kategorileri ve malzemeleri ağaç yapısına dönüştür
+    private List<TreeItem<MaterialCategoryNode>> BuildCategoryTree(List<MaterialCategory> categories, List<Material> materials)
+    {
+        var lookup = categories.ToDictionary(c => c.Id, c =>
+            new TreeItem<MaterialCategoryNode>
+            {
+                Data = new MaterialCategoryNode { Category = c },
+                ShowCreateIcon = true,
+                ShowEditIcon = true,
+                ShowDeleteIcon = true
+            });
+        foreach (var cat in categories)
+        {
+            if (cat.ParentCategoryId.HasValue && lookup.ContainsKey(cat.ParentCategoryId.Value))
+                lookup[cat.ParentCategoryId.Value].Children.Add(lookup[cat.Id]);
+        }
+        foreach (var mat in materials)
+        {
+            if (lookup.ContainsKey(mat.CategoryId))
+                lookup[mat.CategoryId].Data.Materials.Add(mat);
+        }
+        // Sadece kök kategorileri döndür
+        return lookup.Values.Where(n => n.Data.Category?.ParentCategoryId == null).ToList();
+    }
+
+    private void OnCategoryClick(TreeItem<MaterialCategoryNode> node)
+    {
+        if (node.Data.Category != null)
+        {
+            selectedCategory = node.Data.Category;
+            isCategoryEditOpen = true;
+            isMaterialEditOpen = false;
+            selectedMaterial = null;
+            StateHasChanged();
+        }
+    }
+
+    private void OnMaterialClick(Material mat)
+    {
+        StateHasChanged();
+        selectedMaterial = mat;
+        isMaterialEditOpen = true;
+        isCategoryEditOpen = false;
+        selectedCategory = null;
+        StateHasChanged();
+    }
+
+    RenderFragment<MaterialCategoryNode> CategoryNodeTemplate => node => @<div>
+    <b title="@node.Category?.Aciklama">@node.Category?.CategoryName</b>
+@if (!string.IsNullOrWhiteSpace(node.Category?.Aciklama))
+    {
+    <span style="margin-left:8px; color:gray; font-size:smaller;">@node.Category.Aciklama</span>
+    }
+@foreach (var mat in node.Materials)
+    {
+    <div class="material-item rounded px-2 py-1 mb-1" style="margin-left:20px; cursor:pointer;" title="@mat.Aciklama"
+         @onclick="@(() => OnMaterialClick(mat))"
+         @oncontextmenu="@((MouseEventArgs e) => HandleMaterialContextMenu((e, mat)))">
+        <i class="bi bi-box me-2"></i>
+        @mat.MaterialName
+    </div>
+    }
+</div>;
+
+    // Modal işlemleri vs. önceki gibi
+
+    string searchTerm = "";
+
+    List<TreeItem<MaterialCategoryNode>> filteredTree => TreeHelper.FilterTree(
+        categoryTree,
+        item =>
+            (item.Data.Category != null && item.Data.Category.CategoryName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) ||
+            (item.Data.Materials != null && item.Data.Materials.Any(m => m.MaterialName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)))
+    );
+
+    object contextMenuNode = null;
+    string contextMenuType = ""; // "category" veya "material"
+    bool showContextMenu = false;
+    double contextMenuX, contextMenuY;
+
+    private void HandleContextMenu((MouseEventArgs e, TreeItem<MaterialCategoryNode> item) args)
+    {
+        contextMenuNode = args.item;
+        contextMenuType = "category";
+        showContextMenu = true;
+        contextMenuX = args.e.ClientX;
+        contextMenuY = args.e.ClientY;
+        StateHasChanged();
+    }
+
+    private void HandleMaterialContextMenu((MouseEventArgs e, Material mat) args)
+    {
+        contextMenuNode = args.mat;
+        contextMenuType = "material";
+        showContextMenu = true;
+        contextMenuX = args.e.ClientX;
+        contextMenuY = args.e.ClientY;
+        StateHasChanged();
+    }
+
+    private void CloseContextMenu()
+    {
+        showContextMenu = false;
+        contextMenuNode = null;
+        contextMenuType = "";
+        StateHasChanged();
+    }
+    private void AddChildCategory(TreeItem<MaterialCategoryNode> parentNode)
+    {
+        selectedCategory = new MaterialCategory
+        {
+            ParentCategoryId = parentNode.Data.Category.Id
+        };
+        isCategoryEditOpen = true;
+        isMaterialEditOpen = false;
+        StateHasChanged();
+        CloseContextMenu();
+    }
+
+    private void EditCategory(TreeItem<MaterialCategoryNode> node)
+    {
+        selectedCategory = node.Data.Category;
+        isCategoryEditOpen = true;
+        CloseContextMenu();
+    }
+
+    private async Task DeleteCategory(TreeItem<MaterialCategoryNode> node)
+    {
+        CloseContextMenu();
+        await Task.Yield();
+
+        if (node?.Data.Category == null)
+        {
+            ToastService.ShowToast("Kategori bilgisi bulunamadı", ToastType.Error, 5000);
+            return;
+        }
+
+        (bool canDelete, string? reason) = await MaterialCategoryService.CanDeleteAsync(node.Data.Category.Id);
+
+        if (!canDelete)
+        {
+            ToastService.ShowToast(reason ?? "Bilinmeyen bir hata oluştu", ToastType.Error, 5000);
+            return;
+        }
+
+        string categoryName = node.Data.Category.CategoryName ?? "Kategori";
+
+        ModalService.ShowConfirmation(
+            "Silme Onayı",
+            $"'{categoryName}' kaydını silmek istediğinizden emin misiniz?",
+        async result =>
+        {
+            if (result)
+            {
+                var deleted = await MaterialCategoryService.DeleteAsync(node.Data.Category.Id);
+
+                if (deleted)
+                {
+                    ToastService.ShowToast($"{categoryName} silindi", ToastType.Success, 3000);
+
+                    categories = await MaterialCategoryService.GetAllAsync();
+                    categoryTree = BuildCategoryTree(categories, materials);
+
+                    StateHasChanged();
+                }
+                else
+                {
+                    ToastService.ShowToast($"Silme işlemi başarısız oldu", ToastType.Error, 3000);
+                }
+            }
+        });
+        StateHasChanged();
+    }
+
+    private void DefineMaterial(Material mat)
+    {
+        CloseContextMenu();
+    }
+
+    private void EditMaterial(Material mat)
+    {
+        selectedMaterial = mat;
+        isMaterialEditOpen = true;
+        CloseContextMenu();
+    }
+
+    private void DeleteMaterial(Material mat)
+    {
+        CloseContextMenu();
+    }
+    private async Task OpenCreateModal()
+    {
+        // Yeni kategori eklemek için modal açılacaksa:
+        selectedCategory = new MaterialCategory();
+        isCategoryEditOpen = true;
+        isMaterialEditOpen = false;
+        selectedMaterial = null;
+        StateHasChanged();
+    }
+    private async Task OnModalCategorySave()
+    {
+        isCategoryEditOpen = false;
+        if (selectedCategory != null)
+        {
+            if (selectedCategory.Id == 0)
+            {
+                await MaterialCategoryService.AddAsync(selectedCategory);
+            }
+            else
+            {
+                await MaterialCategoryService.UpdateAsync(selectedCategory);
+            }
+        }
+        categories = await MaterialCategoryService.GetAllAsync();
+        categoryTree = BuildCategoryTree(categories, materials);
+        selectedCategory = null;
+        StateHasChanged();
+    }
+    private async Task OnModalMaterialSave()
+    {
+        if (selectedMaterial != null)
+        {
+            if (selectedMaterial.Id == 0)
+                await MaterialService.AddAsync(selectedMaterial);
+            else
+                await MaterialService.UpdateAsync(selectedMaterial);
+        }
+        isMaterialEditOpen = false;
+        selectedMaterial = null;
+        materials = await MaterialService.GetAllAsync();
+        categoryTree = BuildCategoryTree(categories, materials);
+        StateHasChanged();
+    }
+    private void OnModalCategoryClose()
+    {
+        isCategoryEditOpen = false;
+        selectedCategory = null;
+    }
+    private void OnModalMaterialClose()
+    {
+        isMaterialEditOpen = false;
+        selectedMaterial = null;
+    }
+}

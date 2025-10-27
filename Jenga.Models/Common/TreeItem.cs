@@ -6,11 +6,15 @@ using System.Threading.Tasks;
 
 namespace Jenga.Models.Common
 {
-    public class TreeItem
+    /// <summary>
+    /// Ağaç düğümü generic modeli.
+    /// </summary>
+    public class TreeItem<T>
     {
-        public int Id { get; set; }
-        public int? ParentId { get; set; }
-        public string Text { get; set; }
-        public List<TreeItem> Children { get; set; } = new List<TreeItem>();
+        public T Data { get; set; }
+        public List<TreeItem<T>> Children { get; set; } = new();
+        public bool ShowCreateIcon { get; set; } = true;
+        public bool ShowEditIcon { get; set; } = true;
+        public bool ShowDeleteIcon { get; set; } = true;
     }
 }

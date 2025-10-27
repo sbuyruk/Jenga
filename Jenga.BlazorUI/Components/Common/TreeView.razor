@@ -1,59 +1,69 @@
-﻿@typeparam TItem
+﻿@using Jenga.Models.Common
+@typeparam T
 
 <ul class="treeview-list">
     @foreach (var item in Items)
     {
         <li>
             <span class="treeview-item @(IsSelected(item) ? "selected" : "") gap-2"
-                  @onclick="() => OnItemClick.InvokeAsync(item)"
+                  @onclick="Selectable ? (() => OnItemClick.InvokeAsync(item)) : null"
                   @oncontextmenu:preventDefault="true"
                   @oncontextmenu="(e) => OnNodeContextMenu(e, item)">
-                @ItemTemplate(item)
-                @if (!(GetChildren(item)?.Any() ?? false))
+
+                @ItemTemplate(item.Data)
+                @if (item.ShowCreateIcon)
                 {
                     <i class="bi bi-plus-square create-icon"
                        title="Altına Ekle"
                        @onclick:stopPropagation="true"
                        @onclick="() => OnAddChildClick.InvokeAsync(item)"></i>
+                }
+                @if (item.ShowEditIcon)
+                {
                     <i class="bi bi-pencil-square edit-icon"
                        title="Düzenle"
                        @onclick:stopPropagation="true"
-                       @onclick="() => OnItemClick.InvokeAsync(item)"></i>
+                       @onclick="() => OnItemEditClick.InvokeAsync(item)"></i>
+                }
+                @if (item.ShowDeleteIcon)
+                {
                     <i class="bi bi-trash3-fill delete-icon"
                        title="Sil"
                        @onclick:stopPropagation="true"
                        @onclick="() => OnDeleteClick.InvokeAsync(item)"></i>
                 }
             </span>
-            @if (GetChildren(item).Any())
+            @if (item.Children?.Any() == true)
             {
-                <TreeView TItem="TItem"
-                          Items="GetChildren(item)"
+                <TreeView T="T"
+                          Items="item.Children"
                           ItemTemplate="ItemTemplate"
-                          GetChildren="GetChildren"
                           OnItemClick="OnItemClick"
+                          OnItemEditClick="OnItemEditClick"
                           SelectedItem="SelectedItem"
                           OnDeleteClick="OnDeleteClick"
                           OnContextMenu="OnContextMenu"
-                          OnAddChildClick="OnAddChildClick" />
+                          OnAddChildClick="OnAddChildClick"
+                          Selectable="Selectable" />
             }
         </li>
     }
 </ul>
 
 @code {
-    [Parameter] public List<TItem> Items { get; set; }
-    [Parameter] public RenderFragment<TItem> ItemTemplate { get; set; }
-    [Parameter] public Func<TItem, List<TItem>> GetChildren { get; set; }
-    [Parameter] public EventCallback<TItem> OnItemClick { get; set; }
-    [Parameter] public TItem SelectedItem { get; set; }
-    [Parameter] public EventCallback<TItem> OnDeleteClick { get; set; }
-    [Parameter] public EventCallback<(MouseEventArgs, TItem)> OnContextMenu { get; set; }
-    [Parameter] public EventCallback<TItem> OnAddChildClick { get; set; } // YENİ EKLENDİ
+    [Parameter] public TreeItem<T> SelectedItem { get; set; }
+    [Parameter] public List<TreeItem<T>> Items { get; set; }
+    [Parameter] public RenderFragment<T> ItemTemplate { get; set; }
+    [Parameter] public EventCallback<TreeItem<T>> OnItemClick { get; set; }
+    [Parameter] public EventCallback<TreeItem<T>> OnItemEditClick { get; set; } // Edit için ayrı callback
+    [Parameter] public EventCallback<TreeItem<T>> OnDeleteClick { get; set; }
+    [Parameter] public EventCallback<(MouseEventArgs, TreeItem<T>)> OnContextMenu { get; set; }
+    [Parameter] public EventCallback<TreeItem<T>> OnAddChildClick { get; set; }
+    [Parameter] public bool Selectable { get; set; } = true;
 
-    private bool IsSelected(TItem item) => SelectedItem != null && EqualityComparer<TItem>.Default.Equals(item, SelectedItem);
+    private bool IsSelected(TreeItem<T> item) => SelectedItem != null && EqualityComparer<TreeItem<T>>.Default.Equals(item, SelectedItem);
 
-    void OnNodeContextMenu(MouseEventArgs e, TItem item)
+    void OnNodeContextMenu(MouseEventArgs e, TreeItem<T> item)
     {
         OnContextMenu.InvokeAsync((e, item));
     }

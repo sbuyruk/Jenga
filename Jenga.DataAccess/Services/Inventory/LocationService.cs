@@ -3,6 +3,7 @@ using Jenga.DataAccess.Repositories.IRepository.Inventory;
 using Jenga.Models.Inventory;
 using Jenga.Utility.Toast;
 using System.Drawing.Drawing2D;
+using System.Linq.Expressions;
 
 namespace Jenga.DataAccess.Services.Inventory
 {
@@ -67,8 +68,10 @@ namespace Jenga.DataAccess.Services.Inventory
             return true;
         }
 
-        public async Task<(bool CanDelete, string? Reason)> CanDeleteLocationAsync(int locationId)
+        public async Task<(bool CanDelete, string? Reason)> CanDeleteAsync(int locationId)
         {
+            if (await AnyAsync(m => m.ParentId == locationId))
+                return (false, "Bu konumun altında kayıtlı konum bulunmaktadır, önce onu silmelisiniz.");
             if (await _materialEntryService.AnyAsync(m => m.LocationId == locationId))
                 return (false, "Bu konum bir malzeme girişinde kullanılıyor, önce onu silmelisiniz.");
             if (await _materialExitService.AnyAsync(m => m.LocationId == locationId))
@@ -86,7 +89,10 @@ namespace Jenga.DataAccess.Services.Inventory
             var parent = _locationsCache.FirstOrDefault(x => x.Id == parentId);
             return parent?.LocationName ?? "";
         }
-
+        public Task<bool> AnyAsync(Expression<Func<Location, bool>> predicate)
+        {
+            return _unitOfWork.Location.AnyAsync(predicate);
+        }
 
     }
 }

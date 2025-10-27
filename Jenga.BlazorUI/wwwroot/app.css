@@ -127,3 +127,15 @@ h1:focus {
     --context-menu-bg: #23272b;
     border-color: #444;
 }
+/* Malzeme rengi */
+.material-item {
+    background-color: var(--bs-primary-bg-subtle); /* Temaya göre değişir */
+    color: var(--bs-primary-text-emphasis); /* Temaya göre değişir */
+    border-left: 4px solid var(--bs-primary); /* Malzeme için ayırt edici renk */
+}
+
+@media (prefers-color-scheme: dark) {
+    .material-item {
+        /* Gerekirse ek özelleştirme yapılabilir */
+    }
+}

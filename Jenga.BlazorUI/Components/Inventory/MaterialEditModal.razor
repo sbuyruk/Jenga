@@ -66,7 +66,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn btn-primary" @onclick="OnSave">Kaydet</button>
+                    <button class="btn btn-primary" @onclick="HandleSave">Kaydet</button>
                     <button class="btn btn-secondary" @onclick="OnClose">Kapat</button>
                 </div>
             </div>
@@ -75,7 +75,7 @@
 }
 
 @code {
-    [Parameter] public Material Material { get; set; }
+    [Parameter] public Material? Material { get; set; }
     [Parameter] public List<MaterialUnit> MaterialUnits { get; set; } = new();
     [Parameter] public bool IsOpen { get; set; }
     [Parameter] public EventCallback OnSave { get; set; }
@@ -83,4 +83,9 @@
     [Parameter] public List<MaterialCategory> Categories { get; set; } = new();
     [Parameter] public List<MaterialBrand> Brands { get; set; } = new();
     [Parameter] public List<MaterialModel> Models { get; set; } = new();
+
+    private async Task HandleSave()
+    {
+        await OnSave.InvokeAsync();
+    }
 }

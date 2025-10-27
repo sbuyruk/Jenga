@@ -138,7 +138,7 @@ else
             {
                 if (result)
                 {
-                    var deleted = await MaterialCategoryService.DeleteAsync(category);
+                    var deleted = await MaterialCategoryService.DeleteAsync(category.Id);
                     if (deleted)
                     {
                         ToastService.ShowToast($"{category.CategoryName} silindi", ToastType.Success, 3000);

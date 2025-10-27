@@ -3,21 +3,18 @@
 @using Jenga.BlazorUI.Components.Common
 @using Jenga.BlazorUI.Components.Inventory
 @using Jenga.DataAccess.Services.Inventory
+@using Jenga.Models.Common
 @using Jenga.Models.Helper
 @using Jenga.Models.Inventory
 @inject ILocationService LocationService
 
-
-<TreeView TItem="Location"
+<TreeView T="Location"
           Items="tree"
-          GetChildren="@(loc => loc.Children)"
-          OnItemClick="EditLocation"
-          SelectedItem="selectedLocation">
-    <ItemTemplate Context="loc">
-        <span>@loc.LocationName</span>
-    </ItemTemplate>
-</TreeView>
-<LocationEditModal Location="selectedLocation"
+          ItemTemplate="LocationTemplate"
+          SelectedItem="selectedLocation"
+          OnItemClick="EditLocation" />
+
+<LocationEditModal Location="selectedLocation?.Data"
                    IsOpen="isEditOpen"
                    ParentLocations="locations"
                    OnSave="OnModalSave"
@@ -25,24 +22,30 @@
 
 @code {
     List<Location> locations = new();
-    List<Location> tree = new();
-    Location selectedLocation;
+    List<TreeItem<Location>> tree = new();
+    TreeItem<Location>? selectedLocation;
     bool isEditOpen = false;
 
     protected override async Task OnInitializedAsync()
     {
         locations = await LocationService.GetAllAsync();
-        tree = TreeHelper.BuildTree<Location, int>(
+        tree = TreeHelper.BuildGenericTree<Location, int>(
             locations,
             loc => loc.Id,
             loc => loc.ParentId,
-            (loc, children) => loc.Children = children
+            loc => new TreeItem<Location>
+            {
+                Data = loc,
+                ShowCreateIcon = true,
+                ShowEditIcon = true,
+                ShowDeleteIcon = true
+            }
         );
     }
 
-    void EditLocation(Location loc)
+    void EditLocation(TreeItem<Location> item)
     {
-        selectedLocation = loc;
+        selectedLocation = item;
         isEditOpen = true;
         StateHasChanged();
     }
@@ -50,27 +53,33 @@
     async Task OnModalSave()
     {
         isEditOpen = false;
-        if (selectedLocation != null)
+        if (selectedLocation?.Data != null)
         {
-            if (selectedLocation.Id == 0)
+            if (selectedLocation.Data.Id == 0)
             {
-                var saved = await LocationService.AddAsync(selectedLocation);
+                var saved = await LocationService.AddAsync(selectedLocation.Data);
                 if (saved)
                 {
-                    locations.Add(selectedLocation);
+                    locations.Add(selectedLocation.Data);
                 }
             }
             else
             {
-                await LocationService.UpdateAsync(selectedLocation);
+                await LocationService.UpdateAsync(selectedLocation.Data);
             }
         }
         locations = await LocationService.GetAllAsync();
-        tree = TreeHelper.BuildTree<Location, int>(
+        tree = TreeHelper.BuildGenericTree<Location, int>(
             locations,
             loc => loc.Id,
             loc => loc.ParentId,
-            (loc, children) => loc.Children = children
+            loc => new TreeItem<Location>
+            {
+                Data = loc,
+                ShowCreateIcon = true,
+                ShowEditIcon = true,
+                ShowDeleteIcon = true
+            }
         );
         StateHasChanged();
     }
@@ -80,4 +89,7 @@
         isEditOpen = false;
     }
 
+    RenderFragment<Location> LocationTemplate => loc => @<span>
+    @loc.LocationName
+    </span>;
 }

@@ -1,52 +1,75 @@
 ﻿using Jenga.Models.Common;
-using Jenga.Models.Inventory;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Jenga.Models.Helper
 {
     public static class TreeHelper
     {
-        public static List<T> BuildTree<T, TKey>(
+        /// <summary>
+        /// Düz listeyi TreeItem<T> generic hiyerarşisine dönüştürür.
+        /// </summary>
+        public static List<TreeItem<T>> BuildGenericTree<T, TKey>(
             List<T> flatList,
             Func<T, TKey> idSelector,
             Func<T, TKey?> parentIdSelector,
-            Action<T, List<T>> setChildren)
+            Func<T, TreeItem<T>> itemFactory)
             where TKey : struct
         {
-            var lookup = flatList.ToLookup(parentIdSelector);
+            var lookup = flatList.ToDictionary(idSelector, itemFactory);
+            var roots = new List<TreeItem<T>>();
+
             foreach (var item in flatList)
             {
-                var children = lookup[idSelector(item)].ToList();
-                setChildren(item, children);
-            }
-            return lookup[null].ToList(); // ParentId'si null olanlar kök düğümler
-        }
-        public static List<Location> FilterTree(List<Location> nodes, string searchTerm)
-        {
-            if (string.IsNullOrWhiteSpace(searchTerm)) return nodes;
-            var filtered = new List<Location>();
+                var node = lookup[idSelector(item)];
+                var parentId = parentIdSelector(item);
 
+                // Eğer ParentId null veya default ise, kök
+                if (!parentId.HasValue || parentId.Value.Equals(default(TKey)))
+                {
+                    roots.Add(node);
+                }
+                else if (lookup.ContainsKey(parentId.Value))
+                {
+                    lookup[parentId.Value].Children.Add(node);
+                }
+                else
+                {
+                    roots.Add(node);
+                }
+            }
+            return roots;
+        }
+
+        /// <summary>
+        /// Generic tree için filtreleme, klonlama ile yeni ağaç döndürür.
+        /// </summary>
+        public static List<TreeItem<T>> FilterTree<T>(
+            List<TreeItem<T>> nodes,
+            Func<TreeItem<T>, bool> predicate)
+        {
+            var filtered = new List<TreeItem<T>>();
             foreach (var node in nodes)
             {
-                // Düğüm veya childlarında eşleşme varsa ekle
-                if (NodeMatches(node, searchTerm, out var matchedNode))
-                    filtered.Add(matchedNode);
+                var match = FilterNode(node, predicate);
+                if (match != null)
+                    filtered.Add(match);
             }
             return filtered;
         }
 
-        private static bool NodeMatches(Location node, string searchTerm, out Location matched)
+        private static TreeItem<T>? FilterNode<T>(
+            TreeItem<T> node,
+            Func<TreeItem<T>, bool> predicate)
         {
-            bool matches = node.LocationName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase);
-            var matchingChildren = new List<Location>();
+            bool matches = predicate(node);
+            var matchingChildren = new List<TreeItem<T>>();
 
             foreach (var child in node.Children)
             {
-                if (NodeMatches(child, searchTerm, out var matchedChild))
+                var matchedChild = FilterNode(child, predicate);
+                if (matchedChild != null)
                     matchingChildren.Add(matchedChild);
             }
 
@@ -55,22 +78,19 @@ namespace Jenga.Models.Helper
 
             if (matches)
             {
-                matched = new Location
+                // Klonla ve çocukları ekle
+                return new TreeItem<T>
                 {
-                    Id = node.Id,
-                    LocationName = node.LocationName,
-                    LocationType = node.LocationType,
-                    ParentId = node.ParentId,
-                    Aciklama = node.Aciklama,
-                    IsStoragePlace = node.IsStoragePlace,
-                    Children = matchingChildren
+                    Data = node.Data,
+                    Children = matchingChildren,
+                    ShowCreateIcon = node.ShowCreateIcon,
+                    ShowEditIcon = node.ShowEditIcon,
+                    ShowDeleteIcon = node.ShowDeleteIcon
                 };
-                return true;
             }
-
-            matched = null;
-            return false;
+            return null;
         }
     }
+
 
 }

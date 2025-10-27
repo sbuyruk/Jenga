@@ -31,9 +31,18 @@
     font-size: 1rem;
     vertical-align: middle;
 }
-.treeview-item {
+/*.treeview-item {
     position: relative;
     display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    transition: background 0.2s;
+    cursor: pointer;
+}*/
+.treeview-item {
+    position: relative;
+    display: flex;
+    align-items: center;
     padding: 2px 8px;
     border-radius: 4px;
     transition: background 0.2s;
@@ -67,8 +76,8 @@
     display: none;
 }
 .delete-icon {
-    color: #d32f2f;
-    margin-left: 8px;
+    /*color: #d32f2f;*/
+    /*margin-left: 2px;*/
     cursor: pointer;
     font-size: 1rem;
     vertical-align: middle;
@@ -78,11 +87,11 @@
 
     .delete-icon:hover {
         opacity: 1;
-        color: darkred;
+        /*color: darkred;*/
     }
 .edit-icon {
-    color: blue;
-    margin-left: 8px;
+    /*color: blue;*/
+    /*margin-left: 2px;*/
     cursor: pointer;
     font-size: 1rem;
     vertical-align: middle;
@@ -92,11 +101,11 @@
 
     .edit-icon:hover {
         opacity: 1;
-        color: darkblue;
+        /*color: darkblue;*/
     }
 .create-icon {
-    color: green;
-    margin-left: 8px;
+    /*color: green;*/
+    /*margin-left: 2px;*/
     cursor: pointer;
     font-size: 1rem;
     vertical-align: middle;
@@ -106,7 +115,7 @@
 
     .create-icon:hover {
         opacity: 1;
-        color: darkgreen;
+        /*color: darkgreen;*/
     }
 
 .edit-icon,

@@ -9,11 +9,17 @@ namespace Jenga.DataAccess.Services.Inventory
     {
         private readonly IUnitOfWork _unitOfWork;
 
-        public MaterialCategoryService(IUnitOfWork unitOfWork)
+        private readonly IMaterialService _materialService;
+
+        public MaterialCategoryService(
+            IUnitOfWork unitOfWork,
+             IMaterialService materialService,
+            IMaterialExitService materialExitService,
+            IMaterialInventoryService materialInventoryService)
         {
             _unitOfWork = unitOfWork;
+            _materialService = materialService;
         }
-
         public async Task<List<MaterialCategory>> GetAllAsync(CancellationToken cancellationToken = default)
             => await _unitOfWork.MaterialCategory.GetAllAsync(cancellationToken);
 
@@ -34,23 +40,41 @@ namespace Jenga.DataAccess.Services.Inventory
             return true;
         }
 
-        public async Task<bool> DeleteAsync(MaterialCategory category, CancellationToken cancellationToken = default)
+        public async Task<bool> DeleteAsync(int categoryId, CancellationToken cancellationToken = default)
         {
-            // Önce alt kategori var mı kontrolü
             var hasChildren = await _unitOfWork.MaterialCategory
-                .AnyAsync(m => m.ParentCategoryId == category.Id, cancellationToken);
+                .AnyAsync(m => m.ParentCategoryId == categoryId, cancellationToken);
 
             if (hasChildren)
-                return false; // Silme işlemi başarısız
+                return false;
 
-            _unitOfWork.MaterialCategory.Remove(category);
-            await _unitOfWork.MaterialCategory.SaveChangesAsync(cancellationToken);
-            return true;
+            // Ensure the entity is tracked
+            var entity = await _unitOfWork.MaterialCategory.GetByIdAsync(categoryId, cancellationToken);
+            if (entity != null)
+            {
+                _unitOfWork.MaterialCategory.Remove(entity);
+                await _unitOfWork.MaterialCategory.SaveChangesAsync(cancellationToken);
+                return true;
+            }
+            return false;
         }
         public async Task<bool> AnyAsync(Expression<Func<MaterialCategory, bool>> predicate, CancellationToken cancellationToken = default)
         {
             var items = await _unitOfWork.MaterialCategory.GetAllAsync(cancellationToken);
             return items.Any(predicate.Compile());
+        }
+
+        public async Task<(bool CanDelete, string? Reason)> CanDeleteAsync(int id)
+        {
+
+            if (await AnyAsync(m => m.ParentCategoryId == id))
+                return (false, "Bu kategori bir malzemenin üst kategorisi olarak kullanılıyor, önce onu silmelisiniz.");
+            if (await _materialService.AnyAsync(m => m.CategoryId == id))
+                return (false, "Bu kategori bir malzemenin kategorisi kullanılıyor, önce onu silmelisiniz.");
+            if (await _unitOfWork.MaterialCategory.AnyAsync(m => m.ParentCategoryId == id))
+                return (false, "Bu kategori bir malzemenin üst kategorisi olarak kullanılıyor, önce onu silmelisiniz.");
+
+            return (true, null);
         }
     }
 }

@@ -9,7 +9,8 @@ namespace Jenga.DataAccess.Services.Inventory
         Task<MaterialCategory?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
         Task<bool> AddAsync(MaterialCategory category, CancellationToken cancellationToken = default);
         Task<bool> UpdateAsync(MaterialCategory category, CancellationToken cancellationToken = default);
-        Task<bool> DeleteAsync(MaterialCategory category, CancellationToken cancellationToken = default);
+        Task<bool> DeleteAsync(int categoryId, CancellationToken cancellationToken = default);
         Task<bool> AnyAsync(Expression<Func<MaterialCategory, bool>> predicate, CancellationToken cancellationToken = default);
+        Task<(bool CanDelete, string? Reason)> CanDeleteAsync(int id);
     }
 }
