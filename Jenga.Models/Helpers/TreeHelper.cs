@@ -83,9 +83,9 @@ namespace Jenga.Models.Helper
                 {
                     Data = node.Data,
                     Children = matchingChildren,
-                    ShowCreateIcon = node.ShowCreateIcon,
-                    ShowEditIcon = node.ShowEditIcon,
-                    ShowDeleteIcon = node.ShowDeleteIcon
+                    ShowCreate = node.ShowCreate,
+                    ShowEdit = node.ShowEdit,
+                    ShowDelete = node.ShowDelete
                 };
             }
             return null;

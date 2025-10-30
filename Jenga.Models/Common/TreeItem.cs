@@ -11,10 +11,12 @@ namespace Jenga.Models.Common
     /// </summary>
     public class TreeItem<T>
     {
-        public T Data { get; set; }
+        public string Id { get; set; } = Guid.NewGuid().ToString();
+        public T Data { get; set; } = default!;
         public List<TreeItem<T>> Children { get; set; } = new();
-        public bool ShowCreateIcon { get; set; } = true;
-        public bool ShowEditIcon { get; set; } = true;
-        public bool ShowDeleteIcon { get; set; } = true;
+        public bool ShowContextMenu { get; set; } = true;
+        public bool ShowCreate { get; set; } = true;
+        public bool ShowEdit { get; set; } = true;
+        public bool ShowDelete { get; set; } = true;
     }
 }

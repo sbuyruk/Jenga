@@ -29,15 +29,17 @@
     </button>
 </div>
 <div class="treeview-container">
-    <TreeView T="Location"
-              Items="filteredTree"
-              ItemTemplate="LocationTemplate"
-              SelectedItem="selectedLocation"
-              OnItemClick="EditLocation"
-              OnDeleteClick="DeleteLocation"
-              OnContextMenu="HandleContextMenu"
-              OnAddChildClick="AddChildLocation"
-              Selectable="true" />
+    <TreeViewer T="Location"
+                Items="filteredTree"
+                OnEdit="EditLocation"
+                OnDelete="DeleteLocation"
+                OnCreate="AddChildLocation"
+                LabelSelector="@(item => item.Data.LocationName)"
+                DescriptionSelector="@(item => item.Data.Aciklama)"
+                ChildrenSelector="@(item => item.Children)"
+                ShowCreateSelector="@(item => item.ShowCreate)"
+                ShowEditSelector="@(item => item.ShowEdit)"
+                ShowDeleteSelector="@(item => item.ShowDelete)" />
 
     <LocationEditModal Location="selectedLocation?.Data"
                        IsOpen="isEditOpen"
@@ -45,27 +47,6 @@
                        OnSave="OnModalSave"
                        OnClose="OnModalClose" />
 </div>
-
-@if (showContextMenu)
-{
-    <div>
-        <div class="context-menu-overlay" @onclick="CloseContextMenu"></div>
-        <div class="context-menu"
-             style="position:fixed;top:@($"{contextMenuY}px");left:@($"{contextMenuX}px");z-index:1001;">
-            <ul>
-                <li @onclick="() => AddChildLocation(tree.FirstOrDefault(t => t.Data.Id == contextMenuNode.Id)!)">Altına Ekle</li>
-                <li @onclick="() => EditLocation(tree.FirstOrDefault(t => t.Data.Id == contextMenuNode.Id)!)">Düzenle</li>
-                <li @onclick="() => {
-                    var item = tree.FirstOrDefault(t => t.Data.Id == contextMenuNode.Id);
-                    if (item != null)
-                    {
-                        _ = DeleteLocation(item);
-                    }
-                }">Sil</li>
-            </ul>
-        </div>
-    </div>
-}
 
 @code {
     private List<MaterialEntry> materialEntries { get; set; } = new();
@@ -83,11 +64,6 @@
         item => item.Data.LocationName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)
     );
 
-    // Context menu state
-    bool showContextMenu = false;
-    double contextMenuX, contextMenuY;
-    Location contextMenuNode;
-
     protected override async Task OnInitializedAsync()
     {
         locations = await LocationService.GetAllAsync();
@@ -98,9 +74,9 @@
             loc => new TreeItem<Location>
             {
                 Data = loc,
-                ShowCreateIcon = true,
-                ShowEditIcon = true,
-                ShowDeleteIcon = true
+                ShowCreate = true,
+                ShowEdit = true,
+                ShowDelete = true
             }
         );
     }
@@ -120,7 +96,6 @@
     {
         selectedLocation = item;
         isEditOpen = true;
-        CloseContextMenu();
         StateHasChanged();
     }
 
@@ -150,9 +125,9 @@
             loc => new TreeItem<Location>
             {
                 Data = loc,
-                ShowCreateIcon = true,
-                ShowEditIcon = true,
-                ShowDeleteIcon = true
+                ShowCreate = true,
+                ShowEdit = true,
+                ShowDelete = true
             }
         );
         StateHasChanged();
@@ -168,9 +143,9 @@
         selectedLocation = new TreeItem<Location>
         {
             Data = new Location(),
-            ShowCreateIcon = true,
-            ShowEditIcon = true,
-            ShowDeleteIcon = true
+            ShowCreate = true,
+            ShowEdit = true,
+            ShowDelete = true
         };
         isEditOpen = true;
     }
@@ -196,8 +171,6 @@
 
     private async Task DeleteLocation(TreeItem<Location> item)
     {
-        CloseContextMenu();
-        await Task.Yield();
         var (canDelete, reason) = await LocationService.CanDeleteAsync(item.Data.Id);
         if (!canDelete)
         {
@@ -224,9 +197,9 @@
                         loc => new TreeItem<Location>
                         {
                             Data = loc,
-                            ShowCreateIcon = true,
-                            ShowEditIcon = true,
-                            ShowDeleteIcon = true
+                            ShowCreate = true,
+                            ShowEdit = true,
+                            ShowDelete = true
                         }
                     );
                     await OnRefresh.InvokeAsync();
@@ -240,19 +213,6 @@
         });
     }
 
-    void HandleContextMenu((MouseEventArgs e, TreeItem<Location> item) args)
-    {
-        showContextMenu = true;
-        contextMenuX = args.e.ClientX;
-        contextMenuY = args.e.ClientY;
-        contextMenuNode = args.item.Data;
-        StateHasChanged();
-    }
-    void CloseContextMenu()
-    {
-        showContextMenu = false;
-        StateHasChanged();
-    }
     void AddChildLocation(TreeItem<Location> parent)
     {
         selectedLocation = new TreeItem<Location>
@@ -261,17 +221,11 @@
             {
                 ParentId = parent.Data.Id
             },
-            ShowCreateIcon = true,
-            ShowEditIcon = true,
-            ShowDeleteIcon = true
+            ShowCreate = true,
+            ShowEdit = true,
+            ShowDelete = true
         };
         isEditOpen = true;
-        CloseContextMenu();
         StateHasChanged();
     }
-
-    RenderFragment<Location> LocationTemplate => loc => @<span>
-        <i class="@GetLocationIcon(loc) tree-icon"></i>
-        <span title="@loc.Aciklama">@loc.LocationName</span>
-    </span>;
 }

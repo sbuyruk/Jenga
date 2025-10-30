@@ -1,0 +1,132 @@
+﻿.treeview-item {
+    display: table;
+    align-items: center;
+    gap: 8px;
+    padding: 2px 5px;
+    border-radius: 4px;
+    transition: background 0.18s;
+    cursor: pointer;
+    position: relative;
+    min-height: 32px;
+}
+
+.tree-label {
+    font-weight: bold;
+    font-size: 1.03rem;
+    margin-right: 4px;
+}
+
+.tree-desc {
+    color: #888;
+    font-size: 0.95rem;
+    margin-left: 8px;
+    font-weight: normal;
+}
+
+.create-icon, .edit-icon, .delete-icon {
+    display: inline-block;
+    margin-left: 8px;
+    color: #888;
+    font-size: 1.1rem;
+    opacity: 0.85;
+    cursor: pointer;
+    transition: opacity 0.19s, transform 0.19s;
+    vertical-align: middle;
+}
+
+    .create-icon:hover {
+        opacity: 1;
+        color: #388e3c;
+        transform: scale(1.15);
+    }
+
+    .edit-icon:hover {
+        opacity: 1;
+        color: #1976d2;
+        transform: scale(1.15);
+    }
+
+    .delete-icon:hover {
+        opacity: 1;
+        color: #d32f2f;
+        transform: scale(1.15);
+    }
+
+.context-menu {
+    position: absolute;
+    background: #fff;
+    border: 1px solid #ccc;
+    min-width: 120px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    z-index: 1000;
+    padding: 4px 0;
+    top: 32px;
+    left: 0;
+}
+
+    .context-menu div {
+        padding: 6px 16px;
+        cursor: pointer;
+        font-size: 0.95rem;
+        transition: background 0.18s;
+    }
+
+        .context-menu div:hover {
+            background: #e3f2fd;
+        }
+
+/* Material kutuları */
+.material-badge {
+    display: inline-flex;
+    align-items: center;
+    background: #e3f2fd;
+    color: #1976d2;
+    border-radius: 16px;
+    padding: 4px 16px;
+    margin: 2px 8px 2px 0;
+    font-size: 0.96rem;
+    font-weight: 500;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    cursor: pointer;
+    border: 1px solid #bbdefb;
+}
+
+    .material-badge:hover {
+        background: #bbdefb;
+        color: #0d47a1;
+    }
+
+    .material-badge .bi {
+        margin-right: 4px;
+        font-size: 1rem;
+    }
+
+.treeview-item.selected {
+    background: #f0f7ff;
+    font-weight: bold;
+    border-left: 3px solid #1976d2;
+}
+
+/* Dark theme için */
+[data-bs-theme="dark"] .treeview-item:hover {
+    background: #23272b;
+    box-shadow: 0 0 4px #1976d2;
+}
+
+[data-bs-theme="dark"] .material-badge:hover {
+    background: #23272b;
+    color: #90caf9;
+}
+/* başka yere tıklanınca Context menu kaybolsun*/
+.context-menu-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+    background: transparent;
+}
+.material-badge-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px; /* etiketler arası boşluk */
+    margin-top: 4px;
+}

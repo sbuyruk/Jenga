@@ -10,7 +10,8 @@ namespace Jenga.DataAccess.Services.Inventory
         Task<Material?> GetByIdWithRelationsAsync(int id, CancellationToken cancellationToken = default);
         Task<bool> AddAsync(Material material, CancellationToken cancellationToken = default);
         Task<bool> UpdateAsync(Material material, CancellationToken cancellationToken = default);
-        Task<bool> DeleteAsync(Material material, CancellationToken cancellationToken = default);
+        Task<bool> DeleteAsync(int materialId, CancellationToken cancellationToken = default);
         Task<bool> AnyAsync(Expression<Func<Material, bool>> predicate, CancellationToken cancellationToken = default);
+        Task<(bool CanDelete, string? Reason)> CanDeleteAsync(int id);
     }
 }

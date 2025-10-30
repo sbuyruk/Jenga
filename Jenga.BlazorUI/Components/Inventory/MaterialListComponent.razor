@@ -131,7 +131,7 @@ else
             {
                 if (result)
                 {
-                    var deleted = await MaterialService.DeleteAsync(material);
+                    var deleted = await MaterialService.DeleteAsync(material.Id);
                     if (deleted)
                     {
                         ToastService.ShowToast($"{material.MaterialName} silindi", ToastType.Success, 3000);

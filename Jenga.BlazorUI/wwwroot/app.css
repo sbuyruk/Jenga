@@ -108,19 +108,7 @@ h1:focus {
     min-width: 220px;
     max-width: 100%;
 }
-/* Mobilde daha küçük font ve padding */
-@media (max-width: 768px) {
-    .treeview-container {
-        max-height: 45vh;
-        min-width: 120px;
-        font-size: 14px;
-        padding: 4px 4px 4px 0;
-    }
 
-    .treeview-list {
-        font-size: 13px;
-    }
-}
 
 /* Dark theme için */
 [data-bs-theme="dark"] .context-menu {
@@ -138,4 +126,49 @@ h1:focus {
     .material-item {
         /* Gerekirse ek özelleştirme yapılabilir */
     }
+}
+
+/*Treeviewer*/
+ul.treeview-list {
+    list-style: none !important;
+    margin: 0;
+    padding-left: 28px;
+    position: relative;
+}
+
+    ul.treeview-list > li {
+        position: relative;
+        min-height: 32px;
+        padding-left: 0;
+        margin-bottom: 1px;
+    }
+
+    ul.treeview-list li::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -14px;
+        border-left: 1px solid grey;
+        height: 100%;
+        width: 0;
+        z-index: 1;
+    }
+
+    ul.treeview-list li::after {
+        content: "";
+        position: absolute;
+        top: 1.2em;
+        left: -14px;
+        width: 16px;
+        height: 0;
+        border-top: 1px solid grey;
+        z-index: 1;
+    }
+
+    ul.treeview-list > li:only-child::before,
+    ul.treeview-list > li:only-child::after {
+        display: none;
+    }
+.treeview-list .material-badge {
+    margin-left: 0; /* tree çizgisiyle hizalı olsun */
 }

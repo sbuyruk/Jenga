@@ -9,16 +9,10 @@ namespace Jenga.DataAccess.Services.Inventory
     {
         private readonly IUnitOfWork _unitOfWork;
 
-        private readonly IMaterialService _materialService;
-
         public MaterialCategoryService(
-            IUnitOfWork unitOfWork,
-             IMaterialService materialService,
-            IMaterialExitService materialExitService,
-            IMaterialInventoryService materialInventoryService)
+            IUnitOfWork unitOfWork)
         {
             _unitOfWork = unitOfWork;
-            _materialService = materialService;
         }
         public async Task<List<MaterialCategory>> GetAllAsync(CancellationToken cancellationToken = default)
             => await _unitOfWork.MaterialCategory.GetAllAsync(cancellationToken);
@@ -69,7 +63,7 @@ namespace Jenga.DataAccess.Services.Inventory
 
             if (await AnyAsync(m => m.ParentCategoryId == id))
                 return (false, "Bu kategori bir malzemenin üst kategorisi olarak kullanılıyor, önce onu silmelisiniz.");
-            if (await _materialService.AnyAsync(m => m.CategoryId == id))
+            if (await _unitOfWork.Material.AnyAsync(m => m.CategoryId == id))
                 return (false, "Bu kategori bir malzemenin kategorisi kullanılıyor, önce onu silmelisiniz.");
             if (await _unitOfWork.MaterialCategory.AnyAsync(m => m.ParentCategoryId == id))
                 return (false, "Bu kategori bir malzemenin üst kategorisi olarak kullanılıyor, önce onu silmelisiniz.");

@@ -44,12 +44,36 @@ namespace Jenga.DataAccess.Services.Inventory
             return true;
         }
 
-        public async Task<bool> DeleteAsync(Material material, CancellationToken cancellationToken = default)
+        public async Task<bool> DeleteAsync(int materialId, CancellationToken cancellationToken = default)
         {
-            _unitOfWork.Material.Remove(material);
-            await _unitOfWork.Material.SaveChangesAsync(cancellationToken);
-            _materialsCache = null;
-            return true;
+            var hasEntry = await _unitOfWork.MaterialEntry
+                .AnyAsync(m => m.MaterialId == materialId);
+
+            if (hasEntry)
+                return false;
+
+            var hasExit = await _unitOfWork.MaterialExit
+                .AnyAsync(m => m.MaterialId == materialId);
+
+            if (hasExit)
+                return false;
+
+            var hasInventory = await _unitOfWork.MaterialInventory
+                .AnyAsync(m => m.MaterialId == materialId);
+
+            if (hasInventory)
+                return false;
+
+            // Ensure the entity is tracked
+            var entity = await _unitOfWork.Material.GetByIdAsync(materialId, cancellationToken);
+            if (entity != null)
+            {
+                _unitOfWork.Material.Remove(entity);
+                await _unitOfWork.Material.SaveChangesAsync(cancellationToken);
+                return true;
+            }
+            return false;
+
         }
 
         public async Task<bool> AnyAsync(Expression<Func<Material, bool>> predicate, CancellationToken cancellationToken = default)
@@ -73,6 +97,19 @@ namespace Jenga.DataAccess.Services.Inventory
                 _materialsCache = await GetAllAsync(cancellationToken);
             var material = _materialsCache.FirstOrDefault(x => x.Id == materialId);
             return material?.MaterialUnitId ?? 0;
+        }
+        public async Task<(bool CanDelete, string? Reason)> CanDeleteAsync(int id)
+        {
+            if (await _unitOfWork.MaterialEntry.AnyAsync(m => m.MaterialId == id))
+                return (false, "Bu malzeme envantere giriş (MaterialEntry) kayıtlarında bulunmaktadır, önce onu silmelisiniz.");
+
+            if (await _unitOfWork.MaterialExit.AnyAsync(m => m.MaterialId == id))
+                return (false, "Bu malzeme envanterden çıkış (MaterialExit) kayıtlarında bulunmaktadır, önce onu silmelisiniz.");
+
+            if (await _unitOfWork.MaterialInventory.AnyAsync(m => m.MaterialId == id))
+                return (false, "Bu malzeme envanter (MaterialInventory) kayıtlarında bulunmaktadır, önce onu silmelisiniz.");
+
+            return (true, null);
         }
     }
 }

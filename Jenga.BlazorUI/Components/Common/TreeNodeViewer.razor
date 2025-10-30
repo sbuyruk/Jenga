@@ -1,0 +1,197 @@
+﻿@using Jenga.Models.Common
+@typeparam T
+
+<li>
+    <div class="treeview-item">
+        @if (string.IsNullOrEmpty(Label))
+        {
+            <span class="material-badge"
+                  @oncontextmenu="HandleSubItemContextMenu"
+                  @oncontextmenu:preventDefault="true">
+                <i class="bi bi-bag"></i>@(SubItemLabel)
+            </span>
+
+
+        }
+        else
+        {
+            <span class="tree-label"
+                @oncontextmenu="HandleContextMenu"
+                @oncontextmenu:preventDefault="true">@(Label)</span>
+        
+            @if (!string.IsNullOrWhiteSpace(Description))
+            {
+                <span class="tree-desc">@Description</span>
+            }
+            @if (ShowCreate)
+            {
+                <span class="create-icon" title="Alt kategori ekle" @onclick="() => OnCreate.InvokeAsync(Item)">
+                    <i class="bi bi-plus-square"></i>
+                </span>
+            }
+            @if (ShowEdit)
+            {
+                <span class="edit-icon" title="Düzenle" @onclick="() => OnEdit.InvokeAsync(Item)">
+                    <i class="bi bi-pencil-square"></i>
+                </span>
+            }
+            @if (ShowDelete)
+            {
+                <span class="delete-icon" title="Sil" @onclick="() => OnDelete.InvokeAsync(Item)">
+                    <i class="bi bi-trash3-fill"></i>
+                </span>
+            }
+        }
+        @if (ShowContextMenu && ShowMenu)
+        {
+            <div>
+                <div class="context-menu-overlay" @onclick="CloseContextMenu"></div>
+                <div class="context-menu">
+                    @if (ShowCreate)
+                    {
+                        <div @onclick="HandleCreate"><i class="bi bi-plus-square"></i> Alt Kategori Tanımla</div>
+                        <div @onclick="HandleSubItemCreate"><i class="bi bi-bag-plus"></i> Yeni Malzeme Tanımla</div>
+                    }
+                    @if (ShowEdit)
+                    {
+                        <div @onclick="HandleEdit"><i class="bi bi-pencil-square"></i> Düzenle</div>
+                    }
+                    @if (ShowDelete)
+                    {
+                        <div @onclick="HandleDelete"><i class="bi bi-trash3-fill"></i> Sil</div>
+                    }
+                </div>
+            </div>
+        }
+        else if (ShowSubItemMenu)
+        {
+            <div>
+                <div class="context-menu-overlay" @onclick="CloseSubItemContextMenu"></div>
+                <div class="context-menu"
+                     style="position:fixed;top:@($"{SubItemMenuY}px");left:@($"{SubItemMenuX}px");z-index:1001;">
+                    @if (ShowCreate)
+                    {
+                        <div @onclick="HandleSubItemCreate"><i class="bi bi-bag-plus"></i>Yeni Malzeme</div>
+                    }
+                    @if (ShowEdit)
+                    {
+                        <div @onclick="HandleSubItemEdit"><i class="bi bi-pencil-square"></i> Düzenle</div>
+                    }
+                    @if (ShowDelete)
+                    {
+                        <div @onclick="HandleSubItemDelete"><i class="bi bi-trash3-fill"></i> Sil</div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+
+    @if (Children?.Any() == true)
+    {
+        <ul class="treeview-list">
+            @foreach (var child in Children)
+            {
+                <TreeNodeViewer T="T"
+                                Item="child"
+                                OnCreate="OnCreate"
+                                OnEdit="OnEdit"
+                                OnDelete="OnDelete"
+                                LabelSelector="LabelSelector"
+                                DescriptionSelector="DescriptionSelector"
+                                SubItemLabelSelector="SubItemLabelSelector"
+                                ChildrenSelector="ChildrenSelector"
+                                ShowContextMenuSelector="ShowContextMenuSelector"
+                                ShowCreateSelector="ShowCreateSelector"
+                                ShowEditSelector="ShowEditSelector"
+                                ShowDeleteSelector="ShowDeleteSelector"
+                                OnSubItemCreate="OnSubItemCreate"
+                                OnSubItemEdit="OnSubItemEdit"
+                                OnSubItemDelete="OnSubItemDelete" />
+            }
+        </ul>
+    }
+</li>
+
+@code {
+    [Parameter] public TreeItem<T> Item { get; set; } = default!;
+    [Parameter] public EventCallback<TreeItem<T>> OnCreate { get; set; }
+    [Parameter] public EventCallback<TreeItem<T>> OnEdit { get; set; }
+    [Parameter] public EventCallback<TreeItem<T>> OnDelete { get; set; }
+    [Parameter] public Func<TreeItem<T>, string>? LabelSelector { get; set; }
+    [Parameter] public Func<TreeItem<T>, string>? SubItemLabelSelector { get; set; }
+    [Parameter] public Func<TreeItem<T>, string>? DescriptionSelector { get; set; }
+    [Parameter] public Func<TreeItem<T>, IEnumerable<TreeItem<T>>>? ChildrenSelector { get; set; }
+    [Parameter] public Func<TreeItem<T>, bool>? ShowContextMenuSelector { get; set; }
+    [Parameter] public Func<TreeItem<T>, bool>? ShowCreateSelector { get; set; }
+    [Parameter] public Func<TreeItem<T>, bool>? ShowEditSelector { get; set; }
+    [Parameter] public Func<TreeItem<T>, bool>? ShowDeleteSelector { get; set; }
+
+    [Parameter] public EventCallback<TreeItem<T>> OnSubItemCreate { get; set; }
+    [Parameter] public EventCallback<TreeItem<T>> OnSubItemEdit { get; set; }
+    [Parameter] public EventCallback<TreeItem<T>> OnSubItemDelete { get; set; }
+
+    private bool ShowMenu { get; set; } = false;
+
+    private string Label => LabelSelector?.Invoke(Item) ?? Item?.Data?.ToString() ?? "";
+    private string SubItemLabel => SubItemLabelSelector?.Invoke(Item) ?? "";
+    private string Description => DescriptionSelector?.Invoke(Item) ?? "";
+    private IEnumerable<TreeItem<T>>? Children => ChildrenSelector?.Invoke(Item);
+    private bool ShowContextMenu => ShowContextMenuSelector?.Invoke(Item) ?? true;
+    private bool ShowCreate => ShowCreateSelector?.Invoke(Item) ?? true;
+    private bool ShowEdit => ShowEditSelector?.Invoke(Item) ?? true;
+    private bool ShowDelete => ShowDeleteSelector?.Invoke(Item) ?? true;
+
+    private void HandleContextMenu(MouseEventArgs args)
+    {
+        if (ShowContextMenu)
+        {
+            ShowMenu = true;
+            StateHasChanged();
+        }
+    }
+
+    private void HandleCreate() { ShowMenu = false; OnCreate.InvokeAsync(Item); }
+    private void HandleEdit() { ShowMenu = false; OnEdit.InvokeAsync(Item); }
+    private void HandleDelete() { ShowMenu = false; OnDelete.InvokeAsync(Item); }
+    private void CloseContextMenu() { ShowMenu = false; StateHasChanged(); }
+    #region SubItem
+    private bool ShowSubItemMenu { get; set; } = false;
+    private double SubItemMenuX { get; set; }
+    private double SubItemMenuY { get; set; }
+
+
+
+    private void HandleSubItemContextMenu(MouseEventArgs e)
+    {
+        ShowSubItemMenu = true;
+        SubItemMenuX = e.ClientX;
+        SubItemMenuY = e.ClientY;
+        StateHasChanged();
+    }
+
+    private void CloseSubItemContextMenu()
+    {
+        ShowSubItemMenu = false;
+        StateHasChanged();
+    }
+
+    private async void HandleSubItemCreate()
+    {
+        await OnSubItemCreate.InvokeAsync(Item);
+        CloseSubItemContextMenu();
+    }
+
+    private async void HandleSubItemEdit()
+    {
+        await OnSubItemEdit.InvokeAsync(Item);
+        CloseSubItemContextMenu();
+    }
+
+    private async Task HandleSubItemDelete()
+    {
+        // Implement your delete logic here
+        await OnSubItemDelete.InvokeAsync(Item);
+        CloseSubItemContextMenu();
+    }
+    #endregion
+}

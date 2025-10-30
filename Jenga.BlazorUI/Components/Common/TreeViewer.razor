@@ -1,0 +1,44 @@
+﻿@using Jenga.Models.Common
+@using Jenga.Models.Inventory
+@typeparam T
+
+<ul class="treeview-list">
+    @foreach (var item in Items)
+    {
+        <TreeNodeViewer T="T"
+                        Item="item"
+                        OnCreate="OnCreate"
+                        OnEdit="OnEdit"
+                        OnDelete="OnDelete"
+                        LabelSelector="LabelSelector"
+                        DescriptionSelector="DescriptionSelector"
+                        SubItemLabelSelector="SubItemLabelSelector"
+                        ChildrenSelector="ChildrenSelector"
+                        ShowContextMenuSelector="ShowContextMenuSelector"
+                        ShowCreateSelector="ShowCreateSelector"
+                        ShowEditSelector="ShowEditSelector"
+                        ShowDeleteSelector="ShowDeleteSelector"
+                        OnSubItemCreate="OnSubItemCreate"
+                        OnSubItemEdit="OnSubItemEdit"
+                        OnSubItemDelete="OnSubItemDelete" />
+    }
+</ul>
+
+@code {
+    [Parameter] public List<TreeItem<T>> Items { get; set; } = new();
+    [Parameter] public EventCallback<TreeItem<T>> OnCreate { get; set; }
+    [Parameter] public EventCallback<TreeItem<T>> OnEdit { get; set; }
+    [Parameter] public EventCallback<TreeItem<T>> OnDelete { get; set; }
+    [Parameter] public Func<TreeItem<T>, string>? LabelSelector { get; set; }
+    [Parameter] public Func<TreeItem<T>, string>? SubItemLabelSelector { get; set; }
+    [Parameter] public Func<TreeItem<T>, string>? DescriptionSelector { get; set; }
+    [Parameter] public Func<TreeItem<T>, IEnumerable<TreeItem<T>>>? ChildrenSelector { get; set; }
+    [Parameter] public Func<TreeItem<T>, bool>? ShowContextMenuSelector { get; set; }
+    [Parameter] public Func<TreeItem<T>, bool>? ShowCreateSelector { get; set; }
+    [Parameter] public Func<TreeItem<T>, bool>? ShowEditSelector { get; set; }
+    [Parameter] public Func<TreeItem<T>, bool>? ShowDeleteSelector { get; set; }
+
+    [Parameter] public EventCallback<TreeItem<T>> OnSubItemCreate { get; set; }
+    [Parameter] public EventCallback<TreeItem<T>> OnSubItemEdit { get; set; }
+    [Parameter] public EventCallback<TreeItem<T>> OnSubItemDelete { get; set; }
+}

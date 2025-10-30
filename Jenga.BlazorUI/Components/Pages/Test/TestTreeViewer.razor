@@ -1,0 +1,166 @@
+﻿@page "/test-tree-viewer"
+@using System.Collections.Generic
+@using Jenga.BlazorUI.Components.Common
+@using Jenga.DataAccess.Services.Inventory
+@using Jenga.Models.Common
+@using Jenga.Models.Inventory
+@inject Jenga.DataAccess.Services.Inventory.LocationService LocationService
+@inject Jenga.DataAccess.Services.Inventory.MaterialCategoryService MaterialCategoryService
+@inject ILocationService LocationService
+@inject IMaterialCategoryService MaterialCategoryService
+<h3>Location Tree</h3>
+@if (LocationTree == null)
+{
+    <p>Yükleniyor...</p>
+}
+else
+{
+    <TreeViewer T="Location"
+                Items="LocationTree"
+                LabelSelector="@(item => item.Data.LocationName)"
+                ChildrenSelector="@(item => item.Children)"
+                ShowContextMenuSelector="@(item => item.ShowContextMenu)"
+                ShowCreateSelector="@(item => item.ShowCreate)"
+                ShowEditSelector="@(item => item.ShowEdit)"
+                ShowDeleteSelector="@(item => item.ShowDelete)"
+                OnCreate="HandleCreateLocation"
+                OnEdit="HandleEditLocation"
+                OnDelete="HandleDeleteLocation" />
+}
+
+<h3>Material Category Tree</h3>
+@if (MaterialCategoryTree == null)
+{
+    <p>Yükleniyor...</p>
+}
+else
+{
+    <TreeViewer T="MaterialCategory"
+                Items="MaterialCategoryTree"
+                LabelSelector="@(item => item.Data.CategoryName)"
+                ChildrenSelector="@(item => item.Children)"
+                ShowContextMenuSelector="@(item => item.ShowContextMenu)"
+                ShowCreateSelector="@(item => item.ShowCreate)"
+                ShowEditSelector="@(item => item.ShowEdit)"
+                ShowDeleteSelector="@(item => item.ShowDelete)"
+                OnCreate="HandleCreateMaterialCategory"
+                OnEdit="HandleEditMaterialCategory"
+                OnDelete="HandleDeleteMaterialCategory" />
+}
+
+@code {
+    public List<TreeItem<Location>>? LocationTree { get; set; }
+    public List<TreeItem<MaterialCategory>>? MaterialCategoryTree { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var locations = await LocationService.GetAllAsync();
+        LocationTree = BuildLocationTree(locations);
+
+        var categories = await MaterialCategoryService.GetAllAsync();
+        MaterialCategoryTree = BuildMaterialCategoryTree(categories);
+    }
+
+    // Location TreeItem Builder
+    private List<TreeItem<Location>> BuildLocationTree(List<Location> locations)
+    {
+        var lookup = locations.ToLookup(l => l.ParentId);
+        List<TreeItem<Location>> Build(int? parentId)
+        {
+            return lookup[parentId]
+                .Select(loc => new TreeItem<Location>
+                {
+                    Data = loc,
+                    ShowCreate = true,
+                    ShowEdit = true,
+                    ShowDelete = true,
+                    ShowContextMenu = true,
+                    Children = Build(loc.Id)
+                })
+                .ToList();
+        }
+        return Build(null);
+    }
+
+    // MaterialCategory TreeItem Builder
+    private List<TreeItem<MaterialCategory>> BuildMaterialCategoryTree(List<MaterialCategory> categories)
+    {
+        var lookup = categories.ToLookup(c => c.ParentCategoryId);
+        List<TreeItem<MaterialCategory>> Build(int? parentId)
+        {
+            return lookup[parentId]
+                .Select(cat => new TreeItem<MaterialCategory>
+                {
+                    Data = cat,
+                    ShowCreate = true,
+                    ShowEdit = true,
+                    ShowDelete = true,
+                    ShowContextMenu = true,
+                    Children = Build(cat.Id)
+                })
+                .ToList();
+        }
+        return Build(null);
+    }
+
+    // Event handlerlar (gerçek servis ile)
+    private async Task HandleCreateLocation(TreeItem<Location> item)
+    {
+        // Örnek:
+        // var newLoc = new Location { LocationName = "Yeni", ParentId = item.Data.Id };
+        // await LocationService.AddAsync(newLoc);
+        // Yeniden yükle
+        var locations = await LocationService.GetAllAsync();
+        LocationTree = BuildLocationTree(locations);
+    }
+    private async Task HandleEditLocation(TreeItem<Location> item)
+    {
+        // Edit için modal açabilir veya doğrudan düzenleyebilirsiniz
+        // await LocationService.UpdateAsync(item.Data);
+        var locations = await LocationService.GetAllAsync();
+        LocationTree = BuildLocationTree(locations);
+    }
+    private async Task HandleDeleteLocation(TreeItem<Location> item)
+    {
+        var canDelete = await LocationService.CanDeleteAsync(item.Data.Id);
+        if (canDelete.CanDelete)
+        {
+            await LocationService.DeleteAsync(item.Data);
+        }
+        else
+        {
+            // Mesaj göster: canDelete.Reason
+        }
+        var locations = await LocationService.GetAllAsync();
+        LocationTree = BuildLocationTree(locations);
+    }
+
+    private async Task HandleCreateMaterialCategory(TreeItem<MaterialCategory> item)
+    {
+        // Örnek:
+        // var newCat = new MaterialCategory { CategoryName = "Yeni", ParentCategoryId = item.Data.Id };
+        // await MaterialCategoryService.AddAsync(newCat);
+        var categories = await MaterialCategoryService.GetAllAsync();
+        MaterialCategoryTree = BuildMaterialCategoryTree(categories);
+    }
+    private async Task HandleEditMaterialCategory(TreeItem<MaterialCategory> item)
+    {
+        // await MaterialCategoryService.UpdateAsync(item.Data);
+        var categories = await MaterialCategoryService.GetAllAsync();
+        MaterialCategoryTree = BuildMaterialCategoryTree(categories);
+    }
+    private async Task HandleDeleteMaterialCategory(TreeItem<MaterialCategory> item)
+    {
+        var canDelete = await MaterialCategoryService.CanDeleteAsync(item.Data.Id);
+        if (canDelete.CanDelete)
+        {
+            await MaterialCategoryService.DeleteAsync(item.Data.Id);
+        }
+        else
+        {
+            // Mesaj göster: canDelete.Reason
+        }
+        var categories = await MaterialCategoryService.GetAllAsync();
+        MaterialCategoryTree = BuildMaterialCategoryTree(categories);
+    }
+}
