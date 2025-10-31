@@ -1,9 +1,10 @@
 ﻿@using Jenga.Models.Common
+@using Jenga.Models.Helper
 @using Jenga.Models.Inventory
 @typeparam T
 
 <ul class="treeview-list">
-    @foreach (var item in Items)
+    @foreach (var item in FilteredItems)
     {
         <TreeNodeViewer T="T"
                         Item="item"
@@ -25,10 +26,10 @@
 </ul>
 
 @code {
+    // Parameters
     [Parameter] public List<TreeItem<T>> Items { get; set; } = new();
-    [Parameter] public EventCallback<TreeItem<T>> OnCreate { get; set; }
-    [Parameter] public EventCallback<TreeItem<T>> OnEdit { get; set; }
-    [Parameter] public EventCallback<TreeItem<T>> OnDelete { get; set; }
+    [Parameter] public string SearchTerm { get; set; } = "";
+    [Parameter] public Func<TreeItem<T>, string, bool>? FilterFunc { get; set; }
     [Parameter] public Func<TreeItem<T>, string>? LabelSelector { get; set; }
     [Parameter] public Func<TreeItem<T>, string>? SubItemLabelSelector { get; set; }
     [Parameter] public Func<TreeItem<T>, string>? DescriptionSelector { get; set; }
@@ -37,8 +38,36 @@
     [Parameter] public Func<TreeItem<T>, bool>? ShowCreateSelector { get; set; }
     [Parameter] public Func<TreeItem<T>, bool>? ShowEditSelector { get; set; }
     [Parameter] public Func<TreeItem<T>, bool>? ShowDeleteSelector { get; set; }
-
+    [Parameter] public EventCallback<TreeItem<T>> OnCreate { get; set; }
+    [Parameter] public EventCallback<TreeItem<T>> OnEdit { get; set; }
+    [Parameter] public EventCallback<TreeItem<T>> OnDelete { get; set; }
     [Parameter] public EventCallback<TreeItem<T>> OnSubItemCreate { get; set; }
     [Parameter] public EventCallback<TreeItem<T>> OnSubItemEdit { get; set; }
     [Parameter] public EventCallback<TreeItem<T>> OnSubItemDelete { get; set; }
+
+    // Computed property for filtered items
+    private List<TreeItem<T>> FilteredItems =>
+        FilterFunc != null && !string.IsNullOrWhiteSpace(SearchTerm)
+            ? ExpandFiltered(TreeHelper.FilterTree(Items, item => FilterFunc(item, SearchTerm)))
+            : Items;
+
+    // Expand all nodes in the filtered tree
+    private List<TreeItem<T>> ExpandFiltered(List<TreeItem<T>> nodes)
+    {
+        foreach (var node in nodes)
+        {
+            ExpandAll(node);
+        }
+        return nodes;
+    }
+
+    private void ExpandAll(TreeItem<T> node)
+    {
+        node.IsExpanded = true;
+        if (node.Children != null)
+        {
+            foreach (var child in node.Children)
+                ExpandAll(child);
+        }
+    }
 }

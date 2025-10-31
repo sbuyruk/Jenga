@@ -1,5 +1,6 @@
 ﻿@page "/inventory/material-and-category-manager"
 @rendermode InteractiveServer
+
 @using Jenga.BlazorUI.Components.Common
 @using Jenga.BlazorUI.Components.Inventory
 @using Jenga.DataAccess.Services.Inventory
@@ -8,6 +9,7 @@
 @using Jenga.Models.Inventory
 @using Jenga.Utility.Modal
 @using Jenga.Utility.Toast
+
 @inject IToastService ToastService
 @inject IModalService ModalService
 @inject IMaterialEntryService MaterialEntryService
@@ -29,13 +31,17 @@
         <i class="bi bi-plus-lg"></i> Yeni Malzeme Tanımla
     </button>
 </div>
-<div class="treeview-container">
 
+<div class="treeview-container">
     <TreeViewer T="MaterialCategoryNode"
-                Items="filteredTree"
+                Items="categoryTree"
+                SearchTerm="@searchTerm"
+                FilterFunc="(item, term) =>
+                                    (item.Data.Category != null && item.Data.Category.CategoryName.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
+                                    (item.Data.Material != null && item.Data.Material.MaterialName.Contains(term, StringComparison.OrdinalIgnoreCase))"
                 LabelSelector="@(item => item.Data.Category?.CategoryName ?? "")"
                 DescriptionSelector="@(item => item.Data.Category?.Aciklama ?? "")"
-                SubItemLabelSelector="@(item => item.Data.Material.MaterialName??"")" 
+                SubItemLabelSelector="@(item => item.Data.Material.MaterialName ?? "")"
                 ChildrenSelector="@(item => item.Children)"
                 ShowContextMenuSelector="@(item => item.ShowContextMenu)"
                 ShowCreateSelector="@(item => item.ShowCreate)"
@@ -44,8 +50,8 @@
                 OnCreate="HandleCreateMaterialCategory"
                 OnEdit="HandleEditMaterialCategory"
                 OnDelete="HandleDeleteMaterialCategory"
-                OnSubItemCreate="HandleCreateMaterial" 
-                OnSubItemEdit="HandleEditMaterial" 
+                OnSubItemCreate="HandleCreateMaterial"
+                OnSubItemEdit="HandleEditMaterial"
                 OnSubItemDelete="HandleDeleteMaterial" />
 
     <MaterialCategoryEditModal Category="selectedCategory"
@@ -62,85 +68,78 @@
 </div>
 
 @code {
+    // Fields
     private List<MaterialCategory> categories = new();
     private List<Material> materials = new();
     private List<TreeItem<MaterialCategoryNode>> categoryTree = new();
     private bool _dataLoaded;
+    private string searchTerm = "";
 
-    MaterialCategory? selectedCategory;
-    Material? selectedMaterial;
-    bool isCategoryEditOpen = false;
-    bool isMaterialEditOpen = false;
+    private MaterialCategory? selectedCategory;
+    private Material? selectedMaterial;
+    private bool isCategoryEditOpen = false;
+    private bool isMaterialEditOpen = false;
 
+    // Lifecycle
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender && !_dataLoaded)
         {
-            categories = await MaterialCategoryService.GetAllAsync();
-            materials = await MaterialService.GetAllAsync();
-            categoryTree = BuildCategoryTreeWithMaterialsAsNodes(categories, materials);
-            // categoryTree = BuildCategoryTree(categories, materials);
+            await RefreshData();
             _dataLoaded = true;
             StateHasChanged();
         }
     }
 
-    public class MaterialCategoryNode
+    // Data
+    private async Task RefreshData()
     {
-        public MaterialCategory? Category { get; set; }
-        public Material Material { get; set; } = new();
-    }
-    private List<TreeItem<MaterialCategoryNode>> BuildCategoryTreeWithMaterialsAsNodes(List<MaterialCategory> categories, List<Material> materials)
-    {
-        // 1. Create lookup1 for categories
-        var lookup = categories.ToDictionary(c => c.Id, c =>
-            new TreeItem<MaterialCategoryNode>
-            {
-                Data = new MaterialCategoryNode { Category = c },
-                ShowCreate = true,
-                ShowEdit = true,
-                ShowDelete = true,
-                Children = new List<TreeItem<MaterialCategoryNode>>()
-            });
+        var expandedMap = TreeHelper.CollectExpandedStates(categoryTree);
+        categories = await MaterialCategoryService.GetAllAsync();
+        materials = await MaterialService.GetAllAsync();
 
-        // 2. Build category hierarchy
-        foreach (var cat in categories)
-        {
-            if (cat.ParentCategoryId.HasValue && lookup.ContainsKey(cat.ParentCategoryId.Value))
-                lookup[cat.ParentCategoryId.Value].Children.Add(lookup[cat.Id]);
-        }
+        // Kategorileri MaterialCategoryNode'a dönüştür
+        var categoryNodes = categories.Select(c => new MaterialCategoryNode { Category = c }).ToList();
 
-        // 3. Add materials as child nodes under their parent category
+        // Kategori ağacını oluştur
+        categoryTree = TreeHelper.BuildTree<MaterialCategoryNode>(
+            categoryNodes,
+            node => node.Category.Id.ToString(),
+            node => node.Category.ParentCategoryId?.ToString()
+        );
+
+        // Malzemeleri ilgili kategoriye ekle
         foreach (var mat in materials)
         {
-            if (lookup.ContainsKey(mat.CategoryId))
+            var parentId = mat.CategoryId.ToString();
+            var parent = categoryTree.FirstOrDefault(n => n.Id == parentId);
+            if (parent != null)
             {
                 var materialNode = new TreeItem<MaterialCategoryNode>
                 {
-                    Data = new MaterialCategoryNode {Material =  mat  },
+                    Id = "mat-" + mat.Id.ToString(),
+                    Data = new MaterialCategoryNode { Material = mat },
                     ShowCreate = true,
                     ShowEdit = true,
                     ShowDelete = true,
                     Children = new List<TreeItem<MaterialCategoryNode>>()
                 };
-                lookup[mat.CategoryId].Children.Add(materialNode);
+                parent.Children.Add(materialNode);
             }
         }
 
-        // 4. Return root nodes (categories without parent)
-        return lookup.Values.Where(n => n.Data.Category?.ParentCategoryId == null).ToList();
+        TreeHelper.RestoreExpandedStates(categoryTree, expandedMap);
+        StateHasChanged();
     }
-    //search
-    string searchTerm = "";
 
-    List<TreeItem<MaterialCategoryNode>> filteredTree => TreeHelper.FilterTree(
-        categoryTree,
-        item =>
-            (item.Data.Category != null && item.Data.Category.CategoryName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) ||
-            (item.Data.Material != null && item.Data.Material.MaterialName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
-    );
+    // Models
+    public class MaterialCategoryNode
+    {
+        public MaterialCategory? Category { get; set; }
+        public Material Material { get; set; } = new();
+    }
 
-    // Event Handlers MaterialCategory
+    // Event Handlers - Category
     private async Task HandleCreateMaterialCategory(TreeItem<MaterialCategoryNode> item)
     {
         selectedCategory = new MaterialCategory
@@ -186,8 +185,7 @@
                     {
                         ToastService.ShowToast($"{categoryName} silindi", ToastType.Success, 3000);
                         categories = await MaterialCategoryService.GetAllAsync();
-                        categoryTree = BuildCategoryTreeWithMaterialsAsNodes(categories, materials);
-                        // categoryTree = BuildCategoryTree(categories, materials);
+                        await RefreshData();
                         StateHasChanged();
                     }
                     else
@@ -198,6 +196,7 @@
             });
     }
 
+    // Event Handlers - Modal
     private async Task OpenCreateModal()
     {
         selectedCategory = new MaterialCategory();
@@ -213,17 +212,11 @@
         if (selectedCategory != null)
         {
             if (selectedCategory.Id == 0)
-            {
                 await MaterialCategoryService.AddAsync(selectedCategory);
-            }
             else
-            {
                 await MaterialCategoryService.UpdateAsync(selectedCategory);
-            }
         }
-        categories = await MaterialCategoryService.GetAllAsync();
-        categoryTree = BuildCategoryTreeWithMaterialsAsNodes(categories, materials);
-        // categoryTree = BuildCategoryTree(categories, materials);
+        await RefreshData();
         selectedCategory = null;
         StateHasChanged();
     }
@@ -239,9 +232,7 @@
         }
         isMaterialEditOpen = false;
         selectedMaterial = null;
-        materials = await MaterialService.GetAllAsync();
-        categoryTree = BuildCategoryTreeWithMaterialsAsNodes(categories, materials);
-        // categoryTree = BuildCategoryTree(categories, materials);
+        await RefreshData();
         StateHasChanged();
     }
 
@@ -256,7 +247,8 @@
         isMaterialEditOpen = false;
         selectedMaterial = null;
     }
-    // Event Handlers Material
+
+    // Event Handlers - Material
     private async Task HandleCreateMaterial(TreeItem<MaterialCategoryNode> item)
     {
         int categoryId = item.Data.Category != null
@@ -271,6 +263,7 @@
         isMaterialEditOpen = true;
         StateHasChanged();
     }
+
     private void HandleEditMaterial(TreeItem<MaterialCategoryNode> item)
     {
         selectedMaterial = item.Data.Material;
@@ -278,6 +271,7 @@
         isMaterialEditOpen = true;
         StateHasChanged();
     }
+
     private async Task HandleDeleteMaterial(TreeItem<MaterialCategoryNode> item)
     {
         if (item?.Data.Material == null)
@@ -303,8 +297,7 @@
                     if (deleted)
                     {
                         ToastService.ShowToast($"{materialName} silindi", ToastType.Success, 3000);
-                        materials = await MaterialService.GetAllAsync();
-                        categoryTree = BuildCategoryTreeWithMaterialsAsNodes(categories, materials);
+                        await RefreshData();
                         StateHasChanged();
                     }
                     else

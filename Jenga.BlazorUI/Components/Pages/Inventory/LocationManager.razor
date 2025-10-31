@@ -1,5 +1,6 @@
 ﻿@page "/inventory/location-manager"
 @rendermode InteractiveServer
+
 @using Jenga.BlazorUI.Components.Inventory
 @using Jenga.BlazorUI.Components.Common
 @using Jenga.DataAccess.Services.Inventory
@@ -9,12 +10,8 @@
 @using Jenga.Models.Helper
 @using Jenga.Utility.Modal
 @using Jenga.Utility.Toast
-@using Microsoft.AspNetCore.Http
+
 @inject ILocationService LocationService
-@inject IJSRuntime JS
-@inject IMaterialEntryService MaterialEntryService
-@inject IMaterialExitService MaterialExitService
-@inject IMaterialInventoryService MaterialInventoryService
 @inject IModalService ModalService
 @inject IToastService ToastService
 
@@ -30,7 +27,9 @@
 </div>
 <div class="treeview-container">
     <TreeViewer T="Location"
-                Items="filteredTree"
+                Items="tree"
+                SearchTerm="@searchTerm"
+                FilterFunc="(item, term) => item.Data.LocationName != null && item.Data.LocationName.Contains(term, StringComparison.OrdinalIgnoreCase)"
                 OnEdit="EditLocation"
                 OnDelete="DeleteLocation"
                 OnCreate="AddChildLocation"
@@ -49,57 +48,54 @@
 </div>
 
 @code {
-    private List<MaterialEntry> materialEntries { get; set; } = new();
+    // Fields
+    private List<Location> locations = new();
+    private List<TreeItem<Location>> tree = new();
+    private TreeItem<Location>? selectedLocation;
+    private bool isEditOpen = false;
+    private bool _dataLoaded = false;
+    private string searchTerm = "";
+
     [Parameter] public EventCallback OnRefresh { get; set; }
-    private bool _dataLoaded;
-    List<Location> locations = new();
-    List<TreeItem<Location>> tree = new();
-    TreeItem<Location>? selectedLocation;
-    bool isEditOpen = false;
 
-    string searchTerm = "";
-
-    List<TreeItem<Location>> filteredTree => TreeHelper.FilterTree(
-        tree,
-        item => item.Data.LocationName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)
-    );
-
+    // Lifecycle
     protected override async Task OnInitializedAsync()
     {
-        locations = await LocationService.GetAllAsync();
-        tree = TreeHelper.BuildGenericTree<Location, int>(
-            locations,
-            loc => loc.Id,
-            loc => loc.ParentId,
-            loc => new TreeItem<Location>
-            {
-                Data = loc,
-                ShowCreate = true,
-                ShowEdit = true,
-                ShowDelete = true
-            }
-        );
+        await RefreshData();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender && !_dataLoaded)
         {
-            materialEntries = await MaterialEntryService.GetAllAsync();
-            _dataLoaded = true;
-            StateHasChanged();
-            await JS.InvokeVoidAsync("initMaterialEntryTableWithExport");
+            await RefreshData();
         }
     }
 
-    void EditLocation(TreeItem<Location> item)
+    // Data
+    private async Task RefreshData()
+    {
+        var expandedMap = TreeHelper.CollectExpandedStates(tree);
+        locations = await LocationService.GetAllAsync();
+        _dataLoaded = true;
+        tree = TreeHelper.BuildTree<Location>(
+            locations,
+            loc => loc.Id.ToString(),
+            loc => loc.ParentId?.ToString()
+        );
+        TreeHelper.RestoreExpandedStates(tree, expandedMap);
+        StateHasChanged();
+    }
+
+    // Event Handlers
+    private void EditLocation(TreeItem<Location> item)
     {
         selectedLocation = item;
         isEditOpen = true;
         StateHasChanged();
     }
 
-    async Task OnModalSave()
+    private async Task OnModalSave()
     {
         isEditOpen = false;
         if (selectedLocation?.Data != null)
@@ -117,23 +113,10 @@
                 await LocationService.UpdateAsync(selectedLocation.Data);
             }
         }
-        locations = await LocationService.GetAllAsync();
-        tree = TreeHelper.BuildGenericTree<Location, int>(
-            locations,
-            loc => loc.Id,
-            loc => loc.ParentId,
-            loc => new TreeItem<Location>
-            {
-                Data = loc,
-                ShowCreate = true,
-                ShowEdit = true,
-                ShowDelete = true
-            }
-        );
-        StateHasChanged();
+        await RefreshData();
     }
 
-    void OnModalClose()
+    private void OnModalClose()
     {
         isEditOpen = false;
     }
@@ -150,25 +133,6 @@
         isEditOpen = true;
     }
 
-    string GetLocationIcon(Location loc)
-    {
-        if (loc.LocationType == LocationType.Building)
-            return "bi bi-buildings";
-        if (loc.LocationType == LocationType.Floor)
-            return "bi bi-layers";
-        if (loc.LocationType == LocationType.Warehouse)
-            return "bi bi-box";
-        if (loc.LocationType == LocationType.Room)
-            return "bi bi-door-closed";
-        if (loc.LocationType == LocationType.Cabinet)
-            return "bi bi-window-split";
-        if (loc.LocationType == LocationType.Shelf)
-            return "bi bi-table";
-        if (loc.Children?.Any() == true)
-            return "bi bi-folder";
-        return "bi bi-file-earmark";
-    }
-
     private async Task DeleteLocation(TreeItem<Location> item)
     {
         var (canDelete, reason) = await LocationService.CanDeleteAsync(item.Data.Id);
@@ -181,39 +145,26 @@
         ModalService.ShowConfirmation(
             "Silme Onayı",
             $"'{item.Data.LocationName ?? "Konum"}' kaydını silmek istediğinizden emin misiniz?",
-        async result =>
-        {
-            if (result)
+            async result =>
             {
-                var deleted = await LocationService.DeleteAsync(item.Data);
-                if (deleted)
+                if (result)
                 {
-                    ToastService.ShowToast($"{item.Data.LocationName ?? "Konum"} silindi", ToastType.Success, 3000);
-                    locations.Remove(item.Data);
-                    tree = TreeHelper.BuildGenericTree<Location, int>(
-                        locations,
-                        loc => loc.Id,
-                        loc => loc.ParentId,
-                        loc => new TreeItem<Location>
-                        {
-                            Data = loc,
-                            ShowCreate = true,
-                            ShowEdit = true,
-                            ShowDelete = true
-                        }
-                    );
-                    await OnRefresh.InvokeAsync();
-                    StateHasChanged();
+                    var deleted = await LocationService.DeleteAsync(item.Data);
+                    if (deleted)
+                    {
+                        ToastService.ShowToast($"{item.Data.LocationName ?? "Konum"} silindi", ToastType.Success, 3000);
+                        locations.Remove(item.Data);
+                        await RefreshData();
+                    }
+                    else
+                    {
+                        ToastService.ShowToast($"Silme işlemi başarısız oldu", ToastType.Error, 3000);
+                    }
                 }
-                else
-                {
-                    ToastService.ShowToast($"Silme işlemi başarısız oldu", ToastType.Error, 3000);
-                }
-            }
-        });
+            });
     }
 
-    void AddChildLocation(TreeItem<Location> parent)
+    private void AddChildLocation(TreeItem<Location> parent)
     {
         selectedLocation = new TreeItem<Location>
         {
@@ -227,5 +178,21 @@
         };
         isEditOpen = true;
         StateHasChanged();
+    }
+
+    // Utility
+    private string GetLocationIcon(Location loc)
+    {
+        return loc.LocationType switch
+        {
+            LocationType.Building => "bi bi-buildings",
+            LocationType.Floor => "bi bi-layers",
+            LocationType.Warehouse => "bi bi-box",
+            LocationType.Room => "bi bi-door-closed",
+            LocationType.Cabinet => "bi bi-window-split",
+            LocationType.Shelf => "bi bi-table",
+            _ when loc.Children?.Any() == true => "bi bi-folder",
+            _ => "bi bi-file-earmark"
+        };
     }
 }

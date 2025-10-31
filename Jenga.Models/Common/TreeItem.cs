@@ -18,5 +18,6 @@ namespace Jenga.Models.Common
         public bool ShowCreate { get; set; } = true;
         public bool ShowEdit { get; set; } = true;
         public bool ShowDelete { get; set; } = true;
+        public bool IsExpanded { get; set; } = false;
     }
 }

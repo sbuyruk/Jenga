@@ -3,6 +3,14 @@
 
 <li>
     <div class="treeview-item">
+        @* Expand/Collapse icon *@
+        @if (Children?.Any() == true)
+        {
+            <span class="expand-icon" @onclick="ToggleExpand" style="margin-right:4px;cursor:pointer">
+                <i class="bi @(Item.IsExpanded ? "bi-dash-square" : "bi-plus-square")"></i>
+            </span>
+        }
+
         @if (string.IsNullOrEmpty(Label))
         {
             <span class="material-badge"
@@ -10,15 +18,14 @@
                   @oncontextmenu:preventDefault="true">
                 <i class="bi bi-bag"></i>@(SubItemLabel)
             </span>
-
-
         }
         else
         {
             <span class="tree-label"
-                @oncontextmenu="HandleContextMenu"
-                @oncontextmenu:preventDefault="true">@(Label)</span>
-        
+                  @oncontextmenu="HandleContextMenu"
+                  @oncontextmenu:preventDefault="true">
+                @(Label)
+            </span>
             @if (!string.IsNullOrWhiteSpace(Description))
             {
                 <span class="tree-desc">@Description</span>
@@ -26,7 +33,7 @@
             @if (ShowCreate)
             {
                 <span class="create-icon" title="Alt kategori ekle" @onclick="() => OnCreate.InvokeAsync(Item)">
-                    <i class="bi bi-plus-square"></i>
+                    <i class="bi bi-bag-plus"></i>
                 </span>
             }
             @if (ShowEdit)
@@ -42,6 +49,7 @@
                 </span>
             }
         }
+
         @if (ShowContextMenu && ShowMenu)
         {
             <div>
@@ -49,7 +57,7 @@
                 <div class="context-menu">
                     @if (ShowCreate)
                     {
-                        <div @onclick="HandleCreate"><i class="bi bi-plus-square"></i> Alt Kategori Tanımla</div>
+                        <div @onclick="HandleCreate"><i class="bi bi-bag-plus"></i> Alt Kategori Tanımla</div>
                         <div @onclick="HandleSubItemCreate"><i class="bi bi-bag-plus"></i> Yeni Malzeme Tanımla</div>
                     }
                     @if (ShowEdit)
@@ -86,7 +94,7 @@
         }
     </div>
 
-    @if (Children?.Any() == true)
+    @if (Children?.Any() == true && Item.IsExpanded)
     {
         <ul class="treeview-list">
             @foreach (var child in Children)
@@ -113,6 +121,7 @@
 </li>
 
 @code {
+    // Parameters
     [Parameter] public TreeItem<T> Item { get; set; } = default!;
     [Parameter] public EventCallback<TreeItem<T>> OnCreate { get; set; }
     [Parameter] public EventCallback<TreeItem<T>> OnEdit { get; set; }
@@ -125,13 +134,11 @@
     [Parameter] public Func<TreeItem<T>, bool>? ShowCreateSelector { get; set; }
     [Parameter] public Func<TreeItem<T>, bool>? ShowEditSelector { get; set; }
     [Parameter] public Func<TreeItem<T>, bool>? ShowDeleteSelector { get; set; }
-
     [Parameter] public EventCallback<TreeItem<T>> OnSubItemCreate { get; set; }
     [Parameter] public EventCallback<TreeItem<T>> OnSubItemEdit { get; set; }
     [Parameter] public EventCallback<TreeItem<T>> OnSubItemDelete { get; set; }
 
-    private bool ShowMenu { get; set; } = false;
-
+    // Computed properties
     private string Label => LabelSelector?.Invoke(Item) ?? Item?.Data?.ToString() ?? "";
     private string SubItemLabel => SubItemLabelSelector?.Invoke(Item) ?? "";
     private string Description => DescriptionSelector?.Invoke(Item) ?? "";
@@ -141,6 +148,15 @@
     private bool ShowEdit => ShowEditSelector?.Invoke(Item) ?? true;
     private bool ShowDelete => ShowDeleteSelector?.Invoke(Item) ?? true;
 
+    // Context menu state
+    private bool ShowMenu { get; set; } = false;
+    private bool ShowSubItemMenu { get; set; } = false;
+    private double SubItemMenuX { get; set; }
+    private double SubItemMenuY { get; set; }
+
+    // Methods
+    private void ToggleExpand() => Item.IsExpanded = !Item.IsExpanded;
+
     private void HandleContextMenu(MouseEventArgs args)
     {
         if (ShowContextMenu)
@@ -149,17 +165,14 @@
             StateHasChanged();
         }
     }
-
+    private void CloseContextMenu()
+    {
+        ShowMenu = false;
+        StateHasChanged();
+    }
     private void HandleCreate() { ShowMenu = false; OnCreate.InvokeAsync(Item); }
     private void HandleEdit() { ShowMenu = false; OnEdit.InvokeAsync(Item); }
     private void HandleDelete() { ShowMenu = false; OnDelete.InvokeAsync(Item); }
-    private void CloseContextMenu() { ShowMenu = false; StateHasChanged(); }
-    #region SubItem
-    private bool ShowSubItemMenu { get; set; } = false;
-    private double SubItemMenuX { get; set; }
-    private double SubItemMenuY { get; set; }
-
-
 
     private void HandleSubItemContextMenu(MouseEventArgs e)
     {
@@ -168,30 +181,24 @@
         SubItemMenuY = e.ClientY;
         StateHasChanged();
     }
-
     private void CloseSubItemContextMenu()
     {
         ShowSubItemMenu = false;
         StateHasChanged();
     }
-
-    private async void HandleSubItemCreate()
+    private async Task HandleSubItemCreate()
     {
         await OnSubItemCreate.InvokeAsync(Item);
         CloseSubItemContextMenu();
     }
-
-    private async void HandleSubItemEdit()
+    private async Task HandleSubItemEdit()
     {
         await OnSubItemEdit.InvokeAsync(Item);
         CloseSubItemContextMenu();
     }
-
     private async Task HandleSubItemDelete()
     {
-        // Implement your delete logic here
         await OnSubItemDelete.InvokeAsync(Item);
         CloseSubItemContextMenu();
     }
-    #endregion
 }

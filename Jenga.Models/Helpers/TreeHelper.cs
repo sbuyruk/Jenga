@@ -7,40 +7,42 @@ namespace Jenga.Models.Helper
 {
     public static class TreeHelper
     {
-        /// <summary>
-        /// Düz listeyi TreeItem<T> generic hiyerarşisine dönüştürür.
-        /// </summary>
-        public static List<TreeItem<T>> BuildGenericTree<T, TKey>(
-            List<T> flatList,
-            Func<T, TKey> idSelector,
-            Func<T, TKey?> parentIdSelector,
-            Func<T, TreeItem<T>> itemFactory)
-            where TKey : struct
+        public static List<TreeItem<T>> BuildTree<T>(
+        IEnumerable<T> items,
+        Func<T, string> idSelector,
+        Func<T, string?> parentIdSelector,
+        Func<T, List<TreeItem<T>>>? extraChildrenSelector = null)
         {
-            var lookup = flatList.ToDictionary(idSelector, itemFactory);
-            var roots = new List<TreeItem<T>>();
+            var lookup = items.ToDictionary(idSelector, item =>
+                new TreeItem<T>
+                {
+                    Id = idSelector(item),
+                    Data = item,
+                    Children = new List<TreeItem<T>>()
+                });
 
-            foreach (var item in flatList)
+            foreach (var item in items)
             {
-                var node = lookup[idSelector(item)];
                 var parentId = parentIdSelector(item);
+                if (parentId != null && lookup.ContainsKey(parentId))
+                    lookup[parentId].Children.Add(lookup[idSelector(item)]);
+            }
 
-                // Eğer ParentId null veya default ise, kök
-                if (!parentId.HasValue || parentId.Value.Equals(default(TKey)))
+            // Add extra children if needed (e.g., materials under categories)
+            if (extraChildrenSelector != null)
+            {
+                foreach (var item in items)
                 {
-                    roots.Add(node);
-                }
-                else if (lookup.ContainsKey(parentId.Value))
-                {
-                    lookup[parentId.Value].Children.Add(node);
-                }
-                else
-                {
-                    roots.Add(node);
+                    var children = extraChildrenSelector(item);
+                    if (children != null && children.Count > 0)
+                        lookup[idSelector(item)].Children.AddRange(children);
                 }
             }
-            return roots;
+
+            // Return root nodes (no parent)
+            return lookup.Values.Where(n => parentIdSelector(n.Data) == null).ToList();
         }
+        
 
         /// <summary>
         /// Generic tree için filtreleme, klonlama ile yeni ağaç döndürür.
@@ -89,6 +91,41 @@ namespace Jenga.Models.Helper
                 };
             }
             return null;
+        }
+        //Expand Collapse
+        /// <summary>
+        /// Collects the expanded states of all nodes in a tree structure and returns them as a dictionary.
+        /// </summary>
+        /// <remarks>This method recursively traverses the tree structure, including all child nodes, to
+        /// collect the expanded states.</remarks>
+        /// <typeparam name="T">The type of the data contained in the tree nodes.</typeparam>
+        /// <param name="nodes">A list of tree nodes to process. Each node may have child nodes.</param>
+        /// <returns>A dictionary where the keys are the unique identifiers of the nodes and the values indicate whether the
+        /// nodes are expanded.</returns>
+        public static Dictionary<string, bool> CollectExpandedStates<T>(List<TreeItem<T>> nodes)
+        {
+            var dict = new Dictionary<string, bool>();
+            foreach (var node in nodes)
+            {
+                dict[node.Id] = node.IsExpanded;
+                if (node.Children != null && node.Children.Count > 0)
+                {
+                    foreach (var kvp in CollectExpandedStates(node.Children))
+                        dict[kvp.Key] = kvp.Value;
+                }
+            }
+            return dict;
+        }
+
+        public static void RestoreExpandedStates<T>(List<TreeItem<T>> nodes, Dictionary<string, bool> expandedMap)
+        {
+            foreach (var node in nodes)
+            {
+                if (expandedMap.TryGetValue(node.Id, out var isExpanded))
+                    node.IsExpanded = isExpanded;
+                if (node.Children != null && node.Children.Count > 0)
+                    RestoreExpandedStates(node.Children, expandedMap);
+            }
         }
     }
 
