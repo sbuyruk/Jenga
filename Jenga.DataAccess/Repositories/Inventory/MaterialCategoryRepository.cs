@@ -8,15 +8,16 @@ namespace Jenga.DataAccess.Repositories.Inventory
 {
     public class MaterialCategoryRepository : Repository<MaterialCategory>, IMaterialCategoryRepository
     {
-        private readonly ApplicationDbContext _db;
-        public MaterialCategoryRepository(ApplicationDbContext db) : base(db)
+        private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
+        public MaterialCategoryRepository(IDbContextFactory<ApplicationDbContext> dbFactory) : base(dbFactory)
         {
-            _db = db;
+            _dbFactory = dbFactory;
         }
 
         public async Task<bool> AnyAsync(Expression<Func<MaterialCategory, bool>> predicate, CancellationToken cancellationToken = default)
         {
-            return await _db.Set<MaterialCategory>().AnyAsync(predicate, cancellationToken);
+            await using var db = _dbFactory.CreateDbContext();
+            return await db.Set<MaterialCategory>().AnyAsync(predicate, cancellationToken);
         }
     }
 }

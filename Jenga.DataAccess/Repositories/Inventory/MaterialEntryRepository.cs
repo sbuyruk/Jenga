@@ -8,17 +8,16 @@ namespace Jenga.DataAccess.Repositories.Inventory
 {
     public class MaterialEntryRepository : Repository<MaterialEntry>, IMaterialEntryRepository
     {
-        private readonly ApplicationDbContext _db;
-        public MaterialEntryRepository(ApplicationDbContext db) : base(db)
+        private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
+        public MaterialEntryRepository(IDbContextFactory<ApplicationDbContext> dbFactory) : base(dbFactory)
         {
-            _db = db;
+            _dbFactory = dbFactory;
         }
 
-        public async Task<bool> AnyAsync(Expression<Func<MaterialEntry, bool>> predicate)
+        public async Task<bool> AnyAsync(Expression<Func<MaterialEntry, bool>> predicate, CancellationToken cancellationToken = default)
         {
-            return await _db.MaterialEntry_Table.AnyAsync(predicate);
+            await using var db = _dbFactory.CreateDbContext();
+            return await db.MaterialEntry_Table.AnyAsync(predicate, cancellationToken);
         }
-
-
     }
 }

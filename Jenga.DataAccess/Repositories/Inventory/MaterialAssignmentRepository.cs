@@ -7,9 +7,12 @@ namespace Jenga.DataAccess.Repositories.Inventory
 {
     public class MaterialAssignmentRepository : Repository<MaterialAssignment>, IMaterialAssignmentRepository
     {
-        private readonly ApplicationDbContext _db;
-        public MaterialAssignmentRepository(ApplicationDbContext db) : base(db) { _db = db; }
+        private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
+        public MaterialAssignmentRepository(IDbContextFactory<ApplicationDbContext> dbFactory) : base(dbFactory)
+        {
+            _dbFactory = dbFactory;
+        }
 
-
+        // Örnek özel metod eklenebilir
     }
 }

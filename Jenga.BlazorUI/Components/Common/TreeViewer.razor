@@ -1,32 +1,58 @@
-﻿@using Jenga.Models.Common
+﻿@using System
+@using System.Linq
+@using System.Collections.Generic
+@using System.Threading.Tasks
+@using Microsoft.AspNetCore.Components
+@using Jenga.Models.Common
 @using Jenga.Models.Helper
-@using Jenga.Models.Inventory
 @typeparam T
 
-<ul class="treeview-list">
-    @foreach (var item in FilteredItems)
-    {
-        <TreeNodeViewer T="T"
-                        Item="item"
-                        OnCreate="OnCreate"
-                        OnEdit="OnEdit"
-                        OnDelete="OnDelete"
-                        LabelSelector="LabelSelector"
-                        DescriptionSelector="DescriptionSelector"
-                        SubItemLabelSelector="SubItemLabelSelector"
-                        ChildrenSelector="ChildrenSelector"
-                        ShowContextMenuSelector="ShowContextMenuSelector"
-                        ShowCreateSelector="ShowCreateSelector"
-                        ShowEditSelector="ShowEditSelector"
-                        ShowDeleteSelector="ShowDeleteSelector"
-                        OnSubItemCreate="OnSubItemCreate"
-                        OnSubItemEdit="OnSubItemEdit"
-                        OnSubItemDelete="OnSubItemDelete" />
-    }
-</ul>
+<div class="d-flex align-items-start treeview-container">
+    <div class="nav flex-column nav-pills gap-2 sticky-toolbar btn btn-light shadow " role="toolbar" aria-orientation="vertical">
+        <button class="toolbar-btn" title="Genişlet" aria-label="Genişlet" tabindex="0" @onclick="ExpandAllNodes">
+            <i class="bi bi-arrows-angle-expand" aria-hidden="true"></i>
+        </button>
+        <button class="toolbar-btn" title="Daralt" aria-label="Daralt" tabindex="0" @onclick="CollapseAllNodes">
+            <i class="bi bi-arrows-angle-contract" aria-hidden="true"></i>
+        </button>
+
+        @if (SortSelector != null)
+        {
+            <button class="toolbar-btn" title="Sıralama yönünü değiştir" aria-label="Sıralama yönünü değiştir" tabindex="0" @onclick="ToggleSort">
+                <i class="bi @(SortAscending ? "bi-sort-alpha-down" : "bi-sort-alpha-up")"></i>
+            </button>
+        }
+    </div>
+
+    <div class="col treeview-content">
+        <ul class="treeview-list">
+            @foreach (var item in FilteredItems)
+            {
+                <TreeNodeViewer T="T"
+                                Item="item"
+                                SelectedItemId="@SelectedItemId"
+                                OnSelect="HandleNodeSelect"
+                                OnCreate="OnCreate"
+                                OnEdit="OnEdit"
+                                OnDelete="OnDelete"
+                                LabelSelector="LabelSelector"
+                                DescriptionSelector="DescriptionSelector"
+                                SubItemLabelSelector="SubItemLabelSelector"
+                                ChildrenSelector="ChildrenSelector"
+                                ShowContextMenuSelector="ShowContextMenuSelector"
+                                ShowCreateSelector="ShowCreateSelector"
+                                ShowEditSelector="ShowEditSelector"
+                                ShowDeleteSelector="ShowDeleteSelector"
+                                OnSubItemCreate="OnSubItemCreate"
+                                OnSubItemEdit="OnSubItemEdit"
+                                OnSubItemDelete="OnSubItemDelete" />
+            }
+        </ul>
+    </div>
+</div>
 
 @code {
-    // Parameters
+    // --- Parameters ---
     [Parameter] public List<TreeItem<T>> Items { get; set; } = new();
     [Parameter] public string SearchTerm { get; set; } = "";
     [Parameter] public Func<TreeItem<T>, string, bool>? FilterFunc { get; set; }
@@ -45,29 +71,133 @@
     [Parameter] public EventCallback<TreeItem<T>> OnSubItemEdit { get; set; }
     [Parameter] public EventCallback<TreeItem<T>> OnSubItemDelete { get; set; }
 
-    // Computed property for filtered items
-    private List<TreeItem<T>> FilteredItems =>
-        FilterFunc != null && !string.IsNullOrWhiteSpace(SearchTerm)
-            ? ExpandFiltered(TreeHelper.FilterTree(Items, item => FilterFunc(item, SearchTerm)))
-            : Items;
+    // --- Sorting parameters (two-way bind supported) ---
+    [Parameter] public Func<TreeItem<T>, object?>? SortSelector { get; set; }
+    [Parameter] public bool SortAscending { get; set; } = true;
+    [Parameter] public EventCallback<bool> SortAscendingChanged { get; set; }
 
-    // Expand all nodes in the filtered tree
+    // --- Internal state ---
+    private string? SelectedItemId;
+
+    // Expose filtered & sorted list for rendering.
+    private IEnumerable<TreeItem<T>> FilteredItems
+    {
+        get
+        {
+            // If there's a search filter, use filtered and expanded set.
+            List<TreeItem<T>> source;
+            if (FilterFunc != null && !string.IsNullOrWhiteSpace(SearchTerm))
+            {
+                source = ExpandFiltered(TreeHelper.FilterTree(Items, item => FilterFunc(item, SearchTerm)));
+            }
+            else
+            {
+                // shallow clone list container so we can reorder without mutating caller reference
+                source = Items?.Select(CloneShallow).ToList() ?? new List<TreeItem<T>>();
+            }
+
+            if (SortSelector != null)
+            {
+                var sorted = source.OrderByKey(SortSelector, SortAscending).ToList();
+                foreach (var node in sorted) ApplySortRecursive(node);
+                return sorted;
+            }
+
+            return source;
+        }
+    }
+
+    private void HandleNodeSelect(string id) => SelectedItemId = id;
+
     private List<TreeItem<T>> ExpandFiltered(List<TreeItem<T>> nodes)
     {
-        foreach (var node in nodes)
-        {
-            ExpandAll(node);
-        }
+        if (nodes == null) return new List<TreeItem<T>>();
+        foreach (var node in nodes) ExpandAll(node);
         return nodes;
     }
 
     private void ExpandAll(TreeItem<T> node)
     {
+        if (node == null) return;
         node.IsExpanded = true;
         if (node.Children != null)
+            foreach (var child in node.Children) ExpandAll(child);
+    }
+
+    private void CollapseAll(TreeItem<T> node)
+    {
+        if (node == null) return;
+        node.IsExpanded = false;
+        if (node.Children != null)
+            foreach (var child in node.Children) CollapseAll(child);
+    }
+
+    private void ExpandAllNodes()
+    {
+        if (Items == null) return;
+        foreach (var node in Items) ExpandAll(node);
+    }
+
+    private void CollapseAllNodes()
+    {
+        if (Items == null) return;
+        foreach (var node in Items) CollapseAll(node);
+    }
+
+    private TreeItem<T> CloneShallow(TreeItem<T> source)
+    {
+        if (source == null) throw new ArgumentNullException(nameof(source));
+        return new TreeItem<T>
         {
-            foreach (var child in node.Children)
-                ExpandAll(child);
+            Id = source.Id,
+            Data = source.Data,
+            IsExpanded = source.IsExpanded,
+            Children = source.Children != null ? source.Children.ToList() : null,
+            ShowCreate = source.ShowCreate,
+            ShowEdit = source.ShowEdit,
+            ShowDelete = source.ShowDelete
+        };
+    }
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+
+        // Ensure sort is applied on parameter changes so parent-side rebind keeps ordering
+        if (SortSelector != null && Items != null && Items.Any())
+        {
+            ApplySortToItems();
         }
+    }
+
+    private async Task ToggleSort()
+    {
+        SortAscending = !SortAscending;
+
+        if (SortSelector != null && Items != null && Items.Any())
+            ApplySortToItems();
+
+        if (SortAscendingChanged.HasDelegate)
+            await SortAscendingChanged.InvokeAsync(SortAscending);
+
+        StateHasChanged();
+    }
+
+    private void ApplySortToItems()
+    {
+        if (SortSelector == null || Items == null) return;
+
+        // Reassign root list ordered
+        Items = Items.OrderByKey(SortSelector, SortAscending).ToList();
+
+        // Recursively sort child lists
+        foreach (var node in Items) ApplySortRecursive(node);
+    }
+
+    private void ApplySortRecursive(TreeItem<T> node)
+    {
+        if (node == null || node.Children == null || SortSelector == null) return;
+        node.Children = node.Children.OrderByKey(SortSelector, SortAscending).ToList();
+        foreach (var child in node.Children) ApplySortRecursive(child);
     }
 }

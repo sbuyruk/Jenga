@@ -33,20 +33,21 @@
 </div>
 
 <div class="treeview-container">
+
     <TreeViewer T="MaterialCategoryNode"
                 Items="categoryTree"
                 SearchTerm="@searchTerm"
-                FilterFunc="(item, term) =>
-                                    (item.Data.Category != null && item.Data.Category.CategoryName.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
-                                    (item.Data.Material != null && item.Data.Material.MaterialName.Contains(term, StringComparison.OrdinalIgnoreCase))"
+                FilterFunc="@filter"
                 LabelSelector="@(item => item.Data.Category?.CategoryName ?? "")"
                 DescriptionSelector="@(item => item.Data.Category?.Aciklama ?? "")"
-                SubItemLabelSelector="@(item => item.Data.Material.MaterialName ?? "")"
+                SubItemLabelSelector="@(item => item.Data.Material?.MaterialName ?? "")"
                 ChildrenSelector="@(item => item.Children)"
                 ShowContextMenuSelector="@(item => item.ShowContextMenu)"
                 ShowCreateSelector="@(item => item.ShowCreate)"
                 ShowEditSelector="@(item => item.ShowEdit)"
                 ShowDeleteSelector="@(item => item.ShowDelete)"
+                SortSelector='@(item => item.Data.Category?.CategoryName ?? item.Data.Material?.MaterialName ?? "")'
+                SortAscending="@sortAscending" SortAscendingChanged="@(v => sortAscending = v)"
                 OnCreate="HandleCreateMaterialCategory"
                 OnEdit="HandleEditMaterialCategory"
                 OnDelete="HandleDeleteMaterialCategory"
@@ -79,6 +80,14 @@
     private Material? selectedMaterial;
     private bool isCategoryEditOpen = false;
     private bool isMaterialEditOpen = false;
+    private bool sortAscending = true;
+
+    private Func<TreeItem<MaterialCategoryNode>, object?> sortSelector = item =>
+        item.Data.Category?.CategoryName ?? item.Data.Material?.MaterialName ?? "";
+
+    private Func<TreeItem<MaterialCategoryNode>, string, bool> filter = (item, term) =>
+        (item.Data.Category != null && item.Data.Category.CategoryName.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
+        (item.Data.Material != null && item.Data.Material.MaterialName.Contains(term, StringComparison.OrdinalIgnoreCase));
 
     // Lifecycle
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -112,7 +121,7 @@
         foreach (var mat in materials)
         {
             var parentId = mat.CategoryId.ToString();
-            var parent = categoryTree.FirstOrDefault(n => n.Id == parentId);
+            var parent = FindNodeById(categoryTree, parentId);
             if (parent != null)
             {
                 var materialNode = new TreeItem<MaterialCategoryNode>
@@ -131,7 +140,18 @@
         TreeHelper.RestoreExpandedStates(categoryTree, expandedMap);
         StateHasChanged();
     }
-
+    private TreeItem<MaterialCategoryNode>? FindNodeById(List<TreeItem<MaterialCategoryNode>> nodes, string id)
+    {
+        foreach (var node in nodes)
+        {
+            if (node.Id == id)
+                return node;
+            var found = FindNodeById(node.Children, id);
+            if (found != null)
+                return found;
+        }
+        return null;
+    }
     // Models
     public class MaterialCategoryNode
     {
@@ -212,9 +232,15 @@
         if (selectedCategory != null)
         {
             if (selectedCategory.Id == 0)
+            {
                 await MaterialCategoryService.AddAsync(selectedCategory);
+                ToastService.ShowToast($"{(selectedCategory.CategoryName)} eklendi", ToastType.Success, 3000);
+            }
             else
+            {
                 await MaterialCategoryService.UpdateAsync(selectedCategory);
+                ToastService.ShowToast($"{(selectedCategory.CategoryName)} güncellendi", ToastType.Info, 3000);
+            }
         }
         await RefreshData();
         selectedCategory = null;
@@ -226,9 +252,15 @@
         if (selectedMaterial != null)
         {
             if (selectedMaterial.Id == 0)
+            {
                 await MaterialService.AddAsync(selectedMaterial);
+                ToastService.ShowToast($"{(selectedMaterial.MaterialName)} eklendi", ToastType.Success, 3000);
+            }
             else
+            {
                 await MaterialService.UpdateAsync(selectedMaterial);
+                ToastService.ShowToast($"{(selectedMaterial.MaterialName)} güncellendi", ToastType.Info, 3000);
+            }
         }
         isMaterialEditOpen = false;
         selectedMaterial = null;

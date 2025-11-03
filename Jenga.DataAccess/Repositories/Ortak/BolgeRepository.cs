@@ -1,21 +1,23 @@
 ﻿using Jenga.DataAccess.Data;
 using Jenga.DataAccess.Repositories.IRepository.Ortak;
 using Jenga.Models.Ortak;
+using Microsoft.EntityFrameworkCore;
 
 namespace Jenga.DataAccess.Repositories.Ortak
 {
     public class BolgeRepository : Repository<Bolge>, IBolgeRepository
     {
-        ApplicationDbContext _db;
-        public BolgeRepository(ApplicationDbContext db) : base(db)
+        private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
+        public BolgeRepository(IDbContextFactory<ApplicationDbContext> dbFactory) : base(dbFactory)
         {
-            _db = db;
+            _dbFactory = dbFactory;
         }
 
-        public void Save()
+        // Örnek: bölgeye özel metot eklenecekse kısa ömürlü context ile kullanın
+        public async Task<Bolge?> GetByNameAsync(string name, CancellationToken cancellationToken = default)
         {
-            _db.SaveChanges();
+            await using var db = _dbFactory.CreateDbContext();
+            return await db.Bolge_Table.AsNoTracking().FirstOrDefaultAsync(b => b.Adi == name, cancellationToken);
         }
-
     }
 }

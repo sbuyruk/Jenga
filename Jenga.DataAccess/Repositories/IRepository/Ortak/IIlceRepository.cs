@@ -4,6 +4,7 @@ namespace Jenga.DataAccess.Repositories.IRepository.Ortak
 {
     public interface IIlceRepository : IRepository<Ilce>
     {
-        Task<List<Ilce>> GetByIlIdAsync(int ilId);
+        Task SaveAsync(CancellationToken cancellationToken = default);
+        Task<List<Ilce>> GetByIlIdAsync(int ilId, CancellationToken cancellationToken = default);
     }
 }

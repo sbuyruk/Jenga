@@ -38,7 +38,9 @@
                 ChildrenSelector="@(item => item.Children)"
                 ShowCreateSelector="@(item => item.ShowCreate)"
                 ShowEditSelector="@(item => item.ShowEdit)"
-                ShowDeleteSelector="@(item => item.ShowDelete)" />
+                ShowDeleteSelector="@(item => item.ShowDelete)" 
+                SortSelector='@(item => item.Data.LocationName)'
+                SortAscending="@sortAscending" SortAscendingChanged="@(v => sortAscending = v)" />
 
     <LocationEditModal Location="selectedLocation?.Data"
                        IsOpen="isEditOpen"
@@ -55,6 +57,13 @@
     private bool isEditOpen = false;
     private bool _dataLoaded = false;
     private string searchTerm = "";
+    private bool sortAscending = true;
+
+    private Func<TreeItem<MaterialCategory>, object?> sortSelector = item =>
+        item.Data?.CategoryName ;
+
+    private Func<TreeItem<MaterialCategory>, string, bool> filter = (item, term) =>
+        (item.Data != null && item.Data.CategoryName.Contains(term, StringComparison.OrdinalIgnoreCase)) ;
 
     [Parameter] public EventCallback OnRefresh { get; set; }
 
@@ -106,11 +115,13 @@
                 if (saved)
                 {
                     locations.Add(selectedLocation.Data);
+                    ToastService.ShowToast($"{(selectedLocation.Data.LocationName )} eklendi", ToastType.Success, 3000);
                 }
             }
             else
             {
                 await LocationService.UpdateAsync(selectedLocation.Data);
+                ToastService.ShowToast($"{(selectedLocation.Data.LocationName)} güncellendi", ToastType.Info, 3000);
             }
         }
         await RefreshData();

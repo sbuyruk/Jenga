@@ -7,12 +7,10 @@ namespace Jenga.DataAccess.Repositories.Inventory
 {
     public class MaterialModelRepository : Repository<MaterialModel>, IMaterialModelRepository
     {
-        private readonly ApplicationDbContext _db;
-        public MaterialModelRepository(ApplicationDbContext db) : base(db)
+        private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
+        public MaterialModelRepository(IDbContextFactory<ApplicationDbContext> dbFactory) : base(dbFactory)
         {
-            _db = db;
+            _dbFactory = dbFactory;
         }
-
-
     }
 }

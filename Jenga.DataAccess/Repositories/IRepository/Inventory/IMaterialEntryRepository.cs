@@ -5,6 +5,6 @@ namespace Jenga.DataAccess.Repositories.IRepository.Inventory
 {
     public interface IMaterialEntryRepository : IRepository<MaterialEntry>
     {
-        Task<bool> AnyAsync(Expression<Func<MaterialEntry, bool>> predicate);
+        Task<bool> AnyAsync(Expression<Func<MaterialEntry, bool>> predicate, CancellationToken cancellationToken = default);
     }
 }

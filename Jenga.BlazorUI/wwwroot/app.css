@@ -95,6 +95,9 @@ h1:focus {
     background: transparent;
 }
 .treeview-container {
+    position :relative;
+    display:flex;
+    gap:12px;
     max-height: 80vh;
     overflow-y: auto;
     background: var(--bs-body-bg);
@@ -157,7 +160,7 @@ ul.treeview-list {
     ul.treeview-list li::after {
         content: "";
         position: absolute;
-        top: 1.2em;
+        top: 0.9em;
         left: -14px;
         width: 16px;
         height: 0;
@@ -171,4 +174,29 @@ ul.treeview-list {
     }
 .treeview-list .material-badge {
     margin-left: 0; /* tree çizgisiyle hizalı olsun */
+}
+/* Toolbar'ı sabitle */
+.sticky-toolbar {
+    position: sticky;
+    top: 8px; /* üstten boşluk; ihtiyaca göre 0px yapabilirsiniz */
+    align-self: start; /* üstte hizalama */
+    z-index: 1050; /* navbar / modal üstü gereksinimine göre artırın */
+    background: var(--bs-body-bg, #fff); /* tema uyumlu arka plan */
+    padding: 6px;
+    border-radius: 6px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+/* Görünüm küçük ekranlarda yatay konuma geçerse düzenlemek isterseniz: */
+@media (max-width: 767.98px) {
+    .treeview-container {
+        flex-direction: column;
+    }
+
+    .sticky-toolbar {
+        position: sticky;
+        top: 0;
+        width: 100%;
+        display: flex;
+        flex-direction: row;
+    }
 }

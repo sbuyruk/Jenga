@@ -1,151 +1,158 @@
 ﻿using Jenga.DataAccess.Data;
 using Jenga.DataAccess.Repositories.IRepository;
-using Jenga.Models.Inventory;
 using Jenga.Models.Sistem;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
-using System.Threading;
 
 namespace Jenga.DataAccess.Repositories
 {
+    // Repository artık IDbContextFactory ile çalışır.
+    // Her çağrıda kısa ömürlü bir DbContext yaratılır -> aynı context üzerinde eş zamanlı işlemler engellenir.
     public class Repository<T> : IRepository<T> where T : BaseModel
     {
-        private readonly ApplicationDbContext _db;
-        internal DbSet<T> dbSet;
-        public Repository(ApplicationDbContext db)
+        private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
+
+        public Repository(IDbContextFactory<ApplicationDbContext> dbFactory)
         {
-            _db = db;
-            dbSet = _db.Set<T>();
-        }
-        public void Remove(T entity)
-        {
-            if (entity != null)
-            {
-                // Zaten track edilen entity varsa, attach etme!
-                var trackedEntity = dbSet.Local.FirstOrDefault(e => e.Id == entity.Id);
-                if (trackedEntity != null)
-                {
-                    dbSet.Remove(trackedEntity);
-                }
-                else
-                {
-                    dbSet.Attach(entity);
-                    dbSet.Remove(entity);
-                }
-            }
+            _dbFactory = dbFactory;
         }
 
-        public void RemoveRange(IEnumerable<T> entity)
+        // Senkron Remove artık aynı context içinde commit ediyor (SaveChanges çağrısı).
+        public void Remove(T entity)
         {
-            dbSet.RemoveRange(entity);
-           
+            if (entity == null) return;
+
+            using var db = _dbFactory.CreateDbContext();
+            var dbSet = db.Set<T>();
+
+            var trackedEntity = dbSet.Local.FirstOrDefault(e => e.Id == entity.Id);
+            if (trackedEntity != null)
+            {
+                dbSet.Remove(trackedEntity);
+            }
+            else
+            {
+                dbSet.Attach(entity);
+                dbSet.Remove(entity);
+            }
+
+            // Commit hemen yapılır
+            db.SaveChanges();
         }
-        //public void Update(T entity)
-        //{
-        //    entity.DegistirmeTarihi = DateTime.Now;
-        //    dbSet.Entry(entity).Property(x => x.Id).IsModified = false;
-        //    dbSet.Attach(entity);  // Attach to DbContext
-        //    dbSet.Entry(entity).State = EntityState.Modified;
-        //    dbSet.Update(entity);  // Mark the entity as Modified
-        //}
+
+        public void RemoveRange(IEnumerable<T> entities)
+        {
+            using var db = _dbFactory.CreateDbContext();
+            var dbSet = db.Set<T>();
+            dbSet.RemoveRange(entities);
+            db.SaveChanges();
+        }
+
         public void Update(T entity)
         {
             entity.Degistiren = Environment.UserName;
             entity.DegistirmeTarihi = DateTime.Now;
+
+            using var db = _dbFactory.CreateDbContext();
+            var dbSet = db.Set<T>();
             dbSet.Update(entity);
+            db.SaveChanges();
         }
-        //SB async update CancellationToken kısmı nanay
-        //public async Task UpdateAsync(T entity, string? modifiedBy = null, CancellationToken cancellationToken = default)
-        //{
-        //    entity.Degistiren = string.IsNullOrWhiteSpace(modifiedBy) ? Environment.UserName : modifiedBy;
-        //    entity.DegistirmeTarihi = DateTime.Now;
-        //    dbSet.Update(entity);
-        //    await _db.SaveChangesAsync(cancellationToken);
-        //    dbSet.Entry(entity).State = EntityState.Detached;
-        //}
+
         public async Task UpdateAsync(T entity, string? modifiedBy = null, CancellationToken cancellationToken = default)
         {
-            // Önce context'ten var olanı bul
-            var trackedEntity = await dbSet.FindAsync(entity.Id);
+            await using var db = _dbFactory.CreateDbContext();
+            var dbSet = db.Set<T>();
+
+            var trackedEntity = await dbSet.FindAsync(new object[] { entity.Id }, cancellationToken);
             if (trackedEntity != null)
             {
-                // Tüm property'leri güncelle (otomatik map veya manuel kopyala)
-
-                _db.Entry(trackedEntity).CurrentValues.SetValues(entity);
+                db.Entry(trackedEntity).CurrentValues.SetValues(entity);
                 trackedEntity.Degistiren = string.IsNullOrWhiteSpace(modifiedBy) ? Environment.UserName : modifiedBy;
                 trackedEntity.DegistirmeTarihi = DateTime.Now;
             }
             else
             {
-                // Eğer context'te yoksa, attach et ve update et
                 dbSet.Attach(entity);
                 dbSet.Update(entity);
             }
 
-            await _db.SaveChangesAsync(cancellationToken);
+            await db.SaveChangesAsync(cancellationToken);
         }
-        //async methods
+
+        // AddAsync şimdi ekledikten sonra aynı context üzerinde SaveChangesAsync çağırır.
         public async Task AddAsync(T entity, CancellationToken cancellationToken = default)
         {
             entity.Olusturan = Environment.UserName;
             entity.OlusturmaTarihi = DateTime.Now;
+
+            await using var db = _dbFactory.CreateDbContext();
+            var dbSet = db.Set<T>();
             await dbSet.AddAsync(entity, cancellationToken);
-        }
-        public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-        {
-            return await _db.SaveChangesAsync(cancellationToken);
+
+            // commit burada yapılır, böylece ekleme eklediği aynı context üzerinde persist olur
+            await db.SaveChangesAsync(cancellationToken);
         }
 
-        // SB Unlike AddAsync, the Update method doesn’t need to be awaited since it doesn’t perform asynchronous work. It simply marks the entity as modified in the context.
+        // Bu metot hâlen kısa ömürlü context üzerinde SaveChanges çağırır; artık çoğu mutasyon metodu kendi commit'ini yaptığı için
+        // çağıran kodun tekrar SaveChanges çağırmasına gerek yok (ancak çağrı varsa da hata vermez).
+        public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            await using var db = _dbFactory.CreateDbContext();
+            return await db.SaveChangesAsync(cancellationToken);
+        }
 
         public async Task<T?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
         {
-            return await dbSet.AsNoTracking().FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+            await using var db = _dbFactory.CreateDbContext();
+            return await db.Set<T>().AsNoTracking().FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
         }
+
         public async Task<List<T>> GetAllAsync(CancellationToken cancellationToken = default)
         {
-            return await dbSet.AsNoTracking().ToListAsync(cancellationToken);
+            await using var db = _dbFactory.CreateDbContext();
+            return await db.Set<T>().AsNoTracking().ToListAsync(cancellationToken);
         }
 
         public async Task<T?> GetFirstOrDefaultAsync(Expression<Func<T, bool>> filter, string? includeProperties = null, bool trackChanges = true)
         {
-            IQueryable<T> query = dbSet;
-            if (!trackChanges) //If you only need to read the data without modifying it, using AsNoTracking() is an effective way to avoid tracking the entity:
-            {
+            await using var db = _dbFactory.CreateDbContext();
+            IQueryable<T> query = db.Set<T>();
+            if (!trackChanges)
                 query = query.AsNoTracking();
-            }
-            if (includeProperties != null)
+
+            if (!string.IsNullOrWhiteSpace(includeProperties))
             {
-                foreach (var includeProp in includeProperties.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                foreach (var includeProp in includeProperties.Split(',', StringSplitOptions.RemoveEmptyEntries))
                 {
                     query = query.Include(includeProp);
                 }
             }
 
-            query = query.Where(filter);
-            return await query.FirstOrDefaultAsync();
+            return await query.Where(filter).FirstOrDefaultAsync();
         }
+
         public async Task<IEnumerable<T>> GetAllAsync(string? includeProperties = null)
         {
-            IQueryable<T> query = dbSet;
-
-            if (includeProperties != null)
+            await using var db = _dbFactory.CreateDbContext();
+            IQueryable<T> query = db.Set<T>();
+            if (!string.IsNullOrWhiteSpace(includeProperties))
             {
-                foreach (var includeProp in includeProperties.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                foreach (var includeProp in includeProperties.Split(',', StringSplitOptions.RemoveEmptyEntries))
                 {
                     query = query.Include(includeProp);
                 }
             }
-
             return await query.ToListAsync();
         }
+
         public async Task<IEnumerable<T>> GetAllByFilterAsync(Expression<Func<T, bool>> filter, string? includeProperties = null)
         {
-            IQueryable<T> query = dbSet;
-
-            if (includeProperties != null)
+            await using var db = _dbFactory.CreateDbContext();
+            IQueryable<T> query = db.Set<T>();
+            if (!string.IsNullOrWhiteSpace(includeProperties))
             {
-                foreach (var includeProp in includeProperties.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                foreach (var includeProp in includeProperties.Split(',', StringSplitOptions.RemoveEmptyEntries))
                 {
                     query = query.Include(includeProp);
                 }
@@ -153,9 +160,11 @@ namespace Jenga.DataAccess.Repositories
             query = query.Where(filter);
             return await query.ToListAsync();
         }
-        public Task<bool> AnyAsync(Expression<Func<T, bool>> predicate)
+
+        public async Task<bool> AnyAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
         {
-            return dbSet.AnyAsync(predicate);
+            await using var db = _dbFactory.CreateDbContext();
+            return await db.Set<T>().AnyAsync(predicate, cancellationToken);
         }
     }
 }

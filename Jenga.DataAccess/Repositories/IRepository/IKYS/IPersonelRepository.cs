@@ -5,6 +5,8 @@ namespace Jenga.DataAccess.Repositories.IRepository.IKYS
 {
     public interface IPersonelRepository : IRepository<Personel>
     {
-        Task<IEnumerable<SelectListItem>> GetPersonelDDL(bool onlyWorkingPersonel = true, int malzemeId = 0);
+        Task SaveAsync(CancellationToken cancellationToken = default);
+
+        Task<IEnumerable<SelectListItem>> GetPersonelDDL(bool onlyWorkingPersonel = true, int malzemeId = 0, CancellationToken cancellationToken = default);
     }
 }

@@ -7,20 +7,26 @@ namespace Jenga.DataAccess.Repositories.Ortak
 {
     public class IlceRepository : Repository<Ilce>, IIlceRepository
     {
-        ApplicationDbContext _db;
-        public IlceRepository(ApplicationDbContext db) : base(db)
+        private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
+        public IlceRepository(IDbContextFactory<ApplicationDbContext> dbFactory) : base(dbFactory)
         {
-            _db = db;
+            _dbFactory = dbFactory;
         }
 
-        public void Save()
+        // Async Save örneği (factory ile kısa ömürlü context kullanıldığında sync Save() anlamsızdır)
+        public async Task SaveAsync(CancellationToken cancellationToken = default)
         {
-            _db.SaveChanges();
-        }
-        public async Task<List<Ilce>> GetByIlIdAsync(int ilId)
-        {
-            return await _db.Ilce_Table.Where(x => x.IlId == ilId).ToListAsync();
+            await using var db = _dbFactory.CreateDbContext();
+            await db.SaveChangesAsync(cancellationToken);
         }
 
+        public async Task<List<Ilce>> GetByIlIdAsync(int ilId, CancellationToken cancellationToken = default)
+        {
+            await using var db = _dbFactory.CreateDbContext();
+            return await db.Ilce_Table
+                .AsNoTracking()
+                .Where(x => x.IlId == ilId)
+                .ToListAsync(cancellationToken);
+        }
     }
 }

@@ -93,15 +93,6 @@ namespace Jenga.Models.Helper
             return null;
         }
         //Expand Collapse
-        /// <summary>
-        /// Collects the expanded states of all nodes in a tree structure and returns them as a dictionary.
-        /// </summary>
-        /// <remarks>This method recursively traverses the tree structure, including all child nodes, to
-        /// collect the expanded states.</remarks>
-        /// <typeparam name="T">The type of the data contained in the tree nodes.</typeparam>
-        /// <param name="nodes">A list of tree nodes to process. Each node may have child nodes.</param>
-        /// <returns>A dictionary where the keys are the unique identifiers of the nodes and the values indicate whether the
-        /// nodes are expanded.</returns>
         public static Dictionary<string, bool> CollectExpandedStates<T>(List<TreeItem<T>> nodes)
         {
             var dict = new Dictionary<string, bool>();

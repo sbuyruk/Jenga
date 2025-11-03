@@ -5,8 +5,6 @@ namespace Jenga.DataAccess.Repositories.IRepository.Inventory
 {
     public interface IMaterialCategoryRepository : IRepository<MaterialCategory>
     {
-        // MaterialCategory’a özel metotlar ekleyebilirsin.
-
         Task<bool> AnyAsync(Expression<Func<MaterialCategory, bool>> predicate, CancellationToken cancellationToken = default);
     }
 }

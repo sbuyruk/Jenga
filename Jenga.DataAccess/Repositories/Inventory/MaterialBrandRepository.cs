@@ -7,12 +7,17 @@ namespace Jenga.DataAccess.Repositories.Inventory
 {
     public class MaterialBrandRepository : Repository<MaterialBrand>, IMaterialBrandRepository
     {
-        private readonly ApplicationDbContext _db;
-        public MaterialBrandRepository(ApplicationDbContext db) : base(db)
+        private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
+        public MaterialBrandRepository(IDbContextFactory<ApplicationDbContext> dbFactory) : base(dbFactory)
         {
-            _db = db;
+            _dbFactory = dbFactory;
         }
 
-
+        // Örnek: marka adına göre arama
+        public async Task<MaterialBrand?> GetByNameAsync(string name, CancellationToken cancellationToken = default)
+        {
+            await using var db = _dbFactory.CreateDbContext();
+            return await db.MaterialBrand_Table.AsNoTracking().FirstOrDefaultAsync(b => b.BrandName == name, cancellationToken);
+        }
     }
 }

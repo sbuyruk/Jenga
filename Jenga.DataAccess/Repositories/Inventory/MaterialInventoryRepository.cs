@@ -7,12 +7,17 @@ namespace Jenga.DataAccess.Repositories.Inventory
 {
     public class MaterialInventoryRepository : Repository<MaterialInventory>, IMaterialInventoryRepository
     {
-        private readonly ApplicationDbContext _db;
-        public MaterialInventoryRepository(ApplicationDbContext db) : base(db) { _db = db; }
+        private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
+        public MaterialInventoryRepository(IDbContextFactory<ApplicationDbContext> dbFactory) : base(dbFactory)
+        {
+            _dbFactory = dbFactory;
+        }
 
         public async Task<MaterialInventory?> GetByMaterialLocationAsync(int materialId, int locationId, int materialUnitId, CancellationToken cancellationToken = default)
         {
-            return await _db.MaterialInventory_Table
+            await using var db = _dbFactory.CreateDbContext();
+            return await db.MaterialInventory_Table
+                .AsNoTracking()
                 .FirstOrDefaultAsync(mi =>
                     mi.MaterialId == materialId &&
                     mi.LocationId == locationId &&
