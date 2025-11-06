@@ -56,13 +56,6 @@ namespace Jenga.DataAccess.Services.Inventory
             return true;
         }
 
-        public async Task<bool> AddAsync(MaterialEntry entry, CancellationToken cancellationToken = default)
-        {
-            await _unitOfWork.MaterialEntry.AddAsync(entry, cancellationToken);
-            await _unitOfWork.MaterialEntry.SaveChangesAsync(cancellationToken);
-            return true;
-        }
-
         public async Task<bool> UpdateMaterialEntryAndInventoryAsync(MaterialEntry entry, string? currentUserName, CancellationToken cancellationToken = default)
         {
             var eskiEntry = await GetByIdAsync(entry.Id, cancellationToken);

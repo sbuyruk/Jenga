@@ -111,6 +111,7 @@
                 <TreeNodeViewer T="T"
                                 Item="child"
                                 SelectedItemId="@SelectedItemId"
+                                SelectedDataKey="@SelectedDataKey"
                                 OnSelect="OnSelect"
                                 OnCreate="OnCreate"
                                 OnEdit="OnEdit"
@@ -125,7 +126,8 @@
                                 ShowDeleteSelector="ShowDeleteSelector"
                                 OnSubItemCreate="OnSubItemCreate"
                                 OnSubItemEdit="OnSubItemEdit"
-                                OnSubItemDelete="OnSubItemDelete" />
+                                OnSubItemDelete="OnSubItemDelete"
+                                OnToggleExpand="OnToggleExpand" />
             }
         </ul>
     }
@@ -133,6 +135,7 @@
 
 @code {
     [Parameter] public TreeItem<T> Item { get; set; } = default!;
+    [Parameter] public EventCallback<TreeItem<T>> OnSelect { get; set; }
     [Parameter] public EventCallback<TreeItem<T>> OnCreate { get; set; }
     [Parameter] public EventCallback<TreeItem<T>> OnEdit { get; set; }
     [Parameter] public EventCallback<TreeItem<T>> OnDelete { get; set; }
@@ -148,7 +151,12 @@
     [Parameter] public EventCallback<TreeItem<T>> OnSubItemEdit { get; set; }
     [Parameter] public EventCallback<TreeItem<T>> OnSubItemDelete { get; set; }
     [Parameter] public string? SelectedItemId { get; set; }
-    [Parameter] public EventCallback<string> OnSelect { get; set; }
+
+    // New: selected data key propagated from parent
+    [Parameter] public string? SelectedDataKey { get; set; }
+
+    // New callback to request parent toggle the original item
+    [Parameter] public EventCallback<string> OnToggleExpand { get; set; }
 
     private string Label => LabelSelector?.Invoke(Item) ?? Item?.Data?.ToString() ?? "";
     private string SubItemLabel => SubItemLabelSelector?.Invoke(Item) ?? "";
@@ -158,16 +166,27 @@
     private bool ShowCreate => ShowCreateSelector?.Invoke(Item) ?? true;
     private bool ShowEdit => ShowEditSelector?.Invoke(Item) ?? true;
     private bool ShowDelete => ShowDeleteSelector?.Invoke(Item) ?? true;
-    private bool IsSelected => Item.Id == SelectedItemId;
+
+    // IsSelected now checks node id OR stable data key match
+    private bool IsSelected => Item.Id == SelectedItemId || (!string.IsNullOrEmpty(SelectedDataKey) && GetDataKey(Item) == SelectedDataKey);
 
     private bool ShowMenu { get; set; }
     private bool ShowSubItemMenu { get; set; }
     private double SubItemMenuX { get; set; }
     private double SubItemMenuY { get; set; }
 
-    private void ToggleExpand()
+    private async Task ToggleExpand()
     {
         if (Item == null) return;
+
+        // Ask parent to toggle the *original* item by id so the source tree keeps state.
+        if (OnToggleExpand.HasDelegate)
+        {
+            await OnToggleExpand.InvokeAsync(Item.Id);
+            return;
+        }
+
+        // Fallback if parent doesn't support it (keeps previous behavior)
         Item.IsExpanded = !Item.IsExpanded;
     }
 
@@ -236,6 +255,54 @@
     private async Task HandleSelect()
     {
         if (OnSelect.HasDelegate)
-            await OnSelect.InvokeAsync(Item.Id);
+            await OnSelect.InvokeAsync(Item);
+    }
+
+    // Compute data key same way as parent (Category.Id, Material.Id, Id)
+    private string GetDataKey(TreeItem<T>? item)
+    {
+        if (item == null) return string.Empty;
+        var data = item.Data;
+        if (data == null) return item.Id ?? string.Empty;
+
+        var type = data.GetType();
+        var prop = type.GetProperty("Category");
+        if (prop != null)
+        {
+            var cat = prop.GetValue(data);
+            if (cat != null)
+            {
+                var idProp = cat.GetType().GetProperty("Id");
+                if (idProp != null)
+                {
+                    var val = idProp.GetValue(cat)?.ToString();
+                    if (!string.IsNullOrEmpty(val)) return "category:" + val;
+                }
+            }
+        }
+
+        prop = type.GetProperty("Material");
+        if (prop != null)
+        {
+            var mat = prop.GetValue(data);
+            if (mat != null)
+            {
+                var idProp = mat.GetType().GetProperty("Id");
+                if (idProp != null)
+                {
+                    var val = idProp.GetValue(mat)?.ToString();
+                    if (!string.IsNullOrEmpty(val)) return "material:" + val;
+                }
+            }
+        }
+
+        var idP = type.GetProperty("Id");
+        if (idP != null)
+        {
+            var val = idP.GetValue(data)?.ToString();
+            if (!string.IsNullOrEmpty(val)) return "data:" + val;
+        }
+
+        return item.Id ?? string.Empty;
     }
 }

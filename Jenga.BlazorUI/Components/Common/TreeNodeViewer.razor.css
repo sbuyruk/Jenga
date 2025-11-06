@@ -1,13 +1,13 @@
 ﻿.treeview-item {
     display: table;
     align-items: center;
-    gap: 8px;
-    padding: 0px 5px 0px 5px;
+    /*gap: 8px;*/
+    /*padding: 0px 5px 0px 5px;*/
     border-radius: 4px;
     transition: background 0.18s;
     cursor: pointer;
     position: relative;
-    min-height: 32px;
+    min-height: 25px;
 }
 
 .tree-label {
@@ -79,16 +79,16 @@
 .material-badge {
     display: inline-flex;
     align-items: center;
-    background: #e3f2fd;
-    color: #1976d2;
+    /*background: #e3f2fd;*/
+    /*color: #1976d2;*/
     border-radius: 5px;
-    padding: 2px 5px;
-    margin: 2px 5px 2px 0;
-    font-size: 0.96rem;
-    font-weight: 500;
+    /*padding: 2px 5px;*/
+    /*margin: 0px 5px 0px 0;*/
+    font-size: 0.90rem;
+    /*font-weight: 500;*/
     box-shadow: 0 1px 3px rgba(0,0,0,0.06);
     cursor: pointer;
-    border: 1px solid #bbdefb;
+    /*border: 1px solid #bbdefb;*/
 }
 
     .material-badge:hover {

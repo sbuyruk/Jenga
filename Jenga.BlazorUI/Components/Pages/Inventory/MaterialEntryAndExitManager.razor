@@ -1,0 +1,364 @@
+﻿@page "/inventory/materialentry-and-exit-manager"
+@rendermode InteractiveServer
+
+@using Jenga.BlazorUI.Components.Common
+@using Jenga.BlazorUI.Components.Inventory
+@using Jenga.DataAccess.Services.Inventory
+@using Jenga.Models.Common
+@using Jenga.Models.Helper
+@using Jenga.Models.Inventory
+@using Jenga.Utility.Modal
+@using Jenga.Utility.Toast
+
+@inject IMaterialService MaterialService
+@inject IMaterialCategoryService MaterialCategoryService
+@inject IMaterialUnitService MaterialUnitService
+@inject ILocationService LocationService
+@inject IMaterialEntryService MaterialEntryService
+@inject IToastService ToastService
+@inject IJSRuntime JS
+@inject IHttpContextAccessor httpContextAccessor
+
+
+<div class="row g-4 " style=" height: 90vh;">
+        <!-- LEFT: TreeViewer from existing manager -->
+        <div class="col-md-5 " style="height: 100%">
+        <div class="card shadow-sm " style="height: 100%;">
+                <div class="card-body">
+                    <h6 class="card-title mb-3">Malzeme Cinsleri & Malzemeler </h6>
+                    <div class="mt-3 d-flex gap-2">
+                        <input class="form-control form-control-sm" placeholder="Malzeme Ara..." @bind="searchTerm" @bind:event="oninput" />
+                        <button class="btn btn-sm btn-outline-secondary" @onclick="RefreshData">Yenile</button>
+                        <button class="btn btn-sm btn-outline-secondary" @onclick="ClearSearch">Temizle</button>
+                    </div>
+                    <TreeViewer T="MaterialCategoryNode"
+                                Items="categoryTree"
+                                SearchTerm="@searchTerm"
+                                FilterFunc="@filter"
+                                LabelSelector="@(item => item.Data.Category?.CategoryName ?? "")"
+                                DescriptionSelector="@(item => item.Data.Category?.Aciklama ?? "")"
+                                SubItemLabelSelector="@(item => item.Data.Material?.MaterialName ?? "")"
+                                ChildrenSelector="@(item => item.Children)"
+                                ShowContextMenuSelector="@(item => item.ShowContextMenu)"
+                                ShowCreateSelector="@(item => item.ShowCreate)"
+                                ShowEditSelector="@(item => item.ShowEdit)"
+                                ShowDeleteSelector="@(item => item.ShowDelete)"
+                                SortSelector='@(item => item.Data.Category?.CategoryName ?? item.Data.Material?.MaterialName ?? "")'
+                                SortAscending="@sortAscending" SortAscendingChanged="@(v => sortAscending = v)"
+                                OnSubItemEdit="HandleMaterialEdit"
+                                OnSubItemCreate="HandleCreateMaterial"
+                                OnEdit="HandleEditCategory"
+                                OnCreate="HandleCreateCategory"
+                                OnDelete="HandleDeleteCategory"
+                                OnSelect="HandleNodeSelect" />
+
+
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: mockup area (kept from static mockup) -->
+        <div class="col-md-7">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <h5 class="mb-0">Envanter İşlemleri</h5>
+                <div>
+                    <button class="btn btn-success btn-sm" @onclick="() => OpenEntryModal(null)">Envantere Malzeme Ekle</button>
+                </div>
+            </div>
+
+            <div class="card p-3 mb-3">
+                <div class="row align-items-center">
+                    <div class="col-auto">
+                        <div class="material-card p-2" style="border:1px solid #e9eef8;border-radius:8px;background:#fff;">
+                            <div class="fw-semibold">@SelectedMaterial?.MaterialName ?? "— Seçili yok —"</div>
+                            <div class="text-muted small">@("SKU: " + (SelectedMaterial?.MaterialName ?? "-"))</div>
+                            <div class="text-muted small mt-2">Mevcut stok: <strong>@SelectedMaterialStock</strong></div>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="text-muted small">Son işlemler (demo)</div>
+                        <ul class="list-unstyled mb-0 small">
+                            <li>TXN-169: Transfer +50 (WH-A → WH-B)</li>
+                            <li>TXN-168: Entry +500 (WH-A / Shelf-02)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <h6>Quick Actions</h6>
+                <div class="btn-group">
+                    <button class="btn btn-outline-secondary btn-sm">Fiş Oluştur</button>
+                    <button class="btn btn-outline-secondary btn-sm">Toplu Transfer</button>
+                    <button class="btn btn-outline-secondary btn-sm">Hareket Geçmişi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+<!-- Use existing MaterialEntryEditModal component (do not recreate modal here) -->
+<MaterialEntryEditModal MaterialEntry="editingEntry"
+                        Materials="materials"
+                        MaterialUnits="materialUnits"
+                        Locations="locations"
+                        IsOpen="isEntryOpen"
+                        OnSave="OnEntryModalSave"
+                        OnClose="CloseEntryModal" />
+
+<!-- Reuse existing edit/create modals for Material/Category -->
+<MaterialCategoryEditModal Category="selectedCategory"
+                           IsOpen="isCategoryEditOpen"
+                           ParentCategories="categories"
+                           OnSave="OnCategoryModalSave"
+                           OnClose="CloseCategoryModal" />
+
+<MaterialEditModal Material="selectedMaterial"
+                   Categories="categories"
+                   IsOpen="isMaterialEditOpen"
+                   OnSave="OnMaterialModalSave"
+                   OnClose="CloseMaterialModal" />
+
+@code {
+    // Models for page
+    private List<TreeItem<MaterialCategoryNode>> categoryTree = new();
+    private List<MaterialCategory> categories = new();
+    private List<Material> materials = new();
+    private List<MaterialUnit> materialUnits = new();
+    private List<Location> locations = new();
+
+    private string searchTerm = "";
+    private bool sortAscending = true;
+
+    private Material? SelectedMaterial;
+    private decimal SelectedMaterialStock => SelectedMaterial?.MaterialUnitId ?? 0;
+
+    // Entry modal state using provided component
+    private bool isEntryOpen = false;
+    private MaterialEntry? editingEntry;
+
+    // Material/Category edit modals (reuse existing)
+    private bool isCategoryEditOpen = false;
+    private MaterialCategory? selectedCategory;
+    private bool isMaterialEditOpen = false;
+    private Material? selectedMaterial;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadLookups();
+        await RefreshData();
+    }
+
+    private async Task LoadLookups()
+    {
+        materialUnits = await MaterialUnitService.GetAllAsync();
+        locations = await LocationService.GetAllAsync();
+    }
+
+    private async Task RefreshData()
+    {
+        categories = await MaterialCategoryService.GetAllAsync();
+        materials = await MaterialService.GetAllAsync();
+
+        var categoryNodes = categories.Select(c => new MaterialCategoryNode { Category = c }).ToList();
+
+        categoryTree = TreeHelper.BuildTree<MaterialCategoryNode>(
+            categoryNodes,
+            node => node.Category.Id.ToString(),
+            node => node.Category.ParentCategoryId?.ToString()
+        );
+
+        foreach (var mat in materials)
+        {
+            var parentId = mat.CategoryId.ToString();
+            var parent = FindNodeById(categoryTree, parentId);
+            if (parent != null)
+            {
+                parent.Children.Add(new TreeItem<MaterialCategoryNode>
+                {
+                    Id = "mat-" + mat.Id,
+                    Data = new MaterialCategoryNode { Material = mat },
+                    ShowCreate = true,
+                    ShowEdit = true,
+                    ShowDelete = true,
+                    Children = new List<TreeItem<MaterialCategoryNode>>()
+                });
+            }
+        }
+    }
+
+    private TreeItem<MaterialCategoryNode>? FindNodeById(List<TreeItem<MaterialCategoryNode>> nodes, string id)
+    {
+        foreach (var node in nodes)
+        {
+            if (node.Id == id)
+                return node;
+            var found = FindNodeById(node.Children, id);
+            if (found != null) return found;
+        }
+        return null;
+    }
+
+    private Func<TreeItem<MaterialCategoryNode>, string, bool> filter = (item, term) =>
+        (item.Data.Category != null && item.Data.Category.CategoryName.Contains(term ?? "", StringComparison.OrdinalIgnoreCase)) ||
+        (item.Data.Material != null && item.Data.Material.MaterialName.Contains(term ?? "", StringComparison.OrdinalIgnoreCase));
+
+    // Tree events that open entry modal
+    private async Task HandleMaterialEdit(TreeItem<MaterialCategoryNode> item)
+    {
+        if (item?.Data?.Material != null)
+        {
+            SelectedMaterial = item.Data.Material;
+            await OpenEntryModalWithMaterial(SelectedMaterial);
+        }
+    }
+
+    private Task HandleCreateMaterial(TreeItem<MaterialCategoryNode> item)
+    {
+        // open material create modal (reuse existing MaterialEditModal)
+        selectedMaterial = new Material { CategoryId = item.Data.Category?.Id ?? 0 };
+        isMaterialEditOpen = true;
+        return Task.CompletedTask;
+    }
+
+    private void HandleEditCategory(TreeItem<MaterialCategoryNode> item) { selectedCategory = item.Data.Category; isCategoryEditOpen = true; }
+    private void HandleCreateCategory(TreeItem<MaterialCategoryNode> item) { selectedCategory = new MaterialCategory { ParentCategoryId = item.Data.Category?.Id }; isCategoryEditOpen = true; }
+    private void HandleDeleteCategory(TreeItem<MaterialCategoryNode> item) { /* noop for mock */ }
+    private void HandleNodeSelect(TreeItem<MaterialCategoryNode> item)
+    {
+        ToastService.ShowToast($"Seçildi: {(item.Data.Category != null ? item.Data.Category.CategoryName : item.Data.Material != null ? item.Data.Material.MaterialName : "—")}", ToastType.Info, 2000);
+    }
+
+    // Clear search and selection
+    private void ClearSearch()
+    {
+        searchTerm = "";
+        SelectedMaterial = null;
+        StateHasChanged();
+    }
+
+    // Open entry modal using existing MaterialEntryEditModal component
+    private async Task OpenEntryModalWithMaterial(Material mat)
+    {
+        // prepare a MaterialEntry instance to edit/create
+        editingEntry = new MaterialEntry
+        {
+            MaterialId = mat.Id,
+            Quantity = 0,
+            MaterialUnitId = mat.MaterialUnitId,
+            LocationId = 0,
+            EntryDate = DateTime.Now,
+            InvoiceNo = string.Empty
+        };
+        SelectedMaterial = mat;
+        isEntryOpen = true;
+        StateHasChanged();
+        await Task.CompletedTask;
+    }
+
+    private void OpenEntryModal(Material? mat)
+    {
+        if (mat != null)
+        {
+            _ = OpenEntryModalWithMaterial(mat);
+            return;
+        }
+        editingEntry = new MaterialEntry { EntryDate = DateTime.Now };
+        SelectedMaterial = null;
+        isEntryOpen = true;
+    }
+
+    private void CloseEntryModal()
+    {
+        isEntryOpen = false;
+        editingEntry = null;
+    }
+
+    // Called when MaterialEntryEditModal raises OnSave
+    private async Task OnEntryModalSave()
+    {
+        if (editingEntry == null)
+            return;
+
+        // Basic validation
+        if (editingEntry.LocationId == 0)
+        {
+            ToastService.ShowToast("Lütfen Malzeme Yeri seçiniz.", ToastType.Warning, 3000);
+            return;
+        }
+
+        try
+        {
+            string? currentUserName = httpContextAccessor.HttpContext?.User?.Identity?.Name;
+            // Persist via service. Adjust if AddAsync signature differs.
+            var created = await MaterialEntryService.AddAsync(editingEntry,currentUserName,
+                                CancellationToken.None);
+            ToastService.ShowToast("Giriş kaydedildi.", ToastType.Success, 3000);
+
+            // Update local materials list stock if material exists locally
+            var mat = materials.FirstOrDefault(m => m.Id == editingEntry.MaterialId);
+            if (mat != null)
+            {
+               // mat.Stock = (mat.Stock ?? 0) + editingEntry.Quantity;
+            }
+
+            // close modal
+            CloseEntryModal();
+            await RefreshData();
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowToast($"Kaydetme sırasında hata: {ex.Message}", ToastType.Error, 5000);
+        }
+    }
+
+    // Material & Category modals handlers reuse existing code patterns
+    private async Task OnCategoryModalSave()
+    {
+        isCategoryEditOpen = false;
+        if (selectedCategory != null)
+        {
+            if (selectedCategory.Id == 0)
+            {
+                await MaterialCategoryService.AddAsync(selectedCategory);
+                ToastService.ShowToast($"{selectedCategory.CategoryName} eklendi", ToastType.Success, 3000);
+            }
+            else
+            {
+                await MaterialCategoryService.UpdateAsync(selectedCategory);
+                ToastService.ShowToast($"{selectedCategory.CategoryName} güncellendi", ToastType.Info, 3000);
+            }
+            await RefreshData();
+        }
+    }
+
+    private void CloseCategoryModal() { isCategoryEditOpen = false; selectedCategory = null; }
+
+    private async Task OnMaterialModalSave()
+    {
+        isMaterialEditOpen = false;
+        if (selectedMaterial != null)
+        {
+            if (selectedMaterial.Id == 0)
+            {
+                await MaterialService.AddAsync(selectedMaterial);
+                ToastService.ShowToast($"{selectedMaterial.MaterialName} eklendi", ToastType.Success, 3000);
+            }
+            else
+            {
+                await MaterialService.UpdateAsync(selectedMaterial);
+                ToastService.ShowToast($"{selectedMaterial.MaterialName} güncellendi", ToastType.Info, 3000);
+            }
+            await RefreshData();
+        }
+    }
+
+    private void CloseMaterialModal() { isMaterialEditOpen = false; selectedMaterial = null; }
+
+    // Data models
+    public class MaterialCategoryNode
+    {
+        public MaterialCategory? Category { get; set; }
+        public Material Material { get; set; } = new();
+    }
+}

@@ -31,6 +31,7 @@
                 <TreeNodeViewer T="T"
                                 Item="item"
                                 SelectedItemId="@SelectedItemId"
+                                SelectedDataKey="@_selectedDataKey"
                                 OnSelect="HandleNodeSelect"
                                 OnCreate="OnCreate"
                                 OnEdit="OnEdit"
@@ -45,7 +46,8 @@
                                 ShowDeleteSelector="ShowDeleteSelector"
                                 OnSubItemCreate="OnSubItemCreate"
                                 OnSubItemEdit="OnSubItemEdit"
-                                OnSubItemDelete="OnSubItemDelete" />
+                                OnSubItemDelete="OnSubItemDelete"
+                                OnToggleExpand="HandleToggleExpand" />
             }
         </ul>
     </div>
@@ -64,12 +66,14 @@
     [Parameter] public Func<TreeItem<T>, bool>? ShowCreateSelector { get; set; }
     [Parameter] public Func<TreeItem<T>, bool>? ShowEditSelector { get; set; }
     [Parameter] public Func<TreeItem<T>, bool>? ShowDeleteSelector { get; set; }
+    [Parameter] public EventCallback<TreeItem<T>> OnSelect { get; set; }
     [Parameter] public EventCallback<TreeItem<T>> OnCreate { get; set; }
     [Parameter] public EventCallback<TreeItem<T>> OnEdit { get; set; }
     [Parameter] public EventCallback<TreeItem<T>> OnDelete { get; set; }
     [Parameter] public EventCallback<TreeItem<T>> OnSubItemCreate { get; set; }
     [Parameter] public EventCallback<TreeItem<T>> OnSubItemEdit { get; set; }
     [Parameter] public EventCallback<TreeItem<T>> OnSubItemDelete { get; set; }
+
 
     // --- Sorting parameters (two-way bind supported) ---
     [Parameter] public Func<TreeItem<T>, object?>? SortSelector { get; set; }
@@ -78,6 +82,11 @@
 
     // --- Internal state ---
     private string? SelectedItemId;
+    private string? _selectedDataKey;
+
+    // --- Preserve expansion state across parameter updates ---
+    private List<TreeItem<T>>? _previousItems;
+    private readonly Dictionary<string, bool> _expansionStates = new();
 
     // Expose filtered & sorted list for rendering.
     private IEnumerable<TreeItem<T>> FilteredItems
@@ -107,7 +116,44 @@
         }
     }
 
-    private void HandleNodeSelect(string id) => SelectedItemId = id;
+    // Notify local state and forward event to parent if provided
+    private async Task HandleNodeSelect(TreeItem<T> item)
+    {
+        // store clicked node id (may be clone id) for immediate selection visuals
+        SelectedItemId = item?.Id;
+        // compute stable data key from item's Data so selection still matches clones/originals
+        _selectedDataKey = GetDataKey(item);
+
+        if (OnSelect.HasDelegate)
+            await OnSelect.InvokeAsync(item);
+
+        // ensure UI refresh
+        StateHasChanged();
+    }
+
+    // New handler: toggle underlying item by id so original tree keeps expansion state
+    private Task HandleToggleExpand(string id)
+    {
+        if (string.IsNullOrEmpty(id) || Items == null) return Task.CompletedTask;
+        ToggleExpandById(Items, id);
+        // no need to await, just re-render
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private bool ToggleExpandById(IEnumerable<TreeItem<T>> nodes, string id)
+    {
+        foreach (var node in nodes)
+        {
+            if (node.Id == id)
+            {
+                node.IsExpanded = !node.IsExpanded;
+                return true;
+            }
+            if (node.Children != null && node.Children.Any() && ToggleExpandById(node.Children, id)) return true;
+        }
+        return false;
+    }
 
     private List<TreeItem<T>> ExpandFiltered(List<TreeItem<T>> nodes)
     {
@@ -161,6 +207,11 @@
 
     protected override void OnParametersSet()
     {
+        // Capture expansion state from previous items (if any)
+        _expansionStates.Clear();
+        if (_previousItems != null)
+            CaptureExpansionStates(_previousItems, _expansionStates);
+
         base.OnParametersSet();
 
         // Ensure sort is applied on parameter changes so parent-side rebind keeps ordering
@@ -168,6 +219,13 @@
         {
             ApplySortToItems();
         }
+
+        // Re-apply expansion state to newly provided Items
+        if (_expansionStates.Count > 0 && Items != null)
+            ApplyExpansionStates(Items, _expansionStates);
+
+        // Remember current Items for next parameter change
+        _previousItems = Items?.ToList();
     }
 
     private async Task ToggleSort()
@@ -199,5 +257,80 @@
         if (node == null || node.Children == null || SortSelector == null) return;
         node.Children = node.Children.OrderByKey(SortSelector, SortAscending).ToList();
         foreach (var child in node.Children) ApplySortRecursive(child);
+    }
+
+    // Preserve/restore helpers
+    private void CaptureExpansionStates(IEnumerable<TreeItem<T>>? nodes, Dictionary<string, bool> map)
+    {
+        if (nodes == null) return;
+        foreach (var node in nodes)
+        {
+            if (node == null || string.IsNullOrEmpty(node.Id)) continue;
+            map[node.Id] = node.IsExpanded;
+            if (node.Children != null && node.Children.Any()) CaptureExpansionStates(node.Children, map);
+        }
+    }
+
+    private void ApplyExpansionStates(IEnumerable<TreeItem<T>>? nodes, Dictionary<string, bool> map)
+    {
+        if (nodes == null) return;
+        foreach (var node in nodes)
+        {
+            if (node == null || string.IsNullOrEmpty(node.Id)) continue;
+            if (map.TryGetValue(node.Id, out var expanded)) node.IsExpanded = expanded;
+            if (node.Children != null && node.Children.Any()) ApplyExpansionStates(node.Children, map);
+        }
+    }
+
+    // Compute a stable key from node.Data by looking for Category.Id, Material.Id or Id
+    private string GetDataKey(TreeItem<T>? item)
+    {
+        if (item == null) return string.Empty;
+        var data = item.Data;
+        if (data == null) return item.Id ?? string.Empty;
+
+        // try Category.Id
+        var type = data.GetType();
+        var prop = type.GetProperty("Category");
+        if (prop != null)
+        {
+            var cat = prop.GetValue(data);
+            if (cat != null)
+            {
+                var idProp = cat.GetType().GetProperty("Id");
+                if (idProp != null)
+                {
+                    var val = idProp.GetValue(cat)?.ToString();
+                    if (!string.IsNullOrEmpty(val)) return "category:" + val;
+                }
+            }
+        }
+
+        // try Material.Id
+        prop = type.GetProperty("Material");
+        if (prop != null)
+        {
+            var mat = prop.GetValue(data);
+            if (mat != null)
+            {
+                var idProp = mat.GetType().GetProperty("Id");
+                if (idProp != null)
+                {
+                    var val = idProp.GetValue(mat)?.ToString();
+                    if (!string.IsNullOrEmpty(val)) return "material:" + val;
+                }
+            }
+        }
+
+        // try Data.Id
+        var idP = type.GetProperty("Id");
+        if (idP != null)
+        {
+            var val = idP.GetValue(data)?.ToString();
+            if (!string.IsNullOrEmpty(val)) return "data:" + val;
+        }
+
+        // fallback to node id
+        return item.Id ?? string.Empty;
     }
 }
