@@ -5,17 +5,6 @@
     <div class="fw-semibold">@Category.CategoryName</div>
     <div class="text-muted small">@Category.Aciklama</div>
     <div class="text-muted small">@($"{SubCount} alt kategori, {MaterialCount} malzeme")</div>
-
-    @if (OnOpenEntryForCategory.HasDelegate)
-    {
-        <div class="mt-2">
-            <button class="btn btn-sm btn-outline-primary"
-                    @onclick:stopPropagation="true"
-                    @onclick="() => OnOpenEntryForCategory.InvokeAsync(Category)">
-                Giriş
-            </button>
-        </div>
-    }
 </div>
 
 @code {

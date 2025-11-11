@@ -19,7 +19,6 @@
 @inject ILocationService LocationService
 @inject IMaterialEntryService MaterialEntryService
 @inject IToastService ToastService
-@inject IJSRuntime JS
 @inject IHttpContextAccessor httpContextAccessor
 
 
@@ -73,20 +72,20 @@
                     @if (SelectedMaterial != null)
                     {
                         <MaterialLocationGrid SelectedMaterial="SelectedMaterial"
-                                                SelectedMaterialStock="SelectedMaterialStock"
-                                                MaterialUnitSymbol="@GetSelectedMaterialUnitSymbol()"
-                                                SelectedMaterialLocations="selectedMaterialLocations"
-                                                SelectedLocationId="selectedLocationId"
-                                                OnStartEntry="@(args => { StartEntry(args.Item1, args.Item2); return Task.CompletedTask; })"
-                                                OnStartExit="@(args => { StartExit(args.Item1, args.Item2); return Task.CompletedTask; })"
-                                                OnStartTransfer="@(args => { StartTransfer(args.Item1, args.Item2); return Task.CompletedTask; })" />
+                                              SelectedMaterialStock="SelectedMaterialStock"
+                                              MaterialUnitSymbol="@GetSelectedMaterialUnitSymbol()"
+                                              SelectedMaterialLocations="selectedMaterialLocations"
+                                              SelectedLocationId="selectedLocationId"
+                                              OnStartEntry="@(args => { StartEntry(args.Item1, args.Item2); return Task.CompletedTask; })"
+                                              OnStartExit="@(args => { StartExit(args.Item1, args.Item2); return Task.CompletedTask; })"
+                                              OnStartTransfer="@(args => { StartTransfer(args.Item1, args.Item2); return Task.CompletedTask; })" />
                     }
-                    else //if (categoryCards.Any() || materialCards.Any())
+                    else
                     {
                         <CategoryMaterialGrid DisplayedCategory="displayedCategory"
                                               CategoryCards="categoryCards"
                                               MaterialCards="materialCards"
-                                              AllCategories="Categories"
+                                              AllCategories="categories"
                                               AllMaterials="materials"
                                               OnCategoryClick="SelectCategoryCard"
                                               OnOpenMaterial="SelectMaterialFromCard"
@@ -143,18 +142,18 @@
 
 <MaterialCategoryEditModal Category="selectedCategory"
                            IsOpen="isCategoryEditOpen"
-                           ParentCategories="Categories"
+                           ParentCategories="categories"
                            OnSave="OnCategoryModalSave"
                            OnClose="CloseCategoryModal" />
 
-<MaterialEditModal Material="selectedMaterial"
-                   Categories="Categories"
+<MaterialEditModal Material="editingMaterial"
+                   Categories="categories"
                    IsOpen="isMaterialEditOpen"
                    OnSave="OnMaterialModalSave"
                    OnClose="CloseMaterialModal"
-                   Brands="Brands"
-                   Models="Models"
-                   MaterialUnits="MaterialUnits" />
+                   Brands="brands"
+                   Models="models"
+                   MaterialUnits="materialUnits" />
 
 @code {
     // Models for page
@@ -163,10 +162,9 @@
     private List<MaterialUnit> materialUnits = new();
     private List<Location> locations = new();
 
-    [Parameter] public List<MaterialUnit> MaterialUnits { get; set; } = new();
-    [Parameter] public List<MaterialCategory> Categories { get; set; } = new();
-    [Parameter] public List<MaterialBrand> Brands { get; set; } = new();
-    [Parameter] public List<MaterialModel> Models { get; set; } = new();
+    private List<MaterialCategory> categories { get; set; } = new();
+    private List<MaterialBrand> brands { get; set; } = new();
+    private List<MaterialModel> models { get; set; } = new();
 
     // Local state for rendered material cards (legacy)
     private List<Material> materialCards = new();
@@ -187,6 +185,7 @@
     private bool sortAscending = true;
 
     private Material? SelectedMaterial;
+    private Material? editingMaterial;
     private int SelectedMaterialStock => selectedMaterialLocations.Sum(x => x.Quantity);
 
     // Selected location id so we can highlight clicked location
@@ -200,35 +199,28 @@
     private bool isCategoryEditOpen = false;
     private MaterialCategory? selectedCategory;
     private bool isMaterialEditOpen = false;
-    private Material? selectedMaterial;
 
     // New: loaded material inventories
     private List<MaterialInventory> materialInventories = new();
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadLookups();
         await RefreshData();
-    }
-
-    private async Task LoadLookups()
-    {
-        materialUnits = await MaterialUnitService.GetAllAsync();
-        locations = await LocationService.GetAllAsync();
     }
 
     private async Task RefreshData()
     {
-        Categories = await MaterialCategoryService.GetAllAsync();
+        categories = await MaterialCategoryService.GetAllAsync();
         materials = await MaterialService.GetAllAsync();
-        Brands = await MaterialBrandService.GetAllAsync();
-        Models = await MaterialModelService.GetAllAsync();
-        MaterialUnits = await MaterialUnitService.GetAllAsync();
+        brands = await MaterialBrandService.GetAllAsync();
+        models = await MaterialModelService.GetAllAsync();
+        materialUnits = await MaterialUnitService.GetAllAsync();
+        locations = await LocationService.GetAllAsync();
 
         // yükle: MaterialInventory
         materialInventories = await MaterialInventoryService.GetAllAsync();
 
-        var categoryNodes = Categories.Select(c => new MaterialCategoryNode { Category = c }).ToList();
+        var categoryNodes = categories.Select(c => new MaterialCategoryNode { Category = c }).ToList();
 
         categoryTree = TreeHelper.BuildTree<MaterialCategoryNode>(
             categoryNodes,
@@ -253,7 +245,6 @@
                 });
             }
         }
-
     }
 
     private TreeItem<MaterialCategoryNode>? FindNodeById(List<TreeItem<MaterialCategoryNode>> nodes, string id)
@@ -275,7 +266,7 @@
     // Tree events that open material modal
     private void HandleEditMaterial(TreeItem<MaterialCategoryNode> item)
     {
-        selectedMaterial = item.Data.Material;
+        editingMaterial = item.Data.Material;
         isCategoryEditOpen = false;
         isMaterialEditOpen = true;
         StateHasChanged();
@@ -284,7 +275,7 @@
     private Task HandleCreateMaterial(TreeItem<MaterialCategoryNode> item)
     {
         // open material create modal (reuse existing MaterialEditModal)
-        selectedMaterial = new Material { CategoryId = item.Data.Category?.Id ?? 0 };
+        editingMaterial = new Material { CategoryId = item.Data.Category?.Id ?? 0 };
         isMaterialEditOpen = true;
         return Task.CompletedTask;
     }
@@ -293,7 +284,7 @@
     private void HandleCreateCategory(TreeItem<MaterialCategoryNode> item) { selectedCategory = new MaterialCategory { ParentCategoryId = item.Data.Category?.Id }; isCategoryEditOpen = true; }
     private void HandleDeleteCategory(TreeItem<MaterialCategoryNode> item) { /* noop for mock */ }
 
-    private void HandleNodeSelect(TreeItem<MaterialCategoryNode> item)
+    private void HandleNodeSelect(TreeItem<MaterialCategoryNode>? item)
     {
         // reset state for any selection
         materialCards.Clear();
@@ -313,13 +304,7 @@
         if (item.Data?.Material != null)
         {
             var mat = item.Data.Material;
-
-            // ensure only this material is shown in materialCards (legacy behavior)
-            materialCards.Clear();
-            if (!materialCards.Any(m => m.Id == mat.Id))
-            {
-                materialCards.Add(mat);
-            }
+            materialCards.Add(mat);
 
             SelectedMaterial = mat;
             selectedLocationId = null; // clear location highlight on material change
@@ -327,8 +312,6 @@
             _ = LoadMaterialLocationCards(mat);
             _ = LoadMaterialTransactions(mat);
 
-            // clear category cards as we are showing material detail
-            categoryCards.Clear();
             displayedCategory = null;
         }
         else if (item?.Data?.Category != null)
@@ -336,11 +319,9 @@
             // When a category node is selected, build cards for immediate subcategories and child materials
             SelectedMaterial = null;
             selectedLocationId = null;
-            materialCards.Clear();
-            categoryCards.Clear();
 
             // Immediate subcategories (reliable: read from Categories collection)
-            var subCats = Categories?.Where(c => c.ParentCategoryId == item.Data.Category.Id).ToList() ?? new List<MaterialCategory>();
+            var subCats = categories?.Where(c => c.ParentCategoryId == item.Data.Category.Id).ToList() ?? new List<MaterialCategory>();
             if (subCats.Any())
                 categoryCards.AddRange(subCats);
 
@@ -390,10 +371,7 @@
 
         // mimic tree-material selection behavior
         materialCards.Clear();
-        if (!materialCards.Any(m => m.Id == mat.Id))
-        {
-            materialCards.Add(mat);
-        }
+        materialCards.Add(mat);
 
         SelectedMaterial = mat;
         selectedLocationId = null;
@@ -412,37 +390,41 @@
     private void OpenMaterialFromCard(Material mat)
     {
         if (mat == null) return;
-        selectedMaterial = mat;
+        editingMaterial = mat;
         isMaterialEditOpen = true;
     }
 
-    // Loads material entries, groups by location and prepares small cards per location
+    // Loads material locations/stocks using MaterialInventory (source of truth)
     private async Task LoadMaterialLocationCards(Material mat)
     {
         selectedMaterialLocations.Clear();
 
         try
         {
-            // get all entries and aggregate quantities by LocationId
-            var entries = await MaterialEntryService.GetAllAsync();
-            var groups = entries
-                .Where(e => e.MaterialId == mat.Id)
-                .GroupBy(e => e.LocationId)
-                .Select(g => new { LocationId = g.Key, Quantity = g.Sum(x => x.Quantity) });
+            var inventories = materialInventories?
+                .Where(mi => mi.MaterialId == mat.Id)
+                .ToList() ?? new List<MaterialInventory>();
+
+            var groups = inventories
+                .GroupBy(mi => mi.LocationId)
+                .Select(g => new
+                {
+                    LocationId = g.Key,
+                    Quantity = g.Sum(x => x.Quantity),
+                    UnitId = g.Select(x => x.MaterialUnitId).FirstOrDefault()
+                });
 
             foreach (var g in groups)
             {
-                // find location metadata
-                var loc = locations.FirstOrDefault(l => l.Id == g.LocationId);
-                var unit = materialUnits.FirstOrDefault(u => u.Id == mat.MaterialUnitId);
+                var loc = g.LocationId.HasValue ? locations.FirstOrDefault(l => l.Id == g.LocationId.Value) : null;
+                var unit = materialUnits.FirstOrDefault(u => u.Id == g.UnitId) ?? materialUnits.FirstOrDefault(u => u.Id == mat.MaterialUnitId);
 
-                // Only add locations with non-zero quantity
                 if (g.Quantity != 0)
                 {
                     selectedMaterialLocations.Add(new MaterialLocationCard
                     {
-                        LocationId = g.LocationId,
-                        LocationName = loc?.LocationName ?? $"Location {g.LocationId}",
+                        LocationId = g.LocationId ?? 0,
+                        LocationName = loc?.LocationName ?? (g.LocationId.HasValue ? $"Location {g.LocationId}" : "Unknown"),
                         Quantity = g.Quantity,
                         UnitName = unit?.Symbol ?? unit?.Name ?? ""
                     });
@@ -451,8 +433,10 @@
         }
         catch
         {
-            // swallow: UI will show "no locations" if load fails; you can add a toast here if desired
+            // swallow: UI will show "no locations" if load fails
+            ToastService.ShowToast("Malzeme yerleri yüklenemedi.", ToastType.Error, 3000);
         }
+
         StateHasChanged();
     }
 
@@ -489,6 +473,7 @@
         catch
         {
             // ignore for UI
+            ToastService.ShowToast("Malzeme işlemleri yüklenemedi.", ToastType.Error, 3000);
         }
 
         StateHasChanged();
@@ -636,23 +621,23 @@
     private async Task OnMaterialModalSave()
     {
         isMaterialEditOpen = false;
-        if (selectedMaterial != null)
+        if (editingMaterial != null)
         {
-            if (selectedMaterial.Id == 0)
+            if (editingMaterial.Id == 0)
             {
-                await MaterialService.AddAsync(selectedMaterial);
-                ToastService.ShowToast($"{selectedMaterial.MaterialName} eklendi", ToastType.Success, 3000);
+                await MaterialService.AddAsync(editingMaterial);
+                ToastService.ShowToast($"{editingMaterial.MaterialName} eklendi", ToastType.Success, 3000);
             }
             else
             {
-                await MaterialService.UpdateAsync(selectedMaterial);
-                ToastService.ShowToast($"{selectedMaterial.MaterialName} güncellendi", ToastType.Info, 3000);
+                await MaterialService.UpdateAsync(editingMaterial);
+                ToastService.ShowToast($"{editingMaterial.MaterialName} güncellendi", ToastType.Info, 3000);
             }
             await RefreshData();
         }
     }
 
-    private void CloseMaterialModal() { isMaterialEditOpen = false; selectedMaterial = null; }
+    private void CloseMaterialModal() { isMaterialEditOpen = false; editingMaterial = null; }
 
     private string GetSelectedMaterialUnitSymbol()
     {

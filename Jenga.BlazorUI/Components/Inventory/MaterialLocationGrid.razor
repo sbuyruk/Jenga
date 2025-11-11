@@ -60,7 +60,7 @@ else
     [Parameter] public int? SelectedLocationId { get; set; }
 
     // We use tuple EventCallback to pass material + location back to parent
-    [Parameter] public EventCallback<(Material, MaterialLocationCard)> OnStartEntry { get; set; }
-    [Parameter] public EventCallback<(Material, MaterialLocationCard)> OnStartExit { get; set; }
-    [Parameter] public EventCallback<(Material, MaterialLocationCard)> OnStartTransfer { get; set; }
+    [Parameter] public EventCallback<(Material?, MaterialLocationCard)> OnStartEntry { get; set; }  
+    [Parameter] public EventCallback<(Material?, MaterialLocationCard)> OnStartExit { get; set; }
+    [Parameter] public EventCallback<(Material?, MaterialLocationCard)> OnStartTransfer { get; set; }
 }

@@ -20,8 +20,7 @@
         <CategoryCard Category="cat"
                       SubCount="subCount"
                       MaterialCount="matCount"
-                      OnClick="OnCategoryClick"
-                      OnOpenEntryForCategory="OnOpenEntryForCategory" />
+                      OnClick="OnCategoryClick"/>
     }
 </div>
 
@@ -30,7 +29,7 @@
     @foreach (var card in MaterialCards)
     {
         var unit = MaterialUnits?.FirstOrDefault(u => u.Id == card.MaterialUnitId); 
-        var unitLabel = unit?.Name ?? unit?.Symbol ?? card.MaterialUnitId.ToString();
+        var unitLabel = unit?.Name ?? unit?.Symbol ?? string.Empty;
 
         // toplam adedi MaterialInventories listesinden al (yoksa 0)
         decimal totalQuantity = MaterialInventories?.Where(mi => mi.MaterialId == card.Id).Sum(mi => (decimal)mi.Quantity) ?? 0m;
@@ -62,7 +61,6 @@
     // New: separate callback for the "Detay" button which should open edit modal
     [Parameter] public EventCallback<Material> OnOpenMaterialEdit { get; set; }
     // New: when clicking the category-level "Giriş" button
-    [Parameter] public EventCallback<MaterialCategory> OnOpenEntryForCategory { get; set; }
 
     // Yeni: parent'ın gönderdiği MaterialInventory listesi
     [Parameter] public List<MaterialInventory>? MaterialInventories { get; set; }
