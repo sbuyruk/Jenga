@@ -24,7 +24,7 @@ public class ErrorService : IErrorService
         });
         _toastService.ShowToast(message, MapToastLevel(severity)); // opsiyonel
         _logger.Log(message, MapLogLevel(severity));
-    
+
     }
     private ToastType MapToastLevel(ErrorSeverity severity) => severity switch
     {

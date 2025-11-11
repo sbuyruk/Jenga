@@ -1,4 +1,9 @@
 ﻿@using Jenga.Models.Inventory
+@using Jenga.Utility.Toast
+@using Jenga.DataAccess.Services.Inventory
+
+@inject IToastService ToastService
+@inject IMaterialService MaterialService
 
 @if (IsOpen)
 {
@@ -6,68 +11,96 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Malzeme Düzenle</h5>
-                    <button type="button" class="close" @onclick="OnClose" aria-label="Kapat">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
+                    <h5 class="modal-title">@((editing?.Id ?? 0) == 0 ? "Yeni Malzeme Tanımlama" : "Malzeme Düzenle")</h5>
+                    <button type="button" class="btn-close" @onclick="Close" aria-label="Kapat"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-2">
-                        <label>Ad</label>
-                        <input class="form-control" @bind="Material.MaterialName" />
+                        <label class="form-label">Ad</label>
+                        <input class="form-control" @bind="editing.MaterialName" />
+                        @if (Errors.TryGetValue(nameof(Material.MaterialName), out var errName))
+                        {
+                            <div class="text-danger small mt-1">@errName</div>
+                        }
                     </div>
+
                     <div class="mb-2">
-                        <label>Kategori</label>
-                        <select class="form-select form-control" @bind="Material.CategoryId">
-                            <option value="">Seçiniz</option>
+                        <label class="form-label">Kategori</label>
+                        <select class="form-select" @bind="editing.CategoryId">
+                            <option value="0">Seçiniz</option>
                             @foreach (var cat in Categories)
                             {
                                 <option value="@cat.Id">@cat.CategoryName</option>
                             }
                         </select>
+                        @if (Errors.TryGetValue(nameof(Material.CategoryId), out var errCat))
+                        {
+                            <div class="text-danger small mt-1">@errCat</div>
+                        }
                     </div>
+
                     <div class="mb-2">
-                        <label>Marka</label>
-                        <select class="form-select form-control" @bind="Material.BrandId">
-                            <option value="">Seçiniz</option>
+                        <label class="form-label">Marka</label>
+                        <select class="form-select" @bind="editing.BrandId">
+                            <option value="0">Seçiniz</option>
                             @foreach (var brand in Brands)
                             {
                                 <option value="@brand.Id">@brand.BrandName</option>
                             }
                         </select>
                     </div>
+
                     <div class="mb-2">
-                        <label>Model</label>
-                        <select class="form-select form-control" @bind="Material.ModelId">
-                            <option value="">Seçiniz</option>
+                        <label class="form-label">Model</label>
+                        <select class="form-select" @bind="editing.ModelId">
+                            <option value="0">Seçiniz</option>
                             @foreach (var model in Models)
                             {
                                 <option value="@model.Id">@model.ModelName</option>
                             }
                         </select>
                     </div>
+
                     <div class="mb-2">
-                        <label>Birim</label>
-                        <select class="form-select" @bind="Material!.MaterialUnitId">
-                            <option value="">Birim seçiniz</option>
+                        <label class="form-label">Birim</label>
+                        <select class="form-select" @bind="editing.MaterialUnitId">
+                            <option value="0">Birim seçiniz</option>
                             @foreach (var unit in MaterialUnits)
                             {
                                 <option value="@unit.Id">@unit.Name (@unit.Symbol)</option>
                             }
                         </select>
+                        @if (Errors.TryGetValue(nameof(Material.MaterialUnitId), out var errUnit))
+                        {
+                            <div class="text-danger small mt-1">@errUnit</div>
+                        }
                     </div>
-                    <div class="mb-2">
-                        <label>Varlık mı?</label>
-                        <input type="checkbox" class="form-check-input" @bind="Material.IsAsset" />
+
+                    <div class="mb-3">
+                        <label class="form-label">Kritik Stok Miktarı</label>
+                        <input class="form-control" type="number" @bind="editing.CriticalStock" />
                     </div>
+
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="isAsset" @bind="editing.IsAsset" />
+                        <label class="form-check-label" for="isAsset">Varlık mı?</label>
+                    </div>
+
                     <div class="mb-2">
-                        <label>Açıklama</label>
-                        <input class="form-control" @bind="Material.Aciklama" />
+                        <label class="form-label">Açıklama</label>
+                        <textarea class="form-control" rows="3" @bind="editing.Aciklama"></textarea>
                     </div>
                 </div>
+
                 <div class="modal-footer">
-                    <button class="btn btn-primary" @onclick="HandleSave">Kaydet</button>
-                    <button class="btn btn-secondary" @onclick="OnClose">Kapat</button>
+                    <button class="btn btn-primary" @onclick="SaveAsync" disabled="@isSaving">
+                        @if (isSaving)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        }
+                        Kaydet
+                    </button>
+                    <button class="btn btn-secondary" @onclick="Close" disabled="@isSaving">Kapat</button>
                 </div>
             </div>
         </div>
@@ -78,14 +111,111 @@
     [Parameter] public Material? Material { get; set; }
     [Parameter] public List<MaterialUnit> MaterialUnits { get; set; } = new();
     [Parameter] public bool IsOpen { get; set; }
-    [Parameter] public EventCallback OnSave { get; set; }
+    [Parameter] public EventCallback OnSave { get; set; }    // parent persists the Material
     [Parameter] public EventCallback OnClose { get; set; }
     [Parameter] public List<MaterialCategory> Categories { get; set; } = new();
     [Parameter] public List<MaterialBrand> Brands { get; set; } = new();
     [Parameter] public List<MaterialModel> Models { get; set; } = new();
 
-    private async Task HandleSave()
+    private Material editing = new();
+    private readonly Dictionary<string, string> Errors = new();
+    private bool isSaving;
+
+    protected override void OnParametersSet()
     {
-        await OnSave.InvokeAsync();
+        // create shallow copy of incoming Material (avoid mutating parent until save)
+        if (Material != null)
+        {
+            editing = new Material
+            {
+                Id = Material.Id,
+                MaterialName = Material.MaterialName,
+                CategoryId = Material.CategoryId,
+                BrandId = Material.BrandId,
+                ModelId = Material.ModelId,
+                MaterialUnitId = Material.MaterialUnitId,
+                CriticalStock = Material.CriticalStock,
+                IsAsset = Material.IsAsset,
+                Aciklama = Material.Aciklama
+            };
+        }
+        else
+        {
+            editing = new Material();
+        }
+        Errors.Clear();
+    }
+
+    private void Close()
+    {
+        Errors.Clear();
+        OnClose.InvokeAsync();
+    }
+
+    private bool Validate()
+    {
+        Errors.Clear();
+
+        if (string.IsNullOrWhiteSpace(editing.MaterialName))
+            Errors[nameof(Material.MaterialName)] = "Malzeme adı gerekli.";
+
+        if (editing.CategoryId <= 0)
+            Errors[nameof(Material.CategoryId)] = "Kategori seçiniz.";
+
+        if (editing.MaterialUnitId <= 0)
+            Errors[nameof(Material.MaterialUnitId)] = "Birim seçiniz.";
+
+        return Errors.Count == 0;
+    }
+
+    private async Task SaveAsync()
+    {
+        if (isSaving) return;
+
+        if (!Validate())
+        {
+            ToastService.ShowToast("Lütfen formu düzeltiniz.", ToastType.Warning, 2500);
+            return;
+        }
+
+        isSaving = true;
+
+        try
+        {
+            var name = (editing.MaterialName ?? string.Empty).Trim();
+
+            // server-side duplicate check via MaterialService
+            var exists = await MaterialService.ExistsByNameAsync(name, editing.Id);
+            if (exists)
+            {
+                Errors[nameof(Material.MaterialName)] = "Aynı isimde başka bir malzeme mevcut.";
+                ToastService.ShowToast(Errors[nameof(Material.MaterialName)], ToastType.Warning, 3500);
+                return;
+            }
+
+            // copy validated values back to parent Material instance so parent OnSave can persist
+            if (Material != null)
+            {
+                Material.MaterialName = name;
+                Material.CategoryId = editing.CategoryId;
+                Material.BrandId = editing.BrandId;
+                Material.ModelId = editing.ModelId;
+                Material.MaterialUnitId = editing.MaterialUnitId;
+                Material.CriticalStock = editing.CriticalStock;
+                Material.IsAsset = editing.IsAsset;
+                Material.Aciklama = editing.Aciklama;
+            }
+
+            await OnSave.InvokeAsync();
+            ToastService.ShowToast("Malzeme kaydedildi.", ToastType.Success, 2000);
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowToast($"Kaydetme sırasında hata: {ex.Message}", ToastType.Error, 5000);
+        }
+        finally
+        {
+            isSaving = false;
+        }
     }
 }

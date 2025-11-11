@@ -1,5 +1,4 @@
 ﻿using Jenga.Models.Sistem;
-using System;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Jenga.Models.Inventory

@@ -5,7 +5,7 @@ using Jenga.DataAccess.Repositories.IRepository.Ortak;
 
 namespace Jenga.DataAccess.Repositories.IRepository
 {
-    public interface IUnitOfWork 
+    public interface IUnitOfWork
     {
         //Inventory
         IMaterialRepository Material { get; }
@@ -25,7 +25,7 @@ namespace Jenga.DataAccess.Repositories.IRepository
         IRolRepository Rol { get; }
         IRolMenuRepository RolMenu { get; }
         IPersonelRolRepository PersonelRol { get; }
-        
+
         //Ortak
         IBolgeRepository Bolge { get; }
         IIlRepository Il { get; }

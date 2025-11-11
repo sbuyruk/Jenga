@@ -1,0 +1,27 @@
+﻿@using Jenga.Models.Inventory
+
+<div class="material-card p-2 mb-2"
+     @onclick="() => OnOpenMaterial.InvokeAsync(Material)">
+    <div class="fw-semibold">@Material.MaterialName</div>
+    <hr />
+    <div class="text-muted small">@($" {Material.Aciklama ?? "-"}")</div>
+    <div class="text-muted small mt-2">Toplam: <strong>@(TotalQuantity.ToString("0.##")) @UnitLabel</strong></div>
+
+    <div class="btn-group btn-group-sm mt-2" role="group">
+        <button class="btn btn-outline-primary" title="Envantere Ekle" @onclick:stopPropagation="true" @onclick="() => OnOpenEntry.InvokeAsync(Material)">Giriş</button>
+        <button class="btn btn-outline-secondary" title="Detay" @onclick:stopPropagation="true" @onclick="() => OnOpenMaterialEdit.InvokeAsync(Material)">Detay</button>
+    </div>
+</div>
+
+@code {
+    [Parameter] public Material Material { get; set; } = default!;
+    [Parameter] public string UnitLabel { get; set; } = string.Empty;
+    [Parameter] public decimal TotalQuantity { get; set; } = 0m;
+
+    // Kart tıklaması -> SeçilenMalzemeDetayı aç
+    [Parameter] public EventCallback<Material> OnOpenMaterial { get; set; }
+    // Giriş butonu
+    [Parameter] public EventCallback<Material> OnOpenEntry { get; set; }
+    // "Detay" butonu -> düzenleme penceresini açar (kart tıklamasından ayrı)
+    [Parameter] public EventCallback<Material> OnOpenMaterialEdit { get; set; }
+}

@@ -32,6 +32,7 @@
                                 Item="item"
                                 SelectedItemId="@SelectedItemId"
                                 SelectedDataKey="@_selectedDataKey"
+                                DataKeySelector="DataKeySelector"
                                 OnSelect="HandleNodeSelect"
                                 OnCreate="OnCreate"
                                 OnEdit="OnEdit"
@@ -74,6 +75,8 @@
     [Parameter] public EventCallback<TreeItem<T>> OnSubItemEdit { get; set; }
     [Parameter] public EventCallback<TreeItem<T>> OnSubItemDelete { get; set; }
 
+    // DataKey selector provided by caller (stable key for selection across clones)
+    [Parameter] public Func<TreeItem<T>, string>? DataKeySelector { get; set; }
 
     // --- Sorting parameters (two-way bind supported) ---
     [Parameter] public Func<TreeItem<T>, object?>? SortSelector { get; set; }
@@ -121,13 +124,13 @@
     {
         // store clicked node id (may be clone id) for immediate selection visuals
         SelectedItemId = item?.Id;
-        // compute stable data key from item's Data so selection still matches clones/originals
-        _selectedDataKey = GetDataKey(item);
+        // compute stable data key using provided selector
+        _selectedDataKey = DataKeySelector?.Invoke(item) ?? item?.Id;
 
         if (OnSelect.HasDelegate)
             await OnSelect.InvokeAsync(item);
 
-        // ensure UI refresh
+        // update UI
         StateHasChanged();
     }
 
@@ -136,7 +139,6 @@
     {
         if (string.IsNullOrEmpty(id) || Items == null) return Task.CompletedTask;
         ToggleExpandById(Items, id);
-        // no need to await, just re-render
         StateHasChanged();
         return Task.CompletedTask;
     }
@@ -280,57 +282,5 @@
             if (map.TryGetValue(node.Id, out var expanded)) node.IsExpanded = expanded;
             if (node.Children != null && node.Children.Any()) ApplyExpansionStates(node.Children, map);
         }
-    }
-
-    // Compute a stable key from node.Data by looking for Category.Id, Material.Id or Id
-    private string GetDataKey(TreeItem<T>? item)
-    {
-        if (item == null) return string.Empty;
-        var data = item.Data;
-        if (data == null) return item.Id ?? string.Empty;
-
-        // try Category.Id
-        var type = data.GetType();
-        var prop = type.GetProperty("Category");
-        if (prop != null)
-        {
-            var cat = prop.GetValue(data);
-            if (cat != null)
-            {
-                var idProp = cat.GetType().GetProperty("Id");
-                if (idProp != null)
-                {
-                    var val = idProp.GetValue(cat)?.ToString();
-                    if (!string.IsNullOrEmpty(val)) return "category:" + val;
-                }
-            }
-        }
-
-        // try Material.Id
-        prop = type.GetProperty("Material");
-        if (prop != null)
-        {
-            var mat = prop.GetValue(data);
-            if (mat != null)
-            {
-                var idProp = mat.GetType().GetProperty("Id");
-                if (idProp != null)
-                {
-                    var val = idProp.GetValue(mat)?.ToString();
-                    if (!string.IsNullOrEmpty(val)) return "material:" + val;
-                }
-            }
-        }
-
-        // try Data.Id
-        var idP = type.GetProperty("Id");
-        if (idP != null)
-        {
-            var val = idP.GetValue(data)?.ToString();
-            if (!string.IsNullOrEmpty(val)) return "data:" + val;
-        }
-
-        // fallback to node id
-        return item.Id ?? string.Empty;
     }
 }

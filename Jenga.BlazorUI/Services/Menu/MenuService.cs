@@ -1,7 +1,6 @@
 ﻿using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.Models.Common;
 using Jenga.Utility.Helpers;
-using System.Linq;
 
 namespace Jenga.BlazorUI.Services.Menu
 {
@@ -22,7 +21,7 @@ namespace Jenga.BlazorUI.Services.Menu
         public async Task<List<MenuItem>> GetRecursiveMenuAsync()
         {
             var flat = await _unitOfWork.MenuItem.GetAllAsync();
-            var visible = flat.Where(m => m.IsVisible==true).ToList();
+            var visible = flat.Where(m => m.IsVisible == true).ToList();
 
             visible.ForEach(m =>
                 m.Url = string.IsNullOrWhiteSpace(m.Url) ? "#" : m.Url!
@@ -51,7 +50,8 @@ namespace Jenga.BlazorUI.Services.Menu
             var allMenus = await _unitOfWork.MenuItem
                 .GetAllByFilterAsync(x => menuIds.Contains(x.Id) && x.IsVisible == true);
             var processedMenus = allMenus
-                .Select(m => {
+                .Select(m =>
+                {
                     m.Url = string.IsNullOrWhiteSpace(m.Url) ? "#" : m.Url!;
                     return m;
                 }).ToList();

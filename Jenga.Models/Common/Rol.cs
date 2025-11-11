@@ -8,7 +8,7 @@ namespace Jenga.Models.Common
     {
         public string Adi { get; set; } = string.Empty;
         public string Aciklama { get; set; } = string.Empty;
-        
+
 
         public ICollection<PersonelRol>? PersonelRoller { get; set; }
         public ICollection<RolMenu>? RolMenuleri { get; set; }

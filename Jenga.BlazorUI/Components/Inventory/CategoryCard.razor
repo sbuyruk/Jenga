@@ -1,0 +1,27 @@
+﻿@using Jenga.Models.Inventory
+
+<div class="category-card p-2 mb-2"
+     @onclick="() => OnClick.InvokeAsync(Category)">
+    <div class="fw-semibold">@Category.CategoryName</div>
+    <div class="text-muted small">@Category.Aciklama</div>
+    <div class="text-muted small">@($"{SubCount} alt kategori, {MaterialCount} malzeme")</div>
+
+    @if (OnOpenEntryForCategory.HasDelegate)
+    {
+        <div class="mt-2">
+            <button class="btn btn-sm btn-outline-primary"
+                    @onclick:stopPropagation="true"
+                    @onclick="() => OnOpenEntryForCategory.InvokeAsync(Category)">
+                Giriş
+            </button>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public MaterialCategory Category { get; set; } = default!;
+    [Parameter] public int SubCount { get; set; }
+    [Parameter] public int MaterialCount { get; set; }
+    [Parameter] public EventCallback<MaterialCategory> OnClick { get; set; }
+    [Parameter] public EventCallback<MaterialCategory> OnOpenEntryForCategory { get; set; }
+}

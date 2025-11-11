@@ -1,0 +1,26 @@
+﻿<h3>MaterialTransactionList</h3>
+
+@using Jenga.Models.Inventory
+
+@if (Transactions == null || !Transactions.Any())
+{
+    <div class="text-muted small">Seçili malzeme için işlem kaydı bulunamadı.</div>
+}
+else
+{
+    <ul class="list-unstyled mb-0 small">
+        @foreach (var tx in Transactions.Take(MaxItems))
+        {
+            <li>
+                <span class="fw-semibold">@tx.Type</span>
+                <span class="text-muted"> — @tx.Date.ToString("dd/MM/yyyy")</span>
+                <span class="small text-muted">@($"{(tx.IsIncrease ? "+" : "-")}{tx.Quantity} {tx.UnitName}  ({tx.LocationName})")</span>
+            </li>
+        }
+    </ul>
+}
+
+@code {
+    [Parameter] public List<MaterialTransactionView>? Transactions { get; set; }
+    [Parameter] public int MaxItems { get; set; } = 6;
+}

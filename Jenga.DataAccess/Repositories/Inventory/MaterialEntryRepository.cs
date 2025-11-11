@@ -1,8 +1,8 @@
-﻿using System.Linq.Expressions;
-using Jenga.DataAccess.Data;
+﻿using Jenga.DataAccess.Data;
 using Jenga.DataAccess.Repositories.IRepository.Inventory;
 using Jenga.Models.Inventory;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 namespace Jenga.DataAccess.Repositories.Inventory
 {

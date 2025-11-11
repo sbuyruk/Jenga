@@ -1,0 +1,69 @@
+﻿@using Jenga.Models.Inventory
+@using Jenga.Models.Common
+
+@if (DisplayedCategory != null)
+{
+    <div class="mb-2 d-flex justify-content-between align-items-center">
+        <div class="fw-semibold">@DisplayedCategory.CategoryName</div>
+        <div class="text-muted small">@($"{CategoryCards.Count} alt kategori, {MaterialCards.Count} malzeme")</div>
+    </div>
+}
+
+@* Category row *@
+<div class="d-flex gap-2 flex-wrap mb-2">
+    @foreach (var cat in CategoryCards)
+    {
+        // compute counts for this category using full lists passed from parent
+        var subCount = AllCategories?.Count(c => c.ParentCategoryId == cat.Id) ?? 0;
+        var matCount = AllMaterials?.Count(m => m.CategoryId == cat.Id) ?? 0;
+
+        <CategoryCard Category="cat"
+                      SubCount="subCount"
+                      MaterialCount="matCount"
+                      OnClick="OnCategoryClick"
+                      OnOpenEntryForCategory="OnOpenEntryForCategory" />
+    }
+</div>
+
+@* Material row (separate satır) *@
+<div class="d-flex gap-2 flex-wrap mb-2">
+    @foreach (var card in MaterialCards)
+    {
+        var unit = MaterialUnits?.FirstOrDefault(u => u.Id == card.MaterialUnitId); 
+        var unitLabel = unit?.Name ?? unit?.Symbol ?? card.MaterialUnitId.ToString();
+
+        // toplam adedi MaterialInventories listesinden al (yoksa 0)
+        decimal totalQuantity = MaterialInventories?.Where(mi => mi.MaterialId == card.Id).Sum(mi => (decimal)mi.Quantity) ?? 0m;
+
+        <MaterialCard Material="card"
+                      UnitLabel="@unitLabel"
+                      TotalQuantity="@totalQuantity"
+                      OnOpenEntry="OnOpenEntry"
+                      OnOpenMaterial="OnOpenMaterial"
+                      OnOpenMaterialEdit="OnOpenMaterialEdit" />
+    }
+</div>
+
+@code {
+    [Parameter] public MaterialCategory? DisplayedCategory { get; set; }
+    [Parameter] public List<MaterialCategory> CategoryCards { get; set; } = new();
+    [Parameter] public List<Material> MaterialCards { get; set; } = new();
+
+    // full lists provided by parent so we can compute per-category counts
+    [Parameter] public List<MaterialCategory>? AllCategories { get; set; }
+    [Parameter] public List<Material>? AllMaterials { get; set; }
+
+    // material units passed from parent so we can show unit names
+    [Parameter] public List<MaterialUnit>? MaterialUnits { get; set; }
+
+    [Parameter] public EventCallback<MaterialCategory> OnCategoryClick { get; set; }
+    [Parameter] public EventCallback<Material> OnOpenMaterial { get; set; }     // card click -> select & show SelectedMaterialDetail
+    [Parameter] public EventCallback<Material> OnOpenEntry { get; set; }
+    // New: separate callback for the "Detay" button which should open edit modal
+    [Parameter] public EventCallback<Material> OnOpenMaterialEdit { get; set; }
+    // New: when clicking the category-level "Giriş" button
+    [Parameter] public EventCallback<MaterialCategory> OnOpenEntryForCategory { get; set; }
+
+    // Yeni: parent'ın gönderdiği MaterialInventory listesi
+    [Parameter] public List<MaterialInventory>? MaterialInventories { get; set; }
+}

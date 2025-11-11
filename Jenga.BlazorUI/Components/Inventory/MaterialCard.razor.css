@@ -1,0 +1,29 @@
+.material-card {
+    border: 1px solid #e9eef8;
+    border-radius: 8px;
+    background: #fff;
+    min-width: 200px;
+    cursor: pointer;
+    transition: box-shadow .12s ease, transform .06s ease;
+    /* Spacing handled by Bootstrap utility classes (p-2, mb-2) */
+}
+
+.material-card:hover,
+.material-card:focus {
+    box-shadow: 0 6px 18px rgba(2,6,23,0.06);
+    transform: translateY(-2px);
+    outline: none;
+}
+
+.material-card:active {
+    transform: translateY(0);
+}
+
+.material-card hr {
+    margin: .5rem 0;
+    border-color: #eef4ff;
+}
+
+.material-card .btn-group .btn {
+    min-width: 72px;
+}

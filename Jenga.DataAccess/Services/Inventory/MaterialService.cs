@@ -1,8 +1,6 @@
 ﻿using Jenga.DataAccess.Repositories.IRepository;
-using Jenga.DataAccess.Repositories.IRepository.Inventory;
 using Jenga.Models.Inventory;
 using Jenga.Utility.Logging;
-using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
 namespace Jenga.DataAccess.Services.Inventory
@@ -10,12 +8,14 @@ namespace Jenga.DataAccess.Services.Inventory
     public class MaterialService : IMaterialService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly ILogService _logService;
         // Material list cache
         private List<Material>? _materialsCache;
 
         public MaterialService(IUnitOfWork unitOfWork, ILogService logService)
         {
             _unitOfWork = unitOfWork;
+            _logService = logService;
         }
 
         public async Task<List<Material>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -29,19 +29,69 @@ namespace Jenga.DataAccess.Services.Inventory
 
         public async Task<bool> AddAsync(Material material, CancellationToken cancellationToken = default)
         {
-            await _unitOfWork.Material.AddAsync(material, cancellationToken);
-            await _unitOfWork.Material.SaveChangesAsync(cancellationToken);
-            // Invalidate cache if exists
-            _materialsCache = null;
-            return true;
+            if (material == null) throw new ArgumentNullException(nameof(material));
+
+            var name = (material.MaterialName ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                _logService?.LogWarning("MaterialService.AddAsync Ad boş olmamalı.");
+                return false;
+            }
+
+            if (await ExistsByNameAsync(name, null, cancellationToken))
+            {
+                _logService?.LogWarning($"AddAsync Aynı isimde zaten bir malzeme tanımlı: '{name}'.");
+                return false;
+            }
+
+            try
+            {
+                material.MaterialName = name;
+                await _unitOfWork.Material.AddAsync(material, cancellationToken);
+                // repository AddAsync may already call SaveChanges; calling SaveChanges here keeps behavior consistent
+                await _unitOfWork.Material.SaveChangesAsync(cancellationToken);
+                // Invalidate cache if exists
+                _materialsCache = null;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logService?.LogError("Malzeme eklerken hata.", ex);
+                throw;
+            }
         }
 
         public async Task<bool> UpdateAsync(Material material, CancellationToken cancellationToken = default)
         {
-            await _unitOfWork.Material.UpdateAsync(material);
-            await _unitOfWork.Material.SaveChangesAsync(cancellationToken);
-            _materialsCache = null;
-            return true;
+            if (material == null) throw new ArgumentNullException(nameof(material));
+
+            var name = (material.MaterialName ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                _logService?.LogWarning("MaterialService.UpdateAsync Ad boş olmamalı.");
+                return false;
+            }
+
+            if (await ExistsByNameAsync(name, material.Id, cancellationToken))
+            {
+                _logService?.LogWarning($"UpdateAsync Aynı isimde zaten bir malzeme tanımlı: '{name}' (id:{material.Id}).");
+                return false;
+            }
+
+            try
+            {
+                material.MaterialName = name;
+                // Use repository UpdateAsync signature (modifiedBy optional)
+                await _unitOfWork.Material.UpdateAsync(material, null, cancellationToken);
+                await _unitOfWork.Material.SaveChangesAsync(cancellationToken);
+                _materialsCache = null;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logService?.LogError("Malzeme güncellerken hata", ex);
+                throw;
+            }
         }
 
         public async Task<bool> DeleteAsync(int materialId, CancellationToken cancellationToken = default)
@@ -68,18 +118,19 @@ namespace Jenga.DataAccess.Services.Inventory
             var entity = await _unitOfWork.Material.GetByIdAsync(materialId, cancellationToken);
             if (entity != null)
             {
+                // Repository.Remove already commits; keep consistent pattern and then optionally save again
                 _unitOfWork.Material.Remove(entity);
                 await _unitOfWork.Material.SaveChangesAsync(cancellationToken);
+                _materialsCache = null;
                 return true;
             }
             return false;
-
         }
 
         public async Task<bool> AnyAsync(Expression<Func<Material, bool>> predicate, CancellationToken cancellationToken = default)
         {
-            var materials = await _unitOfWork.Material.GetAllAsync(cancellationToken);
-            return materials.Any(predicate.Compile());
+            // Use repository-side AnyAsync to execute in DB
+            return await _unitOfWork.Material.AnyAsync(predicate, cancellationToken);
         }
 
         // Yardımcı Metotlar
@@ -110,6 +161,19 @@ namespace Jenga.DataAccess.Services.Inventory
                 return (false, "Bu malzeme envanter (MaterialInventory) kayıtlarında bulunmaktadır, önce onu silmelisiniz.");
 
             return (true, null);
+        }
+
+        public async Task<bool> ExistsByNameAsync(string name, int? excludeId = null, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return false;
+            var normalized = name.Trim().ToLowerInvariant();
+
+            Expression<Func<Material, bool>> predicate = m =>
+                m.MaterialName != null &&
+                m.MaterialName.Trim().ToLower() == normalized &&
+                (!excludeId.HasValue || m.Id != excludeId.Value);
+
+            return await _unitOfWork.Material.AnyAsync(predicate, cancellationToken);
         }
     }
 }

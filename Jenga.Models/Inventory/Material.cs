@@ -24,10 +24,7 @@ namespace Jenga.Models.Inventory
         [Column("MaterialUnitId")]
         public int MaterialUnitId { get; set; }
 
-
-        // Navigation properties (isteğe bağlı, ekleyebilirsin)
-        // public MaterialCategory? Category { get; set; }
-        // public MaterialBrand? Brand { get; set; }
-        // public MaterialModel? Model { get; set; }
+        [Column("CriticalStock")]
+        public int? CriticalStock { get; set; } = 0;
     }
 }

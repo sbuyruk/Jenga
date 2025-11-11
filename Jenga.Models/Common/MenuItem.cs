@@ -8,7 +8,7 @@ namespace Jenga.Models.Common
     public class MenuItem : BaseModel
     {
         [Column("Adi")]
-        public string? Title { get; set; }="Menu Başlığı";
+        public string? Title { get; set; } = "Menu Başlığı";
 
         [Column("UstMenuId")]
         public int? ParentId { get; set; }
@@ -27,7 +27,7 @@ namespace Jenga.Models.Common
         [NotMapped]
         public bool IsExpanded { get; set; }
         [NotMapped]
-        public bool IsActive { get; set; }  
+        public bool IsActive { get; set; }
 
     }
 

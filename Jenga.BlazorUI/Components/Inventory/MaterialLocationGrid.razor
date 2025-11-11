@@ -1,0 +1,66 @@
+﻿@using Jenga.Models.Inventory
+@using Jenga.Models.Common
+
+
+@if (SelectedMaterial == null)
+{
+    <div class="material-card p-2" style="border:1px solid #e9eef8;border-radius:8px;background:#fff;">
+        <div class="fw-semibold">— Seçili yok —</div>
+    </div>
+}
+else
+{
+    <div class="material-card p-3 mb-2" style="border:1px solid #e9eef8;border-radius:8px;background:#fff;">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+            <div class="fw-semibold">@SelectedMaterial.MaterialName</div>
+            <div class="text-muted small">Toplam: <strong>@SelectedMaterialStock</strong> @MaterialUnitSymbol</div>
+        </div>
+        <hr />
+        <div class="d-flex gap-2 flex-wrap">
+            @if (SelectedMaterialLocations?.Any() == true)
+            {
+                @foreach (var loc in SelectedMaterialLocations)
+                {
+                    var borderColor = loc.LocationId == SelectedLocationId ? "#0d6efd" : "#e9eef8";
+                    var locStyle = $"border:1px solid {borderColor};border-radius:8px;background:#fff; min-width:160px;";
+
+                    <div class="location-card p-2 mb-2" style="@locStyle">
+                        <div class="fw-semibold">@loc.LocationName</div>
+                        <div class="text-muted small mt-2">Mevcut stok: <strong>@loc.Quantity</strong> @loc.UnitName</div>
+
+                        <div class="btn-group btn-group-sm mt-2" role="group" aria-label="Material actions">
+                            <button class="btn btn-outline-primary" title="Malzeme Girişi" @onclick="() => OnStartEntry.InvokeAsync((SelectedMaterial, loc))">Giriş</button>
+                            <button class="btn btn-outline-danger" title="Malzeme Çıkışı" @onclick="() => OnStartExit.InvokeAsync((SelectedMaterial, loc))">Çıkış</button>
+                            <button class="btn btn-outline-warning" title="Transfer" @onclick="() => OnStartTransfer.InvokeAsync((SelectedMaterial, loc))">Transfer</button>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="location-card p-2 mb-2 border" >
+                    <div class="text-muted small mt-2">Mevcut stok: <strong>Yok</strong></div>
+
+                    <div class="btn-group btn-group-sm mt-2" role="group" aria-label="Material actions">
+                        <button class="btn btn-outline-primary" title="Malzeme Girişi" @onclick="() => OnStartEntry.InvokeAsync((SelectedMaterial, new MaterialLocationCard()))">Giriş</button>
+                        <button class="btn btn-outline-danger" title="Malzeme Çıkışı" @onclick="() => OnStartExit.InvokeAsync((SelectedMaterial, new MaterialLocationCard()))">Çıkış</button>
+                        <button class="btn btn-outline-warning" title="Transfer" @onclick="() => OnStartTransfer.InvokeAsync((SelectedMaterial, new MaterialLocationCard()))">Transfer</button>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public Material? SelectedMaterial { get; set; }
+    [Parameter] public int SelectedMaterialStock { get; set; }
+    [Parameter] public string MaterialUnitSymbol { get; set; } = string.Empty;
+    [Parameter] public List<MaterialLocationCard>? SelectedMaterialLocations { get; set; }
+    [Parameter] public int? SelectedLocationId { get; set; }
+
+    // We use tuple EventCallback to pass material + location back to parent
+    [Parameter] public EventCallback<(Material, MaterialLocationCard)> OnStartEntry { get; set; }
+    [Parameter] public EventCallback<(Material, MaterialLocationCard)> OnStartExit { get; set; }
+    [Parameter] public EventCallback<(Material, MaterialLocationCard)> OnStartTransfer { get; set; }
+}

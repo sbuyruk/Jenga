@@ -63,6 +63,7 @@
 
     <MaterialEditModal Material="selectedMaterial"
                        Categories="categories"
+                       Brands="brands"
                        IsOpen="isMaterialEditOpen"
                        OnSave="OnModalMaterialSave"
                        OnClose="OnModalMaterialClose" />
@@ -71,6 +72,7 @@
 @code {
     // Fields
     private List<MaterialCategory> categories = new();
+    private List<MaterialBrand> brands = new();
     private List<Material> materials = new();
     private List<TreeItem<MaterialCategoryNode>> categoryTree = new();
     private bool _dataLoaded;
@@ -105,6 +107,7 @@
     {
         var expandedMap = TreeHelper.CollectExpandedStates(categoryTree);
         categories = await MaterialCategoryService.GetAllAsync();
+        brands = await MaterialBrandService.GetAllAsync();
         materials = await MaterialService.GetAllAsync();
 
         // Kategorileri MaterialCategoryNode'a dönüştür

@@ -112,6 +112,7 @@
                                 Item="child"
                                 SelectedItemId="@SelectedItemId"
                                 SelectedDataKey="@SelectedDataKey"
+                                DataKeySelector="DataKeySelector"
                                 OnSelect="OnSelect"
                                 OnCreate="OnCreate"
                                 OnEdit="OnEdit"
@@ -152,8 +153,11 @@
     [Parameter] public EventCallback<TreeItem<T>> OnSubItemDelete { get; set; }
     [Parameter] public string? SelectedItemId { get; set; }
 
-    // New: selected data key propagated from parent
+    // Selected data key propagated from parent
     [Parameter] public string? SelectedDataKey { get; set; }
+
+    // DataKey selector forwarded from parent (avoid reflection)
+    [Parameter] public Func<TreeItem<T>, string>? DataKeySelector { get; set; }
 
     // New callback to request parent toggle the original item
     [Parameter] public EventCallback<string> OnToggleExpand { get; set; }
@@ -167,8 +171,9 @@
     private bool ShowEdit => ShowEditSelector?.Invoke(Item) ?? true;
     private bool ShowDelete => ShowDeleteSelector?.Invoke(Item) ?? true;
 
-    // IsSelected now checks node id OR stable data key match
-    private bool IsSelected => Item.Id == SelectedItemId || (!string.IsNullOrEmpty(SelectedDataKey) && GetDataKey(Item) == SelectedDataKey);
+    // IsSelected now checks node id OR stable data key match (uses DataKeySelector if provided)
+    private string NodeDataKey => DataKeySelector?.Invoke(Item) ?? Item.Id;
+    private bool IsSelected => Item.Id == SelectedItemId || (!string.IsNullOrEmpty(SelectedDataKey) && NodeDataKey == SelectedDataKey);
 
     private bool ShowMenu { get; set; }
     private bool ShowSubItemMenu { get; set; }
@@ -256,53 +261,5 @@
     {
         if (OnSelect.HasDelegate)
             await OnSelect.InvokeAsync(Item);
-    }
-
-    // Compute data key same way as parent (Category.Id, Material.Id, Id)
-    private string GetDataKey(TreeItem<T>? item)
-    {
-        if (item == null) return string.Empty;
-        var data = item.Data;
-        if (data == null) return item.Id ?? string.Empty;
-
-        var type = data.GetType();
-        var prop = type.GetProperty("Category");
-        if (prop != null)
-        {
-            var cat = prop.GetValue(data);
-            if (cat != null)
-            {
-                var idProp = cat.GetType().GetProperty("Id");
-                if (idProp != null)
-                {
-                    var val = idProp.GetValue(cat)?.ToString();
-                    if (!string.IsNullOrEmpty(val)) return "category:" + val;
-                }
-            }
-        }
-
-        prop = type.GetProperty("Material");
-        if (prop != null)
-        {
-            var mat = prop.GetValue(data);
-            if (mat != null)
-            {
-                var idProp = mat.GetType().GetProperty("Id");
-                if (idProp != null)
-                {
-                    var val = idProp.GetValue(mat)?.ToString();
-                    if (!string.IsNullOrEmpty(val)) return "material:" + val;
-                }
-            }
-        }
-
-        var idP = type.GetProperty("Id");
-        if (idP != null)
-        {
-            var val = idP.GetValue(data)?.ToString();
-            if (!string.IsNullOrEmpty(val)) return "data:" + val;
-        }
-
-        return item.Id ?? string.Empty;
     }
 }

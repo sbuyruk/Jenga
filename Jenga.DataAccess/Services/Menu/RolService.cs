@@ -1,8 +1,6 @@
 ﻿using global::Jenga.DataAccess.Repositories.IRepository;
 using global::Jenga.Utility.Logging;
-using Jenga.DataAccess.Repositories;
 using Jenga.Models.Common;
-using Microsoft.EntityFrameworkCore;
 
 namespace Jenga.DataAccess.Services.Menu
 {

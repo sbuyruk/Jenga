@@ -1,7 +1,4 @@
 ﻿using Jenga.Models.Common;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace Jenga.Models.Helper
 {
@@ -42,7 +39,7 @@ namespace Jenga.Models.Helper
             // Return root nodes (no parent)
             return lookup.Values.Where(n => parentIdSelector(n.Data) == null).ToList();
         }
-        
+
 
         /// <summary>
         /// Generic tree için filtreleme, klonlama ile yeni ağaç döndürür.

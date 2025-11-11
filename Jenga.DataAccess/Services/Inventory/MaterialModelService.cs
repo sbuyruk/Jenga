@@ -1,5 +1,4 @@
 ﻿using Jenga.DataAccess.Repositories.IRepository;
-using Jenga.DataAccess.Repositories.IRepository.Inventory;
 using Jenga.Models.Inventory;
 
 namespace Jenga.DataAccess.Services.Inventory

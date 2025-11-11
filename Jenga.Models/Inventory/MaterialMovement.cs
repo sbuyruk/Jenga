@@ -34,7 +34,7 @@ namespace Jenga.Models.Inventory
         public string? MovementType { get; set; }
 
 
-        
+
 
         // Opsiyonel Navigation Property'ler
         // public Material? Material { get; set; }

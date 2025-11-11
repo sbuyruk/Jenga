@@ -8,7 +8,7 @@ namespace Jenga.Models.Inventory
     {
         public int MaterialId { get; set; }
         public int Quantity { get; set; }
-        public int MaterialUnitId { get; set; } 
+        public int MaterialUnitId { get; set; }
         public string? InvoiceNo { get; set; }
         public DateTime EntryDate { get; set; }
         public int LocationId { get; set; }

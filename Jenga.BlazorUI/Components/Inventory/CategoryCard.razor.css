@@ -1,0 +1,20 @@
+.category-card {
+    border: 1px dashed #cfe2ff;
+    border-radius: 8px;
+    background: #f8fbff;
+    min-width: 200px;
+    cursor: pointer;
+    transition: box-shadow .12s ease, transform .06s ease;
+    /* keep spacing handled by Bootstrap classes (p-2, mb-2) */
+}
+
+.category-card:hover,
+.category-card:focus {
+    box-shadow: 0 6px 18px rgba(2,6,23,0.06);
+    transform: translateY(-2px);
+    outline: none;
+}
+
+.category-card:active {
+    transform: translateY(0);
+}
