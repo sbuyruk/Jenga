@@ -1,7 +1,6 @@
 ﻿@using Jenga.Models.Inventory
 @using Jenga.Models.Common
 
-
 @if (SelectedMaterial == null)
 {
     <div class="material-card p-2" style="border:1px solid #e9eef8;border-radius:8px;background:#fff;">
@@ -10,9 +9,29 @@
 }
 else
 {
+    var ancestors = GetCategoryAncestorsById(SelectedMaterial.CategoryId);
+    var category = AllCategories?.FirstOrDefault(c => c.Id == SelectedMaterial.CategoryId);
+
     <div class="material-card p-3 mb-2" style="border:1px solid #e9eef8;border-radius:8px;background:#fff;">
         <div class="d-flex justify-content-between align-items-start mb-2">
-            <div class="fw-semibold">@SelectedMaterial.MaterialName</div>
+            <div>
+                <div class="fw-semibold">@SelectedMaterial.MaterialName</div>
+                @if (category != null)
+                {
+                    <div class="text-muted small">
+                        @if (ancestors?.Count > 0)
+                        {
+                            foreach (var anc in ancestors)
+                            {
+                                <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none link-primary" @onclick="async () => await OnCategoryClick.InvokeAsync(anc)">@anc.CategoryName</button>
+                                <span class="text-muted mx-1">/</span>
+                            }
+                        }
+                        <button type="button" class="btn btn-link p-0 text-dark text-decoration-none" @onclick="async () => await OnCategoryClick.InvokeAsync(category)">@category.CategoryName</button>
+                    </div>
+                }
+            </div>
+
             <div class="text-muted small">Toplam: <strong>@SelectedMaterialStock</strong> @MaterialUnitSymbol</div>
         </div>
         <hr />
@@ -22,11 +41,14 @@ else
                 @foreach (var loc in SelectedMaterialLocations)
                 {
                     var borderColor = loc.LocationId == SelectedLocationId ? "#0d6efd" : "#e9eef8";
-                    var locStyle = $"border:1px solid {borderColor};border-radius:8px;background:#fff; min-width:160px;";
+                    var locStyle = $"border:1px solid {borderColor};border-radius:8px;background:#fff; min-width:160px;max-width:200px; display:flex; flex-direction:column; justify-content:space-between;";
 
                     <div class="location-card p-2 mb-2" style="@locStyle">
-                        <div class="fw-semibold">@loc.LocationName</div>
-                        <div class="text-muted small mt-2">Mevcut stok: <strong>@loc.Quantity</strong> @loc.UnitName</div>
+                        <div>
+                            <div class="fw-semibold">@loc.LocationName</div>
+                            <div class="text-muted small mt-2" style="font-size:0.75rem;">@GetLocationFullName(loc.LocationId)</div>
+                            <div class="text-muted small mt-2">Mevcut stok: <strong>@loc.Quantity</strong> @loc.UnitName</div>
+                        </div>
 
                         <div class="btn-group btn-group-sm mt-2" role="group" aria-label="Material actions">
                             <button class="btn btn-outline-primary" title="Malzeme Girişi" @onclick="() => OnStartEntry.InvokeAsync((SelectedMaterial, loc))">Giriş</button>
@@ -36,18 +58,18 @@ else
                     </div>
                 }
             }
-            else
-            {
-                <div class="location-card p-2 mb-2 border" >
-                    <div class="text-muted small mt-2">Mevcut stok: <strong>Yok</strong></div>
 
-                    <div class="btn-group btn-group-sm mt-2" role="group" aria-label="Material actions">
-                        <button class="btn btn-outline-primary" title="Malzeme Girişi" @onclick="() => OnStartEntry.InvokeAsync((SelectedMaterial, new MaterialLocationCard()))">Giriş</button>
-                        <button class="btn btn-outline-danger" title="Malzeme Çıkışı" @onclick="() => OnStartExit.InvokeAsync((SelectedMaterial, new MaterialLocationCard()))">Çıkış</button>
-                        <button class="btn btn-outline-warning" title="Transfer" @onclick="() => OnStartTransfer.InvokeAsync((SelectedMaterial, new MaterialLocationCard()))">Transfer</button>
-                    </div>
+            <!-- Additional card for creating a new MaterialEntry -->
+            <div class="location-card p-2 mb-2 border" style="border:1px dashed #e9eef8;border-radius:8px;background:#fff; min-width:160px; max-width:200px; display:flex; flex-direction:column; justify-content:space-between;">
+                <div>
+                    <div class="fw-semibold text-muted">Farklı lokasyon</div>
+                    <div class="text-muted small mt-2">Mevcut stok: <strong>—</strong></div>
                 </div>
-            }
+
+                <div class="btn-group btn-group-sm mt-2" role="group" aria-label="Add material entry">
+                    <button class="btn btn-outline-success" title="Yeni Malzeme Girişi" @onclick="() => OnStartEntry.InvokeAsync((SelectedMaterial, new MaterialLocationCard()))">Yeni Giriş</button>
+                </div>
+            </div>
         </div>
     </div>
 }
@@ -59,8 +81,72 @@ else
     [Parameter] public List<MaterialLocationCard>? SelectedMaterialLocations { get; set; }
     [Parameter] public int? SelectedLocationId { get; set; }
 
+    // Provide all categories so we can render category + parents for selected material
+    [Parameter] public List<MaterialCategory>? AllCategories { get; set; }
+
+    // All locations (needed to build parent location chain)
+    [Parameter] public List<Location>? AllLocations { get; set; }
+
+    // New: callback when a category in breadcrumb is clicked
+    [Parameter] public EventCallback<MaterialCategory> OnCategoryClick { get; set; }
+
     // We use tuple EventCallback to pass material + location back to parent
-    [Parameter] public EventCallback<(Material?, MaterialLocationCard)> OnStartEntry { get; set; }  
+    [Parameter] public EventCallback<(Material?, MaterialLocationCard)> OnStartEntry { get; set; }
     [Parameter] public EventCallback<(Material?, MaterialLocationCard)> OnStartExit { get; set; }
     [Parameter] public EventCallback<(Material?, MaterialLocationCard)> OnStartTransfer { get; set; }
+
+    // helper to build ancestor list (root-first) by category id. Protect against cycles.
+    private List<MaterialCategory> GetCategoryAncestorsById(int categoryId)
+    {
+        var result = new List<MaterialCategory>();
+        if (AllCategories == null) return result;
+
+        var visited = new HashSet<int>();
+        var current = AllCategories.FirstOrDefault(c => c.Id == categoryId);
+        int safety = 0;
+        while (current != null && current.ParentCategoryId.HasValue && safety++ < 50)
+        {
+            var parentId = current.ParentCategoryId.Value;
+            if (visited.Contains(parentId)) break;
+            var parent = AllCategories.FirstOrDefault(c => c.Id == parentId);
+            if (parent == null) break;
+            result.Insert(0, parent);
+            visited.Add(parentId);
+            current = parent;
+        }
+
+        return result;
+    }
+
+    // helper to build location ancestor list (root-first) by location id. Protect against cycles.
+    private List<Location> GetLocationAncestorsById(int locationId)
+    {
+        var result = new List<Location>();
+        if (AllLocations == null) return result;
+
+        var visited = new HashSet<int>();
+        var current = AllLocations.FirstOrDefault(l => l.Id == locationId);
+        int safety = 0;
+        while (current != null && current.ParentId.HasValue && safety++ < 50)
+        {
+            var parentId = current.ParentId.Value;
+            if (visited.Contains(parentId)) break;
+            var parent = AllLocations.FirstOrDefault(l => l.Id == parentId);
+            if (parent == null) break;
+            result.Insert(0, parent);
+            visited.Add(parentId);
+            current = parent;
+        }
+
+        return result;
+    }
+
+    // returns a concatenated string like "Ana Bina >1nci Kat >102 Nolu oda"
+    private string GetLocationFullName(int locationId)
+    {
+        if (AllLocations == null) return string.Empty;
+        var ancestors = GetLocationAncestorsById(locationId);
+        if (ancestors == null || ancestors.Count == 0) return string.Empty;
+        return string.Join(" > ", ancestors.Select(a => a.LocationName));
+    }
 }

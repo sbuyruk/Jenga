@@ -4,9 +4,13 @@
 
 @inject IToastService ToastService
 @inject IMaterialService MaterialService
+@inject IMaterialBrandService MaterialBrandService
+@inject IMaterialModelService MaterialModelService
+@inject IMaterialUnitService MaterialUnitService
 
 @if (IsOpen)
 {
+    <div class="modal-backdrop fade show" style="z-index:1055"></div>
     <div class="modal show" tabindex="-1" style="display: block;">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -41,35 +45,53 @@
 
                     <div class="mb-2">
                         <label class="form-label">Marka</label>
-                        <select class="form-select" @bind="editing.BrandId">
-                            <option value="0">Seçiniz</option>
-                            @foreach (var brand in Brands)
-                            {
-                                <option value="@brand.Id">@brand.BrandName</option>
-                            }
-                        </select>
+                        <div class="input-group">
+                            <select class="form-select" @bind="editing.BrandId">
+                                <option value="0">Seçiniz</option>
+                                @foreach (var brand in Brands)
+                                {
+                                    <option value="@brand.Id">@brand.BrandName</option>
+                                }
+                            </select>
+                            <button class="btn btn-outline-primary d-flex align-items-center" type="button" style="min-width:140px" @onclick="OpenBrandModal" aria-label="Yeni Marka">
+                                <i class="bi bi-plus-square me-2" aria-hidden="true"></i>
+                                Yeni Marka
+                            </button>
+                        </div>
                     </div>
 
                     <div class="mb-2">
                         <label class="form-label">Model</label>
-                        <select class="form-select" @bind="editing.ModelId">
-                            <option value="0">Seçiniz</option>
-                            @foreach (var model in Models)
-                            {
-                                <option value="@model.Id">@model.ModelName</option>
-                            }
-                        </select>
+                        <div class="input-group">
+                            <select class="form-select" @bind="editing.ModelId">
+                                <option value="0">Seçiniz</option>
+                                @foreach (var model in Models)
+                                {
+                                    <option value="@model.Id">@model.ModelName</option>
+                                }
+                            </select>
+                            <button class="btn btn-outline-primary d-flex align-items-center" type="button" style="min-width:140px" @onclick="OpenModelModal" aria-label="Yeni Model">
+                                <i class="bi bi-plus-square me-2" aria-hidden="true"></i>
+                                Yeni Model
+                            </button>
+                        </div>
                     </div>
 
                     <div class="mb-2">
                         <label class="form-label">Birim</label>
-                        <select class="form-select" @bind="editing.MaterialUnitId">
-                            <option value="0">Birim seçiniz</option>
-                            @foreach (var unit in MaterialUnits)
-                            {
-                                <option value="@unit.Id">@unit.Name (@unit.Symbol)</option>
-                            }
-                        </select>
+                        <div class="input-group">
+                            <select class="form-select" @bind="editing.MaterialUnitId">
+                                <option value="0">Birim seçiniz</option>
+                                @foreach (var unit in MaterialUnits)
+                                {
+                                    <option value="@unit.Id">@unit.Name (@unit.Symbol)</option>
+                                }
+                            </select>
+                            <button class="btn btn-outline-primary d-flex align-items-center" type="button" style="min-width:140px" @onclick="OpenUnitModal" aria-label="Yeni Birim">
+                                <i class="bi bi-plus-square me-2" aria-hidden="true"></i>
+                                Yeni Birim
+                            </button>
+                        </div>
                         @if (Errors.TryGetValue(nameof(Material.MaterialUnitId), out var errUnit))
                         {
                             <div class="text-danger small mt-1">@errUnit</div>
@@ -107,6 +129,10 @@
     </div>
 }
 
+<MaterialBrandEditModal Brand="brandToEdit" Categories="Categories" IsOpen="isBrandModalOpen" OnSave="HandleBrandSave" OnClose="CloseBrandModal" />
+<MaterialModelEditModal Model="modelToEdit" Brands="Brands" IsOpen="isModelModalOpen" OnSave="HandleModelSave" OnClose="CloseModelModal" />
+<MaterialUnitEditModal MaterialUnit="unitToEdit" IsOpen="isUnitModalOpen" OnSave="HandleUnitSave" OnClose="CloseUnitModal" />
+
 @code {
     [Parameter] public Material? Material { get; set; }
     [Parameter] public List<MaterialUnit> MaterialUnits { get; set; } = new();
@@ -120,6 +146,16 @@
     private Material editing = new();
     private readonly Dictionary<string, string> Errors = new();
     private bool isSaving;
+
+    // brand modal state
+    private bool isBrandModalOpen;
+    private MaterialBrand brandToEdit = new();
+    // model modal state
+    private bool isModelModalOpen;
+    private MaterialModel modelToEdit = new();
+    // unit modal state
+    private bool isUnitModalOpen;
+    private MaterialUnit unitToEdit = new();
 
     protected override void OnParametersSet()
     {
@@ -216,6 +252,125 @@
         finally
         {
             isSaving = false;
+        }
+    }
+
+    private void OpenBrandModal()
+    {
+        brandToEdit = new MaterialBrand();
+        isBrandModalOpen = true;
+    }
+
+    private void CloseBrandModal()
+    {
+        isBrandModalOpen = false;
+    }
+
+    private async Task HandleBrandSave()
+    {
+        try
+        {
+            // save new brand via service
+            var ok = await MaterialBrandService.AddAsync(brandToEdit);
+            if (ok)
+            {
+                // add to local list and select it
+                Brands.Add(brandToEdit);
+                editing.BrandId = brandToEdit.Id;
+                ToastService.ShowToast("Marka kaydedildi.", ToastType.Success, 2000);
+            }
+            else
+            {
+                ToastService.ShowToast("Marka kaydedilemedi.", ToastType.Error, 3000);
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowToast($"Marka kaydetme hatası: {ex.Message}", ToastType.Error, 4000);
+        }
+        finally
+        {
+            isBrandModalOpen = false;
+            StateHasChanged();
+        }
+    }
+
+    private void OpenModelModal()
+    {
+        modelToEdit = new MaterialModel();
+        // if a brand already selected in editing, prefill it for the model
+        if (editing.BrandId.HasValue && editing.BrandId.Value > 0)
+            modelToEdit.BrandId = editing.BrandId.Value;
+        isModelModalOpen = true;
+    }
+
+    private void CloseModelModal()
+    {
+        isModelModalOpen = false;
+    }
+
+    private async Task HandleModelSave()
+    {
+        try
+        {
+            var ok = await MaterialModelService.AddAsync(modelToEdit);
+            if (ok)
+            {
+                Models.Add(modelToEdit);
+                editing.ModelId = modelToEdit.Id;
+                ToastService.ShowToast("Model kaydedildi.", ToastType.Success, 2000);
+            }
+            else
+            {
+                ToastService.ShowToast("Model kaydedilemedi.", ToastType.Error, 3000);
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowToast($"Model kaydetme hatası: {ex.Message}", ToastType.Error, 4000);
+        }
+        finally
+        {
+            isModelModalOpen = false;
+            StateHasChanged();
+        }
+    }
+
+    private void OpenUnitModal()
+    {
+        unitToEdit = new MaterialUnit();
+        isUnitModalOpen = true;
+    }
+
+    private void CloseUnitModal()
+    {
+        isUnitModalOpen = false;
+    }
+
+    private async Task HandleUnitSave()
+    {
+        try
+        {
+            var ok = await MaterialUnitService.AddAsync(unitToEdit);
+            if (ok)
+            {
+                MaterialUnits.Add(unitToEdit);
+                editing.MaterialUnitId = unitToEdit.Id;
+                ToastService.ShowToast("Birim kaydedildi.", ToastType.Success, 2000);
+            }
+            else
+            {
+                ToastService.ShowToast("Birim kaydedilemedi.", ToastType.Error, 3000);
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowToast($"Birim kaydetme hatası: {ex.Message}", ToastType.Error, 4000);
+        }
+        finally
+        {
+            isUnitModalOpen = false;
+            StateHasChanged();
         }
     }
 }

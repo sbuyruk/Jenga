@@ -10,7 +10,7 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Malzeme Girişi Düzenle</h5>
+                    <h5 class="modal-title">@ModalTitle</h5>
                     <button type="button" class="close" @onclick="OnClose" aria-label="Kapat">
                         <span aria-hidden="true">&times;</span>
                     </button>
@@ -29,6 +29,10 @@
                     <div class="mb-2">
                         <label>Miktar</label>
                         <input class="form-control" @bind="MaterialEntry!.Quantity" type="number" min="1" />
+                        @if (ShowQuantityError)
+                        {
+                            <div class="text-danger small mt-1">Miktar en az 1 olmalıdır.</div>
+                        }
                     </div>
                     <div class="mb-2">
                         <label>Birim</label>
@@ -54,6 +58,10 @@
                                 }
                             }
                         </select>
+                        @if (ShowLocationError)
+                        {
+                            <div class="text-danger small mt-1">Lütfen Malzeme Yeri seçiniz.</div>
+                        }
 
                     </div>
                     <div class="mb-2">
@@ -103,13 +111,31 @@
         }
     }
 
-    private bool IsSaveDisabled => MaterialEntry?.LocationId == 0;
+    // Disable save when there is no entry, location is not selected (0) or quantity is less than1
+    private bool IsSaveDisabled => MaterialEntry == null || MaterialEntry.LocationId ==0 || MaterialEntry.Quantity <1;
+
+    private bool ShowQuantityError => MaterialEntry != null && MaterialEntry.Quantity <1;
+    private bool ShowLocationError => MaterialEntry != null && MaterialEntry.LocationId ==0;
+
+    private string ModalTitle => MaterialEntry == null || MaterialEntry.Id ==0 ? "Envantere Malzeme Girişi" : "Malzeme Girişi Düzenle";
 
     private async Task HandleSave()
     {
-        if (MaterialEntry?.LocationId == 0)
+        if (MaterialEntry == null)
+        {
+            ToastService.ShowWarning("Geçerli bir malzeme girişi bulunamadı.");
+            return;
+        }
+
+        if (MaterialEntry.LocationId ==0)
         {
             ToastService.ShowWarning("Lütfen Malzeme Yeri seçiniz.");
+            return;
+        }
+
+        if (MaterialEntry.Quantity <1)
+        {
+            ToastService.ShowWarning("Lütfen Miktar1 veya daha fazla giriniz.");
             return;
         }
         await OnSave.InvokeAsync();

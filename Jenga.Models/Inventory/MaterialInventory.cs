@@ -11,13 +11,13 @@ namespace Jenga.Models.Inventory
 
         [Column("LocationId")]
         public int? LocationId { get; set; }
-        [Column("MaterialUnitId")]
-        public int MaterialUnitId { get; set; }
+        //[Column("MaterialUnitId")]
+        //public int MaterialUnitId { get; set; }
         [Column("Quantity")]
         public int Quantity { get; set; }
 
         // Opsiyonel navigation property
-        // public Material? Material { get; set; }
+        public Material? Material { get; set; }
         // public Location? Location { get; set; }
         // public MaterialUnit? MaterialUnit { get; set; }
     }

@@ -1,5 +1,7 @@
 ﻿using Jenga.DataAccess.Repositories.IRepository;
+using Jenga.Models.Enums;
 using Jenga.Models.Inventory;
+using Jenga.Utility.Helpers;
 using System.Linq.Expressions;
 
 namespace Jenga.DataAccess.Services.Inventory
@@ -46,6 +48,7 @@ namespace Jenga.DataAccess.Services.Inventory
                 cancellationToken);
 
             // 3. MaterialMovement logu ekle
+            string aciklama = EnumHelper.GetEnumDescription((MaterialExitType)exit.ExitType.Value);
             var movement = new MaterialMovement
             {
                 MaterialId = exit.MaterialId,
@@ -56,8 +59,8 @@ namespace Jenga.DataAccess.Services.Inventory
                 FromPersonId = null,
                 ToPersonId = exit.PersonId,
                 MovementDate = exit.ExitDate,
-                MovementType = exit.ExitType,
-                Aciklama = $"MaterialExit: {exit.ExitType} işlemi.",
+                MovementType ="Çıkış",
+                Aciklama = $"MaterialExit: {aciklama} işlemi.",
                 Olusturan = exit.Olusturan,
                 OlusturmaTarihi = DateTime.Now
             };

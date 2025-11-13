@@ -46,7 +46,7 @@ namespace Jenga.DataAccess.Services.Inventory
                 {
                     MaterialId = materialId,
                     LocationId = locationId,
-                    MaterialUnitId = materialUnitId,
+                    //MaterialUnitId = materialUnitId,
                     Quantity = quantity,
                     Aciklama = aciklama,
                     Olusturan = modifiedBy,

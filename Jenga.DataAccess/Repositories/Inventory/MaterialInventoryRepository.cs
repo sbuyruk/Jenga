@@ -20,8 +20,7 @@ namespace Jenga.DataAccess.Repositories.Inventory
                 .AsNoTracking()
                 .FirstOrDefaultAsync(mi =>
                     mi.MaterialId == materialId &&
-                    mi.LocationId == locationId &&
-                    mi.MaterialUnitId == materialUnitId,
+                    mi.LocationId == locationId, //&& mi.MaterialUnitId == materialUnitId,
                     cancellationToken
                 );
         }

@@ -3,8 +3,22 @@
 
 @if (DisplayedCategory != null)
 {
+    var ancestors = GetCategoryAncestors(DisplayedCategory);
+
     <div class="mb-2 d-flex justify-content-between align-items-center">
-        <div class="fw-semibold">@DisplayedCategory.CategoryName</div>
+        <div class="fw-semibold">
+            @* show breadcrumb of parents (if any) then the current category *@
+            @if (ancestors?.Count > 0)
+            {
+                for (int i = 0; i < ancestors.Count; i++)
+                {
+                    var anc = ancestors[i];
+                    <button type="button" class="btn btn-link p-0 text-decoration-none link-primary" @onclick="async () => await OnCategoryClick.InvokeAsync(anc)">@anc.CategoryName</button>
+                    <span class="text-muted mx-1">/</span>
+                }
+            }
+            <button type="button" class="btn btn-link p-0 text-dark text-decoration-none" @onclick="async () => await OnCategoryClick.InvokeAsync(DisplayedCategory)">@DisplayedCategory.CategoryName</button>
+        </div>
         <div class="text-muted small">@($"{CategoryCards.Count} alt kategori, {MaterialCards.Count} malzeme")</div>
     </div>
 }
@@ -28,7 +42,7 @@
 <div class="d-flex gap-2 flex-wrap mb-2">
     @foreach (var card in MaterialCards)
     {
-        var unit = MaterialUnits?.FirstOrDefault(u => u.Id == card.MaterialUnitId); 
+        var unit = MaterialUnits?.FirstOrDefault(u => u.Id == card.MaterialUnitId);
         var unitLabel = unit?.Name ?? unit?.Symbol ?? string.Empty;
 
         // toplam adedi MaterialInventories listesinden al (yoksa 0)
@@ -64,4 +78,27 @@
 
     // Yeni: parent'ın gönderdiği MaterialInventory listesi
     [Parameter] public List<MaterialInventory>? MaterialInventories { get; set; }
+
+    // helper to build ancestor list (root-first). Protect against cycles with a max depth.
+    private List<MaterialCategory> GetCategoryAncestors(MaterialCategory category)
+    {
+        var result = new List<MaterialCategory>();
+        if (AllCategories == null) return result;
+
+        var visited = new HashSet<int>();
+        var current = category;
+        int safety = 0;
+        while (current != null && current.ParentCategoryId.HasValue && safety++ < 50)
+        {
+            var parentId = current.ParentCategoryId.Value;
+            if (visited.Contains(parentId)) break;
+            var parent = AllCategories.FirstOrDefault(c => c.Id == parentId);
+            if (parent == null) break;
+            result.Insert(0, parent);
+            visited.Add(parentId);
+            current = parent;
+        }
+
+        return result;
+    }
 }

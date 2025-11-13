@@ -1,5 +1,6 @@
 ﻿using Jenga.Models.Sistem;
 using System.ComponentModel.DataAnnotations.Schema;
+using Jenga.Models.Enums;
 
 namespace Jenga.Models.Inventory
 {
@@ -20,8 +21,13 @@ namespace Jenga.Models.Inventory
         [Column("ExitDate")]
         public DateTime ExitDate { get; set; }
 
+        // Stored in the database as an integer corresponding to MaterialExitType
         [Column("ExitType")]
-        public string? ExitType { get; set; }
+        public int? ExitType { get; set; }
+
+        // Helper to get enum name (not mapped to DB)
+        [NotMapped]
+        public string? ExitTypeName => ExitType.HasValue ? Enum.GetName(typeof(MaterialExitType), ExitType.Value) : null;
 
     }
 }
