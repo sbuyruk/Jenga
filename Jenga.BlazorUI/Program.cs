@@ -42,8 +42,6 @@ builder.Services.AddScoped<IMenuService, MenuService>();
 builder.Services.AddScoped<IMenuItemService, MenuItemService>();
 builder.Services.AddScoped<MenuStateService>();
 
-builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents();
 // Toast Service
 builder.Services.AddScoped<IToastService, ToastService>();
 //Logging Services
