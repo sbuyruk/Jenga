@@ -1,4 +1,5 @@
 ﻿using Jenga.Models.Inventory;
+using System.Linq.Expressions;
 
 namespace Jenga.DataAccess.Services.Inventory
 {
@@ -6,9 +7,12 @@ namespace Jenga.DataAccess.Services.Inventory
     {
         Task<List<MaterialTransfer>> GetAllAsync(CancellationToken cancellationToken = default);
         Task<MaterialTransfer?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
-        Task AddAsync(MaterialTransfer transfer, CancellationToken cancellationToken = default);
-        Task UpdateAsync(MaterialTransfer transfer, CancellationToken cancellationToken = default);
-        Task DeleteAsync(MaterialTransfer transfer, CancellationToken cancellationToken = default);
-        // Ek filtre/sorgu fonksiyonları eklenebilir.
+        Task<bool> AddAsync(MaterialTransfer transfer, string? modifiedBy = null, CancellationToken cancellationToken = default);
+        Task<bool> UpdateAsync(MaterialTransfer transfer, CancellationToken cancellationToken = default);
+        Task<bool> DeleteAsync(MaterialTransfer transfer, CancellationToken cancellationToken = default);
+        Task<bool> AnyAsync(Expression<Func<MaterialTransfer, bool>> predicate);
+
+        Task<bool> UpdateMaterialTransferAndInventoryAsync(MaterialTransfer transfer, string? currentUserName, CancellationToken cancellationToken = default);
+        Task<bool> DeleteMaterialTransferAndUpdateInventoryAsync(MaterialTransfer transfer, string? currentUserName, CancellationToken cancellationToken = default);
     }
 }

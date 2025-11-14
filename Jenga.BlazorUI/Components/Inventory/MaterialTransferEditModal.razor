@@ -1,10 +1,8 @@
 ﻿@using Jenga.DataAccess.Services.Inventory
-@using Jenga.Models.Enums
 @using Jenga.Models.Inventory
-@using Jenga.Utility.Helpers
 @using Jenga.Utility.Toast
 @inject IMaterialService MaterialService
-@inject IMaterialExitService MaterialExitService
+@inject IMaterialTransferService MaterialTransferService
 @inject IToastService ToastService
 @if (IsOpen)
 {
@@ -12,7 +10,7 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Malzeme Çıkış Düzenle</h5>
+                    <h5 class="modal-title">Malzeme Transferi</h5>
                     <button type="button" class="close" @onclick="OnClose" aria-label="Kapat">
                         <span aria-hidden="true">&times;</span>
                     </button>
@@ -30,12 +28,12 @@
                     </div>
                     <div class="mb-2">
                         <label>Miktar</label>
-                        <input class="form-control" type="number" @bind="MaterialExit.Quantity" min="1" />
+                        <input class="form-control" @bind="MaterialTransfer!.Quantity" type="number" min="1" />
                         @if (ShowQuantityError)
                         {
                             <div class="text-danger small mt-1">Miktar en az 1 olmalıdır.</div>
                         }
-                        @if (MaterialExit != null && MaterialExit.LocationId !=0)
+                        @if (MaterialTransfer != null && MaterialTransfer.FromLocationId !=0)
                         {
                             <div class="small text-muted mt-1">Mevcut stok: <strong>@AvailableQuantity</strong></div>
                             @if (ShowExceedsError)
@@ -46,7 +44,7 @@
                     </div>
                     <div class="mb-2">
                         <label>Birim</label>
-                        <select class="form-select" @bind="MaterialExit!.MaterialUnitId" disabled>
+                        <select class="form-select" @bind="MaterialTransfer!.MaterialUnitId" disabled>
                             <option value="">Birim seçiniz</option>
                             @foreach (var unit in MaterialUnits)
                             {
@@ -55,70 +53,63 @@
                         </select>
                     </div>
                     <div class="mb-2">
-                        <label>Çıkış Yeri</label>
+                        <label>Nereden</label>
                         @{
-                            // Seçilen malzemenin bulunduğu lokasyonları ve miktarlarını bul
-                            var selectedMaterialId = MaterialExit?.MaterialId ??0;
-                            var locationQuantities = MaterialInventories
+                            var selectedMaterialId = MaterialTransfer?.MaterialId ??0;
+                            var locationQuantities = MaterialInventories?
                                 .Where(mi => mi.MaterialId == selectedMaterialId && mi.LocationId.HasValue)
                                 .GroupBy(mi => mi.LocationId!.Value)
-                                .ToDictionary(g => g.Key, g => g.Sum(mi => mi.Quantity));
+                                .ToDictionary(g => g.Key, g => g.Sum(mi => mi.Quantity))
+                                ?? new Dictionary<int, int>();
 
-                            // Filtrele: miktarı0 olan lokasyonları çıkar
-                            var locationQuantitiesFiltered = locationQuantities
-                                .Where(kv => kv.Value >0)
-                                .ToDictionary(kv => kv.Key, kv => kv.Value);
-
+                            var locationQuantitiesFiltered = locationQuantities.Where(kv => kv.Value >0).ToDictionary(kv => kv.Key, kv => kv.Value);
                             var availableLocationIds = locationQuantitiesFiltered.Keys.ToList();
 
-                            var availableLocations = Locations
-                                .Where(loc => availableLocationIds.Contains(loc.Id))
-                                .ToList();
+                            var availableLocations = Locations?.Where(loc => availableLocationIds.Contains(loc.Id)).ToList() ?? new List<Location>();
 
                             var selectedMaterial = Materials.FirstOrDefault(m => m.Id == selectedMaterialId);
                             var selectedUnitName = selectedMaterial is not null
                                 ? MaterialUnits.FirstOrDefault(u => u.Id == selectedMaterial.MaterialUnitId)?.Name
                                 : null;
                         }
-                        <select class="form-select" @bind="MaterialExit.LocationId">
-                            <option value="">Çıkış yerini seçiniz</option>
+                        <select class="form-select" @bind="MaterialTransfer.FromLocationId">
+                            <option value="">Kaynak lokasyon seçiniz</option>
                             @foreach (var loc in availableLocations)
                             {
                                 var qty = locationQuantitiesFiltered.TryGetValue(loc.Id, out var q) ? q :0;
                                 <option value="@loc.Id">@GetFullLocationName(loc) (@qty @(selectedUnitName ?? ""))</option>
                             }
                         </select>
-                        @if (ShowLocationError)
-                        {
-                            <div class="text-danger small mt-1">Lütfen Malzeme Çıkış Yeri seçiniz.</div>
-                        }
                     </div>
                     <div class="mb-2">
-                        <label>Çıkış Sebebi</label>
-                        <select class="form-select text-muted" @bind="MaterialExit.ExitType">
-                            <option value="">Malzemenin envanterden çıkış sebebini seçiniz</option>
-                            @foreach (MaterialExitType type in Enum.GetValues(typeof(MaterialExitType)))
+                        <label>Nereye</label>
+                        @{
+                            // reuse same availableLocations and unit name for destination list
+                        }
+                        <select class="form-select" @bind="MaterialTransfer.ToLocationId">
+                            <option value="">Hedef lokasyon seçiniz</option>
+                            @foreach (var loc in Locations)
                             {
-                                <option value="@((int)type)">@EnumHelper.GetEnumDescription(type)</option>
+                                // Allow destination locations to be any storage place (even if currently zero), but prefer showing parents and names.
+                                <option value="@loc.Id">@GetFullLocationName(loc)</option>
                             }
-
                         </select>
-                        @if (ShowExitTypeError)
+                        @if (ShowToLocationError)
                         {
-                            <div class="text-danger small mt-1">Lütfen çıkış sebebini seçiniz.</div>
+                            <div class="text-danger small mt-1">Lütfen hedef lokasyon seçiniz.</div>
                         }
                     </div>
                     <div class="mb-2">
                         <label>Tarih</label>
-                        <input class="form-control" type="date" @bind="MaterialExit.ExitDate" />
+                        <input class="form-control" @bind="MaterialTransfer!.TransferDate" type="date" />
                     </div>
                     <div class="mb-2">
                         <label>Açıklama</label>
-                        <textarea class="form-control" rows="3" @bind="MaterialExit.Aciklama"></textarea>
+                        <textarea class="form-control" rows="3" @bind="MaterialTransfer.Aciklama"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn btn-danger" @onclick="HandleSave" disabled="@IsSaveDisabled">Envanterden Çıkar</button>
+                    <button class="btn btn-warning" @onclick="HandleSave" disabled="@IsSaveDisabled">Transfer Et</button>
                     <button class="btn btn-secondary" @onclick="OnClose">Kapat</button>
                 </div>
             </div>
@@ -127,78 +118,65 @@
 }
 
 @code {
-    [Parameter] public MaterialExit MaterialExit { get; set; }
-    [Parameter] public List<Material> Materials { get; set; } = new();
+    [Parameter] public MaterialTransfer? MaterialTransfer { get; set; }
     [Parameter] public List<MaterialUnit> MaterialUnits { get; set; } = new();
-    [Parameter] public List<Location> Locations { get; set; } = new();
-    [Parameter] public List<MaterialInventory> MaterialInventories { get; set; } = new();
     [Parameter] public bool IsOpen { get; set; }
     [Parameter] public EventCallback OnSave { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public List<Material> Materials { get; set; } = new();
+    [Parameter] public List<Location> Locations { get; set; } = new();
+    [Parameter] public List<MaterialInventory>? MaterialInventories { get; set; }
 
     private int _materialId;
     private int MaterialId
     {
-        get => MaterialExit!.MaterialId;
+        get => MaterialTransfer!.MaterialId;
         set
         {
-            MaterialExit!.MaterialId = value;
+            MaterialTransfer!.MaterialId = value;
             var selectedMaterial = Materials.FirstOrDefault(m => m.Id == value);
             if (selectedMaterial != null)
             {
-                MaterialExit!.MaterialUnitId = selectedMaterial.MaterialUnitId;
+                MaterialTransfer!.MaterialUnitId = selectedMaterial.MaterialUnitId;
             }
         }
     }
-    private bool IsSaveDisabled => MaterialExit == null || MaterialExit.LocationId ==0 || MaterialExit.Quantity <1 || ShowExceedsError || !MaterialExit.ExitType.HasValue;
-    private bool ShowQuantityError => MaterialExit != null && MaterialExit.Quantity <1;
-    private bool ShowLocationError => MaterialExit != null && MaterialExit.LocationId ==0;
-    private bool ShowExitTypeError => MaterialExit != null && !MaterialExit.ExitType.HasValue;
-
     private int AvailableQuantity
     {
         get
         {
-            if (MaterialExit == null || MaterialInventories == null || MaterialExit.LocationId ==0) return 0;
+            if (MaterialTransfer == null || MaterialInventories == null || MaterialTransfer.FromLocationId ==0) return 0;
             return MaterialInventories
-                .Where(mi => mi.MaterialId == MaterialExit.MaterialId && mi.LocationId == MaterialExit.LocationId)
+                .Where(mi => mi.MaterialId == MaterialTransfer.MaterialId && mi.LocationId == MaterialTransfer.FromLocationId)
                 .Sum(mi => mi.Quantity);
         }
     }
+    private bool ShowExceedsError => MaterialTransfer != null && MaterialTransfer.FromLocationId !=0 && MaterialTransfer.Quantity > AvailableQuantity;
 
-    private bool ShowExceedsError => MaterialExit != null && MaterialExit.LocationId !=0 && MaterialExit.Quantity > AvailableQuantity;
+    private bool IsSaveDisabled => MaterialTransfer == null || MaterialTransfer.FromLocationId ==0 || MaterialTransfer.ToLocationId ==0 || MaterialTransfer.Quantity <1 || MaterialTransfer.FromLocationId == MaterialTransfer.ToLocationId;
+    private bool ShowQuantityError => MaterialTransfer != null && MaterialTransfer.Quantity <1;
+    private bool ShowToLocationError => MaterialTransfer != null && MaterialTransfer.ToLocationId ==0;
 
     private async Task HandleSave()
     {
-        if (MaterialExit == null)
+        if (MaterialTransfer == null)
         {
-            ToastService.ShowWarning("Geçerli bir çıkış kaydı bulunamadı.");
+            ToastService.ShowWarning("Geçerli bir transfer kaydı bulunamadı.");
             return;
         }
-
-        if (!MaterialExit.ExitType.HasValue)
+        if (MaterialTransfer.FromLocationId ==0 || MaterialTransfer.ToLocationId ==0)
         {
-            ToastService.ShowWarning("Lütfen Çıkış Sebebini seçiniz.");
+            ToastService.ShowWarning("Lütfen kaynak ve hedef lokasyon seçiniz.");
             return;
         }
-
-        if (MaterialExit.LocationId ==0)
+        if (MaterialTransfer.FromLocationId == MaterialTransfer.ToLocationId)
         {
-            ToastService.ShowWarning("Lütfen Malzeme Yeri seçiniz.");
+            ToastService.ShowWarning("Kaynak ve hedef lokasyon aynı olamaz.");
             return;
         }
-
-        if (MaterialExit.Quantity <1)
+        if (MaterialTransfer.Quantity <1)
         {
-            // Inline error also shown; prevent save
-            ToastService.ShowWarning("Miktar en az 1 olmalıdır.");
-            return;
-        }
-
-        // Prevent exit quantity greater than available at selected location
-        if (MaterialExit.LocationId !=0 && MaterialExit.Quantity > AvailableQuantity)
-        {
-            ToastService.ShowWarning("Girilen miktar seçili çıkış yerindeki mevcut stoktan fazla olamaz.");
+            ToastService.ShowWarning("Miktar en az1 olmalıdır.");
             return;
         }
         await OnSave.InvokeAsync();
@@ -209,7 +187,6 @@
         if (loc == null) return string.Empty;
         var parts = new List<string>();
         var current = loc;
-        // Walk up parents using the Locations list
         while (current != null)
         {
             parts.Add(current.LocationName);
@@ -223,7 +200,6 @@
             }
         }
         parts.Reverse();
-        return string.Join(">", parts); // e.g. Ana Bina>1.Kat>101 Nolu Oda
+        return string.Join(" > ", parts);
     }
-
 }

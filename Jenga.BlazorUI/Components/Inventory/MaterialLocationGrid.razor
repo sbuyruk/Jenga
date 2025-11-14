@@ -3,7 +3,7 @@
 
 @if (SelectedMaterial == null)
 {
-    <div class="material-card p-2" style="border:1px solid #e9eef8;border-radius:8px;background:#fff;">
+    <div class="material-card p-2" style="border:1px solid #e9eef8;border-radius:8px;">
         <div class="fw-semibold">— Seçili yok —</div>
     </div>
 }
@@ -12,7 +12,7 @@ else
     var ancestors = GetCategoryAncestorsById(SelectedMaterial.CategoryId);
     var category = AllCategories?.FirstOrDefault(c => c.Id == SelectedMaterial.CategoryId);
 
-    <div class="material-card p-3 mb-2" style="border:1px solid #e9eef8;border-radius:8px;background:#fff;">
+    <div class="material-card p-3 mb-2" style="border:1px solid #e9eef8;border-radius:8px;">
         <div class="d-flex justify-content-between align-items-start mb-2">
             <div>
                 <div class="fw-semibold">@SelectedMaterial.MaterialName</div>
@@ -41,7 +41,7 @@ else
                 @foreach (var loc in SelectedMaterialLocations)
                 {
                     var borderColor = loc.LocationId == SelectedLocationId ? "#0d6efd" : "#e9eef8";
-                    var locStyle = $"border:1px solid {borderColor};border-radius:8px;background:#fff; min-width:160px;max-width:200px; display:flex; flex-direction:column; justify-content:space-between;";
+                    var locStyle = $"border:1px solid {borderColor};border-radius:8px; min-width:160px;max-width:200px; display:flex; flex-direction:column; justify-content:space-between;";
 
                     <div class="location-card p-2 mb-2" style="@locStyle">
                         <div>
@@ -51,7 +51,7 @@ else
                         </div>
 
                         <div class="btn-group btn-group-sm mt-2" role="group" aria-label="Material actions">
-                            <button class="btn btn-outline-primary" title="Malzeme Girişi" @onclick="() => OnStartEntry.InvokeAsync((SelectedMaterial, loc))">Giriş</button>
+                            <button class="btn btn-outline-success" title="Malzeme Girişi" @onclick="() => OnStartEntry.InvokeAsync((SelectedMaterial, loc))">Giriş</button>
                             <button class="btn btn-outline-danger" title="Malzeme Çıkışı" @onclick="() => OnStartExit.InvokeAsync((SelectedMaterial, loc))">Çıkış</button>
                             <button class="btn btn-outline-warning" title="Transfer" @onclick="() => OnStartTransfer.InvokeAsync((SelectedMaterial, loc))">Transfer</button>
                         </div>
@@ -60,7 +60,7 @@ else
             }
 
             <!-- Additional card for creating a new MaterialEntry -->
-            <div class="location-card p-2 mb-2 border" style="border:1px dashed #e9eef8;border-radius:8px;background:#fff; min-width:160px; max-width:200px; display:flex; flex-direction:column; justify-content:space-between;">
+            <div class="location-card p-2 mb-2 border" style="border:1px dashed #e9eef8;border-radius:8px;min-width:160px; max-width:200px; display:flex; flex-direction:column; justify-content:space-between;">
                 <div>
                     <div class="fw-semibold text-muted">Farklı lokasyon</div>
                     <div class="text-muted small mt-2">Mevcut stok: <strong>—</strong></div>

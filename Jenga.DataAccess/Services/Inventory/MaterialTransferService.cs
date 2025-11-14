@@ -25,34 +25,31 @@ namespace Jenga.DataAccess.Services.Inventory
         public async Task<MaterialTransfer?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
             => await _unitOfWork.MaterialTransfer.GetByIdAsync(id, cancellationToken);
 
-        public async Task AddAsync(MaterialTransfer transfer, CancellationToken cancellationToken = default)
+        public async Task<bool> AddAsync(MaterialTransfer transfer, string? modifiedBy, CancellationToken cancellationToken = default)
         {
-            // 1. MaterialTransfer kaydını ekle
             await _unitOfWork.MaterialTransfer.AddAsync(transfer, cancellationToken);
             await _unitOfWork.MaterialTransfer.SaveChangesAsync(cancellationToken);
 
-            // 2. MaterialInventory - kaynak lokasyondan miktarı düş
             await _materialInventoryService.AddOrUpdateInventoryAsync(
                 transfer.MaterialId,
                 transfer.FromLocationId,
                 transfer.MaterialUnitId,
                 -transfer.Quantity,
                 "MaterialTransfer: Kaynak stoktan düşüldü.",
-                transfer.Olusturan,
+                modifiedBy,
                 cancellationToken);
 
-            // 3. MaterialInventory - hedef lokasyona miktarı ekle
             await _materialInventoryService.AddOrUpdateInventoryAsync(
                 transfer.MaterialId,
                 transfer.ToLocationId,
                 transfer.MaterialUnitId,
                 transfer.Quantity,
                 "MaterialTransfer: Hedef stoğa eklendi.",
-                transfer.Olusturan,
+                modifiedBy,
                 cancellationToken);
 
-            // 4. MaterialMovement logu ekle
-            var movement = new MaterialMovement
+            // Add movement log
+            await _materialMovementService.AddAsync(new MaterialMovement
             {
                 MaterialId = transfer.MaterialId,
                 Quantity = transfer.Quantity,
@@ -63,19 +60,20 @@ namespace Jenga.DataAccess.Services.Inventory
                 ToPersonId = transfer.ToPersonId,
                 MovementDate = transfer.TransferDate,
                 MovementType = "Transfer",
-                Aciklama = "MaterialTransfer işlemi.",
-                Olusturan = transfer.Olusturan,
+                Aciklama = "MaterialTransfer işlemi",
+                Olusturan = modifiedBy,
                 OlusturmaTarihi = DateTime.Now
-            };
-            await _materialMovementService.AddAsync(movement, cancellationToken);
+            }, cancellationToken);
+
+            return true;
         }
-        public async Task UpdateAsync(MaterialTransfer yeniTransfer, CancellationToken cancellationToken = default)
+
+        public async Task<bool> UpdateAsync(MaterialTransfer yeniTransfer, CancellationToken cancellationToken = default)
         {
-            // Eski kaydı çek
             var eskiTransfer = await GetByIdAsync(yeniTransfer.Id, cancellationToken);
             if (eskiTransfer == null) throw new Exception("Kayıt bulunamadı!");
 
-            // Eski transferi geri al: kaynak stoğa eski miktarı ekle, hedef stoktan eski miktarı çıkar
+            // rollback old transfer
             await _materialInventoryService.AddOrUpdateInventoryAsync(
                 eskiTransfer.MaterialId,
                 eskiTransfer.FromLocationId,
@@ -94,7 +92,7 @@ namespace Jenga.DataAccess.Services.Inventory
                 yeniTransfer.Olusturan,
                 cancellationToken);
 
-            // Yeni transferi uygula: kaynak stoğa yeni miktarı düş, hedef stoğa yeni miktarı ekle
+            // apply new transfer
             await _materialInventoryService.AddOrUpdateInventoryAsync(
                 yeniTransfer.MaterialId,
                 yeniTransfer.FromLocationId,
@@ -113,7 +111,6 @@ namespace Jenga.DataAccess.Services.Inventory
                 yeniTransfer.Olusturan,
                 cancellationToken);
 
-            // MaterialMovement logu ekle
             await _materialMovementService.AddAsync(new MaterialMovement
             {
                 MaterialId = yeniTransfer.MaterialId,
@@ -130,14 +127,15 @@ namespace Jenga.DataAccess.Services.Inventory
                 OlusturmaTarihi = DateTime.Now
             }, cancellationToken);
 
-            // Kayıt güncelle
             await _unitOfWork.MaterialTransfer.UpdateAsync(yeniTransfer);
             await _unitOfWork.MaterialTransfer.SaveChangesAsync(cancellationToken);
+
+            return true;
         }
 
-        public async Task DeleteAsync(MaterialTransfer transfer, CancellationToken cancellationToken = default)
+        public async Task<bool> DeleteAsync(MaterialTransfer transfer, CancellationToken cancellationToken = default)
         {
-            // Kaynak stoğa transfer edilen miktarı geri ekle
+            // revert: add back to source and subtract from destination
             await _materialInventoryService.AddOrUpdateInventoryAsync(
                 transfer.MaterialId,
                 transfer.FromLocationId,
@@ -147,7 +145,6 @@ namespace Jenga.DataAccess.Services.Inventory
                 transfer.Olusturan,
                 cancellationToken);
 
-            // Hedef stoktan transfer edilen miktarı düş
             await _materialInventoryService.AddOrUpdateInventoryAsync(
                 transfer.MaterialId,
                 transfer.ToLocationId,
@@ -157,7 +154,6 @@ namespace Jenga.DataAccess.Services.Inventory
                 transfer.Olusturan,
                 cancellationToken);
 
-            // MaterialMovement logu ekle
             await _materialMovementService.AddAsync(new MaterialMovement
             {
                 MaterialId = transfer.MaterialId,
@@ -174,9 +170,26 @@ namespace Jenga.DataAccess.Services.Inventory
                 OlusturmaTarihi = DateTime.Now
             }, cancellationToken);
 
-            // Kayıt sil
             _unitOfWork.MaterialTransfer.Remove(transfer);
             await _unitOfWork.MaterialTransfer.SaveChangesAsync(cancellationToken);
+
+            return true;
+        }
+
+        public Task<bool> AnyAsync(System.Linq.Expressions.Expression<Func<MaterialTransfer, bool>> predicate)
+        {
+            return _unitOfWork.MaterialTransfer.AnyAsync(predicate);
+        }
+
+        public async Task<bool> UpdateMaterialTransferAndInventoryAsync(MaterialTransfer transfer, string? currentUserName, CancellationToken cancellationToken = default)
+        {
+            // reuse UpdateAsync
+            return await UpdateAsync(transfer, cancellationToken);
+        }
+
+        public async Task<bool> DeleteMaterialTransferAndUpdateInventoryAsync(MaterialTransfer transfer, string? currentUserName, CancellationToken cancellationToken = default)
+        {
+            return await DeleteAsync(transfer, cancellationToken);
         }
     }
 }

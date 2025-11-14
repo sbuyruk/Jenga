@@ -1,7 +1,7 @@
 .material-card {
     border: 1px solid #e9eef8;
     border-radius: 8px;
-    background: #fff;
+    /*background: #fff;*/
     min-width: 200px;
     cursor: pointer;
     transition: box-shadow .12s ease, transform .06s ease;

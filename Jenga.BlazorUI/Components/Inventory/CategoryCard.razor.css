@@ -1,7 +1,7 @@
 .category-card {
     border: 1px dashed #cfe2ff;
     border-radius: 8px;
-    background: #f8fbff;
+    /*background: #f8fbff;*/
     min-width: 200px;
     cursor: pointer;
     transition: box-shadow .12s ease, transform .06s ease;

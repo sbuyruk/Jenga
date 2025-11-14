@@ -23,18 +23,19 @@
 @inject IMaterialExitService MaterialExitService
 @inject IHttpContextAccessor httpContextAccessor
 @inject IMaterialMovementService MaterialMovementService
+@inject IMaterialTransferService MaterialTransferService
 
 
 <div class="row g-4 " style=" height:90vh;">
     <!-- LEFT: TreeViewer -->
- <div class="col-md-5 " style="height:100%">
+    <div class="col-md-5 " style="height:100%">
         <h5 class="mb-0">Malzeme Cinsleri & Malzemeler </h5>
         <div class="mt-3 d-flex gap-2">
             <input class="form-control form-control-sm" placeholder="Malzeme Ara..." @bind="searchTerm" @bind:event="oninput" />
             <button class="btn btn-sm btn-outline-secondary" @onclick="RefreshData">Yenile</button>
             <button class="btn btn-sm btn-outline-secondary" @onclick="ClearSearch">Temizle</button>
         </div>
-        <div class="card shadow-sm mt-1 " style="height: 90%;">
+        <div class="card shadow-sm mt-1 " style="height:90%;">
             <div class="card-body">
                 <TreeViewer T="MaterialCategoryNode"
                             Items="categoryTree"
@@ -66,7 +67,7 @@
             <h5 class="mb-0">Envanter İşlemleri</h5>
         </div>
 
-        <div class="card p-3 mb-3" >
+        <div class="card p-3 mb-3">
             <div class="row align-items-center">
                 <div class="col-12" id="MaterialCards">
                     @if (SelectedMaterial != null)
@@ -161,6 +162,15 @@
                    Models="models"
                    MaterialUnits="materialUnits" />
 
+<MaterialTransferEditModal MaterialTransfer="editingTransfer"
+                           Materials="materials"
+                           MaterialUnits="materialUnits"
+                           Locations="locations"
+                           MaterialInventories="materialInventories"
+                           IsOpen="isTransferOpen"
+                           OnSave="OnTransferModalSave"
+                           OnClose="CloseTransferModal" />
+
 @code {
     // Models for page
     private List<TreeItem<MaterialCategoryNode>> categoryTree = new();
@@ -185,8 +195,8 @@
     private List<MaterialTransactionView> materialTransactions = new();
 
     // The category currently shown as the header for cards (if any)
-    private MaterialCategory? displayedCategory =new MaterialCategory();
-   
+    private MaterialCategory? displayedCategory = new MaterialCategory();
+
     private string searchTerm = "";
     private bool sortAscending = true;
 
@@ -204,6 +214,10 @@
     // Exit modal state
     private bool isExitOpen = false;
     private MaterialExit? editingExit;
+
+    // Transfer modal state
+    private bool isTransferOpen = false;
+    private MaterialTransfer? editingTransfer;
 
     // Material/Category edit modals (reuse existing)
     private bool isCategoryEditOpen = false;
@@ -233,9 +247,9 @@
         var categoryNodes = categories.Select(c => new MaterialCategoryNode { Category = c }).ToList();
 
         categoryTree = TreeHelper.BuildTree<MaterialCategoryNode>(
-            categoryNodes,
-            node => node.Category.Id.ToString(),
-            node => node.Category.ParentCategoryId?.ToString()
+        categoryNodes,
+        node => node.Category.Id.ToString(),
+        node => node.Category.ParentCategoryId?.ToString()
         );
 
         foreach (var mat in materials)
@@ -257,7 +271,7 @@
         }
 
         // On initial load show top-level categories (ParentCategoryId ==0)
-        categoryCards = categories?.Where(c => (c.ParentCategoryId ??0) ==0).ToList() ?? new List<MaterialCategory>();
+        categoryCards = categories?.Where(c => (c.ParentCategoryId ?? 0) == 0).ToList() ?? new List<MaterialCategory>();
         // Clear material selection so category view is visible
         materialCards.Clear();
         SelectedMaterial = null;
@@ -278,8 +292,8 @@
     }
 
     private Func<TreeItem<MaterialCategoryNode>, string, bool> filter = (item, term) =>
-        (item.Data.Category != null && item.Data.Category.CategoryName.Contains(term ?? "", StringComparison.OrdinalIgnoreCase)) ||
-        (item.Data.Material != null && item.Data.Material.MaterialName.Contains(term ?? "", StringComparison.OrdinalIgnoreCase));
+    (item.Data.Category != null && item.Data.Category.CategoryName.Contains(term ?? "", StringComparison.OrdinalIgnoreCase)) ||
+    (item.Data.Material != null && item.Data.Material.MaterialName.Contains(term ?? "", StringComparison.OrdinalIgnoreCase));
 
     // Tree events that open material modal
     private void HandleEditMaterial(TreeItem<MaterialCategoryNode> item)
@@ -315,26 +329,26 @@
         }
         string categoryName = item.Data.Category.CategoryName ?? "Kategori";
         ModalService.ShowConfirmation(
-            "Silme Onayı",
-            $"'{categoryName}' kaydını silmek istediğinizden emin misiniz?",
-            async result =>
+        "Silme Onayı",
+        $"'{categoryName}' kaydını silmek istediğinizden emin misiniz?",
+        async result =>
+        {
+            if (result)
             {
-                if (result)
+                var deleted = await MaterialCategoryService.DeleteAsync(item.Data.Category.Id);
+                if (deleted)
                 {
-                    var deleted = await MaterialCategoryService.DeleteAsync(item.Data.Category.Id);
-                    if (deleted)
-                    {
-                        ToastService.ShowToast($"{categoryName} silindi", ToastType.Success, 3000);
-                        categories = await MaterialCategoryService.GetAllAsync();
-                        await RefreshData();
-                        StateHasChanged();
-                    }
-                    else
-                    {
-                        ToastService.ShowToast($"Silme işlemi başarısız oldu", ToastType.Error, 3000);
-                    }
+                    ToastService.ShowToast($"{categoryName} silindi", ToastType.Success, 3000);
+                    categories = await MaterialCategoryService.GetAllAsync();
+                    await RefreshData();
+                    StateHasChanged();
                 }
-            });
+                else
+                {
+                    ToastService.ShowToast($"Silme işlemi başarısız oldu", ToastType.Error, 3000);
+                }
+            }
+        });
     }
 
 
@@ -363,7 +377,7 @@
 
             SelectedMaterial = mat;
             selectedLocationId = null; // clear location highlight on material change
-            // fire-and-forget load (keeps method signature synchronous as TreeViewer expects)
+                                       // fire-and-forget load (keeps method signature synchronous as TreeViewer expects)
             _ = LoadMaterialLocationCards(mat);
             _ = LoadMaterialTransactions(mat);
 
@@ -388,7 +402,7 @@
             // set the displayed category (for header)
             displayedCategory = item.Data.Category;
 
-            // ToastService.ShowToast($"Kategori seçildi: {item.Data.Category.CategoryName}", ToastType.Info, 2000);
+            // ToastService.ShowToast($"Kategori seçildi: {item.Data.Category.CategoryName}", ToastType.Info,2000);
         }
 
         // Provide feedback for selections
@@ -457,17 +471,17 @@
         try
         {
             var inventories = materialInventories?
-                .Where(mi => mi.MaterialId == mat.Id)
-                .ToList() ?? new List<MaterialInventory>();
+            .Where(mi => mi.MaterialId == mat.Id)
+            .ToList() ?? new List<MaterialInventory>();
 
             var groups = inventories
-                .GroupBy(mi => mi.LocationId)
-                .Select(g => new
-                {
-                    LocationId = g.Key,
-                    Quantity = g.Sum(x => x.Quantity),
-                    UnitId = g.Select(x => x.Material?.MaterialUnitId).FirstOrDefault()
-                });
+            .GroupBy(mi => mi.LocationId)
+            .Select(g => new
+            {
+                LocationId = g.Key,
+                Quantity = g.Sum(x => x.Quantity),
+                UnitId = g.Select(x => x.Material?.MaterialUnitId).FirstOrDefault()
+            });
 
             foreach (var g in groups)
             {
@@ -504,9 +518,9 @@
         {
             var movements = await MaterialMovementService.GetMovementsByMaterialIdAsync(mat.Id);
             var filtered = movements
-                .OrderByDescending(m => m.MovementDate)
-                .Take(50)
-                .ToList();
+            .OrderByDescending(m => m.MovementDate)
+            .Take(50)
+            .ToList();
 
             // preload exits to resolve ExitType when movement.MovementType is null
             var allExits = await MaterialExitService.GetAllAsync();
@@ -524,7 +538,7 @@
                 bool isIncrease = true;
 
                 var mt = (m.MovementType ?? string.Empty).ToLowerInvariant();
-                bool looksLikeTransfer = mt.Contains("transfer") || mt.Contains("dev" ) || (m.FromLocationId.HasValue && m.ToLocationId.HasValue);
+                bool looksLikeTransfer = mt.Contains("transfer") || mt.Contains("dev") || (m.FromLocationId.HasValue && m.ToLocationId.HasValue);
                 bool looksLikeEntry = mt.Contains("entry") || mt.Contains("giriş") || (!m.FromLocationId.HasValue && m.ToLocationId.HasValue);
                 bool looksLikeExit = mt.Contains("exit") || mt.Contains("çıkış") || (m.FromLocationId.HasValue && !m.ToLocationId.HasValue);
 
@@ -580,7 +594,7 @@
         catch
         {
             // ignore for UI
-            ToastService.ShowToast("Malzeme işlemleri yüklenemedi.", ToastType.Error,3000);
+            ToastService.ShowToast("Malzeme işlemleri yüklenemedi.", ToastType.Error, 3000);
         }
 
         StateHasChanged();
@@ -617,7 +631,7 @@
         editingExit = new MaterialExit
         {
             MaterialId = mat.Id,
-            Quantity =1,
+            Quantity = 1,
             MaterialUnitId = mat.MaterialUnitId,
             LocationId = loc.LocationId,
             ExitDate = DateTime.Now,
@@ -629,12 +643,24 @@
         StateHasChanged();
     }
 
-    private void StartTransfer(Material? mat, MaterialLocationCard loc)
+    private void StartTransfer(Material? mat, MaterialLocationCard fromLoc)
     {
-        if (mat == null || loc == null) return;
+        if (mat == null || fromLoc == null) return;
 
-        selectedLocationId = loc.LocationId;
-        ToastService.ShowToast($"Transfer başlatıldı: {mat.MaterialName} — {loc.LocationName}", ToastType.Info, 2500);
+        editingTransfer = new MaterialTransfer
+        {
+            MaterialId = mat.Id,
+            Quantity = 1,
+            MaterialUnitId = mat.MaterialUnitId,
+            FromLocationId = fromLoc.LocationId,
+            ToLocationId = 0,
+            TransferDate = DateTime.Now,
+            Aciklama = string.Empty
+        };
+
+        SelectedMaterial = mat;
+        isTransferOpen = true;
+        StateHasChanged();
     }
 
     private void ClearSearch()
@@ -700,7 +726,7 @@
         {
             string? currentUserName = httpContextAccessor.HttpContext?.User?.Identity?.Name;
             var created = await MaterialEntryService.AddAsync(editingEntry, currentUserName,
-                                CancellationToken.None);
+            CancellationToken.None);
             ToastService.ShowToast("Giriş kaydedildi.", ToastType.Success, 3000);
 
             CloseEntryModal();
@@ -756,7 +782,7 @@
     private void CloseExitModal()
     {
         isExitOpen = false;
-        editingEntry = null;
+        editingExit = null;
     }
 
     private async Task OnCategoryModalSave()
@@ -808,6 +834,39 @@
         return unit?.Symbol ?? unit?.Name ?? string.Empty;
     }
 
+    // New transfer save/close handlers
+    private void CloseTransferModal()
+    {
+        isTransferOpen = false;
+        editingTransfer = null;
+    }
+
+    private async Task OnTransferModalSave()
+    {
+        if (editingTransfer == null) return;
+        try
+        {
+            string? currentUserName = httpContextAccessor.HttpContext?.User?.Identity?.Name;
+            await MaterialTransferService.AddAsync(editingTransfer, currentUserName, CancellationToken.None);
+            ToastService.ShowToast("Transfer kaydedildi.", ToastType.Success, 3000);
+
+            CloseTransferModal();
+
+            // Refresh inventories
+            materialInventories = await MaterialInventoryService.GetAllAsync();
+
+            if (SelectedMaterial != null)
+            {
+                await LoadMaterialLocationCards(SelectedMaterial);
+                await LoadMaterialTransactions(SelectedMaterial);
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowToast($"Kaydetme sırasında hata: {ex.Message}", ToastType.Error, 5000);
+        }
+    }
+
     // Data models
     public class MaterialCategoryNode
     {
@@ -815,4 +874,4 @@
         public Material? Material { get; set; }
     }
 
-}   
+}
