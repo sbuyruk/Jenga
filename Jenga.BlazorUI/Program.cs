@@ -3,6 +3,7 @@ using Jenga.BlazorUI.Services.Menu;
 using Jenga.DataAccess.Data;
 using Jenga.DataAccess.Repositories;
 using Jenga.DataAccess.Repositories.IRepository;
+using Jenga.DataAccess.Services.IKYS;
 using Jenga.DataAccess.Services.Inventory;
 using Jenga.DataAccess.Services.Menu;
 using Jenga.Utility.Error;
@@ -65,6 +66,9 @@ builder.Services.AddScoped<IMaterialMovementService, MaterialMovementService>();
 builder.Services.AddScoped<IMaterialExitService, MaterialExitService>();
 builder.Services.AddScoped<IMaterialTransferService, MaterialTransferService>();
 builder.Services.AddScoped<ILocationService, LocationService>();
+builder.Services.AddScoped<IPersonelLocationService, PersonelLocationService>();
+//IKYS Service 
+builder.Services.AddScoped<IPersonelService, PersonelService>();
 
 //Currentusername alırken httpContextAcces.. kullanmak için
 builder.Services.AddHttpContextAccessor();

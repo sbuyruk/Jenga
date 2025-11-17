@@ -1,0 +1,186 @@
+﻿@using Jenga.DataAccess.Services.IKYS
+@using Jenga.Models.IKYS
+@using Jenga.Utility.Toast
+@using Microsoft.AspNetCore.Components.Forms
+@inject IPersonelService PersonelService
+@inject IPersonelLocationService PersonelLocationService
+@inject IToastService ToastService
+
+@if (IsOpen)
+{
+    <div class="modal show" tabindex="-1" style="display:block;">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Personel Atama</h5>
+                    <button type="button" class="btn-close" @onclick="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-2">
+                        <label class="form-label">Lokasyon</label>
+                        <input class="form-control form-control-sm" readonly value="@LocationLabel" />
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label">Personel</label>
+                        <input class="form-control form-control-sm" placeholder="İsim veya sicil ara..." @oninput="OnPersonSearch" />
+                        <div class="mt-2">
+                            <select class="form-select form-select-sm" @bind="SelectedPersonId">
+                                <option value="0">Personel seçiniz</option>
+                                @foreach (var p in filteredPersons)
+                                {
+                                    <option value="@p.Id">@($"{p.Adi} {p.Soyadi} (Sicil:{p.SicilNo})")</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label">Rol</label>
+                        <input class="form-control form-control-sm" @bind="Editing.Role" maxlength="200" />
+                    </div>
+
+                    <div class="mb-2 form-check">
+                        <input class="form-check-input" type="checkbox" id="isPrimary" @bind="Editing.IsPrimary" />
+                        <label class="form-check-label" for="isPrimary">Bu personeli birincil yap</label>
+                    </div>
+
+                    <div class="row g-2 mb-2">
+                        <div class="col">
+                            <label class="form-label">Başlangıç</label>
+                            <InputDate class="form-control form-control-sm" @bind-Value="Editing.StartDate" />
+                        </div>
+                        <div class="col">
+                            <label class="form-label">Bitiş</label>
+                            <InputDate class="form-control form-control-sm" @bind-Value="Editing.EndDate" />
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label">Açıklama</label>
+                        <textarea class="form-control form-control-sm" rows="3" @bind="Editing.Aciklama"></textarea>
+                    </div>
+
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" @onclick="HandleSave" disabled="@IsSaveDisabled">Kaydet</button>
+                    <button class="btn btn-secondary" @onclick="Close">Kapat</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnSaved { get; set; }
+
+    // prefilled location info
+    [Parameter] public int LocationId { get; set; }
+    [Parameter] public string LocationLabel { get; set; } = "";
+
+    private PersonelLocation Editing { get; set; } = new PersonelLocation();
+    private List<Personel> persons = new();
+    private List<Personel> filteredPersons = new();
+    private int SelectedPersonId { get; set; } = 0;
+    private string personSearchTerm = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPersons();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // reset editing state when opened
+        if (IsOpen)
+        {
+            Editing = new PersonelLocation
+            {
+                LocationId = LocationId,
+                IsActive = true
+            };
+            SelectedPersonId = 0;
+            personSearchTerm = "";
+            await LoadPersons();
+        }
+    }
+
+    private async Task LoadPersons()
+    {
+        try
+        {
+            persons = await PersonelService.GetCalisanPersonelAsync();
+            filteredPersons = persons;
+        }
+        catch
+        {
+            persons = new List<Personel>();
+            filteredPersons = new List<Personel>();
+        }
+    }
+
+    private void OnPersonSearch(ChangeEventArgs e)
+    {
+        personSearchTerm = e?.Value?.ToString() ?? "";
+        var t = personSearchTerm.Trim().ToLowerInvariant();
+        if (string.IsNullOrEmpty(t)) filteredPersons = persons;
+        else filteredPersons = persons.Where(p =>
+            (p.Adi + " " + p.Soyadi).ToLowerInvariant().Contains(t) ||
+            p.SicilNo.ToString().Contains(t) ||
+            (p.KullaniciAdi ?? "").ToLowerInvariant().Contains(t)
+        ).ToList();
+    }
+
+    private bool IsSaveDisabled =>
+        SelectedPersonId == 0 || Editing.LocationId == 0;
+
+    private async Task HandleSave()
+    {
+        if (SelectedPersonId == 0)
+        {
+            ToastService.ShowToast("Lütfen bir personel seçin", ToastType.Warning, 3000);
+            return;
+        }
+
+        // fill editing
+        Editing.PersonelId = SelectedPersonId;
+        Editing.LocationId = LocationId;
+        Editing.Olusturan = Environment.UserName;
+        Editing.OlusturmaTarihi = DateTime.Now;
+
+        // Try assign
+        try
+        {
+            var added = await PersonelLocationService.AssignLocationToPersonAsync(Editing, Editing.Olusturan);
+            if (!added)
+            {
+                ToastService.ShowToast("Bu atama zaten mevcut veya eklenemedi.", ToastType.Warning, 4000);
+                return;
+            }
+
+            // If IsPrimary flag set, ensure primary rule enforced
+            if (Editing.IsPrimary)
+            {
+                await PersonelLocationService.SetPrimaryAssignmentAsync(Editing.PersonelId, Editing.LocationId, Editing.Olusturan);
+            }
+
+            ToastService.ShowToast("Personel başarıyla atandı.", ToastType.Success, 3000);
+
+            // notify parent
+            if (OnSaved.HasDelegate) await OnSaved.InvokeAsync();
+
+            await Close();
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowToast($"Atama sırasında hata: {ex.Message}", ToastType.Error, 5000);
+        }
+    }
+
+    private async Task Close()
+    {
+        if (OnClose.HasDelegate) await OnClose.InvokeAsync();
+    }
+}

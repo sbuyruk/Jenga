@@ -1,0 +1,398 @@
+﻿@using Jenga.DataAccess.Services.Inventory
+@using Jenga.Models.IKYS
+@using Jenga.Models.Inventory
+@using Jenga.Utility.Toast
+@inject IMaterialService MaterialService
+@inject IMaterialTransferService MaterialTransferService
+@inject IToastService ToastService
+
+@if (IsOpen)
+{
+    <div class="modal show" tabindex="-1" style="display: block;">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Malzeme Transferi</h5>
+                    <button type="button" class="close" @onclick="OnClose" aria-label="Kapat">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Malzeme</label>
+                            <select class="form-select" @bind="MaterialId" @bind:event="onchange">
+                                <option value="">Malzeme seçiniz</option>
+                                @foreach (var mat in Materials)
+                                {
+                                    <option value="@mat.Id">@mat.MaterialName</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label">Miktar</label>
+                            <input class="form-control" @bind="MaterialTransfer!.Quantity" type="number" min="1" />
+                            @if (ShowQuantityError)
+                            {
+                                <div class="text-danger small mt-1">Miktar en az 1 olmalıdır.</div>
+                            }
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label">Birim</label>
+                            <select class="form-select" @bind="MaterialTransfer!.MaterialUnitId" disabled>
+                                <option value="">Birim seçiniz</option>
+                                @foreach (var unit in MaterialUnits)
+                                {
+                                    <option value="@unit.Id">@unit.Name (@unit.Symbol)</option>
+                                }
+                            </select>
+                        </div>
+
+                        <!-- FROM block -->
+                        <div class="col-md-6">
+                            <label class="form-label">Nereden</label>
+                            <div class="input-group mb-1">
+                                <div class="input-group-text">
+                                    <input class="form-check-input mt-0" type="radio" name="fromType" checked="@(!FromIsPerson)" @onclick="() => FromIsPerson = false" />
+                                </div>
+                                <select class="form-select" disabled="@FromIsPerson" @bind="MaterialTransfer.FromLocationId">
+                                    <option value="">Kaynak lokasyon seçiniz</option>
+                                    @foreach (var loc in AvailableFromLocations)
+                                    {
+                                        var qty = LocationQuantities.TryGetValue(loc.Id, out var q) ? q : 0;
+                                        <option value="@loc.Id">@GetFullLocationName(loc) (@qty @(SelectedUnitName ?? ""))</option>
+                                    }
+                                </select>
+                            </div>
+
+                            <div class="input-group">
+                                <div class="input-group-text">
+                                    <input class="form-check-input mt-0" type="radio" name="fromType" checked="@FromIsPerson" @onclick="() => FromIsPerson = true" />
+                                </div>
+                                <select class="form-select" disabled="@(!FromIsPerson)" @bind="SelectedFromPersonId">
+                                    <option value="">Kaynak kişi seçiniz</option>
+                                    @foreach (var p in Persons)
+                                    {
+                                      @* TODO  <option value="@p.Id">@p.Adi @p.Soyadi @(p.ResponsibleLocationId.HasValue ? $"(Sorumlu: {GetLocationNameById(p.ResponsibleLocationId.Value)})" : "")</option> *@
+                                    }
+                                </select>
+                            </div>
+
+                            <div class="small text-muted mt-1">Mevcut stok: <strong>@AvailableQuantity</strong></div>
+                        </div>
+
+                        <!-- TO block -->
+                        <div class="col-md-6">
+                            <label class="form-label">Nereye</label>
+                            <div class="input-group mb-1">
+                                <div class="input-group-text">
+                                    <input class="form-check-input mt-0" type="radio" name="toType" checked="@(!ToIsPerson)" @onclick="() => ToIsPerson = false" />
+                                </div>
+                                <select class="form-select" disabled="@ToIsPerson" @bind="MaterialTransfer.ToLocationId">
+                                    <option value="">Hedef lokasyon seçiniz</option>
+                                    @foreach (var loc in Locations)
+                                    {
+                                        <option value="@loc.Id">@GetFullLocationName(loc)</option>
+                                    }
+                                </select>
+                            </div>
+
+                            <div class="input-group">
+                                <div class="input-group-text">
+                                    <input class="form-check-input mt-0" type="radio" name="toType" checked="@ToIsPerson" @onclick="() => ToIsPerson = true" />
+                                </div>
+                                <select class="form-select" disabled="@(!ToIsPerson)" @bind="SelectedToPersonId">
+                                    <option value="">Hedef kişi seçiniz</option>
+                                    @foreach (var p in Persons)
+                                    {
+                                        <option value="@p.Id">@p.Adi @p.Soyadi</option>
+                                    }
+                                </select>
+                            </div>
+@* TODO
+                            @if (ToIsPerson && SelectedToPerson != null && SelectedToPerson.ResponsibleLocationId.HasValue)
+                            {
+                                <div class="form-check mt-2">
+                                    <input class="form-check-input" type="checkbox" id="usePersonLoc" @bind="UsePersonResponsibleLocation" />
+                                    <label class="form-check-label" for="usePersonLoc">
+                                        Kişinin sorumlu olduğu lokasyona ( @GetLocationNameById(SelectedToPerson.ResponsibleLocationId.Value) ) yönlendir
+                                    </label>
+                                </div>
+                            } *@
+
+                            @if (ShowToLocationError)
+                            {
+                                <div class="text-danger small mt-1">Lütfen hedef seçiniz.</div>
+                            }
+                        </div>
+
+                        <!-- Date & Description -->
+                        <div class="col-md-6">
+                            <label class="form-label">Tarih</label>
+                            <input class="form-control" @bind="MaterialTransfer.TransferDate" type="date" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Referans / Belge</label>
+                            <input class="form-control" @bind="Reference" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Açıklama</label>
+                            <textarea class="form-control" rows="3" @bind="MaterialTransfer.Aciklama"></textarea>
+                        </div>
+
+                        <!-- Preview -->
+                        <div class="col-12 mt-2">
+                            <div class="card">
+                                <div class="card-body">
+                                    <strong>Önizleme</strong>
+                                    <div class="row mt-2">
+                                        <div class="col-md-6">
+                                            <div class="small text-muted">Kaynak (önce)</div>
+                                            <div>@FromPreviewLabel</div>
+                                            <div class="small text-muted">→ Sonra: @FromAfterPreview</div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="small text-muted">Hedef (önce)</div>
+                                            <div>@ToPreviewLabel</div>
+                                            <div class="small text-muted">→ Sonra: @ToAfterPreview</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-warning" @onclick="HandleSave" disabled="@IsSaveDisabled">Transfer Et</button>
+                    <button class="btn btn-secondary" @onclick="OnClose">Kapat</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    // Lightweight person DTO to avoid compile-time coupling; map your real Person -> PersonLite when calling component
+    public class PersonLite
+    {
+        public int Id { get; set; }
+        public string FullName { get; set; } = "";
+        public int? ResponsibleLocationId { get; set; }
+    }
+
+    public class TransferSaveRequest
+    {
+        public MaterialTransfer Transfer { get; set; } = new MaterialTransfer();
+        public bool FromIsPerson { get; set; }
+        public int? FromPersonId { get; set; }
+        public bool ToIsPerson { get; set; }
+        public int? ToPersonId { get; set; }
+        public bool UsePersonResponsibleLocation { get; set; }
+        public string? Reference { get; set; }
+    }
+
+    [Parameter] public MaterialTransfer? MaterialTransfer { get; set; }
+    [Parameter] public List<MaterialUnit> MaterialUnits { get; set; } = new();
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback OnSave { get; set; } // legacy callback kept
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public List<Material> Materials { get; set; } = new();
+    [Parameter] public List<Location> Locations { get; set; } = new();
+    [Parameter] public List<MaterialInventory>? MaterialInventories { get; set; }
+    [Parameter] public List<Personel> Persons { get; set; } = new();
+    [Parameter] public EventCallback<TransferSaveRequest> OnSaveRequested { get; set; } // new, richer payload
+
+    private int _materialId;
+    private int MaterialId
+    {
+        get => MaterialTransfer!.MaterialId;
+        set
+        {
+            MaterialTransfer!.MaterialId = value;
+            var selectedMaterial = Materials.FirstOrDefault(m => m.Id == value);
+            if (selectedMaterial != null)
+            {
+                MaterialTransfer!.MaterialUnitId = selectedMaterial.MaterialUnitId;
+            }
+            RecalculateDerived();
+        }
+    }
+
+    // From/To types
+    private bool FromIsPerson { get; set; } = false;
+    private bool ToIsPerson { get; set; } = false;
+    private int? SelectedFromPersonId { get; set; }
+    private int? SelectedToPersonId { get; set; }
+    private bool UsePersonResponsibleLocation { get; set; } = false;
+    private string? Reference { get; set; }
+
+    // computed helpers
+    private Dictionary<int, int> LocationQuantities = new();
+    private List<Location> AvailableFromLocations = new();
+    private string? SelectedUnitName => Materials.FirstOrDefault(m => m.Id == (MaterialTransfer?.MaterialId ?? 0)) is Material sm ? MaterialUnits.FirstOrDefault(u => u.Id == sm.MaterialUnitId)?.Name : null;
+
+    private Personel? SelectedToPerson => Persons.FirstOrDefault(p => p.Id == SelectedToPersonId);
+    private Personel? SelectedFromPerson => Persons.FirstOrDefault(p => p.Id == SelectedFromPersonId);
+
+    private int AvailableQuantity => CalculateAvailableQuantity();
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+        RecalculateDerived();
+    }
+
+    private void RecalculateDerived()
+    {
+        // build location quantities for the selected material
+        LocationQuantities = MaterialInventories?
+            .Where(mi => mi.MaterialId == (MaterialTransfer?.MaterialId ?? 0) && mi.LocationId.HasValue)
+            .GroupBy(mi => mi.LocationId!.Value)
+            .ToDictionary(g => g.Key, g => g.Sum(mi => mi.Quantity)) ?? new Dictionary<int, int>();
+
+        AvailableFromLocations = Locations.Where(l => LocationQuantities.ContainsKey(l.Id)).ToList();
+    }
+
+    private int CalculateAvailableQuantity()
+    {
+        if (MaterialTransfer == null) return 0;
+        if (FromIsPerson)
+        {
+            // try to compute person-held quantity by summing inventories where holder is person (if your model supports it).
+            // Here we fallback to 0 because component doesn't know person-inventory mapping.
+            return 0;
+        }
+        if (MaterialTransfer.FromLocationId == 0) return 0;
+        return LocationQuantities.TryGetValue(MaterialTransfer.FromLocationId, out var q) ? q : 0;
+    }
+
+    private bool ShowQuantityError => MaterialTransfer != null && MaterialTransfer.Quantity < 1;
+    private bool ShowToLocationError => MaterialTransfer != null && (!ToIsPerson && MaterialTransfer.ToLocationId == 0) && (ToIsPerson && SelectedToPersonId == null);
+
+    private bool IsSaveDisabled =>
+        MaterialTransfer == null ||
+        MaterialTransfer.Quantity < 1 ||
+        (FromIsPerson ? SelectedFromPersonId == null : (MaterialTransfer.FromLocationId == 0)) ||
+        (ToIsPerson ? SelectedToPersonId == null : (MaterialTransfer.ToLocationId == 0)) ||
+        (MaterialTransfer.FromLocationId != 0 && MaterialTransfer.ToLocationId != 0 && MaterialTransfer.FromLocationId == MaterialTransfer.ToLocationId && !ToIsPerson && !FromIsPerson) ||
+        (MaterialTransfer.FromLocationId != 0 && MaterialTransfer.Quantity > AvailableQuantity && !FromIsPerson);
+
+    private string FromPreviewLabel
+    {
+        get
+        {
+            if (FromIsPerson)
+            {
+                var p = SelectedFromPerson;
+                return p != null ? $"{p.Adi}" + $"{p.Soyadi}" : "Kişi seçilmedi";
+            }
+            var loc = Locations.FirstOrDefault(l => l.Id == MaterialTransfer?.FromLocationId);
+            return loc != null ? GetFullLocationName(loc) + $" ({AvailableQuantity} {SelectedUnitName})" : "Lokasyon seçilmedi";
+        }
+    }
+
+    private string FromAfterPreview
+    {
+        get
+        {
+            var before = AvailableQuantity;
+            var after = before - (MaterialTransfer?.Quantity ?? 0);
+            return $"{after} {SelectedUnitName}";
+        }
+    }
+
+    private string ToPreviewLabel
+    {
+        get
+        {
+            if (ToIsPerson)
+            {
+                var p = SelectedToPerson;
+                if (p == null) return "Kişi seçilmedi";
+                // TODO if (UsePersonResponsibleLocation && p.ResponsibleLocationId.HasValue)
+                // {
+                //     var toloc = Locations.FirstOrDefault(l => l.Id == p.ResponsibleLocationId.Value);
+                //     return $"{p.Adi} (→ {GetFullLocationName(toloc)})";
+                // }
+                return p.Adi +" "+p.Soyadi;
+            }
+            var loc = Locations.FirstOrDefault(l => l.Id == MaterialTransfer?.ToLocationId);
+            return loc != null ? GetFullLocationName(loc) : "Lokasyon seçilmedi";
+        }
+    }
+
+    private string ToAfterPreview
+    {
+        get
+        {
+            // Simplified preview: we don't know existing To quantity; show +X
+            return $"+{(MaterialTransfer?.Quantity ?? 0)} {SelectedUnitName}";
+        }
+    }
+
+    private int GetLocationNameQuantity(int locId) => LocationQuantities.TryGetValue(locId, out var q) ? q : 0;
+    private string GetLocationNameById(int id) => Locations.FirstOrDefault(l => l.Id == id)?.LocationName ?? $"Loc {id}";
+
+    private string GetFullLocationName(Location loc)
+    {
+        if (loc == null) return string.Empty;
+        var parts = new List<string>();
+        var current = loc;
+        while (current != null)
+        {
+            parts.Add(current.LocationName);
+            if (current.ParentId.HasValue)
+            {
+                current = Locations.FirstOrDefault(l => l.Id == current.ParentId.Value);
+            }
+            else
+            {
+                current = null;
+            }
+        }
+        parts.Reverse();
+        return string.Join(" > ", parts);
+    }
+
+    private async Task HandleSave()
+    {
+        if (MaterialTransfer == null)
+        {
+            ToastService.ShowWarning("Geçerli bir transfer kaydı bulunamadı.");
+            return;
+        }
+
+        if (IsSaveDisabled)
+        {
+            ToastService.ShowWarning("Lütfen tüm alanları doğrulayın.");
+            return;
+        }
+
+        // Build richer request and pass up to parent for backend handling
+        var req = new TransferSaveRequest
+        {
+            Transfer = MaterialTransfer,
+            FromIsPerson = FromIsPerson,
+            FromPersonId = FromIsPerson ? SelectedFromPersonId : null,
+            ToIsPerson = ToIsPerson,
+            ToPersonId = ToIsPerson ? SelectedToPersonId : null,
+            UsePersonResponsibleLocation = UsePersonResponsibleLocation,
+            Reference = Reference
+        };
+
+        if (OnSaveRequested.HasDelegate)
+        {
+            await OnSaveRequested.InvokeAsync(req);
+        }
+        else if (OnSave.HasDelegate)
+        {
+            // For backward compatibility: just invoke legacy callback and hope parent reads MaterialTransfer
+            await OnSave.InvokeAsync();
+        }
+    }
+}

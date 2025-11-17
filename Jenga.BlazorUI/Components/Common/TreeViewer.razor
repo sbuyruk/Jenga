@@ -28,27 +28,29 @@
         <ul class="treeview-list">
             @foreach (var item in FilteredItems)
             {
+                var createContextMenuLabel = CreateContextMenuLabel ?? "Yarat";
                 <TreeNodeViewer T="T"
-                                Item="item"
+                                Item="@item"
                                 SelectedItemId="@SelectedItemId"
                                 SelectedDataKey="@_selectedDataKey"
-                                DataKeySelector="DataKeySelector"
-                                OnSelect="HandleNodeSelect"
-                                OnCreate="OnCreate"
-                                OnEdit="OnEdit"
-                                OnDelete="OnDelete"
-                                LabelSelector="LabelSelector"
-                                DescriptionSelector="DescriptionSelector"
-                                SubItemLabelSelector="SubItemLabelSelector"
-                                ChildrenSelector="ChildrenSelector"
-                                ShowContextMenuSelector="ShowContextMenuSelector"
-                                ShowCreateSelector="ShowCreateSelector"
-                                ShowEditSelector="ShowEditSelector"
-                                ShowDeleteSelector="ShowDeleteSelector"
-                                OnSubItemCreate="OnSubItemCreate"
-                                OnSubItemEdit="OnSubItemEdit"
-                                OnSubItemDelete="OnSubItemDelete"
-                                OnToggleExpand="HandleToggleExpand" />
+                                DataKeySelector="@DataKeySelector"
+                                OnSelect="@HandleNodeSelect"
+                                OnCreate="@OnCreate"
+                                OnEdit="@OnEdit"
+                                OnDelete="@OnDelete"
+                                LabelSelector="@LabelSelector"
+                                CreateContextMenuLabel="@createContextMenuLabel"
+                                DescriptionSelector="@DescriptionSelector"
+                                SubItemLabelSelector="@SubItemLabelSelector"
+                                ChildrenSelector="@ChildrenSelector"
+                                ShowContextMenuSelector="@ShowContextMenuSelector"
+                                ShowCreateSelector="@ShowCreateSelector"
+                                ShowEditSelector="@ShowEditSelector"
+                                ShowDeleteSelector="@ShowDeleteSelector"
+                                OnSubItemCreate="@OnSubItemCreate"
+                                OnSubItemEdit="@OnSubItemEdit"
+                                OnSubItemDelete="@OnSubItemDelete"
+                                OnToggleExpand="@HandleToggleExpand" />
             }
         </ul>
     </div>
@@ -77,7 +79,7 @@
 
     // DataKey selector provided by caller (stable key for selection across clones)
     [Parameter] public Func<TreeItem<T>, string>? DataKeySelector { get; set; }
-
+    [Parameter] public string? CreateContextMenuLabel { get; set; }
     // --- Sorting parameters (two-way bind supported) ---
     [Parameter] public Func<TreeItem<T>, object?>? SortSelector { get; set; }
     [Parameter] public bool SortAscending { get; set; } = true;

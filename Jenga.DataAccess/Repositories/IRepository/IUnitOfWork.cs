@@ -33,6 +33,7 @@ namespace Jenga.DataAccess.Repositories.IRepository
 
         //IKYS
         IPersonelRepository Personel { get; }
+        IPersonelLocationRepository PersonelLocation { get; }
 
 
     }

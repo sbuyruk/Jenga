@@ -3,9 +3,11 @@
 
 @using Jenga.BlazorUI.Components.Common
 @using Jenga.BlazorUI.Components.Inventory
+@using Jenga.DataAccess.Services.IKYS
 @using Jenga.DataAccess.Services.Inventory
 @using Jenga.Models.Common
 @using Jenga.Models.Helper
+@using Jenga.Models.IKYS
 @using Jenga.Models.Inventory
 @using Jenga.Utility.Modal
 @using Jenga.Utility.Toast
@@ -24,6 +26,7 @@
 @inject IHttpContextAccessor httpContextAccessor
 @inject IMaterialMovementService MaterialMovementService
 @inject IMaterialTransferService MaterialTransferService
+@inject IPersonelService PersonelService
 
 
 <div class="row g-4 " style=" height:90vh;">
@@ -162,10 +165,11 @@
                    Models="models"
                    MaterialUnits="materialUnits" />
 
-<MaterialTransferEditModal MaterialTransfer="editingTransfer"
+<MaterialTransferEditModalV2 MaterialTransfer="editingTransfer"
                            Materials="materials"
                            MaterialUnits="materialUnits"
                            Locations="locations"
+                           Persons="persons"
                            MaterialInventories="materialInventories"
                            IsOpen="isTransferOpen"
                            OnSave="OnTransferModalSave"
@@ -181,6 +185,7 @@
     private List<MaterialCategory> categories { get; set; } = new();
     private List<MaterialBrand> brands { get; set; } = new();
     private List<MaterialModel> models { get; set; } = new();
+    private List<Personel> persons { get; set; } = new();
 
     // Local state for rendered material cards (legacy)
     private List<Material> materialCards = new();
@@ -240,6 +245,7 @@
         models = await MaterialModelService.GetAllAsync();
         materialUnits = await MaterialUnitService.GetAllAsync();
         locations = await LocationService.GetAllAsync();
+        persons = await PersonelService.GetCalisanPersonelAsync();
 
         // yükle: MaterialInventory
         materialInventories = await MaterialInventoryService.GetAllAsync();

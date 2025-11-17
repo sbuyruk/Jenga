@@ -1,0 +1,410 @@
+﻿@page "/ikys/personel-location-manager"
+@rendermode InteractiveServer
+
+@using Jenga.BlazorUI.Components.Common
+@using Jenga.BlazorUI.Components.Inventory
+@using Jenga.DataAccess.Services.Inventory
+@using Jenga.Models.Helper
+@using Jenga.Models.IKYS
+@using Jenga.Models.Inventory
+@using Jenga.Models.Sistem
+@using Jenga.Models.Common
+@using Jenga.DataAccess.Services.IKYS
+@using Jenga.Utility.Modal
+@using Jenga.Utility.Toast
+@inject ILocationService LocationService
+@inject IPersonelLocationService PersonelLocationService
+@inject IToastService ToastService
+@inject IModalService ModalService
+
+<div class="row g-4" style="height:90vh;">
+    <div class="col-md-5" style="height:100%">
+        <h5 class="mb-0">Lokasyonlar</h5>
+        <div class="mt-3 d-flex gap-2">
+            <input class="form-control form-control-sm" placeholder="Lokasyon Ara..." @bind="searchTerm" @bind:event="oninput" />
+            <button class="btn btn-sm btn-outline-secondary" @onclick="RefreshData">Yenile</button>
+            <button class="btn btn-sm btn-outline-secondary" @onclick="ClearSearch">Temizle</button>
+        </div>
+
+        <div class="card shadow-sm mt-1" style="height:90%;">
+            <div class="card-body">
+                <TreeViewer T="LocationNode"
+                            Items="@locationTree"
+                            SearchTerm="@searchTerm"
+                            FilterFunc="@FilterFunc"
+                            LabelSelector="@LabelSelectorFunc"
+                            DescriptionSelector="@DescriptionSelectorFunc"
+                            ChildrenSelector="@ChildrenSelectorFunc"
+                            ShowContextMenuSelector="@ShowContextMenuSelectorFunc"
+                            ShowCreateSelector="@ShowCreateSelectorFunc"
+                            ShowEditSelector="@ShowEditSelectorFunc"
+                            ShowDeleteSelector="@ShowDeleteSelectorFunc"
+                            OnSelect="@HandleNodeSelect"
+                            OnCreate="CreateLocation" 
+                            OnEdit="EditLocation"
+                            OnDelete="DeleteLocation" 
+                            CreateContextMenuLabel="@CreateContextMenuLabel" />
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-7">
+        <h5 class="mb-0">Seçili Lokasyon Bilgisi</h5>
+        <div class="card shadow-sm mt-2 p-3" style="height:90%; overflow:auto;">
+            @if (selectedLocation == null)
+            {
+                <div class="text-muted">Listeden bir lokasyon seçin veya context menu'den Personel Ata seçin.</div>
+            }
+            else
+            {
+                <div class="mb-3">
+                    <strong>@GetFullLocationName(selectedLocation)</strong>
+                    <div class="small text-muted">Id: @selectedLocation.Id</div>
+                </div>
+
+                <div class="mb-2 d-flex justify-content-between align-items-center">
+                    <div><strong>Atanan Personeller</strong></div>
+                    <div>
+                        <button class="btn btn-sm btn-outline-secondary" @onclick="LoadAssignments">Yenile</button>
+                        <button class="btn btn-sm btn-primary" @onclick="OpenAssignModal">Personel Ata</button>
+                    </div>
+                </div>
+
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Personel</th>
+                            <th>Rol</th>
+                            <th>Baş - Bitiş</th>
+                            <th>Durum</th>
+                            <th class="text-end">Aksiyon</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (assignments == null || !assignments.Any())
+                        {
+                            <tr><td colspan="5" class="small-muted">Bu lokasyona atanmış personel yok.</td></tr>
+                        }
+                        else
+                        {
+                            @foreach (var a in assignments)
+                            {
+                                <tr>
+                                    <td>
+                                        @if (a.Personel != null)
+                                        {
+                                            <div><strong>@($"{a.Personel.Adi} {a.Personel.Soyadi}")</strong></div>
+                                            <div class="small-muted">Sicil: @a.Personel.SicilNo</div>
+                                        }
+                                        else
+                                        {
+                                            <div class="small-muted">Personel kaydı yok (id:@a.PersonelId)</div>
+                                        }
+                                    </td>
+                                    <td>@(string.IsNullOrWhiteSpace(a.Role) ? "-" : a.Role)</td>
+                                    <td>@(a.StartDate?.ToString("yyyy-MM-dd") ?? "-") @(!string.IsNullOrEmpty(a.EndDate?.ToString()) ? " - " + (a.EndDate?.ToString("yyyy-MM-dd") ?? "") : "")</td>
+                                    <td>
+                                        @if (a.IsActive) { <span class="badge bg-success">Aktif</span> } else { <span class="badge bg-secondary">Pasif</span> }
+                                        @if (a.IsPrimary) { <span class="ms-2 text-warning">★ Birincil</span> }
+                                    </td>
+                                    <td class="text-end">
+                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => RemoveAssignment(a.PersonelId, a.LocationId)">Çıkar</button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+</div>
+
+<PersonelLocationEditModal IsOpen="isAssignModalOpen"
+                           LocationId="assignLocationId"
+                           LocationLabel="assignLocationLabel"
+                           OnClose="OnAssignModalClose"
+                           OnSaved="OnAssignSaved" />
+<!-- Location edit modal (Personel atama modal'ının yanında/üstünde yerleştirin) -->
+<LocationEditModal Location="selectedEditItem?.Data?.Location"
+                   IsOpen="isLocationEditOpen"
+                   ParentLocations="locations"
+                   OnSave="OnLocationModalSave"
+                   OnClose="OnLocationModalClose" />
+@code {
+    // Tree model
+    private List<TreeItem<LocationNode>> locationTree = new();
+    private List<Location> locations = new();
+    private string searchTerm = "";
+
+    // Selected location / assignments
+    private Location? selectedLocation;
+    private List<PersonelLocation> assignments = new();
+
+    // Assign modal state
+    private bool isAssignModalOpen = false;
+    private int assignLocationId = 0;
+    private string assignLocationLabel = "";
+
+    private string CreateContextMenuLabel = "Alt Kategori Yarat";
+
+    // Delegates moved to fields to avoid Razor attribute parsing issues
+    private Func<TreeItem<LocationNode>, string, bool> FilterFunc => (item, term) =>
+    {
+        if (item?.Data?.Location == null) return false;
+        return (item.Data.Location.LocationName ?? "").Contains(term ?? "", StringComparison.OrdinalIgnoreCase);
+    };
+
+    private Func<TreeItem<LocationNode>, string> LabelSelectorFunc => item => item.Data?.Location?.LocationName ?? string.Empty;
+    private Func<TreeItem<LocationNode>, string> DescriptionSelectorFunc => item => string.Empty;
+    private Func<TreeItem<LocationNode>, IEnumerable<TreeItem<LocationNode>>> ChildrenSelectorFunc => item => item.Children ?? Enumerable.Empty<TreeItem<LocationNode>>();
+    private Func<TreeItem<LocationNode>, bool> ShowContextMenuSelectorFunc => item => true;
+    private Func<TreeItem<LocationNode>, bool> ShowCreateSelectorFunc => item => true;
+    private Func<TreeItem<LocationNode>, bool> ShowEditSelectorFunc => item => true;
+    private Func<TreeItem<LocationNode>, bool> ShowDeleteSelectorFunc => item => true;
+    // edit modal state for LocationEditModal
+    private TreeItem<LocationNode>? selectedEditItem;
+    private bool isLocationEditOpen = false;
+
+    // Called from TreeViewer OnEdit
+    private void EditLocation(TreeItem<LocationNode> item)
+    {
+        if (item == null) return;
+        // keep the tree item reference (same approach as Inventory/LocationManager)
+        selectedEditItem = item;
+        isLocationEditOpen = true;
+        StateHasChanged();
+    }
+
+    // Called from TreeViewer OnCreate
+    private void CreateLocation(TreeItem<LocationNode> parent)
+    {
+        selectedEditItem = new TreeItem<LocationNode>
+        {
+            Data = new LocationNode
+            {
+                Location = new Location
+                {
+                    ParentId = parent?.Data?.Location?.Id
+                }
+            },
+            ShowCreate = true,
+            ShowEdit = true,
+            ShowDelete = true
+        };
+
+        isLocationEditOpen = true;
+        StateHasChanged();
+    }
+
+    private async Task DeleteLocation(TreeItem<LocationNode> item)
+    {
+        if (item?.Data?.Location == null) return;
+
+        var loc = item.Data.Location;
+        var (canDelete, reason) = await LocationService.CanDeleteAsync(loc.Id);
+        if (!canDelete)
+        {
+            ToastService.ShowToast(reason ?? "Bilinmeyen bir hata oluştu", ToastType.Error, 5000);
+            return;
+        }
+
+        ModalService.ShowConfirmation(
+            "Silme Onayı",
+            $"'{loc.LocationName ?? "Konum"}' kaydını silmek istediğinizden emin misiniz?",
+            async result =>
+            {
+                if (!result) return;
+
+                var deleted = await LocationService.DeleteAsync(loc);
+                if (deleted)
+                {
+                    ToastService.ShowToast($"{loc.LocationName ?? "Konum"} silindi", ToastType.Success, 3000);
+                    locations.Remove(loc);
+                    await RefreshData();
+                }
+                else
+                {
+                    ToastService.ShowToast("Silme işlemi başarısız oldu", ToastType.Error, 3000);
+                }
+            });
+    }
+
+    private async Task OnLocationModalSave()
+    {
+        isLocationEditOpen = false;
+
+        var loc = selectedEditItem?.Data?.Location;
+        if (loc != null)
+        {
+            if (loc.Id == 0)
+            {
+                var saved = await LocationService.AddAsync(loc);
+                if (saved)
+                {
+                    locations.Add(loc);
+                    ToastService.ShowToast($"{loc.LocationName} eklendi", ToastType.Success, 3000);
+                }
+                else
+                {
+                    ToastService.ShowToast("Ekleme sırasında hata oluştu", ToastType.Error, 3000);
+                }
+            }
+            else
+            {
+                var updated = await LocationService.UpdateAsync(loc);
+                if (updated)
+                {
+                    ToastService.ShowToast($"{loc.LocationName} güncellendi", ToastType.Info, 3000);
+                }
+                else
+                {
+                    ToastService.ShowToast("Güncelleme sırasında hata oluştu", ToastType.Error, 3000);
+                }
+            }
+        }
+
+        await RefreshData();
+    }
+
+    private void OnLocationModalClose()
+    {
+        isLocationEditOpen = false;
+        StateHasChanged();
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshData();
+    }
+
+    private async Task RefreshData()
+    {
+        locations = await LocationService.GetAllAsync();
+        BuildLocationTree();
+        // clear selected
+        selectedLocation = null;
+        assignments = new List<PersonelLocation>();
+        StateHasChanged();
+    }
+
+    private void BuildLocationTree()
+    {
+        var nodes = locations.Select(l => new LocationNode { Location = l }).ToList();
+        locationTree = TreeHelper.BuildTree<LocationNode>(
+            nodes,
+            node => node.Location.Id.ToString(),
+            node => node.Location.ParentId?.ToString()
+        );
+    }
+
+    private async Task HandleNodeSelect(TreeItem<LocationNode>? item)
+    {
+        if (item == null) return;
+        var loc = item.Data?.Location;
+        if (loc == null) return;
+        selectedLocation = loc;
+        await LoadAssignments();
+        StateHasChanged();
+    }
+
+    private void OpenAssignModal()
+    {
+        if (selectedLocation == null) return;
+        assignLocationId = selectedLocation.Id;
+        assignLocationLabel = GetFullLocationName(selectedLocation);
+        isAssignModalOpen = true;
+        StateHasChanged();
+    }
+
+    private async Task LoadAssignments()
+    {
+        if (selectedLocation == null) return;
+        assignments = await PersonelLocationService.GetPersonelsForLocationAsync(selectedLocation.Id);
+        StateHasChanged();
+    }
+
+    private async Task OnAssignSaved()
+    {
+        // Refresh assignments for the location that was just updated
+        if (selectedLocation != null)
+        {
+            await LoadAssignments();
+        }
+        else
+        {
+            // If modal was opened from context menu without selecting a node first,
+            // try to reload the location's assignments if we can.
+            if (assignLocationId != 0)
+            {
+                assignments = await PersonelLocationService.GetPersonelsForLocationAsync(assignLocationId);
+            }
+        }
+        isAssignModalOpen = false;
+        ToastService.ShowToast("Atama kaydedildi.", ToastType.Success, 3000);
+        StateHasChanged();
+    }
+
+    private void OnAssignModalClose()
+    {
+        isAssignModalOpen = false;
+        StateHasChanged();
+    }
+
+    private void RemoveAssignment(int personelId, int locationId)
+    {
+        ModalService.ShowConfirmation(
+            "Silme Onayı",
+            $"Personeli bu lokasyondan çıkarmak istediğinize emin misiniz?",
+            async result =>
+            {
+                if (!result) return;
+
+                var removed = await PersonelLocationService.UnassignLocationFromPersonAsync(personelId, locationId);
+                if (removed)
+                {
+                    ToastService.ShowToast("Atama kaldırıldı.", ToastType.Success, 2500);
+                    // reload assignments
+                    if (selectedLocation != null && selectedLocation.Id == locationId)
+                        await LoadAssignments();
+                }
+                else
+                {
+                    ToastService.ShowToast("Atama kaldırılırken hata oluştu.", ToastType.Error, 4000);
+                }
+            });
+    }
+
+    private void ClearSearch()
+    {
+        searchTerm = "";
+    }
+
+    private string GetFullLocationName(Location loc)
+    {
+        if (loc == null) return string.Empty;
+        var parts = new List<string>();
+        var current = loc;
+        while (current != null)
+        {
+            parts.Add(current.LocationName);
+            if (current.ParentId.HasValue)
+            {
+                current = locations.FirstOrDefault(l => l.Id == current.ParentId.Value);
+            }
+            else
+            {
+                current = null;
+            }
+        }
+        parts.Reverse();
+        return string.Join(" > ", parts);
+    }
+
+    // helper node type
+    public class LocationNode
+    {
+        public Location Location { get; set; } = new Location();
+    }
+
+
+}

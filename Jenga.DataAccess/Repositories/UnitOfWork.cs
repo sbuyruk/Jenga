@@ -53,6 +53,7 @@ namespace Jenga.DataAccess.Repositories
 
             // IKYS
             Personel = new PersonelRepository(_contextFactory);
+            PersonelLocation = new PersonelLocationRepository(_contextFactory);
 
 
         }
@@ -87,6 +88,7 @@ namespace Jenga.DataAccess.Repositories
 
         // IKYS
         public IPersonelRepository Personel { get; private set; }
+        public IPersonelLocationRepository PersonelLocation { get; private set; }
 
     }
 }

@@ -34,6 +34,8 @@ namespace Jenga.DataAccess.Data
 
         //IKYS
         public DbSet<Personel> Personel_Table { get; set; }
+        public DbSet<IsBilgileri> IsBilgileri_Table { get; set; }
+        public DbSet<PersonelLocation> PersonelLocation_Table { get; set; }
 
         //ortak
         public DbSet<Bolge> Bolge_Table { get; set; }
