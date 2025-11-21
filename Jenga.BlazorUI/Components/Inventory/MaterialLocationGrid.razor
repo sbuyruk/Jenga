@@ -47,6 +47,13 @@ else
                         <div>
                             <div class="fw-semibold">@loc.LocationName</div>
                             <div class="text-muted small mt-2" style="font-size:0.75rem;">@GetLocationFullName(loc.LocationId)</div>
+
+                            @* Eğer personel bağlıysa hemen altında göstersin *@
+                            @if (!string.IsNullOrWhiteSpace(loc.PersonelName))
+                            {
+                                <div class="text-muted small mt-1"><strong>@loc.PersonelName</strong></div>
+                            }
+
                             <div class="text-muted small mt-2">Mevcut stok: <strong>@loc.Quantity</strong> @loc.UnitName</div>
                         </div>
 
@@ -142,10 +149,10 @@ else
     }
 
     // returns a concatenated string like "Ana Bina >1nci Kat >102 Nolu oda"
-    private string GetLocationFullName(int locationId)
+    private string GetLocationFullName(int? locationId)
     {
-        if (AllLocations == null) return string.Empty;
-        var ancestors = GetLocationAncestorsById(locationId);
+        if (AllLocations == null || !locationId.HasValue) return string.Empty;
+        var ancestors = GetLocationAncestorsById(locationId.Value);
         if (ancestors == null || ancestors.Count == 0) return string.Empty;
         return string.Join(" > ", ancestors.Select(a => a.LocationName));
     }

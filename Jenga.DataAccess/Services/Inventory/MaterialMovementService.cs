@@ -50,6 +50,7 @@ namespace Jenga.DataAccess.Services.Inventory
 
         /// <summary>
         /// MaterialEntry CRUD işlemlerinde otomatik hareket logu ekler.
+        /// Yeni: Eğer MaterialEntry.PersonelId varsa ToPersonId'yi doldurur.
         /// </summary>
         public async Task AddMovementForEntryAsync(MaterialEntry entry, string movementType, string? aciklama, string? userName, CancellationToken cancellationToken = default)
         {
@@ -66,6 +67,18 @@ namespace Jenga.DataAccess.Services.Inventory
                 Olusturan = userName,
                 OlusturmaTarihi = DateTime.Now
             };
+
+            // Eğer entry üzerinde PersonelId property varsa (yeni field), ToPersonId olarak set et
+            var prop = entry.GetType().GetProperty("PersonelId");
+            if (prop != null)
+            {
+                var val = prop.GetValue(entry);
+                if (val != null)
+                {
+                    if (val is int ival) movement.ToPersonId = ival;
+                    else if (val is int?) movement.ToPersonId = (int?)val;
+                }
+            }
 
             await AddAsync(movement, cancellationToken);
         }

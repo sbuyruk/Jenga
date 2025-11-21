@@ -15,7 +15,7 @@ namespace Jenga.Models.Inventory
         [Column("MaterialUnitId")]
         public int MaterialUnitId { get; set; }
         [Column("LocationId")]
-        public int LocationId { get; set; }
+        public int? LocationId { get; set; }
         [Column("PersonId")]
         public int? PersonId { get; set; }
         [Column("ExitDate")]

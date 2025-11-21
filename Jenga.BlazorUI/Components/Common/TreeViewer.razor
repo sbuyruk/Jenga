@@ -47,6 +47,7 @@
                                 ShowCreateSelector="@ShowCreateSelector"
                                 ShowEditSelector="@ShowEditSelector"
                                 ShowDeleteSelector="@ShowDeleteSelector"
+                                ShowSubMenuCreateSelector="@ShowSubMenuCreateSelector"
                                 OnSubItemCreate="@OnSubItemCreate"
                                 OnSubItemEdit="@OnSubItemEdit"
                                 OnSubItemDelete="@OnSubItemDelete"
@@ -69,6 +70,7 @@
     [Parameter] public Func<TreeItem<T>, bool>? ShowCreateSelector { get; set; }
     [Parameter] public Func<TreeItem<T>, bool>? ShowEditSelector { get; set; }
     [Parameter] public Func<TreeItem<T>, bool>? ShowDeleteSelector { get; set; }
+    [Parameter] public Func<TreeItem<T>, bool>? ShowSubMenuCreateSelector { get; set; }
     [Parameter] public EventCallback<TreeItem<T>> OnSelect { get; set; }
     [Parameter] public EventCallback<TreeItem<T>> OnCreate { get; set; }
     [Parameter] public EventCallback<TreeItem<T>> OnEdit { get; set; }

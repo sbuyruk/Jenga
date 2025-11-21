@@ -31,22 +31,23 @@ namespace Jenga.DataAccess.Services.Inventory
             await _unitOfWork.MaterialEntry.AddAsync(entry, cancellationToken);
             await _unitOfWork.MaterialEntry.SaveChangesAsync(cancellationToken);
 
-            // Fetch the material to get its unit
+            // Fetch the material to get its unit (only used for movement logging)
             var material = await _unitOfWork.Material.GetByIdAsync(entry.MaterialId, cancellationToken);
             if (material == null) throw new Exception("Malzeme bulunamadı!");
 
             // MaterialInventory güncellemesi
+            // NOTE: üçüncü parametre personelId olmalıdır - entry.PersonelId
             await _materialInventoryService.AddOrUpdateInventoryAsync(
                 entry.MaterialId,
                 entry.LocationId,
-                material.MaterialUnitId,
+                entry.PersonelId, 
                 entry.Quantity,
                 "Malzeme girişi sonrası stok güncellemesi",
                 modifiedBy,
                 cancellationToken
             );
 
-            // MaterialMovement logu ekle
+            // MaterialMovement logu ekle (Movement servisi artık entry.PersonelId'yi kullanıyor)
             await _materialMovementService.AddMovementForEntryAsync(
                 entry, "Giriş", "MaterialEntry eklendi", modifiedBy, cancellationToken
             );
@@ -57,6 +58,7 @@ namespace Jenga.DataAccess.Services.Inventory
         public async Task<bool> UpdateMaterialEntryAndInventoryAsync(MaterialEntry entry, string? currentUserName, CancellationToken cancellationToken = default)
         {
             var eskiEntry = await GetByIdAsync(entry.Id, cancellationToken);
+            if (eskiEntry == null) throw new Exception("Eski kayıt bulunamadı.");
 
             bool miktarDegisti = entry.Quantity != eskiEntry.Quantity;
             bool malzemeDegisti = entry.MaterialId != eskiEntry.MaterialId;
@@ -67,19 +69,32 @@ namespace Jenga.DataAccess.Services.Inventory
             if (miktarDegisti && !malzemeDegisti && !lokasyonDegisti && !birimDegisti)
             {
                 int fark = entry.Quantity - eskiEntry.Quantity;
+                // farkı ilgili (materialId, locationId, personelId) satırına uygula
                 await _materialInventoryService.AddOrUpdateInventoryAsync(
-                    entry.MaterialId, entry.LocationId, entry.MaterialUnitId, fark,
+                    entry.MaterialId,
+                    entry.LocationId,
+                    entry.PersonelId, // <-- düzeltildi
+                    fark,
                     "Kayıt güncellemesi (miktar değişikliği)",
                     currentUserName, cancellationToken);
             }
-            else if (malzemeDegisti || lokasyonDegisti || birimDegisti)
+            else if (malzemeDegisti || lokasyonDegisti || birimDegisti || entry.PersonelId != eskiEntry.PersonelId)
             {
+                // eski kaydı ters yönde geri al
                 await _materialInventoryService.AddOrUpdateInventoryAsync(
-                    eskiEntry.MaterialId, eskiEntry.LocationId, eskiEntry.MaterialUnitId, -eskiEntry.Quantity,
+                    eskiEntry.MaterialId,
+                    eskiEntry.LocationId,
+                    eskiEntry.PersonelId, // <-- düzeltildi
+                    -eskiEntry.Quantity,
                     "Kayıt güncellemesi (eski stoktan düş)",
                     currentUserName, cancellationToken);
+
+                // yeni kaydı ekle
                 await _materialInventoryService.AddOrUpdateInventoryAsync(
-                    entry.MaterialId, entry.LocationId, entry.MaterialUnitId, entry.Quantity,
+                    entry.MaterialId,
+                    entry.LocationId,
+                    entry.PersonelId, // <-- düzeltildi
+                    entry.Quantity,
                     "Kayıt güncellemesi (yeni stoğa ekle)",
                     currentUserName, cancellationToken);
             }
@@ -87,7 +102,7 @@ namespace Jenga.DataAccess.Services.Inventory
             await UpdateAsync(entry, cancellationToken);
 
             // MaterialMovement logu ekle
-            string hareketTipi = (miktarDegisti && !malzemeDegisti && !lokasyonDegisti && !birimDegisti) ? "Düzeltme" : "Transfer";
+            string hareketTipi = (miktarDegisti && !malzemeDegisti && !lokasyonDegisti && !birimDegisti) ? "Düzeltme" : "Düzenleme";
             await _materialMovementService.AddMovementForEntryAsync(
                 entry, hareketTipi, "MaterialEntry güncellendi", currentUserName, cancellationToken
             );
@@ -115,11 +130,11 @@ namespace Jenga.DataAccess.Services.Inventory
             if (silinecekEntry == null)
                 return false;
 
-            // 1. Stoktan çıkar
+            // 1. Stoktan çıkar (entry silindiği için daha önce eklenmiş miktarı ters yönde uygula)
             await _materialInventoryService.AddOrUpdateInventoryAsync(
                 silinecekEntry.MaterialId,
                 silinecekEntry.LocationId,
-                silinecekEntry.MaterialUnitId,
+                silinecekEntry.PersonelId, // <-- düzeltildi
                 -silinecekEntry.Quantity,
                 "MaterialEntry silindi, stoktan çıkarıldı",
                 currentUserName,
@@ -130,7 +145,7 @@ namespace Jenga.DataAccess.Services.Inventory
             var stokKaydi = await _materialInventoryService.GetByMaterialLocationAsync(
                 silinecekEntry.MaterialId,
                 silinecekEntry.LocationId,
-                silinecekEntry.MaterialUnitId,
+                silinecekEntry.PersonelId, // <-- düzeltildi
                 cancellationToken
             );
             if (stokKaydi != null && stokKaydi.Quantity <= 0)

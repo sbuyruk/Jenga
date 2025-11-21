@@ -11,20 +11,22 @@ namespace Jenga.DataAccess.Services.Inventory
         Task<List<MaterialInventory>> GetAllAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Malzeme, lokasyon ve birim kombinasyonu ile envanter kaydı getirir.
+        /// Malzeme + (opsiyonel) lokasyon + (opsiyonel) personel kombinasyonu ile envanter kaydı getirir.
+        /// locationId veya personelId null olabilir.
         /// </summary>
-        Task<MaterialInventory?> GetByMaterialLocationAsync(int materialId, int locationId, int materialUnitId, CancellationToken cancellationToken = default);
+        Task<MaterialInventory?> GetByMaterialLocationAsync(int materialId, int? locationId, int? personelId, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Envanteri ekler veya günceller.
+        /// locationId ve personelId nullable olabilir (ör. sadece lokasyon, sadece personel veya her ikisi).
         /// </summary>
         Task AddOrUpdateInventoryAsync(
             int materialId,
-            int locationId,
-            int materialUnitId,
+            int? locationId,
+            int? personelId,
             int quantity,
             string aciklama,
-            string degistirenKullanici,
+            string? degistirenKullanici,
             CancellationToken cancellationToken = default);
 
         /// <summary>

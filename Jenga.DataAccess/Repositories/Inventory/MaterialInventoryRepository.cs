@@ -13,14 +13,20 @@ namespace Jenga.DataAccess.Repositories.Inventory
             _dbFactory = dbFactory;
         }
 
-        public async Task<MaterialInventory?> GetByMaterialLocationAsync(int materialId, int locationId, int materialUnitId, CancellationToken cancellationToken = default)
+        /// <summary>
+        /// Finds an inventory row by material + optional location + optional person.
+        /// If locationId is null, matches rows with LocationId IS NULL.
+        /// If personelId is null, matches rows with PersonelId IS NULL.
+        /// </summary>
+        public async Task<MaterialInventory?> GetByMaterialLocationAsync(int materialId, int? locationId, int? personelId, CancellationToken cancellationToken = default)
         {
             await using var db = _dbFactory.CreateDbContext();
             return await db.MaterialInventory_Table
                 .AsNoTracking()
                 .FirstOrDefaultAsync(mi =>
                     mi.MaterialId == materialId &&
-                    mi.LocationId == locationId, //&& mi.MaterialUnitId == materialUnitId,
+                    mi.LocationId == locationId &&
+                    mi.PersonelId == personelId,
                     cancellationToken
                 );
         }

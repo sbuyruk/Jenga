@@ -6,6 +6,14 @@
         public string LocationName { get; set; } = string.Empty;
         public int Quantity { get; set; }
         public string UnitName { get; set; } = string.Empty;
+
+        // personel bilgileri (nullable)
+        public int? PersonelId { get; set; }
+        public string? PersonelName { get; set; }
+
+        // YENİ: Bu kartı temsil eden (gruptaki) bir MaterialInventory satırının Id'si
+        // StartTransfer'da modal'a initial selection gönderirken kullanacağız.
+        public int InventoryId { get; set; } = 0;
     }
 
     public class MaterialTransactionView

@@ -19,34 +19,50 @@ namespace Jenga.DataAccess.Services.Inventory
         public async Task<MaterialInventory?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
             => await _unitOfWork.MaterialInventory.GetByIdAsync(id, cancellationToken);
 
-        public async Task<MaterialInventory?> GetByMaterialLocationAsync(int materialId, int locationId, int materialUnitId, CancellationToken cancellationToken = default)
-            => await _unitOfWork.MaterialInventory.GetByMaterialLocationAsync(materialId, locationId, materialUnitId, cancellationToken);
+        public async Task<MaterialInventory?> GetByMaterialLocationAsync(int materialId, int? locationId, int? personelId, CancellationToken cancellationToken = default)
+            => await _unitOfWork.MaterialInventory.GetByMaterialLocationAsync(materialId, locationId, personelId, cancellationToken);
 
         public async Task AddOrUpdateInventoryAsync(
             int materialId,
-            int locationId,
-            int materialUnitId,
+            int? locationId,
+            int? personelId,
             int quantity,
             string aciklama,
             string? modifiedBy,
             CancellationToken cancellationToken = default)
         {
+            // Attempt to find existing inventory row for material+location+person
             var existing = await _unitOfWork.MaterialInventory
-                .GetByMaterialLocationAsync(materialId, locationId, materialUnitId, cancellationToken);
+                .GetByMaterialLocationAsync(materialId, locationId, personelId, cancellationToken);
 
             if (existing != null)
             {
-                existing.Quantity += quantity;
+                // compute new quantity
+                var newQty = existing.Quantity + quantity;
+
+                // Prevent negative resulting stock
+                if (newQty < 0)
+                {
+                    throw new InvalidOperationException($"Yetersiz stok: mevcut {existing.Quantity}, yapılmak istenen değişiklik {quantity}. İşlem yapılmadı.");
+                }
+
+                existing.Quantity = newQty;
                 existing.Aciklama = aciklama;
                 await _unitOfWork.MaterialInventory.UpdateAsync(existing, modifiedBy);
             }
             else
             {
+                // If adding a new row with negative quantity -> not allowed
+                if (quantity < 0)
+                {
+                    throw new InvalidOperationException("Yeni bir stok kaydı eklendiğinde negatif miktar belirtilemez.");
+                }
+
                 var inventory = new MaterialInventory
                 {
                     MaterialId = materialId,
                     LocationId = locationId,
-                    //MaterialUnitId = materialUnitId,
+                    PersonelId = personelId,
                     Quantity = quantity,
                     Aciklama = aciklama,
                     Olusturan = modifiedBy,
@@ -57,6 +73,7 @@ namespace Jenga.DataAccess.Services.Inventory
             await _unitOfWork.MaterialInventory.SaveChangesAsync(cancellationToken);
         }
 
+        // other methods unchanged...
         public async Task UpdateInventoryAsync(MaterialInventory inventory, string? modifiedBy, CancellationToken cancellationToken = default)
         {
             modifiedBy ??= Environment.UserName;
@@ -71,7 +88,6 @@ namespace Jenga.DataAccess.Services.Inventory
         }
         public async Task DeleteAsync(MaterialInventory inventory, CancellationToken cancellationToken = default)
         {
-            // _unitOfWork.MaterialInventory.Remove ile kaydı sil
             _unitOfWork.MaterialInventory.Remove(inventory);
             await _unitOfWork.MaterialInventory.SaveChangesAsync(cancellationToken);
         }
@@ -80,5 +96,4 @@ namespace Jenga.DataAccess.Services.Inventory
             return _unitOfWork.MaterialInventory.AnyAsync(predicate);
         }
     }
-
 }

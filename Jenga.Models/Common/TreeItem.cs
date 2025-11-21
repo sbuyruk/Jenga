@@ -13,5 +13,7 @@
         public bool ShowEdit { get; set; } = true;
         public bool ShowDelete { get; set; } = true;
         public bool IsExpanded { get; set; } = false;
+        public bool ShowSubItemCreate { get; set; } = true;
+        public string CreateContextMenuLabel { get; set; } = "Tanımla";
     }
 }

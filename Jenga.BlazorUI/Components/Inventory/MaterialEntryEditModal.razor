@@ -1,9 +1,18 @@
-﻿@using Jenga.DataAccess.Services.Inventory
+﻿```csharp
+@using Jenga.DataAccess.Services.Inventory
+@using Jenga.Models.IKYS
 @using Jenga.Models.Inventory
 @using Jenga.Utility.Toast
 @inject IMaterialService MaterialService
 @inject IMaterialEntryService MaterialEntryService
 @inject IToastService ToastService
+
+<style>
+    .small-search {
+        margin-bottom: .5rem;
+    }
+</style>
+
 @if (IsOpen)
 {
     <div class="modal show" tabindex="-1" style="display: block;">
@@ -44,26 +53,42 @@
                             }
                         </select>
                     </div>
-                    <div class="mb-2">
-                        <label>Malzeme Yeri</label>
-                        <select class="form-select" @bind="MaterialEntry!.LocationId">
-                            <option value="">Malzeme Yeri seçiniz</option>
-                            @if (ParentLocations != null)
+
+                    <!-- NEW: "Nereye" style block like in MaterialTransferEditModalV2 -->
+                    <div class="mb-2 bg-success-subtle p-2">
+                        <label class="form-label">Malzeme Yeri (Lokasyon / Personel)</label>
+
+                        <div class="small text-muted">Lokasyon ara</div>
+                        <input class="form-control form-control-sm small-search" placeholder="Lokasyon ara..." @bind="toLocationSearch" @bind:event="oninput" />
+
+                        <select class="form-select form-select-sm mb-2" @bind="SelectedToLocationId" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                            <option value="0">Hedef lokasyon seçiniz</option>
+                            @foreach (var loc in AvailableToLocationsFiltered)
                             {
-                                @foreach (var parentLoc in ParentLocations.Where(x => x.IsStoragePlace))
-                                {
-                                    <option value="@parentLoc.Id">
-                                        @GetLocationPath(parentLoc)
-                                    </option>
-                                }
+                                <option value="@loc.Id" title="@GetLocationPath(loc)">@GetLocationPath(loc)</option>
                             }
                         </select>
+
+                        <div class="small text-muted">Personel ara</div>
+                        <input class="form-control form-control-sm small-search" placeholder="Personel ara..." @bind="toPersonSearch" @bind:event="oninput" />
+
+                        <select class="form-select form-select-sm" @bind="SelectedToPersonId">
+                            <option value="">Hedef kişi seçiniz</option>
+                            @foreach (var p in AvailableToPersonsFiltered)
+                            {
+                                <option value="@p.Id" title="@($"{p.Adi} {p.Soyadi}")">@($"{p.Adi} {p.Soyadi}")</option>
+                            }
+                        </select>
+
+                        <div class="small text-muted mt-1">Not: Lokasyon, kişi veya her ikisi seçilebilir. En az birini seçiniz.</div>
+
                         @if (ShowLocationError)
                         {
-                            <div class="text-danger small mt-1">Lütfen Malzeme Yeri seçiniz.</div>
+                            <div class="text-danger small mt-1">Lütfen Malzeme Yeri (lokasyon veya kişi) seçiniz.</div>
                         }
-
                     </div>
+                    <!-- END NEW -->
+
                     <div class="mb-2">
                         <label>Tarih</label>
                         <input class="form-control" @bind="MaterialEntry!.EntryDate" type="date" />
@@ -91,11 +116,37 @@
     [Parameter] public List<Material> Materials { get; set; } = new();
     [Parameter] public List<Location> Locations { get; set; } = new();
 
-    public List<Location>? ParentLocations ;
+    // NEW: accept Persons so UI can show person list (parent should pass Persons)
+    [Parameter] public List<Personel> Persons { get; set; } = new();
+
+    public List<Location>? ParentLocations;
     protected override void OnParametersSet()
     {
         ParentLocations = Locations;
+
+        // initialize SelectedToLocationId / SelectedToPersonId from MaterialEntry if available
+        if (MaterialEntry != null)
+        {
+            // If the model already has LocationId, preselect it
+            if (MaterialEntry.LocationId != 0)
+            {
+                SelectedToLocationId = MaterialEntry.LocationId;
+            }
+
+            // try to read PersonelId from model (if property exists)
+            var prop = MaterialEntry.GetType().GetProperty("PersonelId");
+            if (prop != null)
+            {
+                var val = prop.GetValue(MaterialEntry);
+                if (val != null)
+                {
+                    if (val is int ival) SelectedToPersonId = ival;
+                    else if (val is int?) SelectedToPersonId = (int?)val;
+                }
+            }
+        }
     }
+
     private int _materialId;
     private int MaterialId
     {
@@ -111,13 +162,30 @@
         }
     }
 
-    // Disable save when there is no entry, location is not selected (0) or quantity is less than1
-    private bool IsSaveDisabled => MaterialEntry == null || MaterialEntry.LocationId ==0 || MaterialEntry.Quantity <1;
+    // NEW: search fields & selectors for locations/persons (like Transfer modal)
+    private string toLocationSearch = "";
+    private string toPersonSearch = "";
 
-    private bool ShowQuantityError => MaterialEntry != null && MaterialEntry.Quantity <1;
-    private bool ShowLocationError => MaterialEntry != null && MaterialEntry.LocationId ==0;
+    private int? SelectedToLocationId { get; set; } = null;
+    private int? SelectedToPersonId { get; set; } = null;
 
-    private string ModalTitle => MaterialEntry == null || MaterialEntry.Id ==0 ? "Envantere Malzeme Girişi" : "Malzeme Girişi Düzenle";
+    private IEnumerable<Location> AvailableToLocationsFiltered =>
+        string.IsNullOrWhiteSpace(toLocationSearch)
+            ? (Locations ?? Enumerable.Empty<Location>())
+            : (Locations ?? Enumerable.Empty<Location>()).Where(l => GetLocationPath(l).Contains(toLocationSearch, StringComparison.OrdinalIgnoreCase));
+
+    private IEnumerable<Personel> AvailableToPersonsFiltered =>
+        string.IsNullOrWhiteSpace(toPersonSearch)
+            ? (Persons ?? Enumerable.Empty<Personel>())
+            : (Persons ?? Enumerable.Empty<Personel>()).Where(p => ($"{p.Adi} {p.Soyadi}").Contains(toPersonSearch, StringComparison.OrdinalIgnoreCase));
+
+    // Disable save when there is no entry, neither location nor person chosen, or quantity is less than1
+    private bool IsSaveDisabled => MaterialEntry == null || (SelectedToLocationId == 0 && !SelectedToPersonId.HasValue) || MaterialEntry.Quantity < 1;
+
+    private bool ShowQuantityError => MaterialEntry != null && MaterialEntry.Quantity < 1;
+    private bool ShowLocationError => MaterialEntry != null && (SelectedToLocationId == 0 && !SelectedToPersonId.HasValue);
+
+    private string ModalTitle => MaterialEntry == null || MaterialEntry.Id == 0 ? "Envantere Malzeme Girişi" : "Malzeme Girişi Düzenle";
 
     private async Task HandleSave()
     {
@@ -127,19 +195,36 @@
             return;
         }
 
-        if (MaterialEntry.LocationId ==0)
+        if (SelectedToLocationId == 0 && !SelectedToPersonId.HasValue)
         {
-            ToastService.ShowWarning("Lütfen Malzeme Yeri seçiniz.");
+            ToastService.ShowWarning("Lütfen Malzeme Yeri (lokasyon veya kişi) seçiniz.");
             return;
         }
 
-        if (MaterialEntry.Quantity <1)
+        if (MaterialEntry.Quantity < 1)
         {
-            ToastService.ShowWarning("Lütfen Miktar1 veya daha fazla giriniz.");
+            ToastService.ShowWarning("Lütfen Miktar 1 veya daha fazla giriniz.");
             return;
         }
+
+        // Apply selections to MaterialEntry model
+        MaterialEntry.LocationId = SelectedToLocationId ?? null;
+
+        // Try to set PersonelId property if exists on the MaterialEntry model
+        var prop = MaterialEntry.GetType().GetProperty("PersonelId");
+        if (prop != null)
+        {
+            // convert Nullable<int> or int
+            object? toSet = null;
+            if (SelectedToPersonId.HasValue)
+                toSet = SelectedToPersonId.Value;
+            prop.SetValue(MaterialEntry, toSet);
+        }
+
+        // Fire parent save handler which will perform the server save (MaterialEntryService.AddAsync in parent)
         await OnSave.InvokeAsync();
     }
+
     private string GetLocationPath(Location loc)
     {
         var names = new List<string>();
@@ -153,3 +238,4 @@
         return string.Join(" > ", names);
     }
 }
+```

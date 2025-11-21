@@ -1,4 +1,5 @@
-﻿using Jenga.Models.Sistem;
+﻿using Jenga.Models.IKYS;
+using Jenga.Models.Sistem;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Jenga.Models.Inventory
@@ -11,10 +12,11 @@ namespace Jenga.Models.Inventory
         public int MaterialUnitId { get; set; }
         public string? InvoiceNo { get; set; }
         public DateTime EntryDate { get; set; }
-        public int LocationId { get; set; }
+        public int? LocationId { get; set; }
+        public int? PersonelId { get; set; }
         // Navigation properties (opsiyonel)
-        // public Material? Material { get; set; }
-        // public Location? Location { get; set; }
-        // public MaterialUnit? MaterialUnit { get; set; }
+        public Material? Material { get; set; }
+        public Location? Location { get; set; }
+        public Personel? Personel { get; set; }
     }
 }

@@ -125,7 +125,7 @@
                            LocationLabel="assignLocationLabel"
                            OnClose="OnAssignModalClose"
                            OnSaved="OnAssignSaved" />
-<!-- Location edit modal (Personel atama modal'ının yanında/üstünde yerleştirin) -->
+<!-- Location edit modal -->
 <LocationEditModal Location="selectedEditItem?.Data?.Location"
                    IsOpen="isLocationEditOpen"
                    ParentLocations="locations"
@@ -146,7 +146,7 @@
     private int assignLocationId = 0;
     private string assignLocationLabel = "";
 
-    private string CreateContextMenuLabel = "Alt Kategori Yarat";
+    private string CreateContextMenuLabel = "Alt Konum Yarat";
 
     // Delegates moved to fields to avoid Razor attribute parsing issues
     private Func<TreeItem<LocationNode>, string, bool> FilterFunc => (item, term) =>
@@ -156,7 +156,7 @@
     };
 
     private Func<TreeItem<LocationNode>, string> LabelSelectorFunc => item => item.Data?.Location?.LocationName ?? string.Empty;
-    private Func<TreeItem<LocationNode>, string> DescriptionSelectorFunc => item => string.Empty;
+    private Func<TreeItem<LocationNode>, string> DescriptionSelectorFunc => item => item.Data?.Location?.Aciklama ?? string.Empty;
     private Func<TreeItem<LocationNode>, IEnumerable<TreeItem<LocationNode>>> ChildrenSelectorFunc => item => item.Children ?? Enumerable.Empty<TreeItem<LocationNode>>();
     private Func<TreeItem<LocationNode>, bool> ShowContextMenuSelectorFunc => item => true;
     private Func<TreeItem<LocationNode>, bool> ShowCreateSelectorFunc => item => true;
