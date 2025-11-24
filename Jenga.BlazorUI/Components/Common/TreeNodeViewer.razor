@@ -10,7 +10,7 @@
     <div class="treeview-item @(IsSelected ? "selected" : "")" @onclick="HandleSelect">
         @if (Children?.Any() == true)
         {
-            <span class="expand-icon" @onclick:stopPropagation="true" @onclick="ToggleExpand" style="margin-right:4px;cursor:pointer" role="button" aria-label="Genişlet daralt" tabindex="0">
+            <span class="expand-icon" @onclick:stopPropagation="true" @onclick="ToggleExpand" role="button" aria-label="Genişlet daralt" tabindex="0">
                 <i class="bi @(Item.IsExpanded ? "bi-dash-square" : "bi-plus-square")"></i>
             </span>
         }
@@ -87,8 +87,8 @@
         {
             <div>
                 <div class="context-menu-overlay" @onclick="CloseSubItemContextMenu"></div>
-                <div class="context-menu"
-                     style="position:fixed;top:@($"{SubItemMenuY}px");left:@($"{SubItemMenuX}px");z-index:1001;"
+                <div class="context-menu context-menu-fixed"
+                     style="top:@($"{SubItemMenuY}px");left:@($"{SubItemMenuX}px");"
                      role="menu" aria-label="Sub item menu">
                     @if (ShowCreate)
                     {
