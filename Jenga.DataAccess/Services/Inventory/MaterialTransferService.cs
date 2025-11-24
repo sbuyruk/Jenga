@@ -34,48 +34,40 @@ namespace Jenga.DataAccess.Services.Inventory
         {
             if (transfer == null) throw new ArgumentNullException(nameof(transfer));
 
-            // persist transfer record
+            // 1. Transfer kaydını ekle
             await _unitOfWork.MaterialTransfer.AddAsync(transfer, cancellationToken);
             await _unitOfWork.MaterialTransfer.SaveChangesAsync(cancellationToken);
 
-            // Resolve physical locations to use for inventory operations (nullable)
+            // 2. ID'leri temizle (0 -> null)
+            // UI'dan gelen veriye güveniyoruz ve 0 olan ID'leri null yapıyoruz.
             int? actualFromLocation = transfer.FromLocationId != 0 ? transfer.FromLocationId : null;
             int? actualToLocation = transfer.ToLocationId != 0 ? transfer.ToLocationId : null;
 
-            // If FromPersonId provided: prefer a person-specific inventory row (PersonelId) or fallback to person's primary location
-            if (transfer.FromPersonId.HasValue)
-            {
-                var personInv = (await _unitOfWork.MaterialInventory.GetAllAsync(cancellationToken))
-                    .FirstOrDefault(mi => mi.MaterialId == transfer.MaterialId && mi.PersonelId == transfer.FromPersonId);
-                if (personInv != null)
-                {
-                    // Use person inventory row's LocationId (could be null)
-                    actualFromLocation = personInv.LocationId;
-                }
-            }
+            // PersonelId'ler için de 0 kontrolü
+            int? actualFromPerson = (transfer.FromPersonId.HasValue && transfer.FromPersonId != 0) ? transfer.FromPersonId : null;
+            int? actualToPerson = (transfer.ToPersonId.HasValue && transfer.ToPersonId != 0) ? transfer.ToPersonId : null;
 
-            // Perform inventory updates using triples (materialId, locationId?, personelId?)
-            // Decrement source (note: pass the FromPersonId so person-specific rows are preferred)
+            // 3. KAYNAK stoktan düş
             await _materialInventoryService.AddOrUpdateInventoryAsync(
                 transfer.MaterialId,
                 actualFromLocation,
-                transfer.FromPersonId,
+                actualFromPerson,
                 -transfer.Quantity,
                 "MaterialTransfer: Kaynak stoktan düşüldü.",
                 modifiedBy,
                 cancellationToken);
 
-            // Increment target
+            // 4. HEDEF stoğa ekle
             await _materialInventoryService.AddOrUpdateInventoryAsync(
                 transfer.MaterialId,
                 actualToLocation,
-                transfer.ToPersonId,
+                actualToPerson,
                 transfer.Quantity,
                 "MaterialTransfer: Hedef stoğa eklendi.",
                 modifiedBy,
                 cancellationToken);
 
-            // Add movement/audit
+            // 5. Hareket Logu
             await _materialMovementService.AddAsync(new MaterialMovement
             {
                 MaterialId = transfer.MaterialId,
@@ -83,8 +75,8 @@ namespace Jenga.DataAccess.Services.Inventory
                 MaterialUnitId = transfer.MaterialUnitId,
                 FromLocationId = actualFromLocation ?? transfer.FromLocationId,
                 ToLocationId = actualToLocation ?? transfer.ToLocationId,
-                FromPersonId = transfer.FromPersonId,
-                ToPersonId = transfer.ToPersonId,
+                FromPersonId = actualFromPerson,
+                ToPersonId = actualToPerson,
                 MovementDate = transfer.TransferDate,
                 MovementType = "Transfer",
                 Aciklama = transfer.Aciklama ?? "MaterialTransfer işlemi",
@@ -97,165 +89,12 @@ namespace Jenga.DataAccess.Services.Inventory
 
         public async Task<bool> UpdateAsync(MaterialTransfer yeniTransfer, CancellationToken cancellationToken = default)
         {
-            if (yeniTransfer == null) throw new ArgumentNullException(nameof(yeniTransfer));
-
-            var eskiTransfer = await GetByIdAsync(yeniTransfer.Id, cancellationToken);
-            if (eskiTransfer == null) throw new Exception("Kayıt bulunamadı!");
-
-            // Resolve physical locations/person-inv for old transfer
-            int? eskiFromLoc = eskiTransfer.FromLocationId != 0 ? eskiTransfer.FromLocationId : null;
-            int? eskiToLoc = eskiTransfer.ToLocationId != 0 ? eskiTransfer.ToLocationId : null;
-
-            if (eskiTransfer.FromPersonId.HasValue)
-            {
-                var personInv = (await _unitOfWork.MaterialInventory.GetAllAsync(cancellationToken))
-                    .FirstOrDefault(mi => mi.MaterialId == eskiTransfer.MaterialId && mi.PersonelId == eskiTransfer.FromPersonId);
-
-            }
-
-            // Resolve physical locations/person-inv for new transfer
-            int? yeniFromLoc = yeniTransfer.FromLocationId != 0 ? yeniTransfer.FromLocationId : null;
-            int? yeniToLoc = yeniTransfer.ToLocationId != 0 ? yeniTransfer.ToLocationId : null;
-
-            if (yeniTransfer.FromPersonId.HasValue)
-            {
-                var personInv = (await _unitOfWork.MaterialInventory.GetAllAsync(cancellationToken))
-                    .FirstOrDefault(mi => mi.MaterialId == yeniTransfer.MaterialId && mi.PersonelId == yeniTransfer.FromPersonId);
-            }
-            // Rollback old inventory effects (credit old source, debit old target) where physical rows identified
-            if (eskiFromLoc.HasValue || eskiTransfer.FromPersonId.HasValue)
-            {
-                await _materialInventoryService.AddOrUpdateInventoryAsync(
-                    eskiTransfer.MaterialId,
-                    eskiFromLoc,
-                    eskiTransfer.FromPersonId,
-                    eskiTransfer.Quantity,
-                    "MaterialTransfer güncellendi (eski transfer geri alındı - kaynak geri eklendi)",
-                    yeniTransfer.Olusturan,
-                    cancellationToken);
-            }
-
-            if (eskiToLoc.HasValue || eskiTransfer.ToPersonId.HasValue)
-            {
-                await _materialInventoryService.AddOrUpdateInventoryAsync(
-                    eskiTransfer.MaterialId,
-                    eskiToLoc,
-                    eskiTransfer.ToPersonId,
-                    -eskiTransfer.Quantity,
-                    "MaterialTransfer güncellendi (eski transfer hedef stoğundan düşüldü)",
-                    yeniTransfer.Olusturan,
-                    cancellationToken);
-            }
-
-            // Apply new transfer inventory effects
-            if (yeniFromLoc.HasValue || yeniTransfer.FromPersonId.HasValue)
-            {
-                await _materialInventoryService.AddOrUpdateInventoryAsync(
-                    yeniTransfer.MaterialId,
-                    yeniFromLoc,
-                    yeniTransfer.FromPersonId,
-                    -yeniTransfer.Quantity,
-                    "MaterialTransfer güncellendi (yeni transfer kaynak stoğundan düşüldü)",
-                    yeniTransfer.Olusturan,
-                    cancellationToken);
-            }
-
-            if (yeniToLoc.HasValue || yeniTransfer.ToPersonId.HasValue)
-            {
-                await _materialInventoryService.AddOrUpdateInventoryAsync(
-                    yeniTransfer.MaterialId,
-                    yeniToLoc,
-                    yeniTransfer.ToPersonId,
-                    yeniTransfer.Quantity,
-                    "MaterialTransfer güncellendi (yeni transfer hedef stoğuna eklendi)",
-                    yeniTransfer.Olusturan,
-                    cancellationToken);
-            }
-
-            // Log correction movement
-            await _materialMovementService.AddAsync(new MaterialMovement
-            {
-                MaterialId = yeniTransfer.MaterialId,
-                Quantity = yeniTransfer.Quantity,
-                MaterialUnitId = yeniTransfer.MaterialUnitId,
-                FromLocationId = yeniFromLoc ?? yeniTransfer.FromLocationId,
-                ToLocationId = yeniToLoc ?? yeniTransfer.ToLocationId,
-                FromPersonId = yeniTransfer.FromPersonId,
-                ToPersonId = yeniTransfer.ToPersonId,
-                MovementDate = yeniTransfer.TransferDate,
-                MovementType = "Transfer-Düzeltme",
-                Aciklama = "MaterialTransfer güncellendi.",
-                Olusturan = yeniTransfer.Olusturan,
-                OlusturmaTarihi = DateTime.Now
-            }, cancellationToken);
-
-            // update transfer record
-            await _unitOfWork.MaterialTransfer.UpdateAsync(yeniTransfer);
-            await _unitOfWork.MaterialTransfer.SaveChangesAsync(cancellationToken);
-
-            return true;
+            return await Task.FromResult(false);
         }
 
         public async Task<bool> DeleteAsync(MaterialTransfer transfer, CancellationToken cancellationToken = default)
         {
-            if (transfer == null) throw new ArgumentNullException(nameof(transfer));
-
-            // Resolve locations as in Add/Update
-            int? fromLoc = transfer.FromLocationId != 0 ? transfer.FromLocationId : null;
-            int? toLoc = transfer.ToLocationId != 0 ? transfer.ToLocationId : null;
-
-            if (transfer.FromPersonId.HasValue)
-            {
-                var personInv = (await _unitOfWork.MaterialInventory.GetAllAsync(cancellationToken))
-                    .FirstOrDefault(mi => mi.MaterialId == transfer.MaterialId && mi.PersonelId == transfer.FromPersonId);
-            }
-
-            // Revert inventory effects where applicable
-            if (fromLoc.HasValue || transfer.FromPersonId.HasValue)
-            {
-                await _materialInventoryService.AddOrUpdateInventoryAsync(
-                    transfer.MaterialId,
-                    fromLoc,
-                    transfer.FromPersonId,
-                    transfer.Quantity,
-                    "MaterialTransfer silindi, kaynak stoğa geri eklendi.",
-                    transfer.Olusturan,
-                    cancellationToken);
-            }
-
-            if (toLoc.HasValue || transfer.ToPersonId.HasValue)
-            {
-                await _materialInventoryService.AddOrUpdateInventoryAsync(
-                    transfer.MaterialId,
-                    toLoc,
-                    transfer.ToPersonId,
-                    -transfer.Quantity,
-                    "MaterialTransfer silindi, hedef stoğundan çıkarıldı.",
-                    transfer.Olusturan,
-                    cancellationToken);
-            }
-
-            // Log reverse movement
-            await _materialMovementService.AddAsync(new MaterialMovement
-            {
-                MaterialId = transfer.MaterialId,
-                Quantity = -transfer.Quantity,
-                MaterialUnitId = transfer.MaterialUnitId,
-                FromLocationId = fromLoc ?? transfer.FromLocationId,
-                ToLocationId = toLoc ?? transfer.ToLocationId,
-                FromPersonId = transfer.FromPersonId,
-                ToPersonId = transfer.ToPersonId,
-                MovementDate = DateTime.Now,
-                MovementType = "Transfer-Silme",
-                Aciklama = "MaterialTransfer silindi.",
-                Olusturan = transfer.Olusturan,
-                OlusturmaTarihi = DateTime.Now
-            }, cancellationToken);
-
-            _unitOfWork.MaterialTransfer.Remove(transfer);
-            await _unitOfWork.MaterialTransfer.SaveChangesAsync(cancellationToken);
-
-            return true;
+            return await Task.FromResult(false);
         }
 
         public async Task<bool> UpdateMaterialTransferAndInventoryAsync(MaterialTransfer transfer, string? currentUserName, CancellationToken cancellationToken = default)

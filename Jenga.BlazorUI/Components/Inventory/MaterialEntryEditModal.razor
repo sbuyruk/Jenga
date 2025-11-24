@@ -1,241 +1,156 @@
-﻿```csharp
-@using Jenga.DataAccess.Services.Inventory
+﻿@using Jenga.DataAccess.Services.Inventory
 @using Jenga.Models.IKYS
 @using Jenga.Models.Inventory
 @using Jenga.Utility.Toast
-@inject IMaterialService MaterialService
-@inject IMaterialEntryService MaterialEntryService
-@inject IToastService ToastService
+@using Jenga.BlazorUI.Helpers
 
-<style>
-    .small-search {
-        margin-bottom: .5rem;
-    }
-</style>
+@inject IToastService ToastService
 
 @if (IsOpen)
 {
     <div class="modal show" tabindex="-1" style="display: block;">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">@ModalTitle</h5>
-                    <button type="button" class="close" @onclick="OnClose" aria-label="Kapat">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
+                <div class="modal-header bg-success-subtle">
+                    <h5 class="modal-title">@(IsNewEntry ? "Envantere Malzeme Girişi" : "Giriş Düzenle")</h5>
+                    <button type="button" class="btn-close" @onclick="OnClose" aria-label="Kapat"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-2">
-                        <label>Malzeme</label>
-                        <select class="form-select" @bind="MaterialId" @bind:event="onchange">
-                            <option value="">Malzeme seçiniz</option>
+                    <div class="mb-3">
+                        <label class="form-label">Malzeme</label>
+                        <select class="form-select" @bind="MaterialId">
+                            <option value="0">Seçiniz</option>
                             @foreach (var mat in Materials)
                             {
                                 <option value="@mat.Id">@mat.MaterialName</option>
                             }
                         </select>
                     </div>
-                    <div class="mb-2">
-                        <label>Miktar</label>
-                        <input class="form-control" @bind="MaterialEntry!.Quantity" type="number" min="1" />
-                        @if (ShowQuantityError)
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-8">
+                            <label class="form-label">Miktar</label>
+                            <input class="form-control" @bind="MaterialEntry!.Quantity" type="number" min="1" />
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label">Birim</label>
+                            <input class="form-control" value="@GetUnitName()" disabled />
+                        </div>
+                        @if (MaterialEntry!.Quantity < 1)
                         {
-                            <div class="text-danger small mt-1">Miktar en az 1 olmalıdır.</div>
+                            <div class="text-danger small">En az 1 girilmelidir.</div>
                         }
                     </div>
-                    <div class="mb-2">
-                        <label>Birim</label>
-                        <select class="form-select" @bind="MaterialEntry!.MaterialUnitId" disabled>
-                            <option value="">Birim seçiniz</option>
-                            @foreach (var unit in MaterialUnits)
-                            {
-                                <option value="@unit.Id">@unit.Name (@unit.Symbol)</option>
-                            }
-                        </select>
-                    </div>
 
-                    <!-- NEW: "Nereye" style block like in MaterialTransferEditModalV2 -->
-                    <div class="mb-2 bg-success-subtle p-2">
-                        <label class="form-label">Malzeme Yeri (Lokasyon / Personel)</label>
+                    <!-- Hedef Seçimi -->
+                    <div class="mb-3 bg-light p-3 rounded border">
+                        <label class="form-label fw-bold">Malzeme Yeri</label>
 
-                        <div class="small text-muted">Lokasyon ara</div>
-                        <input class="form-control form-control-sm small-search" placeholder="Lokasyon ara..." @bind="toLocationSearch" @bind:event="oninput" />
+                        <div class="mb-2">
+                            <label class="small text-muted">Lokasyon</label>
+                            <input class="form-control form-control-sm mb-1" placeholder="Ara..." @bind="locSearch" @bind:event="oninput" />
+                            <select class="form-select form-select-sm" @bind="MaterialEntry.LocationId">
+                                <option value="">Seçiniz</option>
+                                @foreach (var loc in FilteredLocations)
+                                {
+                                    <option value="@loc.Id">@InventoryUIHelper.GetLocationFullName(loc.Id, Locations)</option>
+                                }
+                            </select>
+                        </div>
 
-                        <select class="form-select form-select-sm mb-2" @bind="SelectedToLocationId" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                            <option value="0">Hedef lokasyon seçiniz</option>
-                            @foreach (var loc in AvailableToLocationsFiltered)
-                            {
-                                <option value="@loc.Id" title="@GetLocationPath(loc)">@GetLocationPath(loc)</option>
-                            }
-                        </select>
+                        <div>
+                            <label class="small text-muted">Personel (Opsiyonel)</label>
+                            <input class="form-control form-control-sm mb-1" placeholder="Ara..." @bind="persSearch" @bind:event="oninput" />
+                            <select class="form-select form-select-sm" @bind="MaterialEntry.PersonelId">
+                                <option value="">Seçiniz</option>
+                                @foreach (var p in FilteredPersons)
+                                {
+                                    <option value="@p.Id">@p.Adi @p.Soyadi</option>
+                                }
+                            </select>
+                        </div>
 
-                        <div class="small text-muted">Personel ara</div>
-                        <input class="form-control form-control-sm small-search" placeholder="Personel ara..." @bind="toPersonSearch" @bind:event="oninput" />
-
-                        <select class="form-select form-select-sm" @bind="SelectedToPersonId">
-                            <option value="">Hedef kişi seçiniz</option>
-                            @foreach (var p in AvailableToPersonsFiltered)
-                            {
-                                <option value="@p.Id" title="@($"{p.Adi} {p.Soyadi}")">@($"{p.Adi} {p.Soyadi}")</option>
-                            }
-                        </select>
-
-                        <div class="small text-muted mt-1">Not: Lokasyon, kişi veya her ikisi seçilebilir. En az birini seçiniz.</div>
-
-                        @if (ShowLocationError)
+                        @if (IsLocationInvalid)
                         {
-                            <div class="text-danger small mt-1">Lütfen Malzeme Yeri (lokasyon veya kişi) seçiniz.</div>
+                            <div class="text-danger small mt-2">Bir lokasyon veya personel seçmelisiniz.</div>
                         }
                     </div>
-                    <!-- END NEW -->
 
-                    <div class="mb-2">
-                        <label>Tarih</label>
-                        <input class="form-control" @bind="MaterialEntry!.EntryDate" type="date" />
+                    <div class="mb-3">
+                        <label class="form-label">Tarih</label>
+                        <input class="form-control" @bind="MaterialEntry.EntryDate" type="date" />
                     </div>
-                    <div class="mb-2">
-                        <label>Belge No</label>
-                        <input class="form-control" @bind="MaterialEntry!.InvoiceNo" />
+                    <div class="mb-3">
+                        <label class="form-label">Belge No</label>
+                        <input class="form-control" @bind="MaterialEntry.InvoiceNo" />
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn btn-success" @onclick="HandleSave" disabled="@IsSaveDisabled">Envantere Kaydet</button>
-                    <button class="btn btn-secondary" @onclick="OnClose">Kapat</button>
+                    <button class="btn btn-success" @onclick="HandleSave" disabled="@IsSaveDisabled">Kaydet</button>
+                    <button class="btn btn-secondary" @onclick="OnClose">İptal</button>
                 </div>
             </div>
         </div>
     </div>
+    <div class="modal-backdrop fade show"></div>
 }
 
 @code {
     [Parameter] public MaterialEntry? MaterialEntry { get; set; }
-    [Parameter] public List<MaterialUnit> MaterialUnits { get; set; } = new();
     [Parameter] public bool IsOpen { get; set; }
-    [Parameter] public EventCallback OnSave { get; set; }
-    [Parameter] public EventCallback OnClose { get; set; }
     [Parameter] public List<Material> Materials { get; set; } = new();
+    [Parameter] public List<MaterialUnit> MaterialUnits { get; set; } = new();
     [Parameter] public List<Location> Locations { get; set; } = new();
-
-    // NEW: accept Persons so UI can show person list (parent should pass Persons)
     [Parameter] public List<Personel> Persons { get; set; } = new();
 
-    public List<Location>? ParentLocations;
-    protected override void OnParametersSet()
-    {
-        ParentLocations = Locations;
+    [Parameter] public EventCallback OnSave { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
 
-        // initialize SelectedToLocationId / SelectedToPersonId from MaterialEntry if available
-        if (MaterialEntry != null)
-        {
-            // If the model already has LocationId, preselect it
-            if (MaterialEntry.LocationId != 0)
-            {
-                SelectedToLocationId = MaterialEntry.LocationId;
-            }
+    private string locSearch = "";
+    private string persSearch = "";
 
-            // try to read PersonelId from model (if property exists)
-            var prop = MaterialEntry.GetType().GetProperty("PersonelId");
-            if (prop != null)
-            {
-                var val = prop.GetValue(MaterialEntry);
-                if (val != null)
-                {
-                    if (val is int ival) SelectedToPersonId = ival;
-                    else if (val is int?) SelectedToPersonId = (int?)val;
-                }
-            }
-        }
-    }
+    private bool IsNewEntry => MaterialEntry == null || MaterialEntry.Id == 0;
 
-    private int _materialId;
     private int MaterialId
     {
-        get => MaterialEntry!.MaterialId;
+        get => MaterialEntry?.MaterialId ?? 0;
         set
         {
-            MaterialEntry!.MaterialId = value;
-            var selectedMaterial = Materials.FirstOrDefault(m => m.Id == value);
-            if (selectedMaterial != null)
+            if (MaterialEntry != null)
             {
-                MaterialEntry!.MaterialUnitId = selectedMaterial.MaterialUnitId;
+                MaterialEntry.MaterialId = value;
+                var mat = Materials.FirstOrDefault(m => m.Id == value);
+                if (mat != null) MaterialEntry.MaterialUnitId = mat.MaterialUnitId;
             }
         }
     }
 
-    // NEW: search fields & selectors for locations/persons (like Transfer modal)
-    private string toLocationSearch = "";
-    private string toPersonSearch = "";
+    private IEnumerable<Location> FilteredLocations => string.IsNullOrWhiteSpace(locSearch)
+        ? Locations
+        : Locations.Where(l => l.LocationName.Contains(locSearch, StringComparison.OrdinalIgnoreCase));
 
-    private int? SelectedToLocationId { get; set; } = null;
-    private int? SelectedToPersonId { get; set; } = null;
+    private IEnumerable<Personel> FilteredPersons => string.IsNullOrWhiteSpace(persSearch)
+        ? Persons
+        : Persons.Where(p => (p.Adi + " " + p.Soyadi).Contains(persSearch, StringComparison.OrdinalIgnoreCase));
 
-    private IEnumerable<Location> AvailableToLocationsFiltered =>
-        string.IsNullOrWhiteSpace(toLocationSearch)
-            ? (Locations ?? Enumerable.Empty<Location>())
-            : (Locations ?? Enumerable.Empty<Location>()).Where(l => GetLocationPath(l).Contains(toLocationSearch, StringComparison.OrdinalIgnoreCase));
+    // Validation Properties
+    private bool IsLocationInvalid => MaterialEntry != null && (MaterialEntry.LocationId == null || MaterialEntry.LocationId == 0) && (MaterialEntry.PersonelId == null || MaterialEntry.PersonelId == 0);
+    private bool IsSaveDisabled => MaterialEntry == null || MaterialEntry.Quantity < 1 || IsLocationInvalid;
 
-    private IEnumerable<Personel> AvailableToPersonsFiltered =>
-        string.IsNullOrWhiteSpace(toPersonSearch)
-            ? (Persons ?? Enumerable.Empty<Personel>())
-            : (Persons ?? Enumerable.Empty<Personel>()).Where(p => ($"{p.Adi} {p.Soyadi}").Contains(toPersonSearch, StringComparison.OrdinalIgnoreCase));
-
-    // Disable save when there is no entry, neither location nor person chosen, or quantity is less than1
-    private bool IsSaveDisabled => MaterialEntry == null || (SelectedToLocationId == 0 && !SelectedToPersonId.HasValue) || MaterialEntry.Quantity < 1;
-
-    private bool ShowQuantityError => MaterialEntry != null && MaterialEntry.Quantity < 1;
-    private bool ShowLocationError => MaterialEntry != null && (SelectedToLocationId == 0 && !SelectedToPersonId.HasValue);
-
-    private string ModalTitle => MaterialEntry == null || MaterialEntry.Id == 0 ? "Envantere Malzeme Girişi" : "Malzeme Girişi Düzenle";
+    private string GetUnitName()
+    {
+        if (MaterialEntry == null) return "";
+        var u = MaterialUnits.FirstOrDefault(x => x.Id == MaterialEntry.MaterialUnitId);
+        return u != null ? $"{u.Name} ({u.Symbol})" : "";
+    }
 
     private async Task HandleSave()
     {
-        if (MaterialEntry == null)
+        if (IsSaveDisabled)
         {
-            ToastService.ShowWarning("Geçerli bir malzeme girişi bulunamadı.");
+            ToastService.ShowWarning("Lütfen zorunlu alanları doldurunuz.");
             return;
         }
-
-        if (SelectedToLocationId == 0 && !SelectedToPersonId.HasValue)
-        {
-            ToastService.ShowWarning("Lütfen Malzeme Yeri (lokasyon veya kişi) seçiniz.");
-            return;
-        }
-
-        if (MaterialEntry.Quantity < 1)
-        {
-            ToastService.ShowWarning("Lütfen Miktar 1 veya daha fazla giriniz.");
-            return;
-        }
-
-        // Apply selections to MaterialEntry model
-        MaterialEntry.LocationId = SelectedToLocationId ?? null;
-
-        // Try to set PersonelId property if exists on the MaterialEntry model
-        var prop = MaterialEntry.GetType().GetProperty("PersonelId");
-        if (prop != null)
-        {
-            // convert Nullable<int> or int
-            object? toSet = null;
-            if (SelectedToPersonId.HasValue)
-                toSet = SelectedToPersonId.Value;
-            prop.SetValue(MaterialEntry, toSet);
-        }
-
-        // Fire parent save handler which will perform the server save (MaterialEntryService.AddAsync in parent)
         await OnSave.InvokeAsync();
     }
-
-    private string GetLocationPath(Location loc)
-    {
-        var names = new List<string>();
-        var current = loc;
-        while (current != null)
-        {
-            // names.Insert(0, $"{current.LocationName} ({current.LocationType})");
-            names.Insert(0, $"{current.LocationName} ");
-            current = ParentLocations?.FirstOrDefault(x => x.Id == current.ParentId);
-        }
-        return string.Join(" > ", names);
-    }
 }
-```
