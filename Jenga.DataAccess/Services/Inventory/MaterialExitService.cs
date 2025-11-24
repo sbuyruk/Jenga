@@ -3,6 +3,7 @@ using Jenga.Models.Enums;
 using Jenga.Models.Inventory;
 using Jenga.Utility.Helpers;
 using System.Linq.Expressions;
+using System.Security.Cryptography.Xml;
 
 namespace Jenga.DataAccess.Services.Inventory
 {
@@ -41,7 +42,7 @@ namespace Jenga.DataAccess.Services.Inventory
             await _materialInventoryService.AddOrUpdateInventoryAsync(
                 exit.MaterialId,
                 exit.LocationId,
-                material.MaterialUnitId,
+                exit.PersonId,
                 -exit.Quantity,
                 $"MaterialExit: {exit.ExitType} işlemi ile stoktan çıkarıldı.",
                 exit.Olusturan,
@@ -56,8 +57,8 @@ namespace Jenga.DataAccess.Services.Inventory
                 MaterialUnitId = material.MaterialUnitId,
                 FromLocationId = exit.LocationId,
                 ToLocationId = null,
-                FromPersonId = null,
-                ToPersonId = exit.PersonId,
+                FromPersonId = exit.PersonId,
+                ToPersonId = null,
                 MovementDate = exit.ExitDate,
                 MovementType ="Çıkış",
                 Aciklama = $"MaterialExit: {aciklama} işlemi.",

@@ -138,6 +138,7 @@
                        Materials="materials"
                        MaterialUnits="materialUnits"
                        Locations="locations"
+                       Persons="persons"
                        MaterialInventories="materialInventories"
                        IsOpen="isExitOpen"
                        OnSave="OnExitModalSave"
@@ -220,7 +221,6 @@
 
     private async Task RefreshData()
     {
-        // Parelel veri çekme işlemi performans için
         var t1 = MaterialCategoryService.GetAllAsync();
         var t2 = MaterialService.GetAllAsync();
         var t3 = MaterialBrandService.GetAllAsync();
@@ -243,15 +243,12 @@
 
         BuildTree();
 
-        // Reset UI logic
         if (SelectedMaterial == null && displayedCategory == null)
         {
-            // Root kategoriler
             categoryCards = categories.Where(c => (c.ParentCategoryId ?? 0) == 0).ToList();
         }
         else if (SelectedMaterial != null)
         {
-            // Mevcut seçim varsa state'i güncelle
             await LoadMaterialLocationCards(SelectedMaterial);
             await LoadMaterialTransactions(SelectedMaterial);
         }
@@ -267,7 +264,6 @@
             node => node.Category.ParentCategoryId?.ToString()
         );
 
-        // Malzemeleri ağaca ekle
         foreach (var mat in materials)
         {
             var parentId = mat.CategoryId.ToString();
@@ -309,7 +305,6 @@
     {
         if (item == null) return;
 
-        // Reset UI
         materialCards.Clear();
         categoryCards.Clear();
         materialTransactions.Clear();
@@ -332,7 +327,6 @@
 
     private void SelectCategoryCard(MaterialCategory cat)
     {
-        // Ağaçta bulup seçimi tetikle
         var node = FindNodeById(categoryTree, cat.Id.ToString());
         if (node != null) HandleNodeSelect(node);
     }
@@ -342,14 +336,9 @@
         if (mat == null) return;
         SelectedMaterial = mat;
         displayedCategory = null;
-
-        // Tek malzeme kartı göster
         materialCards = new List<Material> { mat };
-
-        // Detayları yükle
         _ = LoadMaterialLocationCards(mat);
         _ = LoadMaterialTransactions(mat);
-
         StateHasChanged();
     }
 
@@ -363,7 +352,6 @@
 
         var invs = materialInventories.Where(mi => mi.MaterialId == mat.Id).ToList();
 
-        // Group by Location & Personel
         var groups = invs
             .GroupBy(mi => new { mi.LocationId, mi.PersonelId })
             .Select(g => new
@@ -401,7 +389,6 @@
         materialTransactions = movements.OrderByDescending(m => m.MovementDate).Take(20)
             .Select(m =>
             {
-                // Basitleştirilmiş logic
                 bool isEntry = !m.FromLocationId.HasValue && m.ToLocationId.HasValue;
                 bool isExit = m.FromLocationId.HasValue && !m.ToLocationId.HasValue;
                 bool isTransfer = m.FromLocationId.HasValue && m.ToLocationId.HasValue;
@@ -448,16 +435,25 @@
 
     private void StartExit(Material? mat, MaterialLocationCard loc)
     {
-        if (mat == null || loc == null) return;
-        selectedLocationId = loc.LocationId;
+        if (mat == null) return;
+
+        selectedLocationId = loc?.LocationId;
+
         editingExit = new MaterialExit
         {
             MaterialId = mat.Id,
-            LocationId = loc.LocationId,
             MaterialUnitId = mat.MaterialUnitId,
             ExitDate = DateTime.Now,
             Quantity = 1
         };
+
+        // DÜZELTME: Lokasyon ve Personel bilgisini karttan alıp modele işle
+        if (loc != null)
+        {
+            editingExit.LocationId = loc.LocationId != 0 ? loc.LocationId : null;
+            editingExit.PersonId = loc.PersonelId; // KARTTAKİ PERSONEL ID BURADA AKTARILIYOR
+        }
+
         SelectedMaterial = mat;
         isExitOpen = true;
     }
@@ -471,11 +467,11 @@
             MaterialId = mat.Id,
             MaterialUnitId = mat.MaterialUnitId,
             FromLocationId = fromLoc.LocationId,
+            FromPersonId = fromLoc.PersonelId,
             TransferDate = DateTime.Now,
             Quantity = 1
         };
 
-        // inventory ID logic logic simplifed
         if (fromLoc.InventoryId != 0)
         {
             modalInitialFromInventoryId = fromLoc.InventoryId;
@@ -519,7 +515,6 @@
             ToastService.ShowSuccess($"{actionName} başarıyla kaydedildi.");
             closeAction();
 
-            // Refresh data partial
             materialInventories = await MaterialInventoryService.GetAllAsync();
             if (SelectedMaterial != null)
             {
@@ -547,7 +542,6 @@
 
     private async Task OnCategoryModalSave()
     {
-        // Implementation same as before but cleaner
         if (selectedCategory == null) return;
         if (selectedCategory.Id == 0) await MaterialCategoryService.AddAsync(selectedCategory);
         else await MaterialCategoryService.UpdateAsync(selectedCategory);
@@ -569,7 +563,6 @@
         if (item.Data.Category == null) return;
         var check = await MaterialCategoryService.CanDeleteAsync(item.Data.Category.Id);
 
-        // BURASI DÜZELTİLDİ: Property isimleri PascalCase (CanDelete, Reason) yapıldı
         if (!check.CanDelete) { ToastService.ShowError(check.Reason); return; }
 
         ModalService.ShowConfirmation("Silme Onayı", $"{item.Data.Category.CategoryName} silinsin mi?", async (res) =>

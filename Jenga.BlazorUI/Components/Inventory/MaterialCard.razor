@@ -1,6 +1,7 @@
 ﻿@using Jenga.Models.Inventory
 
-<div class="material-card p-2 mb-2"
+<div class="material-card p-2 mb-2 @(IsSelected ? "border border-primary bg-light" : "")"
+     style="cursor: pointer;"
      @onclick="() => OnOpenMaterial.InvokeAsync(Material)">
     <div class="fw-semibold">@Material.MaterialName</div>
     <hr />
@@ -17,6 +18,9 @@
     [Parameter] public Material Material { get; set; } = default!;
     [Parameter] public string UnitLabel { get; set; } = string.Empty;
     [Parameter] public decimal TotalQuantity { get; set; } = 0m;
+
+    // Yeni: Seçili olma durumu (Parent component kontrol edebilir)
+    [Parameter] public bool IsSelected { get; set; }
 
     // Kart tıklaması -> SeçilenMalzemeDetayı aç
     [Parameter] public EventCallback<Material> OnOpenMaterial { get; set; }

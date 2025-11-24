@@ -143,7 +143,7 @@
     [Parameter] public List<Material> Materials { get; set; } = new();
     [Parameter] public List<MaterialUnit> MaterialUnits { get; set; } = new();
     [Parameter] public List<Location> Locations { get; set; } = new();
-    [Parameter] public List<Personel> Persons { get; set; } = new(); // Parent component'ten gelmeli
+    [Parameter] public List<Personel> Persons { get; set; } = new();
     [Parameter] public List<MaterialInventory> MaterialInventories { get; set; } = new();
     [Parameter] public bool IsOpen { get; set; }
 
@@ -185,14 +185,12 @@
         ? MaterialUnits.FirstOrDefault(u => u.Id == MaterialExit.MaterialUnitId)?.Symbol
         : null;
 
-    // Mevcut seçim kombinasyonuna (Personel + Lokasyon) ait stok miktarı
     private int AvailableQuantity
     {
         get
         {
             if (CurrentPersonId == 0 && CurrentLocationId == 0) return 0;
 
-            // Tam eşleşme ara
             var match = AvailableInventoryOptions.FirstOrDefault(x =>
                 (x.PersonelId ?? 0) == CurrentPersonId &&
                 (x.LocationId ?? 0) == CurrentLocationId);
@@ -201,7 +199,6 @@
         }
     }
 
-    // Validasyonlar
     private bool ShowQuantityError => MaterialExit != null && MaterialExit.Quantity < 1;
     private bool ShowExceedsError => MaterialExit != null && AvailableQuantity > 0 && MaterialExit.Quantity > AvailableQuantity;
     private bool ShowLocationError => CurrentPersonId == 0 && CurrentLocationId == 0;
@@ -217,14 +214,14 @@
 
     protected override void OnParametersSet()
     {
-        RecalculateDerived();
-
-        // Modeli UI State ile eşle (Eğer model dolu gelirse - örn düzenleme)
+        // DÜZELTME: Önce Model -> State eşleşmesi yapılmalı, sonra listeler hesaplanmalı.
         if (MaterialExit != null && IsOpen)
         {
             CurrentLocationId = MaterialExit.LocationId ?? 0;
             CurrentPersonId = MaterialExit.PersonId ?? 0;
         }
+
+        RecalculateDerived();
     }
 
     private void RecalculateDerived()
@@ -232,7 +229,6 @@
         if (MaterialExit == null) return;
         var matId = MaterialExit.MaterialId;
 
-        // 1. Mevcut envanter seçeneklerini grupla
         AvailableInventoryOptions = MaterialInventories
             .Where(mi => mi.MaterialId == matId)
             .GroupBy(mi => new { mi.LocationId, mi.PersonelId })
@@ -245,17 +241,15 @@
             .Where(x => x.Quantity > 0)
             .ToList();
 
-        // 2. Dropdown listelerini güncelle
         UpdateSelectionLists();
 
-        // 3. Mevcut seçim artık geçersizse (stok bitmişse vs) sıfırla
+        // Mevcut seçim artık listede yoksa temizle
         var currentExists = AvailableInventoryOptions.Any(x =>
             (x.PersonelId ?? 0) == CurrentPersonId &&
             (x.LocationId ?? 0) == CurrentLocationId);
 
         if (!currentExists && IsOpen)
         {
-            // Eğer seçim geçersizse ama listede tek bir seçenek varsa onu seç
             if (AvailableInventoryOptions.Count == 1)
             {
                 var onlyOpt = AvailableInventoryOptions.First();
@@ -272,7 +266,6 @@
 
     private void UpdateSelectionLists()
     {
-        // Personel Listesi (Miktar ile)
         var personTotals = AvailableInventoryOptions
             .Where(x => x.PersonelId.HasValue)
             .GroupBy(x => x.PersonelId!.Value)
@@ -287,7 +280,6 @@
             })
             .OrderBy(x => x.FullName).ToList();
 
-        // Lokasyon Listesi (Miktar ile)
         var locationTotals = AvailableInventoryOptions
             .Where(x => x.LocationId.HasValue)
             .GroupBy(x => x.LocationId!.Value)
@@ -303,25 +295,21 @@
             .OrderBy(x => x.LocationName).ToList();
     }
 
-    // Dropdown Change Handlers (Senkronizasyon)
     private void OnPersonChanged(ChangeEventArgs e)
     {
         if (int.TryParse(e.Value?.ToString(), out int newPersonId))
         {
             CurrentPersonId = newPersonId;
 
-            // Bu personel seçiliyken, mevcut lokasyon uygun mu?
             var match = AvailableInventoryOptions.FirstOrDefault(x =>
                 (x.PersonelId ?? 0) == CurrentPersonId &&
                 (x.LocationId ?? 0) == CurrentLocationId);
 
             if (match == null)
             {
-                // Uygun değilse, personelin ilk uygun lokasyonunu bul
                 var bestMatch = AvailableInventoryOptions.FirstOrDefault(x => (x.PersonelId ?? 0) == CurrentPersonId);
                 CurrentLocationId = bestMatch?.LocationId ?? 0;
             }
-            // match != null ise lokasyon değişmez, senkronize kalır.
         }
     }
 
@@ -331,14 +319,12 @@
         {
             CurrentLocationId = newLocationId;
 
-            // Bu lokasyon seçiliyken, mevcut personel uygun mu?
             var match = AvailableInventoryOptions.FirstOrDefault(x =>
                 (x.PersonelId ?? 0) == CurrentPersonId &&
                 (x.LocationId ?? 0) == CurrentLocationId);
 
             if (match == null)
             {
-                // Uygun değilse, lokasyonun ilk uygun personelini bul
                 var bestMatch = AvailableInventoryOptions.FirstOrDefault(x => (x.LocationId ?? 0) == CurrentLocationId);
                 CurrentPersonId = bestMatch?.PersonelId ?? 0;
             }
@@ -355,7 +341,6 @@
 
         if (MaterialExit != null)
         {
-            // UI seçimlerini Modele aktar
             MaterialExit.LocationId = CurrentLocationId != 0 ? CurrentLocationId : null;
             MaterialExit.PersonId = CurrentPersonId != 0 ? CurrentPersonId : null;
         }
