@@ -1,15 +1,14 @@
-﻿@page "/test/menuler"
+﻿@page "/menu/menu-item-manager"
 @rendermode InteractiveServer
 @using Jenga.BlazorUI.Components.Menus
-@using Jenga.BlazorUI.Services.Common
 @using Jenga.DataAccess.Services.Common
-@using Jenga.DataAccess.Services.Menu
 @using Jenga.Models.Common
 @using Jenga.Utility.Error
 @inject IMenuItemService MenuItemService
 @inject IErrorService ErrorService
 @inject IJSRuntime JS
 
+<h3>Menü Yönetimi</h3>
 <MenuItemListComponent Menus="@menuItems" />
 
 @code {
@@ -25,7 +24,7 @@
             menuItems = await MenuItemService.GetAllAsync();
             _dataLoaded = true;
             StateHasChanged();
-            await JS.InvokeVoidAsync("initCustomDataTable");
+            await JS.InvokeVoidAsync("initDataTable");
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿@using Jenga.DataAccess.Repositories.IRepository
+@using Jenga.DataAccess.Services.Common
 @using Jenga.DataAccess.Services.Menu
 @using Jenga.Models
 @using Jenga.Models.Common
@@ -16,7 +17,7 @@
     </button>
 </div>
 
-@if (MenuItems?.Any() != true)
+@if (Menus?.Any() != true)
 {
     <p>Menü bulunamadı.</p>
 }
@@ -34,7 +35,7 @@ else
             </tr>
         </thead>
         <tbody>
-            @foreach (var item in MenuItems)
+            @foreach (var item in Menus)
             {
                 <tr>
                     <td>@item.Id</td>
@@ -42,7 +43,7 @@ else
                     <td>@item.Url</td>
                     <td>
                         @{
-                            var parent = MenuItems.FirstOrDefault(m => m.Id == item.ParentId);
+                            var parent = Menus.FirstOrDefault(m => m.Id == item.ParentId);
                         }
                         @parent?.Title
                     </td>
@@ -59,15 +60,15 @@ else
 
 @if (showEditModal && selectedMenuItem != null)
 {
-    <MenuItemEditModal MenuItem="@selectedMenuItem"
+    <MenuItemEditModal Menu="@selectedMenuItem"
                        IsOpen="true"
-                       AllMenuItems="@MenuItems"
+                       AllMenuItems="@Menus"
                        OnSave="HandleSave"
                        OnClose="HideModal" />
 }
 
 @code {
-    [Parameter] public List<MenuItem> MenuItems { get; set; } = new();
+    [Parameter] public List<MenuItem> Menus { get; set; } = new();
     private MenuItem? selectedMenuItem { get; set; }
     private bool showEditModal = false;
 
@@ -82,10 +83,10 @@ else
         if (item == null)
             return;
 
-        var hasChildren = MenuItems.Any(m => m.ParentId == item.Id);
+        var hasChildren = Menus.Any(m => m.ParentId == item.Id);
         if (hasChildren)
         {
-            var childTitles = MenuItems
+            var childTitles = Menus
                 .Where(m => m.ParentId == item.Id)
                 .Select(m => m.Title)
                 .Where(title => !string.IsNullOrEmpty(title))
@@ -112,7 +113,7 @@ else
                     if (deleted)
                     {
                         ToastService.ShowToast($"{item.Title} silindi", ToastType.Success, 3000);
-                        MenuItems.Remove(item);
+                        Menus.Remove(item);
                         StateHasChanged();
                     }
                     else

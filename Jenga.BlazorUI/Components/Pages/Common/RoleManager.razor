@@ -1,19 +1,18 @@
-﻿@page "/test/menuler"
+﻿@page "/menu/role-manager"
 @rendermode InteractiveServer
 @using Jenga.BlazorUI.Components.Menus
-@using Jenga.BlazorUI.Services.Common
 @using Jenga.DataAccess.Services.Common
-@using Jenga.DataAccess.Services.Menu
 @using Jenga.Models.Common
 @using Jenga.Utility.Error
-@inject IMenuItemService MenuItemService
+@inject IRoleService RolService
 @inject IErrorService ErrorService
 @inject IJSRuntime JS
 
-<MenuItemListComponent Menus="@menuItems" />
+<h3>Rol Yönetimi</h3>
+<RolListComponent Roller="@roller" />
 
 @code {
-    private List<MenuItem> menuItems = new();
+    private List<Role> roller = new();
 
 
     private bool _dataLoaded;
@@ -22,10 +21,10 @@
     {
         if (firstRender && !_dataLoaded)
         {
-            menuItems = await MenuItemService.GetAllAsync();
+            roller = await RolService.GetAllAsync();
             _dataLoaded = true;
             StateHasChanged();
-            await JS.InvokeVoidAsync("initCustomDataTable");
+            await JS.InvokeVoidAsync("initRolTableWithExport");
         }
     }
 }

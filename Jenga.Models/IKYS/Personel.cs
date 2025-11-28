@@ -31,6 +31,4 @@ public class Personel : BaseModel
     public IletisimBilgileri IletisimBilgileri { get; set; }
     [ValidateNever]
     public IsBilgileri IsBilgileri { get; set; }
-    [ValidateNever]
-    public List<PersonelMenu> PersonelMenu { get; set; }
 }

@@ -1,11 +1,11 @@
 ﻿@page "/test/rol"
 @rendermode InteractiveServer
-@using Jenga.DataAccess.Services.Menu
+@using Jenga.DataAccess.Services.Common
 @using Jenga.Models.Common
 @using Jenga.DataAccess.Repositories.IRepository
-@using Jenga.BlazorUI.Services.Menu
+@using Jenga.BlazorUI.Services.Common
 @inject IUnitOfWork UnitOfWork
-@inject IRolService RolService
+@inject IRoleService RolService
 
 <h5>Rol Listesi</h5>
 <table class="table">
@@ -19,7 +19,7 @@
         @foreach (var item in ExistingItems)
         {
             <tr>
-                <td>@item.Adi</td>
+                <td>@item.Name</td>
                 <td>@item.Aciklama</td>
             </tr>
         }
@@ -27,7 +27,7 @@
 </table>
 
 @code {
-    private IEnumerable<Rol> ExistingItems = new List<Rol>();
+    private IEnumerable<Role> ExistingItems = new List<Role>();
 
     private bool _dataLoaded;
 

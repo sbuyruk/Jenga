@@ -1,7 +1,7 @@
-﻿using Jenga.DataAccess.Repositories.IRepository.IKYS;
+﻿using Jenga.DataAccess.Repositories.IRepository.Common;
+using Jenga.DataAccess.Repositories.IRepository.IKYS;
 using Jenga.DataAccess.Repositories.IRepository.Inventory;
-using Jenga.DataAccess.Repositories.IRepository.Menu;
-using Jenga.DataAccess.Repositories.IRepository.Ortak;
+using Jenga.DataAccess.Repositories.IRepository.Common;
 
 namespace Jenga.DataAccess.Repositories.IRepository
 {
@@ -20,13 +20,11 @@ namespace Jenga.DataAccess.Repositories.IRepository
         IMaterialAssignmentRepository MaterialAssignment { get; }
         IMaterialExitRepository MaterialExit { get; }
         IMaterialTransferRepository MaterialTransfer { get; }
-        // Menu
+        // Common
         IMenuItemRepository MenuItem { get; }
-        IRolRepository Rol { get; }
-        IRolMenuRepository RolMenu { get; }
-        IPersonelRolRepository PersonelRol { get; }
-
-        //Ortak
+        IRoleRepository Role { get; }
+        IRoleMenuRepository RoleMenu { get; }
+        IPersonelRoleRepository PersonelRole { get; }
         IBolgeRepository Bolge { get; }
         IIlRepository Il { get; }
         IIlceRepository Ilce { get; }

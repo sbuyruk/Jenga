@@ -7,23 +7,23 @@ namespace Jenga.Models.Common
     [Table("MenuItem_Table")]
     public class MenuItem : BaseModel
     {
-        [Column("Adi")]
+        [Column("Title")]
         public string? Title { get; set; } = "Menu Başlığı";
 
-        [Column("UstMenuId")]
+        [Column("ParentId")]
         public int? ParentId { get; set; }
 
         [Column("Url")]
         public string? Url { get; set; } = "#";
 
-        [Column("Sira")]
+        [Column("DisplayOrder")]
         public int? DisplayOrder { get; set; }
 
         [Column("IsVisible")]
         public bool? IsVisible { get; set; } = true;
 
         [NotMapped]
-        public List<MenuItem>? Children { get; set; } = [];//initialized
+        public List<MenuItem>? Children { get; set; } = new List<MenuItem>(); // fixed initialization
         [NotMapped]
         public bool IsExpanded { get; set; }
         [NotMapped]

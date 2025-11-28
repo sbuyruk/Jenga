@@ -1,8 +1,9 @@
 ﻿using Jenga.BlazorUI.Components;
-using Jenga.BlazorUI.Services.Menu;
+using Jenga.BlazorUI.Services.Common;
 using Jenga.DataAccess.Data;
 using Jenga.DataAccess.Repositories;
 using Jenga.DataAccess.Repositories.IRepository;
+using Jenga.DataAccess.Services.Common;
 using Jenga.DataAccess.Services.IKYS;
 using Jenga.DataAccess.Services.Inventory;
 using Jenga.DataAccess.Services.Menu;
@@ -11,6 +12,7 @@ using Jenga.Utility.Logging;
 using Jenga.Utility.Modal;
 using Jenga.Utility.Toast;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.Negotiate;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,9 +22,6 @@ var logger = builder.Services.BuildServiceProvider()
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 /*SB*/
-//builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
-//    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")),
-//           ServiceLifetime.Transient);
 builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
@@ -39,7 +38,6 @@ builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 /*SB Menu Servisi*/
-builder.Services.AddScoped<IMenuService, MenuService>();
 builder.Services.AddScoped<IMenuItemService, MenuItemService>();
 builder.Services.AddScoped<MenuStateService>();
 
@@ -53,7 +51,7 @@ builder.Services.AddScoped<IErrorService, ErrorService>();
 //Modal Service
 builder.Services.AddScoped<IModalService, ModalService>();
 //Rol Service
-builder.Services.AddScoped<IRolService, RolService>();
+builder.Services.AddScoped<IRoleService, RoleService>();
 //inventory services
 builder.Services.AddScoped<IMaterialService, MaterialService>();
 builder.Services.AddScoped<IMaterialCategoryService, MaterialCategoryService>();
@@ -67,11 +65,16 @@ builder.Services.AddScoped<IMaterialExitService, MaterialExitService>();
 builder.Services.AddScoped<IMaterialTransferService, MaterialTransferService>();
 builder.Services.AddScoped<ILocationService, LocationService>();
 builder.Services.AddScoped<IPersonelLocationService, PersonelLocationService>();
+builder.Services.AddScoped<CurrentUserService, CurrentUserService>();
 //IKYS Service 
 builder.Services.AddScoped<IPersonelService, PersonelService>();
 
 //Currentusername alırken httpContextAcces.. kullanmak için
 builder.Services.AddHttpContextAccessor();
+
+// Authentication/Authorization for Windows auth (Negotiate)
+builder.Services.AddAuthentication(NegotiateDefaults.AuthenticationScheme).AddNegotiate();
+builder.Services.AddAuthorization();
 
 //DetailedErrors ayarını aç
 builder.Services.AddServerSideBlazor()
@@ -82,12 +85,14 @@ var app = builder.Build();
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
 app.UseHttpsRedirection();
 
+// Authentication/Authorization middleware
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.UseAntiforgery();
 

@@ -1,17 +1,17 @@
 ﻿@page "/test/roller"
 @rendermode InteractiveServer
 @using Jenga.BlazorUI.Components.Menus
-@using Jenga.DataAccess.Services.Menu
+@using Jenga.DataAccess.Services.Common
 @using Jenga.Models.Common
 @using Jenga.Utility.Error
-@inject IRolService RolService
+@inject IRoleService RolService
 @inject IErrorService ErrorService
 @inject IJSRuntime JS
 
 <RolListComponent Roller="@roller" />
 
 @code {
-    private List<Rol> roller = new();
+    private List<Role> roller = new();
 
 
     private bool _dataLoaded;

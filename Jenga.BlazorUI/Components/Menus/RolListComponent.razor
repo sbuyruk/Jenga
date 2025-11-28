@@ -1,12 +1,12 @@
 ﻿@using Jenga.DataAccess.Repositories.IRepository
-@using Jenga.DataAccess.Services.Menu
+@using Jenga.DataAccess.Services.Common
 @using Jenga.Models
 @using Jenga.Models.Common
 @using Jenga.Models.IKYS
 @using Jenga.Utility.Modal
 @using Jenga.Utility.Toast
 @inject IModalService ModalService
-@inject IRolService RolService
+@inject IRoleService RolService
 @inject IJSRuntime JS
 @inject IUnitOfWork UnitOfWork
 @inject IToastService ToastService
@@ -35,7 +35,7 @@ else
             @foreach (var rol in Roller)
             {
                 <tr>
-                    <td>@rol.Adi</td>
+                    <td>@rol.Name</td>
                     <td>@rol.Aciklama</td>
                     <td>
                         <button class="btn btn-primary me-2" @onclick="() => OnEditClicked(rol)">Düzenle</button>
@@ -49,7 +49,7 @@ else
 
 @if (showEditModal && selectedRol != null && personelList != null && menuList != null)
 {
-    <RolEditModal Rol="@selectedRol"
+    <RolEditModal Role="@selectedRol"
                   PersonelList="@personelList"
                   MenuList="@menuList"
                   IsOpen="true"
@@ -58,70 +58,70 @@ else
 }
 
 @code {
-    [Parameter] public List<Rol> Roller { get; set; } = new();
-    private Rol? selectedRol { get; set; }
+    [Parameter] public List<Role> Roller { get; set; } = new();
+    private Role? selectedRol { get; set; }
     private List<Personel>? personelList { get; set; }
     private List<MenuItem>? menuList { get; set; }
     private bool showEditModal = false;
 
-    private async Task OnEditClicked(Rol rol)
+    private async Task OnEditClicked(Role rol)
     {
         selectedRol = await RolService.GetByIdWithRelationsAsync(rol.Id);
         var aktifPersoneller = (await UnitOfWork.Personel.GetAllAsync("IsBilgileri"))
             .Where(p => p.IsBilgileri != null && p.IsBilgileri.CalismaDurumu == "1")
-            .Where(p => selectedRol?.PersonelRoller == null || !selectedRol.PersonelRoller!.Any(pr => pr.PersonelId == p.Id))
+            .Where(p => selectedRol?.PersonelRoles == null || !selectedRol.PersonelRoles!.Any(pr => pr.PersonelId == p.Id))
             .ToList();
 
         var aktifMenuler = (await UnitOfWork.MenuItem.GetAllAsync())
             .Where(p => p.IsVisible == true)
-            .Where(p => selectedRol?.RolMenuleri == null || !selectedRol.RolMenuleri!.Any(rm => rm.MenuId == p.Id))
+            .Where(p => selectedRol?.RoleMenus == null || !selectedRol.RoleMenus!.Any(rm => rm.MenuId == p.Id))
             .ToList();
         //GetData<Personel>("personel");
         personelList = aktifPersoneller;
         menuList = aktifMenuler;// GetData<MenuItem>("menu");
         showEditModal = true;
     }
-    private void OnDeleteClicked(Rol rol)
+    private void OnDeleteClicked(Role role)
     {
         ModalService.ShowConfirmation(
             "Silme Onayı",
-            $"'{rol.Adi}' rolünü silmek istediğinizden emin misiniz?",
+            $"'{role.Name}' rolünü silmek istediğinizden emin misiniz?",
             async result =>
             {
                 if (result)
                 {
-                    await RolService.DeleteAsync(rol);
-                    Roller.Remove(rol);
+                    await RolService.DeleteAsync(role);
+                    Roller.Remove(role);
                     StateHasChanged();
-                    ToastService.ShowToast($"{rol.Adi} silindi", ToastType.Success, 3000);
+                    ToastService.ShowToast($"{role.Name} silindi", ToastType.Success, 3000);
                 }
             });
     }
 
-    private async void HandleSave()
+    private async Task HandleSave()
     {
-        if (selectedRol != null)
+        if (selectedRol == null) return;
+
+        if (selectedRol.Id == 0)
         {
-            if (selectedRol.Id == 0)
+            var ok = await RolService.AddWithRelationsAsync(selectedRol);
+            if (ok)
             {
-                // Yeni rol ekle
-                var savedRol = selectedRol;
-                bool saved= await RolService.AddAsync(selectedRol);
-                if (saved)
-                {
-                    ToastService.ShowToast(savedRol.Adi + " eklendi", ToastType.Success, 3000);
-                    Roller.Add(savedRol);
-                }
+                ToastService.ShowToast(selectedRol.Name + " eklendi", ToastType.Success, 3000);
+                Roller.Add(selectedRol);
             }
-            else
-            {
-                // Mevcut rolü güncelle
-                ToastService.ShowToast(selectedRol.Adi + " güncellendi", ToastType.Info, 3000);
-                await RolService.UpdateAsync(selectedRol);
-            }
-            showEditModal = false;
-            StateHasChanged();
         }
+        else
+        {
+            var ok = await RolService.UpdateWithRelationsAsync(selectedRol);
+            if (ok)
+            {
+                ToastService.ShowToast(selectedRol.Name + " güncellendi", ToastType.Info, 3000);
+            }
+        }
+
+        showEditModal = false;
+        StateHasChanged();
     }
 
     private void HideModal()
@@ -156,7 +156,7 @@ else
     private async Task OpenNewRolModal()
     {
         // Yeni, boş bir rol nesnesi oluştur
-        selectedRol = new Rol();
+        selectedRol = new Role();
         // Aktif personel ve menüleri çek
         var aktifPersoneller = (await UnitOfWork.Personel.GetAllAsync("IsBilgileri"))
             .Where(p => p.IsBilgileri != null && p.IsBilgileri.CalismaDurumu == "1")

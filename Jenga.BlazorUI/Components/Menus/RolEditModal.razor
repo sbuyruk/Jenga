@@ -10,32 +10,32 @@
     <div class="modal show d-block" tabindex="-1" style="display:block;">
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
-                <EditForm Model="@Rol" OnValidSubmit="HandleValidSubmit">
+                <EditForm Model="@Role" OnValidSubmit="HandleValidSubmit">
                     <div class="modal-header">
-                        <h5 class="modal-title">@((Rol.Id == 0) ? "Rol Ekle" : "Rol Düzenle")</h5>
+                        <h5 class="modal-title">@((Role.Id == 0) ? "Rol Ekle" : "Rol Düzenle")</h5>
                         <button type="button" class="btn-close" @onclick="Close"></button>
                     </div>
                     <div class="modal-body">
                         <div class="mb-3">
                             <label>Adı</label>
-                            <InputText class="form-control" @bind-Value="Rol.Adi" />
+                            <InputText class="form-control" @bind-Value="Role.Name" />
                         </div>
                         <div class="mb-3">
                             <label>Açıklama</label>
-                            <InputText class="form-control" @bind-Value="Rol.Aciklama" />
+                            <InputText class="form-control" @bind-Value="Role.Aciklama"/>
                         </div>
                         
                         <br />
                         <div class="row">
 
                             <div class="mb-3 border m-1 col">
-                                <AddRemoveListComponent TItem="PersonelRol"
+                                <AddRemoveListComponent TItem="PersonelRole"
                                                         TSelect="Personel"
                                                         Title="Rolün Verildiği Kişiler"
                                                         SelectPlaceholder="Personel Seçiniz"
                                                         ListHeader="Adı Soyadı"
                                                         SelectList="PersonelList"
-                                                        Items="@(Rol.PersonelRoller?.ToList() ?? new List<PersonelRol>())"
+                                                        Items="@(Role.PersonelRoles?.ToList() ?? new List<PersonelRole>())"
                                                         GetId="@(p => p.Id)"
                                                         GetDisplay="@(p => p.Adi + " " + p.Soyadi)"
                                                         GetListDisplay="@(pr => pr.Personel?.Adi + " " + pr.Personel?.Soyadi)"
@@ -44,13 +44,13 @@
 
                             </div>
                             <div class="mb-3 border m-1 col">
-                                <AddRemoveListComponent TItem="RolMenu"
+                                <AddRemoveListComponent TItem="RoleMenu"
                                                         TSelect="MenuItem"
                                                         Title="Rol Kapsamındaki Menüler"
                                                         SelectPlaceholder="Menü Seçiniz"
                                                         ListHeader="Menü Adı"
                                                         SelectList="MenuList"
-                                                        Items="@(Rol.RolMenuleri?.ToList() ?? new List<RolMenu>())"
+                                                        Items="@(Role.RoleMenus?.ToList() ?? new List<RoleMenu>())"
                                                         GetId="@(m => m.Id)"
                                                         GetDisplay="@(m => m.Title)"
                                                         GetListDisplay="@(rm => rm.Menu?.Title)"
@@ -70,9 +70,9 @@
 }
 
 @code {
-    [Parameter] public Rol Rol { get; set; } = new();
+    [Parameter] public Role Role { get; set; } = new();
     [Parameter] public EventCallback OnClose { get; set; }
-    [Parameter] public EventCallback<Rol> OnSave { get; set; }
+    [Parameter] public EventCallback<Role> OnSave { get; set; }
 
     [Parameter] public List<Personel> PersonelList { get; set; } = new();
     [Parameter] public List<MenuItem> MenuList { get; set; } = new();
@@ -84,10 +84,10 @@
         if (personelId.HasValue)
         {
             var personel = PersonelList.FirstOrDefault(p => p.Id == personelId.Value);
-            if (personel != null && (Rol.PersonelRoller?.All(x => x.PersonelId != personel.Id) ?? true))
+            if (personel != null && (Role.PersonelRoles?.All(x => x.PersonelId != personel.Id) ?? true))
             {
-                Rol.PersonelRoller ??= new List<PersonelRol>();
-                Rol.PersonelRoller.Add(new PersonelRol { PersonelId = personel.Id, Personel = personel });
+                Role.PersonelRoles ??= new List<PersonelRole>();
+                Role.PersonelRoles.Add(new PersonelRole { PersonelId = personel.Id, Personel = personel });
 
                 PersonelList.Remove(personel);
                 StateHasChanged();
@@ -95,9 +95,9 @@
         }
     }
 
-    private async Task RemovePersonelRol(PersonelRol pr)
+    private async Task RemovePersonelRol(PersonelRole pr)
     {
-        Rol.PersonelRoller?.Remove(pr);
+        Role.PersonelRoles?.Remove(pr);
         if (pr.Personel != null)
         {
             PersonelList.Add(pr.Personel);
@@ -108,23 +108,23 @@
     private void AddRolMenu(int? menuId)
     {
         var menu = MenuList.FirstOrDefault(p => p.Id == menuId.Value);
-        if (menu != null && (Rol.RolMenuleri?.All(x => x.MenuId != menu.Id) ?? true))
+        if (menu != null && (Role.RoleMenus?.All(x => x.MenuId != menu.Id) ?? true))
         {
-            Rol.RolMenuleri ??= new List<RolMenu>();
-            Rol.RolMenuleri.Add(new RolMenu { MenuId = menu.Id, Menu = menu });
+            Role.RoleMenus ??= new List<RoleMenu>();
+            Role.RoleMenus.Add(new RoleMenu { MenuId = menu.Id, Menu = menu });
             StateHasChanged();
         }
         
     }
 
-    private void RemoveRolMenu(RolMenu rm)
+    private void RemoveRolMenu(RoleMenu rm)
     {
-        Rol.RolMenuleri?.Remove(rm);
+        Role.RoleMenus?.Remove(rm);
     }
 
     private async Task HandleValidSubmit()
     {
-        await OnSave.InvokeAsync(Rol);
+        await OnSave.InvokeAsync(Role);
         await Close();
     }
 
@@ -136,11 +136,11 @@
     }
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (Rol.RolMenuleri != null )
+        if (Role.RoleMenus != null)
         {
             await JS.InvokeVoidAsync("initCustomDataTable");
         }
-        if (Rol.PersonelRoller!=null)
+        if (Role.PersonelRoles!=null)
         {
             // await JS.InvokeVoidAsync("initCustomDataTable1");
         }

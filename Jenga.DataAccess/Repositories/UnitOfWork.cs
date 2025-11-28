@@ -1,13 +1,12 @@
 ﻿using Jenga.DataAccess.Data;
+using Jenga.DataAccess.Repositories.Common;
 using Jenga.DataAccess.Repositories.IKYS;
 using Jenga.DataAccess.Repositories.Inventory;
 using Jenga.DataAccess.Repositories.IRepository;
+using Jenga.DataAccess.Repositories.IRepository.Common;
 using Jenga.DataAccess.Repositories.IRepository.IKYS;
 using Jenga.DataAccess.Repositories.IRepository.Inventory;
-using Jenga.DataAccess.Repositories.IRepository.Menu;
-using Jenga.DataAccess.Repositories.IRepository.Ortak;
-using Jenga.DataAccess.Repositories.Menu;
-using Jenga.DataAccess.Repositories.Ortak;
+using Jenga.DataAccess.Repositories.IRepository.Common;
 using Microsoft.EntityFrameworkCore;
 
 namespace Jenga.DataAccess.Repositories
@@ -27,9 +26,9 @@ namespace Jenga.DataAccess.Repositories
             // Create repositories passing the factory. Each repository will create
             // short-lived DbContext instances per operation.
             MenuItem = new MenuItemRepository(_contextFactory);
-            Rol = new RolRepository(_contextFactory);
-            RolMenu = new RolMenuRepository(_contextFactory);
-            PersonelRol = new PersonelRolRepository(_contextFactory);
+            Role = new RoleRepository(_contextFactory);
+            RoleMenu = new RoleMenuRepository(_contextFactory);
+            PersonelRole = new PersonelRoleRepository(_contextFactory);
 
             // Inventory
             Material = new MaterialRepository(_contextFactory);
@@ -60,10 +59,12 @@ namespace Jenga.DataAccess.Repositories
 
         // Common
         public IMenuItemRepository MenuItem { get; private set; }
-        public IRolRepository Rol { get; private set; }
-        public IRolMenuRepository RolMenu { get; private set; }
-        public IPersonelRolRepository PersonelRol { get; private set; }
-
+        public IRoleRepository Role { get; private set; }
+        public IRoleMenuRepository RoleMenu { get; private set; }
+        public IPersonelRoleRepository PersonelRole { get; private set; }
+        public IBolgeRepository Bolge { get; private set; }
+        public IIlRepository Il { get; private set; }
+        public IIlceRepository Ilce { get; private set; }
         // Inventory
         public IMaterialRepository Material { get; private set; }
         public IMaterialEntryRepository MaterialEntry { get; private set; }
@@ -77,14 +78,6 @@ namespace Jenga.DataAccess.Repositories
         public IMaterialAssignmentRepository MaterialAssignment { get; private set; }
         public IMaterialExitRepository MaterialExit { get; private set; }
         public IMaterialTransferRepository MaterialTransfer { get; private set; }
-
-
-
-        // Ortak
-        public IBolgeRepository Bolge { get; private set; }
-        public IIlRepository Il { get; private set; }
-        public IIlceRepository Ilce { get; private set; }
-
 
         // IKYS
         public IPersonelRepository Personel { get; private set; }

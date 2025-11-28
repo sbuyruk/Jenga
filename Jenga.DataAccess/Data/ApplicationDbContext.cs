@@ -1,7 +1,6 @@
 ﻿using Jenga.Models.Common;
 using Jenga.Models.IKYS;
 using Jenga.Models.Inventory;
-using Jenga.Models.Ortak;
 using Microsoft.EntityFrameworkCore;
 
 namespace Jenga.DataAccess.Data
@@ -14,10 +13,9 @@ namespace Jenga.DataAccess.Data
         }
         //Common
         public DbSet<MenuItem> MenuItem_Table { get; set; }
-        public DbSet<Rol> Rol_Table { get; set; }
-        public DbSet<PersonelRol> PersonelRol_Table { get; set; }
-        public DbSet<RolMenu> RolMenu_Table { get; set; }
-        public DbSet<PersonelMenu> PersonelMenuleri { get; set; }
+        public DbSet<Role> Rol_Table { get; set; }
+        public DbSet<PersonelRole> PersonelRol_Table { get; set; }
+        public DbSet<RoleMenu> RolMenu_Table { get; set; }
         //Inventory
         public DbSet<Material> Material_Table { get; set; }
         public DbSet<MaterialEntry> MaterialEntry_Table { get; set; }

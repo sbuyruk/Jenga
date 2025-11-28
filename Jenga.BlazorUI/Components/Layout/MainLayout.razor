@@ -1,10 +1,13 @@
 ﻿@using Jenga.BlazorUI.Components.Menus
 @using Jenga.BlazorUI.Components.Toast
-@using Jenga.BlazorUI.Services.Menu
+@using Jenga.BlazorUI.Services.Common
 @inherits LayoutComponentBase
 
 @inject IJSRuntime JS
 @inject MenuStateService MenuState
+@inject IHttpContextAccessor HttpContextAccessor
+@inject CurrentUserService CurrentUserService
+@inject MenuStateService MenuStateService
 
 <div class="page">
     <div class="sidebar">
@@ -13,7 +16,7 @@
     <main>
         <div class="top-row px-4">
             <ThemeSwitcher />
-            <NavLink href="/" class="navbar-brand">Jenga.BlazorUI</NavLink>
+            <NavLink href="/" class="navbar-brand">@(_windowsUser.Length > 0 ? _windowsUser : "Jenga.BlazorUI")</NavLink>
         </div>
 
         <article class="content px-4">
@@ -29,13 +32,37 @@
     <span class="dismiss">🗙</span>
 </div>
 
+<header>
+  <div class="top-right">
+    @if (_personel != null)
+    {
+        <span>@_personel.Adi @_personel.Soyadi</span>
+    }
+    else
+    {
+        <span>Guest</span>
+    }
+  </div>
+</header>
+
 @code {
     private bool _initialized;
+    private string _windowsUser = string.Empty;
+    private Jenga.Models.IKYS.Personel? _personel;
 
     protected override async Task OnInitializedAsync()
     {
         // Menü verisini yüklüyoruz
-        await MenuState.EnsureLoadedAsync();
+   
+
+        _personel = await CurrentUserService.GetCurrentPersonelAsync();
+        var personelId = _personel?.Id ?? 127; // fallback if needed
+        await MenuStateService.EnsureLoadedAsync(personelId);
+
+        if (_personel != null)
+        {
+            _windowsUser = $"{_personel.Adi} {_personel.Soyadi}";
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
