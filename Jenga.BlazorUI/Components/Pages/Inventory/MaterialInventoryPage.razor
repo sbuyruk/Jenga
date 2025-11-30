@@ -1,0 +1,217 @@
+﻿@page "/inventory/material-inventory-page"
+@rendermode InteractiveServer
+
+@using Jenga.DataAccess.Services.IKYS
+@using Jenga.DataAccess.Services.Inventory
+@using Jenga.Models.IKYS
+@using Jenga.Models.Inventory
+@using Jenga.BlazorUI.Components.Inventory
+@using Jenga.Utility.Toast
+
+@inject IMaterialInventoryService MaterialInventoryService
+@inject IMaterialService MaterialService
+@inject IMaterialUnitService MaterialUnitService
+@inject IMaterialCategoryService MaterialCategoryService
+@inject ILocationService LocationService
+@inject IPersonelService PersonelService
+@inject IMaterialEntryService MaterialEntryService
+@inject IToastService ToastService
+@inject IHttpContextAccessor HttpContextAccessor
+
+<h5>Malzeme Envanteri</h5>
+
+<div class="mb-3 d-flex">
+    <input class="form-control form-control-sm me-2" placeholder="Malzeme ara..." @bind="searchTerm" @bind:event="oninput" />
+    <button class="col-md-2 btn btn-sm btn-success" @onclick="OpenNewEntryModal">
+        <i class="bi bi-box-arrow-in-right me-1"></i>Malzeme gir
+    </button>
+</div>
+
+@if (!dataLoaded)
+{
+    <div class="text-muted">Yükleniyor...</div>
+}
+else
+{
+    <MaterialInventoryTable MaterialInventories="FilteredInventories.ToList()"
+                            Materials="materials"
+                            MaterialUnits="units"
+                            Categories="categories"
+                            Locations="locations"
+                            Persons="persons"
+                            OnOpenMovements="HandleOpenMovements"
+                            OnOpenLocations="HandleOpenLocations" />
+}
+
+@* Local entry modal opened by the "Malzeme gir" button *@
+<MaterialEntryEditModal MaterialEntry="editingEntry"
+                        Materials="materials"
+                        MaterialUnits="units"
+                        Locations="locations"
+                        Persons="persons"
+                        IsOpen="isEntryOpen"
+                        OnSave="OnEntryModalSave"
+                        OnClose="CloseEntryModal" />
+
+@* Movements modal (opened when user clicks "Hareketler") *@
+@if (isMovementModalOpen)
+{
+    <div class="modal-backdrop fade show" style="z-index:1055"></div>
+    <div class="modal show" tabindex="-1" style="display: block;">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Hareketler - @GetMaterialName(selectedMovementMaterialId)</h5>
+                    <button type="button" class="btn-close" @onclick="CloseMovementModal" aria-label="Kapat"></button>
+                </div>
+                <div class="modal-body">
+                    <MaterialMovementTable MaterialId="selectedMovementMaterialId"
+                                           Materials="materials"
+                                           Categories="categories"
+                                           Locations="locations"
+                                           Persons="persons"
+                                           MaterialUnits="units"
+                                           MaxItems="0" />
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="CloseMovementModal">Kapat</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<MaterialInventory> inventories = new();
+    private List<Material> materials = new();
+    private List<MaterialUnit> units = new();
+    private List<MaterialCategory> categories = new();
+    private List<Location> locations = new();
+    private List<Personel> persons = new();
+
+    private bool dataLoaded;
+    private string searchTerm = "";
+
+    // Entry modal state
+    private MaterialEntry? editingEntry;
+    private bool isEntryOpen;
+
+    // Movement modal state
+    private int selectedMovementMaterialId;
+    private bool isMovementModalOpen;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        // load all required lists in parallel
+        var t1 = MaterialInventoryService.GetAllAsync();
+        var t2 = MaterialService.GetAllAsync();
+        var t3 = MaterialUnitService.GetAllAsync();
+        var t4 = MaterialCategoryService.GetAllAsync();
+        var t5 = LocationService.GetAllAsync();
+        var t6 = PersonelService.GetCalisanPersonelAsync();
+
+        await Task.WhenAll(t1, t2, t3, t4, t5, t6);
+
+        inventories = t1.Result;
+        materials = t2.Result;
+        units = t3.Result;
+        categories = t4.Result;
+        locations = t5.Result;
+        persons = t6.Result;
+
+        dataLoaded = true;
+        StateHasChanged();
+    }
+
+    private IEnumerable<MaterialInventory> FilteredInventories
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(searchTerm))
+                return inventories;
+            var lower = searchTerm.Trim();
+            var matchedMaterialIds = materials
+                .Where(m => m.MaterialName.Contains(lower, StringComparison.OrdinalIgnoreCase))
+                .Select(m => m.Id)
+                .ToHashSet();
+            return inventories.Where(i => matchedMaterialIds.Contains(i.MaterialId)).ToList();
+        }
+    }
+
+    private async Task HandleOpenMovements(int materialId)
+    {
+        selectedMovementMaterialId = materialId;
+        isMovementModalOpen = true;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private Task HandleOpenLocations(int materialId)
+    {
+        // existing locations handling...
+        return Task.CompletedTask;
+    }
+
+    // Button handler: open modal for a new MaterialEntry
+    private void OpenNewEntryModal()
+    {
+        editingEntry = new MaterialEntry
+        {
+            EntryDate = DateTime.Now,
+            Quantity = 1
+        };
+        isEntryOpen = true;
+    }
+
+    private async Task OnEntryModalSave()
+    {
+        if (editingEntry == null) return;
+
+        try
+        {
+            var currentUser = HttpContextAccessor.HttpContext?.User?.Identity?.Name;
+            var saved = await MaterialEntryService.AddAsync(editingEntry, currentUser, CancellationToken.None);
+            if (saved)
+            {
+                ToastService.ShowToast("Giriş kaydedildi.", ToastType.Success, 2000);
+                inventories = await MaterialInventoryService.GetAllAsync();
+            }
+            else
+            {
+                ToastService.ShowToast("Giriş kaydedilemedi.", ToastType.Error, 3000);
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowToast($"Hata: {ex.Message}", ToastType.Error, 5000);
+        }
+        finally
+        {
+            isEntryOpen = false;
+            editingEntry = null;
+            StateHasChanged();
+        }
+    }
+
+    private void CloseEntryModal()
+    {
+        isEntryOpen = false;
+        editingEntry = null;
+    }
+
+    private void CloseMovementModal()
+    {
+        isMovementModalOpen = false;
+        selectedMovementMaterialId = 0;
+    }
+
+    private string GetMaterialName(int id)
+    {
+        var m = materials.FirstOrDefault(x => x.Id == id);
+        return m?.MaterialName ?? $"id:{id}";
+    }
+}

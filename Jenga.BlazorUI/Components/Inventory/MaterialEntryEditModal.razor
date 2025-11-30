@@ -18,13 +18,32 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Malzeme</label>
-                        <select class="form-select" @bind="MaterialId">
-                            <option value="0">Seçiniz</option>
-                            @foreach (var mat in Materials)
-                            {
-                                <option value="@mat.Id">@mat.MaterialName</option>
-                            }
-                        </select>
+
+                        @* If material selection is fixed (opened from table), render only the selected item and disable the select.
+                           Otherwise render full list so user can change selection. *@
+                        @if (IsMaterialFixed && MaterialEntry != null && MaterialEntry.MaterialId > 0)
+                        {
+                            <select class="form-select" @bind="MaterialId" disabled>
+                                <option value="@MaterialEntry.MaterialId">
+                                    @Materials.FirstOrDefault(m => m.Id == MaterialEntry.MaterialId)?.MaterialName
+                                </option>
+                            </select>
+                        }
+                        else
+                        {
+                            <select class="form-select" @bind="MaterialId">
+                                <option value="0">Seçiniz</option>
+                                @foreach (var mat in DropdownMaterials)
+                                {
+                                    <option value="@mat.Id">@mat.MaterialName</option>
+                                }
+                            </select>
+                        }
+
+                        @if (MaterialId == 0)
+                        {
+                            <div class="text-danger small mt-2">Lütfen bir malzeme seçiniz.</div>
+                        }
                     </div>
 
                     <div class="row g-2 mb-3">
@@ -86,7 +105,9 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn btn-success" @onclick="HandleSave" disabled="@IsSaveDisabled">Kaydet</button>
+                    <button class="btn btn-success" @onclick="HandleSave" disabled="@IsSaveDisabled">
+                        <i class="bi bi-box-arrow-in-right me-1"></i> Envantere Kaydet
+                    </button>
                     <button class="btn btn-secondary" @onclick="OnClose">İptal</button>
                 </div>
             </div>
@@ -102,6 +123,9 @@
     [Parameter] public List<MaterialUnit> MaterialUnits { get; set; } = new();
     [Parameter] public List<Location> Locations { get; set; } = new();
     [Parameter] public List<Personel> Persons { get; set; } = new();
+
+    // New parameter: when true, user cannot change the material (opened from inventory table)
+    [Parameter] public bool IsMaterialFixed { get; set; } = false;
 
     [Parameter] public EventCallback OnSave { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
@@ -125,6 +149,19 @@
         }
     }
 
+    private IEnumerable<Material> DropdownMaterials
+    {
+        get
+        {
+            if (IsOpen && MaterialEntry != null && MaterialEntry.MaterialId > 0)
+            {
+                var single = Materials.Where(m => m.Id == MaterialEntry.MaterialId);
+                if (single.Any()) return single;
+            }
+            return Materials;
+        }
+    }
+
     private IEnumerable<Location> FilteredLocations => string.IsNullOrWhiteSpace(locSearch)
         ? Locations
         : Locations.Where(l => l.LocationName.Contains(locSearch, StringComparison.OrdinalIgnoreCase));
@@ -135,7 +172,7 @@
 
     // Validation Properties
     private bool IsLocationInvalid => MaterialEntry != null && (MaterialEntry.LocationId == null || MaterialEntry.LocationId == 0) && (MaterialEntry.PersonelId == null || MaterialEntry.PersonelId == 0);
-    private bool IsSaveDisabled => MaterialEntry == null || MaterialEntry.Quantity < 1 || IsLocationInvalid;
+    private bool IsSaveDisabled => MaterialEntry == null || MaterialEntry.Quantity < 1 || IsLocationInvalid || MaterialId == 0;
 
     private string GetUnitName()
     {

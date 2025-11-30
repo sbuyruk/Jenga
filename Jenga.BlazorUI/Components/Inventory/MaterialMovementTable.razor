@@ -1,0 +1,128 @@
+﻿@using Jenga.DataAccess.Services.Inventory
+@using Jenga.Models.IKYS
+@using Jenga.Models.Inventory
+@using Jenga.BlazorUI.Helpers
+@inject IMaterialMovementService MaterialMovementService
+
+@if (MaterialId <= 0)
+{
+    <div class="text-muted small">Malzeme seçiniz.</div>
+}
+else if (!loaded)
+{
+    <div class="text-muted small">Yükleniyor...</div>
+}
+else if (movements == null || movements.Count == 0)
+{
+    <div class="text-muted small">Seçili malzeme için hareket kaydı bulunamadı.</div>
+}
+else
+{
+    <table class="table table-sm table-hover table-bordered table-striped">
+        <thead class="table-light">
+            <tr>
+                <th>Hareket</th>
+                <th class="text-end">Miktar</th>
+                <th>Nereden</th>
+                <th>Kimden</th>
+                <th>Nereye</th>
+                <th>Kime</th>
+                <th>Tarih</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var m in movements.OrderByDescending(x => x.MovementDate))
+            {
+                var mat = Materials?.FirstOrDefault(x => x.Id == m.MaterialId);
+                var cat = mat != null ? Categories?.FirstOrDefault(c => c.Id == mat.CategoryId) : null;
+
+                <tr>
+                    <td class="align-middle">@GetMovementTypeLabel(m)</td>
+                    <td class="align-middle text-end">@($"{m.Quantity} {GetUnitSymbol(m)}")</td>
+                    <td class="align-middle">@InventoryUIHelper.GetLocationFullName(m.FromLocationId, Locations)</td>
+                    <td class="align-middle">@GetPersonName(m.FromPersonId)</td>
+                    <td class="align-middle">@InventoryUIHelper.GetLocationFullName(m.ToLocationId, Locations)</td>
+                    <td class="align-middle">@GetPersonName(m.ToPersonId)</td>
+                    <td class="align-middle">@m.MovementDate.ToString("dd.MM.yyyy HH:mm")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    [Parameter] public int MaterialId { get; set; }
+    [Parameter] public List<Material>? Materials { get; set; }
+    [Parameter] public List<MaterialCategory>? Categories { get; set; }
+    [Parameter] public List<Location>? Locations { get; set; }
+    [Parameter] public List<Personel>? Persons { get; set; }
+    [Parameter] public List<MaterialUnit>? MaterialUnits { get; set; }
+
+    // optional: limit items
+    [Parameter] public int MaxItems { get; set; } = 0; // 0 = no limit
+
+    private List<MaterialMovement>? movements;
+    private bool loaded;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        loaded = false;
+        movements = null;
+
+        if (MaterialId > 0)
+        {
+            var list = await MaterialMovementService.GetMovementsByMaterialIdAsync(MaterialId);
+            if (MaxItems > 0)
+                movements = list.OrderByDescending(m => m.MovementDate).Take(MaxItems).ToList();
+            else
+                movements = list.OrderByDescending(m => m.MovementDate).ToList();
+        }
+
+        loaded = true;
+    }
+
+    private string GetPersonName(int? personId)
+    {
+        if (!personId.HasValue || Persons == null) return string.Empty;
+        var p = Persons.FirstOrDefault(x => x.Id == personId.Value);
+        return p != null ? $"{p.Adi} {p.Soyadi}" : string.Empty;
+    }
+
+    private string GetMovementTypeLabel(MaterialMovement m)
+    {
+        // Prefer explicit MovementType if set; otherwise infer from location fields.
+        if (!string.IsNullOrWhiteSpace(m.MovementType))
+        {
+            return m.MovementType;
+        }
+
+        bool isEntry = !m.FromLocationId.HasValue && m.ToLocationId.HasValue;
+        bool isExit = m.FromLocationId.HasValue && !m.ToLocationId.HasValue;
+        bool isTransfer = m.FromLocationId.HasValue && m.ToLocationId.HasValue;
+
+        return isTransfer ? "Transfer" : (isEntry ? "Giriş" : (isExit ? "Çıkış" : "Diğer"));
+    }
+
+    private string GetUnitSymbol(MaterialMovement m)
+    {
+        // 1) Try unit on movement record
+        if (m.MaterialUnitId.HasValue && MaterialUnits != null)
+        {
+            var u = MaterialUnits.FirstOrDefault(x => x.Id == m.MaterialUnitId.Value);
+            if (u != null) return u.Symbol ?? u.Name;
+        }
+
+        // 2) Fallback to material default unit
+        if (Materials != null)
+        {
+            var mat = Materials.FirstOrDefault(x => x.Id == m.MaterialId);
+            if (mat != null && MaterialUnits != null)
+            {
+                var u = MaterialUnits.FirstOrDefault(x => x.Id == mat.MaterialUnitId);
+                if (u != null) return u.Symbol ?? u.Name;
+            }
+        }
+
+        return string.Empty;
+    }
+}

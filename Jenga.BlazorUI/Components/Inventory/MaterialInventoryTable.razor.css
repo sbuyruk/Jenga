@@ -1,0 +1,28 @@
+﻿/* Subtle pulsing row + badge animations for critical stock */
+.critical-row {
+    animation: critical-pulse 1.2s infinite;
+    background-color: rgba(220,53,69,0.03);
+}
+.critical-badge {
+    animation: badge-pulse 1s infinite;
+}
+@keyframes critical-pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(220,53,69,0.00); }
+    50%  { box-shadow: 0 0 12px 4px rgba(220,53,69,0.10); }
+    100% { box-shadow: 0 0 0 0 rgba(220,53,69,0.00); }
+}
+@keyframes badge-pulse {
+    0%   { transform: scale(1); }
+    50%  { transform: scale(1.06); }
+    100% { transform: scale(1); }
+}
+.critical-icon {
+    color: #dc3545;
+    margin-right: 6px;
+    animation: icon-bounce 1s infinite;
+}
+@keyframes icon-bounce {
+    0%   { transform: translateY(0); }
+    50%  { transform: translateY(-3px); }
+    100% { transform: translateY(0); }
+}

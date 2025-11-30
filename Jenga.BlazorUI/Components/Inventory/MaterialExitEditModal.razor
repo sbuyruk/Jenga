@@ -23,13 +23,24 @@
                     <!-- Malzeme Seçimi -->
                     <div class="mb-3">
                         <label class="form-label">Malzeme</label>
-                        <select class="form-select" @bind="MaterialId">
-                            <option value="0">Malzeme seçiniz</option>
-                            @foreach (var mat in Materials)
-                            {
-                                <option value="@mat.Id">@mat.MaterialName</option>
-                            }
-                        </select>
+                        @if (IsMaterialFixed && MaterialExit != null && MaterialExit.MaterialId > 0)
+                        {
+                            <select class="form-select" @bind="MaterialId" disabled>
+                                <option value="@MaterialExit.MaterialId">
+                                    @Materials.FirstOrDefault(m => m.Id == MaterialExit.MaterialId)?.MaterialName
+                                </option>
+                            </select>
+                        }
+                        else
+                        {
+                            <select class="form-select" @bind="MaterialId">
+                                <option value="0">Malzeme seçiniz</option>
+                                @foreach (var mat in DropdownMaterials)
+                                {
+                                    <option value="@mat.Id">@mat.MaterialName</option>
+                                }
+                            </select>
+                        }
                     </div>
 
                     <div class="row g-2 mb-3">
@@ -149,6 +160,7 @@
 
     [Parameter] public EventCallback OnSave { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public bool IsMaterialFixed { get; set; } = false;
     #endregion
 
     #region State
@@ -178,6 +190,19 @@
                 }
             }
             RecalculateDerived();
+        }
+    }
+
+    private IEnumerable<Material> DropdownMaterials
+    {
+        get
+        {
+            if (IsOpen && MaterialExit != null && MaterialExit.MaterialId > 0)
+            {
+                var single = Materials.Where(m => m.Id == MaterialExit.MaterialId);
+                if (single.Any()) return single;
+            }
+            return Materials;
         }
     }
 

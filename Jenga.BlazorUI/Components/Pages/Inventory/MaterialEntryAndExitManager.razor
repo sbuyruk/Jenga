@@ -58,7 +58,8 @@
                             OnCreate="HandleCreateCategory"
                             OnDelete="HandleDeleteCategory"
                             OnSelect="HandleNodeSelect"
-                            CreateContextMenuLabel="@CreateContextMenuLabel" />
+                            CreateContextMenuLabel="@CreateContextMenuLabel" 
+                            ShowSubMenuCreateSelector="@(item => true)" />
             </div>
         </div>
     </div>
@@ -103,20 +104,11 @@
                 </div>
 
                 <div class="col">
-                    @if (materialTransactions.Any())
+                    @if (materialMovements.Any())
                     {
                         <div class="text-muted small mt-3 border-top pt-2">Son işlemler (Giriş/Çıkış/Transfer)</div>
-                        <ul class="list-unstyled mb-0 small">
-                            @foreach (var tx in materialTransactions.Take(6))
-                            {
-                                <li class="mb-1">
-                                    <span class="badge bg-light text-dark border">@tx.Type</span>
-                                    <span class="text-muted">@tx.Date.ToString("dd.MM.yyyy HH:mm")</span>
-                                    <span class="fw-bold ms-1">@($"{(tx.IsIncrease ? "+" : "-")}{tx.Quantity} {tx.UnitName}")</span>
-                                    <span class="text-muted ms-1">@tx.LocationName</span>
-                                </li>
-                            }
-                        </ul>
+
+                        <MaterialMovementList Movements="materialMovements" MaxItems="6" />
                     }
                 </div>
             </div>
@@ -193,7 +185,7 @@
     private List<Material> materialCards = new();
     private List<MaterialCategory> categoryCards = new();
     private List<MaterialLocationCard> selectedMaterialLocations = new();
-    private List<MaterialTransactionView> materialTransactions = new();
+    private List<MaterialMovementView> materialMovements = new();
 
     private Material? SelectedMaterial;
     private MaterialCategory? displayedCategory;
@@ -250,7 +242,7 @@
         else if (SelectedMaterial != null)
         {
             await LoadMaterialLocationCards(SelectedMaterial);
-            await LoadMaterialTransactions(SelectedMaterial);
+            await LoadMaterialMovements(SelectedMaterial);
         }
     }
 
@@ -307,7 +299,7 @@
 
         materialCards.Clear();
         categoryCards.Clear();
-        materialTransactions.Clear();
+        materialMovements.Clear();
         selectedLocationId = null;
 
         if (item.Data?.Material != null)
@@ -338,7 +330,7 @@
         displayedCategory = null;
         materialCards = new List<Material> { mat };
         _ = LoadMaterialLocationCards(mat);
-        _ = LoadMaterialTransactions(mat);
+        _ = LoadMaterialMovements(mat);
         StateHasChanged();
     }
 
@@ -383,10 +375,10 @@
         StateHasChanged();
     }
 
-    private async Task LoadMaterialTransactions(Material mat)
+    private async Task LoadMaterialMovements(Material mat)
     {
         var movements = await MaterialMovementService.GetMovementsByMaterialIdAsync(mat.Id);
-        materialTransactions = movements.OrderByDescending(m => m.MovementDate).Take(20)
+        materialMovements = movements.OrderByDescending(m => m.MovementDate).Take(20)
             .Select(m =>
             {
                 bool isEntry = !m.FromLocationId.HasValue && m.ToLocationId.HasValue;
@@ -400,7 +392,7 @@
 
                 if (isTransfer) locName += " -> " + InventoryUIHelper.GetLocationFullName(m.ToLocationId, locations);
 
-                return new MaterialTransactionView
+                return new MaterialMovementView
                 {
                     Date = m.MovementDate,
                     Quantity = m.Quantity,
@@ -519,7 +511,7 @@
             if (SelectedMaterial != null)
             {
                 await LoadMaterialLocationCards(SelectedMaterial);
-                await LoadMaterialTransactions(SelectedMaterial);
+                await LoadMaterialMovements(SelectedMaterial);
             }
         }
         catch (Exception ex)

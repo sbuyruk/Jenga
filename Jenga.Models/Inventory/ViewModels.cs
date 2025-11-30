@@ -16,7 +16,7 @@
         public int InventoryId { get; set; } = 0;
     }
 
-    public class MaterialTransactionView
+    public class MaterialMovementView
     {
         public DateTime Date { get; set; }
         public int Quantity { get; set; }

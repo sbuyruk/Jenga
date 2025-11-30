@@ -20,13 +20,21 @@
                         <!-- SOL ÜST: Malzeme Seçimi -->
                         <div class="col-md-6">
                             <label class="form-label">Malzeme</label>
-                            <select class="form-select form-select-sm" @bind="MaterialId">
-                                <option value="0">Malzeme seçiniz</option>
-                                @foreach (var mat in Materials)
-                                {
-                                    <option value="@mat.Id">@mat.MaterialName</option>
-                                }
-                            </select>
+                            @if (IsMaterialFixed && MaterialTransfer != null && MaterialTransfer.MaterialId > 0)
+                            {
+                                <select class="form-select" @bind="MaterialId" disabled>
+                                    <option value="@MaterialTransfer.MaterialId">
+                                        @Materials.FirstOrDefault(m => m.Id == MaterialTransfer.MaterialId)?.MaterialName
+                                    </option>
+                                </select>
+                            }
+                            else
+                            {
+                                <select class="form-select" @bind="MaterialId">
+                                    <option value="0">Malzeme seçiniz</option>
+                                    @foreach (var mat in DropdownMaterials) { <option value="@mat.Id">@mat.MaterialName</option> }
+                                </select>
+                            }
                         </div>
 
                         <div class="col-md-3">
@@ -195,6 +203,7 @@
 
     [Parameter] public EventCallback OnSave { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public bool IsMaterialFixed { get; set; } = false;
     #endregion
 
     #region State
@@ -244,6 +253,19 @@
                 if (mat != null) MaterialTransfer.MaterialUnitId = mat.MaterialUnitId;
             }
             RecalculateDerived();
+        }
+    }
+
+    private IEnumerable<Material> DropdownMaterials
+    {
+        get
+        {
+            if (IsOpen && MaterialTransfer != null && MaterialTransfer.MaterialId > 0)
+            {
+                var single = Materials.Where(m => m.Id == MaterialTransfer.MaterialId);
+                if (single.Any()) return single;
+            }
+            return Materials;
         }
     }
 
