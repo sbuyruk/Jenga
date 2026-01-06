@@ -2,6 +2,8 @@
 @using Jenga.Models.IKYS
 @using Jenga.DataAccess.Services.Inventory
 @using Jenga.Utility.Toast
+@using Jenga.BlazorUI.Helpers
+@using Jenga.BlazorUI.Components.Common
 
 @inject IMaterialEntryService MaterialEntryService
 @inject IMaterialExitService MaterialExitService
@@ -10,78 +12,92 @@
 @inject IToastService ToastService
 @inject IHttpContextAccessor HttpContextAccessor
 
-<!-- Styles moved to MaterialInventoryTable.razor.css -->
+@if (inventoryRows == null || !inventoryRows.Any())
+{
+    <div class="text-muted small">No inventory rows available.</div>
+}
+else
+{
+    <GenericTable TItem="InventoryRow"
+                  @ref="tableRef"
+                  Items="inventoryRows"
+                  TableHeight="Auto"
+                  ShowSearch="true"
+                  PageSize="10"
+                  PageSizeOptions="new[] {5, 10, 20, 50}"
+                  KeySelector="(r => r.MaterialId)">
+        <HeaderTemplate>
+            <th @onclick="() => tableRef.SortBy(nameof(InventoryRow.MaterialName))">
+                Malzeme @(tableRef != null && tableRef.CurrentSortField == nameof(InventoryRow.MaterialName) ? (tableRef.CurrentSortDescending ? "▼" : "▲") : "")
+            </th>
+            <th @onclick="() => tableRef.SortBy(nameof(InventoryRow.CategoryName))">
+                Kategori @(tableRef != null && tableRef.CurrentSortField == nameof(InventoryRow.CategoryName) ? (tableRef.CurrentSortDescending ? "▼" : "▲") : "")
+            </th>
+            <th class="text-end" @onclick="() => tableRef.SortBy(nameof(InventoryRow.TotalQuantity))">
+                Toplam Miktar @(tableRef != null && tableRef.CurrentSortField == nameof(InventoryRow.TotalQuantity) ? (tableRef.CurrentSortDescending ? "▼" : "▲") : "")
+            </th>
+            <th @onclick="() => tableRef.SortBy(nameof(InventoryRow.UnitSymbol))">
+                Birim @(tableRef != null && tableRef.CurrentSortField == nameof(InventoryRow.UnitSymbol) ? (tableRef.CurrentSortDescending ? "▼" : "▲") : "")
+            </th>
+            <th @onclick="() => tableRef.SortBy(nameof(InventoryRow.CriticalStock))" class="text-center">
+                Kritik Stok @(tableRef != null && tableRef.CurrentSortField == nameof(InventoryRow.CriticalStock) ? (tableRef.CurrentSortDescending ? "▼" : "▲") : "")
+            </th>
+            <th class="text-center">Bulunduğu Yerler</th>
+            <th class="text-center">Malzeme Hareketleri</th>
+            <th class="text-center">Giriş</th>
+            <th class="text-center">Çıkış</th>
+            <th class="text-center">Transfer</th>
+        </HeaderTemplate>
 
-<table class="table table-sm table-hover table-bordered table-striped">
-    <thead class="table-light">
-        <tr>
-            <th>Malzeme</th>
-            <th>Kategori</th>
-            <th class="text-end">Toplam Miktar</th>
-            <th>Birim</th>
-            <th>Kritik Stok</th>
-            <th>Bulunduğu Yerler</th>
-            <th>Malzeme Hareketleri</th>
-            <th>Giriş</th>
-            <th>Çıkış</th>
-            <th>Transfer</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var s in Summaries)
-        {
-            <tr class="@(s.IsCritical ? "critical-row" : "")" role="row" aria-live="polite">
-                <td class="text-start">@s.MaterialName</td>
-                <td class="text-start">@s.CategoryName</td>
-                <td class="text-end">@s.TotalQuantity</td>
-                <td class="text-start">@s.UnitSymbol</td>
-                <td class="text-center">
-                    @if (s.HasCriticalStock)
+        <RowTemplate Context="r">
+            <td class="align-middle">@r.MaterialName</td>
+            <td class="align-middle">@r.CategoryName</td>
+            <td class="align-middle text-end">@r.TotalQuantity</td>
+            <td class="align-middle">@r.UnitSymbol</td>
+            <td class="align-middle text-center">
+                @if (r.HasCriticalStock)
+                {
+                    if (r.IsCritical)
                     {
-                        if (s.IsCritical)
-                        {
-                            <span class="d-inline-flex align-items-center">
-                                <i class="bi bi-exclamation-triangle-fill critical-icon" aria-hidden="true"></i>
-                                <span class="badge bg-danger critical-badge">Kritik: @s.CriticalStock</span>
-                            </span>
-                        }
-                        else
-                        {
-                            <span class="badge bg-success">OK  <small>(@s.CriticalStock)</small></span>
-                        }
+                        <span class="d-inline-flex align-items-center">
+                            <i class="bi bi-exclamation-triangle-fill critical-icon" aria-hidden="true"></i>
+                            <span class="badge bg-danger critical-badge">Kritik: @r.CriticalStock</span>
+                        </span>
                     }
                     else
                     {
-                        <span class="text-muted small">—</span>
+                        <span class="badge bg-success">OK  <small>(@r.CriticalStock)</small></span>
                     }
-                </td>
-
-                <td class="text-center">
-                    <button class="btn btn-sm btn-outline-primary" @onclick="() => OpenLocations(s.MaterialId)">Bulunduğu yerler</button>
-                </td>
-                <td class="text-center">
-                    <button class="btn btn-sm btn-outline-secondary" @onclick="() => OpenMovements(s.MaterialId)">Hareketler</button>
-                </td>
-                <td class="text-center">
-                    <button class="btn btn-sm btn-outline-success" @onclick="() => StartEntry(s.MaterialId)">
-                        <i class="bi bi-box-arrow-in-right me-1"></i>Giriş
-                    </button>
-                </td>
-                <td class="text-center">
-                    <button class="btn btn-sm btn-outline-danger" @onclick="() => StartExit(s.MaterialId)">
-                        <i class="bi bi-box-arrow-right me-1"></i>Çıkış
-                    </button>
-                </td>
-                <td class="text-center">
-                    <button class="btn btn-sm btn-outline-warning" @onclick="() => StartTransfer(s.MaterialId)">
-                        <i class="bi bi-arrow-left-right me-1"></i>Transfer
-                    </button>
-                </td>
-
-            </tr>
-        }
-    </tbody>
-</table>
+                }
+                else
+                {
+                    <span class="text-muted small">—</span>
+                }
+            </td>
+            <td class="text-center align-middle">
+                <button class="btn btn-sm btn-outline-primary" @onclick="() => OpenLocations(r.MaterialId)">Bulunduğu yerler</button>
+            </td>
+            <td class="text-center align-middle">
+                <button class="btn btn-sm btn-outline-secondary" @onclick="() => OpenMovements(r.MaterialId)">Hareketler</button>
+            </td>
+            <td class="text-center align-middle">
+                <button class="btn btn-sm btn-outline-success" @onclick="() => StartEntry(r.MaterialId)">
+                    <i class="bi bi-box-arrow-in-right me-1"></i>Giriş
+                </button>
+            </td>
+            <td class="text-center align-middle">
+                <button class="btn btn-sm btn-outline-danger" @onclick="() => StartExit(r.MaterialId)">
+                    <i class="bi bi-box-arrow-right me-1"></i>Çıkış
+                </button>
+            </td>
+            <td class="text-center align-middle">
+                <button class="btn btn-sm btn-outline-info" @onclick="() => StartTransfer(r.MaterialId)">
+                    <i class="bi bi-arrow-left-right me-1"></i>Transfer
+                </button>
+            </td>
+        </RowTemplate>
+    </GenericTable>
+}
 
 @* Local modals for Entry / Exit / Transfer *@
 <MaterialEntryEditModal MaterialEntry="editingEntry"
@@ -89,6 +105,8 @@
                         MaterialUnits="MaterialUnits"
                         Locations="Locations"
                         Persons="Persons"
+                        Brands="Brands"
+                        Models="Models"
                         IsOpen="isEntryOpen"
                         IsMaterialFixed="isEntryMaterialFixed"
                         OnSave="OnEntryModalSave"
@@ -99,6 +117,8 @@
                        MaterialUnits="MaterialUnits"
                        Locations="Locations"
                        Persons="Persons"
+                       Brands="Brands"
+                       Models="Models"
                        MaterialInventories="MaterialInventories"
                        IsOpen="isExitOpen"
                        IsMaterialFixed="isExitMaterialFixed"
@@ -110,6 +130,8 @@
                              MaterialUnits="MaterialUnits"
                              Locations="Locations"
                              Persons="Persons"
+                             Brands="Brands"
+                             Models="Models"
                              MaterialInventories="MaterialInventories"
                              IsOpen="isTransferOpen"
                              IsMaterialFixed="isTransferMaterialFixed"
@@ -117,7 +139,20 @@
                              OnSave="OnTransferModalSave"
                              OnClose="CloseTransferModal" />
 
+<MaterialLocationsModal IsOpen="isLocationsModalOpen"
+                        MaterialId="locationsMaterialId"
+                        MaterialInventories="locationsModalInventories"
+                        Materials="Materials"
+                        Locations="Locations"
+                        Persons="Persons"
+                        Brands="Brands"
+                        Models="Models"
+                        OnClose="CloseLocationsModal" />
+
 @code {
+    private GenericTable<InventoryRow> tableRef;
+    private List<InventoryRow> inventoryRows = new();
+
     [Parameter] public List<MaterialInventory> MaterialInventories { get; set; } = new();
     [Parameter] public List<Material> Materials { get; set; } = new();
     [Parameter] public List<MaterialUnit> MaterialUnits { get; set; } = new();
@@ -127,6 +162,10 @@
     [Parameter] public List<Location> Locations { get; set; } = new();
     [Parameter] public List<Personel> Persons { get; set; } = new();
 
+    // Optional lookups used in the locations modal
+    [Parameter] public List<MaterialBrand> Brands { get; set; } = new();
+    [Parameter] public List<MaterialModel> Models { get; set; } = new();
+
     [Parameter] public EventCallback<int> OnOpenMovements { get; set; }
     [Parameter] public EventCallback<int> OnOpenLocations { get; set; }
 
@@ -134,6 +173,9 @@
     [Parameter] public EventCallback<Material> OnStartEntry { get; set; }
     [Parameter] public EventCallback<Material> OnStartExit { get; set; }
     [Parameter] public EventCallback<Material> OnStartTransfer { get; set; }
+
+    // New: notify parent when inventory data changed so parent can reload latest DB data
+    [Parameter] public EventCallback OnInventoryChanged { get; set; }
 
     private class Summary
     {
@@ -144,10 +186,7 @@
         public string UnitSymbol { get; set; } = string.Empty;
         public int? CriticalStock { get; set; }
 
-        // treat as "has defined critical" only when > 0
         public bool HasCriticalStock => CriticalStock.HasValue && CriticalStock.Value > 0;
-
-        // critical when total <= critical value
         public bool IsCritical => HasCriticalStock && TotalQuantity <= (decimal)CriticalStock.Value;
     }
 
@@ -186,8 +225,58 @@
         }
     }
 
+    protected override void OnParametersSet()
+    {
+        BuildInventoryRows();
+    }
+
+    private void BuildInventoryRows()
+    {
+        inventoryRows = Summaries.Select(s => new InventoryRow
+        {
+            MaterialId = s.MaterialId,
+            MaterialName = s.MaterialName ?? string.Empty,
+            CategoryName = s.CategoryName ?? string.Empty,
+            TotalQuantity = s.TotalQuantity,
+            UnitSymbol = s.UnitSymbol ?? string.Empty,
+            CriticalStock = s.CriticalStock,
+            HasCriticalStock = s.HasCriticalStock,
+            IsCritical = s.IsCritical
+        }).ToList();
+    }
+
     private Task OpenMovements(int materialId) => OnOpenMovements.InvokeAsync(materialId);
-    private Task OpenLocations(int materialId) => OnOpenLocations.InvokeAsync(materialId);
+
+    // If parent handles OnOpenLocations, prefer that. Otherwise open local modal that shows MaterialInventory rows.
+    private async Task OpenLocations(int materialId)
+    {
+        locationsMaterialId = materialId;
+        locationsModalInventories = (MaterialInventories ?? new List<MaterialInventory>())
+            .Where(mi => mi.MaterialId == materialId && mi.Quantity > 0)
+            .ToList();
+
+        isLocationsModalOpen = true;
+        StateHasChanged();
+
+        if (OnOpenLocations.HasDelegate)
+        {
+            try
+            {
+                await OnOpenLocations.InvokeAsync(materialId);
+            }
+            catch
+            {
+                // swallow to avoid breaking UI
+            }
+        }
+    }
+
+    private void CloseLocationsModal()
+    {
+        isLocationsModalOpen = false;
+        locationsMaterialId = 0;
+        locationsModalInventories = new();
+    }
 
     // Local modal state for MaterialEntry / MaterialExit / MaterialTransfer
     private MaterialEntry? editingEntry;
@@ -203,12 +292,16 @@
     private bool isTransferMaterialFixed;
     private int? modalInitialFromInventoryId;
 
+    // Locations modal state
+    private bool isLocationsModalOpen;
+    private int locationsMaterialId;
+    private List<MaterialInventory> locationsModalInventories = new();
+
     // Entry flow
     private Task StartEntry(int materialId)
     {
         var mat = Materials.FirstOrDefault(m => m.Id == materialId);
 
-        // Prefer parent handler
         if (mat != null && OnStartEntry.HasDelegate)
             return OnStartEntry.InvokeAsync(mat);
 
@@ -222,7 +315,7 @@
                 Quantity = 1
             };
             isEntryOpen = true;
-            isEntryMaterialFixed = true; // lock selection when opened from the table
+            isEntryMaterialFixed = true;
         }
         return Task.CompletedTask;
     }
@@ -239,6 +332,9 @@
             {
                 ToastService.ShowToast("Giriş kaydedildi.", ToastType.Success, 2000);
                 MaterialInventories = await MaterialInventoryService.GetAllAsync();
+                // notify parent to refresh its data
+                if (OnInventoryChanged.HasDelegate)
+                    await OnInventoryChanged.InvokeAsync();
             }
             else
             {
@@ -270,7 +366,6 @@
     {
         var mat = Materials.FirstOrDefault(m => m.Id == materialId);
 
-        // Prefer parent handler
         if (mat != null && OnStartExit.HasDelegate)
             return OnStartExit.InvokeAsync(mat);
 
@@ -283,6 +378,27 @@
                 ExitDate = DateTime.Now,
                 Quantity = 1
             };
+
+            var initial = (MaterialInventories ?? new List<MaterialInventory>())
+                .Where(mi => mi.MaterialId == mat.Id)
+                .GroupBy(mi => new { mi.LocationId, mi.PersonelId })
+                .Select(g => new
+                {
+                    InvId = g.First().Id,
+                    Loc = g.Key.LocationId,
+                    Pers = g.Key.PersonelId,
+                    Qty = g.Sum(x => x.Quantity)
+                })
+                .Where(x => x.Qty > 0)
+                .OrderByDescending(x => x.Qty)
+                .FirstOrDefault();
+
+            if (initial != null)
+            {
+                editingExit.LocationId = (initial.Loc.HasValue && initial.Loc.Value != 0) ? initial.Loc : null;
+                editingExit.PersonelId = (initial.Pers.HasValue && initial.Pers.Value != 0) ? initial.Pers : null;
+            }
+
             isExitOpen = true;
             isExitMaterialFixed = true;
         }
@@ -298,6 +414,9 @@
             await MaterialExitService.AddAsync(editingExit, CancellationToken.None);
             ToastService.ShowToast("Çıkış kaydedildi.", ToastType.Success, 2000);
             MaterialInventories = await MaterialInventoryService.GetAllAsync();
+            // notify parent to refresh its data
+            if (OnInventoryChanged.HasDelegate)
+                await OnInventoryChanged.InvokeAsync();
         }
         catch (Exception ex)
         {
@@ -324,7 +443,6 @@
     {
         var mat = Materials.FirstOrDefault(m => m.Id == materialId);
 
-        // Prefer parent handler
         if (mat != null && OnStartTransfer.HasDelegate)
             return OnStartTransfer.InvokeAsync(mat);
 
@@ -337,26 +455,39 @@
                 TransferDate = DateTime.Now,
                 Quantity = 1
             };
-            // no preselected from-inventory by default; parent can pass if needed via InitialSelectedFromInventoryId parameter
-            modalInitialFromInventoryId = null;
+
+            var initialInvId = (MaterialInventories ?? new List<MaterialInventory>())
+                .Where(mi => mi.MaterialId == mat.Id)
+                .GroupBy(mi => new { mi.LocationId, mi.PersonelId })
+                .Select(g => new { InvId = g.First().Id, Qty = g.Sum(x => x.Quantity) })
+                .Where(x => x.Qty > 0)
+                .OrderByDescending(x => x.Qty)
+                .Select(x => x.InvId)
+                .FirstOrDefault();
+
+            modalInitialFromInventoryId = initialInvId == 0 ? null : initialInvId;
+
             isTransferOpen = true;
             isTransferMaterialFixed = true;
         }
         return Task.CompletedTask;
     }
 
-    private async Task OnTransferModalSave()
+    private async Task OnTransferModalSave(MaterialTransfer? transfer)
     {
-        if (editingTransfer == null) return;
+        if (transfer == null) return;
 
         try
         {
             var currentUser = HttpContextAccessor.HttpContext?.User?.Identity?.Name;
-            var ok = await MaterialTransferService.AddAsync(editingTransfer, currentUser, CancellationToken.None);
+            var ok = await MaterialTransferService.AddAsync(transfer, currentUser, CancellationToken.None);
             if (ok)
             {
                 ToastService.ShowToast("Transfer kaydedildi.", ToastType.Success, 2000);
                 MaterialInventories = await MaterialInventoryService.GetAllAsync();
+                // notify parent to refresh its data
+                if (OnInventoryChanged.HasDelegate)
+                    await OnInventoryChanged.InvokeAsync();
             }
             else
             {
@@ -383,5 +514,17 @@
         editingTransfer = null;
         modalInitialFromInventoryId = null;
         isTransferMaterialFixed = false;
+    }
+
+    private class InventoryRow
+    {
+        public int MaterialId { get; set; }
+        public string MaterialName { get; set; } = string.Empty;
+        public string CategoryName { get; set; } = string.Empty;
+        public decimal TotalQuantity { get; set; }
+        public string UnitSymbol { get; set; } = string.Empty;
+        public int? CriticalStock { get; set; }
+        public bool HasCriticalStock { get; set; }
+        public bool IsCritical { get; set; }
     }
 }

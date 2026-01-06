@@ -1,0 +1,174 @@
+﻿@using Jenga.BlazorUI.Components.Common
+@using Jenga.BlazorUI.Services.Common
+@using Jenga.DataAccess.Repositories.IRepository
+@using Jenga.DataAccess.Services.Common
+@using Jenga.Models
+@using Jenga.Models.Common
+@using Jenga.Models.IKYS
+
+@using Jenga.Utility.Toast
+@inject IModalService ModalService
+@inject IRoleService RolService
+@inject IUnitOfWork UnitOfWork
+@inject IToastService ToastService
+
+<div class="d-flex justify-content-end mb-2">
+    <button class="btn btn-success" @onclick="OpenNewRolModal" type="button">
+        <i class="bi bi-plus-lg"></i> Yeni Rol
+    </button>
+</div>
+
+@if (Roles?.Any() != true)
+{
+    <p>Rol bulunamadı.</p>
+}
+else
+{
+        <GenericTable TItem="Role"
+                  Items="Roles"
+                  PageSize="10"
+                  TableHeight="Auto"
+                  ShowSearch="true"
+                  ShowExport="true"
+                  ExportFileName="roller-export.xlsx">
+        <HeaderTemplate>
+            <th>Ad</th>
+            <th>Açıklama</th>
+            <th>İşlemler</th>
+        </HeaderTemplate>
+
+        <RowTemplate Context="item">
+            <td>@item.Name</td>
+            <td>@item.Aciklama</td>
+            <td>
+                <button class="btn btn-sm btn-primary me-2" @onclick="() => OnEditClicked(item)">Düzenle</button>
+                <button class="btn btn-sm btn-danger" @onclick="() => OnDeleteClicked(item)">Sil</button>
+            </td>
+        </RowTemplate>
+    </GenericTable>
+}
+
+@if (showEditModal && selectedRol != null && personelList != null && menuList != null)
+{
+    <RolEditModal Role="@selectedRol"
+                  PersonelList="@personelList"
+                  MenuList="@menuList"
+                  IsOpen="true"
+                  OnSave="HandleSave"
+                  OnClose="HideModal" />
+}
+
+@code {
+    [Parameter] public List<Role> Roles { get; set; } = new();
+    private Role? selectedRol { get; set; }
+    private List<Personel>? personelList { get; set; }
+    private List<MenuItem>? menuList { get; set; }
+    private bool showEditModal = false;
+
+    private async Task OnEditClicked(Role rol)
+    {
+        selectedRol = await RolService.GetByIdWithRelationsAsync(rol.Id);
+        var aktifPersoneller = (await UnitOfWork.Personel.GetAllAsync("IsBilgileri"))
+            .Where(p => p.IsBilgileri != null && p.IsBilgileri.CalismaDurumu == "1")
+            .Where(p => selectedRol?.PersonelRoles == null || !selectedRol.PersonelRoles!.Any(pr => pr.PersonelId == p.Id))
+            .ToList();
+
+        var aktifMenuler = (await UnitOfWork.MenuItem.GetAllAsync())
+            .Where(p => p.IsVisible == true)
+            .Where(p => selectedRol?.RoleMenus == null || !selectedRol.RoleMenus!.Any(rm => rm.MenuId == p.Id))
+            .ToList();
+        //GetData<Personel>("personel");
+        personelList = aktifPersoneller;
+        menuList = aktifMenuler;// GetData<MenuItem>("menu");
+        showEditModal = true;
+    }
+    private void OnDeleteClicked(Role role)
+    {
+        ModalService.ShowConfirmation(
+            "Silme Onayı",
+            $"'{role.Name}' rolünü silmek istediğinizden emin misiniz?",
+            async result =>
+            {
+                if (result)
+                {
+                    await RolService.DeleteAsync(role);
+                    Roles.Remove(role);
+                    StateHasChanged();
+                    ToastService.ShowToast($"{role.Name} silindi", ToastType.Success, 3000);
+                }
+            });
+    }
+
+    private async Task HandleSave()
+    {
+        if (selectedRol == null) return;
+
+        if (selectedRol.Id == 0)
+        {
+            var ok = await RolService.AddWithRelationsAsync(selectedRol);
+            if (ok)
+            {
+                ToastService.ShowToast(selectedRol.Name + " eklendi", ToastType.Success, 3000);
+                Roles.Add(selectedRol);
+            }
+        }
+        else
+        {
+            var ok = await RolService.UpdateWithRelationsAsync(selectedRol);
+            if (ok)
+            {
+                ToastService.ShowToast(selectedRol.Name + " güncellendi", ToastType.Info, 3000);
+            }
+        }
+
+        showEditModal = false;
+        StateHasChanged();
+    }
+
+    private void HideModal()
+    {
+        selectedRol = null;
+        showEditModal = false;
+    }
+
+    private List<T> GetData<T>(string type)
+    {
+        // Mock data - burayı gerçek veri kaynağınızla değiştirin
+        if (type == "personel")
+        {
+            return new List<T>()
+            {
+                (T)(object)new Personel() { Id = 11111, Adi = "Ali", Soyadi = "Veli" },
+                (T)(object)new Personel() { Id = 22222, Adi = "Ayşe", Soyadi = " Yılmaz" }
+            };
+        }
+        else if (type == "menu")
+        {
+            return new List<T>()
+            {
+                (T)(object)new MenuItem() { Id = 33333,Title  = "Ana Menü", Url = "/ana-menu" },
+                (T)(object)new MenuItem() { Id = 44444, Title = "Hakkımızda", Url = "/hakkimizda" }
+            };
+        }
+
+        return new List<T>();
+    }
+
+    private async Task OpenNewRolModal()
+    {
+        // Yeni, boş bir rol nesnesi oluştur
+        selectedRol = new Role();
+        // Aktif personel ve menüleri çek
+        var aktifPersoneller = (await UnitOfWork.Personel.GetAllAsync("IsBilgileri"))
+            .Where(p => p.IsBilgileri != null && p.IsBilgileri.CalismaDurumu == "1")
+            .ToList();
+
+        var aktifMenuler = (await UnitOfWork.MenuItem.GetAllAsync())
+            .Where(p => p.IsVisible == true)
+            .ToList();
+
+        personelList = aktifPersoneller;
+        menuList = aktifMenuler;
+        showEditModal = true;
+    }
+}

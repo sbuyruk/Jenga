@@ -1,0 +1,127 @@
+﻿@using Jenga.Models.Inventory
+@using Jenga.Models.IKYS
+@using Jenga.BlazorUI.Helpers
+
+@if (IsOpen)
+{
+    <div class="modal show" tabindex="-1" style="display: block;">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary-subtle">
+                    <h5 class="modal-title">Bulunduğu yerler — @GetMaterialName(MaterialId)</h5>
+                    <button type="button" class="btn-close" @onclick="Close" aria-label="Kapat"></button>
+                </div>
+                <div class="modal-body">
+                    @if (!SelectedInventories.Any())
+                    {
+                        <div class="text-muted small">Seçili malzeme için envanter kaydı bulunamadı.</div>
+                    }
+                    else
+                    {
+                        <table class="table table-sm table-striped table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Malzeme</th>
+                                    <th>Marka</th>
+                                    <th>Model</th>
+                                    <th class="text-end">Miktar</th>
+                                    <th>Lokasyon</th>
+                                    <th>Personel</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var inv in SelectedInventories.OrderByDescending(x => x.Quantity))
+                                {
+                                    <tr>
+                                        <td class="text-start">@GetMaterialName(inv)</td>
+                                        <td class="text-start">@GetBrandName(inv)</td>
+                                        <td class="text-start">@GetModelName(inv)</td>
+                                        <td class="text-end">@inv.Quantity</td>
+                                        <td class="text-start">@GetLocationName(inv)</td>
+                                        <td class="text-start">@GetPersonelName(inv)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="Close">Kapat</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public int MaterialId { get; set; }
+
+    [Parameter] public List<MaterialInventory> MaterialInventories { get; set; } = new();
+    [Parameter] public List<Material> Materials { get; set; } = new();
+    [Parameter] public List<Location> Locations { get; set; } = new();
+    [Parameter] public List<Personel> Persons { get; set; } = new();
+    [Parameter] public List<MaterialBrand> Brands { get; set; } = new();
+    [Parameter] public List<MaterialModel> Models { get; set; } = new();
+
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private IEnumerable<MaterialInventory> SelectedInventories =>
+        MaterialId <= 0 ? Enumerable.Empty<MaterialInventory>() : MaterialInventories.Where(mi => mi.MaterialId == MaterialId);
+
+    private string GetMaterialName(int materialId)
+    {
+        var m = Materials.FirstOrDefault(x => x.Id == materialId);
+        return m?.MaterialName ?? $"(id:{materialId})";
+    }
+
+    private string GetMaterialName(MaterialInventory mi) =>
+        mi.Material?.MaterialName ?? GetMaterialName(mi.MaterialId);
+
+    private string GetBrandName(MaterialInventory mi)
+    {
+        if (mi.Brand != null && !string.IsNullOrWhiteSpace(mi.Brand.BrandName)) return mi.Brand.BrandName;
+        if (mi.BrandId.HasValue)
+        {
+            var b = Brands.FirstOrDefault(x => x.Id == mi.BrandId.Value);
+            return b?.BrandName ?? "";
+        }
+        return "";
+    }
+
+    private string GetModelName(MaterialInventory mi)
+    {
+        if (mi.Model != null && !string.IsNullOrWhiteSpace(mi.Model.ModelName)) return mi.Model.ModelName;
+        if (mi.ModelId.HasValue)
+        {
+            var m = Models.FirstOrDefault(x => x.Id == mi.ModelId.Value);
+            return m?.ModelName ?? "";
+        }
+        return "";
+    }
+
+    private string GetLocationName(MaterialInventory mi)
+    {
+        if (mi.Location != null && !string.IsNullOrWhiteSpace(mi.Location.LocationName)) return InventoryUIHelper.GetLocationFullName(mi.Location.Id, Locations);
+        if (mi.LocationId.HasValue) return InventoryUIHelper.GetLocationFullName(mi.LocationId.Value, Locations);
+        return "";
+    }
+
+    private string GetPersonelName(MaterialInventory mi)
+    {
+        if (mi.Personel != null) return $"{mi.Personel.Adi} {mi.Personel.Soyadi}";
+        if (mi.PersonelId.HasValue)
+        {
+            var p = Persons.FirstOrDefault(x => x.Id == mi.PersonelId.Value);
+            return p != null ? $"{p.Adi} {p.Soyadi}" : "";
+        }
+        return "";
+    }
+
+    private async Task Close()
+    {
+        if (OnClose.HasDelegate)
+            await OnClose.InvokeAsync();
+    }
+}

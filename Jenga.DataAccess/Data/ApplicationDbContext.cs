@@ -1,6 +1,7 @@
 ﻿using Jenga.Models.Common;
 using Jenga.Models.IKYS;
 using Jenga.Models.Inventory;
+using Jenga.Models.TBYS;
 using Microsoft.EntityFrameworkCore;
 
 namespace Jenga.DataAccess.Data
@@ -39,6 +40,11 @@ namespace Jenga.DataAccess.Data
         public DbSet<Bolge> Bolge_Table { get; set; }
         public DbSet<Il> Il_Table { get; set; }
         public DbSet<Ilce> Ilce_Table { get; set; }
+         
+        // TBYS
+        public DbSet<Tasinmaz> Tasinmaz_Table { get; set; }
+        public DbSet<TasinmazBagisci> TasinmazBagisci_Table { get; set; }
+        public DbSet<Bagis> Bagis_Table { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

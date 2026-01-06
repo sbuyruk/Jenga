@@ -47,6 +47,9 @@ namespace Jenga.DataAccess.Services.Inventory
             int? actualFromPerson = (transfer.FromPersonId.HasValue && transfer.FromPersonId != 0) ? transfer.FromPersonId : null;
             int? actualToPerson = (transfer.ToPersonId.HasValue && transfer.ToPersonId != 0) ? transfer.ToPersonId : null;
 
+            int? actualBrand = (transfer.BrandId.HasValue && transfer.BrandId != 0) ? transfer.BrandId : null;
+            int? actualModel = (transfer.ModelId.HasValue && transfer.ModelId != 0) ? transfer.ModelId : null;
+
             // 3. KAYNAK stoktan düş
             await _materialInventoryService.AddOrUpdateInventoryAsync(
                 transfer.MaterialId,
@@ -55,6 +58,8 @@ namespace Jenga.DataAccess.Services.Inventory
                 -transfer.Quantity,
                 "MaterialTransfer: Kaynak stoktan düşüldü.",
                 modifiedBy,
+                actualBrand,
+                actualModel,
                 cancellationToken);
 
             // 4. HEDEF stoğa ekle
@@ -65,10 +70,12 @@ namespace Jenga.DataAccess.Services.Inventory
                 transfer.Quantity,
                 "MaterialTransfer: Hedef stoğa eklendi.",
                 modifiedBy,
+                actualBrand,
+                actualModel,
                 cancellationToken);
 
             // 5. Hareket Logu
-            await _materialMovementService.AddAsync(new MaterialMovement
+            var movement = new MaterialMovement
             {
                 MaterialId = transfer.MaterialId,
                 Quantity = transfer.Quantity,
@@ -81,8 +88,12 @@ namespace Jenga.DataAccess.Services.Inventory
                 MovementType = "Transfer",
                 Aciklama = transfer.Aciklama ?? "MaterialTransfer işlemi",
                 Olusturan = modifiedBy,
-                OlusturmaTarihi = DateTime.Now
-            }, cancellationToken);
+                OlusturmaTarihi = DateTime.Now,
+                BrandId = actualBrand,
+                ModelId = actualModel
+            };
+
+            await _materialMovementService.AddAsync(movement, cancellationToken);
 
             return true;
         }

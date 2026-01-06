@@ -31,24 +31,22 @@ namespace Jenga.DataAccess.Services.Inventory
             await _unitOfWork.MaterialEntry.AddAsync(entry, cancellationToken);
             await _unitOfWork.MaterialEntry.SaveChangesAsync(cancellationToken);
 
-            // Malzeme bilgisini sadece loglama veya kontrol için çekiyoruz, zorunlu değilse kaldırılabilir.
-            // var material = await _unitOfWork.Material.GetByIdAsync(entry.MaterialId, cancellationToken);
-
-            // DÜZELTME: 0 gelen ID'leri NULL'a çeviriyoruz.
+            // Normalize incoming zero IDs to null
             int? actualLocationId = entry.LocationId != 0 ? entry.LocationId : null;
-            // PersonelId zaten int? olabilir ama modelde int ise kontrol gerekir.
-            // Genelde PersonelId nullable int ise sorun yok, int ise ve 0 ise null yapılmalı.
-            // Burada entry.PersonelId özelliğinin int? olduğunu varsayarak:
-            int? actualPersonelId = (entry.PersonelId.HasValue && entry.PersonelId.Value != 0) ? entry.PersonelId : null;
+            int? actualPersonnelId = (entry.PersonelId.HasValue && entry.PersonelId.Value != 0) ? entry.PersonelId : null;
+            int? actualBrandId = (entry.BrandId.HasValue && entry.BrandId.Value != 0) ? entry.BrandId : null;
+            int? actualModelId = (entry.ModelId.HasValue && entry.ModelId.Value != 0) ? entry.ModelId : null;
 
-            // MaterialInventory güncellemesi
+            // Update inventory - pass brand/model from entry if provided
             await _materialInventoryService.AddOrUpdateInventoryAsync(
                 entry.MaterialId,
                 actualLocationId,
-                actualPersonelId,
+                actualPersonnelId,
                 entry.Quantity,
                 "Malzeme girişi sonrası stok güncellemesi",
                 modifiedBy,
+                actualBrandId,
+                actualModelId,
                 cancellationToken
             );
 
@@ -61,61 +59,76 @@ namespace Jenga.DataAccess.Services.Inventory
 
         public async Task<bool> UpdateMaterialEntryAndInventoryAsync(MaterialEntry entry, string? currentUserName, CancellationToken cancellationToken = default)
         {
-            var eskiEntry = await GetByIdAsync(entry.Id, cancellationToken);
-            if (eskiEntry == null) throw new Exception("Eski kayıt bulunamadı.");
+            var oldEntry = await GetByIdAsync(entry.Id, cancellationToken);
+            if (oldEntry == null) throw new Exception("Eski kayıt bulunamadı.");
 
-            bool miktarDegisti = entry.Quantity != eskiEntry.Quantity;
-            bool malzemeDegisti = entry.MaterialId != eskiEntry.MaterialId;
-            bool lokasyonDegisti = entry.LocationId != eskiEntry.LocationId;
-            bool birimDegisti = entry.MaterialUnitId != eskiEntry.MaterialUnitId;
-            bool personelDegisti = entry.PersonelId != eskiEntry.PersonelId;
+            bool quantityChanged = entry.Quantity != oldEntry.Quantity;
+            bool materialChanged = entry.MaterialId != oldEntry.MaterialId;
+            bool locationChanged = entry.LocationId != oldEntry.LocationId;
+            bool unitChanged = entry.MaterialUnitId != oldEntry.MaterialUnitId;
+            bool personnelChanged = entry.PersonelId != oldEntry.PersonelId;
+            bool brandChanged = entry.BrandId != oldEntry.BrandId;
+            bool modelChanged = entry.ModelId != oldEntry.ModelId;
 
             currentUserName ??= Environment.UserName;
 
-            // ID Düzeltmeleri
-            int? yeniLoc = entry.LocationId != 0 ? entry.LocationId : null;
-            int? yeniPers = (entry.PersonelId.HasValue && entry.PersonelId.Value != 0) ? entry.PersonelId : null;
+            // ID normalization
+            int? newLocation = entry.LocationId != 0 ? entry.LocationId : null;
+            int? newPersonnel = (entry.PersonelId.HasValue && entry.PersonelId.Value != 0) ? entry.PersonelId : null;
+            int? newBrand = (entry.BrandId.HasValue && entry.BrandId.Value != 0) ? entry.BrandId : null;
+            int? newModel = (entry.ModelId.HasValue && entry.ModelId.Value != 0) ? entry.ModelId : null;
 
-            int? eskiLoc = eskiEntry.LocationId != 0 ? eskiEntry.LocationId : null;
-            int? eskiPers = (eskiEntry.PersonelId.HasValue && eskiEntry.PersonelId.Value != 0) ? eskiEntry.PersonelId : null;
+            int? oldLocation = oldEntry.LocationId != 0 ? oldEntry.LocationId : null;
+            int? oldPersonnel = (oldEntry.PersonelId.HasValue && oldEntry.PersonelId.Value != 0) ? oldEntry.PersonelId : null;
+            int? oldBrand = (oldEntry.BrandId.HasValue && oldEntry.BrandId.Value != 0) ? oldEntry.BrandId : null;
+            int? oldModel = (oldEntry.ModelId.HasValue && oldEntry.ModelId.Value != 0) ? oldEntry.ModelId : null;
 
-            if (miktarDegisti && !malzemeDegisti && !lokasyonDegisti && !birimDegisti && !personelDegisti)
+            if (quantityChanged && !materialChanged && !locationChanged && !unitChanged && !personnelChanged && !brandChanged && !modelChanged)
             {
-                int fark = entry.Quantity - eskiEntry.Quantity;
+                int delta = entry.Quantity - oldEntry.Quantity;
                 await _materialInventoryService.AddOrUpdateInventoryAsync(
                     entry.MaterialId,
-                    yeniLoc,
-                    yeniPers,
-                    fark,
+                    newLocation,
+                    newPersonnel,
+                    delta,
                     "Kayıt güncellemesi (miktar değişikliği)",
-                    currentUserName, cancellationToken);
+                    currentUserName,
+                    newBrand,
+                    newModel,
+                    cancellationToken);
             }
-            else if (malzemeDegisti || lokasyonDegisti || birimDegisti || personelDegisti)
+            else if (materialChanged || locationChanged || unitChanged || personnelChanged || brandChanged || modelChanged)
             {
-                // Eski kaydı geri al (stoktan düş)
+                // Revert old inventory (subtract old quantity) using old brand/model
                 await _materialInventoryService.AddOrUpdateInventoryAsync(
-                    eskiEntry.MaterialId,
-                    eskiLoc,
-                    eskiPers,
-                    -eskiEntry.Quantity,
+                    oldEntry.MaterialId,
+                    oldLocation,
+                    oldPersonnel,
+                    -oldEntry.Quantity,
                     "Kayıt güncellemesi (eski stoktan düş)",
-                    currentUserName, cancellationToken);
+                    currentUserName,
+                    oldBrand,
+                    oldModel,
+                    cancellationToken);
 
-                // Yeni kaydı ekle
+                // Add new inventory using new brand/model
                 await _materialInventoryService.AddOrUpdateInventoryAsync(
                     entry.MaterialId,
-                    yeniLoc,
-                    yeniPers,
+                    newLocation,
+                    newPersonnel,
                     entry.Quantity,
                     "Kayıt güncellemesi (yeni stoğa ekle)",
-                    currentUserName, cancellationToken);
+                    currentUserName,
+                    newBrand,
+                    newModel,
+                    cancellationToken);
             }
 
             await UpdateAsync(entry, cancellationToken);
 
-            string hareketTipi = (miktarDegisti && !malzemeDegisti && !lokasyonDegisti && !birimDegisti && !personelDegisti) ? "Düzeltme" : "Düzenleme";
+            string movementType = (quantityChanged && !materialChanged && !locationChanged && !unitChanged && !personnelChanged && !brandChanged && !modelChanged) ? "Düzeltme" : "Düzenleme";
             await _materialMovementService.AddMovementForEntryAsync(
-                entry, hareketTipi, "MaterialEntry güncellendi", currentUserName, cancellationToken
+                entry, movementType, "MaterialEntry güncellendi", currentUserName, cancellationToken
             );
 
             return true;
@@ -135,42 +148,48 @@ namespace Jenga.DataAccess.Services.Inventory
             return true;
         }
 
-        public async Task<bool> DeleteMaterialEntryAndUpdateInventoryAsync(MaterialEntry silinecekEntry, string? currentUserName, CancellationToken cancellationToken = default)
+        public async Task<bool> DeleteMaterialEntryAndUpdateInventoryAsync(MaterialEntry entryToDelete, string? currentUserName, CancellationToken cancellationToken = default)
         {
             currentUserName ??= Environment.UserName;
-            if (silinecekEntry == null) return false;
+            if (entryToDelete == null) return false;
 
-            int? loc = silinecekEntry.LocationId != 0 ? silinecekEntry.LocationId : null;
-            int? pers = (silinecekEntry.PersonelId.HasValue && silinecekEntry.PersonelId.Value != 0) ? silinecekEntry.PersonelId : null;
+            int? location = entryToDelete.LocationId != 0 ? entryToDelete.LocationId : null;
+            int? personnel = (entryToDelete.PersonelId.HasValue && entryToDelete.PersonelId.Value != 0) ? entryToDelete.PersonelId : null;
+            int? brand = (entryToDelete.BrandId.HasValue && entryToDelete.BrandId.Value != 0) ? entryToDelete.BrandId : null;
+            int? model = (entryToDelete.ModelId.HasValue && entryToDelete.ModelId.Value != 0) ? entryToDelete.ModelId : null;
 
-            // 1. Stoktan çıkar
+            // 1. Subtract from inventory
             await _materialInventoryService.AddOrUpdateInventoryAsync(
-                silinecekEntry.MaterialId,
-                loc,
-                pers,
-                -silinecekEntry.Quantity,
+                entryToDelete.MaterialId,
+                location,
+                personnel,
+                -entryToDelete.Quantity,
                 "MaterialEntry silindi, stoktan çıkarıldı",
                 currentUserName,
+                brand,
+                model,
                 cancellationToken
             );
 
-            // 2. Stok 0 veya altı ise sil (Temizlik)
-            var stokKaydi = await _materialInventoryService.GetByMaterialLocationAsync(
-                silinecekEntry.MaterialId,
-                loc,
-                pers,
+            // 2. If stock <= 0 remove inventory record (cleanup)
+            var inventoryRecord = await _materialInventoryService.GetByMaterialLocationAsync(
+                entryToDelete.MaterialId,
+                location,
+                personnel,
+                brand,
+                model,
                 cancellationToken
             );
-            if (stokKaydi != null && stokKaydi.Quantity <= 0)
+            if (inventoryRecord != null && inventoryRecord.Quantity <= 0)
             {
-                await _materialInventoryService.DeleteAsync(stokKaydi, cancellationToken);
+                await _materialInventoryService.DeleteAsync(inventoryRecord, cancellationToken);
             }
 
-            // 3. Kaydı sil
-            await DeleteAsync(silinecekEntry, cancellationToken);
+            // 3. Delete the entry
+            await DeleteAsync(entryToDelete, cancellationToken);
 
             await _materialMovementService.AddMovementForEntryAsync(
-                silinecekEntry, "Silme", "MaterialEntry silindi", currentUserName, cancellationToken
+                entryToDelete, "Silme", "MaterialEntry silindi", currentUserName, cancellationToken
             );
 
             return true;

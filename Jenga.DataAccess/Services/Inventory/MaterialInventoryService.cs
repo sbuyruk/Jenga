@@ -19,8 +19,8 @@ namespace Jenga.DataAccess.Services.Inventory
         public async Task<MaterialInventory?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
             => await _unitOfWork.MaterialInventory.GetByIdAsync(id, cancellationToken);
 
-        public async Task<MaterialInventory?> GetByMaterialLocationAsync(int materialId, int? locationId, int? personelId, CancellationToken cancellationToken = default)
-            => await _unitOfWork.MaterialInventory.GetByMaterialLocationAsync(materialId, locationId, personelId, cancellationToken);
+        public async Task<MaterialInventory?> GetByMaterialLocationAsync(int materialId, int? locationId, int? personelId, int? brandId = null, int? modelId = null, CancellationToken cancellationToken = default)
+            => await _unitOfWork.MaterialInventory.GetByMaterialLocationAsync(materialId, locationId, personelId, brandId, modelId, cancellationToken);
 
         public async Task AddOrUpdateInventoryAsync(
             int materialId,
@@ -29,11 +29,13 @@ namespace Jenga.DataAccess.Services.Inventory
             int quantity,
             string aciklama,
             string? modifiedBy,
+            int? brandId = null,
+            int? modelId = null,
             CancellationToken cancellationToken = default)
         {
-            // Attempt to find existing inventory row for material+location+person
+            // Attempt to find existing inventory row for material+location+person+brand+model
             var existing = await _unitOfWork.MaterialInventory
-                .GetByMaterialLocationAsync(materialId, locationId, personelId, cancellationToken);
+                .GetByMaterialLocationAsync(materialId, locationId, personelId, brandId, modelId, cancellationToken);
 
             if (existing != null)
             {
@@ -66,7 +68,9 @@ namespace Jenga.DataAccess.Services.Inventory
                     Quantity = quantity,
                     Aciklama = aciklama,
                     Olusturan = modifiedBy,
-                    OlusturmaTarihi = DateTime.Now
+                    OlusturmaTarihi = DateTime.Now,
+                    BrandId = brandId,
+                    ModelId = modelId
                 };
                 await _unitOfWork.MaterialInventory.AddAsync(inventory, cancellationToken);
             }

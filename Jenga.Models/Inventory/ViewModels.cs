@@ -28,5 +28,9 @@
 
         // Raw movement/exit type from the movement record (e.g. Exit.ExitType)
         public string MovementTypeRaw { get; set; } = string.Empty;
+
+        // New: brand/model display fields (optional)
+        public string? BrandName { get; set; }
+        public string? ModelName { get; set; }
     }
 }

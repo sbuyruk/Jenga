@@ -1,0 +1,55 @@
+﻿@page "/inventory/material-entry-page"
+@rendermode InteractiveServer
+@using Jenga.BlazorUI.Components.Inventory
+@using Jenga.DataAccess.Services.IKYS
+@using Jenga.DataAccess.Services.Inventory
+@using Jenga.Models.IKYS
+@using Jenga.Models.Inventory
+@using Microsoft.JSInterop
+@inject IMaterialEntryService MaterialEntryService
+@inject IMaterialService MaterialService
+@inject IMaterialUnitService MaterialUnitService
+@inject ILocationService LocationService
+@inject IPersonelService PersonelService
+@inject IMaterialBrandService MaterialBrandService
+@inject IMaterialModelService MaterialModelService
+@inject IJSRuntime JS
+
+<h3>Malzeme Girişleri</h3>
+<MaterialEntryTable MaterialEntries="@materialEntries"
+                            Materials="@materials"
+                            Locations="@locations"
+                            Personels="@personels"
+                            MaterialUnits="@materialUnits"
+                            Brands="@brands"
+                            Models="@models"/>
+
+@code {
+    private List<MaterialEntry> materialEntries = new();
+    private List<Material> materials = new();
+    private List<MaterialUnit> materialUnits = new();
+    private List<Location> locations = new();
+    private List<Personel> personels = new();
+    private List<MaterialBrand> brands = new();
+    private List<MaterialModel> models = new();
+    private bool _dataLoaded;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_dataLoaded)
+        {
+            materialEntries = await MaterialEntryService.GetAllAsync();
+            materials = await MaterialService.GetAllAsync();
+            locations = await LocationService.GetAllAsync();
+            personels = await PersonelService.GetCalisanPersonelAsync();
+            brands = await MaterialBrandService.GetAllAsync();
+            models = await MaterialModelService.GetAllAsync();
+            materialUnits = await MaterialUnitService.GetAllAsync();
+            _dataLoaded = true;
+            StateHasChanged();
+            await JS.InvokeVoidAsync("initMaterialEntryTableWithExport");
+        }
+    }
+
+
+}

@@ -11,9 +11,9 @@ namespace Jenga.Models.Common
         public string Adi { get; set; }
         [Required]
         [DisplayName("Bölge Kısa Adı")]
-        public string KisaAdi { get; set; }
+        public string? KisaAdi { get; set; }
 
-
+        public bool Aktif { get; set; } 
 
     }
 }

@@ -1,21 +1,21 @@
 ﻿@rendermode InteractiveServer
 @using Jenga.BlazorUI.Components.Menus
 @using Jenga.Models.Common
-<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <NavLink class="navbar-brand" href="/">Jenga.BlazorUI</NavLink>
-    </div>
-</div>
+@inject NavigationManager Navigation
 
-<div class="nav-scrollable"
-     onclick="
-       // Sadece .treeview-sidebar dışında tıklanırsa toggler click
-       if (!event.target.closest('.treeview-sidebar')) {
-         document.querySelector('.navbar-toggler').click();
-       }
-     ">
+@* NavMenu now provides the sidebar brand area similar to the attached HTML *@
+<div class="nav-scrollable @(IsCollapsed ? "collapsed" : "")" id="main-nav">
     <nav class="nav flex-column">
-        <aside class="treeview-sidebar">
+        <aside class="treeview-sidebar @(IsCollapsed ? "collapsed" : "")">
+            <div class="brand" style="padding:12px 0 8px 0;">
+
+                <div class="brand-content" style="display:flex;align-items:center;gap:8px;">
+                    <a href="/" @onclick="NavigateHome" @onclick:preventDefault="true" style="display:inline-block;">
+                        <img src="/images/jenga-logo.png" alt="Jenga logo" width="150" loading="lazy" style="cursor:pointer;" />
+                    </a>
+                </div>
+            </div>
+
             @if (Items == null || !Items.Any())
             {
                 <p>Yükleniyor…</p>
@@ -24,6 +24,8 @@
             {
                 <RecursiveMenu Items="Items" />
             }
+
+            <div style="flex:1"></div>
         </aside>
     </nav>
 </div>
@@ -31,5 +33,13 @@
 @code {
     [Parameter]
     public List<MenuItem>? Items { get; set; }
-}
 
+    // Backwards-compatible parameter (parent may still pass this)
+    [Parameter]
+    public bool IsCollapsed { get; set; } = false;
+
+    private void NavigateHome()
+    {
+        Navigation.NavigateTo("/");
+    }
+}

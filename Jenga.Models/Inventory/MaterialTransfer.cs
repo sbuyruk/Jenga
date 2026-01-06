@@ -14,5 +14,16 @@ namespace Jenga.Models.Inventory
         public int? FromPersonId { get; set; }
         public int? ToPersonId { get; set; }
         public DateTime TransferDate { get; set; } = DateTime.Now;
+
+        // New: optional brand/model for the transfer (nullable)
+        [Column("BrandId")]
+        public int? BrandId { get; set; }
+
+        [Column("ModelId")]
+        public int? ModelId { get; set; }
+
+        // Optional navigation properties
+        public MaterialBrand? Brand { get; set; }
+        public MaterialModel? Model { get; set; }
     }
 }

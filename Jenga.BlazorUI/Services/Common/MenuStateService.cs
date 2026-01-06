@@ -11,6 +11,36 @@ namespace Jenga.BlazorUI.Services.Common
         private readonly IMenuItemService _menuService;
         private readonly SemaphoreSlim _gate = new(1, 1);
 
+        // UI state
+        private bool _isOpen = true;
+        private bool _isCollapsed;
+
+        public bool IsOpen
+        {
+            get => _isOpen;
+            private set
+            {
+                if (_isOpen == value) return;
+                _isOpen = value;
+                NotifyChange();
+            }
+        }
+
+        public bool IsCollapsed
+        {
+            get => _isCollapsed;
+            private set
+            {
+                if (_isCollapsed == value) return;
+                _isCollapsed = value;
+                NotifyChange();
+            }
+        }
+
+        public event Action? OnChange;
+
+        private void NotifyChange() => OnChange?.Invoke();
+
         public MenuStateService(IMenuItemService menuService)
         {
             _menuService = menuService;
@@ -32,5 +62,11 @@ namespace Jenga.BlazorUI.Services.Common
                 _gate.Release();
             }
         }
+
+        // helpers for components to call
+        public void ToggleOpen() => IsOpen = !IsOpen;
+        public void SetOpen(bool open) => IsOpen = open;
+        public void ToggleCollapsed() => IsCollapsed = !IsCollapsed;
+        public void SetCollapsed(bool collapsed) => IsCollapsed = collapsed;
     }
 }

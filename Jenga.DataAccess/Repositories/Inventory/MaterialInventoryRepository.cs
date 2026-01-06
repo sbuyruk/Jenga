@@ -14,11 +14,10 @@ namespace Jenga.DataAccess.Repositories.Inventory
         }
 
         /// <summary>
-        /// Finds an inventory row by material + optional location + optional person.
-        /// If locationId is null, matches rows with LocationId IS NULL.
-        /// If personelId is null, matches rows with PersonelId IS NULL.
+        /// Finds an inventory row by material + optional location + optional person + optional brand + optional model.
+        /// If a nullable parameter is null, matches rows with that column IS NULL.
         /// </summary>
-        public async Task<MaterialInventory?> GetByMaterialLocationAsync(int materialId, int? locationId, int? personelId, CancellationToken cancellationToken = default)
+        public async Task<MaterialInventory?> GetByMaterialLocationAsync(int materialId, int? locationId, int? personelId, int? brandId = null, int? modelId = null, CancellationToken cancellationToken = default)
         {
             await using var db = _dbFactory.CreateDbContext();
             return await db.MaterialInventory_Table
@@ -26,7 +25,9 @@ namespace Jenga.DataAccess.Repositories.Inventory
                 .FirstOrDefaultAsync(mi =>
                     mi.MaterialId == materialId &&
                     mi.LocationId == locationId &&
-                    mi.PersonelId == personelId,
+                    mi.PersonelId == personelId &&
+                    mi.BrandId == brandId &&
+                    mi.ModelId == modelId,
                     cancellationToken
                 );
         }

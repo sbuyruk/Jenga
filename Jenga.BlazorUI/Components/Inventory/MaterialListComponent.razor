@@ -1,6 +1,6 @@
-﻿@using Jenga.Models.Inventory
+﻿@using Jenga.BlazorUI.Services.Common
 @using Jenga.DataAccess.Services.Inventory
-@using Jenga.Utility.Modal
+@using Jenga.Models.Inventory
 @using Jenga.Utility.Toast
 @inject IToastService ToastService
 @inject IModalService ModalService
@@ -24,8 +24,6 @@ else
             <tr>
                 <th>Ad</th>
                 <th>Kategori</th>
-                <th>Marka</th>
-                <th>Model</th>
                 <th>Birim</th>
                 <th>Varlık mı</th>
                 <th>Açıklama</th>
@@ -42,18 +40,6 @@ else
                             var category = Categories.FirstOrDefault(x => x.Id == mat.CategoryId);
                         }
                         @category?.CategoryName
-                    </td>
-                    <td>
-                        @{
-                            var brand = Brands.FirstOrDefault(x => x.Id == mat.BrandId);
-                        }
-                        @brand?.BrandName
-                    </td>
-                    <td>
-                        @{
-                            var model = Models.FirstOrDefault(x => x.Id == mat.ModelId);
-                        }
-                        @model?.ModelName
                     </td>
                     <td>
                         @{
@@ -80,8 +66,6 @@ else
                       OnSave="HandleSave"
                       OnClose="HideModal"
                       Categories="Categories"
-                      Brands="Brands"
-                      Models="Models"
                       MaterialUnits="MaterialUnits" />
 }
 
@@ -89,9 +73,6 @@ else
     [Parameter] public List<Material> Materials { get; set; } = new();
     [Parameter] public List<MaterialUnit> MaterialUnits { get; set; } = new();
     [Parameter] public List<MaterialCategory> Categories { get; set; } = new();
-    [Parameter] public List<MaterialBrand> Brands { get; set; } = new();
-    [Parameter] public List<MaterialModel> Models { get; set; } = new();
-
 
     private Material? selectedMaterial { get; set; }
     private bool showEditModal = false;

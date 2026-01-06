@@ -1,0 +1,31 @@
+﻿@page "/common/switch-user"
+@inject Jenga.BlazorUI.Services.Common.ImpersonationService ImpersonationService
+@inject NavigationManager NavigationManager
+
+<h4>Farklı kullanıcı ile bağlan</h4>
+
+<div class="mb-2">
+    <input @bind="userName" placeholder="Kullanıcı adı (örn: jsahin)" class="form-control" />
+</div>
+
+<div>
+    <button class="btn btn-primary" @onclick="Switch">Bağlan</button>
+    <button class="btn btn-secondary ms-2" @onclick="Clear">Temizle</button>
+</div>
+
+@code {
+    private string userName = string.Empty;
+
+    private async Task Switch()
+    {
+        if (string.IsNullOrWhiteSpace(userName)) return;
+        await ImpersonationService.SetOverrideAsync(userName.Trim());
+        NavigationManager.NavigateTo("/", forceLoad: true);
+    }
+
+    private async Task Clear()
+    {
+        await ImpersonationService.ClearOverrideAsync();
+        NavigationManager.NavigateTo("/", forceLoad: true);
+    }
+}

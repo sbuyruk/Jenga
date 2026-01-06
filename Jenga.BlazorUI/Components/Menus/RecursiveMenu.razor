@@ -1,4 +1,5 @@
 ﻿@using Jenga.Models.Common
+@using Microsoft.AspNetCore.Components.Web
 @inject NavigationManager Nav
 
 <ul class="recursive-menu">
@@ -7,15 +8,15 @@
         <li class="menu-item @(item.IsExpanded ? "open" : "") @(item.IsActive ? "active" : "")">
             @if (!string.IsNullOrEmpty(item.Url) && (item.Children == null || !item.Children.Any()))
             {
-                <NavLink href="@item.Url"
-                         class="menu-header nav-link"
-                         Match="NavLinkMatch.All">
+                <a href="@item.Url"
+                   class="menu-header nav-link"
+                   @onclick="(e) => OnNavigate(e, item.Url)"
+                   @onclick:preventDefault>
                     <span class="menu-title">@item.Title</span>
-                </NavLink>
+                </a>
             }
             else
             {
-
                 <div class="menu-header"
                      @onclick="() => Toggle(item)"
                      @onclick:stopPropagation>
@@ -45,86 +46,18 @@
     [Parameter]
     public List<MenuItem> Items { get; set; } = new();
 
-    private void Toggle(MenuItem item)
+    protected override void OnInitialized()
     {
-        item.IsExpanded = !item.IsExpanded;
+        // update active flags at startup
+        SetActiveRecursive(Items);
+        Nav.LocationChanged += OnLocationChanged;
     }
 
-}
-
-@* @rendermode InteractiveServer
-@using Jenga.Models.Common
-@using Jenga.BlazorUI.Components.Menus
-@inject NavigationManager Nav
-@inject ILogger<RecursiveMenu> Logger
-
-<ul class="recursive-menu">
-    @foreach (var item in Items!)
-{
-    <li class="menu-item @(item.IsExpanded ? "open" : "")">
-        @if (!string.IsNullOrEmpty(item.Url) && (item.Children is null || item.Children.Count == 0))
-        {
-            <!-- Sadece alt menüsü olmayanlar NavLink ile yönlendirilir -->
-            <NavLink href="@item.Url"
-                     class="menu-header nav-link"
-                     Match="NavLinkMatch.All">
-                <span class="menu-title">@item.Title</span>
-            </NavLink>
-        }
-        else
-        {
-            <!-- Alt menüsü olanlar sadece toggle edilir -->
-            <div class="menu-header" @onclick="() => Toggle(item)">
-                <span class="menu-title">@item.Title</span>
-
-                @if (item.Children?.Any() == true)
-                {
-                    <span class="toggle-icon @(item.IsExpanded ? "rotated" : "")">
-                        <svg class="menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M8 5v14l11-7z" />
-                        </svg>
-                    </span>
-                }
-            </div>
-        }
-
-        @if (item.IsExpanded && item.Children?.Any() == true)
-        {
-            <ul class="submenu show">
-                <RecursiveMenu Items="item.Children" />
-            </ul>
-        }
-    </li>
-}
-
-</ul>
-
-@code {
-    [Parameter]
-    public List<MenuItem>? Items { get; set; }
-    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
     {
-        SetActiveRecursive(Items!);
-        InvokeAsync(StateHasChanged); // Daha kontrollü render
+        SetActiveRecursive(Items);
+        InvokeAsync(StateHasChanged);
     }
-    // protected override void OnParametersSet()
-    // {
-    //     if (Items is not null)
-    //         SetActiveRecursive(Items);
-    // }
-
-
-    // private void OnItemClick(MenuItem item)
-    // {
-    //     if (!string.IsNullOrWhiteSpace(item.Url) && (item.Children is null || item.Children.Count == 0))
-    //     {
-    //         Nav.NavigateTo(item.Url);
-    //     }
-    //     else
-    //     {
-    //         Toggle(item);
-    //     }
-    // }
 
     private void Toggle(MenuItem item)
     {
@@ -150,15 +83,46 @@
             }
         }
     }
-    protected override bool ShouldRender()
+
+    private void OnNavigate(MouseEventArgs e, string url)
     {
-        return Items is not null;
+        if (string.IsNullOrWhiteSpace(url))
+            return;
+
+        // Normalize URLs:
+        // - If absolute and host equals current host => use path+query for client-side navigation
+        // - If path/relative => ensure it starts with '/' and NavigateTo
+        // - If external => allow full load (forceLoad:true) so user can still reach external resource
+        if (Uri.TryCreate(url, UriKind.Absolute, out var abs))
+        {
+            try
+            {
+                var baseUri = new Uri(Nav.BaseUri);
+                if (string.Equals(abs.Host, baseUri.Host, StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(abs.Scheme, baseUri.Scheme, StringComparison.OrdinalIgnoreCase))
+                {
+                    var path = abs.PathAndQuery + abs.Fragment;
+                    Nav.NavigateTo(path, forceLoad: false);
+                    return;
+                }
+            }
+            catch
+            {
+                // fallback below
+            }
+
+            // external/other host -> full load
+            Nav.NavigateTo(url, forceLoad: true);
+            return;
+        }
+
+        // relative/partial path
+        var normalized = url.StartsWith("/") ? url : "/" + url;
+        Nav.NavigateTo(normalized, forceLoad: false);
     }
 
-    // public void Dispose()
-    // {
-    //     Nav.LocationChanged -= OnLocationChanged;
-    // }
+    public void Dispose()
+    {
+        Nav.LocationChanged -= OnLocationChanged;
+    }
 }
-
- *@

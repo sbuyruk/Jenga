@@ -9,12 +9,6 @@ namespace Jenga.Models.Inventory
         [Column("CategoryId")]
         public int CategoryId { get; set; }
 
-        [Column("BrandId")]
-        public int? BrandId { get; set; }
-
-        [Column("ModelId")]
-        public int? ModelId { get; set; }
-
         [Column("MaterialName")]
         public string MaterialName { get; set; } = string.Empty;
 

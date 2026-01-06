@@ -12,7 +12,14 @@ else
             <li>
                 <span class="fw-semibold">@tx.Type</span>
                 <span class="text-muted"> — @tx.Date.ToString("dd/MM/yyyy")</span>
-                <span class="small text-muted">@($"{(tx.IsIncrease ? "+" : "-")}{tx.Quantity} {tx.UnitName}  ({tx.LocationName})")</span>
+                <span class="small text-muted">
+                    @(
+                        $"" +
+                        $"{(tx.IsIncrease ? "+" : "-")}{tx.Quantity} {tx.UnitName}  ({tx.LocationName})" +
+                        (string.IsNullOrWhiteSpace(tx.BrandName) ? "" : $" • {tx.BrandName}") +
+                        (string.IsNullOrWhiteSpace(tx.ModelName) ? "" : $" / {tx.ModelName}")
+                    )
+                </span>
             </li>
         }
     </ul>

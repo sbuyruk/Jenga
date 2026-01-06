@@ -1,96 +1,184 @@
-﻿@using Jenga.DataAccess.Services.Inventory
+﻿@using Jenga.BlazorUI.Components.Common
+@using Jenga.DataAccess.Services.Inventory
 @using Jenga.Models.IKYS
 @using Jenga.Models.Inventory
 @using Jenga.BlazorUI.Helpers
+@using Jenga.Models.Common  
 @inject IMaterialMovementService MaterialMovementService
 
 @if (MaterialId <= 0)
 {
-    <div class="text-muted small">Malzeme seçiniz.</div>
+    <div class="text-muted small">Select a material.</div>
 }
 else if (!loaded)
 {
-    <div class="text-muted small">Yükleniyor...</div>
+    <div class="text-muted small">Loading...</div>
 }
-else if (movements == null || movements.Count == 0)
+else if (movementRows == null || movementRows.Count == 0)
 {
-    <div class="text-muted small">Seçili malzeme için hareket kaydı bulunamadı.</div>
+    <div class="text-muted small">No movements found for the selected material.</div>
 }
 else
 {
-    <table class="table table-sm table-hover table-bordered table-striped">
-        <thead class="table-light">
-            <tr>
-                <th>Hareket</th>
-                <th class="text-end">Miktar</th>
-                <th>Nereden</th>
-                <th>Kimden</th>
-                <th>Nereye</th>
-                <th>Kime</th>
-                <th>Tarih</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var m in movements.OrderByDescending(x => x.MovementDate))
-            {
-                var mat = Materials?.FirstOrDefault(x => x.Id == m.MaterialId);
-                var cat = mat != null ? Categories?.FirstOrDefault(c => c.Id == mat.CategoryId) : null;
+    <GenericTable TItem="MovementRow"
+                  @ref="tableRef"
+                  Items="movementRows"
+                  TableHeight="@TableHeight"
+                  ShowSearch="true"
+                  PageSize="@(MaxItems > 0 ? MaxItems : 10)"
+                  PageSizeOptions="new[] {5, 10, 20, 50}">
+        <HeaderTemplate>
+            <th @onclick="() => tableRef.SortBy(nameof(MovementRow.ActionType))">
+                Action @(tableRef != null && tableRef.CurrentSortField == nameof(MovementRow.ActionType) ? (tableRef.CurrentSortDescending ? "▼" : "▲") : "")
+            </th>
+            <th @onclick="() => tableRef.SortBy(nameof(MovementRow.FromLocation))">
+                From @(tableRef != null && tableRef.CurrentSortField == nameof(MovementRow.FromLocation) ? (tableRef.CurrentSortDescending ? "▼" : "▲") : "")
+            </th>
+            <th @onclick="() => tableRef.SortBy(nameof(MovementRow.FromPerson))">
+                From Person @(tableRef != null && tableRef.CurrentSortField == nameof(MovementRow.FromPerson) ? (tableRef.CurrentSortDescending ? "▼" : "▲") : "")
+            </th>
+            <th @onclick="() => tableRef.SortBy(nameof(MovementRow.ToLocation))">
+                To @(tableRef != null && tableRef.CurrentSortField == nameof(MovementRow.ToLocation) ? (tableRef.CurrentSortDescending ? "▼" : "▲") : "")
+            </th>
+            <th @onclick="() => tableRef.SortBy(nameof(MovementRow.ToPerson))">
+                To Person @(tableRef != null && tableRef.CurrentSortField == nameof(MovementRow.ToPerson) ? (tableRef.CurrentSortDescending ? "▼" : "▲") : "")
+            </th>
+            <th @onclick="() => tableRef.SortBy(nameof(MovementRow.QuantityValue))" class="text-end">
+                Quantity @(tableRef != null && tableRef.CurrentSortField == nameof(MovementRow.QuantityValue) ? (tableRef.CurrentSortDescending ? "▼" : "▲") : "")
+            </th>
+            <th @onclick="() => tableRef.SortBy(nameof(MovementRow.Brand))">
+                Brand @(tableRef != null && tableRef.CurrentSortField == nameof(MovementRow.Brand) ? (tableRef.CurrentSortDescending ? "▼" : "▲") : "")
+            </th>
+            <th @onclick="() => tableRef.SortBy(nameof(MovementRow.Model))">
+                Model @(tableRef != null && tableRef.CurrentSortField == nameof(MovementRow.Model) ? (tableRef.CurrentSortDescending ? "▼" : "▲") : "")
+            </th>
+            <th @onclick="() => tableRef.SortBy(nameof(MovementRow.Operation))">
+                Operation @(tableRef != null && tableRef.CurrentSortField == nameof(MovementRow.Operation) ? (tableRef.CurrentSortDescending ? "▼" : "▲") : "")
+            </th>
+            <th @onclick="() => tableRef.SortBy(nameof(MovementRow.DateValue))">
+                Date @(tableRef != null && tableRef.CurrentSortField == nameof(MovementRow.DateValue) ? (tableRef.CurrentSortDescending ? "▼" : "▲") : "")
+            </th>
+        </HeaderTemplate>
 
-                <tr>
-                    <td class="align-middle">@GetMovementTypeLabel(m)</td>
-                    <td class="align-middle text-end">@($"{m.Quantity} {GetUnitSymbol(m)}")</td>
-                    <td class="align-middle">@InventoryUIHelper.GetLocationFullName(m.FromLocationId, Locations)</td>
-                    <td class="align-middle">@GetPersonName(m.FromPersonId)</td>
-                    <td class="align-middle">@InventoryUIHelper.GetLocationFullName(m.ToLocationId, Locations)</td>
-                    <td class="align-middle">@GetPersonName(m.ToPersonId)</td>
-                    <td class="align-middle">@m.MovementDate.ToString("dd.MM.yyyy HH:mm")</td>
-                </tr>
-            }
-        </tbody>
-    </table>
+        <RowTemplate Context="m">
+            <td class="align-middle">@m.ActionType</td>
+            <td class="align-middle">@m.FromLocation</td>
+            <td class="align-middle">@m.FromPerson</td>
+            <td class="align-middle">@m.ToLocation</td>
+            <td class="align-middle">@m.ToPerson</td>
+            <td class="align-middle text-end">@m.QuantityText</td>
+            <td class="align-middle">@m.Brand</td>
+            <td class="align-middle">@m.Model</td>
+            <td class="align-middle">@m.Operation</td>
+            <td class="align-middle">@m.DateText</td>
+        </RowTemplate>
+    </GenericTable>
 }
 
 @code {
+    private GenericTable<MovementRow> tableRef;
+
     [Parameter] public int MaterialId { get; set; }
     [Parameter] public List<Material>? Materials { get; set; }
     [Parameter] public List<MaterialCategory>? Categories { get; set; }
     [Parameter] public List<Location>? Locations { get; set; }
     [Parameter] public List<Personel>? Persons { get; set; }
     [Parameter] public List<MaterialUnit>? MaterialUnits { get; set; }
+    [Parameter] public List<MaterialBrand>? Brands { get; set; }
+    [Parameter] public List<MaterialModel>? Models { get; set; }
 
-    // optional: limit items
     [Parameter] public int MaxItems { get; set; } = 0; // 0 = no limit
+    [Parameter] public string TableHeight { get; set; } = "Auto";
 
     private List<MaterialMovement>? movements;
+    private List<MovementRow>? movementRows;
     private bool loaded;
 
     protected override async Task OnParametersSetAsync()
     {
         loaded = false;
         movements = null;
+        movementRows = null;
 
         if (MaterialId > 0)
         {
             var list = await MaterialMovementService.GetMovementsByMaterialIdAsync(MaterialId);
-            if (MaxItems > 0)
-                movements = list.OrderByDescending(m => m.MovementDate).Take(MaxItems).ToList();
-            else
-                movements = list.OrderByDescending(m => m.MovementDate).ToList();
+            movements = (MaxItems > 0)
+                ? list.OrderByDescending(m => m.MovementDate).Take(MaxItems).ToList()
+                : list.OrderByDescending(m => m.MovementDate).ToList();
+        }
+
+        if (movements != null)
+        {
+            movementRows = BuildMovementRows(movements);
         }
 
         loaded = true;
     }
 
-    private string GetPersonName(int? personId)
+    private List<MovementRow> BuildMovementRows(IEnumerable<MaterialMovement> list)
     {
-        if (!personId.HasValue || Persons == null) return string.Empty;
-        var p = Persons.FirstOrDefault(x => x.Id == personId.Value);
+        var brandLookup = (Brands ?? new List<MaterialBrand>()).ToDictionary(b => b.Id, b => b);
+        var modelLookup = (Models ?? new List<MaterialModel>()).ToDictionary(m => m.Id, m => m);
+        var materialLookup = (Materials ?? new List<Material>()).ToDictionary(m => m.Id, m => m);
+        var unitLookup = (MaterialUnits ?? new List<MaterialUnit>()).ToDictionary(u => u.Id, u => u);
+        var locationList = Locations ?? new List<Location>();
+        var personList = Persons ?? new List<Personel>();
+
+        var rows = new List<MovementRow>();
+
+        foreach (var m in list)
+        {
+            var brandName = (m.BrandId != null && brandLookup.TryGetValue(m.BrandId.Value, out var b)) ? b.BrandName : string.Empty;
+            var modelName = (m.ModelId != null && modelLookup.TryGetValue(m.ModelId.Value, out var md)) ? md.ModelName : string.Empty;
+
+            var unitSymbol = string.Empty;
+            if (m.MaterialUnitId != null && unitLookup.TryGetValue(m.MaterialUnitId.Value, out var u))
+                unitSymbol = u.Symbol ?? u.Name;
+            else if (materialLookup.TryGetValue(m.MaterialId, out var mat) && unitLookup.TryGetValue(mat.MaterialUnitId, out var u2))
+                unitSymbol = u2.Symbol ?? u2.Name;
+
+            // assume m.Quantity is decimal (adjust if your model uses double/int)
+            var quantityValue = m.Quantity;
+            var qtyText = $"{m.Quantity} {unitSymbol}".Trim();
+
+            var fromLoc = InventoryUIHelper.GetLocationFullName(m.FromLocationId, locationList);
+            var toLoc = InventoryUIHelper.GetLocationFullName(m.ToLocationId, locationList);
+            var fromPerson = GetPersonName(m.FromPersonId, personList);
+            var toPerson = GetPersonName(m.ToPersonId, personList);
+
+            var actionLabel = GetMovementTypeLabel(m);
+
+            rows.Add(new MovementRow
+            {
+                Id = m.Id,
+                ActionType = actionLabel,
+                Operation = m.Operation ?? string.Empty,
+                Brand = brandName ?? string.Empty,
+                Model = modelName ?? string.Empty,
+                QuantityText = qtyText,
+                QuantityValue = quantityValue,
+                FromLocation = fromLoc,
+                FromPerson = fromPerson,
+                ToLocation = toLoc,
+                ToPerson = toPerson,
+                DateText = m.MovementDate.ToString("dd.MM.yyyy HH:mm"),
+                DateValue = m.MovementDate
+            });
+        }
+
+        return rows;
+    }
+
+    private string GetPersonName(int? personId, List<Personel> personList)
+    {
+        if (!personId.HasValue || personList == null) return string.Empty;
+        var p = personList.FirstOrDefault(x => x.Id == personId.Value);
         return p != null ? $"{p.Adi} {p.Soyadi}" : string.Empty;
     }
 
     private string GetMovementTypeLabel(MaterialMovement m)
     {
-        // Prefer explicit MovementType if set; otherwise infer from location fields.
         if (!string.IsNullOrWhiteSpace(m.MovementType))
         {
             return m.MovementType;
@@ -100,29 +188,6 @@ else
         bool isExit = m.FromLocationId.HasValue && !m.ToLocationId.HasValue;
         bool isTransfer = m.FromLocationId.HasValue && m.ToLocationId.HasValue;
 
-        return isTransfer ? "Transfer" : (isEntry ? "Giriş" : (isExit ? "Çıkış" : "Diğer"));
-    }
-
-    private string GetUnitSymbol(MaterialMovement m)
-    {
-        // 1) Try unit on movement record
-        if (m.MaterialUnitId.HasValue && MaterialUnits != null)
-        {
-            var u = MaterialUnits.FirstOrDefault(x => x.Id == m.MaterialUnitId.Value);
-            if (u != null) return u.Symbol ?? u.Name;
-        }
-
-        // 2) Fallback to material default unit
-        if (Materials != null)
-        {
-            var mat = Materials.FirstOrDefault(x => x.Id == m.MaterialId);
-            if (mat != null && MaterialUnits != null)
-            {
-                var u = MaterialUnits.FirstOrDefault(x => x.Id == mat.MaterialUnitId);
-                if (u != null) return u.Symbol ?? u.Name;
-            }
-        }
-
-        return string.Empty;
+        return isTransfer ? "Transfer" : (isEntry ? "Entry" : (isExit ? "Exit" : "Other"));
     }
 }

@@ -17,7 +17,7 @@ namespace Jenga.Models.Inventory
         [Column("LocationId")]
         public int? LocationId { get; set; }
         [Column("PersonId")]
-        public int? PersonId { get; set; }
+        public int? PersonelId { get; set; }
         [Column("ExitDate")]
         public DateTime ExitDate { get; set; }
 
@@ -25,9 +25,19 @@ namespace Jenga.Models.Inventory
         [Column("ExitType")]
         public int? ExitType { get; set; }
 
+        // New: brand/model at exit level (nullable)
+        [Column("BrandId")]
+        public int? BrandId { get; set; }
+
+        [Column("ModelId")]
+        public int? ModelId { get; set; }
+
         // Helper to get enum name (not mapped to DB)
         [NotMapped]
         public string? ExitTypeName => ExitType.HasValue ? Enum.GetName(typeof(MaterialExitType), ExitType.Value) : null;
 
+        // Optional navigation properties
+        public MaterialBrand? Brand { get; set; }
+        public MaterialModel? Model { get; set; }
     }
 }

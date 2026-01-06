@@ -1,0 +1,28 @@
+﻿@page "/common/role-page"
+@rendermode InteractiveServer
+@using Jenga.BlazorUI.Components.Menus
+@using Jenga.DataAccess.Services.Common
+@using Jenga.Models.Common
+@using Jenga.Utility.Error
+@inject IRoleService RolService
+@inject IErrorService ErrorService
+
+<h3>Rol Yönetimi</h3>
+<RoleTable Roles="@roles" />
+
+@code {
+    private List<Role> roles = new();
+
+
+    private bool _dataLoaded;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_dataLoaded)
+        {
+            roles = await RolService.GetAllAsync();
+            _dataLoaded = true;
+            StateHasChanged();
+        }
+    }
+}

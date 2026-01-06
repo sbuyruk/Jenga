@@ -1,11 +1,11 @@
-﻿@using Jenga.Models.Inventory
+﻿@using Jenga.BlazorUI.Services.Common
 @using Jenga.DataAccess.Services.Inventory
-@using Jenga.Utility.Modal
+@using Jenga.Models.Inventory
 @using Jenga.Utility.Toast
 @inject IToastService ToastService
 @inject IModalService ModalService
 @inject IMaterialModelService MaterialModelService
-@inject IMaterialService MaterialService    
+@inject IMaterialEntryService MaterialEntryService    
 
 <div class="d-flex justify-content-end mb-2">
     <button class="btn btn-success" @onclick="OpenNewModelModal" type="button">
@@ -93,11 +93,11 @@ else
     }
     private async Task OnDeleteClicked(MaterialModel model)
     {
-        //TODO: Check if model is used in any material before deleting
-        var hasMaterial = await MaterialService.AnyAsync(m => m.ModelId == model.Id);
-        if (hasMaterial)
+        // Check if model is used in any material entry before deleting
+        var hasMaterialEntry = await MaterialEntryService.AnyAsync(m => m.ModelId == model.Id);
+        if (hasMaterialEntry)
         {
-            ToastService.ShowToast("Bu model bir malzemede kullanılıyor, önce onu silmelisiniz.", ToastType.Error, 5000);
+            ToastService.ShowToast("Bu model bir malzeme girişinde kullanılıyor, önce onu silmelisiniz.", ToastType.Error, 5000);
             return;
         }
 

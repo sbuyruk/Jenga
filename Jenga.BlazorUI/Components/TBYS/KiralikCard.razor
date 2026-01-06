@@ -1,0 +1,138 @@
+﻿@using Jenga.BlazorUI.Services.Common
+@using Jenga.Models.Common
+@using Jenga.Models.TBYS
+@using System
+@using System.Linq
+@using Jenga.Utility
+@using Microsoft.AspNetCore.Components
+@inject IModalService ModalService
+
+<div class="card summary-card">
+    <div class="card-header" >
+        <strong>@(string.IsNullOrWhiteSpace(Title) ? "Kiralıklar" : Title)</strong>
+    </div>
+    <div class="card-body">
+        @if (TotalCount > 0)
+        {
+            <div class="d-flex align-items-center mb-2">
+                <div class="flex-grow-1">Kiraya Uygun</div>
+                <div class="fw-bold" >@KirayaUygunCount Adet</div>
+            </div>
+
+            <div class="d-flex align-items-center mb-2">
+                <div class="flex-grow-1">Kiraya Uygun Olmayan</div>
+                <div class="fw-bold" >@KirayaUygunDegilCount Adet</div>
+            </div>
+
+            <hr />
+
+            <div class="d-flex align-items-center">
+                <div class="flex-grow-1">Toplam Taşınmaz</div>
+                <div class="" >@TotalCount Adet</div>
+            </div>
+        }
+        else
+        {
+            <div class="text-center text-muted">Gösterilecek kayıt yok</div>
+        }
+
+        <div class="mt-3 text-center">
+            <button type="button" class="btn btn-sm btn-link m-2" @onclick="ShowKirayaUygun">Kiralamaya Uygun Taşınmazlar</button>
+            <button type="button" class="btn btn-sm btn-link" @onclick="ShowKirayaUygunDegil">Kiralamaya Uygun Olmayanlar</button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public IEnumerable<Tasinmaz>? Tasinmazlar { get; set; }
+    [Parameter] public IEnumerable<Bolge>? Bolgeler { get; set; }
+    [Parameter] public IEnumerable<Il>? Iller { get; set; }
+    [Parameter] public string? Title { get; set; }
+
+    private int KirayaUygunCount { get; set; }
+    private int KirayaUygunDegilCount { get; set; }
+    private int TotalCount { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        BuildCounts();
+    }
+
+    private void BuildCounts()
+    {
+        var source = Tasinmazlar ?? Enumerable.Empty<Tasinmaz>();
+        var filtered = source.Where(x => x != null && x.EnvanterdeMi == 1).ToList();
+
+        TotalCount = filtered.Count;
+
+        KirayaUygunCount = filtered.Count(x => IsKirayaUygun(x.KirayaUygunluk));
+        KirayaUygunDegilCount = TotalCount - KirayaUygunCount;
+    }
+
+    private static bool IsKirayaUygun(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        var v = value.Trim();
+
+        // Common positive representations; adjust if project uses different codes
+        var positive = new[] { "Kiraya Uygun" };
+        return positive.Contains(v);
+    }
+
+    private async Task ShowKirayaUygunDegil()
+    {
+        var req = new ModalRequest
+        {
+            Title = "Kiraya Uygun Olmayan Taşınmazlar",
+            Message = string.Empty,
+            ShowConfirmationButtons = false
+        };
+
+        req.Content = builder =>
+        {
+            builder.OpenComponent(0, typeof(Jenga.BlazorUI.Components.TBYS.KiralıkOlmayanChart));
+            builder.AddAttribute(1, "Tasinmazlar", (Tasinmazlar ?? Enumerable.Empty<Tasinmaz>())
+                .Where(t => t != null
+                            && t.EnvanterdeMi == 1
+                            && !string.IsNullOrWhiteSpace(t.KirayaUygunluk)
+                            && t.KirayaUygunluk.Equals(ProjectConstants.KIRAYA_UYGUN_DEGIL)));
+            builder.AddAttribute(2, "Iller", Iller);
+            builder.AddAttribute(3, "Bolgeler", Bolgeler);
+            builder.AddAttribute(4, "Title", Title);
+            builder.AddAttribute(5, "OnClose", EventCallback.Factory.Create(this, () => req.Close?.Invoke()));
+            builder.CloseComponent();
+        };
+
+        await ModalService.Show(req);
+    }
+
+    private async Task ShowKirayaUygun()
+    {
+        var req = new ModalRequest
+        {
+            Title = "Kiralamaya Uygun Taşınmazlar",
+            Message = string.Empty,
+            ShowConfirmationButtons = false
+        };
+
+        // render TasinmazChart inside modal; wire chart OnClose to request.Close
+        req.Content = builder =>
+        {
+            builder.OpenComponent(0, typeof(Jenga.BlazorUI.Components.TBYS.TasinmazChart));
+            builder.AddAttribute(1, "Tasinmazlar", (Tasinmazlar ?? Enumerable.Empty<Tasinmaz>())
+                .Where(t => t?.KirayaUygunluk != null && t.KirayaUygunluk.Equals(ProjectConstants.KIRAYA_UYGUN)));
+            builder.AddAttribute(2, "Iller", Iller);
+            builder.AddAttribute(3, "Bolgeler", Bolgeler);
+            builder.AddAttribute(4, "Title", Title);
+            builder.AddAttribute(5, "OnClose", EventCallback.Factory.Create(this, () => req.Close?.Invoke()));
+            builder.AddAttribute(6, "ShowMonetaryValues", false);
+            builder.CloseComponent();
+        };
+
+        await ModalService.Show(req);
+    }
+}

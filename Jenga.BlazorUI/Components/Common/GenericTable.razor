@@ -1,0 +1,503 @@
+﻿@using System.Reflection
+@using System.Globalization
+@using System.Text
+@using System.ComponentModel
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.JSInterop
+@inject IJSRuntime JSRuntime
+
+@typeparam TItem
+<div class="generic-table p-1">
+    <div class="gt-controls bg-body-tertiary">
+        @if (ShowSearch)
+        {
+            <input class="gt-search small" placeholder="@PlaceholderSearch" @bind="SearchText" @bind:event="oninput" />
+        }
+        <div class="gt-page-controls">
+            <label class="fw-bold me-3">
+                
+                <select @bind="BoundPageSize" @bind:event="onchange" class="form-select-sm">
+                    @foreach (var opt in PageSizeOptions)
+                    {
+                        <option value="@opt">@opt</option>
+                    }
+                </select> 
+                Satır Göster
+            </label>
+            @if (ShowExport)
+            {
+                <button class="btn btn-sm btn-secondary ms-2" @onclick="ExportToExcel" title="Excel'e Aktar" aria-label="Excel'e Aktar">
+                    <i class="bi bi-download me-1" aria-hidden="true"></i> Excel'e Aktar
+                </button>
+            }
+        </div>
+    </div>
+
+    <div class="gt-table-wrapper" style="height:@TableHeight">
+        <table class="table table-striped gt-table ">
+            <thead>
+                <tr>
+                    @if (HeaderTemplate != null)
+                    {
+                        @HeaderTemplate
+                    }
+                    else
+                    {
+                        @foreach (var col in Columns)
+                        {
+                            <th @onclick="() => ToggleSort(col.Name)">
+                                @col.DisplayName
+                                @if (sortField == col.Name)
+                                {
+                                    <span class="gt-sort-indicator">@(sortDescending ? "▼" : "▲")</span>
+                                }
+                            </th>
+                        }
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @if (RowTemplate != null)
+                {
+                    @foreach (var item in PagedItems)
+                    {
+                        <tr @onclick="() => OnRowClickedInternal(item)" class="gt-row" @key="GetKey(item)">
+                            @RowTemplate(item)
+                        </tr>
+                    }
+                }
+                else
+                {
+                    @foreach (var item in PagedItems)
+                    {
+                        <tr @onclick="() => OnRowClickedInternal(item)" class="gt-row" @key="GetKey(item)">
+                            @foreach (var col in Columns)
+                            {
+                                <td>@FormatValue(col.Property.GetValue(item))</td>
+                            }
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="gt-pagination">
+        <button class="btn btn-sm btn-outline-secondary" @onclick="FirstPage" disabled="@(currentPage == 1)" title="İlk Sayfa" aria-label="İlk Sayfa">
+            <i class="bi bi-skip-backward-fill" aria-hidden="true"></i>
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" @onclick="PrevPage" disabled="@(currentPage == 1)" title="Önceki" aria-label="Önceki">
+            <i class="bi bi-chevron-left" aria-hidden="true"></i>
+        </button>
+        <span class="mx-2 align-middle">Sayfa @currentPage / @totalPages</span>
+        <button class="btn btn-sm btn-outline-secondary" @onclick="NextPage" disabled="@(currentPage == totalPages)" title="Sonraki" aria-label="Sonraki">
+            <i class="bi bi-chevron-right" aria-hidden="true"></i>
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" @onclick="LastPage" disabled="@(currentPage == totalPages)" title="Son Sayfa" aria-label="Son Sayfa">
+            <i class="bi bi-skip-forward-fill" aria-hidden="true"></i>
+        </button>
+    </div>
+</div>
+
+@code {
+    /* Parameters */
+    [Parameter] public IEnumerable<TItem> Items { get; set; } = Array.Empty<TItem>();
+    [Parameter] public RenderFragment<TItem> RowTemplate { get; set; }
+    [Parameter] public RenderFragment HeaderTemplate { get; set; }
+    [Parameter] public int PageSize { get; set; } = 10;
+    [Parameter] public int[] PageSizeOptions { get; set; } = new[] { 5, 10, 20, 50 };
+    [Parameter] public string TableHeight { get; set; } = "400px";
+    [Parameter] public bool ShowSearch { get; set; } = true;
+    [Parameter] public string PlaceholderSearch { get; set; } = "Ara...";
+    [Parameter] public EventCallback<TItem> OnRowClicked { get; set; }
+    [Parameter] public Func<TItem, object> KeySelector { get; set; } // optional for @key
+
+    // New export parameters
+    [Parameter] public bool ShowExport { get; set; } = true;
+    [Parameter] public string ExportFileName { get; set; } = null; // if null, auto-generated
+
+    /* Internal state */
+    private List<TItem> allItems = new();
+    private List<TItem> filtered = new();
+    private List<TItem> PagedItems = new();
+    private int currentPage = 1;
+    private int totalPages = 1;
+
+    private string sortField;
+    private bool sortDescending = false;
+
+    private PropertyInfo[] props;
+    private List<ColumnDef> Columns = new();
+
+    // Backing field for search
+    private string searchText = string.Empty;
+
+    // Backing field for page size binding
+    private int boundPageSize;
+
+    private string SearchText
+    {
+        get => searchText;
+        set
+        {
+            if (searchText == value) return;
+            searchText = value;
+            currentPage = 1;
+            ApplyFilterSortAndPaging();
+        }
+    }
+
+    private int BoundPageSize
+    {
+        get => boundPageSize;
+        set
+        {
+            if (boundPageSize == value) return;
+            boundPageSize = value;
+            PageSize = value;
+            currentPage = 1;
+            ApplyFilterSortAndPaging();
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        allItems = Items?.ToList() ?? new List<TItem>();
+        props = typeof(TItem).GetProperties(BindingFlags.Instance | BindingFlags.Public);
+
+        // Always build Columns from properties so sorting by property-name works even when custom HeaderTemplate is used.
+        BuildColumnsFromProps();
+
+        // initialize bound page size from parameter
+        boundPageSize = PageSize;
+
+        ApplyFilterSortAndPaging();
+    }
+
+    private void BuildColumnsFromProps()
+    {
+        Columns = props.Select(p =>
+        {
+            // Prefer DisplayNameAttribute, then DisplayAttribute, otherwise property name.
+            string displayName = p.Name;
+            var dn = p.GetCustomAttribute<DisplayNameAttribute>();
+            if (dn != null && !string.IsNullOrWhiteSpace(dn.DisplayName))
+            {
+                displayName = dn.DisplayName;
+            }
+            else
+            {
+                var disp = p.GetCustomAttribute<DisplayAttribute>();
+                if (disp != null && !string.IsNullOrWhiteSpace(disp.Name))
+                {
+                    displayName = disp.Name;
+                }
+            }
+
+            return new ColumnDef
+            {
+                Name = p.Name,
+                DisplayName = displayName,
+                Property = p
+            };
+        }).ToList();
+    }
+
+    private void ApplyFilterSortAndPaging()
+    {
+        if (string.IsNullOrWhiteSpace(searchText))
+        {
+            filtered = allItems.ToList();
+        }
+        else
+        {
+            var q = searchText.Trim();
+            filtered = allItems.Where(x => ItemMatchesSearch(x, q)).ToList();
+        }
+
+        if (!string.IsNullOrEmpty(sortField))
+        {
+            var col = Columns.FirstOrDefault(c => c.Name == sortField);
+            if (col != null)
+            {
+                // Safe ordering: handle nulls and non-IComparable by using string fallback
+                filtered = filtered.OrderBy(x =>
+                {
+                    var v = col.Property.GetValue(x);
+                    if (v == null) return (object)string.Empty;
+                    if (v is IComparable) return v;
+                    return v.ToString() ?? string.Empty;
+                }, new ObjectAsComparable()).ToList();
+
+                if (sortDescending)
+                    filtered.Reverse();
+            }
+        }
+
+        if (PageSize <= 0) PageSize = 10;
+        totalPages = (int)Math.Ceiling(filtered.Count / (double)PageSize);
+        if (totalPages < 1) totalPages = 1;
+        if (currentPage > totalPages) currentPage = totalPages;
+        if (currentPage < 1) currentPage = 1;
+
+        PagedItems = filtered.Skip((currentPage - 1) * PageSize).Take(PageSize).ToList();
+
+        StateHasChanged();
+    }
+
+    // public helper to allow parent to trigger sort when custom HeaderTemplate is used
+    public void SortBy(string field)
+    {
+        ToggleSort(field);
+    }
+
+    // expose current sort state for parent to be able to render indicators
+    public string CurrentSortField => sortField;
+    public bool CurrentSortDescending => sortDescending;
+
+    private bool ItemMatchesSearch(TItem item, string q)
+    {
+        if (item == null) return false;
+
+        // Build a combined searchable string for the item -- try all top-level properties
+        var sb = new StringBuilder();
+        foreach (var p in props)
+        {
+            object val;
+            try { val = p.GetValue(item); }
+            catch { val = null; }
+            var part = ToSearchString(val, 0);
+            if (!string.IsNullOrEmpty(part))
+            {
+                if (sb.Length > 0) sb.Append(' ');
+                sb.Append(part);
+            }
+        }
+
+        var hay = sb.ToString();
+        if (string.IsNullOrEmpty(hay)) return false;
+        return hay.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0;
+    }
+
+    // recursive serializer to plain searchable string (depth-limited)
+    private string ToSearchString(object obj, int depth)
+    {
+        if (obj == null) return string.Empty;
+        if (depth > 2) return string.Empty; // derinlik sınırı: 0..2 (ayarlanabilir)
+
+        // string direkt döndür
+        if (obj is string s) return s;
+
+        var type = obj.GetType();
+
+        // primitive/value types, enum, decimal, DateTime, Guid vb.
+        if (type.IsPrimitive || type.IsEnum || obj is decimal || obj is DateTime || obj is DateTimeOffset || obj is Guid || obj is TimeSpan)
+        {
+            if (obj is DateTime dt) return dt.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+            if (obj is DateTimeOffset dto) return dto.ToString("o", CultureInfo.InvariantCulture);
+            if (obj is IFormattable f) return f.ToString(null, CultureInfo.InvariantCulture);
+            return obj.ToString();
+        }
+
+        // IEnumerable (string hariç)
+        if (obj is System.Collections.IEnumerable enumr)
+        {
+            var sb = new StringBuilder();
+            foreach (var e in enumr)
+            {
+                var part = ToSearchString(e, depth + 1);
+                if (!string.IsNullOrEmpty(part))
+                {
+                    if (sb.Length > 0) sb.Append(' ');
+                    sb.Append(part);
+                }
+            }
+            return sb.ToString();
+        }
+
+        // Complex nesne: public propertylerini gez ve birleştir
+        var sbObj = new StringBuilder();
+        var props2 = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+        foreach (var pi in props2)
+        {
+            object val;
+            try { val = pi.GetValue(obj); }
+            catch { continue; }
+            var part = ToSearchString(val, depth + 1);
+            if (!string.IsNullOrEmpty(part))
+            {
+                if (sbObj.Length > 0) sbObj.Append(' ');
+                sbObj.Append(part);
+            }
+        }
+        return sbObj.ToString();
+    }
+
+    private void ToggleSort(string field)
+    {
+        if (sortField == field)
+        {
+            sortDescending = !sortDescending;
+        }
+        else
+        {
+            sortField = field;
+            sortDescending = false;
+        }
+        currentPage = 1;
+        ApplyFilterSortAndPaging();
+    }
+
+    private void FirstPage() { currentPage = 1; ApplyFilterSortAndPaging(); }
+    private void PrevPage() { if (currentPage > 1) currentPage--; ApplyFilterSortAndPaging(); }
+    private void NextPage() { if (currentPage < totalPages) currentPage++; ApplyFilterSortAndPaging(); }
+    private void LastPage() { currentPage = totalPages; ApplyFilterSortAndPaging(); }
+
+    private void OnRowClickedInternal(TItem item)
+    {
+        if (OnRowClicked.HasDelegate) OnRowClicked.InvokeAsync(item);
+    }
+
+    private object GetKey(TItem item) => KeySelector != null ? KeySelector(item) : item;
+
+    private string FormatValue(object value) => value?.ToString() ?? "";
+
+    private class ColumnDef
+    {
+        public string Name { get; set; }
+        public string DisplayName { get; set; }
+        public PropertyInfo Property { get; set; }
+    }
+
+    // Comparer wrapper: if object implements IComparable, use it; otherwise compare string form
+    private class ObjectAsComparable : IComparer<object>
+    {
+        public int Compare(object x, object y)
+        {
+            if (ReferenceEquals(x, y)) return 0;
+            if (x == null) return -1;
+            if (y == null) return 1;
+
+            if (x is IComparable xc && x.GetType() == y.GetType())
+            {
+                return xc.CompareTo(y);
+            }
+
+            // fallback to string compare
+            var sx = x.ToString() ?? string.Empty;
+            var sy = y.ToString() ?? string.Empty;
+            return StringComparer.InvariantCultureIgnoreCase.Compare(sx, sy);
+        }
+    }
+
+    // --- Export helpers ---
+    private static string QuoteCsv(string input)
+    {
+        if (input is null) return "";
+        var needsQuotes = input.Contains(',') || input.Contains('"') || input.Contains('\n') || input.Contains('\r');
+        var escaped = input.Replace("\"", "\"\"");
+        return needsQuotes ? $"\"{escaped}\"" : escaped;
+    }
+
+    private async Task<bool> WaitForJsFunction(string expression, int retries = 8, int delayMs = 200)
+    {
+        for (var i = 0; i < retries; i++)
+        {
+            try
+            {
+                var ok = await JSRuntime.InvokeAsync<bool>("eval", expression);
+                if (ok) return true;
+            }
+            catch
+            {
+                // ignore and retry
+            }
+            await Task.Delay(delayMs);
+        }
+        return false;
+    }
+
+    // add module ref
+    private IJSObjectReference? _exportModule;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                // import module from wwwroot/js/genericTableExport.mjs
+                _exportModule = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./js/genericTableExport.mjs");
+            }
+            catch
+            {
+                // ignore — we'll fallback to CSV using open/data-url if module missing
+            }
+        }
+    }
+
+    private async Task ExportToExcel()
+    {
+        var exportItems = filtered ?? allItems;
+        var headers = Columns.Select(c => c.DisplayName ?? c.Name).ToArray();
+        var rows = exportItems.Select(item => Columns.Select(c => FormatValue(c.Property.GetValue(item))).ToArray()).ToArray();
+
+        var filename = ExportFileName;
+        if (string.IsNullOrWhiteSpace(filename))
+            filename = $"table-export-{DateTime.UtcNow:yyyyMMddHHmmss}.xlsx";
+        else if (!filename.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase))
+            filename = filename + ".xlsx";
+
+        if (_exportModule != null)
+        {
+            try
+            {
+                await _exportModule.InvokeVoidAsync("downloadXlsx", filename, headers, rows);
+                return;
+            }
+            catch
+            {
+                // fallback below
+            }
+        }
+
+        // fallback: CSV via data URL open (works without helper)
+        var sb = new StringBuilder();
+        sb.AppendLine(string.Join(",", headers.Select(QuoteCsv)));
+        foreach (var r in rows)
+        {
+            sb.AppendLine(string.Join(",", r.Select(QuoteCsv)));
+        }
+        var bytes = Encoding.UTF8.GetBytes(sb.ToString());
+        var base64 = Convert.ToBase64String(bytes);
+        var dataUrl = "data:text/csv;charset=utf-8;base64," + base64;
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("open", dataUrl, "_blank");
+        }
+        catch
+        {
+            // last resort: attempt to call module CSV download if module exists
+            if (_exportModule != null)
+            {
+                try
+                {
+                    await _exportModule.InvokeVoidAsync("downloadFromBase64", filename.Replace(".xlsx", ".csv"), base64, "text/csv;charset=utf-8;");
+                }
+                catch
+                {
+                    // give up silently
+                }
+            }
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_exportModule != null)
+        {
+            await _exportModule.DisposeAsync();
+            _exportModule = null;
+        }
+    }
+}

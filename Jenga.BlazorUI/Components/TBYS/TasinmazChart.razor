@@ -1,0 +1,249 @@
+﻿@using Jenga.Models.Common
+@using Jenga.Models.TBYS
+@using System.Linq
+@using System.Globalization
+@using Jenga.Utility
+@inherits ComponentBase
+
+@* 
+  TasinmazChart component
+  - Parameter: Tasinmazlar (IEnumerable<Tasinmaz>) : source list of records
+  - Parameter: Title (string) : optional title
+  - Parameter: OnClose (EventCallback) : optional close callback (e.g., modal)
+  - Parameter: ShowMonetaryValues (bool) : whether to show Emlak/Tahmini values
+  Behavior:
+  - Filters items where EnvanterdeMi == 1
+  - Groups by SorumluBolge
+  - Shows ownership counts (Tam/Çıplak) and counts by Cinsi (Bina, Mesken, İşyeri, Arsa, Tarla)
+  - Shows totals and sum fields for EmlakBeyanDegeri / TahminiRayicDegeri (optional)
+*@
+
+<div class="p-3">
+    <h5 class="mb-3">@(!string.IsNullOrWhiteSpace(Title) ? Title : string.Empty)</h5>
+
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped table-sm">
+            <thead class="table-light text-center align-middle">
+                <tr>
+                    <th rowspan="2">Bölge</th>
+                    <th colspan="2">Mülkiyet</th>
+                    <th rowspan="2">Toplam</th>
+                    <th colspan="5">Taşınmazın Cinsi</th>
+                </tr>
+                <tr>
+                    <th>Tam Mülkiyet</th>
+                    <th>Çıplak Mülkiyet</th>
+                    <th>Bina</th>
+                    <th>Mesken</th>
+                    <th>İşyeri</th>
+                    <th>Arsa</th>
+                    <th>Tarla</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Rows?.Any() == true)
+                {
+                    foreach (var r in Rows)
+                    {
+                        <tr class="align-middle text-center">
+                            <td class="text-start">@r.Region</td>
+                            <td>@r.TamMulk</td>
+                            <td>@r.CiplakMulk</td>
+                            <td>@r.Total</td>
+                            <td>@r.Bina</td>
+                            <td>@r.Mesken</td>
+                            <td>@r.Isyeri</td>
+                            <td>@r.Arsa</td>
+                            <td>@r.Tarla</td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="9" class="text-center text-muted">Gösterilecek kayıt yok</td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot class="table-light text-center align-middle">
+                <tr>
+                    <th class="text-start">Toplam</th>
+                    <th>@Totals.TamMulk</th>
+                    <th>@Totals.CiplakMulk</th>
+                    <th>@Totals.Total</th>
+                    <th>@Totals.Bina</th>
+                    <th>@Totals.Mesken</th>
+                    <th>@Totals.Isyeri</th>
+                    <th>@Totals.Arsa</th>
+                    <th>@Totals.Tarla</th>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    @if (ShowMonetaryValues)
+    {
+        <div class="d-flex align-items-center mt-2 gap-3">
+            <label class="mb-0"><strong>Emlak Beyan Değeri :</strong></label>
+            <input class="form-control form-control-sm text-end" style="max-width:220px;" value="@FormatMoney(TotalEmlakBeyanDegeri)" disabled />
+
+            <label class="mb-0 ms-3"><strong>Tahmini Rayiç Değeri :</strong></label>
+            <input class="form-control form-control-sm text-end" style="max-width:220px;" value="@FormatMoney(TotalTahminiRayicDegeri)" disabled />
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public IEnumerable<Tasinmaz>? Tasinmazlar { get; set; }
+    [Parameter]
+    public IEnumerable<Il>? Iller { get; set; }
+    [Parameter]
+    public IEnumerable<Bolge>? Bolgeler { get; set; }
+    [Parameter]
+    public string? Title { get; set; }
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    // New parameter to control visibility of monetary summary fields (default: true)
+    [Parameter]
+    public bool ShowMonetaryValues { get; set; } = true;
+
+    private record StatRow(string Region, int TamMulk, int CiplakMulk, int Total, int Bina, int Mesken, int Isyeri, int Arsa, int Tarla);
+
+    private List<StatRow>? Rows;
+    private StatRow Totals = new StatRow("Toplam", 0, 0, 0, 0, 0, 0, 0, 0);
+
+    private decimal TotalEmlakBeyanDegeri;
+    private decimal TotalTahminiRayicDegeri;
+
+    protected override void OnParametersSet()
+    {
+        BuildStats();
+    }
+
+    private void BuildStats()
+    {
+        var source = (Tasinmazlar ?? Enumerable.Empty<Tasinmaz>())
+            .Where(x => x != null && x.EnvanterdeMi == 1)
+            .ToList();
+
+        // Helper local funcs to determine ownership and cinsi
+        static bool IsTamMulk(Tasinmaz t)
+        {
+            if (!string.IsNullOrWhiteSpace(t?.MulkiyetSekli))
+            {
+                var v = t.MulkiyetSekli!.Trim();
+                if (v.IndexOf(ProjectConstants.MULKIYET_SEKLI_TM, StringComparison.OrdinalIgnoreCase) >= 0) return true;
+                if (v.IndexOf(ProjectConstants.MULKIYET_SEKLI_CM, StringComparison.OrdinalIgnoreCase) >= 0) return false;
+            }
+            // fallback: if KatMulkiyeti bit is true, consider tam
+            if (t?.KatMulkiyeti is bool km && km) return true;
+            return false;
+        }
+
+        static string NormalizeKullanimSekli(string? c) => string.IsNullOrWhiteSpace(c) ? "Diğer" : c!.Trim();
+
+        var ilById = (Iller ?? Enumerable.Empty<Il>()).Where(i => i != null).ToDictionary(i => i.Id, i => i);
+        // map BolgeId to display name (first Il found's Bolge string)
+        var bolgeById = (Bolgeler ?? Enumerable.Empty<Bolge>())
+            .Where(b => b.Aktif)
+            .ToDictionary(b => b.Id, b => b);
+
+        var groups = source
+                    .GroupBy(b =>
+                    {
+                        // b.IlId is int? (nullable int), ilById expects int (non-nullable)
+                        if (b.IlId.HasValue && ilById.TryGetValue(b.IlId.Value, out var il) && il.BolgeId.HasValue && bolgeById.TryGetValue(il.BolgeId.Value, out var bolge))
+                            return bolge.Id;
+
+                        return 999;
+                    })
+                    .OrderBy(g => g.Key)
+                    .ToList();
+        var list = new List<StatRow>();
+        int sumTam = 0, sumCiplak = 0, sumTotal = 0;
+        int sumBina = 0, sumMesken = 0, sumIsyeri = 0, sumArsa = 0, sumTarla = 0;
+        decimal sumEmlak = 0m, sumRayic = 0m;
+
+        foreach (var g in groups)
+        {
+            string region = string.Empty;
+            if (bolgeById.TryGetValue(g.Key, out var bn))
+            {
+                region = bn.KisaAdi ?? "Bilinmeyen";
+            }
+            else
+            {
+                // if key is negative
+                if (g.Key == 999)
+                {
+
+                    region = "İl Bilgisi Yok";
+                }
+                else
+                {
+                    region = $"BolgeId:{g.Key}";
+                }
+            }
+
+            var tam = g.Count(t => IsTamMulk(t));
+            var ciplak = g.Count() - tam;
+
+            int apt = g.Count(t => NormalizeKullanimSekli(t.KullanimSekli).Equals(ProjectConstants.KULLANIMSEKLI_APT, StringComparison.OrdinalIgnoreCase));
+            int ishani = g.Count(t => NormalizeKullanimSekli(t.KullanimSekli).Equals(ProjectConstants.KULLANIMSEKLI_ISHANI, StringComparison.OrdinalIgnoreCase));
+
+            var bina = apt + ishani;
+            var mesken = g.Count(t => NormalizeKullanimSekli(t.KullanimSekli).Equals(ProjectConstants.KULLANIMSEKLI_MESKEN, StringComparison.OrdinalIgnoreCase));
+            var isyeri = g.Count(t => NormalizeKullanimSekli(t.KullanimSekli).Equals(ProjectConstants.KULLANIMSEKLI_ISYERI, StringComparison.OrdinalIgnoreCase) || NormalizeKullanimSekli(t.Cinsi).Equals("Isyeri", StringComparison.OrdinalIgnoreCase));
+            var arsa = g.Count(t => NormalizeKullanimSekli(t.KullanimSekli).Equals(ProjectConstants.KULLANIMSEKLI_ARSA, StringComparison.OrdinalIgnoreCase));
+            var tarla = g.Count(t => NormalizeKullanimSekli(t.KullanimSekli).Equals(ProjectConstants.KULLANIMSEKLI_TARLA, StringComparison.OrdinalIgnoreCase));
+
+            var total = g.Count();
+
+            // sums for money fields
+            sumEmlak += g.Sum(t => t.EmlakBeyanDegeri ?? 0m);
+            sumRayic += g.Sum(t => t.TahminiRayicDegeri ?? 0m);
+
+            list.Add(new StatRow(
+                Region: region,
+                TamMulk: tam,
+                CiplakMulk: ciplak,
+                Total: total,
+                Bina: bina,
+                Mesken: mesken,
+                Isyeri: isyeri,
+                Arsa: arsa,
+                Tarla: tarla
+            ));
+
+            sumTam += tam;
+            sumCiplak += ciplak;
+            sumTotal += total;
+            sumBina += bina;
+            sumMesken += mesken;
+            sumIsyeri += isyeri;
+            sumArsa += arsa;
+            sumTarla += tarla;
+        }
+
+        Rows = list;
+        Totals = new StatRow("Toplam", sumTam, sumCiplak, sumTotal, sumBina, sumMesken, sumIsyeri, sumArsa, sumTarla);
+
+        TotalEmlakBeyanDegeri = sumEmlak;
+        TotalTahminiRayicDegeri = sumRayic;
+    }
+
+    private string FormatMoney(decimal value)
+    {
+        // format with two decimals, culture-invariant with thousand separators for readability
+        return value.ToString("N2", CultureInfo.CurrentCulture);
+    }
+
+    private async Task Close()
+    {
+        if (OnClose.HasDelegate)
+            await OnClose.InvokeAsync(null);
+    }
+}

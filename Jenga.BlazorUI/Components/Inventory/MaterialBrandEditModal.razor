@@ -1,4 +1,6 @@
 ﻿@using Jenga.Models.Inventory
+@using System.Linq
+@using System.Collections.Generic
 
 @if (IsOpen)
 {
@@ -21,7 +23,7 @@
                         <label>Kategori</label>
                         <select class="form-select" @bind="Brand.CategoryId">
                             <option value="">Kategori Seçiniz</option>
-                            @foreach (var cat in Categories)
+                            @foreach (var cat in RootCategories)
                             {
                                 <option value="@cat.Id">@cat.CategoryName</option>
                             }
@@ -47,4 +49,49 @@
     [Parameter] public bool IsOpen { get; set; }
     [Parameter] public EventCallback OnSave { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
+
+    // Return only true root categories. To handle recursive trees we compute each category's root ancestor
+    // and return distinct root ancestors where ParentCategoryId == null or 0.
+    private IEnumerable<MaterialCategory> RootCategories
+    {
+        get
+        {
+            if (Categories == null || Categories.Count == 0) return Enumerable.Empty<MaterialCategory>();
+
+            var roots = new Dictionary<int, MaterialCategory>();
+            foreach (var c in Categories)
+            {
+                var root = FindRootAncestor(c);
+                if (root == null) continue;
+
+                // consider root only if it is a top-level node (ParentCategoryId == null or 0)
+                if (!root.ParentCategoryId.HasValue || root.ParentCategoryId.Value == 0)
+                {
+                    if (!roots.ContainsKey(root.Id))
+                        roots[root.Id] = root;
+                }
+            }
+
+            return roots.Values.OrderBy(r => r.CategoryName);
+        }
+    }
+
+    // Walk up the parent chain until there is no parent or ParentCategoryId == 0.
+    // Protect against cycles with a visited set.
+    private MaterialCategory? FindRootAncestor(MaterialCategory start)
+    {
+        if (start == null) return null;
+        var current = start;
+        var visited = new HashSet<int>();
+        while (current.ParentCategoryId.HasValue && current.ParentCategoryId.Value != 0)
+        {
+            // detect cycle
+            if (!visited.Add(current.Id)) break;
+
+            var parent = Categories.FirstOrDefault(c => c.Id == current.ParentCategoryId.Value);
+            if (parent == null) break;
+            current = parent;
+        }
+        return current;
+    }
 }

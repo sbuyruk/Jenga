@@ -1,68 +1,174 @@
+/* MainLayout scoped styles — removed :root block (variables are now in global app.css) */
+
+/* Page skeleton */
 .page {
-    background-color: var( --bs-primary-bg-subtle);
+    background: linear-gradient(180deg, var(--bg), #071123 85%);
     position: relative;
     display: flex;
     flex-direction: column;
+    min-height: 100vh;
+    color: var(--text);
+    font-family: Inter, system-ui, "Segoe UI", Roboto, Arial, sans-serif;
 }
 
+/* Main grows to fill available area */
 main {
     flex: 1;
+    display: block;
 }
 
-/*.sidebar {
-    background-image: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);
-}*/
-.sidebar {
-    background-image: linear-gradient( 180deg, var(--bs-primary) 0%, var(--bs-primary-border-subtle) 80%);
-    color: var(--bs-body-color);
-}
-
-
+/* Top-row header (match example visual) */
 .top-row {
-    background-image: linear-gradient( 90deg, var(--bs-primary) 0%, var(--bs-primary-border-subtle) 80% );
-    color: var(--bs-body-color);
-    border-bottom: 1px solid #d6d5d5;
-    justify-content: flex-end;
-    height: 3.5rem;
+    height: 90px;
     display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    background: linear-gradient(90deg, var(--p3), rgba(0,0,0,0.06));
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    z-index: 121;
+    box-sizing: border-box;
+}
+
+.top-row .site-logo,
+#logo {
+    height: 80px;
+    width: auto;
+    object-fit: contain;
+    border-radius: 6px;
+}
+
+/* Controls in the header */
+.controls {
+    display: flex;
+    gap: 12px;
     align-items: center;
 }
 
-    .top-row ::deep a, .top-row ::deep .btn-link {
-        white-space: nowrap;
-        margin-left: 1.5rem;
-        text-decoration: none;
-    }
-
-    .top-row ::deep a:hover, .top-row ::deep .btn-link:hover {
-        text-decoration: underline;
-    }
-
-    .top-row ::deep a:first-child {
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-@media (max-width: 640.98px) {
-    .top-row {
-        justify-content: space-between;
-    }
-
-    .top-row ::deep a, .top-row ::deep .btn-link {
-        margin-left: 0;
-    }
+.controls select,
+.controls button {
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.06);
+    background: transparent;
+    color: var(--text);
+    font-weight: 700;
+    cursor: pointer;
 }
 
+/* Variant segment */
+.variant-seg {
+    display: inline-flex;
+    background: transparent;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.variant-seg button {
+    border: 0;
+    padding: 8px 12px;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+}
+
+.variant-seg button[aria-pressed="true"] {
+    background: linear-gradient(180deg, var(--p1), var(--p4));
+    color: #fff;
+    box-shadow: 0 8px 24px var(--shadow);
+}
+
+/* Content grid (left aside + main + right aside in main.content) */
+main.content {
+    padding: 22px;
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 20px;
+    box-sizing: border-box;
+}
+
+/* Card visuals (used by inner pages) */
+.card {
+    background: var(--card-bg);
+    border-radius: 10px;
+    padding: 16px;
+    color: var(--text);
+    box-shadow: 0 10px 30px var(--shadow);
+    border: 1px solid rgba(255,255,255,0.03);
+}
+
+/* Muted helper */
+.muted {
+    color: var(--muted);
+}
+
+/* Responsive: on small screens stack layout */
+@media (max-width: 900px) {
+    .sidebar { display: none; }
+    main.content { grid-template-columns: 1fr; }
+    .top-row { height: 72px; padding: 0 14px; }
+    .top-row .site-logo { height: 44px; }
+}
+
+/* Sidebar / drawer rules (keeps parity with MainLayout markup) */
+.sidebar {
+    width: 260px;
+    min-width: 72px;
+    overflow: hidden;
+    z-index: 100;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    background: linear-gradient(180deg, rgba(255,255,255,0.01), var(--surface));
+    box-sizing: border-box;
+    padding: 18px;
+}
+
+/* collapsed vs open classes are preserved */
+.sidebar.open {
+    width: 260px;
+    transform: translateX(0);
+}
+
+.sidebar.collapsed {
+    width: 72px;
+}
+
+/* Overlay for mobile drawer */
+.sidebar-overlay {
+    display: none;
+}
+
+/* Hidden but accessible checkbox used for CSS-only toggling */
+.nav-toggle-checkbox {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+}
+
+/* Desktop behavior: when checkbox unchecked -> collapsed, checked -> expanded */
 @media (min-width: 641px) {
-    .page {
-        flex-direction: row;
+    .nav-toggle-checkbox:not(:checked) ~ .sidebar {
+        width: 72px !important; /* collapsed */
+        min-width: 72px !important;
     }
 
-    .sidebar {
-        width: 250px;
-        height: 100vh;
-        position: sticky;
-        top: 0;
+    .nav-toggle-checkbox:checked ~ .sidebar {
+        width: 350px !important; /* expanded */
+        min-width: 250px !important;
+    }
+
+    .nav-toggle-checkbox:checked ~ .sidebar-overlay {
+        display: none !important;
+        pointer-events: none !important;
+    }
+
+    /* layout becomes row on wide screens */
+    .page {
+        flex-direction: row;
     }
 
     .top-row {
@@ -70,36 +176,73 @@ main {
         top: 0;
         z-index: 1;
     }
+}
 
-    .top-row.auth ::deep a:first-child {
-        flex: 1;
-        text-align: right;
-        width: 0;
+/* Small screens: checkbox checked opens the drawer (overlay visible) */
+@media (max-width: 640.98px) {
+    .sidebar {
+        transform: translateX(-110%);
+        width: 250px;
     }
 
-    .top-row, article {
-        padding-left: 2rem !important;
-        padding-right: 1.5rem !important;
+    .nav-toggle-checkbox:checked ~ .sidebar {
+        transform: translateX(0) !important;
+        z-index: 100;
+    }
+
+    .nav-toggle-checkbox:checked ~ .sidebar-overlay {
+        display: block !important;
+        pointer-events: auto !important;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.45);
+        z-index: 90;
     }
 }
 
-#blazor-error-ui {
-    color-scheme: light only;
-    background: lightyellow;
-    bottom: 0;
-    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
-    box-sizing: border-box;
-    display: none;
-    left: 0;
-    padding: 0.6rem 1.25rem 0.7rem 1.25rem;
-    position: fixed;
+/* Sidebar toggle (hamburger) */
+.sidebar-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 36px;
+    padding: 0;
+    margin: 0 0.5rem 0 0;
+    background: var(--bs-bg-primary);
+    color: #fff !important;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 6px;
+    z-index: 140;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+    cursor: pointer;
+}
+
+.sidebar-toggle .hamburger {
+    display: inline-block;
+    width: 18px;
+    height: 14px;
+    position: relative;
+}
+
+.sidebar-toggle .hamburger span {
+    display: block;
+    height: 2px;
     width: 100%;
-    z-index: 1000;
+    background: #fff;
+    border-radius: 2px;
+    transition: transform 160ms ease, opacity 160ms ease;
 }
 
-    #blazor-error-ui .dismiss {
-        cursor: pointer;
-        position: absolute;
-        right: 0.75rem;
-        top: 0.5rem;
-    }
+.sidebar-toggle .hamburger span + span {
+    margin-top: 4px;
+}
+
+/* accessibility helper */
+.sr-only {
+    position: absolute !important;
+    height: 1px; width: 1px;
+    overflow: hidden;
+    clip: rect(1px, 1px, 1px, 1px);
+    white-space: nowrap;
+}

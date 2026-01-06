@@ -1,5 +1,4 @@
-﻿
-namespace Jenga.Utility
+﻿namespace Jenga.Utility
 {
     public static class ProjectConstants
     {
@@ -7,6 +6,23 @@ namespace Jenga.Utility
         public const int SIFIR = 0;
         public static DateTime ILK_TARIH = new DateTime(1900, 1, 1);
         public const int GENELMUDUR_PERSONELID = 1184;
+
+        // Mulkiyet abbreviations (TM = Tam Mülkiyet, ÇM = Çıplak Mülkiyet)
+        public const string MULKIYET_SEKLI_TM = "TM";
+        public const string MULKIYET_SEKLI_CM = "ÇM";
+        //Kiraya Uygunluk
+        public const string KIRAYA_UYGUN = "Kiraya Uygun";
+        public const string KIRAYA_UYGUN_DEGIL = "Kiraya Uygun Değil";
+        //Kullanım Şekli
+        public const string KULLANIMSEKLI_ISHANI = "İşhanı";
+        public const string KULLANIMSEKLI_APT = "Apt.";
+        public const string KULLANIMSEKLI_ARSA = "Arsa";
+        public const string KULLANIMSEKLI_BAZISTASYONU = "Bis";
+        public const string KULLANIMSEKLI_ISYERI = "İşyeri";
+        public const string KULLANIMSEKLI_MEV = "M.Ev";
+        public const string KULLANIMSEKLI_MESKEN = "Mesken";
+        public const string KULLANIMSEKLI_TARLA = "Tarla";
+        public const string KULLANIMSEKLI_TESIS = "Tesis";
 
         public static string BAGISCI_SAG = "Sağ";
         public static string BAGISCI_VEFAT = "Vefat";

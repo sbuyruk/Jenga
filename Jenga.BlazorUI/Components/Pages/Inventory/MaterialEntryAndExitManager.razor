@@ -4,13 +4,14 @@
 @using Jenga.BlazorUI.Components.Common
 @using Jenga.BlazorUI.Components.Inventory
 @using Jenga.BlazorUI.Helpers
-@using Jenga.DataAccess.Services.Inventory
+@using Jenga.BlazorUI.Services.Common
 @using Jenga.DataAccess.Services.IKYS
+@using Jenga.DataAccess.Services.Inventory
 @using Jenga.Models.Common
 @using Jenga.Models.Helper
 @using Jenga.Models.IKYS
 @using Jenga.Models.Inventory
-@using Jenga.Utility.Modal
+
 @using Jenga.Utility.Toast
 
 @inject IToastService ToastService
@@ -122,6 +123,8 @@
                         MaterialUnits="materialUnits"
                         Locations="locations"
                         Persons="persons"
+                        Brands="brands"
+                        Models="models"
                         IsOpen="isEntryOpen"
                         OnSave="OnEntryModalSave"
                         OnClose="CloseEntryModal" />
@@ -131,6 +134,8 @@
                        MaterialUnits="materialUnits"
                        Locations="locations"
                        Persons="persons"
+                       Brands="brands"
+                       Models="models"
                        MaterialInventories="materialInventories"
                        IsOpen="isExitOpen"
                        OnSave="OnExitModalSave"
@@ -147,8 +152,6 @@
                    IsOpen="isMaterialEditOpen"
                    OnSave="OnMaterialModalSave"
                    OnClose="CloseMaterialModal"
-                   Brands="brands"
-                   Models="models"
                    MaterialUnits="materialUnits" />
 
 <MaterialTransferEditModalV2 MaterialTransfer="editingTransfer"
@@ -156,6 +159,8 @@
                              MaterialUnits="materialUnits"
                              Locations="locations"
                              Persons="persons"
+                             Brands="brands"
+                             Models="models"
                              MaterialInventories="materialInventories"
                              IsOpen="isTransferOpen"
                              InitialSelectedFromInventoryId="modalInitialFromInventoryId"
@@ -399,7 +404,9 @@
                     LocationName = locName,
                     Type = type,
                     IsIncrease = isEntry || (isTransfer && m.ToLocationId == selectedLocationId),
-                    UnitName = materialUnits.FirstOrDefault(u => u.Id == m.MaterialUnitId)?.Symbol ?? ""
+                    UnitName = materialUnits.FirstOrDefault(u => u.Id == m.MaterialUnitId)?.Symbol ?? "",
+                    BrandName = brands.FirstOrDefault(b => b.Id == m.BrandId)?.BrandName,
+                    ModelName = models.FirstOrDefault(md => md.Id == m.ModelId)?.ModelName
                 };
             }).ToList();
 
@@ -443,7 +450,7 @@
         if (loc != null)
         {
             editingExit.LocationId = loc.LocationId != 0 ? loc.LocationId : null;
-            editingExit.PersonId = loc.PersonelId; // KARTTAKİ PERSONEL ID BURADA AKTARILIYOR
+            editingExit.PersonelId = loc.PersonelId; // KARTTAKİ PERSONEL ID BURADA AKTARILIYOR
         }
 
         SelectedMaterial = mat;
@@ -490,11 +497,11 @@
             "Çıkış", () => isExitOpen = false);
     }
 
-    private async Task OnTransferModalSave()
+    private async Task OnTransferModalSave(MaterialTransfer? transfer)
     {
-        if (editingTransfer == null) return;
+        if (transfer == null) return;
         await ExecuteTransaction(async () =>
-            await MaterialTransferService.AddAsync(editingTransfer, httpContextAccessor.HttpContext?.User?.Identity?.Name, CancellationToken.None),
+            await MaterialTransferService.AddAsync(transfer, httpContextAccessor.HttpContext?.User?.Identity?.Name, CancellationToken.None),
             "Transfer", () => isTransferOpen = false);
     }
 

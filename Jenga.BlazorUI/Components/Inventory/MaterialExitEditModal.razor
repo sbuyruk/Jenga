@@ -63,28 +63,17 @@
                         </div>
                     </div>
 
-                    <!-- Çıkış Yeri Seçimi (Personel ve Lokasyon Ayrıldı) -->
+                    <!-- Çıkış Yeri Seçimi (Tek DDL: Kaynak Stok - RAW inventory kayıtları) -->
                     <div class="mb-3 bg-light p-3 rounded border">
                         <label class="form-label fw-bold">Çıkış Yeri (Kaynak Stok)</label>
 
                         <div class="mb-2">
-                            <label class="small text-muted">Personelden Çıkış</label>
-                            <select class="form-select form-select-sm" value="@CurrentPersonId" @onchange="OnPersonChanged">
-                                <option value="0">-- Personel Yok / Seçiniz --</option>
-                                @foreach (var p in SourcePersons)
+                            <label class="small text-muted">Kaynak Stok</label>
+                            <select class="form-select form-select-sm" @bind="SelectedSourceId">
+                                <option value="0">-- Kaynak Stok Seçiniz --</option>
+                                @foreach (var s in SourceOptions)
                                 {
-                                    <option value="@p.Id">@p.FullName</option>
-                                }
-                            </select>
-                        </div>
-
-                        <div class="mb-2">
-                            <label class="small text-muted">Lokasyondan Çıkış</label>
-                            <select class="form-select form-select-sm" value="@CurrentLocationId" @onchange="OnLocationChanged">
-                                <option value="0">-- Lokasyon Yok / Seçiniz --</option>
-                                @foreach (var l in SourceLocations)
-                                {
-                                    <option value="@l.Id">@l.LocationName</option>
+                                    <option value="@s.Id">@s.DisplayName</option>
                                 }
                             </select>
                         </div>
@@ -141,12 +130,25 @@
     #region Models
     public class InventoryOption
     {
+        public int InventoryId { get; set; } // MaterialInventory.Id (assumed)
         public int? LocationId { get; set; }
         public int? PersonelId { get; set; }
+        public int? BrandId { get; set; }
+        public int? ModelId { get; set; }
         public int Quantity { get; set; }
     }
-    public class SourceItem { public int Id { get; set; } public string FullName { get; set; } = ""; }
-    public class LocationItem { public int Id { get; set; } public string LocationName { get; set; } = ""; }
+
+    // Single unified dropdown option (maps 1:1 to a MaterialInventory record)
+    public class SourceOption
+    {
+        public int Id { get; set; } // will use InventoryId
+        public int? LocationId { get; set; }
+        public int? PersonelId { get; set; }
+        public int? BrandId { get; set; }
+        public int? ModelId { get; set; }
+        public int Quantity { get; set; }
+        public string DisplayName { get; set; } = "";
+    }
     #endregion
 
     #region Parameters
@@ -155,6 +157,9 @@
     [Parameter] public List<MaterialUnit> MaterialUnits { get; set; } = new();
     [Parameter] public List<Location> Locations { get; set; } = new();
     [Parameter] public List<Personel> Persons { get; set; } = new();
+    [Parameter] public List<MaterialBrand> Brands { get; set; } = new();
+    [Parameter] public List<MaterialModel> Models { get; set; } = new();
+
     [Parameter] public List<MaterialInventory> MaterialInventories { get; set; } = new();
     [Parameter] public bool IsOpen { get; set; }
 
@@ -164,14 +169,38 @@
     #endregion
 
     #region State
-    // Dropdownlarda seçili görünen değerler
-    private int CurrentPersonId { get; set; }
-    private int CurrentLocationId { get; set; }
+    // selection sync guard to avoid re-entrancy
+    private bool _isSyncingSelection;
 
-    // Hesaplanan Listeler
     private List<InventoryOption> AvailableInventoryOptions { get; set; } = new();
-    private List<SourceItem> SourcePersons { get; set; } = new();
-    private List<LocationItem> SourceLocations { get; set; } = new();
+    private List<SourceOption> SourceOptions { get; set; } = new();
+
+    // bound to the single dropdown (holds InventoryId)
+    private int _selectedSourceId;
+    private int SelectedSourceId
+    {
+        get => _selectedSourceId;
+        set
+        {
+            if (_selectedSourceId == value) return;
+            _selectedSourceId = value;
+            // update MaterialExit fields immediately when user picks a source
+            SyncSelectedSourceToMaterialExit();
+        }
+    }
+
+    private void SyncSelectedSourceToMaterialExit()
+    {
+        var sel = SourceOptions.FirstOrDefault(s => s.Id == SelectedSourceId);
+        if (sel != null && MaterialExit != null)
+        {
+            // Normalize zeros to null to avoid 0 getting interpreted as "has value but zero"
+            MaterialExit.LocationId = sel.LocationId;
+            MaterialExit.PersonelId = sel.PersonelId;
+            MaterialExit.BrandId = (sel.BrandId.HasValue && sel.BrandId.Value != 0) ? sel.BrandId : null;
+            MaterialExit.ModelId = (sel.ModelId.HasValue && sel.ModelId.Value != 0) ? sel.ModelId : null;
+        }
+    }
     #endregion
 
     #region Computed Properties
@@ -188,7 +217,13 @@
                 {
                     MaterialExit.MaterialUnitId = selectedMaterial.MaterialUnitId;
                 }
+                else
+                {
+                    MaterialExit.MaterialUnitId = 0;
+                }
             }
+            // reset selections when material changes
+            SelectedSourceId = 0;
             RecalculateDerived();
         }
     }
@@ -214,19 +249,17 @@
     {
         get
         {
-            if (CurrentPersonId == 0 && CurrentLocationId == 0) return 0;
+            if (MaterialExit == null) return 0;
+            if (SelectedSourceId == 0) return 0;
 
-            var match = AvailableInventoryOptions.FirstOrDefault(x =>
-                (x.PersonelId ?? 0) == CurrentPersonId &&
-                (x.LocationId ?? 0) == CurrentLocationId);
-
-            return match?.Quantity ?? 0;
+            var sel = SourceOptions.FirstOrDefault(s => s.Id == SelectedSourceId);
+            return sel?.Quantity ?? 0;
         }
     }
 
     private bool ShowQuantityError => MaterialExit != null && MaterialExit.Quantity < 1;
     private bool ShowExceedsError => MaterialExit != null && AvailableQuantity > 0 && MaterialExit.Quantity > AvailableQuantity;
-    private bool ShowLocationError => CurrentPersonId == 0 && CurrentLocationId == 0;
+    private bool ShowLocationError => SelectedSourceId == 0;
     private bool ShowExitTypeError => MaterialExit != null && !MaterialExit.ExitType.HasValue;
 
     private bool IsSaveDisabled =>
@@ -239,14 +272,38 @@
 
     protected override void OnParametersSet()
     {
-        // DÜZELTME: Önce Model -> State eşleşmesi yapılmalı, sonra listeler hesaplanmalı.
         if (MaterialExit != null && IsOpen)
         {
-            CurrentLocationId = MaterialExit.LocationId ?? 0;
-            CurrentPersonId = MaterialExit.PersonId ?? 0;
+            // selected source will be set after RecalculateDerived
         }
 
         RecalculateDerived();
+
+        if (MaterialExit != null && IsOpen)
+        {
+            // Try to find exact inventory row that matches exit's location/person/brand/model
+            var existing = SourceOptions.FirstOrDefault(s =>
+                (s.LocationId ?? 0) == (MaterialExit.LocationId ?? 0) &&
+                (s.PersonelId ?? 0) == (MaterialExit.PersonelId ?? 0) &&
+                (s.BrandId ?? 0) == (MaterialExit.BrandId ?? 0) &&
+                (s.ModelId ?? 0) == (MaterialExit.ModelId ?? 0));
+
+            if (existing != null)
+            {
+                SelectedSourceId = existing.Id;
+                SyncSelectedSourceToMaterialExit();
+            }
+            else if (SourceOptions.Count == 1)
+            {
+                var only = SourceOptions.First();
+                SelectedSourceId = only.Id;
+                SyncSelectedSourceToMaterialExit();
+            }
+            else
+            {
+                SelectedSourceId = 0;
+            }
+        }
     }
 
     private void RecalculateDerived()
@@ -254,106 +311,105 @@
         if (MaterialExit == null) return;
         var matId = MaterialExit.MaterialId;
 
+        // RAW inventory kayıtlarını al
         AvailableInventoryOptions = MaterialInventories
-            .Where(mi => mi.MaterialId == matId)
-            .GroupBy(mi => new { mi.LocationId, mi.PersonelId })
-            .Select(g => new InventoryOption
+            .Where(mi => mi.MaterialId == matId && mi.Quantity > 0)
+            .Select(mi => new InventoryOption
             {
-                LocationId = g.Key.LocationId,
-                PersonelId = g.Key.PersonelId,
-                Quantity = g.Sum(x => x.Quantity)
+                InventoryId = mi.Id,
+                LocationId = mi.LocationId,
+                PersonelId = mi.PersonelId,
+                // normalize 0 -> null here to avoid 0 being treated as a valid id
+                BrandId = (mi.BrandId.HasValue && mi.BrandId.Value != 0) ? mi.BrandId : null,
+                ModelId = (mi.ModelId.HasValue && mi.ModelId.Value != 0) ? mi.ModelId : null,
+                Quantity = mi.Quantity
             })
-            .Where(x => x.Quantity > 0)
             .ToList();
 
-        UpdateSelectionLists();
+        BuildSourceOptions();
 
-        // Mevcut seçim artık listede yoksa temizle
-        var currentExists = AvailableInventoryOptions.Any(x =>
-            (x.PersonelId ?? 0) == CurrentPersonId &&
-            (x.LocationId ?? 0) == CurrentLocationId);
+        // Eğer mevcut SelectedSourceId hala geçerliyse koru
+        if (SourceOptions.Any(s => s.Id == SelectedSourceId))
+            return;
 
-        if (!currentExists && IsOpen)
+        // 1) MaterialExit içindeki değerlere tam uyan inventory kaydını bulup seç
+        var match = SourceOptions.FirstOrDefault(s =>
+            (s.LocationId ?? 0) == (MaterialExit.LocationId ?? 0) &&
+            (s.PersonelId ?? 0) == (MaterialExit.PersonelId ?? 0) &&
+            (s.BrandId ?? 0) == (MaterialExit.BrandId ?? 0) &&
+            (s.ModelId ?? 0) == (MaterialExit.ModelId ?? 0));
+
+        if (match != null)
         {
-            if (AvailableInventoryOptions.Count == 1)
-            {
-                var onlyOpt = AvailableInventoryOptions.First();
-                CurrentPersonId = onlyOpt.PersonelId ?? 0;
-                CurrentLocationId = onlyOpt.LocationId ?? 0;
-            }
-            else
-            {
-                CurrentPersonId = 0;
-                CurrentLocationId = 0;
-            }
+            SelectedSourceId = match.Id; // setter sync yapacak
+            return;
         }
+
+        // 2) Sadece 1 seçenek varsa onu seç
+        if (SourceOptions.Count == 1)
+        {
+            SelectedSourceId = SourceOptions[0].Id;
+            return;
+        }
+
+        // 3) Aksi halde temizle
+        SelectedSourceId = 0;
     }
 
-    private void UpdateSelectionLists()
+    private void BuildSourceOptions()
     {
-        var personTotals = AvailableInventoryOptions
-            .Where(x => x.PersonelId.HasValue)
-            .GroupBy(x => x.PersonelId!.Value)
-            .ToDictionary(g => g.Key, g => g.Sum(x => x.Quantity));
-
-        SourcePersons = Persons
-            .Where(p => personTotals.ContainsKey(p.Id))
-            .Select(p => new SourceItem
+        SourceOptions = AvailableInventoryOptions
+            .Select(opt =>
             {
-                Id = p.Id,
-                FullName = $"{p.Adi} {p.Soyadi} ({personTotals[p.Id]} {SelectedUnitName})"
+                // Determine base name: person or location
+                string baseName;
+                if (opt.PersonelId.HasValue && opt.LocationId.HasValue)
+                {
+                    var p = Persons.FirstOrDefault(pp => pp.Id == opt.PersonelId.Value);
+                    var l = Locations.FirstOrDefault(ll => ll.Id == opt.LocationId.Value);
+                    var pName = p != null ? $"{p.Adi} {p.Soyadi}" : $"Personel {opt.PersonelId}";
+                    var lName = l != null ? InventoryUIHelper.GetLocationFullName(l.Id, Locations) : $"Lokasyon {opt.LocationId}";
+                    baseName = lName + "/" + pName+" - ";
+                }
+                else if(opt.PersonelId.HasValue)
+                {
+                    var p = Persons.FirstOrDefault(pp => pp.Id == opt.PersonelId.Value);
+                    baseName = p != null ? $"{p.Adi} {p.Soyadi}" : $"Personel {opt.PersonelId}";
+                }
+                else if (opt.LocationId.HasValue)
+                {
+                    var l = Locations.FirstOrDefault(ll => ll.Id == opt.LocationId.Value);
+                    baseName = l != null ? InventoryUIHelper.GetLocationFullName(l.Id, Locations) : $"Lokasyon {opt.LocationId}";
+                }
+                else
+                {
+                    baseName = string.Empty;
+                }
+
+                var brandName = opt.BrandId.HasValue ? Brands.FirstOrDefault(b => b.Id == opt.BrandId.Value)?.BrandName : null;
+                var modelName = opt.ModelId.HasValue ? Models.FirstOrDefault(m => m.Id == opt.ModelId.Value)?.ModelName : null;
+
+                var brandModelPart = (brandName, modelName) switch
+                {
+                    (null, null) => "",
+                    (var b, null) => $" - {b}",
+                    (null, var m) => $" - {m}",
+                    (var b, var m) => $" - {b}/{m}"
+                };
+
+                return new SourceOption
+                {
+                    Id = opt.InventoryId,
+                    LocationId = opt.LocationId,
+                    PersonelId = opt.PersonelId,
+                    BrandId = opt.BrandId,
+                    ModelId = opt.ModelId,
+                    Quantity = opt.Quantity,
+                    DisplayName = $"{baseName}{brandModelPart} ({opt.Quantity} {SelectedUnitName})"
+                };
             })
-            .OrderBy(x => x.FullName).ToList();
-
-        var locationTotals = AvailableInventoryOptions
-            .Where(x => x.LocationId.HasValue)
-            .GroupBy(x => x.LocationId!.Value)
-            .ToDictionary(g => g.Key, g => g.Sum(x => x.Quantity));
-
-        SourceLocations = Locations
-            .Where(l => locationTotals.ContainsKey(l.Id))
-            .Select(l => new LocationItem
-            {
-                Id = l.Id,
-                LocationName = $"{InventoryUIHelper.GetLocationFullName(l.Id, Locations)} ({locationTotals[l.Id]} {SelectedUnitName})"
-            })
-            .OrderBy(x => x.LocationName).ToList();
-    }
-
-    private void OnPersonChanged(ChangeEventArgs e)
-    {
-        if (int.TryParse(e.Value?.ToString(), out int newPersonId))
-        {
-            CurrentPersonId = newPersonId;
-
-            var match = AvailableInventoryOptions.FirstOrDefault(x =>
-                (x.PersonelId ?? 0) == CurrentPersonId &&
-                (x.LocationId ?? 0) == CurrentLocationId);
-
-            if (match == null)
-            {
-                var bestMatch = AvailableInventoryOptions.FirstOrDefault(x => (x.PersonelId ?? 0) == CurrentPersonId);
-                CurrentLocationId = bestMatch?.LocationId ?? 0;
-            }
-        }
-    }
-
-    private void OnLocationChanged(ChangeEventArgs e)
-    {
-        if (int.TryParse(e.Value?.ToString(), out int newLocationId))
-        {
-            CurrentLocationId = newLocationId;
-
-            var match = AvailableInventoryOptions.FirstOrDefault(x =>
-                (x.PersonelId ?? 0) == CurrentPersonId &&
-                (x.LocationId ?? 0) == CurrentLocationId);
-
-            if (match == null)
-            {
-                var bestMatch = AvailableInventoryOptions.FirstOrDefault(x => (x.LocationId ?? 0) == CurrentLocationId);
-                CurrentPersonId = bestMatch?.PersonelId ?? 0;
-            }
-        }
+            .OrderBy(s => s.DisplayName)
+            .ToList();
     }
 
     private async Task HandleSave()
@@ -366,8 +422,22 @@
 
         if (MaterialExit != null)
         {
-            MaterialExit.LocationId = CurrentLocationId != 0 ? CurrentLocationId : null;
-            MaterialExit.PersonId = CurrentPersonId != 0 ? CurrentPersonId : null;
+            var sel = SourceOptions.FirstOrDefault(s => s.Id == SelectedSourceId);
+            if (sel != null)
+            {
+                MaterialExit.LocationId = sel.LocationId;
+                MaterialExit.PersonelId = sel.PersonelId;
+                // Ensure zeros are converted to null so service normalization keeps actual values
+                MaterialExit.BrandId = (sel.BrandId.HasValue && sel.BrandId.Value != 0) ? sel.BrandId : null;
+                MaterialExit.ModelId = (sel.ModelId.HasValue && sel.ModelId.Value != 0) ? sel.ModelId : null;
+            }
+            else
+            {
+                MaterialExit.LocationId = null;
+                MaterialExit.PersonelId = null;
+                MaterialExit.BrandId = null;
+                MaterialExit.ModelId = null;
+            }
         }
 
         await OnSave.InvokeAsync();

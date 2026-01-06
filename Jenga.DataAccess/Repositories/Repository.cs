@@ -111,7 +111,15 @@ namespace Jenga.DataAccess.Repositories
         public async Task<List<T>> GetAllAsync(CancellationToken cancellationToken = default)
         {
             await using var db = _dbFactory.CreateDbContext();
-            return await db.Set<T>().AsNoTracking().ToListAsync(cancellationToken);
+            try
+            {
+                return await db.Set<T>().AsNoTracking().ToListAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                // Hata ayıklamayı kolaylaştırmak için ek bağlamla tekrar fırlatılırken, orijinal istisna korunur.
+                throw new InvalidOperationException($"Veritabanından {typeof(T).FullName} türündeki tüm varlıkları alma işlemi başarısız oldu.", ex);
+            }
         }
 
         public async Task<T?> GetFirstOrDefaultAsync(Expression<Func<T, bool>> filter, string? includeProperties = null, bool trackChanges = true)

@@ -19,10 +19,20 @@ namespace Jenga.Models.Inventory
         [Column("Quantity")]
         public int Quantity { get; set; }
 
-        // Opsiyonel navigation property
+        // New: brand/model at inventory level (nullable)
+        [Column("BrandId")]
+        public int? BrandId { get; set; }
+
+        [Column("ModelId")]
+        public int? ModelId { get; set; }
+
+        // Optional navigation properties
         public Material? Material { get; set; }
         public Location? Location { get; set; }
         public Personel? Personel { get; set; }
+
+        public MaterialBrand? Brand { get; set; }
+        public MaterialModel? Model { get; set; }
     }
 }
 

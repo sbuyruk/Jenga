@@ -6,7 +6,9 @@ using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.DataAccess.Repositories.IRepository.Common;
 using Jenga.DataAccess.Repositories.IRepository.IKYS;
 using Jenga.DataAccess.Repositories.IRepository.Inventory;
-using Jenga.DataAccess.Repositories.IRepository.Common;
+using Jenga.DataAccess.Repositories.IRepository.TBYS;
+using Jenga.DataAccess.Repositories.TBYS;
+using Jenga.Models.TBYS;
 using Microsoft.EntityFrameworkCore;
 
 namespace Jenga.DataAccess.Repositories
@@ -54,7 +56,10 @@ namespace Jenga.DataAccess.Repositories
             Personel = new PersonelRepository(_contextFactory);
             PersonelLocation = new PersonelLocationRepository(_contextFactory);
 
-
+            // TBYS
+            Tasinmaz = new TasinmazRepository(_contextFactory);
+            TasinmazBagisci = new TasinmazBagisciRepository(_contextFactory);
+            Bagis = new BagisRepository(_contextFactory);
         }
 
         // Common
@@ -83,5 +88,9 @@ namespace Jenga.DataAccess.Repositories
         public IPersonelRepository Personel { get; private set; }
         public IPersonelLocationRepository PersonelLocation { get; private set; }
 
+        // TBYS
+        public ITasinmazRepository Tasinmaz { get; private set; }
+        public ITasinmazBagisciRepository TasinmazBagisci { get; private set; }
+        public IBagisRepository Bagis { get; private set; }
     }
 }

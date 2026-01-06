@@ -3,7 +3,7 @@ using Jenga.Models.Enums;
 using Jenga.Models.Inventory;
 using Jenga.Utility.Helpers;
 using System.Linq.Expressions;
-using System.Security.Cryptography.Xml;
+using System;
 
 namespace Jenga.DataAccess.Services.Inventory
 {
@@ -38,106 +38,147 @@ namespace Jenga.DataAccess.Services.Inventory
             var material = await _unitOfWork.Material.GetByIdAsync(exit.MaterialId, cancellationToken);
             if (material == null) throw new Exception("Malzeme bulunamadı!");
 
-            // 2. MaterialInventory'den miktarı düş
+            // Normalize 0 -> null for optional ids
+            int? actualLocation = exit.LocationId != 0 ? exit.LocationId : null;
+            int? actualPerson = (exit.PersonelId.HasValue && exit.PersonelId.Value != 0) ? exit.PersonelId : null;
+            int? actualBrand = (exit.BrandId.HasValue && exit.BrandId.Value != 0) ? exit.BrandId : null;
+            int? actualModel = (exit.ModelId.HasValue && exit.ModelId.Value != 0) ? exit.ModelId : null;
+
+            // 2. MaterialInventory'den miktarı düş (include brand/model)
             await _materialInventoryService.AddOrUpdateInventoryAsync(
                 exit.MaterialId,
-                exit.LocationId,
-                exit.PersonId,
+                actualLocation,
+                actualPerson,
                 -exit.Quantity,
                 $"MaterialExit: {exit.ExitType} işlemi ile stoktan çıkarıldı.",
                 exit.Olusturan,
+                actualBrand,
+                actualModel,
                 cancellationToken);
 
-            // 3. MaterialMovement logu ekle
-            string aciklama = EnumHelper.GetEnumDescription((MaterialExitType)exit.ExitType.Value);
+            // 3. MaterialMovement logu ekle (include brand/model)
+            string operation = EnumHelper.GetEnumDescription((MaterialExitType)exit.ExitType.Value);
             var movement = new MaterialMovement
             {
                 MaterialId = exit.MaterialId,
                 Quantity = -exit.Quantity,
                 MaterialUnitId = material.MaterialUnitId,
-                FromLocationId = exit.LocationId,
+                FromLocationId = actualLocation,
                 ToLocationId = null,
-                FromPersonId = exit.PersonId,
+                FromPersonId = actualPerson,
                 ToPersonId = null,
                 MovementDate = exit.ExitDate,
-                MovementType ="Çıkış",
-                Aciklama = $"MaterialExit: {aciklama} işlemi.",
+                MovementType = "Çıkış",
+                Operation = $"Çıkış nedeni: {operation}",
+                Aciklama = $"MaterialExit: {operation} işlemi.",
                 Olusturan = exit.Olusturan,
-                OlusturmaTarihi = DateTime.Now
+                OlusturmaTarihi = DateTime.Now,
+                BrandId = actualBrand,
+                ModelId = actualModel
             };
             await _materialMovementService.AddAsync(movement, cancellationToken);
         }
-        public async Task UpdateAsync(MaterialExit yeniExit, CancellationToken cancellationToken = default)
+        public async Task UpdateAsync(MaterialExit newExit, CancellationToken cancellationToken = default)
         {
             // Eski kaydı çek
-            var eskiExit = await GetByIdAsync(yeniExit.Id, cancellationToken);
-            if (eskiExit == null) throw new Exception("Kayıt bulunamadı!");
+            var oldExit = await GetByIdAsync(newExit.Id, cancellationToken);
+            if (oldExit == null) throw new Exception("Kayıt bulunamadı!");
 
-            // Eski miktarı envantere geri ekle
+            // Normalize ids (0->null)
+            int? oldLocation = oldExit.LocationId != 0 ? oldExit.LocationId : null;
+            int? oldPerson = (oldExit.PersonelId.HasValue && oldExit.PersonelId.Value != 0) ? oldExit.PersonelId : null;
+            int? oldBrand = (oldExit.BrandId.HasValue && oldExit.BrandId.Value != 0) ? oldExit.BrandId : null;
+            int? oldModel = (oldExit.ModelId.HasValue && oldExit.ModelId.Value != 0) ? oldExit.ModelId : null;
+
+            int? newLocation = newExit.LocationId != 0 ? newExit.LocationId : null;
+            int? newPerson = (newExit.PersonelId.HasValue && newExit.PersonelId.Value != 0) ? newExit.PersonelId : null;
+            int? newBrand = (newExit.BrandId.HasValue && newExit.BrandId.Value != 0) ? newExit.BrandId : null;
+            int? newModel = (newExit.ModelId.HasValue && newExit.ModelId.Value != 0) ? newExit.ModelId : null;
+
+            // Eski miktarı envantere geri ekle (include old brand/model)
             await _materialInventoryService.AddOrUpdateInventoryAsync(
-                eskiExit.MaterialId,
-                eskiExit.LocationId,
-                eskiExit.MaterialUnitId,
-                eskiExit.Quantity,
+                oldExit.MaterialId,
+                oldLocation,
+                oldPerson,
+                oldExit.Quantity,
                 "MaterialExit güncellendi (eski miktar stokta geri eklendi)",
-                yeniExit.Olusturan,
+                newExit.Olusturan,
+                oldBrand,
+                oldModel,
                 cancellationToken);
 
-            // Yeni miktarı envanterden düş
+            // Yeni miktarı envanterden düş (include new brand/model)
             await _materialInventoryService.AddOrUpdateInventoryAsync(
-                yeniExit.MaterialId,
-                yeniExit.LocationId,
-                yeniExit.MaterialUnitId,
-                -yeniExit.Quantity,
+                newExit.MaterialId,
+                newLocation,
+                newPerson,
+                -newExit.Quantity,
                 "MaterialExit güncellendi (yeni miktar stoktan çıkarıldı)",
-                yeniExit.Olusturan,
+                newExit.Olusturan,
+                newBrand,
+                newModel,
                 cancellationToken);
 
-            // MaterialMovement logu ekle
+            // MaterialMovement logu ekle (include brand/model)
+            string operation = EnumHelper.GetEnumDescription((MaterialExitType)newExit.ExitType.Value);
             await _materialMovementService.AddAsync(new MaterialMovement
             {
-                MaterialId = yeniExit.MaterialId,
-                Quantity = -yeniExit.Quantity,
-                MaterialUnitId = yeniExit.MaterialUnitId,
-                FromLocationId = yeniExit.LocationId,
-                ToPersonId = yeniExit.PersonId,
-                MovementDate = yeniExit.ExitDate,
+                MaterialId = newExit.MaterialId,
+                Quantity = -newExit.Quantity,
+                MaterialUnitId = newExit.MaterialUnitId,
+                FromLocationId = newExit.LocationId,
+                ToPersonId = newExit.PersonelId,
+                MovementDate = newExit.ExitDate,
                 MovementType = "Düzeltme",
+                Operation = $"Çıkış nedeni: {operation}",
                 Aciklama = "MaterialExit güncellendi.",
-                Olusturan = yeniExit.Olusturan,
-                OlusturmaTarihi = DateTime.Now
+                Olusturan = newExit.Olusturan,
+                OlusturmaTarihi = DateTime.Now,
+                BrandId = newBrand,
+                ModelId = newModel
             }, cancellationToken);
 
             // Kayıt güncelle
-            await _unitOfWork.MaterialExit.UpdateAsync(yeniExit);
+            await _unitOfWork.MaterialExit.UpdateAsync(newExit);
             await _unitOfWork.MaterialExit.SaveChangesAsync(cancellationToken);
         }
 
         public async Task DeleteAsync(MaterialExit exit, CancellationToken cancellationToken = default)
         {
-            // Envantere miktarı geri ekle
+            // Normalize ids
+            int? location = exit.LocationId != 0 ? exit.LocationId : null;
+            int? person = (exit.PersonelId.HasValue && exit.PersonelId.Value != 0) ? exit.PersonelId : null;
+            int? brand = (exit.BrandId.HasValue && exit.BrandId.Value != 0) ? exit.BrandId : null;
+            int? model = (exit.ModelId.HasValue && exit.ModelId.Value != 0) ? exit.ModelId : null;
+
+            // Envantere miktarı geri ekle (include brand/model)
             await _materialInventoryService.AddOrUpdateInventoryAsync(
                 exit.MaterialId,
-                exit.LocationId,
-                exit.MaterialUnitId,
+                location,
+                person,
                 exit.Quantity,
                 "MaterialExit silindi, stok geri eklendi.",
                 exit.Olusturan,
+                brand,
+                model,
                 cancellationToken);
 
-            // MaterialMovement logu ekle
+            // MaterialMovement logu ekle (include brand/model)
             await _materialMovementService.AddAsync(new MaterialMovement
             {
                 MaterialId = exit.MaterialId,
                 Quantity = exit.Quantity,
                 MaterialUnitId = exit.MaterialUnitId,
                 FromLocationId = exit.LocationId,
-                ToPersonId = exit.PersonId,
+                ToPersonId = exit.PersonelId,
                 MovementDate = DateTime.Now,
                 MovementType = "Silme",
+                Operation = "Silme",
                 Aciklama = "MaterialExit silindi.",
                 Olusturan = exit.Olusturan,
-                OlusturmaTarihi = DateTime.Now
+                OlusturmaTarihi = DateTime.Now,
+                BrandId = brand,
+                ModelId = model
             }, cancellationToken);
 
             // Kayıt sil

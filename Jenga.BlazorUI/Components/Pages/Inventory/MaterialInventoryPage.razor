@@ -15,16 +15,18 @@
 @inject ILocationService LocationService
 @inject IPersonelService PersonelService
 @inject IMaterialEntryService MaterialEntryService
+@inject IMaterialBrandService MaterialBrandService
+@inject IMaterialModelService MaterialModelService
 @inject IToastService ToastService
 @inject IHttpContextAccessor HttpContextAccessor
 
-<h5>Malzeme Envanteri</h5>
-
-<div class="mb-3 d-flex">
-    <input class="form-control form-control-sm me-2" placeholder="Malzeme ara..." @bind="searchTerm" @bind:event="oninput" />
-    <button class="col-md-2 btn btn-sm btn-success" @onclick="OpenNewEntryModal">
-        <i class="bi bi-box-arrow-in-right me-1"></i>Malzeme gir
-    </button>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="mb-0">Malzeme Envanteri</h5>
+    <div>
+        <button class="btn btn-success" @onclick="OpenNewEntryModal">
+            <i class="bi bi-box-arrow-in-right me-1"></i>Malzeme gir
+        </button>
+    </div>
 </div>
 
 @if (!dataLoaded)
@@ -33,14 +35,17 @@
 }
 else
 {
-    <MaterialInventoryTable MaterialInventories="FilteredInventories.ToList()"
+    <MaterialInventoryTable MaterialInventories="inventories.ToList()"
                             Materials="materials"
+                            Brands="brands"
+                            Models="models"
                             MaterialUnits="units"
                             Categories="categories"
                             Locations="locations"
                             Persons="persons"
                             OnOpenMovements="HandleOpenMovements"
-                            OnOpenLocations="HandleOpenLocations" />
+                            OnOpenLocations="HandleOpenLocations"
+                            OnInventoryChanged="HandleInventoryChanged" />
 }
 
 @* Local entry modal opened by the "Malzeme gir" button *@
@@ -49,6 +54,8 @@ else
                         MaterialUnits="units"
                         Locations="locations"
                         Persons="persons"
+                        Brands="brands"
+                        Models="models"
                         IsOpen="isEntryOpen"
                         OnSave="OnEntryModalSave"
                         OnClose="CloseEntryModal" />
@@ -60,7 +67,7 @@ else
     <div class="modal show" tabindex="-1" style="display: block;">
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
-                <div class="modal-header">
+                <div class="modal-header bg-secondary-subtle">
                     <h5 class="modal-title">Hareketler - @GetMaterialName(selectedMovementMaterialId)</h5>
                     <button type="button" class="btn-close" @onclick="CloseMovementModal" aria-label="Kapat"></button>
                 </div>
@@ -70,6 +77,8 @@ else
                                            Categories="categories"
                                            Locations="locations"
                                            Persons="persons"
+                                           Brands="brands"
+                                           Models="models"
                                            MaterialUnits="units"
                                            MaxItems="0" />
                 </div>
@@ -88,9 +97,11 @@ else
     private List<MaterialCategory> categories = new();
     private List<Location> locations = new();
     private List<Personel> persons = new();
+    private List<MaterialBrand> brands = new();
+    private List<MaterialModel> models = new();
 
     private bool dataLoaded;
-    private string searchTerm = "";
+    // private string searchTerm = "";
 
     // Entry modal state
     private MaterialEntry? editingEntry;
@@ -114,8 +125,10 @@ else
         var t4 = MaterialCategoryService.GetAllAsync();
         var t5 = LocationService.GetAllAsync();
         var t6 = PersonelService.GetCalisanPersonelAsync();
+        var t7 = MaterialBrandService.GetAllAsync();
+        var t8 = MaterialModelService.GetAllAsync();
 
-        await Task.WhenAll(t1, t2, t3, t4, t5, t6);
+        await Task.WhenAll(t1, t2, t3, t4, t5, t6, t7, t8);
 
         inventories = t1.Result;
         materials = t2.Result;
@@ -123,24 +136,11 @@ else
         categories = t4.Result;
         locations = t5.Result;
         persons = t6.Result;
+        brands = t7.Result;
+        models = t8.Result;
 
         dataLoaded = true;
         StateHasChanged();
-    }
-
-    private IEnumerable<MaterialInventory> FilteredInventories
-    {
-        get
-        {
-            if (string.IsNullOrWhiteSpace(searchTerm))
-                return inventories;
-            var lower = searchTerm.Trim();
-            var matchedMaterialIds = materials
-                .Where(m => m.MaterialName.Contains(lower, StringComparison.OrdinalIgnoreCase))
-                .Select(m => m.Id)
-                .ToHashSet();
-            return inventories.Where(i => matchedMaterialIds.Contains(i.MaterialId)).ToList();
-        }
     }
 
     private async Task HandleOpenMovements(int materialId)
@@ -178,7 +178,8 @@ else
             if (saved)
             {
                 ToastService.ShowToast("Giriş kaydedildi.", ToastType.Success, 2000);
-                inventories = await MaterialInventoryService.GetAllAsync();
+                // reload full data to ensure latest DB state
+                await LoadDataAsync();
             }
             else
             {
@@ -213,5 +214,11 @@ else
     {
         var m = materials.FirstOrDefault(x => x.Id == id);
         return m?.MaterialName ?? $"id:{id}";
+    }
+
+    // New callback invoked when child table indicates the inventory changed
+    private async Task HandleInventoryChanged()
+    {
+        await LoadDataAsync();
     }
 }

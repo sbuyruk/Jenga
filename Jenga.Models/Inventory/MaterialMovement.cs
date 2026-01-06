@@ -33,15 +33,24 @@ namespace Jenga.Models.Inventory
         [Column("MovementType")]
         public string? MovementType { get; set; }
 
+        // New: Brand/Model at movement level (nullable)
+        [Column("BrandId")]
+        public int? BrandId { get; set; }
 
-
-
-        // Opsiyonel Navigation Property'ler
+        [Column("ModelId")]
+        public int? ModelId { get; set; }
+       
+        [Column("Operation")]
+        public string? Operation { get; set; }
+        // Optional navigation properties
         // public Material? Material { get; set; }
         // public Location? FromLocation { get; set; }
         // public Location? ToLocation { get; set; }
         // public Person? FromPerson { get; set; }
         // public Person? ToPerson { get; set; }
         // public MaterialUnit? MaterialUnit { get; set; }
+
+        //public MaterialBrand? Brand { get; set; }
+        //public MaterialModel? Model { get; set; }
     }
 }

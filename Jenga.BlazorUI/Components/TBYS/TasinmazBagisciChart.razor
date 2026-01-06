@@ -1,0 +1,148 @@
+﻿@using Jenga.Models.Common
+@using Jenga.Models.TBYS
+@using System.Linq
+@using System.Globalization
+@using Jenga.Utility
+@inherits ComponentBase
+
+@*
+  TasinmazBagisciChart - revised to use only Bagisci data
+  - Parameter: Bagiscilar (IEnumerable<TasinmazBagisci>) : source list of donors
+  - Parameter: Iller (IEnumerable<Il>) : optional list of provinces to map IlId -> BolgeId / Bolge name
+  - Groups by Il.BolgeId (falls back to IlId or "Bilinmeyen")
+  - Columns: Bölge | Sağ Olanlar | Vefat ve Diğer
+*@
+
+<div class="tasinmaz-bagisci-chart p-3">
+    <h5 class="mb-3">@(!string.IsNullOrWhiteSpace(Title) ? Title : string.Empty)</h5>
+
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped table-sm">
+            <thead class="table-light text-center align-middle">
+                <tr>
+                    <th>Bölge</th>
+                    <th>Sağ Olanlar</th>
+                    <th>Vefat / Lağv / Tasfiye </th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Rows?.Any() == true)
+                {
+                    foreach (var r in Rows)
+                    {
+                        <tr class="align-middle text-center">
+                            <td class="text-start">@r.Region</td>
+                            <td>@r.Alive</td>
+                            <td>@r.Deceased</td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="3" class="text-center text-muted">Gösterilecek kayıt yok</td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot class="table-light text-center align-middle">
+                <tr>
+                    <th class="text-start">Toplam</th>
+                    <th>@Totals.Alive</th>
+                    <th>@Totals.Deceased</th>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public IEnumerable<TasinmazBagisci>? Bagiscilar { get; set; }
+    [Parameter]
+    public IEnumerable<Il>? Iller { get; set; }
+    [Parameter]
+    public IEnumerable<Bolge>? Bolgeler { get; set; }
+    [Parameter]
+    public string? Title { get; set; }
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    private record StatRow(string Region, int Alive, int Deceased);
+
+    private List<StatRow>? Rows;
+    private StatRow Totals = new StatRow("Toplam", 0, 0);
+
+    protected override void OnParametersSet()
+    {
+        BuildStats();
+    }
+
+    private void BuildStats()
+    {
+        var source = (Bagiscilar ?? Enumerable.Empty<TasinmazBagisci>()).ToList();
+
+        // Build lookups for Il -> BolgeId and Bolge name
+        var ilById = (Iller ?? Enumerable.Empty<Il>()).ToDictionary(i => i.Id, i => i);
+        // map BolgeId to display name (first Il found's Bolge string)
+        var bolgeById = (Bolgeler ?? Enumerable.Empty<Bolge>())
+            .Where(b=>b.Aktif)
+            .ToDictionary(b => b.Id, b=>b);
+
+        // Group by BolgeId (if Iller supplied) otherwise group by IlId; fallback key -1 means unknown
+        var groups = source
+            .GroupBy(b =>
+            {
+                // b.IlId is int? (nullable int), ilById expects int (non-nullable)
+                if (b.IlId.HasValue && ilById.TryGetValue(b.IlId.Value, out var il) && il.BolgeId.HasValue && bolgeById.TryGetValue(il.BolgeId.Value, out var bolge))
+                    return bolge.Id ;
+                
+                return 999; 
+            })
+            .OrderBy(g => g.Key)
+            .ToList();
+
+        var list = new List<StatRow>();
+        int sumAlive = 0, sumDeceased = 0;
+
+        foreach (var g in groups)
+        {
+            // Resolve display region name
+            string region=string.Empty;
+            if (bolgeById.TryGetValue(g.Key, out var bn))
+            {
+                region = bn.KisaAdi ?? "Bilinmeyen";
+            }
+            else
+            {
+                // if key is negative
+                if (g.Key == 999)
+                {
+                    
+                    region = "Bilinmeyen";
+                }
+                else
+                {
+                    region = $"BolgeId:{g.Key}";
+                }
+            }
+
+            int alive = g.Count(b =>
+                (
+                    !string.IsNullOrWhiteSpace(b.Sag_vefat) &&
+                    (b.Sag_vefat.Equals(ProjectConstants.BAGISCI_SAG))
+                )
+            );
+
+            int total = g.Count();
+            int deceased = Math.Max(0, total - alive);
+
+            list.Add(new StatRow(region, alive, deceased));
+
+            sumAlive += alive;
+            sumDeceased += deceased;
+        }
+
+        Rows = list;
+        Totals = new StatRow("Toplam", sumAlive, sumDeceased);
+    }
+}

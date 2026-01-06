@@ -1,0 +1,115 @@
+﻿@using Jenga.BlazorUI.Services.Common
+@using Jenga.Models.Common
+@using Jenga.Models.TBYS
+@using System
+@using System.Linq
+@using Microsoft.AspNetCore.Components
+
+@inject NavigationManager NavigationManager
+@inject IModalService ModalService
+
+<div class="card summary-card">
+    <div class="card-header">
+        <strong>@(string.IsNullOrWhiteSpace(Title) ? "Taşınmazlar" : Title)</strong>
+    </div>
+    <div class="card-body">
+        @if (Grouped?.Any() == true)
+        {
+            foreach (var g in Grouped)
+            {
+                <div class="d-flex align-items-center mb-2">
+                    <div class="flex-grow-1">@g.Name </div>
+                    <div class="" >@g.Count Adet</div>
+                </div>
+            }
+
+            <hr />
+
+            <div class="d-flex align-items-center mb-2">
+                <div class="flex-grow-1">Çıplak Mülkiyet </div>
+                <div class="">@CiplakMulkCount Adet</div>
+            </div>
+            <div class="d-flex align-items-center mb-2">
+                <div class="flex-grow-1">Tam Mülkiyet </div>
+                <div class="" >@TamMulkCount Adet</div>
+            </div>
+
+            <hr />
+            <div class="d-flex align-items-center">
+                <div class="flex-grow-1 fw-bold">Toplam Taşınmaz</div>
+                <div class="fw-bold">@TotalCount Adet</div>
+            </div>
+        }
+        else
+        {
+            <div class="text-center">Gösterilecek kayıt yok</div>
+        }
+
+        <div class="mt-3">
+            <button type="button" class="btn btn-sm btn-link p-0" @onclick="ViewDetails">Taşınmaz Durumunu Görüntüle</button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public IEnumerable<Tasinmaz>? Tasinmazlar { get; set; }
+    [Parameter] public IEnumerable<Bolge>? Bolgeler { get; set; }
+    [Parameter] public IEnumerable<Il>? Iller { get; set; }
+    [Parameter] public string? Title { get; set; }
+
+
+    private List<(string Name, int Count)>? Grouped { get; set; }
+    private int TotalCount { get; set; }
+    private int CiplakMulkCount { get; set; }
+    private int TamMulkCount { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        BuildGroups();
+    }
+
+    private void BuildGroups()
+    {
+        var source = Tasinmazlar ?? Enumerable.Empty<Tasinmaz>();
+
+        var filtered = source.Where(x => x != null && x.EnvanterdeMi == 1);
+
+        var groups = filtered
+            .GroupBy(x => string.IsNullOrWhiteSpace(x.KullanimSekli) ? "Diğer" : x.KullanimSekli!.Trim())
+            .Select(g => (Name: g.Key, Count: g.Count()))
+            .OrderByDescending(g => g.Count)
+            .ToList();
+
+        Grouped = groups;
+        TotalCount = groups.Sum(g => g.Count);
+
+        // compute Çıplak mülkiyet (KullanimSekli == "ÇM") and Tam mülkiyet (KullanimSekli == "TM")
+        CiplakMulkCount = filtered.Count(x => string.Equals(x.MulkiyetSekli?.Trim(), "ÇM", StringComparison.OrdinalIgnoreCase));
+        TamMulkCount = filtered.Count(x => string.Equals(x.MulkiyetSekli?.Trim(), "TM", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private async Task ViewDetails()
+    {
+        var req = new ModalRequest
+        {
+            Title = "Taşınmaz Durumu",
+            Message = string.Empty,
+            ShowConfirmationButtons = false
+        };
+
+        // render TasinmazChart inside modal; wire chart OnClose to request.Close
+        req.Content = builder =>
+        {
+            builder.OpenComponent(0, typeof(Jenga.BlazorUI.Components.TBYS.TasinmazChart));
+            builder.AddAttribute(1, "Tasinmazlar", Tasinmazlar);
+            builder.AddAttribute(2, "Iller", Iller);
+            builder.AddAttribute(3, "Bolgeler", Bolgeler);
+            builder.AddAttribute(4, "Title", Title);
+            builder.AddAttribute(5, "OnClose", EventCallback.Factory.Create(this, () => req.Close?.Invoke()));
+            builder.AddAttribute(6, "ShowMonetaryValues", true);
+            builder.CloseComponent();
+        };
+
+        await ModalService.Show(req);
+    }
+}

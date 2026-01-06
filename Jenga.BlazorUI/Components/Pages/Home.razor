@@ -1,7 +1,199 @@
 ﻿@page "/"
+@* @rendermode InteractiveServer *@
+@* @using Jenga.Models.Common
+@using Microsoft.AspNetCore.Components.Web
+@inject Jenga.BlazorUI.Services.Common.CurrentUserService CurrentUserService
+@inject Jenga.DataAccess.Services.Common.IMenuItemService MenuItemService
+@inject NavigationManager Nav *@
 
-<PageTitle>Home</PageTitle>
+@* <main id="main-content" class="hero" role="main" tabindex="-1">
 
-<h1>Hello, world!</h1>
+    <section class="quick-cards" aria-label="Hızlı erişim">
+        @if (isLoading)
+        {
+            <p>Yükleniyor...</p>
+        }
+        else if (AllowedMenus?.Any() != true)
+        {
+            <p>Kullanıcı için yetkili menü bulunamadı.</p>
+        }
+        else
+        {
+            <div class="d-flex flex-wrap gap-3">
+                @foreach (var menu in AllowedMenus)
+                {
+                    <div class="col">
+                        <card class="card summary-card" style="height:250px;width:200px;overflow:auto"
+                              role="button"
+                              tabindex="0"
+                              @onclick="() => OpenMenu(menu)"
+                              @onkeydown="@(e => OnKeyDown(e, menu))"
+                              aria-label="@menu.Title">
+                            <div class="card-header" style="@GetCardHeaderStyle(menu)">
+                                @menu.Title
+                            </div>
+                            <div class="card-body">
+                                <p>@menu.Aciklama</p>
+                            </div>
+                            <div class="card-footer text-center">
+                                <button class="btn btn-sm btn-primary"
+                                        @onclick:stopPropagation="true"
+                                        @onclick="() => OpenMenu(menu)">
+                                    Aç
+                                </button>
+                            </div>
+                        </card>
+                    </div>
+                }
+            </div>
+        }
+    </section>
+</main> *@
 
-Welcome to your new app.
+@* @code {
+    private List<MenuItem> AllowedMenus { get; set; } = new();
+    private bool isLoading = true;
+
+    // Palette for card headers (choose any hex colors you like)
+    private readonly string[] _headerPalette = new[]
+    {
+        "#0d6efd", // blue
+        "#6610f2", // purple
+        "#198754", // green
+        "#fd7e14", // orange
+        "#dc3545", // red
+        "#0dcaf0", // cyan
+        "#6f42c1", // violet
+        "#20c997", // teal
+        "#ffc107", // yellow
+        "#212529"  // dark
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        isLoading = true;
+
+        try
+        {
+            var personel = await CurrentUserService.GetCurrentPersonelAsync();
+            if (personel == null)
+            {
+                AllowedMenus = new List<MenuItem>();
+                return;
+            }
+
+            // Use service to get authorized menu tree for the current personel
+            var menuTree = await MenuItemService.GetAuthorizedMenuAsync(personel.Id);
+
+            // Flatten tree and filter only actionable items (Url not empty/# and visible)
+            var flat = Flatten(menuTree);
+            AllowedMenus = flat
+                .Where(m => m != null
+                            && m.IsVisible == true
+                            && !string.IsNullOrWhiteSpace(m.Url)
+                            && m.Url != "#")
+                .OrderBy(m => m.DisplayOrder ?? 0)
+                .ToList();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    // Recursively flatten MenuItem tree
+    private List<MenuItem> Flatten(IEnumerable<MenuItem>? items)
+    {
+        var result = new List<MenuItem>();
+        if (items == null) return result;
+
+        foreach (var item in items)
+        {
+            if (item == null) continue;
+            result.Add(item);
+            if (item.Children != null && item.Children.Count > 0)
+            {
+                result.AddRange(Flatten(item.Children));
+            }
+        }
+
+        return result;
+    }
+
+    private void OpenMenu(MenuItem menu)
+    {
+        if (menu == null) return;
+        var url = menu.Url ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(url) || url == "#") return;
+
+        Nav.NavigateTo(url);
+    }
+
+    private void OnKeyDown(KeyboardEventArgs e, MenuItem menu)
+    {
+        // activate on Enter or Space
+        if (e.Key == "Enter" || e.Key == " ")
+        {
+            OpenMenu(menu);
+        }
+    }
+
+    // Returns inline style for the card header with a deterministic "random" color per menu.
+    // Uses menu.Id (fallback to Title hash) to pick a color from _headerPalette and computes a
+    // readable text color (black/white) based on luminance. Also adds a subtle gradient.
+    private string GetCardHeaderStyle(MenuItem menu)
+    {
+        if (menu == null) return string.Empty;
+
+        var key = menu.Id != 0 ? menu.Id : (menu.Title?.GetHashCode() ?? 0);
+        var idx = Math.Abs(key) % _headerPalette.Length;
+        var baseHex = _headerPalette[idx];
+        var darker = DarkenHex(baseHex, 0.14);
+        var textColor = GetContrastColor(baseHex);
+
+        // inline style overrides .summary-card header background and text color
+        return $"background: linear-gradient(135deg, {baseHex}, {darker}); color: {textColor};";
+    }
+
+    // Darken a hex color by factor (0..1). factor 0.14 means 14% darker.
+    private static string DarkenHex(string hex, double factor)
+    {
+        var (r, g, b) = ParseHex(hex);
+        int dr = (int)Math.Round(r * (1 - factor));
+        int dg = (int)Math.Round(g * (1 - factor));
+        int db = (int)Math.Round(b * (1 - factor));
+        return $"#{dr:X2}{dg:X2}{db:X2}";
+    }
+
+    // Return readable text color for given background hex (#RRGGBB or RRGGBB)
+    private static string GetContrastColor(string hex)
+    {
+        var (r, g, b) = ParseHex(hex);
+        // relative luminance (approx)
+        var lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255.0;
+        // threshold tuned for good contrast: dark backgrounds -> white text
+        return lum < 0.6 ? "#ffffff" : "#000000";
+    }
+
+    private static (int r, int g, int b) ParseHex(string hex)
+    {
+        if (string.IsNullOrWhiteSpace(hex)) return (0, 0, 0);
+        var h = hex.TrimStart('#');
+        if (h.Length == 3)
+        {
+            // short form e.g. #abc -> aabbcc
+            var r = Convert.ToInt32(new string(h[0], 2), 16);
+            var g = Convert.ToInt32(new string(h[1], 2), 16);
+            var b = Convert.ToInt32(new string(h[2], 2), 16);
+            return (r, g, b);
+        }
+        if (h.Length >= 6)
+        {
+            var r = Convert.ToInt32(h.Substring(0, 2), 16);
+            var g = Convert.ToInt32(h.Substring(2, 2), 16);
+            var b = Convert.ToInt32(h.Substring(4, 2), 16);
+            return (r, g, b);
+        }
+        return (0, 0, 0);
+    }
+} *@

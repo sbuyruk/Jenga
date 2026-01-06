@@ -3,6 +3,7 @@
 @using Jenga.Models.Inventory
 @using Jenga.Utility.Toast
 @using Jenga.BlazorUI.Helpers
+@using System.Linq
 
 @inject IToastService ToastService
 
@@ -59,6 +60,30 @@
                         {
                             <div class="text-danger small">En az 1 girilmelidir.</div>
                         }
+                    </div>
+
+                    @* Brand / Model selection for the entry *@
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label">Marka (Opsiyonel)</label>
+                            <select class="form-select form-select-sm" @bind="BrandId" @bind:event="onchange">
+                                <option value="">Seçiniz</option>
+                                @foreach (var b in FilteredBrands)
+                                {
+                                    <option value="@b.Id">@b.BrandName</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Model (Opsiyonel)</label>
+                            <select class="form-select form-select-sm" @bind="MaterialEntry.ModelId">
+                                <option value="">Seçiniz</option>
+                                @foreach (var m in FilteredModels)
+                                {
+                                    <option value="@m.Id">@m.ModelName</option>
+                                }
+                            </select>
+                        </div>
                     </div>
 
                     <!-- Hedef Seçimi -->
@@ -124,6 +149,13 @@
     [Parameter] public List<Location> Locations { get; set; } = new();
     [Parameter] public List<Personel> Persons { get; set; } = new();
 
+    // Brands/models (kept: entry-level brand/model are still selectable)
+    [Parameter] public List<MaterialBrand> Brands { get; set; } = new();
+    [Parameter] public List<MaterialModel> Models { get; set; } = new();
+
+    // Categories needed to resolve root category of a material (recursive)
+    [Parameter] public List<MaterialCategory> Categories { get; set; } = new();
+
     // New parameter: when true, user cannot change the material (opened from inventory table)
     [Parameter] public bool IsMaterialFixed { get; set; } = false;
 
@@ -144,7 +176,30 @@
             {
                 MaterialEntry.MaterialId = value;
                 var mat = Materials.FirstOrDefault(m => m.Id == value);
-                if (mat != null) MaterialEntry.MaterialUnitId = mat.MaterialUnitId;
+                if (mat != null)
+                {
+                    MaterialEntry.MaterialUnitId = mat.MaterialUnitId;
+                    // IMPORTANT: Do NOT read or assign BrandId/ModelId from the Material entity —
+                    // Material no longer contains BrandId/ModelId.
+                }
+                else
+                {
+                    MaterialEntry.MaterialUnitId = 0;
+                }
+            }
+        }
+    }
+
+    private int? _brandId;
+    private int? BrandId
+    {
+        get => MaterialEntry?.BrandId;
+        set
+        {
+            if (MaterialEntry != null)
+            {
+                MaterialEntry.BrandId = value;
+                OnBrandChanged();
             }
         }
     }
@@ -170,6 +225,81 @@
         ? Persons
         : Persons.Where(p => (p.Adi + " " + p.Soyadi).Contains(persSearch, StringComparison.OrdinalIgnoreCase));
 
+    private IEnumerable<MaterialModel> FilteredModels
+    {
+        get
+        {
+            if (MaterialEntry != null && MaterialEntry.BrandId.HasValue)
+            {
+                return Models.Where(m => m.BrandId == MaterialEntry.BrandId.Value);
+            }
+
+            // If editing an existing entry that has a ModelId but no BrandId, ensure the selected model appears
+            if (MaterialEntry != null && MaterialEntry.ModelId.HasValue)
+            {
+                var selected = Models.FirstOrDefault(m => m.Id == MaterialEntry.ModelId.Value);
+                if (selected != null)
+                {
+                    // Return the selected model first, then any other models (optional)
+                    return new[] { selected }.Concat(Models.Where(m => m.Id != selected.Id));
+                }
+            }
+
+            return Models;
+        }
+    }
+
+    // Filter brands to only those whose CategoryId equals the selected material's root category id (recursive)
+    // Ensure currently-selected brand is present in the list when editing.
+    private IEnumerable<MaterialBrand> FilteredBrands
+    {
+        get
+        {
+            if (MaterialEntry == null || MaterialEntry.MaterialId == 0) return Enumerable.Empty<MaterialBrand>();
+
+            var mat = Materials.FirstOrDefault(m => m.Id == MaterialEntry.MaterialId);
+            if (mat == null) return Enumerable.Empty<MaterialBrand>();
+
+            var rootCatId = GetRootCategoryId(mat.CategoryId);
+            var list = rootCatId.HasValue
+                ? Brands.Where(b => b.CategoryId.HasValue && b.CategoryId.Value == rootCatId.Value).ToList()
+                : new List<MaterialBrand>();
+
+            // Include currently selected brand even if it isn't in the filtered list (ensures brand/model are visible on edit)
+            if (MaterialEntry.BrandId.HasValue)
+            {
+                var sel = Brands.FirstOrDefault(b => b.Id == MaterialEntry.BrandId.Value);
+                if (sel != null && !list.Any(b => b.Id == sel.Id))
+                {
+                    list.Insert(0, sel);
+                }
+            }
+
+            return list;
+        }
+    }
+
+    // Walks up the category tree until the root (ParentCategoryId == null or 0) and returns that Id
+    private int? GetRootCategoryId(int? categoryId)
+    {
+        if (!categoryId.HasValue) return null;
+        if (Categories == null || Categories.Count == 0) return categoryId;
+
+        var current = Categories.FirstOrDefault(c => c.Id == categoryId.Value);
+        if (current == null) return categoryId;
+
+        var visited = new HashSet<int>();
+        while (current.ParentCategoryId.HasValue && current.ParentCategoryId.Value != 0)
+        {
+            if (!visited.Add(current.Id)) break; // protect against cycles
+            var parent = Categories.FirstOrDefault(c => c.Id == current.ParentCategoryId.Value);
+            if (parent == null) break;
+            current = parent;
+        }
+
+        return current.Id;
+    }
+
     // Validation Properties
     private bool IsLocationInvalid => MaterialEntry != null && (MaterialEntry.LocationId == null || MaterialEntry.LocationId == 0) && (MaterialEntry.PersonelId == null || MaterialEntry.PersonelId == 0);
     private bool IsSaveDisabled => MaterialEntry == null || MaterialEntry.Quantity < 1 || IsLocationInvalid || MaterialId == 0;
@@ -179,6 +309,28 @@
         if (MaterialEntry == null) return "";
         var u = MaterialUnits.FirstOrDefault(x => x.Id == MaterialEntry.MaterialUnitId);
         return u != null ? $"{u.Name} ({u.Symbol})" : "";
+    }
+
+    private void OnBrandChanged()
+    {
+        // @bind already updated MaterialEntry.BrandId; fix model selection only if necessary
+        if (MaterialEntry == null) return;
+
+        if (MaterialEntry.BrandId.HasValue)
+        {
+            var modelsForBrand = Models.Where(m => m.BrandId == MaterialEntry.BrandId.Value).ToList();
+            if (MaterialEntry.ModelId.HasValue && !modelsForBrand.Any(m => m.Id == MaterialEntry.ModelId.Value))
+            {
+                MaterialEntry.ModelId = null;
+            }
+        }
+        else
+        {
+            // brand cleared by user -> clear model
+            MaterialEntry.ModelId = null;
+        }
+
+        StateHasChanged();
     }
 
     private async Task HandleSave()

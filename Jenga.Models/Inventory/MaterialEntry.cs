@@ -14,9 +14,20 @@ namespace Jenga.Models.Inventory
         public DateTime EntryDate { get; set; }
         public int? LocationId { get; set; }
         public int? PersonelId { get; set; }
-        // Navigation properties (opsiyonel)
+
+        [Column("BrandId")]
+        public int? BrandId { get; set; }
+
+        [Column("ModelId")]
+        public int? ModelId { get; set; }
+
+        // Navigation properties (optional)
         public Material? Material { get; set; }
         public Location? Location { get; set; }
         public Personel? Personel { get; set; }
+
+        // Navigation to brand/model
+        public MaterialBrand? Brand { get; set; }
+        public MaterialModel? Model { get; set; }
     }
 }

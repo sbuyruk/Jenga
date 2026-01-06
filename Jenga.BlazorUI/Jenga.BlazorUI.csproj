@@ -16,8 +16,4 @@
     <Folder Include="Components\Pages\Personel\" />
   </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Components.QuickGrid" Version="9.0.9" />
-  </ItemGroup>
-
 </Project>

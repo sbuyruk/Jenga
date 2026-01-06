@@ -1,0 +1,108 @@
+﻿@page "/tbys/tasinmaz-summary"
+@rendermode InteractiveServer
+@using Jenga.BlazorUI.Components.TBYS
+@using Jenga.DataAccess.Services.Common
+@using Jenga.Models.Common
+@using Jenga.Models.TBYS
+@using Jenga.DataAccess.Services.TBYS
+@inject ITasinmazService TasinmazService
+@inject ITasinmazBagisciService TasinmazBagisciService
+@inject IBagisService BagisService
+@inject IIlService IlService
+@inject IBolgeService BolgeService
+@inject NavigationManager NavigationManager
+@implements IDisposable
+
+<div class="admin-overview p-3">
+    <h3 class="mb-3">Yönetici Özeti (Tasinmaz Bilgileri) </h3>
+
+    @if (isLoading)
+    {
+        <div class="text-muted">Yükleniyor...</div>
+    }
+    else if (loadFailed)
+    {
+        <div class="text-danger">Veri yüklenirken hata oluştu.</div>
+    }
+    else
+    {
+        <div class="d-flex flex-wrap gap-3">
+            <TasinmazCard Tasinmazlar="@tasinmazlar"
+                Iller="@iller"
+                Bolgeler="@bolgeler" />
+            <TasinmazBagisciCard Bagiscilar="@bagiscilar"
+                Iller="@iller"
+                Bolgeler="@bolgeler"
+                Bagislar="@bagislar" />
+            <KiralikCard Tasinmazlar="tasinmazlar"
+                Iller="@iller"
+                Bolgeler="@bolgeler" />
+            @* Add other summary cards here later *@
+        </div>
+    }
+</div>
+
+@code {
+    private List<Tasinmaz>? tasinmazlar;
+    private List<TasinmazBagisci>? bagiscilar;
+    private List<Il>? iller;
+    private List<Bolge>? bolgeler;
+    private List<Bagis>? bagislar;
+    private bool isLoading;
+    private bool loadFailed;
+    private CancellationTokenSource? _cts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _cts = new CancellationTokenSource();
+        await LoadDataAsync(_cts.Token);
+    }
+
+    private async Task LoadDataAsync(CancellationToken cancellationToken)
+    {
+        isLoading = true;
+        loadFailed = false;
+        try
+        {
+            // Load all records; TasinmazCard internally filters EnvanterdeMi == 1
+            var list = await TasinmazService.GetAllAsync(cancellationToken);
+            tasinmazlar = list;
+
+            // Load bagiscilar for BagisciCard
+            var bagisciList = await TasinmazBagisciService.GetAllAsync(cancellationToken);
+            bagiscilar = bagisciList;
+            // Load Iller for BagisciCard
+            var ilList = await IlService.GetAllAsync(cancellationToken);
+            iller = ilList;
+
+            // Load Bolgeler
+            var bolgeList = await BolgeService.GetAllAsync(cancellationToken);
+            bolgeler = bolgeList;
+
+            // Load Bagislar
+            var bagisList = await BagisService.GetAllAsync(cancellationToken);
+            bagislar = bagisList;
+
+
+        }
+        catch
+        {
+            loadFailed = true;
+            tasinmazlar = new List<Tasinmaz>();
+            bagiscilar = new List<TasinmazBagisci>();
+            iller = new List<Il>();
+            bolgeler = new List<Bolge>();
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    public void Dispose()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+    }
+}

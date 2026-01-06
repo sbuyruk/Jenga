@@ -1,0 +1,166 @@
+﻿@using Jenga.Models.Common
+@using Jenga.Models.TBYS
+@using Jenga.Utility
+@using Microsoft.AspNetCore.Components
+
+<div class="p-2">
+    @if (RowKeys.Count == 0)
+    {
+        <div class="text-center text-muted">Gösterilecek kayıt yok</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-bordered table-sm align-middle mb-0" style="min-width:900px;">
+                <thead class="table-light text-center">
+                    <tr>
+                        <th rowspan="2">Kiraya Verilmeme Sebebi</th>
+                        @foreach (var reg in RegionList)
+                        {
+                            <th colspan="2">@((reg.KisaAdi ?? reg.Adi) ?? "Bölge")</th>
+                        }
+                        <th colspan="3">Toplam</th>
+                    </tr>
+                    <tr class="text-center">
+                        @foreach (var reg in RegionList)
+                        {
+                            <th>TM</th>
+                            <th>ÇM</th>
+                        }
+                        <th>TM</th>
+                        <th>ÇM</th>
+                        <th>TM + ÇM</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @foreach (var key in RowKeys)
+                    {
+                        <tr>
+                            <td>@(string.IsNullOrWhiteSpace(key) ? "Diğer" : key)</td>
+
+                            @foreach (var reg in RegionList)
+                            {
+                                var cell = Matrix.TryGetValue(key, out var map) && map.TryGetValue(reg.Id, out var cc) ? cc : new CellCounts();
+                                <td class="text-end">@cell.TM</td>
+                                <td class="text-end">@cell.CM</td>
+                            }
+
+                            @{
+                                var rowTotalTM = Matrix.TryGetValue(key, out var m) ? m.Values.Sum(v => v.TM) : 0;
+                                var rowTotalCM = Matrix.TryGetValue(key, out var m2) ? m2.Values.Sum(v => v.CM) : 0;
+                            }
+                            <td class="text-end fw-bold">@rowTotalTM</td>
+                            <td class="text-end fw-bold">@rowTotalCM</td>
+                            <td class="text-end fw-bold">@(@rowTotalTM + @rowTotalCM)</td>
+                        </tr>
+                    }
+                </tbody>
+
+                <tfoot class="table-light">
+                    <tr>
+                        <th>Toplam</th>
+                        @foreach (var reg in RegionList)
+                        {
+                            var colTM = RowKeys.Sum(rk => Matrix.TryGetValue(rk, out var cmap) && cmap.TryGetValue(reg.Id, out var cc) ? cc.TM : 0);
+                            var colCM = RowKeys.Sum(rk => Matrix.TryGetValue(rk, out var cmap) && cmap.TryGetValue(reg.Id, out var cc) ? cc.CM : 0);
+                            <th class="text-end">@colTM</th>
+                            <th class="text-end">@colCM</th>
+                        }
+
+                        @{
+                            var totalTM = RowKeys.Sum(rk => Matrix.TryGetValue(rk, out var cmap) ? cmap.Values.Sum(v => v.TM) : 0);
+                            var totalCM = RowKeys.Sum(rk => Matrix.TryGetValue(rk, out var cmap) ? cmap.Values.Sum(v => v.CM) : 0);
+                        }
+                        <th class="text-end fw-bold">@totalTM</th>
+                        <th class="text-end fw-bold">@totalCM</th>
+                        <th class="text-end fw-bold">@(@totalTM + @totalCM)</th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public IEnumerable<Tasinmaz>? Tasinmazlar { get; set; }
+    [Parameter] public List<Bolge>? Bolgeler { get; set; }
+    [Parameter] public List<Il>? Iller { get; set; }
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    // active regions to display as columns (preserve provided order)
+    private List<Bolge> RegionList { get; set; } = new();
+
+    // Matrix: KiraDurumu => (BolgeId => CellCounts)
+    private Dictionary<string, Dictionary<int, CellCounts>> Matrix { get; set; } = new();
+    private List<string> RowKeys { get; set; } = new();
+
+    // bucket id for unknown / non-mapped regions (kept in totals but not rendered)
+    private const int HiddenRegionId = 999;
+
+    protected override void OnParametersSet()
+    {
+        BuildMatrix();
+    }
+
+    private void BuildMatrix()
+    {
+        Matrix = new Dictionary<string, Dictionary<int, CellCounts>>(StringComparer.OrdinalIgnoreCase);
+        RowKeys = new List<string>();
+
+        // prepare lookups
+        var ilById = (Iller ?? Enumerable.Empty<Il>()).Where(i => i != null).ToDictionary(i => i.Id, i => i);
+        var activeBolgeler = (Bolgeler ?? Enumerable.Empty<Bolge>()).Where(b => b != null && b.Aktif).ToList();
+        RegionList = activeBolgeler;
+
+        var regionIds = new HashSet<int>(RegionList.Select(r => r.Id));
+
+        var source = (Tasinmazlar ?? Enumerable.Empty<Tasinmaz>())
+            .Where(t => t != null && t.EnvanterdeMi == 1
+                        && !string.IsNullOrWhiteSpace(t.KirayaUygunluk)
+                        && string.Equals(t.KirayaUygunluk?.Trim(), ProjectConstants.KIRAYA_UYGUN_DEGIL, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        foreach (var t in source)
+        {
+            var key = string.IsNullOrWhiteSpace(t.KiraDurumu) ? "Diğer" : t.KiraDurumu.Trim();
+            if (!Matrix.TryGetValue(key, out var regionMap))
+            {
+                regionMap = new Dictionary<int, CellCounts>();
+                Matrix[key] = regionMap;
+                RowKeys.Add(key);
+            }
+
+            int regId = HiddenRegionId;
+            if (t.IlId.HasValue && ilById.TryGetValue(t.IlId.Value, out var il) && il.BolgeId.HasValue && regionIds.Contains(il.BolgeId.Value))
+            {
+                regId = il.BolgeId.Value;
+            }
+
+            if (!regionMap.TryGetValue(regId, out var counts))
+            {
+                counts = new CellCounts();
+                regionMap[regId] = counts;
+            }
+
+            var mulkiyet = (t.MulkiyetSekli ?? string.Empty).Trim();
+            if (string.Equals(mulkiyet, ProjectConstants.MULKIYET_SEKLI_CM, StringComparison.OrdinalIgnoreCase))
+                counts.CM++;
+            else
+                counts.TM++;
+        }
+    }
+
+    private Task Close()
+    {
+        return OnClose.InvokeAsync(null);
+    }
+
+    private class CellCounts
+    {
+        public int TM { get; set; }
+        public int CM { get; set; }
+        public int Total => TM + CM;
+    }
+}

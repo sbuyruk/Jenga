@@ -6,13 +6,12 @@ using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.DataAccess.Services.Common;
 using Jenga.DataAccess.Services.IKYS;
 using Jenga.DataAccess.Services.Inventory;
-using Jenga.DataAccess.Services.Menu;
+using Jenga.DataAccess.Services.TBYS;
 using Jenga.Utility.Error;
 using Jenga.Utility.Logging;
-using Jenga.Utility.Modal;
 using Jenga.Utility.Toast;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.Negotiate;
+using Microsoft.EntityFrameworkCore;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -65,7 +64,13 @@ builder.Services.AddScoped<IMaterialExitService, MaterialExitService>();
 builder.Services.AddScoped<IMaterialTransferService, MaterialTransferService>();
 builder.Services.AddScoped<ILocationService, LocationService>();
 builder.Services.AddScoped<IPersonelLocationService, PersonelLocationService>();
-builder.Services.AddScoped<CurrentUserService, CurrentUserService>();
+builder.Services.AddScoped<ITasinmazService, TasinmazService>();
+builder.Services.AddScoped<ITasinmazBagisciService, TasinmazBagisciService>();
+builder.Services.AddScoped<IBagisService, BagisService>();
+builder.Services.AddScoped<IIlService, IlService>();
+builder.Services.AddScoped<IBolgeService, BolgeService>();
+builder.Services.AddScoped<CurrentUserService>();
+builder.Services.AddScoped<ImpersonationService>();
 //IKYS Service 
 builder.Services.AddScoped<IPersonelService, PersonelService>();
 

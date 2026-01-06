@@ -1,4 +1,23 @@
-﻿html, body {
+﻿/* wwwroot/app.css */
+:root {
+    --p1: #000080;
+    --p2: #FF0000;
+    --p3: #9E2A3A;
+    --p4: #3A2525;
+    --bg: #FFFFFF;
+    --surface: #FFF8F8;
+    --text: #1E1E1E;
+    --muted: #6b6b6b;
+    --card-bg: #ffffff;
+    --shadow: rgba(16,20,22,0.06);
+
+    /* bootstrap compatibility fallbacks if you rely on them */
+    --bs-primary: var(--p3);
+    --bs-primary-border-subtle: rgba(0,0,0,0.06);
+    --bs-body-color: var(--text);
+    --bs-bg-primary: rgba(255,255,255,0.04);
+}
+html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
@@ -35,7 +54,24 @@ h1:focus {
 .validation-message {
     color: #e50000;
 }
+#blazor-error-ui {
+    background: lightyellow;
+    bottom: 0;
+    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
+    display: none;
+    left: 0;
+    padding: 0.6rem 1.25rem 0.7rem 1.25rem;
+    position: fixed;
+    width: 100%;
+    z-index: 1000;
+}
 
+    #blazor-error-ui .dismiss {
+        cursor: pointer;
+        position: absolute;
+        right: 0.75rem;
+        top: 0.5rem;
+    }
 .blazor-error-boundary {
     background: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTYiIGhlaWdodD0iNDkiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIG92ZXJmbG93PSJoaWRkZW4iPjxkZWZzPjxjbGlwUGF0aCBpZD0iY2xpcDAiPjxyZWN0IHg9IjIzNSIgeT0iNTEiIHdpZHRoPSI1NiIgaGVpZ2h0PSI0OSIvPjwvY2xpcFBhdGg+PC9kZWZzPjxnIGNsaXAtcGF0aD0idXJsKCNjbGlwMCkiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0yMzUgLTUxKSI+PHBhdGggZD0iTTI2My41MDYgNTFDMjY0LjcxNyA1MSAyNjUuODEzIDUxLjQ4MzcgMjY2LjYwNiA1Mi4yNjU4TDI2Ny4wNTIgNTIuNzk4NyAyNjcuNTM5IDUzLjYyODMgMjkwLjE4NSA5Mi4xODMxIDI5MC41NDUgOTIuNzk1IDI5MC42NTYgOTIuOTk2QzI5MC44NzcgOTMuNTEzIDI5MSA5NC4wODE1IDI5MSA5NC42NzgyIDI5MSA5Ny4wNjUxIDI4OS4wMzggOTkgMjg2LjYxNyA5OUwyNDAuMzgzIDk5QzIzNy45NjMgOTkgMjM2IDk3LjA2NTEgMjM2IDk0LjY3ODIgMjM2IDk0LjM3OTkgMjM2LjAzMSA5NC4wODg2IDIzNi4wODkgOTMuODA3MkwyMzYuMzM4IDkzLjAxNjIgMjM2Ljg1OCA5Mi4xMzE0IDI1OS40NzMgNTMuNjI5NCAyNTkuOTYxIDUyLjc5ODUgMjYwLjQwNyA1Mi4yNjU4QzI2MS4yIDUxLjQ4MzcgMjYyLjI5NiA1MSAyNjMuNTA2IDUxWk0yNjMuNTg2IDY2LjAxODNDMjYwLjczNyA2Ni4wMTgzIDI1OS4zMTMgNjcuMTI0NSAyNTkuMzEzIDY5LjMzNyAyNTkuMzEzIDY5LjYxMDIgMjU5LjMzMiA2OS44NjA4IDI1OS4zNzEgNzAuMDg4N0wyNjEuNzk1IDg0LjAxNjEgMjY1LjM4IDg0LjAxNjEgMjY3LjgyMSA2OS43NDc1QzI2Ny44NiA2OS43MzA5IDI2Ny44NzkgNjkuNTg3NyAyNjcuODc5IDY5LjMxNzkgMjY3Ljg3OSA2Ny4xMTgyIDI2Ni40NDggNjYuMDE4MyAyNjMuNTg2IDY2LjAxODNaTTI2My41NzYgODYuMDU0N0MyNjEuMDQ5IDg2LjA1NDcgMjU5Ljc4NiA4Ny4zMDA1IDI1OS43ODYgODkuNzkyMSAyNTkuNzg2IDkyLjI4MzcgMjYxLjA0OSA5My41Mjk1IDI2My41NzYgOTMuNTI5NSAyNjYuMTE2IDkzLjUyOTUgMjY3LjM4NyA5Mi4yODM3IDI2Ny4zODcgODkuNzkyMSAyNjcuMzg3IDg3LjMwMDUgMjY2LjExNiA4Ni4wNTQ3IDI2My41NzYgODYuMDU0N1oiIGZpbGw9IiNGRkU1MDAiIGZpbGwtcnVsZT0iZXZlbm9kZCIvPjwvZz48L3N2Zz4=) no-repeat 1rem/1.8rem, #b32121;
     padding: 1rem 1rem 1rem 3.7rem;
@@ -113,12 +149,6 @@ h1:focus {
     height:95%;
 }
 
-
-/* Dark theme için */
-[data-bs-theme="dark"] .context-menu {
-    --context-menu-bg: #23272b;
-    border-color: #444;
-}
 /* Malzeme rengi */
 .material-item {
     background-color: var(--bs-primary-bg-subtle); /* Temaya göre değişir */
@@ -201,3 +231,92 @@ ul.treeview-list {
         flex-direction: row;
     }
 }
+.summary-card {
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #e6e6e6;
+    /*font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;*/
+}
+
+    /* Header — yeşil arka plan ve beyaz yazı (görsel örneğe uygun) */
+    .summary-card .card-header {
+        background: linear-gradient(90deg, var(--p1), var(--muted));
+        color: #fff;
+        padding: 12px 16px;
+        font-size: 1.0rem;
+    }
+
+    /* Card body düzeni */
+    .summary-card .card-body {
+        padding: 14px 16px;
+        color: #333;
+        font-size: 0.90rem;
+    }
+
+        /* Grup satırı: label solda, sayı sağda */
+        .summary-card .card-body .d-flex {
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* Küçük açıklama metinleri (soldaki) */
+        .summary-card .card-body .text-muted {
+            color: #8a8a8a;
+            font-size: 0.80rem;
+        }
+
+        /* Adet sayıları (sağdaki) */
+        .summary-card .card-body .font-weight-bold {
+            color: #111;
+            font-size: 1.05rem;
+            font-weight: 700;
+        }
+
+    /* Ayrım çizgisi */
+    .summary-card hr {
+        border: none;
+        border-top: 2px solid grey;
+        margin: 10px 0;
+    }
+
+    /* Link alanı */
+    .summary-card .card-body a {
+        color: #2176d2;
+        text-decoration: none;
+        font-size: 0.95rem;
+    }
+
+        .summary-card .card-body a:hover {
+            text-decoration: underline;
+        }
+
+/* Küçük ekranlar için max-width kontrolü */
+.summary-card {
+    max-width: 230px;
+    min-width:180px;
+    min-height:auto;
+    width: 100%;
+}
+
+    /* Eğer Bootstrap yoksa bazı helper sınıflar için fallback */
+    .summary-card .d-flex {
+        display: flex;
+    }
+
+    .summary-card .align-items-center {
+        align-items: center;
+    }
+
+    .summary-card .flex-grow-1 {
+        flex: 1 1 auto;
+    }
+
+    .summary-card .mb-2 {
+        margin-bottom: 0.5rem;
+    }
+
+    .summary-card .mt-3 {
+        margin-top: 1rem;
+    }

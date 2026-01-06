@@ -1,0 +1,145 @@
+﻿@using Jenga.BlazorUI.Services.Common
+@using Jenga.Models.Common
+@using Jenga.Models.TBYS
+@using System
+@using System.Linq
+@using Jenga.Utility
+@using Microsoft.AspNetCore.Components
+@inject IModalService ModalService
+
+<div class="card summary-card">
+    <div class="card-header">
+        <strong>@(string.IsNullOrWhiteSpace(Title) ? "Taşınmaz Bağışçılar" : Title)</strong>
+    </div>
+    <div class="card-body">
+        @if (TotalCount > 0)
+        {
+            <div class="text-center mb-2">
+                <div class="flex-grow-1" >Ortalama Bağış Yapma Yaşı</div>
+                <div class="flex-grow-1" >(2020 Yılından İtibaren)</div>
+                <div class="fw-bold" >@(AverageAgeAtDonation.HasValue ? $"{AverageAgeAtDonation.Value:0.0} yaş" : "-")</div>
+            </div>
+            <hr />
+            <div class="d-flex align-items-center mb-2">
+                <div class="flex-grow-1" >Sağ Olanlar</div>
+                <div class="fw-bold" >@AliveCount Kişi</div>
+            </div>
+
+            <div class="d-flex align-items-center mb-2">
+                <div class="flex-grow-1" >Vefat (Lağv/Tasfiye vb.)</div>
+                <div class="fw-bold">@DeceasedCount Kişi</div>
+            </div>
+
+
+            <hr />
+            <div class="d-flex align-items-center">
+                <div class="flex-grow-1 fw-bold" >Toplam Bağışçı</div>
+                <div class="fw-bold" >@TotalCount Kişi</div>
+            </div>
+            
+        }
+        else
+        {
+            <div class="text-center">Gösterilecek kayıt yok</div>
+        }
+
+        <div class="mt-3">
+            <!-- Butona basınca modal açılır ve içinde TasinmazBagisciChart gösterilir -->
+            <button type="button" class="btn btn-sm btn-link p-0" @onclick="ViewDetails">Bağışçı Durumunu Görüntüle</button>
+        </div>
+    </div>
+</div>
+
+
+@code {
+    [Parameter] public IEnumerable<TasinmazBagisci>? Bagiscilar { get; set; }
+    [Parameter] public IEnumerable<Bolge>? Bolgeler { get; set; }
+    [Parameter] public IEnumerable<Il>? Iller { get; set; }
+    [Parameter] public IEnumerable<Tasinmaz>? Tasinmazlar { get; set; }
+    [Parameter] public IEnumerable<Bagis>? Bagislar { get; set; } // <-- added to compute yaş ortalaması
+    [Parameter] public string? Title { get; set; }
+
+    private int TotalCount { get; set; }
+    private int DeceasedCount { get; set; }
+    private int AliveCount { get; set; }
+    private double? AverageAgeAtDonation { get; set; }
+
+    // Modal flag
+    private bool ShowChartModal { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        BuildCounts();
+    }
+
+    private void BuildCounts()
+    {
+        var source = Bagiscilar ?? Enumerable.Empty<TasinmazBagisci>();
+
+        TotalCount = source.Count();
+
+        // `Sag_vefat` .
+        AliveCount = source.Count(b =>
+            b != null &&
+            (
+                (!string.IsNullOrWhiteSpace(b.Sag_vefat) &&
+                 b.Sag_vefat.Equals(ProjectConstants.BAGISCI_SAG)
+                )
+            ));
+
+        DeceasedCount = Math.Max(0, TotalCount - AliveCount);
+
+        // Ortalama yaş hesaplama: Bagis.BagisTarihi ve TasinmazBagisci.DogumTarihi kullanılarak.
+        // SQL örneğinizdeki gibi 2020-01-01 sonrası bağışlar alınır.
+        var bagisSource = Bagislar ?? Enumerable.Empty<Bagis>();
+        var donors = source.ToDictionary(d => d.Id, d => d);
+        var cutoff = new DateTime(2020, 1, 1);
+
+        var ages = bagisSource
+            .Where(b => b != null && b.BagisTarihi > cutoff && donors.ContainsKey(b.BagisciId ?? 0))
+            .Select(b =>
+            {
+                var donor = donors[b.BagisciId ?? 0];
+                // Hesaplama: tam yaş (doğum gününü dikkate alarak)
+                int age = b.BagisTarihi?.Year - donor.DogumTarihi?.Year ?? 0;
+                if (b.BagisTarihi < donor.DogumTarihi?.AddYears(age))
+                {
+                    age--;
+                }
+                return (double)age;
+            })
+            .ToList();
+
+        AverageAgeAtDonation = ages.Any() ? Math.Round(ages.Average(), 1) : (double?)null;
+    }
+
+    private async Task ViewDetails()
+    {
+        var req = new ModalRequest
+        {
+            Title = "Bağışçı Durumu",
+            Message = string.Empty,
+            ShowConfirmationButtons = false
+        };
+
+        // render TasinmazChart inside modal; wire chart OnClose to request.Close
+        req.Content = builder =>
+        {
+            builder.OpenComponent(0, typeof(Jenga.BlazorUI.Components.TBYS.TasinmazBagisciChart));
+            builder.AddAttribute(1, "Bagiscilar", Bagiscilar);
+            builder.AddAttribute(2, "Iller", Iller);
+            builder.AddAttribute(3, "Bolgeler", Bolgeler);
+            builder.AddAttribute(4, "OnClose", EventCallback.Factory.Create(this, () => req.Close?.Invoke()));
+            builder.CloseComponent();
+        };
+
+        await ModalService.Show(req);
+    }
+
+    private Task CloseModal()
+    {
+        ShowChartModal = false;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+}

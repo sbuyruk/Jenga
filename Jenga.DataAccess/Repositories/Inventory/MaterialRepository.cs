@@ -1,5 +1,6 @@
 ﻿using Jenga.DataAccess.Data;
 using Jenga.DataAccess.Repositories.IRepository.Inventory;
+using Jenga.DataAccess.Repositories.IRepository.TBYS;
 using Jenga.Models.Inventory;
 using Microsoft.EntityFrameworkCore;
 
@@ -19,8 +20,6 @@ namespace Jenga.DataAccess.Repositories.Inventory
             await using var db = _dbFactory.CreateDbContext();
             return await db.Material_Table
                 //.Include(m => m.Category)
-                //.Include(m => m.Brand)
-                //.Include(m => m.Model)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(m => m.Id == id, cancellationToken);
         }

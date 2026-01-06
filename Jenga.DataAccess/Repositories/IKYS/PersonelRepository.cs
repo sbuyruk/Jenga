@@ -1,5 +1,6 @@
 ﻿using Jenga.DataAccess.Data;
 using Jenga.DataAccess.Repositories.IRepository.IKYS;
+using Jenga.DataAccess.Repositories.IRepository.TBYS;
 using Jenga.Models.IKYS;
 using Microsoft.EntityFrameworkCore;
 
