@@ -13,6 +13,8 @@ using Jenga.Utility.Toast;
 using Microsoft.AspNetCore.Authentication.Negotiate;
 using Microsoft.EntityFrameworkCore;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
+using System.Globalization;
+using Microsoft.AspNetCore.Localization;
 
 var builder = WebApplication.CreateBuilder(args);
 var logger = builder.Services.BuildServiceProvider()
@@ -49,7 +51,7 @@ builder.Services.AddScoped<ILogWriter, FileLogWriter>();
 builder.Services.AddScoped<IErrorService, ErrorService>();
 //Modal Service
 builder.Services.AddScoped<IModalService, ModalService>();
-//Rol Service
+//Role Service
 builder.Services.AddScoped<IRoleService, RoleService>();
 //inventory services
 builder.Services.AddScoped<IMaterialService, MaterialService>();
@@ -64,8 +66,14 @@ builder.Services.AddScoped<IMaterialExitService, MaterialExitService>();
 builder.Services.AddScoped<IMaterialTransferService, MaterialTransferService>();
 builder.Services.AddScoped<ILocationService, LocationService>();
 builder.Services.AddScoped<IPersonelLocationService, PersonelLocationService>();
+//TBYS Services
 builder.Services.AddScoped<ITasinmazService, TasinmazService>();
 builder.Services.AddScoped<ITasinmazBagisciService, TasinmazBagisciService>();
+builder.Services.AddScoped<IKiraciService, KiraciService>();
+builder.Services.AddScoped<IKiraSozlesmeService, KiraSozlesmeService>();
+builder.Services.AddScoped<ISozlesmeTasinmazService, SozlesmeTasinmazService>();
+builder.Services.AddScoped<IOdemePlaniService, OdemePlaniService>();
+//Common Services
 builder.Services.AddScoped<IBagisService, BagisService>();
 builder.Services.AddScoped<IIlService, IlService>();
 builder.Services.AddScoped<IBolgeService, BolgeService>();
@@ -85,7 +93,25 @@ builder.Services.AddAuthorization();
 builder.Services.AddServerSideBlazor()
     .AddCircuitOptions(options => { options.DetailedErrors = true; });
 
+// Set default culture early so all code (including components) uses tr-TR by default
+var defaultCulture = new CultureInfo("tr-TR");
+CultureInfo.DefaultThreadCurrentCulture = defaultCulture;
+CultureInfo.DefaultThreadCurrentUICulture = defaultCulture;
+
+builder.Services.AddLocalization(); // optional but recommended for localization support
+
 var app = builder.Build();
+
+var supportedCultures = new[] { defaultCulture };
+var localizationOptions = new RequestLocalizationOptions
+{
+    DefaultRequestCulture = new RequestCulture(defaultCulture),
+    SupportedCultures = supportedCultures,
+    SupportedUICultures = supportedCultures
+};
+
+app.UseRequestLocalization(localizationOptions);
+
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {

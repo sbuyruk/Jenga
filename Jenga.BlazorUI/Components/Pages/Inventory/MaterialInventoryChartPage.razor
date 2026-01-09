@@ -1,4 +1,4 @@
-﻿@page "/inventory/material-inventory-manager"
+﻿@page "/inventory/material-inventoryChart-page"
 @rendermode InteractiveServer
 @using Jenga.BlazorUI.Components.Inventory
 @using Jenga.DataAccess.Services.Inventory
@@ -6,19 +6,26 @@
 @using Microsoft.JSInterop
 @inject IMaterialInventoryService MaterialInventoryService
 @inject IMaterialService MaterialService
+@inject IMaterialBrandService MaterialBrandService
+@inject IMaterialModelService MaterialModelService
 @inject IMaterialUnitService MaterialUnitService
 @inject ILocationService LocationService
-@inject IJSRuntime JS
 
 <h3>Stok Durumu (Envanter)</h3>
-<MaterialInventoryListComponent Inventories="@inventories"
-                                Materials="@materials"
-                                MaterialUnits="@units"
-                                Locations="@locations" />
+
+<MaterialInventoryChart TItem="MaterialInventory"
+                        Inventories="@inventories"
+                        Materials="@materials"
+                        Brands="@brands"
+                        Models="@models"
+                        MaterialUnits="@units"
+                        Locations="@locations" />
 
 @code {
     private List<MaterialInventory> inventories = new();
     private List<Material> materials = new();
+    private List<MaterialBrand> brands = new();
+    private List<MaterialModel> models = new();
     private List<MaterialUnit> units = new();
     private List<Location> locations = new();
     private bool _dataLoaded;
@@ -29,11 +36,12 @@
         {
             inventories = await MaterialInventoryService.GetAllAsync();
             materials = await MaterialService.GetAllAsync();
+            brands = await MaterialBrandService.GetAllAsync();
+            models = await MaterialModelService.GetAllAsync();
             units = await MaterialUnitService.GetAllAsync();
             locations = await LocationService.GetAllAsync();
             _dataLoaded = true;
             StateHasChanged();
-            await JS.InvokeVoidAsync("initMaterialTableWithExport");
         }
     }
 }

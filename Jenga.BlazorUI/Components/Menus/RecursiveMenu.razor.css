@@ -1,78 +1,127 @@
-﻿.recursive-menu {
+﻿:root {
+    /* sensible fallbacks if CSS variables are not defined elsewhere */
+    --menu-gradient-start: #ffffff;
+    --menu-gradient-end: #f7f7f7;
+    --menu-gradient-hover-start: #eef3ff;
+    --menu-gradient-hover-end: #e6efff;
+    --menu-text: #333;
+    --menu-text-hover: #0b5ed7;
+    --menu-icon: #6c757d;
+    --menu-icon-hover: #0b5ed7;
+    --submenu-bg: transparent;
+    --submenu-text: #444;
+    --active-bg: #eef6ff;
+    --open-bg: #f8fbff;
+    --border-active: #0b5ed7;
+}
+
+/* Base list */
+.recursive-menu {
     list-style: none;
     padding-left: 0;
     margin: 0;
 }
 
+/* List item */
 .menu-item {
     border-radius: 6px;
-    transition: background-color 0.3s ease, padding 0.2s ease;
-    border-radius: 4px;
+    transition: background-color 0.22s ease;
+    will-change: transform, box-shadow;
 }
 
+/* Keep layout stable — animate the header instead of shifting the entire li */
 .menu-header {
     background: linear-gradient(90deg, var(--menu-gradient-start), var(--menu-gradient-end));
     color: var(--menu-text);
     font-weight: 500;
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    padding: 0px 8px;
-    border-radius: 4px;
+    justify-content: space-between;
+    padding: 8px;
+    border-radius: 6px;
     cursor: pointer;
-    transition: background 0.4s ease, color 0.4s ease;
+    transition: background 0.28s ease, color 0.28s ease, transform 0.18s ease, box-shadow 0.18s ease, padding-left 0.18s ease;
+    text-decoration: none;
 }
 
-    .menu-header:hover {
-        background: linear-gradient(90deg, var(--menu-gradient-hover-start), var(--menu-gradient-hover-end));
-        color: var(--menu-text-hover);
-    }
+/* Subtle hover lift on the header only — avoids reflow of other items */
+.menu-header:hover,
+.menu-header:focus {
+    background: linear-gradient(90deg, var(--menu-gradient-hover-start), var(--menu-gradient-hover-end));
+    color: var(--menu-text-hover);
+    transform: translateX(2px);
+    box-shadow: 0 8px 18px rgba(16, 24, 40, 0.06);
+    padding-left: 4px;
+}
 
+/* Anchor variant */
+.menu-header.nav-link {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+}
+
+/* Icon & toggle */
 .toggle-icon {
     display: inline-block;
-    transition: transform 0.3s ease;
+    transition: transform 0.28s ease;
     margin-left: 8px;
 }
 
-    .toggle-icon.rotated {
-        transform: rotate(90deg);
-    }
+.toggle-icon.rotated {
+    transform: rotate(90deg);
+}
 
 .menu-icon {
     fill: var(--menu-icon);
-    transition: fill 0.3s ease;
+    transition: fill 0.28s ease, transform 0.18s ease;
 }
 
-.menu-header:hover .menu-icon {
+.menu-header:hover .menu-icon,
+.menu-header:focus .menu-icon {
     fill: var(--menu-icon-hover);
+    transform: translateX(2px);
 }
 
+/* Submenu container animation */
 .submenu {
     list-style: none;
     margin-left: 1rem;
     overflow: hidden;
     max-height: 0;
     opacity: 0;
-    transform: scaleY(0.95);
-    transition: max-height 0.3s ease, opacity 0.3s ease, transform 0.3s ease;
+    transform-origin: top;
+    transform: scaleY(0.98);
+    transition: max-height 0.32s ease, opacity 0.28s ease, transform 0.28s ease;
     background-color: var(--submenu-bg);
     padding-left: 16px;
-    margin-top: 4px;
+    margin-top: 6px;
 }
 
-    .submenu.show {
-        max-height: 500px;
-        opacity: 1;
-        transform: scaleY(1) translateY(0);
-        transition: all 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
-    }
+.submenu.show {
+    max-height: 1000px; /* large enough for nested menus */
+    opacity: 1;
+    transform: scaleY(1) translateY(0);
+    transition: all 0.42s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
 
-    .submenu li {
-        padding: 4px 0;
-        font-size: 0.9em;
-        color: var(--submenu-text);
-    }
+/* Submenu item visuals and hover */
+.submenu li {
+    padding: 4px 2px;
+    font-size: 0.95em;
+    color: var(--submenu-text);
+    border-radius: 6px;
+    transition: background-color 0.18s ease, transform 0.14s ease;
+}
 
+.submenu li:hover,
+.submenu li:focus {
+    background-color: rgba(11, 94, 215, 0.04);
+    transform: translateX(1px);
+    cursor: pointer;
+}
+
+/* Active / open states */
 .menu-item.active {
     border-left: 4px solid var(--border-active);
     background-color: var(--active-bg);
@@ -82,19 +131,17 @@
     background-color: var(--open-bg);
 }
 
-
-
-
+/* Sidebar container */
 .treeview-sidebar {
     width: 220px;
-    background: linear-gradient(180deg, #f0f0f0, #e0e0e0);
+    background: linear-gradient(180deg, #f0f0f0, #eaeaea);
     padding: 12px;
-    border-right: 1px solid #ccc;
+    border-right: 1px solid #d7d7d7;
     overflow-y: auto;
     font-family: 'Segoe UI', sans-serif;
 }
 
-/* Başlık */
+/* Title */
 .menu-title {
     width: 100%;
     font-weight: 600;
@@ -104,6 +151,53 @@
     border: none;
     cursor: pointer;
     padding: 6px 4px;
-    color: #333;
+    color: inherit;
+}
+
+/* Focus styles for keyboard users */
+.menu-header:focus,
+.menu-header.nav-link:focus,
+.submenu li:focus {
+    outline: 3px solid rgba(11, 94, 215, 0.12);
+    outline-offset: 2px;
+    border-radius: 6px;
+}
+
+/* Visual highlight for the selected/active menu item */
+.recursive-menu .menu-item > .menu-header,
+.recursive-menu .menu-item > a.menu-header {
+    padding: 2px 8px;
+    transition: background-color 150ms ease, color 150ms ease;
+}
+
+/* Active (selected) item */
+.recursive-menu .menu-item.active > .menu-header,
+.recursive-menu .menu-item.active > a.menu-header {
+    /*background-color: var(--p3, #0d6efd);*/
+    /*color: #fff;*/
+    font-weight: 600;
+    border-radius: 6px;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.06);
+    border: 1px solid var(--p1);
+    border-left: 5px solid var(--p1);
+}
+
+/* Improve contrast for nested items */
+.recursive-menu .menu-item .submenu .menu-item.active > .menu-header {
+    padding-left: 12px;
+}
+
+/* Ensure link text is white when active */
+.recursive-menu .menu-item.active a,
+.recursive-menu .menu-item.active .menu-title {
+    color: inherit;
+}
+
+/* Respect user preference for reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        transition: none !important;
+        animation: none !important;
+    }
 }
 

@@ -4,6 +4,7 @@
 @using Jenga.DataAccess.Services.Menu
 @using Jenga.Models.Common
 @using Jenga.Utility.Toast
+@using System.ComponentModel.DataAnnotations
 @inject IToastService ToastService
 @inject IModalService ModalService
 @inject IMenuItemService MenuItemService
@@ -20,36 +21,23 @@
 }
 else
 {
-    <GenericTable TItem="MenuItem"
-                  Items="Menus"
+    <GenericTable TItem="MenuRow"
+                  Items="menuRows"
                   PageSize="10"
                   TableHeight="Auto"
                   ShowSearch="true"
                   ShowExport="true"
-                  ExportFileName="menuler-export.xlsx">
-        <HeaderTemplate>
-            <th>Id</th>
-            <th>Başlık</th>
-            <th>Url</th>
-            <th>Üst Menüsü</th>
-            <th>Görünür</th>
-            <th>İşlemler</th>
-        </HeaderTemplate>
-
-        <RowTemplate Context="item">
-            <td>@item.Id</td>
-            <td>@item.Title</td>
-            <td>@item.Url</td>
+                  ExportFileName="menuler-export.xlsx"
+                  KeySelector="(r => r.Id)">
+        <RowTemplate Context="row">
+            <td>@row.Id</td>
+            <td>@row.Title</td>
+            <td>@row.Url</td>
+            <td>@row.ParentTitle</td>
+            <td>@(row.IsVisible ? "Evet" : "Hayır")</td>
             <td>
-                @{
-                    var parent = Menus.FirstOrDefault(m => m.Id == item.ParentId);
-                }
-                @parent?.Title
-            </td>
-            <td>@(item.IsVisible == true ? "Evet" : "Hayır")</td>
-            <td>
-                <button class="btn btn-sm btn-primary me-2" @onclick="() => OnEditClicked(item)">Düzenle</button>
-                <button class="btn btn-sm btn-danger" @onclick="() => OnDeleteClicked(item)">Sil</button>
+                <button class="btn btn-sm btn-primary me-2" @onclick="() => OnEditClicked(row.Original)">Düzenle</button>
+                <button class="btn btn-sm btn-danger" @onclick="() => OnDeleteClicked(row.Original)">Sil</button>
             </td>
         </RowTemplate>
     </GenericTable>
@@ -66,8 +54,22 @@ else
 
 @code {
     [Parameter] public List<MenuItem> Menus { get; set; } = new();
+
     private MenuItem? selectedMenuItem { get; set; }
     private bool showEditModal = false;
+
+    // Rows used by GenericTable (DTO wrapper so GenericTable auto-headers work and display names can be applied)
+    private List<MenuRow> menuRows = new();
+
+    protected override void OnParametersSet()
+    {
+        BuildMenuRows();
+    }
+
+    private void BuildMenuRows()
+    {
+        menuRows = Menus.Select(m => new MenuRow(m, Menus)).ToList();
+    }
 
     private async Task OnEditClicked(MenuItem item)
     {
@@ -112,6 +114,9 @@ else
                     {
                         ToastService.ShowToast($"{item.Title} silindi", ToastType.Success, 3000);
                         Menus.Remove(item);
+                        // remove corresponding row
+                        var row = menuRows.FirstOrDefault(r => r.Original == item || r.Id == item.Id);
+                        if (row != null) menuRows.Remove(row);
                         StateHasChanged();
                     }
                     else
@@ -122,22 +127,43 @@ else
             });
     }
 
-    private async void HandleSave()
+    // NOTE: Changed signature to accept the MenuItem passed from the modal and return Task.
+    // This prevents a race condition where the modal's OnClose clears selectedMenuItem before the async save completes.
+    private async Task HandleSave(MenuItem menu)
     {
-        if (selectedMenuItem != null)
+        if (menu != null)
         {
-            if (selectedMenuItem.Id == 0)
+            if (menu.Id == 0)
             {
-                ToastService.ShowToast(selectedMenuItem.Title + " eklendi", ToastType.Success, 3000);
-                await MenuItemService.AddAsync(selectedMenuItem);
-                // ensure newly added item is reflected in supplied list (caller may have to refresh)
-                Menus.Add(selectedMenuItem);
+                // Add
+                var saved = await MenuItemService.AddAsync(menu);
+                if (saved)
+                {
+                    Menus.Add(menu);
+                    ToastService.ShowToast("Yeni menü eklendi", ToastType.Success, 3000);
+                    menuRows.Add(new MenuRow(menu, Menus));
+                }
+                else
+                {
+                    ToastService.ShowToast("Ekleme başarısız oldu", ToastType.Error, 3000);
+                }
             }
             else
             {
-                ToastService.ShowToast($"{selectedMenuItem.Title} güncellendi", ToastType.Success, 3000);
-                await MenuItemService.UpdateAsync(selectedMenuItem);
+                var updated = await MenuItemService.UpdateAsync(menu);
+                if (updated)
+                {
+                    ToastService.ShowToast($"{menu.Title} güncellendi", ToastType.Success, 3000);
+                    // update row
+                    var row = menuRows.FirstOrDefault(r => r.Id == menu.Id);
+                    if (row != null) row.UpdateFrom(menu, Menus);
+                }
+                else
+                {
+                    ToastService.ShowToast("Güncelleme başarısız oldu", ToastType.Error, 3000);
+                }
             }
+
             showEditModal = false;
             StateHasChanged();
         }
@@ -153,5 +179,48 @@ else
     {
         selectedMenuItem = new MenuItem();
         showEditModal = true;
+    }
+
+    // DTO wrapper used only for UI table rendering and sorting labels
+    private class MenuRow
+    {
+        public int Id { get; private set; }
+
+        [Display(Name = "Başlık")]
+        public string Title { get; private set; } = string.Empty;
+
+        [Display(Name = "Url")]
+        public string Url { get; private set; } = string.Empty;
+
+        [Display(Name = "Üst Menüsü")]
+        public string ParentTitle { get; private set; } = string.Empty;
+
+        [Display(Name = "Görünür")]
+        public bool IsVisible { get; private set; }
+
+        // Keep original so action buttons can pass the real model to modals/services
+
+        [Display(Name ="İşlemler")]
+        public MenuItem Original { get; private set; }
+
+        public MenuRow(MenuItem item, IEnumerable<MenuItem> all)
+        {
+            Original = item;
+            UpdateFrom(item, all);
+        }
+
+        public void UpdateFrom(MenuItem item, IEnumerable<MenuItem> all)
+        {
+            Id = item.Id;
+            Title = item.Title ?? string.Empty;
+            Url = item.Url ?? string.Empty;
+            IsVisible = item.IsVisible == true;
+            ParentTitle = string.Empty;
+            if (item.ParentId.HasValue)
+            {
+                var p = all.FirstOrDefault(x => x.Id == item.ParentId.Value);
+                ParentTitle = p?.Title ?? string.Empty;
+            }
+        }
     }
 }

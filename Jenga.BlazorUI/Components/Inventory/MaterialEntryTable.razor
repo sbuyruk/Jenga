@@ -4,6 +4,7 @@
 @using Jenga.Models.IKYS
 @using Jenga.Models.Inventory
 @using Jenga.Utility.Toast
+@using System.ComponentModel.DataAnnotations
 @inject IMaterialEntryService MaterialEntryService
 @inject IModalService ModalService
 @inject IToastService ToastService
@@ -29,17 +30,7 @@ else
                   PageSize="10"
                   PageSizeOptions="new[] {5, 10, 20, 50}"
                   KeySelector="(r => r.Id)">
-        <HeaderTemplate>
-            <th @onclick="() => tableRef.SortBy(nameof(EntryRow.MaterialName))">Malzeme @(tableRef != null && tableRef.CurrentSortField == nameof(EntryRow.MaterialName) ? (tableRef.CurrentSortDescending ? "▼" : "▲") : "")</th>
-            <th @onclick="() => tableRef.SortBy(nameof(EntryRow.Brand))">Marka / Model @(tableRef != null && tableRef.CurrentSortField == nameof(EntryRow.Brand) ? (tableRef.CurrentSortDescending ? "▼" : "▲") : "")</th>
-            <th class="text-end" @onclick="() => tableRef.SortBy(nameof(EntryRow.QuantityValue))">Miktar @(tableRef != null && tableRef.CurrentSortField == nameof(EntryRow.QuantityValue) ? (tableRef.CurrentSortDescending ? "▼" : "▲") : "")</th>
-            <th @onclick="() => tableRef.SortBy(nameof(EntryRow.UnitName))">Birim @(tableRef != null && tableRef.CurrentSortField == nameof(EntryRow.UnitName) ? (tableRef.CurrentSortDescending ? "▼" : "▲") : "")</th>
-            <th @onclick="() => tableRef.SortBy(nameof(EntryRow.LocationPath))">Lokasyon Adı @(tableRef != null && tableRef.CurrentSortField == nameof(EntryRow.LocationPath) ? (tableRef.CurrentSortDescending ? "▼" : "▲") : "")</th>
-            <th @onclick="() => tableRef.SortBy(nameof(EntryRow.PersonName))">Personel @(tableRef != null && tableRef.CurrentSortField == nameof(EntryRow.PersonName) ? (tableRef.CurrentSortDescending ? "▼" : "▲") : "")</th>
-            <th @onclick="() => tableRef.SortBy(nameof(EntryRow.DateValue))">Tarih @(tableRef != null && tableRef.CurrentSortField == nameof(EntryRow.DateValue) ? (tableRef.CurrentSortDescending ? "▼" : "▲") : "")</th>
-            <th @onclick="() => tableRef.SortBy(nameof(EntryRow.InvoiceNo))">Belge No @(tableRef != null && tableRef.CurrentSortField == nameof(EntryRow.InvoiceNo) ? (tableRef.CurrentSortDescending ? "▼" : "▲") : "")</th>
-            <th>İşlemler</th>
-        </HeaderTemplate>
+        @* Let GenericTable auto-build sortable headers from EntryRow properties (Display attributes used below) *@
 
         <RowTemplate Context="r">
             <td class="align-middle">@r.MaterialName</td>
@@ -250,16 +241,38 @@ else
     {
         public int Id { get; set; }
         public MaterialEntry OriginalEntry { get; set; }
+
+        [Display(Name = "Malzeme")]
         public string MaterialName { get; set; } = string.Empty;
+
+        [Display(Name = "Marka")]
         public string Brand { get; set; } = string.Empty;
+
+        [Display(Name = "Model")]
         public string Model { get; set; } = string.Empty;
+
+        [Display(Name = "Miktar")]
         public string QuantityText { get; set; } = string.Empty;
+
+        [Display(Name = "Miktar (Sıralama)")]
         public decimal QuantityValue { get; set; }
+
+        [Display(Name = "Birim")]
         public string UnitName { get; set; } = string.Empty;
+
+        [Display(Name = "Lokasyon")]
         public string LocationPath { get; set; } = string.Empty;
+
+        [Display(Name = "Personel")]
         public string PersonName { get; set; } = string.Empty;
+
+        [Display(Name = "Tarih")]
         public string DateText { get; set; } = string.Empty;
+
+        [Display(Name = "Tarih (Sıralama)")]
         public DateTime DateValue { get; set; }
+
+        [Display(Name = "Belge No")]
         public string InvoiceNo { get; set; } = string.Empty;
     }
 }

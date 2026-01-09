@@ -60,6 +60,10 @@ namespace Jenga.DataAccess.Repositories
             Tasinmaz = new TasinmazRepository(_contextFactory);
             TasinmazBagisci = new TasinmazBagisciRepository(_contextFactory);
             Bagis = new BagisRepository(_contextFactory);
+            Kiraci = new KiraciRepository(_contextFactory);
+            KiraSozlesme = new KiraSozlesmeRepository(_contextFactory);
+            SozlesmeTasinmaz = new SozlesmeTasinmazRepository(_contextFactory);
+            OdemePlani = new OdemePlaniRepository(_contextFactory);
         }
 
         // Common
@@ -92,5 +96,12 @@ namespace Jenga.DataAccess.Repositories
         public ITasinmazRepository Tasinmaz { get; private set; }
         public ITasinmazBagisciRepository TasinmazBagisci { get; private set; }
         public IBagisRepository Bagis { get; private set; }
+        public IKiraciRepository Kiraci { get; private set; }
+        public IKiraSozlesmeRepository KiraSozlesme { get; private set; }
+        public ISozlesmeTasinmazRepository SozlesmeTasinmaz { get; private set; }
+        public IOdemePlaniRepository OdemePlani
+        {
+            get; private set;
+        }
     }
 }

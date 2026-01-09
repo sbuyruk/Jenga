@@ -1,0 +1,48 @@
+﻿/* GenericPieChart.razor.css (scoped) */
+
+.generic-pie-chart {
+    /* container-level adjustments (inherits project fonts/colors) */
+}
+
+.generic-pie-chart .chart-row.border {
+    padding: 8px;
+    border-radius: 6px;
+}
+
+/* SVG adjustments */
+.generic-pie-chart svg {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
+/* Legend layout */
+.generic-pie-chart .legend {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+/* Legend header */
+.generic-pie-chart .legend-header {
+    font-size: 0.9rem;
+    color: #343a40;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+/* color swatch uses inline CSS variable --swatch-color set per-item */
+.generic-pie-chart .color-swatch {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    margin-right: 8px;
+    background-color: var(--swatch-color);
+}
+
+/* value text sizing */
+.generic-pie-chart .legend .value {
+    font-size: 0.7rem;
+    /* keeps Bootstrap's .text-muted color if present */
+}

@@ -45,7 +45,10 @@ namespace Jenga.DataAccess.Data
         public DbSet<Tasinmaz> Tasinmaz_Table { get; set; }
         public DbSet<TasinmazBagisci> TasinmazBagisci_Table { get; set; }
         public DbSet<Bagis> Bagis_Table { get; set; }
-
+        public DbSet<Kiraci> Kiraci_Table { get; set; }
+        public DbSet<KiraSozlesme> KiraSozlesme_Table { get; set; }
+        public DbSet<SozlesmeTasinmaz> SozlesmeTasinmaz_Table { get; set; }
+        public DbSet<OdemePlani> OdemePlani_Table { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

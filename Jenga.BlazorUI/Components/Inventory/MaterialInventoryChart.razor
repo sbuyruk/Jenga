@@ -1,0 +1,227 @@
+﻿@using Jenga.Models.Inventory
+@using Jenga.Models.IKYS
+@using Jenga.BlazorUI.Components.Common
+@using Jenga.DataAccess.Services.Inventory
+@using System.ComponentModel
+@using System.ComponentModel.DataAnnotations
+@inject IMaterialBrandService MaterialBrandService
+@inject IMaterialModelService MaterialModelService
+
+@typeparam TItem
+
+@* Toolbar *@
+<div class="d-flex align-items-center mb-2">
+    <label class="form-check form-check-inline mb-0">
+        <input class="form-check-input" type="checkbox" @bind="GroupByMaterial" />
+        <span class="form-check-label">Malzemeye Göre Grupla</span>
+    </label>
+    <div class="text-muted small ms-3">@((GroupByMaterial) ? "Gösterim: malzemeye göre toplam" : "Gösterim: envanter satırları")</div>
+</div>
+
+@* Table *@
+@if (rows == null || !rows.Any())
+{
+    <div class="text-muted small">No inventory rows available.</div>
+}
+else
+{
+    <GenericTable TItem="InventoryRow"
+                  Items="rows"
+                  TableHeight="Auto"
+                  ShowSearch="true"
+                  PageSize="10"
+                  PageSizeOptions="new[] {5, 10, 20, 50}"
+                  KeySelector="(r => r.RowKey)">
+
+        <RowTemplate Context="r">
+            <td class="align-middle">@r.MaterialName</td>
+            <td class="align-middle">@r.BrandName</td>
+            <td class="align-middle">@r.ModelName</td>
+            <td class="align-middle">@r.LocationName</td>
+            <td class="align-middle text-end">@r.Quantity</td>
+            <td class="align-middle">@r.UnitSymbol</td>
+        </RowTemplate>
+    </GenericTable>
+}
+
+@code {
+    [Parameter] public List<MaterialInventory> Inventories { get; set; } = new();
+    [Parameter] public List<Material> Materials { get; set; } = new();
+    [Parameter] public List<MaterialUnit> MaterialUnits { get; set; } = new();
+    [Parameter] public List<Location> Locations { get; set; } = new();
+    [Parameter] public List<MaterialBrand> Brands { get; set; } = new();
+    [Parameter] public List<MaterialModel> Models { get; set; } = new();
+
+    // backing field + property so toggling checkbox rebuilds rows immediately
+    private bool groupByMaterial;
+    protected bool GroupByMaterial
+    {
+        get => groupByMaterial;
+        set
+        {
+            if (groupByMaterial == value) return;
+            groupByMaterial = value;
+            BuildRows();
+        }
+    }
+
+    private List<InventoryRow> rows = new();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await EnsureBrandsAndModelsAsync();
+        BuildRows();
+    }
+
+    private async Task EnsureBrandsAndModelsAsync()
+    {
+        // If parent component didn't supply brands/models, load them from services.
+        if (Brands == null || !Brands.Any())
+        {
+            try
+            {
+                Brands = await MaterialBrandService.GetAllAsync();
+            }
+            catch
+            {
+                Brands = new List<MaterialBrand>();
+            }
+        }
+
+        if (Models == null || !Models.Any())
+        {
+            try
+            {
+                Models = await MaterialModelService.GetAllAsync();
+            }
+            catch
+            {
+                Models = new List<MaterialModel>();
+            }
+        }
+    }
+
+    private void BuildRows()
+    {
+        // Defensive defaults
+        var invs = Inventories ?? new List<MaterialInventory>();
+        var mats = Materials ?? new List<Material>();
+        var units = MaterialUnits ?? new List<MaterialUnit>();
+        var locs = Locations ?? new List<Location>();
+        var brands = Brands ?? new List<MaterialBrand>();
+        var models = Models ?? new List<MaterialModel>();
+
+        var matLookup = mats.ToDictionary(m => m.Id);
+        var unitLookup = units.ToDictionary(u => u.Id);
+        var locLookup = locs.ToDictionary(l => l.Id);
+        var brandLookup = brands.ToDictionary(b => b.Id);
+        var modelLookup = models.ToDictionary(m => m.Id);
+
+        // total per material
+        var totals = invs
+            .GroupBy(x => x.MaterialId)
+            .ToDictionary(g => g.Key, g => g.Sum(x => x.Quantity));
+
+        rows = new List<InventoryRow>();
+
+        if (GroupByMaterial)
+        {
+            // one row per material (total)
+            foreach (var g in invs.GroupBy(x => x.MaterialId).OrderBy(x => matLookup.ContainsKey(x.Key) ? matLookup[x.Key].MaterialName : x.Key.ToString()))
+            {
+                var mid = g.Key;
+                var mat = matLookup.ContainsKey(mid) ? matLookup[mid] : null;
+
+                // compute total and skip materials with total quantity 0
+                var totalQty = totals.TryGetValue(mid, out var t) ? t : 0;
+                if (totalQty == 0)
+                    continue;
+
+                // pick first inventory row's brand/model for this material (if any)
+                var anyInv = g.FirstOrDefault();
+                string brandName = "—";
+                string modelName = "—";
+                if (anyInv != null)
+                {
+                    if (anyInv.BrandId.HasValue && brandLookup.ContainsKey(anyInv.BrandId.Value))
+                        brandName = brandLookup[anyInv.BrandId.Value].BrandName;
+                    if (anyInv.ModelId.HasValue && modelLookup.ContainsKey(anyInv.ModelId.Value))
+                        modelName = modelLookup[anyInv.ModelId.Value].ModelName;
+                }
+
+                var unit = mat != null && unitLookup.ContainsKey(mat.MaterialUnitId)
+                    ? unitLookup[mat.MaterialUnitId]
+                    : null;
+
+                rows.Add(new InventoryRow
+                {
+                    RowKey = $"mat_{mid}",
+                    InventoryId = 0,
+                    MaterialId = mid,
+                    MaterialName = mat != null ? mat.MaterialName : $"(id:{mid})",
+                    BrandName = brandName,
+                    ModelName = modelName,
+                    UnitSymbol = unit?.Symbol ?? unit?.Name ?? "",
+                    LocationName = "—",
+                    Quantity = totalQty
+                });
+            }
+        }
+        else
+        {
+            // individual inventory rows (location-level)
+            foreach (var inv in invs.OrderBy(x => matLookup.ContainsKey(x.MaterialId) ? matLookup[x.MaterialId].MaterialName : x.MaterialId.ToString()))
+            {
+                // skip inventory rows with zero quantity
+                if (inv.Quantity == 0)
+                    continue;
+
+                var mat = matLookup.ContainsKey(inv.MaterialId) ? matLookup[inv.MaterialId] : null;
+                var unit = mat != null && unitLookup.ContainsKey(mat.MaterialUnitId) ? unitLookup[mat.MaterialUnitId] : null;
+                var locName = inv.LocationId.HasValue && locLookup.ContainsKey(inv.LocationId.Value) ? locLookup[inv.LocationId.Value].LocationName : "—";
+
+                string brandName = "—";
+                string modelName = "—";
+                if (inv.BrandId.HasValue && brandLookup.ContainsKey(inv.BrandId.Value))
+                    brandName = brandLookup[inv.BrandId.Value].BrandName;
+                if (inv.ModelId.HasValue && modelLookup.ContainsKey(inv.ModelId.Value))
+                    modelName = modelLookup[inv.ModelId.Value].ModelName;
+
+                rows.Add(new InventoryRow
+                {
+                    RowKey = $"inv_{inv.Id}",
+                    InventoryId = inv.Id,
+                    MaterialId = inv.MaterialId,
+                    MaterialName = mat?.MaterialName ?? $"(id:{inv.MaterialId})",
+                    BrandName = brandName,
+                    ModelName = modelName,
+                    UnitSymbol = unit?.Symbol ?? unit?.Name ?? "",
+                    LocationName = locName,
+                    Quantity = inv.Quantity
+                });
+            }
+        }
+    }
+
+    private class InventoryRow
+    {
+        [Browsable(false)]
+        public string RowKey { get; set; } = Guid.NewGuid().ToString();
+        [Browsable(false)]
+        public int InventoryId { get; set; }
+        [Browsable(false)]
+        public int MaterialId { get; set; }
+        [Display(Name = "Malzeme")]
+        public string MaterialName { get; set; } = string.Empty;
+        [Display(Name = "Marka")]
+        public string BrandName { get; set; } = string.Empty;
+        [Display(Name = "Model")]
+        public string ModelName { get; set; } = string.Empty;
+        [Display(Name = "Konum")]
+        public string LocationName { get; set; } = string.Empty;
+        [Display(Name = "Miktar")]
+        public decimal Quantity { get; set; }
+        [Display(Name = "Birim")]
+        public string UnitSymbol { get; set; } = string.Empty;
+    }
+}

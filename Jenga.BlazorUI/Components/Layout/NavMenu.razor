@@ -11,11 +11,11 @@
 
                 <div class="brand-content" style="display:flex;align-items:center;gap:8px;">
                     <a href="/" @onclick="NavigateHome" @onclick:preventDefault="true" style="display:inline-block;">
-                        <img src="/images/jenga-logo.png" alt="Jenga logo" width="150" loading="lazy" style="cursor:pointer;" />
+                        <img src="/images/jenga-logo-sm.png" alt="Jenga logo" width="150" loading="lazy" style="cursor:pointer;" />
                     </a>
                 </div>
             </div>
-
+            <hr />
             @if (Items == null || !Items.Any())
             {
                 <p>Yükleniyor…</p>

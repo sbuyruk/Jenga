@@ -242,17 +242,17 @@ ul.treeview-list {
 
     /* Header — yeşil arka plan ve beyaz yazı (görsel örneğe uygun) */
     .summary-card .card-header {
-        background: linear-gradient(90deg, var(--p1), var(--muted));
-        color: #fff;
+        background: linear-gradient(90deg, var(--surface), var(--muted));
+        /*color: #fff;*/
         padding: 12px 16px;
-        font-size: 1.0rem;
+        font-size: 0.9rem;
     }
 
     /* Card body düzeni */
     .summary-card .card-body {
         padding: 14px 16px;
         color: #333;
-        font-size: 0.90rem;
+        font-size: 0.8rem;
     }
 
         /* Grup satırı: label solda, sayı sağda */
@@ -264,13 +264,13 @@ ul.treeview-list {
         /* Küçük açıklama metinleri (soldaki) */
         .summary-card .card-body .text-muted {
             color: #8a8a8a;
-            font-size: 0.80rem;
+            font-size: 0.7rem;
         }
 
         /* Adet sayıları (sağdaki) */
         .summary-card .card-body .font-weight-bold {
             color: #111;
-            font-size: 1.05rem;
+            font-size: 0.9rem;
             font-weight: 700;
         }
 
@@ -285,7 +285,7 @@ ul.treeview-list {
     .summary-card .card-body a {
         color: #2176d2;
         text-decoration: none;
-        font-size: 0.95rem;
+        font-size: 0.85rem;
     }
 
         .summary-card .card-body a:hover {

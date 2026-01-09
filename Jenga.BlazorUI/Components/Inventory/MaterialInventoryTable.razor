@@ -1,4 +1,5 @@
-﻿@using Jenga.Models.Inventory
+﻿@using System.ComponentModel.DataAnnotations
+@using Jenga.Models.Inventory
 @using Jenga.Models.IKYS
 @using Jenga.DataAccess.Services.Inventory
 @using Jenga.Utility.Toast
@@ -19,35 +20,12 @@
 else
 {
     <GenericTable TItem="InventoryRow"
-                  @ref="tableRef"
                   Items="inventoryRows"
                   TableHeight="Auto"
                   ShowSearch="true"
                   PageSize="10"
                   PageSizeOptions="new[] {5, 10, 20, 50}"
                   KeySelector="(r => r.MaterialId)">
-        <HeaderTemplate>
-            <th @onclick="() => tableRef.SortBy(nameof(InventoryRow.MaterialName))">
-                Malzeme @(tableRef != null && tableRef.CurrentSortField == nameof(InventoryRow.MaterialName) ? (tableRef.CurrentSortDescending ? "▼" : "▲") : "")
-            </th>
-            <th @onclick="() => tableRef.SortBy(nameof(InventoryRow.CategoryName))">
-                Kategori @(tableRef != null && tableRef.CurrentSortField == nameof(InventoryRow.CategoryName) ? (tableRef.CurrentSortDescending ? "▼" : "▲") : "")
-            </th>
-            <th class="text-end" @onclick="() => tableRef.SortBy(nameof(InventoryRow.TotalQuantity))">
-                Toplam Miktar @(tableRef != null && tableRef.CurrentSortField == nameof(InventoryRow.TotalQuantity) ? (tableRef.CurrentSortDescending ? "▼" : "▲") : "")
-            </th>
-            <th @onclick="() => tableRef.SortBy(nameof(InventoryRow.UnitSymbol))">
-                Birim @(tableRef != null && tableRef.CurrentSortField == nameof(InventoryRow.UnitSymbol) ? (tableRef.CurrentSortDescending ? "▼" : "▲") : "")
-            </th>
-            <th @onclick="() => tableRef.SortBy(nameof(InventoryRow.CriticalStock))" class="text-center">
-                Kritik Stok @(tableRef != null && tableRef.CurrentSortField == nameof(InventoryRow.CriticalStock) ? (tableRef.CurrentSortDescending ? "▼" : "▲") : "")
-            </th>
-            <th class="text-center">Bulunduğu Yerler</th>
-            <th class="text-center">Malzeme Hareketleri</th>
-            <th class="text-center">Giriş</th>
-            <th class="text-center">Çıkış</th>
-            <th class="text-center">Transfer</th>
-        </HeaderTemplate>
 
         <RowTemplate Context="r">
             <td class="align-middle">@r.MaterialName</td>
@@ -150,7 +128,6 @@ else
                         OnClose="CloseLocationsModal" />
 
 @code {
-    private GenericTable<InventoryRow> tableRef;
     private List<InventoryRow> inventoryRows = new();
 
     [Parameter] public List<MaterialInventory> MaterialInventories { get; set; } = new();
@@ -519,11 +496,22 @@ else
     private class InventoryRow
     {
         public int MaterialId { get; set; }
+
+        [Display(Name = "Malzeme")]
         public string MaterialName { get; set; } = string.Empty;
+
+        [Display(Name = "Kategori")]
         public string CategoryName { get; set; } = string.Empty;
+
+        [Display(Name = "Toplam Miktar")]
         public decimal TotalQuantity { get; set; }
+
+        [Display(Name = "Birim")]
         public string UnitSymbol { get; set; } = string.Empty;
+
+        [Display(Name = "Kritik Stok")]
         public int? CriticalStock { get; set; }
+
         public bool HasCriticalStock { get; set; }
         public bool IsCritical { get; set; }
     }

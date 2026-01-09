@@ -1,4 +1,5 @@
-﻿@using Jenga.BlazorUI.Components.Common
+﻿@using System.ComponentModel.DataAnnotations
+@using Jenga.BlazorUI.Components.Common
 @using Jenga.BlazorUI.Services.Common
 @using Jenga.DataAccess.Repositories.IRepository
 @using Jenga.DataAccess.Services.Common
@@ -7,6 +8,7 @@
 @using Jenga.Models.IKYS
 
 @using Jenga.Utility.Toast
+@using System.ComponentModel
 @inject IModalService ModalService
 @inject IRoleService RolService
 @inject IUnitOfWork UnitOfWork
@@ -24,25 +26,20 @@
 }
 else
 {
-        <GenericTable TItem="Role"
-                  Items="Roles"
+    <GenericTable TItem="RoleRow"
+                  Items="roleRows"
                   PageSize="10"
                   TableHeight="Auto"
                   ShowSearch="true"
                   ShowExport="true"
-                  ExportFileName="roller-export.xlsx">
-        <HeaderTemplate>
-            <th>Ad</th>
-            <th>Açıklama</th>
-            <th>İşlemler</th>
-        </HeaderTemplate>
-
-        <RowTemplate Context="item">
-            <td>@item.Name</td>
-            <td>@item.Aciklama</td>
+                  ExportFileName="roller-export.xlsx"
+                  KeySelector="(r => r.Id)">
+        <RowTemplate Context="row">
+            <td>@row.Name</td>
+            <td>@row.Aciklama</td>
             <td>
-                <button class="btn btn-sm btn-primary me-2" @onclick="() => OnEditClicked(item)">Düzenle</button>
-                <button class="btn btn-sm btn-danger" @onclick="() => OnDeleteClicked(item)">Sil</button>
+                <button class="btn btn-sm btn-primary me-2" @onclick="() => OnEditClicked(row.Original)">Düzenle</button>
+                <button class="btn btn-sm btn-danger" @onclick="() => OnDeleteClicked(row.Original)">Sil</button>
             </td>
         </RowTemplate>
     </GenericTable>
@@ -65,6 +62,19 @@ else
     private List<MenuItem>? menuList { get; set; }
     private bool showEditModal = false;
 
+    // DTO rows for GenericTable
+    private List<RoleRow> roleRows = new();
+
+    protected override void OnParametersSet()
+    {
+        BuildRoleRows();
+    }
+
+    private void BuildRoleRows()
+    {
+        roleRows = Roles.Select(r => new RoleRow(r)).ToList();
+    }
+
     private async Task OnEditClicked(Role rol)
     {
         selectedRol = await RolService.GetByIdWithRelationsAsync(rol.Id);
@@ -77,11 +87,12 @@ else
             .Where(p => p.IsVisible == true)
             .Where(p => selectedRol?.RoleMenus == null || !selectedRol.RoleMenus!.Any(rm => rm.MenuId == p.Id))
             .ToList();
-        //GetData<Personel>("personel");
+
         personelList = aktifPersoneller;
-        menuList = aktifMenuler;// GetData<MenuItem>("menu");
+        menuList = aktifMenuler;
         showEditModal = true;
     }
+
     private void OnDeleteClicked(Role role)
     {
         ModalService.ShowConfirmation(
@@ -93,6 +104,8 @@ else
                 {
                     await RolService.DeleteAsync(role);
                     Roles.Remove(role);
+                    var row = roleRows.FirstOrDefault(r => r.Original == role || r.Id == role.Id);
+                    if (row != null) roleRows.Remove(row);
                     StateHasChanged();
                     ToastService.ShowToast($"{role.Name} silindi", ToastType.Success, 3000);
                 }
@@ -110,6 +123,11 @@ else
             {
                 ToastService.ShowToast(selectedRol.Name + " eklendi", ToastType.Success, 3000);
                 Roles.Add(selectedRol);
+                roleRows.Add(new RoleRow(selectedRol));
+            }
+            else
+            {
+                ToastService.ShowToast("Ekleme başarısız oldu", ToastType.Error, 3000);
             }
         }
         else
@@ -118,6 +136,12 @@ else
             if (ok)
             {
                 ToastService.ShowToast(selectedRol.Name + " güncellendi", ToastType.Info, 3000);
+                var row = roleRows.FirstOrDefault(r => r.Id == selectedRol.Id);
+                if (row != null) row.UpdateFrom(selectedRol);
+            }
+            else
+            {
+                ToastService.ShowToast("Güncelleme başarısız oldu", ToastType.Error, 3000);
             }
         }
 
@@ -131,34 +155,9 @@ else
         showEditModal = false;
     }
 
-    private List<T> GetData<T>(string type)
-    {
-        // Mock data - burayı gerçek veri kaynağınızla değiştirin
-        if (type == "personel")
-        {
-            return new List<T>()
-            {
-                (T)(object)new Personel() { Id = 11111, Adi = "Ali", Soyadi = "Veli" },
-                (T)(object)new Personel() { Id = 22222, Adi = "Ayşe", Soyadi = " Yılmaz" }
-            };
-        }
-        else if (type == "menu")
-        {
-            return new List<T>()
-            {
-                (T)(object)new MenuItem() { Id = 33333,Title  = "Ana Menü", Url = "/ana-menu" },
-                (T)(object)new MenuItem() { Id = 44444, Title = "Hakkımızda", Url = "/hakkimizda" }
-            };
-        }
-
-        return new List<T>();
-    }
-
     private async Task OpenNewRolModal()
     {
-        // Yeni, boş bir rol nesnesi oluştur
         selectedRol = new Role();
-        // Aktif personel ve menüleri çek
         var aktifPersoneller = (await UnitOfWork.Personel.GetAllAsync("IsBilgileri"))
             .Where(p => p.IsBilgileri != null && p.IsBilgileri.CalismaDurumu == "1")
             .ToList();
@@ -170,5 +169,35 @@ else
         personelList = aktifPersoneller;
         menuList = aktifMenuler;
         showEditModal = true;
+    }
+
+    // DTO wrapper for UI table
+    private class RoleRow
+    {
+        [Browsable(false)]
+        public int Id { get; private set; }
+
+        [Display(Name = "Ad")]
+        public string Name { get; private set; } = string.Empty;
+
+        [Display(Name = "Açıklama")]
+        public string Aciklama { get; private set; } = string.Empty;
+        
+        [Display(Name = "İşlemler")]
+        public Role Original { get; private set; }
+
+        public RoleRow(Role r)
+        {
+            Original = r;
+            UpdateFrom(r);
+        }
+
+        public void UpdateFrom(Role r)
+        {
+            Id = r.Id;
+            Name = r.Name ?? string.Empty;
+            Aciklama = r.Aciklama ?? string.Empty;
+            Original = r;
+        }
     }
 }

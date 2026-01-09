@@ -1,4 +1,6 @@
-﻿@using Jenga.BlazorUI.Components.Common
+﻿@using System.ComponentModel
+@using System.ComponentModel.DataAnnotations
+@using Jenga.BlazorUI.Components.Common
 @using Jenga.DataAccess.Services.Inventory
 @using Jenga.Models.IKYS
 @using Jenga.Models.Inventory
@@ -21,63 +23,27 @@ else if (movementRows == null || movementRows.Count == 0)
 else
 {
     <GenericTable TItem="MovementRow"
-                  @ref="tableRef"
                   Items="movementRows"
                   TableHeight="@TableHeight"
                   ShowSearch="true"
-                  PageSize="@(MaxItems > 0 ? MaxItems : 10)"
+                  PageSize="@(MaxItems > 0 ? MaxItems : 5)"
                   PageSizeOptions="new[] {5, 10, 20, 50}">
-        <HeaderTemplate>
-            <th @onclick="() => tableRef.SortBy(nameof(MovementRow.ActionType))">
-                Action @(tableRef != null && tableRef.CurrentSortField == nameof(MovementRow.ActionType) ? (tableRef.CurrentSortDescending ? "▼" : "▲") : "")
-            </th>
-            <th @onclick="() => tableRef.SortBy(nameof(MovementRow.FromLocation))">
-                From @(tableRef != null && tableRef.CurrentSortField == nameof(MovementRow.FromLocation) ? (tableRef.CurrentSortDescending ? "▼" : "▲") : "")
-            </th>
-            <th @onclick="() => tableRef.SortBy(nameof(MovementRow.FromPerson))">
-                From Person @(tableRef != null && tableRef.CurrentSortField == nameof(MovementRow.FromPerson) ? (tableRef.CurrentSortDescending ? "▼" : "▲") : "")
-            </th>
-            <th @onclick="() => tableRef.SortBy(nameof(MovementRow.ToLocation))">
-                To @(tableRef != null && tableRef.CurrentSortField == nameof(MovementRow.ToLocation) ? (tableRef.CurrentSortDescending ? "▼" : "▲") : "")
-            </th>
-            <th @onclick="() => tableRef.SortBy(nameof(MovementRow.ToPerson))">
-                To Person @(tableRef != null && tableRef.CurrentSortField == nameof(MovementRow.ToPerson) ? (tableRef.CurrentSortDescending ? "▼" : "▲") : "")
-            </th>
-            <th @onclick="() => tableRef.SortBy(nameof(MovementRow.QuantityValue))" class="text-end">
-                Quantity @(tableRef != null && tableRef.CurrentSortField == nameof(MovementRow.QuantityValue) ? (tableRef.CurrentSortDescending ? "▼" : "▲") : "")
-            </th>
-            <th @onclick="() => tableRef.SortBy(nameof(MovementRow.Brand))">
-                Brand @(tableRef != null && tableRef.CurrentSortField == nameof(MovementRow.Brand) ? (tableRef.CurrentSortDescending ? "▼" : "▲") : "")
-            </th>
-            <th @onclick="() => tableRef.SortBy(nameof(MovementRow.Model))">
-                Model @(tableRef != null && tableRef.CurrentSortField == nameof(MovementRow.Model) ? (tableRef.CurrentSortDescending ? "▼" : "▲") : "")
-            </th>
-            <th @onclick="() => tableRef.SortBy(nameof(MovementRow.Operation))">
-                Operation @(tableRef != null && tableRef.CurrentSortField == nameof(MovementRow.Operation) ? (tableRef.CurrentSortDescending ? "▼" : "▲") : "")
-            </th>
-            <th @onclick="() => tableRef.SortBy(nameof(MovementRow.DateValue))">
-                Date @(tableRef != null && tableRef.CurrentSortField == nameof(MovementRow.DateValue) ? (tableRef.CurrentSortDescending ? "▼" : "▲") : "")
-            </th>
-        </HeaderTemplate>
-
         <RowTemplate Context="m">
             <td class="align-middle">@m.ActionType</td>
             <td class="align-middle">@m.FromLocation</td>
             <td class="align-middle">@m.FromPerson</td>
             <td class="align-middle">@m.ToLocation</td>
             <td class="align-middle">@m.ToPerson</td>
-            <td class="align-middle text-end">@m.QuantityText</td>
+            <td class="align-middle text-end">@($"{m.Quantity:0.##} {m.UnitSymbol}")</td>
             <td class="align-middle">@m.Brand</td>
             <td class="align-middle">@m.Model</td>
             <td class="align-middle">@m.Operation</td>
-            <td class="align-middle">@m.DateText</td>
+            <td class="align-middle">@m.Date.ToString("dd.MM.yyyy HH:mm")</td>
         </RowTemplate>
     </GenericTable>
 }
 
 @code {
-    private GenericTable<MovementRow> tableRef;
-
     [Parameter] public int MaterialId { get; set; }
     [Parameter] public List<Material>? Materials { get; set; }
     [Parameter] public List<MaterialCategory>? Categories { get; set; }
@@ -138,9 +104,7 @@ else
             else if (materialLookup.TryGetValue(m.MaterialId, out var mat) && unitLookup.TryGetValue(mat.MaterialUnitId, out var u2))
                 unitSymbol = u2.Symbol ?? u2.Name;
 
-            // assume m.Quantity is decimal (adjust if your model uses double/int)
             var quantityValue = m.Quantity;
-            var qtyText = $"{m.Quantity} {unitSymbol}".Trim();
 
             var fromLoc = InventoryUIHelper.GetLocationFullName(m.FromLocationId, locationList);
             var toLoc = InventoryUIHelper.GetLocationFullName(m.ToLocationId, locationList);
@@ -151,19 +115,17 @@ else
 
             rows.Add(new MovementRow
             {
-                Id = m.Id,
                 ActionType = actionLabel,
                 Operation = m.Operation ?? string.Empty,
                 Brand = brandName ?? string.Empty,
                 Model = modelName ?? string.Empty,
-                QuantityText = qtyText,
-                QuantityValue = quantityValue,
+                Quantity = quantityValue,
+                UnitSymbol = unitSymbol ?? string.Empty,
                 FromLocation = fromLoc,
                 FromPerson = fromPerson,
                 ToLocation = toLoc,
                 ToPerson = toPerson,
-                DateText = m.MovementDate.ToString("dd.MM.yyyy HH:mm"),
-                DateValue = m.MovementDate
+                Date = m.MovementDate
             });
         }
 
@@ -189,5 +151,41 @@ else
         bool isTransfer = m.FromLocationId.HasValue && m.ToLocationId.HasValue;
 
         return isTransfer ? "Transfer" : (isEntry ? "Entry" : (isExit ? "Exit" : "Other"));
+    }
+
+    private class MovementRow
+    {
+        [Display(Name = "Hareket")]
+        public string ActionType { get; set; } = string.Empty;
+
+        [Display(Name = "Nereden")]
+        public string FromLocation { get; set; } = string.Empty;
+
+        [Display(Name = "Kimden")]
+        public string FromPerson { get; set; } = string.Empty;
+
+        [Display(Name = "Nereye")]
+        public string ToLocation { get; set; } = string.Empty;
+
+        [Display(Name = "Kime")]
+        public string ToPerson { get; set; } = string.Empty;
+
+        [Display(Name = "Miktar")]
+        public decimal Quantity { get; set; }
+
+        [Browsable(false)]
+        public string UnitSymbol { get; set; } = string.Empty;
+
+        [Display(Name = "Marka")]
+        public string Brand { get; set; } = string.Empty;
+
+        [Display(Name = "Model")]
+        public string Model { get; set; } = string.Empty;
+
+        [Display(Name = "İşlem")]
+        public string Operation { get; set; } = string.Empty;
+
+        [Display(Name = "Tarih")]
+        public DateTime Date { get; set; }
     }
 }

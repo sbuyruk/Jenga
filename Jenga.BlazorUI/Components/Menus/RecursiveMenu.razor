@@ -61,11 +61,22 @@
 
     private void Toggle(MenuItem item)
     {
+        if (item == null) return;
+
         item.IsExpanded = !item.IsExpanded;
+
+        // mark the clicked parent as selected (visual feedback)
+        if (Items != null)
+        {
+            ClearActiveRecursive(Items);
+            item.IsActive = true;
+        }
     }
 
     private void SetActiveRecursive(List<MenuItem> items)
     {
+        if (items == null) return;
+
         var fullUri = Nav.Uri.ToLowerInvariant();
         var currentUrl = Nav.ToBaseRelativePath(Nav.Uri).TrimStart('/').ToLowerInvariant();
 
@@ -81,7 +92,51 @@
                 if (item.Children.Any(c => c.IsActive))
                     item.IsActive = true;
             }
+
+            // Ensure the branch that contains the active item stays expanded so the selected menu is visible after navigation
+            item.IsExpanded = item.IsActive || (item.Children?.Any(c => c.IsActive) == true);
         }
+    }
+
+    private void ClearActiveRecursive(List<MenuItem> items)
+    {
+        if (items == null) return;
+        foreach (var i in items)
+        {
+            i.IsActive = false;
+            if (i.Children?.Any() == true) ClearActiveRecursive(i.Children);
+        }
+    }
+
+    // Find menu item by URL and mark it (expand ancestors) so selection is immediate on click
+    private bool MarkActiveByUrl(List<MenuItem> items, string normalizedUrl)
+    {
+        if (items == null) return false;
+        foreach (var item in items)
+        {
+            var itemUrl = item.Url?.TrimStart('/').ToLowerInvariant() ?? "";
+            if (!string.IsNullOrEmpty(itemUrl) && itemUrl == normalizedUrl)
+            {
+                ClearActiveRecursive(Items ?? new List<MenuItem>());
+                item.IsActive = true;
+                return true;
+            }
+
+            if (item.Children?.Any() == true)
+            {
+                if (MarkActiveByUrl(item.Children, normalizedUrl))
+                {
+                    item.IsExpanded = true;
+                    item.IsActive = true;
+                    return true;
+                }
+            }
+
+            // not matched here
+            item.IsActive = item.IsActive && item.IsActive; // keep any previous true set for ancestors handled above
+        }
+
+        return false;
     }
 
     private void OnNavigate(MouseEventArgs e, string url)
@@ -89,10 +144,14 @@
         if (string.IsNullOrWhiteSpace(url))
             return;
 
-        // Normalize URLs:
-        // - If absolute and host equals current host => use path+query for client-side navigation
-        // - If path/relative => ensure it starts with '/' and NavigateTo
-        // - If external => allow full load (forceLoad:true) so user can still reach external resource
+        // Normalize incoming url for matching
+        var normalized = url.StartsWith("/") ? url.TrimStart('/').ToLowerInvariant() : url.TrimStart('/').ToLowerInvariant();
+
+        // mark menu immediately so user sees selection before navigation completes
+        if (Items != null)
+            _ = MarkActiveByUrl(Items, normalized);
+
+        // Normalize URLs and navigate
         if (Uri.TryCreate(url, UriKind.Absolute, out var abs))
         {
             try
@@ -117,8 +176,8 @@
         }
 
         // relative/partial path
-        var normalized = url.StartsWith("/") ? url : "/" + url;
-        Nav.NavigateTo(normalized, forceLoad: false);
+        var to = url.StartsWith("/") ? url : "/" + url;
+        Nav.NavigateTo(to, forceLoad: false);
     }
 
     public void Dispose()

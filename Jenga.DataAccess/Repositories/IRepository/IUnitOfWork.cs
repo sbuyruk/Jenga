@@ -39,7 +39,9 @@ namespace Jenga.DataAccess.Repositories.IRepository
         ITasinmazRepository Tasinmaz { get; }
         ITasinmazBagisciRepository TasinmazBagisci { get; }
         IBagisRepository Bagis { get; }
-        
-
+        IKiraciRepository Kiraci { get; }
+        IKiraSozlesmeRepository KiraSozlesme { get; }
+        ISozlesmeTasinmazRepository SozlesmeTasinmaz { get; }
+        IOdemePlaniRepository OdemePlani { get; }
     }
 }

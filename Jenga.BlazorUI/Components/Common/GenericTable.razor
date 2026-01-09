@@ -45,12 +45,14 @@
                     {
                         @foreach (var col in Columns)
                         {
-                            <th @onclick="() => ToggleSort(col.Name)">
-                                @col.DisplayName
-                                @if (sortField == col.Name)
-                                {
-                                    <span class="gt-sort-indicator">@(sortDescending ? "▼" : "▲")</span>
-                                }
+                            <th @onclick="() => ToggleSort(col.Name)" role="button" aria-label="Sırala: @col.DisplayName">
+                                <span class="d-inline-flex align-items-center">
+                                    <span>@col.DisplayName</span>
+                                    @if (sortField == col.Name)
+                                    {
+                                        <i class="gt-sort-indicator bi @(sortDescending ? "bi-caret-down-fill" : "bi-caret-up-fill") ms-2" aria-hidden="true"></i>
+                                    }
+                                </span>
                             </th>
                         }
                     }
@@ -163,7 +165,12 @@
     protected override void OnParametersSet()
     {
         allItems = Items?.ToList() ?? new List<TItem>();
-        props = typeof(TItem).GetProperties(BindingFlags.Instance | BindingFlags.Public);
+
+        // Respect [Browsable(false)] — skip such properties when building auto-columns
+        props = typeof(TItem)
+            .GetProperties(BindingFlags.Instance | BindingFlags.Public)
+            .Where(p => p.GetCustomAttribute<BrowsableAttribute>()?.Browsable != false)
+            .ToArray();
 
         // Always build Columns from properties so sorting by property-name works even when custom HeaderTemplate is used.
         BuildColumnsFromProps();

@@ -1,0 +1,19 @@
+﻿@page "/test/barChart"
+@using Jenga.BlazorUI.Components.Common
+@rendermode InteractiveServer
+
+<h4>Generic Bar Chart — Mock Data</h4>
+
+<GenericBarChart Items="@data" LabelSelector="x => x.Name" ValueSelector="x => x.Value" Title="Mock Sales" />
+
+@code {
+    private record CategoryData(string Name, decimal Value);
+
+    private List<CategoryData> data = new()
+    {
+        new CategoryData("Q1", 120m),
+        new CategoryData("Q2", 210m),
+        new CategoryData("Q3", 160m),
+        new CategoryData("Q4", 300m)
+    };
+}

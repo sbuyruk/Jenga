@@ -1,6 +1,7 @@
 ﻿@page "/tbys/tasinmaz-summary"
 @rendermode InteractiveServer
 @using Jenga.BlazorUI.Components.TBYS
+@using Jenga.BlazorUI.Components.Common
 @using Jenga.DataAccess.Services.Common
 @using Jenga.Models.Common
 @using Jenga.Models.TBYS
@@ -10,11 +11,11 @@
 @inject IBagisService BagisService
 @inject IIlService IlService
 @inject IBolgeService BolgeService
+@inject IOdemePlaniService OdemePlaniService
 @inject NavigationManager NavigationManager
 @implements IDisposable
 
 <div class="admin-overview p-3">
-    <h3 class="mb-3">Yönetici Özeti (Tasinmaz Bilgileri) </h3>
 
     @if (isLoading)
     {
@@ -30,14 +31,37 @@
             <TasinmazCard Tasinmazlar="@tasinmazlar"
                 Iller="@iller"
                 Bolgeler="@bolgeler" />
+            <GenericPieChart TItem="PieItem"
+                             Items="kullanimChartItems"
+                             LabelSelector="@(p => p.Label)"
+                             ValueSelector="@(p => p.Value)"
+                             Title="Taşınmaz Cinsleri"
+                             Height="340"
+                             Width="700"
+                              />
             <TasinmazBagisciCard Bagiscilar="@bagiscilar"
                 Iller="@iller"
                 Bolgeler="@bolgeler"
                 Bagislar="@bagislar" />
-            <KiralikCard Tasinmazlar="tasinmazlar"
+           
+
+            @* Add other summary cards here later *@
+        </div>
+        <hr />
+        <div class="d-flex flex-wrap gap-3">
+             <KiralikCard Tasinmazlar="tasinmazlar"
                 Iller="@iller"
                 Bolgeler="@bolgeler" />
-            @* Add other summary cards here later *@
+            <GenericBarChart TItem="YearAmount"
+                             Items="kiraChartItems"
+                             LabelSelector="@(y => y.Label)"
+                             ValueSelector="@(y => y.Amount)"
+                             Title="Son 10 yıllık Kira Gelirleri"
+                             Height="300"
+                             Width="800"
+                             ShowLegend="false" />
+
+
         </div>
     }
 </div>
@@ -48,9 +72,16 @@
     private List<Il>? iller;
     private List<Bolge>? bolgeler;
     private List<Bagis>? bagislar;
+    private List<OdemePlani>? odemePlanlari;
     private bool isLoading;
     private bool loadFailed;
     private CancellationTokenSource? _cts;
+
+    // Chart items for GenericBarChart
+    private List<YearAmount> kiraChartItems = new();
+
+    // Chart items for GenericPieChart (Taşınmaz Cinsleri)
+    private List<PieItem> kullanimChartItems = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -64,26 +95,17 @@
         loadFailed = false;
         try
         {
-            // Load all records; TasinmazCard internally filters EnvanterdeMi == 1
-            var list = await TasinmazService.GetAllAsync(cancellationToken);
-            tasinmazlar = list;
+            // Load shared datasets
+            tasinmazlar = await TasinmazService.GetAllAsync(cancellationToken);
+            bagiscilar = await TasinmazBagisciService.GetAllAsync(cancellationToken);
+            iller = await IlService.GetAllAsync(cancellationToken);
+            bolgeler = await BolgeService.GetAllAsync(cancellationToken);
+            bagislar = await BagisService.GetAllAsync(cancellationToken);
 
-            // Load bagiscilar for BagisciCard
-            var bagisciList = await TasinmazBagisciService.GetAllAsync(cancellationToken);
-            bagiscilar = bagisciList;
-            // Load Iller for BagisciCard
-            var ilList = await IlService.GetAllAsync(cancellationToken);
-            iller = ilList;
-
-            // Load Bolgeler
-            var bolgeList = await BolgeService.GetAllAsync(cancellationToken);
-            bolgeler = bolgeList;
-
-            // Load Bagislar
-            var bagisList = await BagisService.GetAllAsync(cancellationToken);
-            bagislar = bagisList;
-
-
+            // Load payment plans and prepare charts
+            odemePlanlari = await OdemePlaniService.GetAllAsync(cancellationToken);
+            PrepareKiraGeliriChart();
+            PrepareTasinmazCinsleriChart();
         }
         catch
         {
@@ -92,6 +114,9 @@
             bagiscilar = new List<TasinmazBagisci>();
             iller = new List<Il>();
             bolgeler = new List<Bolge>();
+            odemePlanlari = new List<OdemePlani>();
+            kiraChartItems = new List<YearAmount>();
+            kullanimChartItems = new List<PieItem>();
         }
         finally
         {
@@ -100,9 +125,74 @@
         }
     }
 
+    private void PrepareKiraGeliriChart()
+    {
+        kiraChartItems.Clear();
+        if (odemePlanlari == null || !odemePlanlari.Any()) return;
+
+        int currentYear = DateTime.Now.Year;
+        var years = Enumerable.Range(currentYear - 9, 10).ToList(); // last 10 years (inclusive)
+
+        // Group by Yil and sum OdenenTutar (safe with nulls)
+        var sumsByYear = odemePlanlari
+            .Where(op => op != null)
+            .GroupBy(op => op.Yil)
+            .ToDictionary(g => g.Key, g => g.Sum(x => x.OdenenTutar));
+
+        foreach (var y in years)
+        {
+            decimal amount = sumsByYear.TryGetValue(y, out var v) ? (v ?? 0m) : 0m;
+            kiraChartItems.Add(new YearAmount
+            {
+                Year = y,
+                Label = y.ToString(),
+                Amount = amount
+            });
+        }
+    }
+
+    private void PrepareTasinmazCinsleriChart()
+    {
+        kullanimChartItems.Clear();
+        if (tasinmazlar == null || !tasinmazlar.Any()) return;
+         
+        var source = tasinmazlar ?? Enumerable.Empty<Tasinmaz>();
+
+        var filtered = source.Where(x => x != null && x.EnvanterdeMi == 1);
+       
+        var groups = filtered
+            .GroupBy(x => string.IsNullOrWhiteSpace(x.KullanimSekli) ? "Diğer" : x.KullanimSekli!.Trim())
+            .Select(g => (Name: g.Key, Count: g.Count()))
+            .OrderByDescending(g => g.Count)
+            .ToList();
+        foreach (var g in groups)
+        {
+            kullanimChartItems.Add(new PieItem
+            {
+                Label = g.Name,
+                Value = Convert.ToDecimal(g.Count)
+            });
+        }
+    }
+
     public void Dispose()
     {
         _cts?.Cancel();
         _cts?.Dispose();
+    }
+
+    // Simple DTO used by GenericBarChart
+    private class YearAmount
+    {
+        public int Year { get; set; }
+        public string Label { get; set; } = "";
+        public decimal Amount { get; set; }
+    }
+
+    // DTO used by GenericPieChart
+    private class PieItem
+    {
+        public string Label { get; set; } = "";
+        public decimal Value { get; set; }
     }
 }

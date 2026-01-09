@@ -1,17 +1,21 @@
-﻿.generic-table {
+﻿/* GenericTable - cleaned and deduplicated */
+.generic-table {
     font-family: Arial, Helvetica, sans-serif;
     font-size: 14px;
-    background:var(--surface);
+    background: var(--surface);
 }
 
+/* Controls */
 .gt-controls {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 8px;
-    padding: 0.5rem; /* optional: keep spacing comfortable */
-    border-radius: 4px; /* optional: subtle rounding */
+    padding: 0.5rem;
+    border-radius: 4px;
+    gap: 12px;
 }
+.gt-page-controls { display:flex; align-items:center; gap:8px; }
 
 .gt-search {
     padding: 6px 8px;
@@ -20,57 +24,76 @@
     width: 240px;
 }
 
+/* Table wrapper and base table */
 .gt-table-wrapper {
     overflow-y: auto;
     border: 1px solid #e0e0e0;
     border-radius: 4px;
 }
-
 .gt-table {
     border-collapse: collapse;
     width: 100%;
     table-layout: fixed;
 }
 
-    .gt-table th,
-    .gt-table td {
-        padding: 8px 10px;
-        border-bottom: 1px solid #eee;
-        text-overflow: ellipsis;
-        overflow: hidden;
-        white-space: nowrap;
-    }
+/* Cells and header */
+.gt-table th,
+.gt-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #eee;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+}
 
-    .gt-table thead th {
-        position: sticky;
-        top: 0;
-        background: #fafafa;
-        z-index: 2;
-        border-bottom: 2px solid #ddd;
-        cursor: pointer;
-    }
+/* Sticky header */
+.gt-table thead th {
+    position: sticky;
+    top: 0;
+    background: #fafafa;
+    z-index: 2;
+    border-bottom: 2px solid #ddd;
+    cursor: pointer;
+    user-select: none;
+}
 
+/* Header content with icon spacing */
+.gt-table thead th .header-content,
+.gt-table thead th > span.d-inline-flex {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Sort indicator (Bootstrap Icons classes applied in markup) */
+.gt-sort-indicator {
+    margin-left: 6px;
+    font-size: 12px;
+    color: #555;
+}
+
+/* Row hover */
 .gt-row:hover {
     background: #f7f7f7;
     cursor: pointer;
 }
 
+/* Pagination buttons */
 .gt-pagination {
     margin-top: 8px;
     display: flex;
     align-items: center;
     gap: 8px;
 }
+.gt-pagination button {
+    padding: 6px 8px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    background: white;
+}
 
-    .gt-pagination button {
-        padding: 6px 8px;
-        border-radius: 4px;
-        border: 1px solid #ccc;
-        background: white;
-    }
-
-.gt-sort-indicator {
-    margin-left: 6px;
-    font-size: 12px;
-    color: #555;
+/* Small responsive tweaks */
+@media (max-width: 640px) {
+    .gt-search { width: 140px; }
+    .gt-controls { flex-direction: column; align-items: stretch; gap:6px; }
 }
