@@ -1,0 +1,24 @@
+﻿@page "/test/apexChart"
+@using ApexCharts
+@rendermode InteractiveServer
+
+<ApexChart TItem="Point" Title="Satış (Günlük)">
+    <ApexPointSeries TItem="Point"
+                     Items="@data"
+                     XValue="p => p.Day"
+                     YValue="p => p.Value"
+                     Name="Satış" />
+</ApexChart>
+
+@code {
+    private List<Point> data = new()
+    {
+        new(DateTime.Today.AddDays(-4), 10),
+        new(DateTime.Today.AddDays(-3), 14),
+        new(DateTime.Today.AddDays(-2), 8),
+        new(DateTime.Today.AddDays(-1), 20),
+        new(DateTime.Today, 16),
+    };
+
+    public record Point(DateTime Day, decimal Value);
+}

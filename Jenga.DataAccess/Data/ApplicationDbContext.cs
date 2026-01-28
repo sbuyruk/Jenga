@@ -49,6 +49,7 @@ namespace Jenga.DataAccess.Data
         public DbSet<KiraSozlesme> KiraSozlesme_Table { get; set; }
         public DbSet<SozlesmeTasinmaz> SozlesmeTasinmaz_Table { get; set; }
         public DbSet<OdemePlani> OdemePlani_Table { get; set; }
+        public DbSet<Odeme> Odeme_Table { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

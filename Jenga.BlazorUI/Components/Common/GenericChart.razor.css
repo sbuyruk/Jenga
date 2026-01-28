@@ -1,0 +1,92 @@
+﻿.generic-chart {
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+    border-radius: 10px;
+    background: linear-gradient(180deg, #ffffff00 0%, var(--surface) 60%);
+    box-shadow: 0 6px 18px rgba(18, 38, 63, 0.08);
+    color: #1f2937;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    --muted: #6b7280;
+
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+.generic-chart .generic-chart-inner {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    height: 100%;
+    min-height: 0; /* IMPORTANT: allow children to shrink within fixed Height */
+}
+
+/* Title (centered) */
+.generic-chart-title {
+    text-align: center;
+    font-weight: 600;
+    font-size: 14px;
+    color: #111827;
+    margin: 2px 0 2px 0;
+    flex: 0 0 auto;
+}
+
+/* Chart area takes remaining space */
+.generic-chart-stage {
+    flex: 1 1 auto;
+    min-height: 0; /* IMPORTANT */
+    min-width: 0;
+    display: flex;
+}
+
+/* Force Apex to fit stage (no clipping, responsive) */
+.generic-chart :deep(.apexcharts-canvas) {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.generic-chart :deep(.apexcharts-svg) {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* Legend shouldn't force overflow */
+.generic-chart :deep(.apexcharts-legend) {
+    max-width: 100%;
+}
+
+/* Legend (currently not used after you removed custom legend, but harmless) */
+.generic-chart .legend {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.generic-chart .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.generic-chart .swatch {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06) inset;
+}
+
+.generic-chart .legend-sub {
+    color: var(--muted);
+    font-size: 0.82rem;
+}
+
+@media (prefers-color-scheme: dark) {
+    .generic-chart-title {
+        color: #f9fafb;
+    }
+}

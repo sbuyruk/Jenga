@@ -16,4 +16,8 @@
     <Folder Include="Components\Pages\Personel\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Blazor-ApexCharts" Version="6.0.2" />
+  </ItemGroup>
+
 </Project>

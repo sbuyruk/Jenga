@@ -7,7 +7,7 @@
 @using Microsoft.AspNetCore.Components
 @inject IModalService ModalService
 
-<div class="card summary-card">
+<div class="card summary-card" style="@CardStyle">
     <div class="card-header">
         <strong>@(string.IsNullOrWhiteSpace(Title) ? "Taşınmaz Bağışçılar" : Title)</strong>
     </div>
@@ -15,28 +15,27 @@
         @if (TotalCount > 0)
         {
             <div class="text-center mb-2">
-                <div class="flex-grow-1" >Ortalama Bağış Yapma Yaşı</div>
-                <div class="flex-grow-1" >(2020 Yılından İtibaren)</div>
-                <div class="fw-bold" >@(AverageAgeAtDonation.HasValue ? $"{AverageAgeAtDonation.Value:0.0} yaş" : "-")</div>
+                <div class="flex-grow-1">Ortalama Bağış Yapma Yaşı</div>
+                <div class="flex-grow-1">(2020 Yılından İtibaren)</div>
+                <div class="fw-bold">@(AverageAgeAtDonation.HasValue ? $"{AverageAgeAtDonation.Value:0.0} yaş" : "-")</div>
             </div>
             <hr />
             <div class="d-flex align-items-center mb-2">
-                <div class="flex-grow-1" >Sağ Olanlar</div>
-                <div class="fw-bold" >@AliveCount Kişi</div>
+                <div class="flex-grow-1">Sağ Olanlar</div>
+                <div class="fw-bold">@AliveCount Kişi</div>
             </div>
 
             <div class="d-flex align-items-center mb-2">
-                <div class="flex-grow-1" >Vefat (Lağv/Tasfiye vb.)</div>
+                <div class="flex-grow-1">Vefat (Lağv/Tasfiye vb.)</div>
                 <div class="fw-bold">@DeceasedCount Kişi</div>
             </div>
 
-
             <hr />
             <div class="d-flex align-items-center">
-                <div class="flex-grow-1 fw-bold" >Toplam Bağışçı</div>
-                <div class="fw-bold" >@TotalCount Kişi</div>
+                <div class="flex-grow-1 fw-bold">Toplam Bağışçı</div>
+                <div class="fw-bold">@TotalCount Kişi</div>
             </div>
-            
+
         }
         else
         {
@@ -58,6 +57,10 @@
     [Parameter] public IEnumerable<Tasinmaz>? Tasinmazlar { get; set; }
     [Parameter] public IEnumerable<Bagis>? Bagislar { get; set; } // <-- added to compute yaş ortalaması
     [Parameter] public string? Title { get; set; }
+
+    [Parameter] public string? Height { get; set; }
+
+    private string? CardStyle => string.IsNullOrWhiteSpace(Height) ? null : $"height: {Height};";
 
     private int TotalCount { get; set; }
     private int DeceasedCount { get; set; }

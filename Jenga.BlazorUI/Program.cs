@@ -73,6 +73,7 @@ builder.Services.AddScoped<IKiraciService, KiraciService>();
 builder.Services.AddScoped<IKiraSozlesmeService, KiraSozlesmeService>();
 builder.Services.AddScoped<ISozlesmeTasinmazService, SozlesmeTasinmazService>();
 builder.Services.AddScoped<IOdemePlaniService, OdemePlaniService>();
+builder.Services.AddScoped<IOdemeService, OdemeService>();
 //Common Services
 builder.Services.AddScoped<IBagisService, BagisService>();
 builder.Services.AddScoped<IIlService, IlService>();

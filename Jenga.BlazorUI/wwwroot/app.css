@@ -17,6 +17,9 @@
     --bs-body-color: var(--text);
     --bs-bg-primary: rgba(255,255,255,0.04);
 }
+html {
+    scroll-behavior: smooth;
+}
 html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
@@ -237,6 +240,7 @@ ul.treeview-list {
     overflow: hidden;
     background: #fff;
     border: 1px solid #e6e6e6;
+    height:360px;
     /*font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;*/
 }
 

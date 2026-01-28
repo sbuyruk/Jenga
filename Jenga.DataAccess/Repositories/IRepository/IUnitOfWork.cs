@@ -1,7 +1,6 @@
 ﻿using Jenga.DataAccess.Repositories.IRepository.Common;
 using Jenga.DataAccess.Repositories.IRepository.IKYS;
 using Jenga.DataAccess.Repositories.IRepository.Inventory;
-using Jenga.DataAccess.Repositories.IRepository.Common;
 using Jenga.DataAccess.Repositories.IRepository.TBYS;
 using Jenga.DataAccess.Services.TBYS;
 
@@ -43,5 +42,6 @@ namespace Jenga.DataAccess.Repositories.IRepository
         IKiraSozlesmeRepository KiraSozlesme { get; }
         ISozlesmeTasinmazRepository SozlesmeTasinmaz { get; }
         IOdemePlaniRepository OdemePlani { get; }
+        IOdemeRepository Odeme { get; }
     }
 }

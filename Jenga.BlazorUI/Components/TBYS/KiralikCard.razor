@@ -7,8 +7,8 @@
 @using Microsoft.AspNetCore.Components
 @inject IModalService ModalService
 
-<div class="card summary-card">
-    <div class="card-header" >
+<div class="card summary-card" style="@CardStyle">
+    <div class="card-header">
         <strong>@(string.IsNullOrWhiteSpace(Title) ? "Kiralıklar" : Title)</strong>
     </div>
     <div class="card-body">
@@ -16,23 +16,24 @@
         {
             <div class="d-flex align-items-center mb-2">
                 <div class="flex-grow-1">Kiraya Uygun</div>
-                <div class="fw-bold" >@KirayaUygunCount Adet</div>
+                <div class="fw-bold">@KirayaUygunCount Adet</div>
             </div>
 
             <div class="d-flex align-items-center mb-2">
                 <div class="flex-grow-1">Kiraya Uygun Olmayan</div>
-                <div class="fw-bold" >@KirayaUygunDegilCount Adet</div>
+                <div class="fw-bold">@KirayaUygunDegilCount Adet</div>
             </div>
 
             <hr />
 
             <div class="d-flex align-items-center">
                 <div class="flex-grow-1">Toplam Taşınmaz</div>
-                <div class="" >@TotalCount Adet</div>
+                <div class="">@TotalCount Adet</div>
             </div>
         }
         else
         {
+            KiraSozlesme kiraSozlesme = new KiraSozlesme();
             <div class="text-center text-muted">Gösterilecek kayıt yok</div>
         }
 
@@ -48,6 +49,10 @@
     [Parameter] public IEnumerable<Bolge>? Bolgeler { get; set; }
     [Parameter] public IEnumerable<Il>? Iller { get; set; }
     [Parameter] public string? Title { get; set; }
+
+    [Parameter] public string? Height { get; set; }
+
+    private string? CardStyle => string.IsNullOrWhiteSpace(Height) ? null : $"height: {Height};";
 
     private int KirayaUygunCount { get; set; }
     private int KirayaUygunDegilCount { get; set; }

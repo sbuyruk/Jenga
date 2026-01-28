@@ -64,6 +64,7 @@ namespace Jenga.DataAccess.Repositories
             KiraSozlesme = new KiraSozlesmeRepository(_contextFactory);
             SozlesmeTasinmaz = new SozlesmeTasinmazRepository(_contextFactory);
             OdemePlani = new OdemePlaniRepository(_contextFactory);
+            Odeme = new OdemeRepository(_contextFactory);
         }
 
         // Common
@@ -99,9 +100,7 @@ namespace Jenga.DataAccess.Repositories
         public IKiraciRepository Kiraci { get; private set; }
         public IKiraSozlesmeRepository KiraSozlesme { get; private set; }
         public ISozlesmeTasinmazRepository SozlesmeTasinmaz { get; private set; }
-        public IOdemePlaniRepository OdemePlani
-        {
-            get; private set;
-        }
+        public IOdemePlaniRepository OdemePlani { get; private set;}
+        public IOdemeRepository Odeme { get; private set;}
     }
 }

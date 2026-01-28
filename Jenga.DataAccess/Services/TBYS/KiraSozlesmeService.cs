@@ -27,7 +27,7 @@ namespace Jenga.DataAccess.Services.TBYS
             if (sozlesme == null) throw new ArgumentNullException(nameof(sozlesme));
 
             // Basic validation: must have either KiraciId or TasinmazId or a contract number
-            var hasParty = sozlesme.KiraciId.HasValue || sozlesme.TasinmazId.HasValue || !string.IsNullOrWhiteSpace(sozlesme.SozlesmeNo);
+            var hasParty = sozlesme.KiraciId.HasValue || sozlesme.SozBasTar.HasValue || !string.IsNullOrWhiteSpace(sozlesme.SozlesmeDurumu);
             if (!hasParty)
             {
                 _logService?.LogWarning("KiraSozlesmeService.AddAsync: KiraciId, TasinmazId veya SozlesmeNo gerekli.");
@@ -51,7 +51,7 @@ namespace Jenga.DataAccess.Services.TBYS
         {
             if (sozlesme == null) throw new ArgumentNullException(nameof(sozlesme));
 
-            var hasParty = sozlesme.KiraciId.HasValue || sozlesme.TasinmazId.HasValue || !string.IsNullOrWhiteSpace(sozlesme.SozlesmeNo);
+            var hasParty = sozlesme.KiraciId.HasValue || sozlesme.SozBasTar.HasValue || !string.IsNullOrWhiteSpace(sozlesme.SozlesmeDurumu);
             if (!hasParty)
             {
                 _logService?.LogWarning("KiraSozlesmeService.UpdateAsync: KiraciId, TasinmazId veya SozlesmeNo gerekli.");

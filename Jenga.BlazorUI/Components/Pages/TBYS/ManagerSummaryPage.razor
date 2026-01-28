@@ -1,4 +1,4 @@
-﻿@page "/tbys/tasinmaz-summary"
+﻿@page "/tbys/manager-summary"
 @rendermode InteractiveServer
 @using Jenga.BlazorUI.Components.TBYS
 @using Jenga.BlazorUI.Components.Common
@@ -8,71 +8,128 @@
 @using Jenga.DataAccess.Services.TBYS
 @inject ITasinmazService TasinmazService
 @inject ITasinmazBagisciService TasinmazBagisciService
+@inject IKiraSozlesmeService KiraSozlesmeService
 @inject IBagisService BagisService
 @inject IIlService IlService
 @inject IBolgeService BolgeService
-@inject IOdemePlaniService OdemePlaniService
+@inject IOdemeService OdemeService
 @inject NavigationManager NavigationManager
 @implements IDisposable
 
-<div class="admin-overview p-3">
+<div class="admin-overview p-3 manager-summary-layout">
+    <div class="manager-summary-content">
+        @if (isLoading)
+        {
+            <div class="text-muted">Yükleniyor...</div>
+        }
+        else if (loadFailed)
+        {
+            <div class="text-danger">Veri yüklenirken hata oluştu.</div>
+        }
+        else
+        {
+            <section id="bolum-tasinmaz">
+                <div class="d-flex flex-wrap gap-3">
+                    <TasinmazCard Tasinmazlar="@tasinmazlar"
+                                 Iller="@iller"
+                                 Bolgeler="@bolgeler" />
 
-    @if (isLoading)
-    {
-        <div class="text-muted">Yükleniyor...</div>
-    }
-    else if (loadFailed)
-    {
-        <div class="text-danger">Veri yüklenirken hata oluştu.</div>
-    }
-    else
-    {
-        <div class="d-flex flex-wrap gap-3">
-            <TasinmazCard Tasinmazlar="@tasinmazlar"
-                Iller="@iller"
-                Bolgeler="@bolgeler" />
-            <GenericPieChart TItem="PieItem"
-                             Items="kullanimChartItems"
-                             LabelSelector="@(p => p.Label)"
-                             ValueSelector="@(p => p.Value)"
-                             Title="Taşınmaz Cinsleri"
-                             Height="340"
-                             Width="700"
-                              />
-            <TasinmazBagisciCard Bagiscilar="@bagiscilar"
-                Iller="@iller"
-                Bolgeler="@bolgeler"
-                Bagislar="@bagislar" />
-           
+                    <GenericChart TItem="PieItem"
+                                  Items="kullanimChartItems"
+                                  LabelSelector="@(p => p.Label)"
+                                  ValueSelector="@(p => p.Value)"
+                                  Title="Taşınmaz Cinsleri"
+                                  SeriesName="Cins"
+                                  Type="GenericChart<PieItem>.GenericChartType.Pie"
+                                  Height="340"
+                                  Width="700"
+                                  ShowLegend="true"
+                                  ShowDataLabels="true"
+                                  ValueFormat="N0"
+                                  ColorPalette="@_piePalette" />
 
-            @* Add other summary cards here later *@
-        </div>
-        <hr />
-        <div class="d-flex flex-wrap gap-3">
-             <KiralikCard Tasinmazlar="tasinmazlar"
-                Iller="@iller"
-                Bolgeler="@bolgeler" />
-            <GenericBarChart TItem="YearAmount"
-                             Items="kiraChartItems"
-                             LabelSelector="@(y => y.Label)"
-                             ValueSelector="@(y => y.Amount)"
-                             Title="Son 10 yıllık Kira Gelirleri"
-                             Height="300"
-                             Width="800"
-                             ShowLegend="false" />
+                    <TasinmazBagisciCard Bagiscilar="@bagiscilar"
+                                         Iller="@iller"
+                                         Bolgeler="@bolgeler"
+                                         Bagislar="@bagislar" />
+                </div>
+            </section>
 
+            <hr />
 
-        </div>
-    }
+            <section id="bolum-kira-ozet">
+                <div class="d-flex flex-wrap gap-3">
+                    <KiralikCard Tasinmazlar="tasinmazlar"
+                                Iller="@iller"
+                                Bolgeler="@bolgeler" />
+
+                    <GenericChart TItem="YearAmount"
+                                  Items="kiraChartItems"
+                                  LabelSelector="@(y => y.Label)"
+                                  ValueSelector="@(r => r.Amount)"
+                                  Title="Son 10 yıllık Kira Gelirleri"
+                                  SeriesName="Gelir"
+                                  Type="GenericChart<YearAmount>.GenericChartType.Bar"
+                                  ValueFormat="N0"
+                                  ShowDataLabels="false"
+                                  ShowLegend="false" />
+
+                    <KiraYenilemeCard Sozlesmeler="kiraSozlesmeler" />
+                </div>
+            </section>
+
+            <hr />
+
+            <section id="bolum-gorsel">
+                <div class="d-flex justify-content-center">
+                    <img src="images/coding.gif"
+                         alt="coding"
+                         class="rounded shadow-sm"
+                         style="max-width: 15%; height: auto;" />
+                </div>
+            </section>
+
+            <hr />
+
+            <section id="bolum-kira-aylik">
+                <div class="d-flex flex-wrap gap-3">
+                    <GenericChart TItem="MonthAmount"
+                                  Series="kiraAylikSon3YilSeries"
+                                  LabelSelector="@(x => x.Label)"
+                                  ValueSelector="@(x => x.Amount)"
+                                  Title="Son 5 Yılın (Aylık) Kira Gelirleri"
+                                  Type="GenericChart<MonthAmount>.GenericChartType.Bar"
+                                  ValueFormat="N0"
+                                  ShowDataLabels="false"
+                                  ShowLegend="true"
+                                  Width="1000"
+                                  Height="500" />
+                </div>
+            </section>
+        }
+
+    </div>
+
+    <aside class="manager-summary-spy" aria-label="Bölümler">
+        <div class="manager-summary-spy-title">Bölümler</div>
+        <nav class="manager-summary-spy-nav">
+            <a href="" @onclick='() => ScrollTo("bolum-tasinmaz")' @onclick:preventDefault="true">Taşınmaz / Cinsler / Bağışçı</a>
+            <a href="" @onclick='() => ScrollTo("bolum-kira-ozet")' @onclick:preventDefault="true">Kira Özet</a>
+            <a href="" @onclick='() => ScrollTo("bolum-gorsel")' @onclick:preventDefault="true">Görsel</a>
+            <a href="" @onclick='() => ScrollTo("bolum-kira-aylik")' @onclick:preventDefault="true">Aylık Kira (5 Yıl)</a>
+        </nav>
+    </aside>
 </div>
 
 @code {
     private List<Tasinmaz>? tasinmazlar;
+    private List<KiraSozlesme>? kiraSozlesmeler;
     private List<TasinmazBagisci>? bagiscilar;
     private List<Il>? iller;
     private List<Bolge>? bolgeler;
     private List<Bagis>? bagislar;
-    private List<OdemePlani>? odemePlanlari;
+    // private List<OdemePlani>? odemePlanlari;
+    private List<Odeme>? odemeler;
     private bool isLoading;
     private bool loadFailed;
     private CancellationTokenSource? _cts;
@@ -83,6 +140,8 @@
     // Chart items for GenericPieChart (Taşınmaz Cinsleri)
     private List<PieItem> kullanimChartItems = new();
 
+    private List<MonthAmount> kiraAylikChartItems = new();
+    private List<GenericChart<MonthAmount>.GenericSeries> kiraAylikSon3YilSeries = new();
     protected override async Task OnInitializedAsync()
     {
         _cts = new CancellationTokenSource();
@@ -97,14 +156,17 @@
         {
             // Load shared datasets
             tasinmazlar = await TasinmazService.GetAllAsync(cancellationToken);
+            kiraSozlesmeler = await KiraSozlesmeService.GetAllAsync(cancellationToken);
             bagiscilar = await TasinmazBagisciService.GetAllAsync(cancellationToken);
             iller = await IlService.GetAllAsync(cancellationToken);
             bolgeler = await BolgeService.GetAllAsync(cancellationToken);
             bagislar = await BagisService.GetAllAsync(cancellationToken);
 
             // Load payment plans and prepare charts
-            odemePlanlari = await OdemePlaniService.GetAllAsync(cancellationToken);
+            odemeler = await OdemeService.GetAllAsync(cancellationToken);
             PrepareKiraGeliriChart();
+            PrepareKiraAylikSon3YilChart();
+
             PrepareTasinmazCinsleriChart();
         }
         catch
@@ -112,9 +174,10 @@
             loadFailed = true;
             tasinmazlar = new List<Tasinmaz>();
             bagiscilar = new List<TasinmazBagisci>();
+            kiraSozlesmeler = new List<KiraSozlesme>();
             iller = new List<Il>();
             bolgeler = new List<Bolge>();
-            odemePlanlari = new List<OdemePlani>();
+            odemeler = new List<Odeme>();
             kiraChartItems = new List<YearAmount>();
             kullanimChartItems = new List<PieItem>();
         }
@@ -128,16 +191,16 @@
     private void PrepareKiraGeliriChart()
     {
         kiraChartItems.Clear();
-        if (odemePlanlari == null || !odemePlanlari.Any()) return;
+        if (odemeler == null || !odemeler.Any()) return;
 
         int currentYear = DateTime.Now.Year;
         var years = Enumerable.Range(currentYear - 9, 10).ToList(); // last 10 years (inclusive)
 
         // Group by Yil and sum OdenenTutar (safe with nulls)
-        var sumsByYear = odemePlanlari
-            .Where(op => op != null)
-            .GroupBy(op => op.Yil)
-            .ToDictionary(g => g.Key, g => g.Sum(x => x.OdenenTutar));
+        var sumsByYear = odemeler
+    .Where(op => op?.OdemeTarihi != null)
+    .GroupBy(op => op!.OdemeTarihi!.Value.Year)
+    .ToDictionary(g => g.Key, g => g.Sum(x => x.OdenenTutar));
 
         foreach (var y in years)
         {
@@ -174,7 +237,81 @@
             });
         }
     }
+    private void PrepareKiraAylikSon3YilChart()
+{
+    kiraAylikSon3YilSeries.Clear();
+    if (odemeler == null || odemeler.Count == 0) return;
 
+    var yearNow = DateTime.Now.Year;
+        var years = new[] { yearNow - 4, yearNow - 3, yearNow - 2, yearNow - 1, yearNow };
+
+    foreach (var year in years)
+    {
+        var sumsByMonth = odemeler
+            .Where(o => o?.OdemeTarihi != null && o.OdemeTarihi.Value.Year == year)
+            .GroupBy(o => o!.OdemeTarihi!.Value.Month)
+            .ToDictionary(g => g.Key, g => g.Sum(x => x.OdenenTutar) ?? 0m);
+
+        var items = new List<MonthAmount>(12);
+        for (int month = 1; month <= 12; month++)
+        {
+            var amount = sumsByMonth.TryGetValue(month, out var v) ? v : 0m;
+
+            items.Add(new MonthAmount
+            {
+                Month = month,
+                Label = new DateTime(2000, month, 1).ToString("MMM"),
+                Amount = amount
+            });
+        }
+
+        kiraAylikSon3YilSeries.Add(new GenericChart<MonthAmount>.GenericSeries(year.ToString(), items));
+    }
+}
+private void PrepareKiraAylikChart()
+{
+    kiraAylikChartItems.Clear();
+    if (odemeler == null || odemeler.Count == 0) return;
+
+    var now = DateTime.Now;
+    var start = new DateTime(now.Year, now.Month, 1).AddMonths(-11); // inclusive: last 12 months
+
+    var sums = odemeler
+        .Where(o => o?.OdemeTarihi != null && o.OdemeTarihi.Value >= start)
+        .GroupBy(o => new { o!.OdemeTarihi!.Value.Year, o.OdemeTarihi!.Value.Month })
+        .ToDictionary(
+            g => (g.Key.Year, g.Key.Month),
+            g => g.Sum(x => x.OdenenTutar) ?? 0m);
+
+    for (var d = start; d <= new DateTime(now.Year, now.Month, 1); d = d.AddMonths(1))
+    {
+        var amount = sums.TryGetValue((d.Year, d.Month), out var v) ? v : 0m;
+
+        kiraAylikChartItems.Add(new MonthAmount
+        {
+            Year = d.Year,
+            Month = d.Month,
+            Label = $"{d:MMM yyyy}", // e.g. "Jan 2026" (UI culture'a göre değişebilir)
+            Amount = amount
+        });
+    }
+
+    // Prepare series for the generic chart
+    kiraAylikSon3YilSeries.Clear();
+    var grouped = kiraAylikChartItems
+        .GroupBy(x => x.Year)
+        .OrderBy(g => g.Key)
+        .ToList();
+
+    foreach (var yearGroup in grouped)
+    {
+        var series = new GenericChart<MonthAmount>.GenericSeries(
+        yearGroup.Key.ToString(), // Name parameter
+        yearGroup.ToList()        // Items parameter
+    );
+        kiraAylikSon3YilSeries.Add(series);
+    }
+}
     public void Dispose()
     {
         _cts?.Cancel();
@@ -195,4 +332,39 @@
         public string Label { get; set; } = "";
         public decimal Value { get; set; }
     }
+    private static readonly string[] _piePalette =
+[
+    "#2563EB", // blue
+        "#7C3AED", // violet
+        "#06B6D4", // cyan
+        "#10B981", // emerald
+        "#F59E0B", // amber
+        "#EF4444", // red
+        "#F97316", // orange
+        "#84CC16", // lime
+        "#EC4899", // pink
+        "#64748B"  // slate
+];
+private class MonthYearAmount
+{
+    public int Year { get; set; }
+    public int Month { get; set; }
+    public string Label { get; set; } = "";
+    public decimal Amount { get; set; }
+}
+private class MonthAmount
+{
+    public int Year { get; set; } // <-- Add this property
+    public int Month { get; set; }
+    public string Label { get; set; } = "";
+    public decimal Amount { get; set; }
+}
+private void ScrollTo(string id)
+{
+    var baseUri = NavigationManager.BaseUri.TrimEnd('/');
+    var url = $"{baseUri}/tbys/tasinmaz-summary#{id}";
+
+    // forceLoad: false => postback/yeni sayfa yok
+    NavigationManager.NavigateTo(url, forceLoad: false, replace: true);
+}
 }

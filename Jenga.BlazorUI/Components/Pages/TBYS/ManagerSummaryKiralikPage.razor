@@ -1,0 +1,219 @@
+﻿@page "/tbys/kiralik-summary"
+@rendermode InteractiveServer
+@using Jenga.BlazorUI.Components.TBYS
+@using Jenga.BlazorUI.Components.Common
+@using Jenga.DataAccess.Services.Common
+@using Jenga.Models.Common
+@using Jenga.Models.TBYS
+@using Jenga.DataAccess.Services.TBYS
+@inject ITasinmazService TasinmazService
+@inject IKiraSozlesmeService KiraSozlesmeService
+@inject IIlService IlService
+@inject IBolgeService BolgeService
+@inject IOdemeService OdemeService
+@implements IDisposable
+
+<div class="admin-overview p-3 manager-summary-layout">
+    <div class="manager-summary-content">
+        @if (isLoading)
+        {
+            <div class="text-muted">Yükleniyor...</div>
+        }
+        else if (loadFailed)
+        {
+            <div class="text-danger">Veri yüklenirken hata oluştu.</div>
+        }
+        else
+        {
+
+            <div class="d-flex flex-wrap gap-3">
+                <div>
+                    <KiralikCard Tasinmazlar="tasinmazlar"
+                                 Iller="@iller"
+                                 Bolgeler="@bolgeler" 
+                                 Height="360px"
+                                 />
+                </div>
+                <div>
+                    <GenericChart TItem="YearAmount"
+                                  Items="kiraChartItems"
+                                  LabelSelector="@(y => y.Label)"
+                                  ValueSelector="@(r => r.Amount)"
+                                  Title="Son 10 yıllık Kira Gelirleri"
+                                  SeriesName="Gelir"
+                                  Type="GenericChart<YearAmount>.GenericChartType.Bar"
+                                  ShowDataLabels="false"
+                                  ShowLegend="false"
+                                  Height="360px"
+                                  Width="630px"/>
+                </div>
+                <div>
+                    <KiraYenilemeCard 
+                            Sozlesmeler="kiraSozlesmeler" 
+                            Height="360px"/>
+                </div>
+            </div>
+
+            <hr />
+
+            
+                <div class="d-flex flex-wrap gap-3">
+                    <GenericChart TItem="MonthAmount"
+                                  Series="kiraAylikSon3YilSeries"
+                                  LabelSelector="@(x => x.Label)"
+                                  ValueSelector="@(x => x.Amount)"
+                                  Title="Son 5 Yılın (Aylık) Kira Gelirleri"
+                                  Type="GenericChart<MonthAmount>.GenericChartType.Bar"
+                                  ShowDataLabels="true"
+                                  ShowLegend="false"
+                                  Height="460px"
+                                  Width="1120px"
+                                  GridPaddingBottom="40" />
+                </div>
+
+            <hr />
+
+            <div class="d-flex justify-content-center">
+                <img src="images/coding.gif"
+                     alt="coding"
+                     class="rounded shadow-sm"
+                     style="max-width: 15%; height: auto;" />
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private List<Tasinmaz>? tasinmazlar;
+    private List<KiraSozlesme>? kiraSozlesmeler;
+    private List<Il>? iller;
+    private List<Bolge>? bolgeler;
+    private List<Odeme>? odemeler;
+    private bool isLoading;
+    private bool loadFailed;
+    private CancellationTokenSource? _cts;
+
+    // Chart items for GenericBarChart
+    private readonly List<YearAmount> kiraChartItems = new();
+
+    private readonly List<GenericChart<MonthAmount>.GenericSeries> kiraAylikSon3YilSeries = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _cts = new CancellationTokenSource();
+        await LoadDataAsync(_cts.Token);
+    }
+
+    private async Task LoadDataAsync(CancellationToken cancellationToken)
+    {
+        isLoading = true;
+        loadFailed = false;
+
+        try
+        {
+            tasinmazlar = await TasinmazService.GetAllAsync(cancellationToken);
+            kiraSozlesmeler = await KiraSozlesmeService.GetAllAsync(cancellationToken);
+            iller = await IlService.GetAllAsync(cancellationToken);
+            bolgeler = await BolgeService.GetAllAsync(cancellationToken);
+
+            odemeler = await OdemeService.GetAllAsync(cancellationToken);
+
+            PrepareKiraGeliriChart();
+            PrepareKiraAylikSon3YilChart();
+        }
+        catch
+        {
+            loadFailed = true;
+            tasinmazlar = new List<Tasinmaz>();
+            kiraSozlesmeler = new List<KiraSozlesme>();
+            iller = new List<Il>();
+            bolgeler = new List<Bolge>();
+            odemeler = new List<Odeme>();
+            kiraChartItems.Clear();
+            kiraAylikSon3YilSeries.Clear();
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void PrepareKiraGeliriChart()
+    {
+        kiraChartItems.Clear();
+        if (odemeler == null || !odemeler.Any()) return;
+
+        int currentYear = DateTime.Now.Year;
+        var years = Enumerable.Range(currentYear - 9, 10).ToList();
+
+        var sumsByYear = odemeler
+            .Where(op => op?.OdemeTarihi != null)
+            .GroupBy(op => op!.OdemeTarihi!.Value.Year)
+            .ToDictionary(g => g.Key, g => g.Sum(x => x.OdenenTutar));
+
+        foreach (var y in years)
+        {
+            decimal amount = sumsByYear.TryGetValue(y, out var v) ? (v ?? 0m) : 0m;
+            kiraChartItems.Add(new YearAmount
+            {
+                Year = y,
+                Label = y.ToString(),
+                Amount = amount
+            });
+        }
+    }
+
+    private void PrepareKiraAylikSon3YilChart()
+    {
+        kiraAylikSon3YilSeries.Clear();
+        if (odemeler == null || odemeler.Count == 0) return;
+
+        var yearNow = DateTime.Now.Year;
+        var years = new[] { yearNow - 4, yearNow - 3, yearNow - 2, yearNow - 1, yearNow };
+
+        foreach (var year in years)
+        {
+            var sumsByMonth = odemeler
+                .Where(o => o?.OdemeTarihi != null && o.OdemeTarihi.Value.Year == year)
+                .GroupBy(o => o!.OdemeTarihi!.Value.Month)
+                .ToDictionary(g => g.Key, g => g.Sum(x => x.OdenenTutar) ?? 0m);
+
+            var items = new List<MonthAmount>(12);
+            for (int month = 1; month <= 12; month++)
+            {
+                var amount = sumsByMonth.TryGetValue(month, out var v) ? v : 0m;
+
+                items.Add(new MonthAmount
+                {
+                    Month = month,
+                    Label = new DateTime(2000, month, 1).ToString("MMM"),
+                    Amount = amount
+                });
+            }
+
+            kiraAylikSon3YilSeries.Add(new GenericChart<MonthAmount>.GenericSeries(year.ToString(), items));
+        }
+    }
+
+    public void Dispose()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+    }
+
+    private class YearAmount
+    {
+        public int Year { get; set; }
+        public string Label { get; set; } = "";
+        public decimal Amount { get; set; }
+    }
+
+    private class MonthAmount
+    {
+        public int Year { get; set; }
+        public int Month { get; set; }
+        public string Label { get; set; } = "";
+        public decimal Amount { get; set; }
+    }
+}

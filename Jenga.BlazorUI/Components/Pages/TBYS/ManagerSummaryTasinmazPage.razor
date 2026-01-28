@@ -1,0 +1,240 @@
+﻿@page "/tbys/tasinmaz-summary"
+@rendermode InteractiveServer
+@using Jenga.BlazorUI.Components.TBYS
+@using Jenga.BlazorUI.Components.Common
+@using Jenga.Models.Common
+@using Jenga.Models.TBYS
+@using Jenga.DataAccess.Services.Common
+@using Jenga.DataAccess.Services.TBYS
+@inject ITasinmazService TasinmazService
+@inject ITasinmazBagisciService TasinmazBagisciService
+@inject IBagisService BagisService
+@inject IIlService IlService
+@inject IBolgeService BolgeService
+@inject NavigationManager NavigationManager
+@implements IDisposable
+
+<div class="admin-overview p-3 manager-summary-layout">
+    <div>
+        @if (isLoading)
+        {
+            <div class="text-muted">Yükleniyor...</div>
+        }
+        else if (loadFailed)
+        {
+            <div class="text-danger">Veri yüklenirken hata oluştu.</div>
+        }
+        else
+        {
+            <div class="d-flex flex-wrap gap-5">
+                <div>
+                    <TasinmazCard Tasinmazlar="@tasinmazlar"
+                                 Iller="@iller"
+                                 Bolgeler="@bolgeler"
+                                 Height="360px" />
+                </div>
+
+                <div >
+                    <GenericChart TItem="PieItem"
+                                  Items="kullanimChartItems"
+                                  LabelSelector="@(p => p.Label)"
+                                  ValueSelector="@(p => p.Value)"
+                                  Title="Taşınmaz Cinsleri"
+                                  SeriesName="Cins"
+                                  Type="GenericChart<PieItem>.GenericChartType.Pie"
+                                  Height="360px"
+                                  Width="430px"
+                                  ShowLegend="false"
+                                  ShowDataLabels="true"
+                                  ColorPalette="@_piePalette"
+                                  GridPaddingBottom="40" />
+                </div>
+
+                <div >
+                    <TasinmazBagisciCard Bagiscilar="@bagiscilar"
+                                         Iller="@iller"
+                                         Bolgeler="@bolgeler"
+                                         Bagislar="@bagislar"
+                                         Height="360px" />
+                </div>
+
+
+            </div>
+            <hr />
+            <div class="d-flex flex-wrap gap-3">
+                <div>
+                    <GenericChart TItem="YearCountItem"
+                                  Items="bagisYilChartItems"
+                                  LabelSelector="@(x => x.Label)"
+                                  ValueSelector="@(x => x.Value)"
+                                  Title="Taşınmaz Bağış Adedi (Son 10 Yıl)"
+                                  SeriesName="Bağış Adedi"
+                                  Type="GenericChart<YearCountItem>.GenericChartType.Bar"
+                                  Height="460px"
+                                  Width="975px"
+                                  ShowLegend="false"
+                                  ShowDataLabels="true"
+                                  ColorPalette="@_barPalette"
+                                  XAxisLabelRotateDegrees="-45"
+                                  XAxisLabelsAlwaysRotate="true"
+                                  XAxisHideOverlappingLabels="true"
+                                  GridPaddingBottom="40" />
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private List<Tasinmaz>? tasinmazlar;
+    private List<TasinmazBagisci>? bagiscilar;
+    private List<Il>? iller;
+    private List<Bolge>? bolgeler;
+    private List<Bagis>? bagislar;
+    private bool isLoading;
+    private bool loadFailed;
+    private CancellationTokenSource? _cts;
+
+    private readonly List<PieItem> kullanimChartItems = new();
+    private readonly List<YearCountItem> bagisYilChartItems = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _cts = new CancellationTokenSource();
+        await LoadDataAsync(_cts.Token);
+    }
+
+    private async Task LoadDataAsync(CancellationToken cancellationToken)
+    {
+        isLoading = true;
+        loadFailed = false;
+        try
+        {
+            tasinmazlar = await TasinmazService.GetAllAsync(cancellationToken);
+            bagiscilar = await TasinmazBagisciService.GetAllAsync(cancellationToken);
+            iller = await IlService.GetAllAsync(cancellationToken);
+            bolgeler = await BolgeService.GetAllAsync(cancellationToken);
+            bagislar = await BagisService.GetAllAsync(cancellationToken);
+
+            PrepareTasinmazCinsleriChart();
+            PrepareBagisYilChart();
+        }
+        catch
+        {
+            loadFailed = true;
+            tasinmazlar = new List<Tasinmaz>();
+            bagiscilar = new List<TasinmazBagisci>();
+            iller = new List<Il>();
+            bolgeler = new List<Bolge>();
+            bagislar = new List<Bagis>();
+            kullanimChartItems.Clear();
+            bagisYilChartItems.Clear();
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void PrepareTasinmazCinsleriChart()
+    {
+        kullanimChartItems.Clear();
+        if (tasinmazlar == null || !tasinmazlar.Any())
+            return;
+
+        var filtered = tasinmazlar.Where(x => x != null && x.EnvanterdeMi == 1);
+
+        var groups = filtered
+            .GroupBy(x => string.IsNullOrWhiteSpace(x.KullanimSekli) ? "Diğer" : x.KullanimSekli!.Trim())
+            .Select(g => (Name: g.Key, Count: g.Count()))
+            .OrderByDescending(g => g.Count)
+            .ToList();
+
+        foreach (var g in groups)
+        {
+            kullanimChartItems.Add(new PieItem
+            {
+                Label = g.Name,
+                Value = Convert.ToDecimal(g.Count)
+            });
+        }
+    }
+
+    private void PrepareBagisYilChart()
+    {
+        bagisYilChartItems.Clear();
+
+        if (tasinmazlar == null || tasinmazlar.Count == 0)
+        {
+            return;
+        }
+
+        var currentYear = DateTime.Now.Year;
+        var startYear = currentYear - 9;
+
+        var yearCounts = tasinmazlar
+            .Where(t => t is not null && t.EnvanterdeMi == 1)
+            .Select(t =>
+            {
+                if (string.IsNullOrWhiteSpace(t.BagisYili))
+                {
+                    return (int?)null;
+                }
+
+                return int.TryParse(t.BagisYili.Trim(), out var y) ? y : (int?)null;
+            })
+            .Where(y => y.HasValue && y.Value >= startYear && y.Value <= currentYear)
+            .Select(y => y!.Value)
+            .GroupBy(y => y)
+            .ToDictionary(g => g.Key, g => g.Count());
+
+        for (var year = startYear; year <= currentYear; year++)
+        {
+            yearCounts.TryGetValue(year, out var count);
+
+            bagisYilChartItems.Add(new YearCountItem
+            {
+                Label = year.ToString(),
+                Value = count
+            });
+        }
+    }
+
+    public void Dispose()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+    }
+
+    private sealed class PieItem
+    {
+        public string Label { get; set; } = "";
+        public decimal Value { get; set; }
+    }
+
+    private sealed class YearCountItem
+    {
+        public string Label { get; set; } = "";
+        public decimal Value { get; set; }
+    }
+
+    private static readonly string[] _piePalette =
+    [
+        "#2563EB", // blue
+        "#7C3AED", // violet
+        "#06B6D4", // cyan
+        "#10B981", // emerald
+        "#F59E0B", // amber
+        "#EF4444", // red
+        "#F97316", // orange
+        "#84CC16", // lime
+        "#EC4899", // pink
+        "#64748B"  // slate
+    ];
+
+    private static readonly string[] _barPalette =
+    [
+        "#0EA5E9" // sky
+    ];
+}

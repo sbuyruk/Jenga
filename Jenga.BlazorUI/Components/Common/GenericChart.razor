@@ -1,0 +1,369 @@
+﻿@typeparam TItem
+@using System.Globalization
+@using ApexCharts
+
+<div class="generic-chart" style="@ChartStyle">
+    @if (((Items == null || !Items.Any()) && (Series == null || !Series.Any())) || LabelSelector == null || ValueSelector == null)
+    {
+        <div class="text-muted">No data to display</div>
+    }
+    else
+    {
+        <div class="generic-chart-inner">
+            @if (!string.IsNullOrWhiteSpace(Title))
+            {
+                <div class="generic-chart-title">@Title</div>
+            }
+
+            <div class="generic-chart-stage">
+                <ApexChart TItem="ChartPoint"
+                           @key="_renderKey"
+                           @ref="_chart"
+                           Options="@_options">
+
+                    @if (_seriesPoints.Count > 0 && (Type == GenericChartType.Bar || Type == GenericChartType.Line || Type == GenericChartType.Area))
+                    {
+                        foreach (var s in _seriesPoints)
+                        {
+                            <ApexPointSeries TItem="ChartPoint"
+                                             Items="@s.Points"
+                                             Name="@s.Name"
+                                             XValue="p => p.Label"
+                                             YValue="p => p.Value"
+                                             SeriesType="@GetSeriesType(Type)" />
+                        }
+                    }
+                    else
+                    {
+                        @if (Type == GenericChartType.Bar)
+                        {
+                            <ApexPointSeries TItem="ChartPoint"
+                                             Items="@_points"
+                                             Name="@SeriesName"
+                                             XValue="p => p.Label"
+                                             YValue="p => p.Value"
+                                             SeriesType="SeriesType.Bar" />
+                        }
+                        else if (Type == GenericChartType.Line)
+                        {
+                            <ApexPointSeries TItem="ChartPoint"
+                                             Items="@_points"
+                                             Name="@SeriesName"
+                                             XValue="p => p.Label"
+                                             YValue="p => p.Value"
+                                             SeriesType="SeriesType.Line" />
+                        }
+                        else if (Type == GenericChartType.Area)
+                        {
+                            <ApexPointSeries TItem="ChartPoint"
+                                             Items="@_points"
+                                             Name="@SeriesName"
+                                             XValue="p => p.Label"
+                                             YValue="p => p.Value"
+                                             SeriesType="SeriesType.Area" />
+                        }
+                        else if (Type == GenericChartType.Pie || Type == GenericChartType.Donut)
+                        {
+                            <ApexPointSeries TItem="ChartPoint"
+                                             Items="@_points"
+                                             Name="@SeriesName"
+                                             XValue="p => p.Label"
+                                             YValue="p => p.Value"
+                                             SeriesType="@(Type == GenericChartType.Donut ? SeriesType.Donut : SeriesType.Pie)" />
+                        }
+                    }
+                </ApexChart>
+            </div>
+        </div>
+    }
+</div>
+
+@code
+{
+    public enum GenericChartType
+    {
+        Bar,
+        Line,
+        Area,
+        Pie,
+        Donut
+    }
+
+    private sealed record ChartPoint(string Label, decimal Value, int Index);
+
+    public sealed record GenericSeries(string Name, IEnumerable<TItem> Items);
+
+    private sealed record SeriesPoints(string Name, List<ChartPoint> Points);
+
+    private ApexChart<ChartPoint>? _chart;
+    private ApexChartOptions<ChartPoint> _options = new();
+    private readonly List<ChartPoint> _points = new();
+    private readonly List<SeriesPoints> _seriesPoints = new();
+
+    private long _renderKey;
+
+    [Parameter] public IEnumerable<TItem>? Items { get; set; }
+    [Parameter] public IReadOnlyList<GenericSeries>? Series { get; set; }
+    [Parameter] public Func<TItem, string>? LabelSelector { get; set; }
+    [Parameter] public Func<TItem, decimal?>? ValueSelector { get; set; }
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string SeriesName { get; set; } = "Series";
+    [Parameter] public GenericChartType Type { get; set; } = GenericChartType.Bar;
+    [Parameter] public bool ShowLegend { get; set; } = true;
+    [Parameter] public bool ShowDataLabels { get; set; } = false;
+    [Parameter] public string[]? ColorPalette { get; set; }
+    [Parameter] public bool AutoUpdate { get; set; } = true;
+
+    // X-axis label layout
+    [Parameter] public int XAxisLabelRotateDegrees { get; set; } = -45;
+    [Parameter] public bool XAxisLabelsAlwaysRotate { get; set; } = true;
+    [Parameter] public bool XAxisHideOverlappingLabels { get; set; } = true;
+
+    // Extra padding/margin inside chart canvas (px)
+    [Parameter] public int GridPaddingBottom { get; set; } = 18;
+
+    // CSS sizes (container)
+    [Parameter] public string? Height { get; set; } = "360px";
+    [Parameter] public string? Width { get; set; }
+
+    private string? ChartStyle
+    {
+        get
+        {
+            var height = string.IsNullOrWhiteSpace(Height) ? null : $"height: {Height};";
+            var width = string.IsNullOrWhiteSpace(Width) ? null : $"width: {Width};";
+
+            if (height is null && width is null)
+            {
+                return null;
+            }
+
+            return $"{height} {width}".Trim();
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        BuildSeriesPoints();
+        BuildPoints();
+        BuildOptions();
+        _renderKey++;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender && AutoUpdate && _chart is not null)
+        {
+            try { await _chart.UpdateSeriesAsync(true); } catch { }
+        }
+    }
+
+    private void BuildPoints()
+    {
+        _points.Clear();
+        if (Items == null || LabelSelector == null || ValueSelector == null) return;
+
+        int i = 0;
+        foreach (var item in Items)
+        {
+            var label = LabelSelector(item);
+            var value = ValueSelector(item) ?? 0m;
+            _points.Add(new ChartPoint(string.IsNullOrWhiteSpace(label) ? "Diğer" : label, value, i));
+            i++;
+        }
+    }
+
+    private List<string> _xCategories = new();
+
+    private static readonly string[] _monthCategoriesTr =
+    [
+        "Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"
+    ];
+
+    private void BuildSeriesPoints()
+    {
+        _seriesPoints.Clear();
+        _xCategories.Clear();
+
+        if (Series == null || Series.Count == 0) return;
+        if (LabelSelector == null || ValueSelector == null) return;
+
+        // If this is your monthly chart, lock to 12-month categories.
+        // Otherwise keep previous dynamic behavior.
+        var lockToMonths = true;
+
+        _xCategories = lockToMonths
+            ? _monthCategoriesTr.ToList()
+            : new List<string>();
+
+        if (!lockToMonths)
+        {
+            var labelOrder = new Dictionary<string, int>(StringComparer.Ordinal);
+            int order = 0;
+
+            foreach (var series in Series)
+            {
+                foreach (var item in series.Items ?? Array.Empty<TItem>())
+                {
+                    var label = LabelSelector(item);
+                    label = string.IsNullOrWhiteSpace(label) ? "Diğer" : label;
+
+                    if (!labelOrder.ContainsKey(label))
+                    {
+                        labelOrder[label] = order++;
+                    }
+                }
+            }
+
+            _xCategories = labelOrder
+                .OrderBy(kvp => kvp.Value)
+                .Select(kvp => kvp.Key)
+                .ToList();
+        }
+
+        foreach (var series in Series)
+        {
+            var map = new Dictionary<string, decimal>(StringComparer.Ordinal);
+
+            foreach (var item in series.Items ?? Array.Empty<TItem>())
+            {
+                var label = LabelSelector(item);
+                label = string.IsNullOrWhiteSpace(label) ? "Diğer" : label;
+
+                var value = ValueSelector(item) ?? 0m;
+                map[label] = map.TryGetValue(label, out var cur) ? cur + value : value;
+            }
+
+            var points = new List<ChartPoint>(_xCategories.Count);
+            for (int i = 0; i < _xCategories.Count; i++)
+            {
+                var label = _xCategories[i];
+                var value = map.TryGetValue(label, out var v) ? v : 0m;
+                points.Add(new ChartPoint(label, value, i));
+            }
+
+            _seriesPoints.Add(new SeriesPoints(series.Name, points));
+        }
+    }
+
+    private void BuildOptions()
+    {
+        var palette = ColorPalette ?? new[]
+        {
+            "#4e79a7", "#f28e2b", "#e15759", "#76b7b2", "#59a14f", "#edc949", "#af7aa1", "#ff9da7", "#9c755f", "#bab0ac"
+        };
+
+        var jsNumberFormatter =
+            "function (val) { try { return (val ?? 0).toLocaleString(); } catch(e) { return val; } }";
+
+        var jsYAxisFormatter =
+            "function (val) { try { return (val ?? 0).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); } catch(e) { return val; } }";
+
+        var hasMultiSeriesXY =
+            _seriesPoints.Count > 0 && (Type == GenericChartType.Bar || Type == GenericChartType.Line || Type == GenericChartType.Area);
+
+        _options = new ApexChartOptions<ChartPoint>
+        {
+            Chart = new Chart
+            {
+                Toolbar = new Toolbar { Show = false },
+                Animations = new Animations { Enabled = true },
+                Height = TryParsePxToInt(Height),
+                Width = TryParsePxToInt(Width)
+            },
+            Grid = new Grid
+            {
+                Padding = new Padding
+                {
+                    Bottom = GridPaddingBottom
+                }
+            },
+            Colors = palette.ToList(),
+            DataLabels = new DataLabels
+            {
+                Enabled = ShowDataLabels,
+                Formatter = jsNumberFormatter
+            },
+            Tooltip = new Tooltip
+            {
+                Y = new TooltipY
+                {
+                    Formatter = jsNumberFormatter
+                }
+            },
+            Xaxis = new XAxis
+            {
+                Categories = hasMultiSeriesXY ? _xCategories : null,
+                TickPlacement = TickPlacement.Between,
+
+                // Force tick count to match categories to avoid auto ticks like -1, 0, 1...
+                TickAmount = hasMultiSeriesXY ? _xCategories.Count : null,
+
+                Labels = new XAxisLabels
+                {
+                    Rotate = (double)XAxisLabelRotateDegrees,
+                    RotateAlways = XAxisLabelsAlwaysRotate,
+                    HideOverlappingLabels = XAxisHideOverlappingLabels,
+                    Trim = true,
+                    OffsetX = 0
+                }
+            },
+            Yaxis = new List<YAxis>
+            {
+                new YAxis
+                {
+                    Labels = new YAxisLabels
+                    {
+                        Formatter = jsYAxisFormatter
+                    }
+                }
+            },
+            Legend = new Legend
+            {
+                Show = ShowLegend
+            },
+            PlotOptions = new PlotOptions
+            {
+                Bar = new PlotOptionsBar
+                {
+                    BorderRadius = 4,
+                    Horizontal = false,
+                    ColumnWidth = "75%"
+                }
+            },
+            Stroke = new Stroke
+            {
+                Width = Type == GenericChartType.Line ? 3 : 2
+            }
+        };
+    }
+
+    private static SeriesType GetSeriesType(GenericChartType type) =>
+        type switch
+        {
+            GenericChartType.Line => SeriesType.Line,
+            GenericChartType.Area => SeriesType.Area,
+            _ => SeriesType.Bar
+        };
+
+    private static int? TryParsePxToInt(string? cssSize)
+    {
+        if (string.IsNullOrWhiteSpace(cssSize))
+        {
+            return null;
+        }
+
+        var s = cssSize.Trim();
+
+        if (!s.EndsWith("px", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        s = s[..^2].Trim();
+
+        return int.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out var px) && px > 0
+            ? px
+            : null;
+    }
+}

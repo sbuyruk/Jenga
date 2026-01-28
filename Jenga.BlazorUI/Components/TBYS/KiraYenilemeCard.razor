@@ -1,0 +1,179 @@
+﻿@using Jenga.Models.TBYS
+@using Microsoft.AspNetCore.Components
+@using System.Globalization
+
+<div class="card summary-card kira-yenileme-card" style="@CardStyle">
+    <div class="card-header">
+        <strong>@(string.IsNullOrWhiteSpace(Title) ? "Kira Yenileme" : Title)</strong>
+    </div>
+
+    <div class="card-body">
+        @if (TotalCount > 0)
+        {
+            <div class="d-flex align-items-center mb-2">
+                <div class="flex-grow-1">Geçen ay yenilenen sözleşme</div>
+                <div class="fw-bold">@LastMonthRenewedCount Adet</div>
+            </div>
+            <div class="d-flex align-items-center mb-2">
+                <div class="flex-grow-1">Geçen ay kira artış oranı</div>
+                <div class="fw-bold">@FormatPercent(LastMonthIncreaseRate)</div>
+            </div>
+
+            <hr />
+
+            <div class="d-flex align-items-center mb-2">
+                <div class="flex-grow-1">Bu ay yenilenen sözleşme</div>
+                <div class="fw-bold">@ThisMonthRenewedCount Adet</div>
+            </div>
+            <div class="d-flex align-items-center mb-2">
+                <div class="flex-grow-1">Bu ay yenilenecek sözleşme</div>
+                <div class="fw-bold">@ThisMonthDueCount Adet</div>
+            </div>
+            <div class="d-flex align-items-center mb-2">
+                <div class="flex-grow-1">Bu ay kira artış oranı</div>
+                <div class="fw-bold">@FormatPercent(ThisMonthIncreaseRate)</div>
+            </div>
+
+            <hr />
+
+            <div class="d-flex align-items-center">
+                <div class="flex-grow-1">Gelecek ay yenilenecek sözleşme</div>
+                <div class="fw-bold">@NextMonthDueCount Adet</div>
+            </div>
+        }
+        else
+        {
+            <div class="text-center text-muted">Gösterilecek kayıt yok</div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public IEnumerable<KiraSozlesme>? Sozlesmeler { get; set; }
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public DateTime? TodayOverride { get; set; }
+
+    [Parameter] public string? Height { get; set; }
+
+    private string? CardStyle => string.IsNullOrWhiteSpace(Height) ? null : $"height: {Height};";
+
+    private int TotalCount { get; set; }
+
+    private int LastMonthRenewedCount { get; set; }
+    private decimal? LastMonthIncreaseRate { get; set; }
+
+    private int ThisMonthRenewedCount { get; set; }
+    private int ThisMonthDueCount { get; set; }
+    private decimal? ThisMonthIncreaseRate { get; set; }
+
+    private int NextMonthDueCount { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        BuildStats();
+    }
+
+    private void BuildStats()
+    {
+        var list = (Sozlesmeler ?? Enumerable.Empty<KiraSozlesme>())
+            .Where(x => x != null)
+            .ToList();
+
+        TotalCount = list.Count;
+
+        var today = (TodayOverride ?? DateTime.Today).Date;
+
+        var thisMonthStart = new DateTime(today.Year, today.Month, 1);
+        var nextMonthStart = thisMonthStart.AddMonths(1);
+        var lastMonthStart = thisMonthStart.AddMonths(-1);
+        var lastMonthEndExclusive = thisMonthStart;
+        var nextMonthEndExclusive = nextMonthStart.AddMonths(1);
+
+        var lastMonthRenewed = list.Where(s => s.SozBasTar.HasValue
+                                              && s.SozBasTar.Value.Date >= lastMonthStart
+                                              && s.SozBasTar.Value.Date < lastMonthEndExclusive)
+                                   .ToList();
+
+        var thisMonthRenewed = list.Where(s => s.SozBasTar.HasValue
+                                              && s.SozBasTar.Value.Date >= thisMonthStart
+                                              && s.SozBasTar.Value.Date < nextMonthStart)
+                                   .ToList();
+
+        LastMonthRenewedCount = lastMonthRenewed.Count;
+        ThisMonthRenewedCount = thisMonthRenewed.Count;
+
+        ThisMonthDueCount = list.Count(s => s.SozBitTar.HasValue
+                                            && s.SozBitTar.Value.Date >= thisMonthStart
+                                            && s.SozBitTar.Value.Date < nextMonthStart);
+
+        NextMonthDueCount = list.Count(s => s.SozBitTar.HasValue
+                                            && s.SozBitTar.Value.Date >= nextMonthStart
+                                            && s.SozBitTar.Value.Date < nextMonthEndExclusive);
+
+        LastMonthIncreaseRate = CalculateAverageIncreaseRateWithin(list, lastMonthStart, lastMonthEndExclusive);
+        ThisMonthIncreaseRate = CalculateAverageIncreaseRateWithin(list, thisMonthStart, nextMonthStart);
+    }
+
+    private static decimal? CalculateAverageIncreaseRateWithin(
+        List<KiraSozlesme> all,
+        DateTime startInclusive,
+        DateTime endExclusive)
+    {
+        var renewedInWindow = all
+            .Where(s => s.KiraciId.HasValue
+                        && s.SozBasTar.HasValue
+                        && s.SozBasTar.Value.Date >= startInclusive
+                        && s.SozBasTar.Value.Date < endExclusive
+                        && s.KiraBedeli.HasValue)
+            .ToList();
+
+        if (renewedInWindow.Count == 0)
+        {
+            return null;
+        }
+
+        decimal sumRates = 0m;
+        int rateCount = 0;
+
+        foreach (var renewed in renewedInWindow)
+        {
+            var prev = all
+                .Where(p => p.KiraciId == renewed.KiraciId
+                            && p.SozBasTar.HasValue
+                            && p.SozBasTar.Value.Date < renewed.SozBasTar!.Value.Date
+                            && p.KiraBedeli.HasValue
+                            && p.KiraBedeli.Value > 0m)
+                .OrderByDescending(p => p.SozBasTar!.Value)
+                .FirstOrDefault();
+
+            if (prev == null)
+            {
+                continue;
+            }
+
+            var prevRent = prev.KiraBedeli!.Value;
+            var newRent = renewed.KiraBedeli!.Value;
+
+            var rate = (newRent - prevRent) / prevRent;
+            sumRates += rate;
+            rateCount++;
+        }
+
+        if (rateCount == 0)
+        {
+            return null;
+        }
+
+        return sumRates / rateCount;
+    }
+
+    private static string FormatPercent(decimal? rate)
+    {
+        if (!rate.HasValue)
+        {
+            return "-";
+        }
+
+        return rate.Value.ToString("P1", CultureInfo.GetCultureInfo("tr-TR"));
+    }
+}
