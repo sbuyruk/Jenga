@@ -15,6 +15,9 @@ using Microsoft.EntityFrameworkCore;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 using System.Globalization;
 using Microsoft.AspNetCore.Localization;
+using Jenga.DataAccess.Services.NBYS;
+using Jenga.BlazorUI.Services.Presence;
+using Microsoft.AspNetCore.Components.Server.Circuits;
 
 var builder = WebApplication.CreateBuilder(args);
 var logger = builder.Services.BuildServiceProvider()
@@ -82,6 +85,10 @@ builder.Services.AddScoped<CurrentUserService>();
 builder.Services.AddScoped<ImpersonationService>();
 //IKYS Service 
 builder.Services.AddScoped<IPersonelService, PersonelService>();
+//NBYS Services
+builder.Services.AddScoped<INakitBagisciService, NakitBagisciService>();
+builder.Services.AddScoped<INakitBagisHareketService, NakitBagisHareketService>();
+builder.Services.AddScoped<IBankaTanimService, BankaTanimService>();
 
 //Currentusername alırken httpContextAcces.. kullanmak için
 builder.Services.AddHttpContextAccessor();
@@ -100,7 +107,12 @@ CultureInfo.DefaultThreadCurrentCulture = defaultCulture;
 CultureInfo.DefaultThreadCurrentUICulture = defaultCulture;
 
 builder.Services.AddLocalization(); // optional but recommended for localization support
-
+// Presence Circuit Handler
+builder.Services.AddScoped<CircuitHandler, PresenceCircuitHandler>();
+builder.Services.AddScoped<UserPresenceQueryService>();
+builder.Services.AddScoped<PresenceHeartbeatState>();
+builder.Services.AddScoped<PresenceHeartbeatService>();
+builder.Services.AddScoped<UserNavigationLogService>();
 var app = builder.Build();
 
 var supportedCultures = new[] { defaultCulture };

@@ -1,0 +1,88 @@
+﻿@using System.Globalization
+
+<div class="aylik-nakit-bagis-table" style="@(!IsOpen ? "display:none;" : null)">
+    <div class="fw-semibold text-center mb-2">@Title</div>
+
+    <div class="table-responsive">
+        <table class="table table-sm table-bordered align-middle mb-0">
+            <thead>
+                <tr>
+                    <th class="text-center">Banka</th>
+                    <th class="text-center">Bağışçı Sayısı</th>
+                    <th class="text-center">Bağış Miktarı</th>
+                    <th class="text-center">En Yüksek Bağış</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @if (Items?.Any() != true)
+                {
+                    <tr>
+                        <td colspan="4" class="text-muted text-center">Kayıt bulunamadı.</td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var x in Items!)
+                    {
+                        <tr>
+                            <td>@x.Banka</td>
+
+                            <td class="text-end">@x.YeniBagisciSayisi.ToString("N0")</td>
+
+                            <td class="text-end">@x.YeniBagisMiktari.ToString("N2")</td>
+
+                            <td class="text-end">@x.EnYuksekBagis.ToString("N2")</td>
+                        </tr>
+                    }
+
+                    <tr class="table-light fw-semibold">
+                        <td>Toplam</td>
+
+                        <td class="text-end">@Items!.Sum(i => i.YeniBagisciSayisi).ToString("N0")</td>
+
+                        <td class="text-end">@Items!.Sum(i => i.YeniBagisMiktari).ToString("N2")</td>
+
+                        <td class="text-end">@Items!.Max(i => i.EnYuksekBagis).ToString("N2")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int Year { get; set; }
+    [Parameter] public int Month { get; set; }
+
+    [Parameter] public IReadOnlyList<Row>? Items { get; set; }
+
+    [Parameter] public bool IsOpen { get; set; } = true;
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private static readonly CultureInfo _trCulture = new("tr-TR");
+
+    private string Title
+    {
+        get
+        {
+            var dt = new DateTime(Year, Month, 1);
+            return $"{dt.ToString("MMMM yyyy", _trCulture)} Nakit Bağış ve Bağışçı Durumu";
+        }
+    }
+
+    public sealed class Row
+    {
+        public required string Banka { get; set; }
+
+        public int EskiBagisciSayisi { get; set; }
+        public int YeniBagisciSayisi { get; set; }
+        public int ToplamBagisciSayisi { get; set; }
+
+        public decimal EskiBagisMiktari { get; set; }
+        public decimal YeniBagisMiktari { get; set; }
+        public decimal ToplamBagisMiktari { get; set; }
+
+        public decimal EnYuksekBagis { get; set; }
+    }
+}

@@ -451,7 +451,7 @@
 
         var filename = ExportFileName;
         if (string.IsNullOrWhiteSpace(filename))
-            filename = $"table-export-{DateTime.UtcNow:yyyyMMddHHmmss}.xlsx";
+            filename = $"table-export-{DateTime.Now:yyyyMMddHHmmss}.xlsx";
         else if (!filename.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase))
             filename = filename + ".xlsx";
 

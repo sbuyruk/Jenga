@@ -1,6 +1,7 @@
 ﻿@using Jenga.Models.Common
 @using Microsoft.AspNetCore.Components.Web
 @inject NavigationManager Nav
+@inject Jenga.BlazorUI.Services.Presence.UserNavigationLogService UserNavigationLogService
 
 <ul class="recursive-menu">
     @foreach (var item in Items ?? Enumerable.Empty<MenuItem>())
@@ -10,7 +11,7 @@
             {
                 <a href="@item.Url"
                    class="menu-header nav-link"
-                   @onclick="(e) => OnNavigate(e, item.Url)"
+                   @onclick="(e) => OnNavigateAsync(e, item.Url!)"
                    @onclick:preventDefault>
                     <span class="menu-title">@item.Title</span>
                 </a>
@@ -139,44 +140,16 @@
         return false;
     }
 
-    private void OnNavigate(MouseEventArgs e, string url)
+    private async Task OnNavigateAsync(MouseEventArgs e, string url)
     {
         if (string.IsNullOrWhiteSpace(url))
             return;
 
-        // Normalize incoming url for matching
-        var normalized = url.StartsWith("/") ? url.TrimStart('/').ToLowerInvariant() : url.TrimStart('/').ToLowerInvariant();
-
-        // mark menu immediately so user sees selection before navigation completes
-        if (Items != null)
-            _ = MarkActiveByUrl(Items, normalized);
-
-        // Normalize URLs and navigate
-        if (Uri.TryCreate(url, UriKind.Absolute, out var abs))
-        {
-            try
-            {
-                var baseUri = new Uri(Nav.BaseUri);
-                if (string.Equals(abs.Host, baseUri.Host, StringComparison.OrdinalIgnoreCase)
-                    && string.Equals(abs.Scheme, baseUri.Scheme, StringComparison.OrdinalIgnoreCase))
-                {
-                    var path = abs.PathAndQuery + abs.Fragment;
-                    Nav.NavigateTo(path, forceLoad: false);
-                    return;
-                }
-            }
-            catch
-            {
-                // fallback below
-            }
-
-            // external/other host -> full load
-            Nav.NavigateTo(url, forceLoad: true);
-            return;
-        }
-
-        // relative/partial path
         var to = url.StartsWith("/") ? url : "/" + url;
+
+        // Log the user's explicit menu click (source of truth)
+        await UserNavigationLogService.LogAsync(to);
+
         Nav.NavigateTo(to, forceLoad: false);
     }
 

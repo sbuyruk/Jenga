@@ -1,0 +1,155 @@
+﻿@using System.Globalization
+@using Jenga.BlazorUI.Services.Common
+@using Jenga.DataAccess.Services.NBYS
+@using Jenga.Models.NBYS
+@inject IModalService ModalService
+@inject IBankaTanimService BankaTanimService
+
+<div class="card nakit-bagis-card shadow-sm">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <div class="fw-semibold">@HeaderText</div>
+    </div>
+
+    <div class="card-body">
+        <div class="row g-2">
+            <div class="col-12">
+                <div class="text-muted small">Toplam Bağış Tutarı (TL)</div>
+                <div class="fs-5 fw-semibold">@TotalDonationAmount.ToString("N2")</div>
+            </div>
+
+            <div class="col-12 col-md-6">
+                <div class="text-muted small">Toplam Bağışçı Sayısı (Kişi)</div>
+                <div class="fs-6 fw-semibold">@TotalDonorCount.ToString("N0")</div>
+            </div>
+
+            <div class="col-12 col-md-6">
+                <div class="text-muted small">İlk kez Bağış Yapan Sayısı (Kişi)</div>
+                <div class="fs-6 fw-semibold">@FirstTimeDonorCount.ToString("N0")</div>
+            </div>
+        </div>
+
+        <hr />
+        <button type="button" class="btn btn-sm btn-link p-0" @onclick="ViewDetails">@LinkText</button>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int Year { get; set; }
+    [Parameter] public int Month { get; set; }
+
+    [Parameter] public decimal TotalDonationAmount { get; set; }
+    [Parameter] public int TotalDonorCount { get; set; }
+    [Parameter] public int FirstTimeDonorCount { get; set; }
+    [Parameter] public List<NakitBagisHareket>? NakitBagislar { get; set; }
+
+    [Parameter] public EventCallback<(int Year, int Month)> OnOpenDetails { get; set; }
+
+    private static readonly CultureInfo _trCulture = new("tr-TR");
+
+    private string HeaderText
+    {
+        get
+        {
+            var dt = new DateTime(Year, Month, 1);
+            return dt.ToString("MMMM yyyy", _trCulture).ToUpper(_trCulture);
+        }
+    }
+
+    private string LinkText
+    {
+        get
+        {
+            var dt = new DateTime(Year, Month, 1);
+            var monthYear = dt.ToString("MMMM yyyy", _trCulture);
+            return $"{monthYear} Bağış Ayrıntıları";
+        }
+    }
+
+    private async Task ViewDetails()
+    {
+        int selectedYear = Year;
+        int selectedMonth = Month;
+
+        var monthItems = (NakitBagislar ?? new List<NakitBagisHareket>())
+            .Where(x => x?.BagisTarihi != null
+                        && x.BagisTarihi.Value.Year == selectedYear
+                        && x.BagisTarihi.Value.Month == selectedMonth)
+            .Select(x => x!)
+            .ToList();
+
+        var BankaGrup3ByBankaId = await GetBankaGrup3ByBankaIdAsync();
+
+        var tableRows = BuildAylikNakitBagisRows(monthItems, BankaGrup3ByBankaId);
+
+        var req = new ModalRequest
+        {
+            Title = "Nakit Bağış Ayrıntıları",
+            Message = string.Empty,
+            ShowConfirmationButtons = false
+        };
+
+        req.Content = builder =>
+        {
+            builder.OpenComponent(0, typeof(Jenga.BlazorUI.Components.NBYS.NakitBagisTable));
+            builder.AddAttribute(1, "IsOpen", true);
+            builder.AddAttribute(2, "Year", selectedYear);
+            builder.AddAttribute(3, "Month", selectedMonth);
+            builder.AddAttribute(4, "Items", tableRows);
+            builder.AddAttribute(5, "OnClose", EventCallback.Factory.Create(this, () => req.Close?.Invoke()));
+            builder.CloseComponent();
+        };
+
+        await ModalService.Show(req);
+    }
+
+    private static List<NakitBagisTable.Row> BuildAylikNakitBagisRows(
+        List<NakitBagisHareket> monthItems,
+        IReadOnlyDictionary<int, string> BankaGrup3ByBankaId)
+    {
+        return monthItems
+            .GroupBy(x =>
+            {
+                if (x.BankaId == null)
+                {
+                    return "-";
+                }
+
+                return BankaGrup3ByBankaId.TryGetValue(x.BankaId.Value, out var grup) && !string.IsNullOrWhiteSpace(grup)
+                    ? grup
+                    : x.BankaId.Value.ToString();
+            })
+            .Select(g =>
+            {
+                var donors = g.Where(x => x.BagisciId != null).Select(x => x.BagisciId!.Value).Distinct().ToList();
+                var donorCount = donors.Count;
+                var totalAmount = g.Sum(x => x.BagisMiktari) ?? 0m;
+                var maxDonation = g.Max(x => x.BagisMiktari) ?? 0m;
+
+                return new NakitBagisTable.Row
+                {
+                    Banka = g.Key,
+                    EskiBagisciSayisi = 0,
+                    YeniBagisciSayisi = donorCount,
+                    ToplamBagisciSayisi = donorCount,
+                    EskiBagisMiktari = 0m,
+                    YeniBagisMiktari = totalAmount,
+                    ToplamBagisMiktari = totalAmount,
+                    EnYuksekBagis = maxDonation
+                };
+            })
+            .OrderByDescending(x => x.ToplamBagisMiktari)
+            .ToList();
+    }
+
+    private async Task<Dictionary<int, string>> GetBankaGrup3ByBankaIdAsync()
+    {
+        var list = await BankaTanimService.GetAllAsync();
+
+        return list
+            .Where(x => x != null)
+            .GroupBy(x => x.Id)
+            .ToDictionary(
+                g => g.Key,
+                g => (g.First().BankaGrup3 ?? string.Empty).Trim());
+    }
+}

@@ -1,0 +1,166 @@
+﻿* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f5f7fa;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* Kayan Banner */
+.ticker-wrapper {
+    background: #ff6b6b;
+    color: white;
+    padding: 15px 0;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    margin-bottom: 20px;
+    width: 1200px;
+}
+
+.ticker {
+    display: flex;
+    white-space: nowrap;
+    gap: 0;
+}
+
+.ticker-track {
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+    flex-shrink: 0;
+    animation: ticker-scroll 40s linear infinite;
+}
+
+.ticker-item {
+    padding: 0 50px;
+    font-size: 18px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+    .ticker-item i {
+        font-size: 20px;
+    }
+
+@keyframes ticker-scroll {
+    0% {
+        transform: translateX(0);
+    }
+
+    100% {
+        transform: translateX(-100%);
+    }
+}
+
+/* Farklı Renkli Banner Örnekleri */
+.ticker-wrapper.p3 {
+    background: linear-gradient(135deg, var(--p3) 0%, var(--muted) 100%);
+}
+
+.ticker-wrapper.blue {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.ticker-wrapper.green {
+    background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%);
+}
+
+.ticker-wrapper.orange {
+    background: linear-gradient(135deg, #f7971e 0%, #ffd200 100%);
+}
+
+.ticker-wrapper.dark {
+    background: linear-gradient(135deg, #232526 0%, #414345 100%);
+}
+
+.ticker-wrapper.gradient-1 {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.ticker-wrapper.cyan {
+    background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
+}
+
+/* Hız Varyasyonları */
+.ticker.slow {
+    animation: scroll 45s linear infinite;
+}
+
+.ticker.fast {
+    animation: scroll 15s linear infinite;
+}
+
+/* Hover ile Durdurma */
+.ticker-wrapper.pauseable:hover .ticker-track {
+    animation-play-state: paused;
+}
+
+/* Başlık */
+.section-title {
+    font-size: 24px;
+    color: #2c3e50;
+    margin: 30px 0 15px 0;
+    font-weight: bold;
+}
+
+.description {
+    color: #7f8c8d;
+    margin-bottom: 15px;
+    font-size: 14px;
+}
+
+/* Info Box */
+.info-box {
+    background: #e8f5e9;
+    border-left: 4px solid #4caf50;
+    padding: 20px;
+    margin-top: 40px;
+    border-radius: 8px;
+}
+
+    .info-box h3 {
+        color: #2e7d32;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .info-box ul {
+        color: #2e7d32;
+        line-height: 2;
+        list-style: none;
+    }
+
+        .info-box ul li {
+            padding-left: 25px;
+            position: relative;
+        }
+
+            .info-box ul li:before {
+                content: "✓";
+                position: absolute;
+                left: 0;
+                font-weight: bold;
+            }
+
+    .info-box code {
+        background: #c8e6c9;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-family: 'Courier New', monospace;
+        font-size: 13px;
+    }

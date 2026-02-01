@@ -1,6 +1,7 @@
 ﻿using Jenga.Models.Common;
 using Jenga.Models.IKYS;
 using Jenga.Models.Inventory;
+using Jenga.Models.NBYS;
 using Jenga.Models.TBYS;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,10 +14,17 @@ namespace Jenga.DataAccess.Data
 
         }
         //Common
+        public DbSet<Bolge> Bolge_Table { get; set; }
+        public DbSet<Il> Il_Table { get; set; }
+        public DbSet<Ilce> Ilce_Table { get; set; }
         public DbSet<MenuItem> MenuItem_Table { get; set; }
         public DbSet<Role> Rol_Table { get; set; }
         public DbSet<PersonelRole> PersonelRol_Table { get; set; }
         public DbSet<RoleMenu> RolMenu_Table { get; set; }
+        //Presence
+        public DbSet<UserPresenceSession> UserPresenceSession_Table { get; set; }
+        public DbSet<UserNavigationEvent> UserNavigationEvent_Table { get; set; }
+
         //Inventory
         public DbSet<Material> Material_Table { get; set; }
         public DbSet<MaterialEntry> MaterialEntry_Table { get; set; }
@@ -36,11 +44,6 @@ namespace Jenga.DataAccess.Data
         public DbSet<IsBilgileri> IsBilgileri_Table { get; set; }
         public DbSet<PersonelLocation> PersonelLocation_Table { get; set; }
 
-        //ortak
-        public DbSet<Bolge> Bolge_Table { get; set; }
-        public DbSet<Il> Il_Table { get; set; }
-        public DbSet<Ilce> Ilce_Table { get; set; }
-         
         // TBYS
         public DbSet<Tasinmaz> Tasinmaz_Table { get; set; }
         public DbSet<TasinmazBagisci> TasinmazBagisci_Table { get; set; }
@@ -50,10 +53,21 @@ namespace Jenga.DataAccess.Data
         public DbSet<SozlesmeTasinmaz> SozlesmeTasinmaz_Table { get; set; }
         public DbSet<OdemePlani> OdemePlani_Table { get; set; }
         public DbSet<Odeme> Odeme_Table { get; set; }
+        //NBYS
+        public DbSet<NakitBagisci> NakitBagisci_Table { get; set; }
+        public DbSet<NakitBagisHareket> NakitBagisHareket_Table { get; set; }
+        public DbSet<Armagan> Armagan_Table { get; set; }
+        public DbSet<BankaTanim> BankaTanim_Table { get; set; }
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<UserPresenceSession>()
+                .HasIndex(x => x.CircuitId)
+                .IsUnique();
 
+            modelBuilder.Entity<UserPresenceSession>()
+                .HasIndex(x => new { x.PersonelId, x.DisconnectedAt });
         }
     }
 }

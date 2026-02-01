@@ -6,17 +6,15 @@ using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.DataAccess.Repositories.IRepository.Common;
 using Jenga.DataAccess.Repositories.IRepository.IKYS;
 using Jenga.DataAccess.Repositories.IRepository.Inventory;
+using Jenga.DataAccess.Repositories.IRepository.NBYS;
 using Jenga.DataAccess.Repositories.IRepository.TBYS;
+using Jenga.DataAccess.Repositories.NBYS;
 using Jenga.DataAccess.Repositories.TBYS;
 using Jenga.Models.TBYS;
 using Microsoft.EntityFrameworkCore;
 
 namespace Jenga.DataAccess.Repositories
 {
-    // UnitOfWork now receives IDbContextFactory<ApplicationDbContext> and
-    // constructs repositories that themselves accept the factory.
-    // This avoids creating and holding long-lived ApplicationDbContext instances
-    // inside the UnitOfWork, preventing concurrent usage issues in Blazor Server.
     public class UnitOfWork : IUnitOfWork
     {
         private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
@@ -25,8 +23,6 @@ namespace Jenga.DataAccess.Repositories
         {
             _contextFactory = contextFactory;
 
-            // Create repositories passing the factory. Each repository will create
-            // short-lived DbContext instances per operation.
             MenuItem = new MenuItemRepository(_contextFactory);
             Role = new RoleRepository(_contextFactory);
             RoleMenu = new RoleMenuRepository(_contextFactory);
@@ -51,7 +47,6 @@ namespace Jenga.DataAccess.Repositories
             Il = new IlRepository(_contextFactory);
             Ilce = new IlceRepository(_contextFactory);
 
-
             // IKYS
             Personel = new PersonelRepository(_contextFactory);
             PersonelLocation = new PersonelLocationRepository(_contextFactory);
@@ -65,6 +60,12 @@ namespace Jenga.DataAccess.Repositories
             SozlesmeTasinmaz = new SozlesmeTasinmazRepository(_contextFactory);
             OdemePlani = new OdemePlaniRepository(_contextFactory);
             Odeme = new OdemeRepository(_contextFactory);
+
+            // NBYS
+            NakitBagisci = new NakitBagisciRepository(_contextFactory);
+            NakitBagisHareket = new NakitBagisHareketRepository(_contextFactory);
+            Armagan = new ArmaganRepository(_contextFactory);
+            BankaTanim = new BankaTanimRepository(_contextFactory);
         }
 
         // Common
@@ -75,6 +76,7 @@ namespace Jenga.DataAccess.Repositories
         public IBolgeRepository Bolge { get; private set; }
         public IIlRepository Il { get; private set; }
         public IIlceRepository Ilce { get; private set; }
+
         // Inventory
         public IMaterialRepository Material { get; private set; }
         public IMaterialEntryRepository MaterialEntry { get; private set; }
@@ -100,7 +102,13 @@ namespace Jenga.DataAccess.Repositories
         public IKiraciRepository Kiraci { get; private set; }
         public IKiraSozlesmeRepository KiraSozlesme { get; private set; }
         public ISozlesmeTasinmazRepository SozlesmeTasinmaz { get; private set; }
-        public IOdemePlaniRepository OdemePlani { get; private set;}
-        public IOdemeRepository Odeme { get; private set;}
+        public IOdemePlaniRepository OdemePlani { get; private set; }
+        public IOdemeRepository Odeme { get; private set; }
+
+        // NBYS
+        public INakitBagisciRepository NakitBagisci { get; private set; }
+        public INakitBagisHareketRepository NakitBagisHareket { get; private set; }
+        public IArmaganRepository Armagan { get; private set; }
+        public IBankaTanimRepository BankaTanim { get; private set; }
     }
 }

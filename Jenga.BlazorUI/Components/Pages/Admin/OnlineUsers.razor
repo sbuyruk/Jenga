@@ -1,0 +1,221 @@
+﻿@page "/admin/online"
+@rendermode InteractiveServer
+
+@using Jenga.BlazorUI.Services.Presence
+@using Jenga.Models.Common
+
+@inject UserPresenceQueryService PresenceQueryService
+
+<div class="navbar navbar-expand-lg bg-body-tertiary gap-3 mb-3 shadow-sm rounded py-2 px-3" style="min-height:56px;">
+    <h3 class="mb-0 flex-grow-1">Online Kullanıcılar (Sekmeler)</h3>
+
+    <button class="btn btn-outline-primary" @onclick="@(async () => await RefreshAsync())" disabled="@_isLoading" type="button">
+        Yenile
+    </button>
+</div>
+
+@if (_isLoading)
+{
+    <div class="text-muted">Yükleniyor...</div>
+}
+else if (_sessions.Count == 0)
+{
+    <div class="text-muted">Online sekme bulunamadı.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-sm table-bordered align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Kullanıcı</th>
+                    <th class="text-center">PersonelId</th>
+                    <th>CircuitId</th>
+                    <th>Son URL</th>
+                    <th>Connected </th>
+                    <th>LastSeen </th>
+                    <th>IP</th>
+                    <th>UserAgent</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var row in _sessions)
+                {
+                    var s = row.Session;
+
+                    <tr style="cursor:pointer;" @onclick="@(() => OpenHistoryAsync(s.PersonelId))">
+                        <td>@(string.IsNullOrWhiteSpace(s.DisplayName) ? s.UserName : s.DisplayName)</td>
+                        <td class="text-center">@s.PersonelId</td>
+                        <td><code>@s.CircuitId</code></td>
+                        <td style="max-width:420px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                            @row.LastUrl
+                        </td>
+                        <td>@s.ConnectedAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                        <td>@s.LastSeen.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                        <td>@s.RemoteIp</td>
+                        <td style="max-width:520px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                            @s.UserAgent
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="text-muted">
+        Toplam açık sekme: @_sessions.Count
+    </div>
+}
+
+@if (_isHistoryOpen)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,.5);" @onclick="CloseHistory">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable" @onclick:stopPropagation>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Navigation History (PersonelId: @_historyPersonelId)</h5>
+                    <button type="button" class="btn-close" aria-label="Close" @onclick="CloseHistory"></button>
+                </div>
+
+                <div class="modal-body">
+                    @if (_isHistoryLoading)
+                    {
+                        <div class="text-muted">Yükleniyor...</div>
+                    }
+                    else if (!string.IsNullOrWhiteSpace(_historyError))
+                    {
+                        <div class="text-danger">@_historyError</div>
+                    }
+                    else if (_history.Count == 0)
+                    {
+                        <div class="text-muted">Kayıt bulunamadı.</div>
+                    }
+                    else
+                    {
+                        <table class="table table-sm table-bordered align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width:190px;">Occurred (UTC)</th>
+                                    <th style="width:120px;">SessionId</th>
+                                    <th>Url</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var h in _history)
+                                {
+                                    <tr>
+                                        <td>@h.OccurredAtUtc.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                                        <td class="text-center">@h.PresenceSessionId</td>
+                                        <td style="max-width:720px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                                            @h.Url
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseHistory">Kapat</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private bool _isLoading = true;
+    private List<UserPresenceQueryService.OpenSessionView> _sessions = new();
+
+    private PeriodicTimer? _refreshTimer;
+    private CancellationTokenSource? _refreshCts;
+    private Task? _refreshLoop;
+
+    private bool _isHistoryOpen;
+    private bool _isHistoryLoading;
+    private string? _historyError;
+    private int _historyPersonelId;
+    private List<UserPresenceQueryService.UserNavigationHistoryItem> _history = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshAsync();
+        StartAutoRefresh();
+    }
+
+    private void StartAutoRefresh()
+    {
+        _refreshCts?.Cancel();
+        _refreshCts?.Dispose();
+        _refreshTimer?.Dispose();
+
+        _refreshCts = new CancellationTokenSource();
+        _refreshTimer = new PeriodicTimer(TimeSpan.FromSeconds(5));
+
+        _refreshLoop = RunRefreshLoopAsync(_refreshCts.Token);
+    }
+
+    private async Task RunRefreshLoopAsync(CancellationToken token)
+    {
+        try
+        {
+            while (_refreshTimer != null && await _refreshTimer.WaitForNextTickAsync(token))
+            {
+                await RefreshAsync(silent: true);
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (OperationCanceledException) { }
+    }
+
+    private async Task RefreshAsync(bool silent = false)
+    {
+        if (!silent)
+            _isLoading = true;
+
+        try
+        {
+            _sessions = await PresenceQueryService.GetOpenSessionViewsAsync();
+        }
+        finally
+        {
+            if (!silent)
+                _isLoading = false;
+        }
+    }
+
+    private async Task OpenHistoryAsync(int personelId)
+    {
+        _historyPersonelId = personelId;
+        _isHistoryOpen = true;
+        _isHistoryLoading = true;
+        _historyError = null;
+        _history = new();
+
+        try
+        {
+            _history = await PresenceQueryService.GetUserNavigationHistoryAsync(personelId, take: 200);
+        }
+        catch (Exception ex)
+        {
+            _historyError = ex.Message;
+        }
+        finally
+        {
+            _isHistoryLoading = false;
+        }
+    }
+
+    private void CloseHistory()
+    {
+        _isHistoryOpen = false;
+    }
+
+    public void Dispose()
+    {
+        _refreshCts?.Cancel();
+        _refreshTimer?.Dispose();
+        _refreshCts?.Dispose();
+    }
+}

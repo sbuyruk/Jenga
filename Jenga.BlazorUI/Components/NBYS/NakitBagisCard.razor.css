@@ -1,0 +1,7 @@
+﻿.nakit-bagis-card {
+    border-radius: 10px;
+}
+
+.nakit-bagis-card .card-header {
+    background: rgba(255,255,255,0.02);
+}

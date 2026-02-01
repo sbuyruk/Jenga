@@ -2,6 +2,8 @@
 @using Jenga.BlazorUI.Components.Common
 @using Jenga.BlazorUI.Components.Toast
 @using Jenga.BlazorUI.Services.Common
+@using Jenga.BlazorUI.Services.Presence
+@using Microsoft.AspNetCore.Components.Routing
 
 @inherits LayoutComponentBase
 
@@ -9,6 +11,8 @@
 @inject IHttpContextAccessor HttpContextAccessor
 @inject CurrentUserService CurrentUserService
 @inject NavigationManager Nav
+@inject PresenceHeartbeatService PresenceHeartbeatService
+@inject Jenga.BlazorUI.Services.Presence.UserNavigationLogService UserNavigationLogService
 
 <div class="page">
         <input id="navtoggle" type="checkbox" class="nav-toggle-checkbox" aria-label="Toggle navigation"
@@ -90,8 +94,21 @@
         Nav.LocationChanged += OnLocationChanged;
     }
 
-    private async void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    private async void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
+        try
+        {
+            // absolute -> relative
+            var relative = Nav.ToBaseRelativePath(e.Location);
+            var url = "/" + relative.TrimStart('/');
+
+            await UserNavigationLogService.LogAsync(url);
+        }
+        catch
+        {
+            // log failure should not break navigation
+        }
+
         await InvokeAsync(StateHasChanged);
     }
 
@@ -101,14 +118,55 @@
         InvokeAsync(StateHasChanged);
     }
 
+    private void CloseSidebar()
+    {
+        MenuState.SetOpen(false);
+    }
+
+    private PeriodicTimer? _presenceTimer;
+    private CancellationTokenSource? _presenceCts;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            StartPresenceHeartbeat();
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    private void StartPresenceHeartbeat()
+    {
+        _presenceCts?.Cancel();
+        _presenceCts?.Dispose();
+
+        _presenceCts = new CancellationTokenSource();
+        _presenceTimer = new PeriodicTimer(TimeSpan.FromSeconds(30));
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                while (await _presenceTimer.WaitForNextTickAsync(_presenceCts.Token))
+                {
+                    await PresenceHeartbeatService.TouchAsync(_presenceCts.Token);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // ignore
+            }
+        }, _presenceCts.Token);
+    }
+
     public void Dispose()
     {
         MenuState.OnChange -= MenuStateChanged;
         Nav.LocationChanged -= OnLocationChanged;
-    }
 
-    private void CloseSidebar()
-    {
-        MenuState.SetOpen(false);
+        _presenceCts?.Cancel();
+        _presenceTimer?.Dispose();
+        _presenceCts?.Dispose();
     }
 }

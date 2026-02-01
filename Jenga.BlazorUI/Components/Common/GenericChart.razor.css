@@ -28,9 +28,9 @@
 /* Title (centered) */
 .generic-chart-title {
     text-align: center;
-    font-weight: 600;
-    font-size: 14px;
-    color: #111827;
+    font-weight: 700;
+    font-size: 16px;
+    color: black;
     margin: 2px 0 2px 0;
     flex: 0 0 auto;
 }
