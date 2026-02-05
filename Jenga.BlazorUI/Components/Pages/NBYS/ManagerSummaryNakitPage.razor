@@ -4,16 +4,11 @@
 @using Jenga.BlazorUI.Components.NBYS
 @using Jenga.DataAccess.Services.NBYS
 @using Jenga.Models.NBYS
-@using Jenga.BlazorUI.Services.Common
-@using Jenga.Models.Common
-@using Jenga.DataAccess.Repositories.IRepository
 @rendermode InteractiveServer
 @inject INakitBagisHareketService NakitBagisHareketService
-@inject IModalService ModalService
-@inject IUnitOfWork UnitOfWork
 @implements IDisposable
 
-<div class="container py-4">
+<div class="page-container py-4">
     <div class="admin-overview p-3 manager-summary-layout">
         <div class="manager-summary-content">
             @if (isLoading)
@@ -27,25 +22,41 @@
             else
             {
                 <div class="d-flex flex-wrap gap-3">
-                    <div>
-                        <div class="d-flex flex-wrap gap-3">
-                            <GenericChart TItem="MonthAmount"
-                                          Series="bagislarSon5YilSeries"
-                                          LabelSelector="@(x => x.Label)"
-                                          ValueSelector="@(x => x.Amount)"
-                                          Title="Aylık Nakit Bağış Gelirleri (Son 5 Yıl)"
-                                          Type="GenericChart<MonthAmount>.GenericChartType.Bar"
-                                          ShowDataLabels="true"
-                                          ShowLegend="false"
-                                          Height="460px"
-                                          Width="1200px"
-                                          GridPaddingBottom="40"
-                                          ColorPalette="@_nbysPalette" />
-                        </div>
-                    </div>
-                    <div>
+                    <section class="d-flex flex-wrap gap-3">
+                        <GenericChart TItem="DayAmount"
+                                      Series="bagislarBuAyGunlukSeries"
+                                      LabelSelector="@(x => x.Label)"
+                                      ValueSelector="@(x => x.Amount)"
+                                      Title="Günlük Nakit Bağış Gelirleri (Bu Ay)"
+                                      Type="GenericChart<DayAmount>.GenericChartType.Bar"
+                                      ShowDataLabels="true"
+                                      ShowLegend="false"
+                                      Height="300px"
+                                      Width="590px"
+                                      GridPaddingBottom="40"
+                                      ColorPalette="@_nbysPalette2"
+                                      LockToMonthCategories="false" />
+
+                        <GenericChart TItem="DayCount"
+                                      Series="bagiscilarBuAyGunlukSeries"
+                                      LabelSelector="@(x => x.Label)"
+                                      ValueSelector="@(x => x.Count)"
+                                      Title="Günlük Tekil Bağışçı Sayısı (Bu Ay)"
+                                      Type="GenericChart<DayCount>.GenericChartType.Bar"
+                                      ShowDataLabels="true"
+                                      ShowLegend="false"
+                                      Height="300px"
+                                      Width="590px"
+                                      GridPaddingBottom="40"
+                                      ColorPalette="@_nbysPalette3"
+                                      LockToMonthCategories="false" />
+                    </section>
+
+                    <hr class="section-separator" />
+
+                    <section class="w-100">
                         <div class="ticker-wrapper p3 pauseable">
-                            <div class="ticker" aria-label="Bilgilendirme">
+                            <div class="ticker text-center" aria-label="Bilgilendirme">
                                 <div class="ticker-track">
                                     <span class="ticker-item">
                                         <i class="bi bi-star-fill"></i> @ThisMonthSummaryText
@@ -77,29 +88,82 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </div>
+                    </section>
 
-                <hr />
+                    <hr class="section-separator" />
 
-                <h5 class="mb-2">Aylık Özet</h5>
+                    <section class="monthly-cards-container">
+                        <div class="d-flex flex-wrap gap-3 justify-content-center w-100 mx-auto">
+                            @foreach (var card in monthlyCards)
+                            {
+                                <NakitBagisCard Year="@card.Year"
+                                                Month="@card.Month"
+                                                TotalDonationAmount="@card.TotalDonationAmount"
+                                                TotalDonorCount="@card.TotalDonorCount"
+                                                FirstTimeDonorCount="@card.FirstTimeDonorCount"
+                                                NakitBagislar="@nakitBagislarLastYears" />
+                            }
+                        </div>
+                    </section>
 
-                <div class="d-flex flex-wrap gap-3">
-                    @foreach (var card in monthlyCards)
-                    {
-                        <NakitBagisCard Year="@card.Year"
-                                       Month="@card.Month"
-                                       TotalDonationAmount="@card.TotalDonationAmount"
-                                       TotalDonorCount="@card.TotalDonorCount"
-                                       FirstTimeDonorCount="@card.FirstTimeDonorCount"
-                                       NakitBagislar="nakitBagislarLastYears" />
-                    }
+                    <hr class="section-separator" />
+
+                    <section class="d-flex flex-wrap gap-3">
+                        <GenericChart TItem="MonthAmount"
+                                      Series="bagislarSon5YilSeries"
+                                      LabelSelector="@(x => x.Label)"
+                                      ValueSelector="@(x => x.Amount)"
+                                      Title="Aylık Nakit Bağış Gelirleri (Son 5 Yıl)"
+                                      Type="GenericChart<MonthAmount>.GenericChartType.Bar"
+                                      ShowDataLabels="true"
+                                      ShowLegend="false"
+                                      Height="460px"
+                                      Width="1200px"
+                                      GridPaddingBottom="40"
+                                      ColorPalette="@_nbysPalette"
+                                      LockToMonthCategories="true" />
+                    </section>
+
+                    <hr class="section-separator" />
+
+                    <section class="d-flex flex-wrap gap-3">
+                        <GenericChart TItem="YearAmount"
+                                      Series="bagislarSon10YilYillikTutarSeries"
+                                      LabelSelector="@(x => x.Label)"
+                                      ValueSelector="@(x => x.Amount)"
+                                      Title="Yıllık Nakit Bağış Tutarı (Son 10 Yıl)"
+                                      Type="GenericChart<YearAmount>.GenericChartType.Bar"
+                                      ShowDataLabels="true"
+                                      ShowLegend="false"
+                                      Height="300px"
+                                      Width="590px"
+                                      GridPaddingBottom="40"
+                                      ColorPalette="@_nbysPalette4"
+                                      LockToMonthCategories="false"
+                                      XAxisLabelRotateDegrees="0"
+                                      XAxisLabelsAlwaysRotate="false" />
+
+                        <GenericChart TItem="YearCount"
+                                      Series="bagiscilarSon10YilYillikTekilSeries"
+                                      LabelSelector="@(x => x.Label)"
+                                      ValueSelector="@(x => x.Count)"
+                                      Title="Yıllık Tekil Bağışçı Sayısı (Son 10 Yıl)"
+                                      Type="GenericChart<YearCount>.GenericChartType.Bar"
+                                      ShowDataLabels="true"
+                                      ShowLegend="false"
+                                      Height="300px"
+                                      Width="590px"
+                                      GridPaddingBottom="40"
+                                      ColorPalette="@_nbysPalette5"
+                                      LockToMonthCategories="false"
+                                      XAxisLabelRotateDegrees="0"
+                                      XAxisLabelsAlwaysRotate="false" />
+                    </section>
                 </div>
             }
         </div>
     </div>
 </div>
-
 
 @code {
     private static readonly CultureInfo _trCulture = new("tr-TR");
@@ -116,8 +180,45 @@
         "yellow",
     ];
 
+    private static readonly string[] _nbysPalette2 =
+    [
+        "#FF595E",
+        "#FFCA3A",
+        "#8AC926",
+        "#1982C4",
+        "#6A4C93",
+    ];
+
+    private static readonly string[] _nbysPalette3 =
+    [
+        "#9B5DE5",
+        "#F15BB5",
+        "#FEE440",
+        "#00BBF9",
+        "#00F5D4",
+    ];
+
+    private static readonly string[] _nbysPalette4 =
+    [
+        "#FEE440",
+        "#00BBF9",
+        "#9B5DE5",
+        "#F15BB5",
+        "#00F5D4",
+    ];
+
+    private static readonly string[] _nbysPalette5 =
+    [
+        "#00BBF9",
+        "#9B5DE5",
+        "#F15BB5",
+        "#00F5D4",
+        "#FEE440",
+    ];
+
     private const int LastYears = 5;
     private const int Since = 2005;
+    private const int Last10Years = 10;
 
     private List<NakitBagisHareket>? nakitBagislarLastYears;
     private List<NakitBagisHareket>? nakitBagislarSince;
@@ -129,6 +230,9 @@
     private int _thisMonthDonationCount;
     private decimal _thisMonthDonationTotal;
 
+    private DateTime _thisMonthPeriodStartDate;
+    private DateTime _thisMonthPeriodEndDate;
+
     private int _lastYearSameMonthDonationCount;
     private decimal _lastYearSameMonthDonationTotal;
 
@@ -139,12 +243,17 @@
     private int _newDonorsLastYear;
     private int _newDonorsTwoYearsAgo;
 
+    private DateTime _lastYearSameMonthPeriodStartDate;
+    private DateTime _lastYearSameMonthPeriodEndDate;
+
     private readonly List<GenericChart<MonthAmount>.GenericSeries> bagislarSon5YilSeries = new();
+    private readonly List<GenericChart<DayAmount>.GenericSeries> bagislarBuAyGunlukSeries = new();
+    private readonly List<GenericChart<DayCount>.GenericSeries> bagiscilarBuAyGunlukSeries = new();
+
+    private readonly List<GenericChart<YearAmount>.GenericSeries> bagislarSon10YilYillikTutarSeries = new();
+    private readonly List<GenericChart<YearCount>.GenericSeries> bagiscilarSon10YilYillikTekilSeries = new();
 
     private readonly List<MonthlyNakitBagisCardVM> monthlyCards = new();
-
-    private int selectedYear;
-    private int selectedMonth;
 
     private string ThisMonthSummaryText
     {
@@ -152,7 +261,8 @@
         {
             var now = DateTime.Now;
             var monthYearText = now.ToString("MMMM yyyy", _trCulture);
-            return $"{monthYearText} ayında şu ana kadar alınan {_thisMonthDonationCount:N0} adet bağıştan {_thisMonthDonationTotal:N2} TL gelir elde edildi...";
+
+            return $"{monthYearText} ayında 01.{now:MM}.{now:yyyy} - {(_thisMonthPeriodEndDate == DateTime.MinValue ? "--" : _thisMonthPeriodEndDate.ToString("dd.MM.yyyy", _trCulture))} aralığında alınan {_thisMonthDonationCount:N0} adet bağıştan {_thisMonthDonationTotal:N2} TL gelir elde edildi...";
         }
     }
 
@@ -161,9 +271,16 @@
         get
         {
             var now = DateTime.Now;
-            var lastYearSameMonth = new DateTime(now.Year - 1, now.Month, 1);
-            var monthYearText = lastYearSameMonth.ToString("MMMM yyyy", _trCulture);
-            return $"{monthYearText} ayında ise alınan {_lastYearSameMonthDonationCount:N0} adet bağıştan {_lastYearSameMonthDonationTotal:N2} TL gelir elde edilmişti...";
+            var lastYearNow = now.AddYears(-1);
+
+            var monthYearText = lastYearNow.ToString("MMMM yyyy", _trCulture);
+            var periodStartText = $"01.{lastYearNow:MM}.{lastYearNow:yyyy}";
+
+            var endText = _lastYearSameMonthPeriodEndDate == DateTime.MinValue
+                ? "--"
+                : _lastYearSameMonthPeriodEndDate.ToString("dd.MM.yyyy", _trCulture);
+
+            return $"{monthYearText} ayında ise {periodStartText} - {endText} aralığında alınan {_lastYearSameMonthDonationCount:N0} adet bağıştan {_lastYearSameMonthDonationTotal:N2} TL gelir elde edilmişti...";
         }
     }
 
@@ -173,7 +290,7 @@
         {
             if (_thisMonthCountChangePercent == null || _thisMonthTotalChangePercent == null)
             {
-                return "Geçen yılın aynı ayı için karşılaştırma yapılamadı (baz değer 0).";
+                return "Geçen yılın aynı dönemi için karşılaştırma yapılamadı (baz değer 0).";
             }
 
             var countDirectionText = _thisMonthCountChangePercent.Value >= 0m ? "artış" : "azalış";
@@ -182,7 +299,15 @@
             var countAbs = Math.Abs(_thisMonthCountChangePercent.Value);
             var totalAbs = Math.Abs(_thisMonthTotalChangePercent.Value);
 
-            return $"Bu yıl içinde bulunduğumuz ayda geçen yılın aynı ayına göre %{countAbs:N2} kadar bağış sayısında {countDirectionText}, %{totalAbs:N2} kadar da bağış tutarında {totalDirectionText} olmuştur.";
+            var now = DateTime.Now;
+            var lastYearNow = now.AddYears(-1);
+
+            var periodStartText = $"01.{lastYearNow:MM}.{lastYearNow:yyyy}";
+            var endText = _lastYearSameMonthPeriodEndDate == DateTime.MinValue
+                ? "--"
+                : _lastYearSameMonthPeriodEndDate.ToString("dd.MM.yyyy", _trCulture);
+
+            return $"{periodStartText} - {endText} aralığında geçen yılın aynı dönemine göre bağış sayısında %{countAbs:N2} {countDirectionText}, bağış tutarında ise %{totalAbs:N2} {totalDirectionText} olmuştur.";
         }
     }
 
@@ -191,6 +316,7 @@
         get
         {
             var yearNow = DateTime.Now.Year;
+
             return $"{yearNow - 1} yılında {_newDonorsLastYear:N0} adet yeni bağışçı Vakfımıza ilk defa bağış yaptı, {yearNow - 2} yılında bu rakam {_newDonorsTwoYearsAgo:N0} idi, {yearNow} yılında ise şu ana kadar {_newDonorsThisYearYtd:N0} adet yeni bağışçı ailemize katıldı...(Son 20 Yılın bağışları dikkate alınmıştır)";
         }
     }
@@ -208,22 +334,39 @@
 
         try
         {
-            nakitBagislarLastYears = await NakitBagisHareketService.GetLastYearsAsync(LastYears, cancellationToken);
+            var years = DateTime.Now.Year - Since;
+
+            nakitBagislarSince = await NakitBagisHareketService.GetLastYearsAsync(years, cancellationToken);
+
+            var cutoff = new DateTime(DateTime.Now.Year - (LastYears - 1), 1, 1);
+
+            nakitBagislarLastYears = nakitBagislarSince?
+                .Where(x => x?.BagisTarihi != null && x.BagisTarihi.Value >= cutoff)
+                .Select(x => x!)
+                .ToList();
+
             PrepareThisMonthSummary();
             PrepareLastYearSameMonthSummary();
             PrepareThisMonthYoYChange();
             PrepareBagislarSon5YilChart();
 
-            int years = DateTime.Now.Year - Since;
-            nakitBagislarSince = await NakitBagisHareketService.GetLastYearsAsync(years, cancellationToken);
-            PrepareNewDonorsSummary();
+            PrepareBagislarBuAyGunlukChart();
+            PrepareBagiscilarBuAyGunlukChart();
 
+            PrepareLast10YearsYearlyDonationAmountChart();
+            PrepareLast10YearsYearlyUniqueDonorCountChart();
+
+            PrepareNewDonorsSummary();
             PrepareMonthlyCards(monthCount: 2);
         }
         catch
         {
             loadFailed = true;
             bagislarSon5YilSeries.Clear();
+            bagislarBuAyGunlukSeries.Clear();
+            bagiscilarBuAyGunlukSeries.Clear();
+            bagislarSon10YilYillikTutarSeries.Clear();
+            bagiscilarSon10YilYillikTekilSeries.Clear();
             monthlyCards.Clear();
         }
         finally
@@ -231,6 +374,173 @@
             isLoading = false;
             StateHasChanged();
         }
+    }
+
+    private void PrepareLast10YearsYearlyDonationAmountChart()
+    {
+        bagislarSon10YilYillikTutarSeries.Clear();
+
+        if (nakitBagislarSince == null || nakitBagislarSince.Count == 0)
+        {
+            return;
+        }
+
+        var yearNow = DateTime.Now.Year;
+        var firstYear = yearNow - (Last10Years - 1);
+
+        var filtered = nakitBagislarSince
+            .Where(x => x?.BagisTarihi != null && x.BagisTarihi.Value.Year >= firstYear && x.BagisTarihi.Value.Year <= yearNow)
+            .Select(x => x!)
+            .ToList();
+
+        var sumsByYear = filtered
+            .GroupBy(x => x.BagisTarihi!.Value.Year)
+            .ToDictionary(g => g.Key, g => g.Sum(v => v.BagisMiktari) ?? 0m);
+
+        var items = new List<YearAmount>(Last10Years);
+        for (var year = firstYear; year <= yearNow; year++)
+        {
+            var amount = sumsByYear.TryGetValue(year, out var v) ? v : 0m;
+
+            items.Add(new YearAmount
+            {
+                Year = year,
+                Label = year.ToString(_trCulture),
+                Amount = amount
+            });
+        }
+
+        bagislarSon10YilYillikTutarSeries.Add(new GenericChart<YearAmount>.GenericSeries("Toplam Tutar", items));
+    }
+
+    private void PrepareLast10YearsYearlyUniqueDonorCountChart()
+    {
+        bagiscilarSon10YilYillikTekilSeries.Clear();
+
+        if (nakitBagislarSince == null || nakitBagislarSince.Count == 0)
+        {
+            return;
+        }
+
+        var yearNow = DateTime.Now.Year;
+        var firstYear = yearNow - (Last10Years - 1);
+
+        var filtered = nakitBagislarSince
+            .Where(x => x?.BagisTarihi != null
+                        && x.BagisTarihi.Value.Year >= firstYear
+                        && x.BagisTarihi.Value.Year <= yearNow
+                        && x.BagisciId != null)
+            .Select(x => x!)
+            .ToList();
+
+        var uniqueDonorsByYear = filtered
+            .GroupBy(x => x.BagisciId!.Value)
+            .Select(g => new
+            {
+                DonorId = g.Key,
+                FirstDonationDate = g.Min(x => x.BagisTarihi!.Value)
+            })
+            .ToDictionary(x => x.DonorId, x => x.FirstDonationDate);
+
+        var items = new List<YearCount>(Last10Years);
+        for (var year = firstYear; year <= yearNow; year++)
+        {
+            var count = uniqueDonorsByYear.Values.Count(d => d.Year == year);
+
+            items.Add(new YearCount
+            {
+                Year = year,
+                Label = year.ToString(_trCulture),
+                Count = count
+            });
+        }
+
+        bagiscilarSon10YilYillikTekilSeries.Add(new GenericChart<YearCount>.GenericSeries("Tekil Bağışçı", items));
+    }
+
+    private void PrepareBagislarBuAyGunlukChart()
+    {
+        bagislarBuAyGunlukSeries.Clear();
+
+        if (nakitBagislarLastYears == null || nakitBagislarLastYears.Count == 0)
+        {
+            return;
+        }
+
+        var now = DateTime.Now;
+        var year = now.Year;
+        var month = now.Month;
+
+        var sumsByDate = nakitBagislarLastYears
+            .Where(x => x?.BagisTarihi != null
+                        && x.BagisTarihi.Value.Year == year
+                        && x.BagisTarihi.Value.Month == month)
+            .GroupBy(x => x!.BagisTarihi!.Value.Date)
+            .ToDictionary(g => g.Key, g => g.Sum(v => v.BagisMiktari) ?? 0m);
+
+        var daysInMonth = DateTime.DaysInMonth(year, month);
+
+        var items = new List<DayAmount>(daysInMonth);
+        for (var day = 1; day <= daysInMonth; day++)
+        {
+            var date = new DateTime(year, month, day);
+            var amount = sumsByDate.TryGetValue(date.Date, out var v) ? v : 0m;
+
+            items.Add(new DayAmount
+            {
+                Day = day,
+                Label = date.ToString("dd.MM.yyyy", _trCulture),
+                Amount = amount
+            });
+        }
+
+        bagislarBuAyGunlukSeries.Add(new GenericChart<DayAmount>.GenericSeries(
+            now.ToString("MMMM yyyy", _trCulture),
+            items));
+    }
+
+    private void PrepareBagiscilarBuAyGunlukChart()
+    {
+        bagiscilarBuAyGunlukSeries.Clear();
+
+        if (nakitBagislarLastYears == null || nakitBagislarLastYears.Count == 0)
+        {
+            return;
+        }
+
+        var now = DateTime.Now;
+        var year = now.Year;
+        var month = now.Month;
+
+        var donorCountsByDate = nakitBagislarLastYears
+            .Where(x => x?.BagisTarihi != null
+                        && x.BagisTarihi.Value.Year == year
+                        && x.BagisTarihi.Value.Month == month
+                        && x.BagisciId != null)
+            .GroupBy(x => x!.BagisTarihi!.Value.Date)
+            .ToDictionary(
+                g => g.Key,
+                g => g.Select(v => v!.BagisciId!.Value).Distinct().Count());
+
+        var daysInMonth = DateTime.DaysInMonth(year, month);
+
+        var items = new List<DayCount>(daysInMonth);
+        for (var day = 1; day <= daysInMonth; day++)
+        {
+            var date = new DateTime(year, month, day);
+            var count = donorCountsByDate.TryGetValue(date.Date, out var v) ? v : 0;
+
+            items.Add(new DayCount
+            {
+                Day = day,
+                Label = date.ToString("dd.MM.yyyy", _trCulture),
+                Count = count
+            });
+        }
+
+        bagiscilarBuAyGunlukSeries.Add(new GenericChart<DayCount>.GenericSeries(
+            now.ToString("MMMM yyyy", _trCulture),
+            items));
     }
 
     private void PrepareMonthlyCards(int monthCount)
@@ -250,7 +560,6 @@
             .Select(x => x!)
             .ToList();
 
-        // İlk bağış tarihi (donor bazında) -> "ilk kez bağış yapan" hesabı için
         var firstDonationDateByDonor = items
             .Where(x => x.BagisciId != null && x.BagisTarihi != null)
             .GroupBy(x => x.BagisciId!.Value)
@@ -295,7 +604,6 @@
             });
         }
 
-        // Son ay en üstte olsun
         monthlyCards.Sort((a, b) => (b.Year, b.Month).CompareTo((a.Year, a.Month)));
     }
 
@@ -304,13 +612,30 @@
         _thisMonthDonationCount = 0;
         _thisMonthDonationTotal = 0m;
 
-        if (nakitBagislarLastYears == null || nakitBagislarLastYears.Count == 0) return;
-
         var now = DateTime.Now;
+        _thisMonthPeriodStartDate = new DateTime(now.Year, now.Month, 1);
+
+        var endDateInclusive = now.Date.AddDays(-1);
+
+        if (endDateInclusive < _thisMonthPeriodStartDate)
+        {
+            _thisMonthPeriodEndDate = DateTime.MinValue;
+            return;
+        }
+
+        _thisMonthPeriodEndDate = endDateInclusive;
+        var endDateExclusive = endDateInclusive.AddDays(1);
+
+        if (nakitBagislarLastYears == null || nakitBagislarLastYears.Count == 0)
+        {
+            return;
+        }
+
         var thisMonthItems = nakitBagislarLastYears
             .Where(x => x?.BagisTarihi != null
-                        && x.BagisTarihi.Value.Year == now.Year
-                        && x.BagisTarihi.Value.Month == now.Month)
+                        && x.BagisTarihi.Value >= _thisMonthPeriodStartDate
+                        && x.BagisTarihi.Value < endDateExclusive)
+            .Select(x => x!)
             .ToList();
 
         _thisMonthDonationCount = thisMonthItems.Count;
@@ -322,16 +647,32 @@
         _lastYearSameMonthDonationCount = 0;
         _lastYearSameMonthDonationTotal = 0m;
 
-        if (nakitBagislarLastYears == null || nakitBagislarLastYears.Count == 0) return;
-
         var now = DateTime.Now;
-        var year = now.Year - 1;
-        var month = now.Month;
+        var lastYearNow = now.AddYears(-1);
+
+        _lastYearSameMonthPeriodStartDate = new DateTime(lastYearNow.Year, lastYearNow.Month, 1);
+
+        var endDateInclusive = lastYearNow.Date.AddDays(-1);
+
+        if (endDateInclusive < _lastYearSameMonthPeriodStartDate)
+        {
+            _lastYearSameMonthPeriodEndDate = DateTime.MinValue;
+            return;
+        }
+
+        _lastYearSameMonthPeriodEndDate = endDateInclusive;
+        var endDateExclusive = endDateInclusive.AddDays(1);
+
+        if (nakitBagislarLastYears == null || nakitBagislarLastYears.Count == 0)
+        {
+            return;
+        }
 
         var lastYearItems = nakitBagislarLastYears
             .Where(x => x?.BagisTarihi != null
-                        && x.BagisTarihi.Value.Year == year
-                        && x.BagisTarihi.Value.Month == month)
+                        && x.BagisTarihi.Value >= _lastYearSameMonthPeriodStartDate
+                        && x.BagisTarihi.Value < endDateExclusive)
+            .Select(x => x!)
             .ToList();
 
         _lastYearSameMonthDonationCount = lastYearItems.Count;
@@ -360,14 +701,20 @@
         _newDonorsLastYear = 0;
         _newDonorsTwoYearsAgo = 0;
 
-        if (nakitBagislarSince == null || nakitBagislarSince.Count == 0) return;
+        if (nakitBagislarSince == null || nakitBagislarSince.Count == 0)
+        {
+            return;
+        }
 
         var withDonor = nakitBagislarSince
             .Where(x => x?.BagisTarihi != null && x.BagisciId != null)
             .Select(x => x!)
             .ToList();
 
-        if (withDonor.Count == 0) return;
+        if (withDonor.Count == 0)
+        {
+            return;
+        }
 
         var firstDonationYearByDonor = withDonor
             .GroupBy(x => x.BagisciId!.Value)
@@ -386,14 +733,17 @@
         _newDonorsLastYear = firstDonationYearByDonor.Values.Count(d => d.Year == yearLast);
         _newDonorsTwoYearsAgo = firstDonationYearByDonor.Values.Count(d => d.Year == yearTwoAgo);
 
-        _newDonorsThisYearYtd = firstDonationYearByDonor.Values.Count(d =>
-            d.Year == yearNow && d.Date <= now.Date);
+        _newDonorsThisYearYtd = firstDonationYearByDonor.Values.Count(d => d.Year == yearNow && d.Date <= now.Date);
     }
 
     private void PrepareBagislarSon5YilChart()
     {
         bagislarSon5YilSeries.Clear();
-        if (nakitBagislarLastYears == null || nakitBagislarLastYears.Count == 0) return;
+
+        if (nakitBagislarLastYears == null || nakitBagislarLastYears.Count == 0)
+        {
+            return;
+        }
 
         var yearNow = DateTime.Now.Year;
         var years = new[] { yearNow - 4, yearNow - 3, yearNow - 2, yearNow - 1, yearNow };
@@ -406,19 +756,19 @@
                 .ToDictionary(g => g.Key, g => g.Sum(x => x.BagisMiktari) ?? 0m);
 
             var items = new List<MonthAmount>(12);
-            for (int month = 1; month <= 12; month++)
+            for (var month = 1; month <= 12; month++)
             {
                 var amount = sumsByMonth.TryGetValue(month, out var v) ? v : 0m;
 
                 items.Add(new MonthAmount
                 {
                     Month = month,
-                    Label = new DateTime(2000, month, 1).ToString("MMM"),
+                    Label = new DateTime(2000, month, 1).ToString("MMM", _trCulture),
                     Amount = amount
                 });
             }
 
-            bagislarSon5YilSeries.Add(new GenericChart<MonthAmount>.GenericSeries(year.ToString(), items));
+            bagislarSon5YilSeries.Add(new GenericChart<MonthAmount>.GenericSeries(year.ToString(_trCulture), items));
         }
     }
 
@@ -444,11 +794,31 @@
         public decimal Amount { get; set; }
     }
 
-    private class MonthAmount
+    private class YearCount
     {
         public int Year { get; set; }
+        public string Label { get; set; } = "";
+        public decimal? Count { get; set; }
+    }
+
+    private class MonthAmount
+    {
         public int Month { get; set; }
         public string Label { get; set; } = "";
         public decimal Amount { get; set; }
+    }
+
+    private class DayAmount
+    {
+        public int Day { get; set; }
+        public string Label { get; set; } = "";
+        public decimal Amount { get; set; }
+    }
+
+    private class DayCount
+    {
+        public int Day { get; set; }
+        public string Label { get; set; } = "";
+        public int Count { get; set; }
     }
 }

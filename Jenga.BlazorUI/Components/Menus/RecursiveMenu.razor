@@ -1,7 +1,6 @@
 ﻿@using Jenga.Models.Common
 @using Microsoft.AspNetCore.Components.Web
 @inject NavigationManager Nav
-@inject Jenga.BlazorUI.Services.Presence.UserNavigationLogService UserNavigationLogService
 
 <ul class="recursive-menu">
     @foreach (var item in Items ?? Enumerable.Empty<MenuItem>())
@@ -9,12 +8,11 @@
         <li class="menu-item @(item.IsExpanded ? "open" : "") @(item.IsActive ? "active" : "")">
             @if (!string.IsNullOrEmpty(item.Url) && (item.Children == null || !item.Children.Any()))
             {
-                <a href="@item.Url"
-                   class="menu-header nav-link"
-                   @onclick="(e) => OnNavigateAsync(e, item.Url!)"
-                   @onclick:preventDefault>
+                <NavLink href="@NormalizeUrl(item.Url!)"
+                         class="menu-header nav-link"
+                         Match="NavLinkMatch.All">
                     <span class="menu-title">@item.Title</span>
-                </a>
+                </NavLink>
             }
             else
             {
@@ -49,7 +47,6 @@
 
     protected override void OnInitialized()
     {
-        // update active flags at startup
         SetActiveRecursive(Items);
         Nav.LocationChanged += OnLocationChanged;
     }
@@ -66,7 +63,6 @@
 
         item.IsExpanded = !item.IsExpanded;
 
-        // mark the clicked parent as selected (visual feedback)
         if (Items != null)
         {
             ClearActiveRecursive(Items);
@@ -94,7 +90,6 @@
                     item.IsActive = true;
             }
 
-            // Ensure the branch that contains the active item stays expanded so the selected menu is visible after navigation
             item.IsExpanded = item.IsActive || (item.Children?.Any(c => c.IsActive) == true);
         }
     }
@@ -109,48 +104,12 @@
         }
     }
 
-    // Find menu item by URL and mark it (expand ancestors) so selection is immediate on click
-    private bool MarkActiveByUrl(List<MenuItem> items, string normalizedUrl)
-    {
-        if (items == null) return false;
-        foreach (var item in items)
-        {
-            var itemUrl = item.Url?.TrimStart('/').ToLowerInvariant() ?? "";
-            if (!string.IsNullOrEmpty(itemUrl) && itemUrl == normalizedUrl)
-            {
-                ClearActiveRecursive(Items ?? new List<MenuItem>());
-                item.IsActive = true;
-                return true;
-            }
-
-            if (item.Children?.Any() == true)
-            {
-                if (MarkActiveByUrl(item.Children, normalizedUrl))
-                {
-                    item.IsExpanded = true;
-                    item.IsActive = true;
-                    return true;
-                }
-            }
-
-            // not matched here
-            item.IsActive = item.IsActive && item.IsActive; // keep any previous true set for ancestors handled above
-        }
-
-        return false;
-    }
-
-    private async Task OnNavigateAsync(MouseEventArgs e, string url)
+    private static string NormalizeUrl(string url)
     {
         if (string.IsNullOrWhiteSpace(url))
-            return;
+            return "/";
 
-        var to = url.StartsWith("/") ? url : "/" + url;
-
-        // Log the user's explicit menu click (source of truth)
-        await UserNavigationLogService.LogAsync(to);
-
-        Nav.NavigateTo(to, forceLoad: false);
+        return url.StartsWith("/", StringComparison.Ordinal) ? url : "/" + url;
     }
 
     public void Dispose()

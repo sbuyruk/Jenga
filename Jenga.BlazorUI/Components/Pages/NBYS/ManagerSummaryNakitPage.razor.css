@@ -11,9 +11,44 @@ body {
     padding: 20px;
 }
 
-.container {
+.page-container {
     max-width: 1400px;
     margin: 0 auto;
+}
+
+.manager-scrollspy-layout {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 16px;
+    align-items: start;
+}
+
+.manager-scrollspy-nav {
+    position: sticky;
+    top: 12px;
+}
+
+.manager-scrollspy-nav .nav-link {
+    border-radius: 6px;
+    padding: 8px 10px;
+    color: var(--muted);
+}
+
+.manager-scrollspy-nav .nav-link.active {
+    background: rgba(30, 136, 229, 0.10);
+    color: var(--text);
+    font-weight: 700;
+}
+
+.manager-scrollspy-content {
+    position: relative;
+    height: calc(100vh - 140px);
+    overflow-y: auto;
+    padding-right: 10px;
+}
+
+.manager-section {
+    scroll-margin-top: 12px;
 }
 
 /* Kayan Banner */
@@ -107,60 +142,3 @@ body {
 .ticker-wrapper.pauseable:hover .ticker-track {
     animation-play-state: paused;
 }
-
-/* Başlık */
-.section-title {
-    font-size: 24px;
-    color: #2c3e50;
-    margin: 30px 0 15px 0;
-    font-weight: bold;
-}
-
-.description {
-    color: #7f8c8d;
-    margin-bottom: 15px;
-    font-size: 14px;
-}
-
-/* Info Box */
-.info-box {
-    background: #e8f5e9;
-    border-left: 4px solid #4caf50;
-    padding: 20px;
-    margin-top: 40px;
-    border-radius: 8px;
-}
-
-    .info-box h3 {
-        color: #2e7d32;
-        margin-bottom: 15px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-
-    .info-box ul {
-        color: #2e7d32;
-        line-height: 2;
-        list-style: none;
-    }
-
-        .info-box ul li {
-            padding-left: 25px;
-            position: relative;
-        }
-
-            .info-box ul li:before {
-                content: "✓";
-                position: absolute;
-                left: 0;
-                font-weight: bold;
-            }
-
-    .info-box code {
-        background: #c8e6c9;
-        padding: 2px 8px;
-        border-radius: 4px;
-        font-family: 'Courier New', monospace;
-        font-size: 13px;
-    }

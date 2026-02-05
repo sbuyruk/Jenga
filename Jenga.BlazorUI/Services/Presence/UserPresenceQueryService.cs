@@ -49,7 +49,7 @@ namespace Jenga.BlazorUI.Services.Presence
         }
 
         public sealed record UserNavigationHistoryItem(
-            DateTime OccurredAtUtc,
+            DateTime OccurredAt,
             int? PresenceSessionId,
             string Url);
 
@@ -72,5 +72,62 @@ namespace Jenga.BlazorUI.Services.Presence
                     x.Url!))
                 .ToListAsync(cancellationToken);
         }
+
+        public sealed record UserNavigationSummaryItem(
+            int PersonelId,
+            string? FullName,
+            int NavigationCount,
+            string? LastUrl,
+            DateTime? LastOccurredAt);
+
+        public async Task<List<UserNavigationSummaryItem>> GetUserNavigationSummaryAsync(
+            int? takeUsers = null,
+            CancellationToken cancellationToken = default)
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+
+            var baseQuery = db.UserNavigationEvent_Table.AsNoTracking()
+                .Where(e => e.Url != null && e.Url != "");
+
+            var lastEventPerUser =
+                from e in baseQuery
+                group e by e.PersonelId into g
+                select new
+                {
+                    PersonelId = g.Key,
+                    LastEventId = g.OrderByDescending(x => x.OccurredAt)
+                        .ThenByDescending(x => x.Id)
+                        .Select(x => x.Id)
+                        .FirstOrDefault()
+                };
+
+            var query =
+                from l in lastEventPerUser
+                join p in db.Personel_Table.AsNoTracking() on l.PersonelId equals p.Id
+                join eLast in baseQuery on l.LastEventId equals eLast.Id
+                join agg in
+                    (from e in baseQuery
+                     group e by e.PersonelId into g
+                     select new { PersonelId = g.Key, Cnt = g.Count() })
+                on l.PersonelId equals agg.PersonelId
+                orderby eLast.OccurredAt descending, l.PersonelId descending
+                select new UserNavigationSummaryItem(
+                    l.PersonelId,
+                    p.Adi + " " + p.Soyadi,
+                    agg.Cnt,
+                    eLast.Url,
+                    eLast.OccurredAt);
+
+            if (takeUsers.HasValue)
+                query = query.Take(takeUsers.Value);
+
+            return await query.ToListAsync(cancellationToken);
+        }
+
+        public async Task<List<UserNavigationHistoryItem>> GetUserNavigationHistoryByPersonelAsync(
+            int personelId,
+            int take = 500,
+            CancellationToken cancellationToken = default)
+            => await GetUserNavigationHistoryAsync(personelId, take, cancellationToken);
     }
 }

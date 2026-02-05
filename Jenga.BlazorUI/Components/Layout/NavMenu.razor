@@ -1,18 +1,15 @@
-﻿@rendermode InteractiveServer
-@using Jenga.BlazorUI.Components.Menus
+﻿@using Jenga.BlazorUI.Components.Menus
 @using Jenga.Models.Common
 @inject NavigationManager Navigation
 
-@* NavMenu now provides the sidebar brand area similar to the attached HTML *@
 <div class="nav-scrollable @(IsCollapsed ? "collapsed" : "")" id="main-nav">
     <nav class="nav flex-column">
         <aside class="treeview-sidebar @(IsCollapsed ? "collapsed" : "")">
             <div class="brand" style="padding:12px 0 8px 0;">
-
                 <div class="brand-content" style="display:flex;align-items:center;gap:8px;">
-                    <a href="/" @onclick="NavigateHome" @onclick:preventDefault="true" style="display:inline-block;">
+                    <NavLink href="/" style="display:inline-block;">
                         <img src="/images/jenga-logo-sm.png" alt="Jenga logo" width="150" loading="lazy" style="cursor:pointer;" />
-                    </a>
+                    </NavLink>
                 </div>
             </div>
             <hr />
@@ -34,12 +31,6 @@
     [Parameter]
     public List<MenuItem>? Items { get; set; }
 
-    // Backwards-compatible parameter (parent may still pass this)
     [Parameter]
     public bool IsCollapsed { get; set; } = false;
-
-    private void NavigateHome()
-    {
-        Navigation.NavigateTo("/");
-    }
 }

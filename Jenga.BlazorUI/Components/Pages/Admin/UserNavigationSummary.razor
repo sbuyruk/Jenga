@@ -1,13 +1,12 @@
-﻿@page "/admin/online"
+﻿@page "/admin/navigation-summary"
 @rendermode InteractiveServer
 
 @using Jenga.BlazorUI.Services.Presence
-@using Jenga.Models.Common
 
 @inject UserPresenceQueryService PresenceQueryService
 
 <div class="navbar navbar-expand-lg bg-body-tertiary gap-3 mb-3 shadow-sm rounded py-2 px-3" style="min-height:56px;">
-    <h3 class="mb-0 flex-grow-1">Online Kullanıcılar (Sekmeler)</h3>
+    <h3 class="mb-0 flex-grow-1">Kullanıcı Navigasyon Özeti</h3>
 
     <button class="btn btn-outline-primary" @onclick="@(async () => await RefreshAsync())" disabled="@_isLoading" type="button">
         Yenile
@@ -18,9 +17,9 @@
 {
     <div class="text-muted">Yükleniyor...</div>
 }
-else if (_sessions.Count == 0)
+else if (_rows.Count == 0)
 {
-    <div class="text-muted">Online sekme bulunamadı.</div>
+    <div class="text-muted">Kayıt bulunamadı.</div>
 }
 else
 {
@@ -28,34 +27,22 @@ else
         <table class="table table-sm table-bordered align-middle">
             <thead class="table-light">
                 <tr>
-                    <th>Kullanıcı</th>
-                    <th class="text-center">PersonelId</th>
-                    <th>CircuitId</th>
+                    <th class="text-center" style="width:120px;">Personel</th>
+                    <th class="text-center" style="width:160px;">Navigasyon Sayısı</th>
                     <th>Son URL</th>
-                    <th>Connected </th>
-                    <th>LastSeen </th>
-                    <th>IP</th>
-                    <th>UserAgent</th>
+                    <th style="width:190px;">Son Hareket</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach (var row in _sessions)
+                @foreach (var r in _rows)
                 {
-                    var s = row.Session;
-
-                    <tr style="cursor:pointer;" @onclick="@(() => OpenHistoryAsync(s.PersonelId))">
-                        <td>@(string.IsNullOrWhiteSpace(s.DisplayName) ? s.UserName : s.DisplayName)</td>
-                        <td class="text-center">@s.PersonelId</td>
-                        <td><code>@s.CircuitId</code></td>
-                        <td style="max-width:420px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                            @row.LastUrl
+                    <tr style="cursor:pointer;" @onclick="@(() => OpenUserDetailsAsync(r.PersonelId))">
+                        <td class="text-center">@r.FullName</td>
+                        <td class="text-center">@r.NavigationCount</td>
+                        <td style="max-width:720px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                            @r.LastUrl
                         </td>
-                        <td>@s.ConnectedAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
-                        <td>@s.LastSeen.ToString("yyyy-MM-dd HH:mm:ss")</td>
-                        <td>@s.RemoteIp</td>
-                        <td style="max-width:520px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                            @s.UserAgent
-                        </td>
+                        <td>@(r.LastOccurredAt?.ToString("yyyy-MM-dd HH:mm:ss") ?? "-")</td>
                     </tr>
                 }
             </tbody>
@@ -63,30 +50,30 @@ else
     </div>
 
     <div class="text-muted">
-        Toplam açık sekme: @_sessions.Count
+        Toplam kullanıcı: @_rows.Count
     </div>
 }
 
-@if (_isHistoryOpen)
+@if (_isUserModalOpen)
 {
-    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,.5);" @onclick="CloseHistory">
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,.5);" @onclick="CloseUserDetails">
         <div class="modal-dialog modal-lg modal-dialog-scrollable" @onclick:stopPropagation>
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Navigation History (PersonelId: @_historyPersonelId)</h5>
-                    <button type="button" class="btn-close" aria-label="Close" @onclick="CloseHistory"></button>
+                    <h5 class="modal-title">Navigation Detay (PersonelId: @_selectedPersonelId)</h5>
+                    <button type="button" class="btn-close" aria-label="Close" @onclick="CloseUserDetails"></button>
                 </div>
 
                 <div class="modal-body">
-                    @if (_isHistoryLoading)
+                    @if (_isUserModalLoading)
                     {
                         <div class="text-muted">Yükleniyor...</div>
                     }
-                    else if (!string.IsNullOrWhiteSpace(_historyError))
+                    else if (!string.IsNullOrWhiteSpace(_userModalError))
                     {
-                        <div class="text-danger">@_historyError</div>
+                        <div class="text-danger">@_userModalError</div>
                     }
-                    else if (_history.Count == 0)
+                    else if (_userEvents.Count == 0)
                     {
                         <div class="text-muted">Kayıt bulunamadı.</div>
                     }
@@ -101,13 +88,13 @@ else
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach (var h in _history)
+                                @foreach (var e in _userEvents)
                                 {
                                     <tr>
-                                        <td>@h.OccurredAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
-                                        <td class="text-center">@h.PresenceSessionId</td>
+                                        <td>@e.OccurredAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                                        <td class="text-center">@e.PresenceSessionId</td>
                                         <td style="max-width:720px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                                            @h.Url
+                                            @e.Url
                                         </td>
                                     </tr>
                                 }
@@ -117,7 +104,7 @@ else
                 </div>
 
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" @onclick="CloseHistory">Kapat</button>
+                    <button type="button" class="btn btn-secondary" @onclick="CloseUserDetails">Kapat</button>
                 </div>
             </div>
         </div>
@@ -126,17 +113,17 @@ else
 
 @code {
     private bool _isLoading = true;
-    private List<UserPresenceQueryService.OpenSessionView> _sessions = new();
+    private List<UserPresenceQueryService.UserNavigationSummaryItem> _rows = new();
 
     private PeriodicTimer? _refreshTimer;
     private CancellationTokenSource? _refreshCts;
     private Task? _refreshLoop;
 
-    private bool _isHistoryOpen;
-    private bool _isHistoryLoading;
-    private string? _historyError;
-    private int _historyPersonelId;
-    private List<UserPresenceQueryService.UserNavigationHistoryItem> _history = new();
+    private bool _isUserModalOpen;
+    private bool _isUserModalLoading;
+    private string? _userModalError;
+    private int _selectedPersonelId;
+    private List<UserPresenceQueryService.UserNavigationHistoryItem> _userEvents = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -151,7 +138,7 @@ else
         _refreshTimer?.Dispose();
 
         _refreshCts = new CancellationTokenSource();
-        _refreshTimer = new PeriodicTimer(TimeSpan.FromSeconds(5));
+        _refreshTimer = new PeriodicTimer(TimeSpan.FromSeconds(10));
 
         _refreshLoop = RunRefreshLoopAsync(_refreshCts.Token);
     }
@@ -176,7 +163,7 @@ else
 
         try
         {
-            _sessions = await PresenceQueryService.GetOpenSessionViewsAsync();
+            _rows = await PresenceQueryService.GetUserNavigationSummaryAsync();
         }
         finally
         {
@@ -185,31 +172,31 @@ else
         }
     }
 
-    private async Task OpenHistoryAsync(int personelId)
+    private async Task OpenUserDetailsAsync(int personelId)
     {
-        _historyPersonelId = personelId;
-        _isHistoryOpen = true;
-        _isHistoryLoading = true;
-        _historyError = null;
-        _history = new();
+        _selectedPersonelId = personelId;
+        _isUserModalOpen = true;
+        _isUserModalLoading = true;
+        _userModalError = null;
+        _userEvents = new();
 
         try
         {
-            _history = await PresenceQueryService.GetUserNavigationHistoryAsync(personelId, take: 200);
+            _userEvents = await PresenceQueryService.GetUserNavigationHistoryByPersonelAsync(personelId, take: 500);
         }
         catch (Exception ex)
         {
-            _historyError = ex.Message;
+            _userModalError = ex.Message;
         }
         finally
         {
-            _isHistoryLoading = false;
+            _isUserModalLoading = false;
         }
     }
 
-    private void CloseHistory()
+    private void CloseUserDetails()
     {
-        _isHistoryOpen = false;
+        _isUserModalOpen = false;
     }
 
     public void Dispose()

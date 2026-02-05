@@ -114,6 +114,8 @@
     [Parameter] public string[]? ColorPalette { get; set; }
     [Parameter] public bool AutoUpdate { get; set; } = true;
 
+    [Parameter] public bool LockToMonthCategories { get; set; }
+
     // X-axis label layout
     [Parameter] public int XAxisLabelRotateDegrees { get; set; } = -45;
     [Parameter] public bool XAxisLabelsAlwaysRotate { get; set; } = true;
@@ -188,15 +190,11 @@
         if (Series == null || Series.Count == 0) return;
         if (LabelSelector == null || ValueSelector == null) return;
 
-        // If this is your monthly chart, lock to 12-month categories.
-        // Otherwise keep previous dynamic behavior.
-        var lockToMonths = true;
-
-        _xCategories = lockToMonths
+        _xCategories = LockToMonthCategories
             ? _monthCategoriesTr.ToList()
             : new List<string>();
 
-        if (!lockToMonths)
+        if (!LockToMonthCategories)
         {
             var labelOrder = new Dictionary<string, int>(StringComparer.Ordinal);
             int order = 0;
@@ -295,10 +293,7 @@
             {
                 Categories = hasMultiSeriesXY ? _xCategories : null,
                 TickPlacement = TickPlacement.Between,
-
-                // Force tick count to match categories to avoid auto ticks like -1, 0, 1...
                 TickAmount = hasMultiSeriesXY ? _xCategories.Count : null,
-
                 Labels = new XAxisLabels
                 {
                     Rotate = (double)XAxisLabelRotateDegrees,

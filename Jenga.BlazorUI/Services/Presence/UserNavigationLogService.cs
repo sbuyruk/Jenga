@@ -23,13 +23,16 @@ namespace Jenga.BlazorUI.Services.Presence
 
         public async Task LogAsync(string url, CancellationToken cancellationToken = default)
         {
+            if (string.IsNullOrWhiteSpace(url))
+                return;
+
             var personel = await _currentUserService.GetCurrentPersonelAsync();
             if (personel == null)
                 return;
 
             await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
 
-            db.Set<UserNavigationEvent>().Add(new UserNavigationEvent
+            db.UserNavigationEvent_Table.Add(new UserNavigationEvent
             {
                 PersonelId = personel.Id,
                 PresenceSessionId = _presenceState.SessionId,

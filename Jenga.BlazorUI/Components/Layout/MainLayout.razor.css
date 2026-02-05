@@ -2,7 +2,7 @@
 
 /* Page skeleton */
 .page {
-    background: linear-gradient(180deg, var(--bg), #071123 85%);
+    background: linear-gradient(180deg, var(--bg), var(--p4) 110% );
     position: relative;
     display: flex;
     flex-direction: column;
@@ -119,7 +119,8 @@ main.content {
     position: sticky;
     top: 0;
     height: 100vh;
-    background: linear-gradient(180deg, rgba(255,255,255,0.01), var(--surface));
+    background: var(--surface);
+    
     box-sizing: border-box;
     padding: 18px;
 }
