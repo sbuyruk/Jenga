@@ -34,7 +34,7 @@
                                  Height="360px" />
                 </div>
 
-                <div >
+                <div>
                     <GenericChart TItem="PieItem"
                                   Items="kullanimChartItems"
                                   LabelSelector="@(p => p.Label)"
@@ -50,17 +50,17 @@
                                   GridPaddingBottom="40" />
                 </div>
 
-                <div >
+                <div>
                     <TasinmazBagisciCard Bagiscilar="@bagiscilar"
                                          Iller="@iller"
                                          Bolgeler="@bolgeler"
                                          Bagislar="@bagislar"
                                          Height="360px" />
                 </div>
-
-
             </div>
+
             <hr />
+
             <div class="d-flex flex-wrap gap-3">
                 <div>
                     <GenericChart TItem="YearCountItem"
@@ -82,6 +82,15 @@
                 </div>
             </div>
         }
+
+        <div class="d-flex justify-content-center mt-4">
+            <img src="/images/zekayi.gif"
+                 alt="Zekayi"
+                 loading="lazy"
+                 data-bs-toggle="tooltip"
+                 data-bs-placement="top"
+                 title="Mr.ÇALIŞ is bussy as ever" />
+        </div>
     </div>
 </div>
 

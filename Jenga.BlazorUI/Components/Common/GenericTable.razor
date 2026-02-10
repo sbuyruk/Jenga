@@ -34,7 +34,7 @@
     </div>
 
     <div class="gt-table-wrapper" style="height:@TableHeight">
-        <table class="table table-striped gt-table ">
+        <table class="@TableCssClass">
             <thead>
                 <tr>
                     @if (HeaderTemplate != null)
@@ -114,6 +114,8 @@
     [Parameter] public EventCallback<TItem> OnRowClicked { get; set; }
     [Parameter] public Func<TItem, object> KeySelector { get; set; } // optional for @key
 
+    [Parameter] public string TableClass { get; set; } = null;
+
     // New export parameters
     [Parameter] public bool ShowExport { get; set; } = true;
     [Parameter] public string ExportFileName { get; set; } = null; // if null, auto-generated
@@ -136,6 +138,15 @@
 
     // Backing field for page size binding
     private int boundPageSize;
+
+    private string TableCssClass
+    {
+        get
+        {
+            const string defaultClasses = "table gt-table";
+            return string.IsNullOrWhiteSpace(TableClass) ? defaultClasses : $"{defaultClasses} {TableClass}".Trim();
+        }
+    }
 
     private string SearchText
     {

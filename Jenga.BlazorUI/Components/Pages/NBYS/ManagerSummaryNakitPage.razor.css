@@ -12,20 +12,21 @@ body {
 }
 
 .page-container {
-    max-width: 1400px;
+    max-width: 1800px;
     margin: 0 auto;
 }
 
 .manager-scrollspy-layout {
     display: grid;
-    grid-template-columns: 260px 1fr;
-    gap: 16px;
+    grid-template-columns: 1fr 200px;
+    gap: 10px;
     align-items: start;
 }
 
 .manager-scrollspy-nav {
     position: sticky;
     top: 12px;
+    order: 2;
 }
 
 .manager-scrollspy-nav .nav-link {
@@ -45,6 +46,7 @@ body {
     height: calc(100vh - 140px);
     overflow-y: auto;
     padding-right: 10px;
+    order: 1;
 }
 
 .manager-section {
@@ -141,4 +143,14 @@ body {
 /* Hover ile Durdurma */
 .ticker-wrapper.pauseable:hover .ticker-track {
     animation-play-state: paused;
+}
+
+.section-separator {
+    width: 100%;
+    margin: 1rem 0;
+    opacity: 0.25;
+}
+
+.monthly-cards-container {
+    width: 1200px;
 }
