@@ -15,15 +15,21 @@
         }
         <div class="gt-page-controls">
             <label class="fw-bold me-3">
-                
+
                 <select @bind="BoundPageSize" @bind:event="onchange" class="form-select-sm">
                     @foreach (var opt in PageSizeOptions)
                     {
                         <option value="@opt">@opt</option>
                     }
-                </select> 
+                </select>
                 Satır Göster
             </label>
+            @if (ShowCopy)
+            {
+                <button class="btn btn-sm btn-outline-secondary ms-2" @onclick="CopyToClipboard" title="Kopyala" aria-label="Kopyala">
+                    <i class="bi bi-clipboard me-1" aria-hidden="true"></i> Kopyala
+                </button>
+            }
             @if (ShowExport)
             {
                 <button class="btn btn-sm btn-secondary ms-2" @onclick="ExportToExcel" title="Excel'e Aktar" aria-label="Excel'e Aktar">
@@ -34,7 +40,7 @@
     </div>
 
     <div class="gt-table-wrapper" style="height:@TableHeight">
-        <table class="@TableCssClass">
+        <table id="@_tableId" class="@TableCssClass">
             <thead>
                 <tr>
                     @if (HeaderTemplate != null)
@@ -116,9 +122,13 @@
 
     [Parameter] public string TableClass { get; set; } = null;
 
+    [Parameter] public bool ShowCopy { get; set; } = true;
+
     // New export parameters
     [Parameter] public bool ShowExport { get; set; } = true;
     [Parameter] public string ExportFileName { get; set; } = null; // if null, auto-generated
+
+    private readonly string _tableId = $"gt-{Guid.NewGuid():N}";
 
     /* Internal state */
     private List<TItem> allItems = new();
@@ -417,22 +427,13 @@
         return needsQuotes ? $"\"{escaped}\"" : escaped;
     }
 
-    private async Task<bool> WaitForJsFunction(string expression, int retries = 8, int delayMs = 200)
+    private static string EscapeTsv(string input)
     {
-        for (var i = 0; i < retries; i++)
-        {
-            try
-            {
-                var ok = await JSRuntime.InvokeAsync<bool>("eval", expression);
-                if (ok) return true;
-            }
-            catch
-            {
-                // ignore and retry
-            }
-            await Task.Delay(delayMs);
-        }
-        return false;
+        if (string.IsNullOrEmpty(input)) return string.Empty;
+        return input
+            .Replace("\r\n", "\n")
+            .Replace("\r", "\n")
+            .Replace("\t", " ");
     }
 
     // add module ref
@@ -452,6 +453,25 @@
                 // ignore — we'll fallback to CSV using open/data-url if module missing
             }
         }
+    }
+
+    private async Task CopyToClipboard()
+    {
+        if (_exportModule != null)
+        {
+            try
+            {
+                await _exportModule.InvokeVoidAsync("copyTableToClipboard", _tableId);
+                return;
+            }
+            catch
+            {
+                // ignore
+            }
+        }
+
+        // module yoksa hiç kopyalamamak daha doğru (birebir davranış JS ile mümkün)
+        // istersen burada eski TSV fallback'i tutabiliriz.
     }
 
     private async Task ExportToExcel()

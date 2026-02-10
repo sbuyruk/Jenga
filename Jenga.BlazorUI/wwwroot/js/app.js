@@ -21,3 +21,17 @@
     // anchor sayısı dinamik değişebilir -> refresh
     window.bootstrap.ScrollSpy.getInstance(scrollEl)?.refresh();
 };
+
+window.scrollSpyScrollTo = (scrollElementId, sectionId) => {
+    const scrollEl = document.getElementById(scrollElementId);
+    const target = document.getElementById(sectionId);
+
+    if (!scrollEl || !target) {
+        return;
+    }
+
+    // container içindeki pozisyonu hesapla
+    const top = target.offsetTop;
+
+    scrollEl.scrollTo({ top, behavior: 'smooth' });
+};

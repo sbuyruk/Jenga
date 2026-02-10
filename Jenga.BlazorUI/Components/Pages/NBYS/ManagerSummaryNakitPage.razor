@@ -38,11 +38,30 @@
             <div class="manager-scrollspy-layout">
                 <nav id="manager-scrollspy-nav" class="manager-scrollspy-nav">
                     <div class="nav nav-pills flex-column gap-1">
-                        <a class="nav-link" href="#gunluk">Günlük Bağışlar</a>
-                        <a class="nav-link" href="#aylik-kartlar">Aylık Kartlar</a>
-                        <a class="nav-link" href="#il-ay-cizelge">İl / Ay Çizelgesi (Bu Yıl)</a>
-                        <a class="nav-link" href="#son5yil">Son 5 Yıl</a>
-                        <a class="nav-link" href="#son10yil">Son 10 Yıl</a>
+                        <a class="nav-link"
+                           href="#gunluk"
+                           @onclick:preventDefault="true"
+                           @onclick='() => ScrollToAsync("gunluk")'>Günlük Bağışlar</a>
+
+                        <a class="nav-link"
+                           href="#aylik-kartlar"
+                           @onclick:preventDefault="true"
+                           @onclick='() => ScrollToAsync("aylik-kartlar")'>Aylık Kartlar</a>
+
+                        <a class="nav-link"
+                           href="#il-ay-cizelge"
+                           @onclick:preventDefault="true"
+                           @onclick='() => ScrollToAsync("il-ay-cizelge")'>İl / Ay Çizelgesi (Bu Yıl)</a>
+
+                        <a class="nav-link"
+                           href="#son5yil"
+                           @onclick:preventDefault="true"
+                           @onclick='() => ScrollToAsync("son5yil")'>Son 5 Yıl</a>
+
+                        <a class="nav-link"
+                           href="#son10yil"
+                           @onclick:preventDefault="true"
+                           @onclick='() => ScrollToAsync("son10yil")'>Son 10 Yıl</a>
                     </div>
                 </nav>
 
@@ -141,7 +160,6 @@
 
                     <section id="il-ay-cizelge" class="manager-section w-100">
                         <div class="d-flex flex-wrap gap-3 justify-content-center w-100 mx-auto">
-                            
 
                             @if (currentYearProvinceMonthlyRows.Count == 0)
                             {
@@ -214,7 +232,6 @@
                                         </RowTemplate>
                                     </GenericTable>
                                 </div>
-
                             }
                         </div>
                     </section>
@@ -285,17 +302,17 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (isLoading || loadFailed)
+        if (_scrollSpyInitialized || isLoading || loadFailed)
         {
             return;
         }
 
-        if (firstRender && !_scrollSpyInitialized)
-        {
-            _scrollSpyInitialized = true;
-            await JS.InvokeVoidAsync("initScrollSpy", "manager-scrollspy-content", "manager-scrollspy-nav", 12);
-        }
+        _scrollSpyInitialized = true;
+        await JS.InvokeVoidAsync("initScrollSpy", "manager-scrollspy-content", "manager-scrollspy-nav", 12);
     }
+
+    private Task ScrollToAsync(string sectionId)
+        => JS.InvokeVoidAsync("scrollSpyScrollTo", "manager-scrollspy-content", sectionId).AsTask();
 
     // Culture
     private static readonly CultureInfo _trCulture = new("tr-TR");
