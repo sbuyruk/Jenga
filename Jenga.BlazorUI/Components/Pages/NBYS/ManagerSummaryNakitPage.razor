@@ -142,18 +142,25 @@
 
                     <hr class="section-separator" />
 
-                    <section id="aylik-kartlar" class="manager-section monthly-cards-container">
-                        <div class="d-flex flex-wrap gap-3 justify-content-center w-100 mx-auto">
-                            @foreach (var card in monthlyCards)
-                            {
-                                <NakitBagisCard Year="@card.Year"
-                                                Month="@card.Month"
-                                                TotalDonationAmount="@card.TotalDonationAmount"
-                                                TotalDonorCount="@card.TotalDonorCount"
-                                                FirstTimeDonorCount="@card.FirstTimeDonorCount"
-                                                NakitBagislar="@nakitBagislarLastYears" />
-                            }
-                        </div>
+                    <section id="aylik-kartlar" class="manager-section w-100">
+                        @if (monthlyCards.Count == 0)
+                        {
+                            <div class="text-muted">Aylık kartlar için görüntülenecek veri bulunamadı.</div>
+                        }
+                        else
+                        {
+                            <div class="d-flex flex-wrap gap-3 justify-content-center w-100 mx-auto">
+                                @foreach (var card in monthlyCards)
+                                {
+                                    <NakitBagisCard Year="@card.Year"
+                                                    Month="@card.Month"
+                                                    TotalDonationAmount="@card.TotalDonationAmount"
+                                                    TotalDonorCount="@card.TotalDonorCount"
+                                                    FirstTimeDonorCount="@card.FirstTimeDonorCount"
+                                                    NakitBagislar="@nakitBagislarLastYears" />
+                                }
+                            </div>
+                        }
                     </section>
 
                     <hr class="section-separator" />
@@ -222,10 +229,24 @@
                                         </HeaderTemplate>
 
                                         <RowTemplate Context="row">
-                                            @if (row.IsProvinceFirstRow)
-                                            {
-                                                <td style="white-space:nowrap;" rowspan="@row.ProvinceRowSpan">@row.ProvinceName</td>
+                                            @{
+                                                var hasSort = !string.IsNullOrWhiteSpace(_ilAyTable?.CurrentSortField);
+                                                var hasSearch = !string.IsNullOrWhiteSpace(_ilAyTable?.CurrentSearchText);
+                                                var isGroupedView = !hasSort && !hasSearch;
                                             }
+
+                                            @if (isGroupedView)
+                                            {
+                                                if (row.IsProvinceFirstRow)
+                                                {
+                                                    <td style="white-space:nowrap;" rowspan="@row.ProvinceRowSpan">@row.ProvinceName</td>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <td style="white-space:nowrap;">@row.ProvinceName</td>
+                                            }
+
                                             <td>@row.MonthLabel</td>
                                             <td class="text-end">@row.DonorCount.ToString("N0", _trCulture)</td>
                                             <td class="text-end">@row.NewDonorCount.ToString("N0", _trCulture)</td>
@@ -238,7 +259,7 @@
 
                     <hr class="section-separator" />
 
-                    <section id="son5yil" class="manager-section d-flex flex-wrap gap-3">
+                    <section id="son5yil" class="manager-section d-flex flex-wrap gap-3 justify-content-center w-100">
                         <GenericChart TItem="MonthAmount"
                                       Series="bagislarSon5YilSeries"
                                       LabelSelector="@(x => x.Label)"
@@ -256,7 +277,7 @@
 
                     <hr class="section-separator" />
 
-                    <section id="son10yil" class="manager-section d-flex flex-wrap gap-3">
+                    <section id="son10yil" class="manager-section d-flex flex-wrap gap-3 justify-content-center w-100">
                         <GenericChart TItem="YearAmount"
                                       Series="bagislarSon10YilYillikTutarSeries"
                                       LabelSelector="@(x => x.Label)"
@@ -265,7 +286,7 @@
                                       Type="GenericChart<YearAmount>.GenericChartType.Bar"
                                       ShowDataLabels="true"
                                       ShowLegend="false"
-                                      Height="300px"
+                                      Height="400px"
                                       Width="590px"
                                       GridPaddingBottom="40"
                                       ColorPalette="@_nbysPalette3"
@@ -281,7 +302,7 @@
                                       Type="GenericChart<YearCount>.GenericChartType.Bar"
                                       ShowDataLabels="true"
                                       ShowLegend="false"
-                                      Height="300px"
+                                      Height="400px"
                                       Width="590px"
                                       GridPaddingBottom="40"
                                       ColorPalette="@_nbysPalette5"
@@ -296,7 +317,6 @@
 </div>
 
 @code {
-    // Components / JS
     private GenericTable<ProvinceMonthlyDonorRow>? _ilAyTable;
     private bool _scrollSpyInitialized;
 
@@ -314,10 +334,8 @@
     private Task ScrollToAsync(string sectionId)
         => JS.InvokeVoidAsync("scrollSpyScrollTo", "manager-scrollspy-content", sectionId).AsTask();
 
-    // Culture
     private static readonly CultureInfo _trCulture = new("tr-TR");
 
-    // Colors
     private static readonly string[] _nbysPalette =
     [
         "red",
@@ -366,36 +384,29 @@
         "#FEE440",
     ];
 
-    // Constants
     private const int LastYears = 5;
     private const int Since = 2005;
     private const int Last10Years = 10;
 
-    // Data (raw)
     private List<NakitBagisHareket>? nakitBagislarLastYears;
     private List<NakitBagisHareket>? nakitBagislarSince;
 
-    // Lookups
     private Dictionary<int, int?> _donorProvinceIdByDonorId = new();
     private Dictionary<int, string> _ilNameById = new();
 
-    // UI data
     private readonly List<ProvinceMonthlyDonorRow> currentYearProvinceMonthlyRows = new();
     private readonly List<MonthlyNakitBagisCardVM> monthlyCards = new();
 
-    // Charts
     private readonly List<GenericChart<MonthAmount>.GenericSeries> bagislarSon5YilSeries = new();
     private readonly List<GenericChart<DayAmount>.GenericSeries> bagislarBuAyGunlukSeries = new();
     private readonly List<GenericChart<DayCount>.GenericSeries> bagiscilarBuAyGunlukSeries = new();
     private readonly List<GenericChart<YearAmount>.GenericSeries> bagislarSon10YilYillikTutarSeries = new();
     private readonly List<GenericChart<YearCount>.GenericSeries> bagiscilarSon10YilYillikTekilSeries = new();
 
-    // Page state
     private bool isLoading;
     private bool loadFailed;
     private CancellationTokenSource? _cts;
 
-    // Ticker / summary state
     private int _thisMonthDonationCount;
     private decimal _thisMonthDonationTotal;
     private DateTime _thisMonthPeriodStartDate;
@@ -413,7 +424,6 @@
     private int _newDonorsLastYear;
     private int _newDonorsTwoYearsAgo;
 
-    // Computed texts (ticker)
     private string ThisMonthSummaryText
     {
         get
@@ -1084,7 +1094,6 @@
         _cts?.Dispose();
     }
 
-    // Models
     private sealed class ProvinceMonthlyDonorRow
     {
         public int ProvinceId { get; set; }

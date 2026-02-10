@@ -149,6 +149,9 @@
     // Backing field for page size binding
     private int boundPageSize;
 
+    // Expose search to parent (needed for rowspan/grouped layouts)
+    public string CurrentSearchText => searchText;
+
     private string TableCssClass
     {
         get
@@ -319,21 +322,18 @@
         var type = obj.GetType();
 
         // primitive/value types, enum, decimal, DateTime, Guid vb.
-        if (type.IsPrimitive || type.IsEnum || obj is decimal || obj is DateTime || obj is DateTimeOffset || obj is Guid || obj is TimeSpan)
+        if (type.IsPrimitive || obj is decimal || obj is DateTime || obj is Guid || type.IsEnum)
         {
-            if (obj is DateTime dt) return dt.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
-            if (obj is DateTimeOffset dto) return dto.ToString("o", CultureInfo.InvariantCulture);
-            if (obj is IFormattable f) return f.ToString(null, CultureInfo.InvariantCulture);
-            return obj.ToString();
+            return Convert.ToString(obj, CultureInfo.CurrentCulture) ?? string.Empty;
         }
 
-        // IEnumerable (string hariç)
-        if (obj is System.Collections.IEnumerable enumr)
+        // IEnumerable ise içeriklerini düzleştir (string hariç)
+        if (obj is System.Collections.IEnumerable enumerable && obj is not string)
         {
             var sb = new StringBuilder();
-            foreach (var e in enumr)
+            foreach (var item in enumerable)
             {
-                var part = ToSearchString(e, depth + 1);
+                var part = ToSearchString(item, depth + 1);
                 if (!string.IsNullOrEmpty(part))
                 {
                     if (sb.Length > 0) sb.Append(' ');
@@ -343,22 +343,56 @@
             return sb.ToString();
         }
 
-        // Complex nesne: public propertylerini gez ve birleştir
-        var sbObj = new StringBuilder();
-        var props2 = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
-        foreach (var pi in props2)
+        // kompleks tipe fallback: TypeConverter varsa dene, yoksa ToString
+        var converter = TypeDescriptor.GetConverter(type);
+        if (converter != null && converter.CanConvertTo(typeof(string)))
         {
-            object val;
-            try { val = pi.GetValue(obj); }
-            catch { continue; }
-            var part = ToSearchString(val, depth + 1);
-            if (!string.IsNullOrEmpty(part))
+            try
             {
-                if (sbObj.Length > 0) sbObj.Append(' ');
-                sbObj.Append(part);
+                var converted = converter.ConvertToString(null, CultureInfo.CurrentCulture, obj);
+                if (!string.IsNullOrWhiteSpace(converted))
+                    return converted;
+            }
+            catch
+            {
             }
         }
-        return sbObj.ToString();
+
+        return obj.ToString() ?? string.Empty;
+    }
+
+    private string FormatValue(object value)
+    {
+        if (value == null) return string.Empty;
+        if (value is DateTime dt) return dt.ToString("dd.MM.yyyy");
+        return value.ToString();
+    }
+
+    private async Task CopyToClipboard()
+    {
+        var sb = new StringBuilder();
+
+        // header
+        var headers = Columns.Select(c => c.DisplayName).ToArray();
+        sb.AppendLine(string.Join('\t', headers));
+
+        // rows (filtered, not just paged)
+        foreach (var item in filtered)
+        {
+            var row = Columns.Select(c => FormatValue(c.Property.GetValue(item))).ToArray();
+            sb.AppendLine(string.Join('\t', row));
+        }
+
+        await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", sb.ToString());
+    }
+
+    private async Task ExportToExcel()
+    {
+        var fileName = string.IsNullOrWhiteSpace(ExportFileName)
+            ? $"export-{DateTime.Now:yyyyMMddHHmmss}.xlsx"
+            : ExportFileName;
+
+        await JSRuntime.InvokeVoidAsync("genericTableExport.exportTableToExcel", _tableId, fileName);
     }
 
     private void ToggleSort(string field)
@@ -372,33 +406,55 @@
             sortField = field;
             sortDescending = false;
         }
+
         currentPage = 1;
         ApplyFilterSortAndPaging();
     }
 
-    private void FirstPage() { currentPage = 1; ApplyFilterSortAndPaging(); }
-    private void PrevPage() { if (currentPage > 1) currentPage--; ApplyFilterSortAndPaging(); }
-    private void NextPage() { if (currentPage < totalPages) currentPage++; ApplyFilterSortAndPaging(); }
-    private void LastPage() { currentPage = totalPages; ApplyFilterSortAndPaging(); }
-
-    private void OnRowClickedInternal(TItem item)
+    private void FirstPage()
     {
-        if (OnRowClicked.HasDelegate) OnRowClicked.InvokeAsync(item);
+        currentPage = 1;
+        ApplyFilterSortAndPaging();
     }
 
-    private object GetKey(TItem item) => KeySelector != null ? KeySelector(item) : item;
+    private void PrevPage()
+    {
+        if (currentPage > 1) currentPage--;
+        ApplyFilterSortAndPaging();
+    }
 
-    private string FormatValue(object value) => value?.ToString() ?? "";
+    private void NextPage()
+    {
+        if (currentPage < totalPages) currentPage++;
+        ApplyFilterSortAndPaging();
+    }
 
-    private class ColumnDef
+    private void LastPage()
+    {
+        currentPage = totalPages;
+        ApplyFilterSortAndPaging();
+    }
+
+    private async Task OnRowClickedInternal(TItem item)
+    {
+        if (OnRowClicked.HasDelegate)
+            await OnRowClicked.InvokeAsync(item);
+    }
+
+    private object GetKey(TItem item)
+    {
+        if (KeySelector == null) return item;
+        return KeySelector(item);
+    }
+
+    private sealed class ColumnDef
     {
         public string Name { get; set; }
         public string DisplayName { get; set; }
         public PropertyInfo Property { get; set; }
     }
 
-    // Comparer wrapper: if object implements IComparable, use it; otherwise compare string form
-    private class ObjectAsComparable : IComparer<object>
+    private sealed class ObjectAsComparable : IComparer<object>
     {
         public int Compare(object x, object y)
         {
@@ -406,136 +462,19 @@
             if (x == null) return -1;
             if (y == null) return 1;
 
-            if (x is IComparable xc && x.GetType() == y.GetType())
-            {
-                return xc.CompareTo(y);
-            }
-
-            // fallback to string compare
-            var sx = x.ToString() ?? string.Empty;
-            var sy = y.ToString() ?? string.Empty;
-            return StringComparer.InvariantCultureIgnoreCase.Compare(sx, sy);
-        }
-    }
-
-    // --- Export helpers ---
-    private static string QuoteCsv(string input)
-    {
-        if (input is null) return "";
-        var needsQuotes = input.Contains(',') || input.Contains('"') || input.Contains('\n') || input.Contains('\r');
-        var escaped = input.Replace("\"", "\"\"");
-        return needsQuotes ? $"\"{escaped}\"" : escaped;
-    }
-
-    private static string EscapeTsv(string input)
-    {
-        if (string.IsNullOrEmpty(input)) return string.Empty;
-        return input
-            .Replace("\r\n", "\n")
-            .Replace("\r", "\n")
-            .Replace("\t", " ");
-    }
-
-    // add module ref
-    private IJSObjectReference? _exportModule;
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            try
-            {
-                // import module from wwwroot/js/genericTableExport.mjs
-                _exportModule = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./js/genericTableExport.mjs");
-            }
-            catch
-            {
-                // ignore — we'll fallback to CSV using open/data-url if module missing
-            }
-        }
-    }
-
-    private async Task CopyToClipboard()
-    {
-        if (_exportModule != null)
-        {
-            try
-            {
-                await _exportModule.InvokeVoidAsync("copyTableToClipboard", _tableId);
-                return;
-            }
-            catch
-            {
-                // ignore
-            }
-        }
-
-        // module yoksa hiç kopyalamamak daha doğru (birebir davranış JS ile mümkün)
-        // istersen burada eski TSV fallback'i tutabiliriz.
-    }
-
-    private async Task ExportToExcel()
-    {
-        var exportItems = filtered ?? allItems;
-        var headers = Columns.Select(c => c.DisplayName ?? c.Name).ToArray();
-        var rows = exportItems.Select(item => Columns.Select(c => FormatValue(c.Property.GetValue(item))).ToArray()).ToArray();
-
-        var filename = ExportFileName;
-        if (string.IsNullOrWhiteSpace(filename))
-            filename = $"table-export-{DateTime.Now:yyyyMMddHHmmss}.xlsx";
-        else if (!filename.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase))
-            filename = filename + ".xlsx";
-
-        if (_exportModule != null)
-        {
-            try
-            {
-                await _exportModule.InvokeVoidAsync("downloadXlsx", filename, headers, rows);
-                return;
-            }
-            catch
-            {
-                // fallback below
-            }
-        }
-
-        // fallback: CSV via data URL open (works without helper)
-        var sb = new StringBuilder();
-        sb.AppendLine(string.Join(",", headers.Select(QuoteCsv)));
-        foreach (var r in rows)
-        {
-            sb.AppendLine(string.Join(",", r.Select(QuoteCsv)));
-        }
-        var bytes = Encoding.UTF8.GetBytes(sb.ToString());
-        var base64 = Convert.ToBase64String(bytes);
-        var dataUrl = "data:text/csv;charset=utf-8;base64," + base64;
-        try
-        {
-            await JSRuntime.InvokeVoidAsync("open", dataUrl, "_blank");
-        }
-        catch
-        {
-            // last resort: attempt to call module CSV download if module exists
-            if (_exportModule != null)
+            if (x is IComparable cx)
             {
                 try
                 {
-                    await _exportModule.InvokeVoidAsync("downloadFromBase64", filename.Replace(".xlsx", ".csv"), base64, "text/csv;charset=utf-8;");
+                    return cx.CompareTo(y);
                 }
                 catch
                 {
-                    // give up silently
+                    // if types mismatch, fallback
                 }
             }
-        }
-    }
 
-    public async ValueTask DisposeAsync()
-    {
-        if (_exportModule != null)
-        {
-            await _exportModule.DisposeAsync();
-            _exportModule = null;
+            return string.Compare(x.ToString(), y.ToString(), StringComparison.CurrentCulture);
         }
     }
 }
