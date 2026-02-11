@@ -112,6 +112,11 @@
     [Parameter] public IEnumerable<TItem> Items { get; set; } = Array.Empty<TItem>();
     [Parameter] public RenderFragment<TItem> RowTemplate { get; set; }
     [Parameter] public RenderFragment HeaderTemplate { get; set; }
+
+    // NEW: Export customization (optional)
+    [Parameter] public IReadOnlyList<string>? ExportHeaders { get; set; }
+    [Parameter] public Func<TItem, IReadOnlyList<object?>>? ExportRow { get; set; }
+
     [Parameter] public int PageSize { get; set; } = 10;
     [Parameter] public int[] PageSizeOptions { get; set; } = new[] { 5, 10, 20, 50 };
     [Parameter] public string TableHeight { get; set; } = "400px";
@@ -121,14 +126,13 @@
     [Parameter] public Func<TItem, object> KeySelector { get; set; } // optional for @key
 
     [Parameter] public string TableClass { get; set; } = null;
-
     [Parameter] public bool ShowCopy { get; set; } = true;
-
-    // New export parameters
     [Parameter] public bool ShowExport { get; set; } = true;
     [Parameter] public string ExportFileName { get; set; } = null; // if null, auto-generated
 
     private readonly string _tableId = $"gt-{Guid.NewGuid():N}";
+
+    private IJSObjectReference? _genericTableExportModule;
 
     /* Internal state */
     private List<TItem> allItems = new();
@@ -143,13 +147,9 @@
     private PropertyInfo[] props;
     private List<ColumnDef> Columns = new();
 
-    // Backing field for search
     private string searchText = string.Empty;
-
-    // Backing field for page size binding
     private int boundPageSize;
 
-    // Expose search to parent (needed for rowspan/grouped layouts)
     public string CurrentSearchText => searchText;
 
     private string TableCssClass
@@ -190,19 +190,85 @@
     {
         allItems = Items?.ToList() ?? new List<TItem>();
 
-        // Respect [Browsable(false)] — skip such properties when building auto-columns
         props = typeof(TItem)
             .GetProperties(BindingFlags.Instance | BindingFlags.Public)
             .Where(p => p.GetCustomAttribute<BrowsableAttribute>()?.Browsable != false)
             .ToArray();
 
-        // Always build Columns from properties so sorting by property-name works even when custom HeaderTemplate is used.
         BuildColumnsFromProps();
 
-        // initialize bound page size from parameter
         boundPageSize = PageSize;
 
         ApplyFilterSortAndPaging();
+    }
+
+    private ValueTask<IJSObjectReference> GetGenericTableExportModuleAsync()
+    {
+        return _genericTableExportModule is not null
+            ? ValueTask.FromResult(_genericTableExportModule)
+            : LoadGenericTableExportModuleAsync();
+    }
+
+    private async ValueTask<IJSObjectReference> LoadGenericTableExportModuleAsync()
+    {
+        _genericTableExportModule = await JSRuntime.InvokeAsync<IJSObjectReference>(
+            "import",
+            "./js/genericTableExport.mjs");
+
+        return _genericTableExportModule;
+    }
+
+    private async Task CopyToClipboard()
+    {
+        var module = await GetGenericTableExportModuleAsync();
+        await module.InvokeVoidAsync("copyTableToClipboard", _tableId);
+    }
+
+    private async Task ExportToExcel()
+    {
+        var fileName = string.IsNullOrWhiteSpace(ExportFileName)
+            ? $"export-{DateTime.Now:yyyyMMddHHmmss}.xlsx"
+            : ExportFileName;
+
+        // Export should be based on *filtered* (not paged) to include all rows.
+        IReadOnlyList<string> headers;
+        List<IReadOnlyList<object?>> rows;
+
+        if (ExportHeaders != null && ExportHeaders.Count > 0)
+        {
+            headers = ExportHeaders;
+        }
+        else
+        {
+            headers = Columns.Select(c => c.DisplayName).ToArray();
+        }
+
+        if (ExportRow != null)
+        {
+            rows = filtered.Select(item => ExportRow(item)).ToList();
+        }
+        else
+        {
+            rows = filtered
+                .Select(item => (IReadOnlyList<object?>)Columns.Select(c => c.Property.GetValue(item)).ToArray())
+                .ToList();
+        }
+
+        // Convert values using the same formatter at export time
+        var formattedRows = rows
+            .Select(r => r.Select(FormatValue).ToArray())
+            .ToArray();
+
+        var module = await GetGenericTableExportModuleAsync();
+        await module.InvokeVoidAsync("downloadXlsx", fileName, headers, formattedRows);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_genericTableExportModule is not null)
+        {
+            await _genericTableExportModule.DisposeAsync();
+        }
     }
 
     private void BuildColumnsFromProps()
@@ -366,33 +432,6 @@
         if (value == null) return string.Empty;
         if (value is DateTime dt) return dt.ToString("dd.MM.yyyy");
         return value.ToString();
-    }
-
-    private async Task CopyToClipboard()
-    {
-        var sb = new StringBuilder();
-
-        // header
-        var headers = Columns.Select(c => c.DisplayName).ToArray();
-        sb.AppendLine(string.Join('\t', headers));
-
-        // rows (filtered, not just paged)
-        foreach (var item in filtered)
-        {
-            var row = Columns.Select(c => FormatValue(c.Property.GetValue(item))).ToArray();
-            sb.AppendLine(string.Join('\t', row));
-        }
-
-        await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", sb.ToString());
-    }
-
-    private async Task ExportToExcel()
-    {
-        var fileName = string.IsNullOrWhiteSpace(ExportFileName)
-            ? $"export-{DateTime.Now:yyyyMMddHHmmss}.xlsx"
-            : ExportFileName;
-
-        await JSRuntime.InvokeVoidAsync("genericTableExport.exportTableToExcel", _tableId, fileName);
     }
 
     private void ToggleSort(string field)

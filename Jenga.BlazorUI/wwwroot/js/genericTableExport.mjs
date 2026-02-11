@@ -192,3 +192,41 @@ export async function downloadXlsx(filename, headers, rows) {
         throw ex;
     }
 }
+
+export async function exportTableToExcel(tableId, filename) {
+    const table = document.getElementById(tableId);
+    if (!table) throw new Error(`Table not found: ${tableId}`);
+
+    const safeName = (filename && String(filename).trim().length > 0)
+        ? String(filename).trim()
+        : `export-${new Date().toISOString().replace(/[-:]/g, '').replace('T', '').slice(0, 14)}.xlsx`;
+
+    const headers = readHeaderTexts(table);
+    const rows = readBodyRows(table);
+
+    await downloadXlsx(safeName, headers, rows);
+}
+
+function readHeaderTexts(table) {
+    const headerRow = table.querySelector('thead tr');
+    if (!headerRow) return [];
+
+    const headerCells = Array.from(headerRow.querySelectorAll('th,td'))
+        .filter(cell => !!(cell.offsetParent || cell.getClientRects().length));
+
+    return headerCells.map(cell => cellText(cell));
+}
+
+function readBodyRows(table) {
+    const bodyRows = Array.from(table.querySelectorAll('tbody tr'));
+    const rows = [];
+
+    for (const tr of bodyRows) {
+        const cells = Array.from(tr.querySelectorAll('td,th'))
+            .filter(cell => !!(cell.offsetParent || cell.getClientRects().length));
+
+        rows.push(cells.map(cell => cellText(cell)));
+    }
+
+    return rows;
+}
