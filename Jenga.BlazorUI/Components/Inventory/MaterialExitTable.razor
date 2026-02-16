@@ -1,0 +1,248 @@
+﻿@using Jenga.BlazorUI.Components.Common
+@using Jenga.BlazorUI.Services.Common
+@using Jenga.DataAccess.Services.Inventory
+@using Jenga.Models.Enums
+@using Jenga.Models.IKYS
+@using Jenga.Models.Inventory
+@using Jenga.Utility.Helpers
+@using Jenga.Utility.Toast
+@using Jenga.BlazorUI.Helpers
+@inject IToastService ToastService
+@inject IModalService ModalService
+@inject IMaterialExitService MaterialExitService
+@inject IHttpContextAccessor httpContextAccessor
+
+<div class="d-flex justify-content-end mb-2">
+    <button class="btn btn-success" @onclick="OpenNewExitModal" type="button">
+        <i class="bi bi-plus-lg"></i> Yeni Çıkış
+    </button>
+</div>
+
+@if (MaterialExits?.Any() != true)
+{
+    <p>Malzeme çıkış kaydı bulunamadı.</p>
+}
+else
+{
+    <GenericTable TItem="ExitRow"
+                  Items="exitRows"
+                  PageSize="10"
+                  PageSizeOptions="new[] { 10, 20, 50, 100 }"
+                  TableHeight="Auto"
+                  ShowSearch="true"
+                  ShowExport="true"
+                  ExportFileName="material-exits.xlsx"
+                  KeySelector="(r => r.Id)"
+                  TableClass="table-hover table-sm table-bordered">
+
+        <HeaderTemplate>
+            <th>Tarih</th>
+            <th>Malzeme</th>
+            <th class="text-end">Miktar</th>
+            <th>Birim</th>
+            <th>Lokasyon</th>
+            <th>Çıkış Tipi</th>
+            <th>Açıklama</th>
+            <th class="text-center">İşlemler</th>
+        </HeaderTemplate>
+
+        <RowTemplate Context="r">
+            <td class="align-middle">@r.ExitDateText</td>
+            <td class="align-middle">@r.MaterialName</td>
+            <td class="align-middle text-end">@r.Quantity</td>
+            <td class="align-middle">@r.UnitName</td>
+            <td class="align-middle">@r.LocationName</td>
+            <td class="align-middle">@r.ExitTypeText</td>
+            <td class="align-middle">@r.Description</td>
+            <td class="text-center align-middle" style="white-space:nowrap;">
+                <button class="btn btn-sm btn-primary me-2" @onclick="() => OnEditClicked(r.OriginalExit)">Düzenle</button>
+                <button class="btn btn-sm btn-danger" @onclick="() => OnDeleteClicked(r.OriginalExit)">Sil</button>
+            </td>
+        </RowTemplate>
+    </GenericTable>
+}
+
+@if (showEditModal && selectedExit != null)
+{
+    <MaterialExitEditModal MaterialExit="@selectedExit"
+                           IsOpen="true"
+                           Materials="Materials"
+                           MaterialUnits="MaterialUnits"
+                           Locations="Locations"
+                           MaterialInventories="MaterialInventories"
+                           OnSave="HandleSave"
+                           OnClose="HideModal" />
+}
+
+@code {
+    [Parameter] public List<MaterialExit> MaterialExits { get; set; } = new();
+    [Parameter] public List<Material> Materials { get; set; } = new();
+    [Parameter] public List<MaterialUnit> MaterialUnits { get; set; } = new();
+    [Parameter] public List<Location> Locations { get; set; } = new();
+    [Parameter] public List<MaterialInventory> MaterialInventories { get; set; } = new();
+
+    private readonly Dictionary<int, string> _materialNameById = new();
+    private readonly Dictionary<int, string> _unitNameById = new();
+
+    private List<ExitRow> exitRows = new();
+
+    private MaterialExit? selectedExit;
+    private bool showEditModal;
+
+    protected override void OnParametersSet()
+    {
+        BuildLookups();
+        BuildRows();
+    }
+
+    private void BuildLookups()
+    {
+        _materialNameById.Clear();
+        _unitNameById.Clear();
+
+        if (Materials != null)
+        {
+            foreach (var m in Materials)
+            {
+                _materialNameById[m.Id] = m.MaterialName ?? string.Empty;
+            }
+        }
+
+        if (MaterialUnits != null)
+        {
+            foreach (var u in MaterialUnits)
+            {
+                _unitNameById[u.Id] = u.Symbol ?? u.Name ?? string.Empty;
+            }
+        }
+    }
+
+    private void BuildRows()
+    {
+        exitRows = (MaterialExits ?? new List<MaterialExit>())
+            .Select(e => new ExitRow
+            {
+                Id = e.Id,
+                OriginalExit = e,
+                ExitDate = e.ExitDate,
+                ExitDateText = e.ExitDate.ToString("yyyy-MM-dd"),
+                MaterialName = _materialNameById.TryGetValue(e.MaterialId, out var mn) ? mn : string.Empty,
+                Quantity = e.Quantity,
+                UnitName = _unitNameById.TryGetValue(e.MaterialUnitId, out var un) ? un : string.Empty,
+                LocationName = GetLocationName(e.LocationId),
+                ExitTypeText = GetExitTypeText(e),
+                Description = e.Aciklama ?? string.Empty
+            })
+            .ToList();
+    }
+
+    private string GetLocationName(int? locationId)
+    {
+        if (!locationId.HasValue || locationId.Value == 0) return string.Empty;
+
+        var loc = Locations?.FirstOrDefault(l => l.Id == locationId.Value);
+        if (loc == null) return string.Empty;
+
+        // Hierarchical name (same style used elsewhere)
+        return InventoryUIHelper.GetLocationFullName(loc.Id, Locations);
+    }
+
+    private static string GetExitTypeText(MaterialExit exit)
+    {
+        if (!exit.ExitType.HasValue) return string.Empty;
+
+        var v = exit.ExitType.Value;
+        if (Enum.IsDefined(typeof(MaterialExitType), v))
+        {
+            return EnumHelper.GetEnumDescription((MaterialExitType)v);
+        }
+
+        return exit.ExitTypeName ?? v.ToString();
+    }
+
+    private void OnEditClicked(MaterialExit exit)
+    {
+        selectedExit = exit;
+        showEditModal = true;
+    }
+
+    private async void HandleSave()
+    {
+        if (selectedExit != null)
+        {
+            if (selectedExit.Quantity < 1)
+            {
+                ToastService.ShowError("Miktar 1'den küçük olamaz!", 3000);
+                return;
+            }
+
+            if (selectedExit.Id == 0)
+            {
+                await MaterialExitService.AddAsync(selectedExit, CancellationToken.None);
+                MaterialExits.Add(selectedExit);
+            }
+            else
+            {
+                await MaterialExitService.UpdateAsync(selectedExit);
+            }
+
+            showEditModal = false;
+            BuildRows();
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnDeleteClicked(MaterialExit exit)
+    {
+        var materialName = _materialNameById.TryGetValue(exit.MaterialId, out var mn) ? mn : "Malzeme";
+
+        ModalService.ShowConfirmation(
+            "Silme Onayı",
+            $"'{materialName}' çıkış kaydını silmek istediğinizden emin misiniz?",
+            async result =>
+            {
+                if (!result)
+                {
+                    return;
+                }
+
+                await MaterialExitService.DeleteAsync(exit);
+                ToastService.ShowToast("Çıkış kaydı silindi", ToastType.Success, 3000);
+
+                MaterialExits.Remove(exit);
+                BuildRows();
+                StateHasChanged();
+            });
+    }
+
+    private void HideModal()
+    {
+        selectedExit = null;
+        showEditModal = false;
+    }
+
+    private Task OpenNewExitModal()
+    {
+        selectedExit = new MaterialExit { ExitDate = DateTime.Now };
+        showEditModal = true;
+        return Task.CompletedTask;
+    }
+
+    private sealed class ExitRow
+    {
+        public int Id { get; set; }
+        public MaterialExit OriginalExit { get; set; } = default!;
+
+        public DateTime ExitDate { get; set; }
+        public string ExitDateText { get; set; } = string.Empty;
+
+        public string MaterialName { get; set; } = string.Empty;
+        public int Quantity { get; set; }
+        public string UnitName { get; set; } = string.Empty;
+
+        public string LocationName { get; set; } = string.Empty;
+        public string ExitTypeText { get; set; } = string.Empty;
+
+        public string Description { get; set; } = string.Empty;
+    }
+}

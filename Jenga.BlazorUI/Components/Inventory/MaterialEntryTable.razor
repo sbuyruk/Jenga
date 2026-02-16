@@ -1,10 +1,10 @@
-﻿@using Jenga.BlazorUI.Components.Common
+﻿@using System.ComponentModel
+@using Jenga.BlazorUI.Components.Common
 @using Jenga.BlazorUI.Services.Common
 @using Jenga.DataAccess.Services.Inventory
 @using Jenga.Models.IKYS
 @using Jenga.Models.Inventory
 @using Jenga.Utility.Toast
-@using System.ComponentModel.DataAnnotations
 @inject IMaterialEntryService MaterialEntryService
 @inject IModalService ModalService
 @inject IToastService ToastService
@@ -28,19 +28,90 @@ else
                   TableHeight="Auto"
                   ShowSearch="true"
                   PageSize="10"
-                  PageSizeOptions="new[] {5, 10, 20, 50}"
+                  PageSizeOptions="new[] { 5, 10, 20, 50 }"
                   KeySelector="(r => r.Id)">
-        @* Let GenericTable auto-build sortable headers from EntryRow properties (Display attributes used below) *@
+        <HeaderTemplate>
+            <th @onclick="() => tableRef.SortBy(nameof(EntryRow.EntryDate))" role="button" aria-label="Sırala: Tarih">
+                <span class="d-inline-flex align-items-center">
+                    <span>Tarih</span>
+                    @if (tableRef?.CurrentSortField == nameof(EntryRow.EntryDate))
+                    {
+                        <i class="gt-sort-indicator bi @(tableRef.CurrentSortDescending ? "bi-caret-down-fill" : "bi-caret-up-fill") ms-2" aria-hidden="true"></i>
+                    }
+                </span>
+            </th>
+
+            <th @onclick="() => tableRef.SortBy(nameof(EntryRow.MaterialName))" role="button" aria-label="Sırala: Malzeme">
+                <span class="d-inline-flex align-items-center">
+                    <span>Malzeme</span>
+                    @if (tableRef?.CurrentSortField == nameof(EntryRow.MaterialName))
+                    {
+                        <i class="gt-sort-indicator bi @(tableRef.CurrentSortDescending ? "bi-caret-down-fill" : "bi-caret-up-fill") ms-2" aria-hidden="true"></i>
+                    }
+                </span>
+            </th>
+
+            <th @onclick="() => tableRef.SortBy(nameof(EntryRow.BrandName))" role="button" aria-label="Sırala: Marka">
+                <span class="d-inline-flex align-items-center">
+                    <span>Marka</span>
+                    @if (tableRef?.CurrentSortField == nameof(EntryRow.BrandName))
+                    {
+                        <i class="gt-sort-indicator bi @(tableRef.CurrentSortDescending ? "bi-caret-down-fill" : "bi-caret-up-fill") ms-2" aria-hidden="true"></i>
+                    }
+                </span>
+            </th>
+
+            <th @onclick="() => tableRef.SortBy(nameof(EntryRow.ModelName))" role="button" aria-label="Sırala: Model">
+                <span class="d-inline-flex align-items-center">
+                    <span>Model</span>
+                    @if (tableRef?.CurrentSortField == nameof(EntryRow.ModelName))
+                    {
+                        <i class="gt-sort-indicator bi @(tableRef.CurrentSortDescending ? "bi-caret-down-fill" : "bi-caret-up-fill") ms-2" aria-hidden="true"></i>
+                    }
+                </span>
+            </th>
+
+            <th class="text-end" @onclick="() => tableRef.SortBy(nameof(EntryRow.Quantity))" role="button" aria-label="Sırala: Miktar">
+                <span class="d-inline-flex align-items-center justify-content-end w-100">
+                    <span>Miktar</span>
+                    @if (tableRef?.CurrentSortField == nameof(EntryRow.Quantity))
+                    {
+                        <i class="gt-sort-indicator bi @(tableRef.CurrentSortDescending ? "bi-caret-down-fill" : "bi-caret-up-fill") ms-2" aria-hidden="true"></i>
+                    }
+                </span>
+            </th>
+
+            <th @onclick="() => tableRef.SortBy(nameof(EntryRow.LocationPath))" role="button" aria-label="Sırala: Lokasyon">
+                <span class="d-inline-flex align-items-center">
+                    <span>Lokasyon</span>
+                    @if (tableRef?.CurrentSortField == nameof(EntryRow.LocationPath))
+                    {
+                        <i class="gt-sort-indicator bi @(tableRef.CurrentSortDescending ? "bi-caret-down-fill" : "bi-caret-up-fill") ms-2" aria-hidden="true"></i>
+                    }
+                </span>
+            </th>
+
+            <th @onclick="() => tableRef.SortBy(nameof(EntryRow.PersonName))" role="button" aria-label="Sırala: Personel">
+                <span class="d-inline-flex align-items-center">
+                    <span>Personel</span>
+                    @if (tableRef?.CurrentSortField == nameof(EntryRow.PersonName))
+                    {
+                        <i class="gt-sort-indicator bi @(tableRef.CurrentSortDescending ? "bi-caret-down-fill" : "bi-caret-up-fill") ms-2" aria-hidden="true"></i>
+                    }
+                </span>
+            </th>
+
+            <th>İşlemler</th>
+        </HeaderTemplate>
 
         <RowTemplate Context="r">
+            <td class="align-middle">@r.EntryDate.ToString("yyyy-MM-dd")</td>
             <td class="align-middle">@r.MaterialName</td>
-            <td class="align-middle">@($"{r.Brand} {r.Model}".Trim())</td>
+            <td class="align-middle">@r.BrandName</td>
+            <td class="align-middle">@r.ModelName</td>
             <td class="align-middle text-end">@r.QuantityText</td>
-            <td class="align-middle">@r.UnitName</td>
             <td class="align-middle">@r.LocationPath</td>
             <td class="align-middle">@r.PersonName</td>
-            <td class="align-middle">@r.DateText</td>
-            <td class="align-middle">@r.InvoiceNo</td>
             <td class="align-middle">
                 <button class="btn btn-sm btn-primary me-2" @onclick="() => OnEditClicked(r.OriginalEntry)">Düzenle</button>
                 <button class="btn btn-sm btn-danger" @onclick="() => OnDeleteClicked(r.OriginalEntry)">Sil</button>
@@ -56,15 +127,15 @@ else
                             OnSave="HandleSave"
                             OnClose="HideModal"
                             Materials="@Materials"
-                            Locations="@Locations" 
-                            Persons="@Personels" 
+                            Locations="@Locations"
+                            Persons="@Personels"
                             MaterialUnits="@MaterialUnits"
                             Brands="@Brands"
                             Models="@Models" />
 }
 
 @code {
-    private GenericTable<EntryRow> tableRef;
+    private GenericTable<EntryRow>? tableRef;
 
     [Parameter] public List<MaterialEntry> MaterialEntries { get; set; } = new();
     [Parameter] public List<Material> Materials { get; set; } = new();
@@ -76,12 +147,25 @@ else
     [Parameter] public EventCallback OnRefresh { get; set; }
 
     private List<EntryRow> entryRows = new();
-    private MaterialEntry? selectedEntry { get; set; }
-    private bool showEditModal = false;
+    private MaterialEntry? selectedEntry;
+    private bool showEditModal;
+
+    private bool _initialSortApplied;
 
     protected override void OnParametersSet()
     {
         BuildEntryRows();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (!_initialSortApplied && tableRef is not null && entryRows.Count > 0)
+        {
+            // Default: Tarih DESC
+            tableRef.SortBy(nameof(EntryRow.EntryDate)); // ASC
+            tableRef.SortBy(nameof(EntryRow.EntryDate)); // DESC
+            _initialSortApplied = true;
+        }
     }
 
     private void BuildEntryRows()
@@ -90,46 +174,47 @@ else
         var modelLookup = (Models ?? new List<MaterialModel>()).ToDictionary(m => m.Id, m => m);
         var materialLookup = (Materials ?? new List<Material>()).ToDictionary(m => m.Id, m => m);
         var unitLookup = (MaterialUnits ?? new List<MaterialUnit>()).ToDictionary(u => u.Id, u => u);
-        var locationList = Locations ?? new List<Location>();
-        var personList = Personels ?? new List<Personel>();
 
         entryRows = new List<EntryRow>();
 
-        foreach (var e in MaterialEntries)
+        foreach (var e in MaterialEntries ?? new List<MaterialEntry>())
         {
             var materialName = materialLookup.TryGetValue(e.MaterialId, out var mat) ? mat.MaterialName : string.Empty;
-            var brandName = (e.BrandId != null && brandLookup.TryGetValue(e.BrandId.Value, out var b)) ? b.BrandName : string.Empty;
-            var modelName = (e.ModelId != null && modelLookup.TryGetValue(e.ModelId.Value, out var md)) ? md.ModelName : string.Empty;
+            var brandName = (e.BrandId.HasValue && brandLookup.TryGetValue(e.BrandId.Value, out var b)) ? b.BrandName : string.Empty;
+            var modelName = (e.ModelId.HasValue && modelLookup.TryGetValue(e.ModelId.Value, out var md)) ? md.ModelName : string.Empty;
 
-            var unitSymbol = string.Empty;
-            if (e.MaterialUnitId != null && unitLookup.TryGetValue(e.MaterialUnitId, out var u))
-                unitSymbol = u.Symbol ?? u.Name;
+            var unitName = string.Empty;
+            if (unitLookup.TryGetValue(e.MaterialUnitId, out var u))
+            {
+                unitName = u.Symbol ?? u.Name ?? string.Empty;
+            }
             else if (materialLookup.TryGetValue(e.MaterialId, out var m2) && unitLookup.TryGetValue(m2.MaterialUnitId, out var u2))
-                unitSymbol = u2.Symbol ?? u2.Name;
+            {
+                unitName = u2.Symbol ?? u2.Name ?? string.Empty;
+            }
 
-            var qtyText = $"{e.Quantity} {unitSymbol}".Trim();
-
-            var locPath = GetLocationPath(Locations.FirstOrDefault(l => l.Id == e.LocationId));
-            var person = Personels.FirstOrDefault(p => p.Id == e.PersonelId) ?? e.Personel;
+            var locPath = GetLocationPath(Locations?.FirstOrDefault(l => l.Id == e.LocationId));
+            var person = Personels?.FirstOrDefault(p => p.Id == e.PersonelId) ?? e.Personel;
             var personName = person != null ? $"{person.Adi} {person.Soyadi}" : string.Empty;
 
             entryRows.Add(new EntryRow
             {
                 Id = e.Id,
                 OriginalEntry = e,
+                EntryDate = e.EntryDate,
                 MaterialName = materialName ?? string.Empty,
-                Brand = brandName ?? string.Empty,
-                Model = modelName ?? string.Empty,
-                QuantityText = qtyText,
-                QuantityValue = e.Quantity,
-                UnitName = unitSymbol ?? string.Empty,
+                BrandName = brandName ?? string.Empty,
+                ModelName = modelName ?? string.Empty,
+                Quantity = e.Quantity,
+                QuantityText = $"{e.Quantity} {unitName}".Trim(),
+                UnitName = unitName ?? string.Empty,
                 LocationPath = locPath,
-                PersonName = personName,
-                DateText = e.EntryDate.ToString("yyyy-MM-dd"),
-                DateValue = e.EntryDate,
-                InvoiceNo = e.InvoiceNo ?? string.Empty
+                PersonName = personName
             });
         }
+
+        // data değişince initial sort tekrar uygulanabilsin
+        _initialSortApplied = false;
     }
 
     private void OnEditClicked(MaterialEntry entry)
@@ -140,35 +225,36 @@ else
 
     private async void HandleSave()
     {
-        string? currentUserName = httpContextAccessor.HttpContext?.User?.Identity?.Name;
-        if (selectedEntry != null)
-        {
-            if (selectedEntry.Quantity < 1)
-            {
-                ToastService.ShowError("Miktar 1'den küçük olamaz!", 3000);
-                return;
-            }
-            if (selectedEntry.Id == 0)
-            {
-                var saved = await MaterialEntryService.AddAsync(
-                                selectedEntry,
-                                currentUserName,
-                                CancellationToken.None);
+        var currentUserName = httpContextAccessor.HttpContext?.User?.Identity?.Name;
 
-                if (saved)
-                {
-                    MaterialEntries.Add(selectedEntry);
-                }
-            }
-            else
-            {
-                await MaterialEntryService.UpdateMaterialEntryAndInventoryAsync(selectedEntry, currentUserName, CancellationToken.None);
-            }
-            showEditModal = false;
-            await OnRefresh.InvokeAsync();
-            BuildEntryRows();
-            StateHasChanged();
+        if (selectedEntry == null)
+        {
+            return;
         }
+
+        if (selectedEntry.Quantity < 1)
+        {
+            ToastService.ShowError("Miktar 1'den küçük olamaz!", 3000);
+            return;
+        }
+
+        if (selectedEntry.Id == 0)
+        {
+            var saved = await MaterialEntryService.AddAsync(selectedEntry, currentUserName, CancellationToken.None);
+            if (saved)
+            {
+                MaterialEntries.Add(selectedEntry);
+            }
+        }
+        else
+        {
+            await MaterialEntryService.UpdateMaterialEntryAndInventoryAsync(selectedEntry, currentUserName, CancellationToken.None);
+        }
+
+        showEditModal = false;
+        await OnRefresh.InvokeAsync();
+        BuildEntryRows();
+        StateHasChanged();
     }
 
     private async Task OnDeleteClicked(MaterialEntry entry)
@@ -182,22 +268,25 @@ else
             $"'{material?.MaterialName ?? "Malzeme"}' kaydını silmek istediğinizden emin misiniz?",
             async result =>
             {
-                if (result)
+                if (!result)
                 {
-                    string? currentUserName = httpContextAccessor.HttpContext?.User?.Identity?.Name;
-                    var deleted = await MaterialEntryService.DeleteMaterialEntryAndUpdateInventoryAsync(entry, currentUserName, CancellationToken.None);
-                    if (deleted)
-                    {
-                        ToastService.ShowToast($"{material?.MaterialName ?? entry.Id.ToString()} silindi", ToastType.Success, 3000);
-                        MaterialEntries.Remove(entry);
-                        await OnRefresh.InvokeAsync();
-                        BuildEntryRows();
-                        StateHasChanged();
-                    }
-                    else
-                    {
-                        ToastService.ShowToast($"Silme işlemi başarısız oldu", ToastType.Error, 3000);
-                    }
+                    return;
+                }
+
+                var currentUserName = httpContextAccessor.HttpContext?.User?.Identity?.Name;
+                var deleted = await MaterialEntryService.DeleteMaterialEntryAndUpdateInventoryAsync(entry, currentUserName, CancellationToken.None);
+
+                if (deleted)
+                {
+                    ToastService.ShowToast($"{material?.MaterialName ?? entry.Id.ToString()} silindi", ToastType.Success, 3000);
+                    MaterialEntries.Remove(entry);
+                    await OnRefresh.InvokeAsync();
+                    BuildEntryRows();
+                    StateHasChanged();
+                }
+                else
+                {
+                    ToastService.ShowToast("Silme işlemi başarısız oldu", ToastType.Error, 3000);
                 }
             });
     }
@@ -208,71 +297,60 @@ else
         showEditModal = false;
     }
 
-    private async Task OpenNewEntryModal()
+    private Task OpenNewEntryModal()
     {
         selectedEntry = new MaterialEntry
         {
             EntryDate = DateTime.Now
         };
+
         showEditModal = true;
+        return Task.CompletedTask;
     }
 
     private string GetLocationPath(Location? loc)
     {
-        if (loc == null) return string.Empty;
+        if (loc == null)
+        {
+            return string.Empty;
+        }
+
         var names = new List<string>();
         var current = loc;
+
         while (current != null)
         {
             names.Insert(0, current.LocationName);
             current = Locations.FirstOrDefault(x => x.Id == current.ParentId);
         }
+
         return string.Join(" > ", names);
     }
 
-    private string GetPersonName(int? personId, List<Personel> personList)
+    private sealed class EntryRow
     {
-        if (!personId.HasValue || personList == null) return string.Empty;
-        var p = personList.FirstOrDefault(x => x.Id == personId.Value);
-        return p != null ? $"{p.Adi} {p.Soyadi}" : string.Empty;
-    }
-
-    private class EntryRow
-    {
+        [Browsable(false)]
         public int Id { get; set; }
-        public MaterialEntry OriginalEntry { get; set; }
 
-        [Display(Name = "Malzeme")]
+        [Browsable(false)]
+        public MaterialEntry OriginalEntry { get; set; } = default!;
+
+        public DateTime EntryDate { get; set; }
+
         public string MaterialName { get; set; } = string.Empty;
 
-        [Display(Name = "Marka")]
-        public string Brand { get; set; } = string.Empty;
+        public string BrandName { get; set; } = string.Empty;
 
-        [Display(Name = "Model")]
-        public string Model { get; set; } = string.Empty;
+        public string ModelName { get; set; } = string.Empty;
 
-        [Display(Name = "Miktar")]
+        public int Quantity { get; set; }
+
         public string QuantityText { get; set; } = string.Empty;
 
-        [Display(Name = "Miktar (Sıralama)")]
-        public decimal QuantityValue { get; set; }
-
-        [Display(Name = "Birim")]
         public string UnitName { get; set; } = string.Empty;
 
-        [Display(Name = "Lokasyon")]
         public string LocationPath { get; set; } = string.Empty;
 
-        [Display(Name = "Personel")]
         public string PersonName { get; set; } = string.Empty;
-
-        [Display(Name = "Tarih")]
-        public string DateText { get; set; } = string.Empty;
-
-        [Display(Name = "Tarih (Sıralama)")]
-        public DateTime DateValue { get; set; }
-
-        [Display(Name = "Belge No")]
-        public string InvoiceNo { get; set; } = string.Empty;
     }
 }

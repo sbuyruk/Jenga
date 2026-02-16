@@ -1,4 +1,5 @@
-﻿@using Jenga.BlazorUI.Services.Common
+﻿@using Jenga.BlazorUI.Components.Common
+@using Jenga.BlazorUI.Services.Common
 @using Jenga.DataAccess.Services.Inventory
 @using Jenga.Models.Inventory
 @using Jenga.Utility.Toast
@@ -20,35 +21,34 @@
 }
 else
 {
-    <table class="table table-striped display" id="MaterialCategoryListTable">
-        <thead>
-            <tr>
-                <th>Ad</th>
-                <th>Açıklama</th>
-                <th>Üst Kategori Id</th>
-                <th>İşlemler</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var cat in Categories)
-            {
-                <tr>
-                    <td>@cat.CategoryName</td>
-                    <td>@cat.Aciklama</td>
-                    <td>
-                        @{
-                            var parent = Categories.FirstOrDefault(x => x.Id == cat.ParentCategoryId);
-                        }
-                        @parent?.CategoryName
-                    </td>
-                    <td>
-                        <button class="btn btn-primary me-2" @onclick="() => OnEditClicked(cat)">Düzenle</button>
-                        <button class="btn btn-danger" @onclick="() => OnDeleteClicked(cat)">Sil</button>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+    <GenericTable TItem="MaterialCategory"
+                  Items="Categories"
+                  PageSize="10"
+                  PageSizeOptions="new[] { 10, 20, 50, 100 }"
+                  TableHeight="Auto"
+                  ShowSearch="true"
+                  ShowExport="true"
+                  ExportFileName="material-categories.xlsx"
+                  KeySelector="(c => c.Id)"
+                  TableClass="table-hover table-sm table-bordered">
+
+        <HeaderTemplate>
+            <th>Ad</th>
+            <th>Açıklama</th>
+            <th>Üst Kategori</th>
+            <th class="text-center">İşlemler</th>
+        </HeaderTemplate>
+
+        <RowTemplate Context="cat">
+            <td class="align-middle">@cat.CategoryName</td>
+            <td class="align-middle">@cat.Aciklama</td>
+            <td class="align-middle">@GetParentCategoryName(cat.ParentCategoryId)</td>
+            <td class="text-center align-middle" style="white-space:nowrap;">
+                <button class="btn btn-sm btn-primary me-2" @onclick="() => OnEditClicked(cat)">Düzenle</button>
+                <button class="btn btn-sm btn-danger" @onclick="() => OnDeleteClicked(cat)">Sil</button>
+            </td>
+        </RowTemplate>
+    </GenericTable>
 }
 
 @if (showEditModal && selectedCategory != null)
@@ -60,10 +60,30 @@ else
                               ParentCategories="Categories?.Where(x => x.Id != selectedCategory.Id).ToList()" />
 }
 
-@code {
+@code
+{
     [Parameter] public List<MaterialCategory> Categories { get; set; } = new();
-    private MaterialCategory? selectedCategory { get; set; }
-    private bool showEditModal = false;
+
+    private readonly Dictionary<int, string> _categoryNameById = new();
+
+    private MaterialCategory? selectedCategory;
+    private bool showEditModal;
+
+    protected override void OnParametersSet()
+    {
+        _categoryNameById.Clear();
+
+        if (Categories != null)
+        {
+            foreach (var c in Categories)
+            {
+                _categoryNameById[c.Id] = c.CategoryName ?? string.Empty;
+            }
+        }
+    }
+
+    private string GetParentCategoryName(int? parentCategoryId)
+        => parentCategoryId.HasValue && _categoryNameById.TryGetValue(parentCategoryId.Value, out var name) ? name : string.Empty;
 
     private Task OnEditClicked(MaterialCategory category)
     {
@@ -71,6 +91,7 @@ else
         showEditModal = true;
         return Task.CompletedTask;
     }
+
     private async void HandleSave()
     {
         if (selectedCategory != null)
@@ -87,15 +108,14 @@ else
             {
                 await MaterialCategoryService.UpdateAsync(selectedCategory);
             }
+
             showEditModal = false;
             StateHasChanged();
         }
     }
+
     private async Task OnDeleteClicked(MaterialCategory category)
     {
-        // Alt kategori kontrolü
-        if (category == null)
-            return;
         var hasChildren = Categories.Any(m => m.ParentCategoryId == category.Id);
         if (hasChildren)
         {
@@ -115,14 +135,14 @@ else
             ToastService.ShowToast(message, ToastType.Error, 5000);
             return;
         }
-        // Material kontrolü
+
         var hasMaterial = await MaterialService.AnyAsync(m => m.CategoryId == category.Id);
         if (hasMaterial)
         {
             ToastService.ShowToast("Bu kategoriye bağlı malzemeler var, önce onları silmelisiniz.", ToastType.Error, 5000);
             return;
         }
-        // Brand kontrolü yap
+
         var hasBrand = await MaterialBrandService.AnyAsync(m => m.CategoryId == category.Id);
         if (hasBrand)
         {
@@ -130,36 +150,40 @@ else
             return;
         }
 
-
         ModalService.ShowConfirmation(
             "Silme Onayı",
-            $"'{category.CategoryName}' rolünü silmek istediğinizden emin misiniz?",
+            $"'{category.CategoryName}' kategorisini silmek istediğinizden emin misiniz?",
             async result =>
             {
-                if (result)
+                if (!result)
                 {
-                    var deleted = await MaterialCategoryService.DeleteAsync(category.Id);
-                    if (deleted)
-                    {
-                        ToastService.ShowToast($"{category.CategoryName} silindi", ToastType.Success, 3000);
-                        Categories.Remove(category);
-                        StateHasChanged();
-                    }
-                    else
-                    {
-                        ToastService.ShowToast($"Silme işlemi başarısız oldu", ToastType.Error, 3000);
-                    }
+                    return;
+                }
+
+                var deleted = await MaterialCategoryService.DeleteAsync(category.Id);
+                if (deleted)
+                {
+                    ToastService.ShowToast($"{category.CategoryName} silindi", ToastType.Success, 3000);
+                    Categories.Remove(category);
+                    StateHasChanged();
+                }
+                else
+                {
+                    ToastService.ShowToast("Silme işlemi başarısız oldu", ToastType.Error, 3000);
                 }
             });
     }
+
     private void HideModal()
     {
         selectedCategory = null;
         showEditModal = false;
     }
-    private async Task OpenNewCategoryModal()
+
+    private Task OpenNewCategoryModal()
     {
         selectedCategory = new MaterialCategory();
         showEditModal = true;
+        return Task.CompletedTask;
     }
 }

@@ -9,8 +9,8 @@
 @inject IJSRuntime JS
 
 <h3>Malzeme Marka Yönetimi</h3>
-<MaterialBrandListComponent Brands="@brands"
-                           Categories="@categories" />
+<MaterialBrandTable Brands="brands"
+                    Categories="categories" />
 
 @code {
     private List<MaterialBrand> brands = new();
@@ -25,7 +25,6 @@
             categories = await MaterialCategoryService.GetAllAsync();
             _dataLoaded = true;
             StateHasChanged();
-            await JS.InvokeVoidAsync("initMaterialBrandTableWithExport");
         }
     }
 }

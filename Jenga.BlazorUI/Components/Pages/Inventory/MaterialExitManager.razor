@@ -13,12 +13,11 @@
 
 <h3>Malzeme Çıkış Yönetimi</h3>
 
-<MaterialExitListComponent
-    MaterialExits="@materialExits"
-    Materials="@materials"
-    MaterialUnits="@units"
-    Locations="@locations"
-    MaterialInventories="@materialInventories" />
+<MaterialExitTable MaterialExits="@materialExits"
+                   Materials="@materials"
+                   MaterialUnits="@units"
+                   Locations="@locations"
+                   MaterialInventories="@materialInventories" />
 
 @code {
     private List<MaterialExit> materialExits = new();
@@ -40,7 +39,6 @@
             materialInventories = await MaterialInventoryService.GetAllAsync();
             _dataLoaded = true;
             StateHasChanged();
-            await JS.InvokeVoidAsync("initMaterialTableWithExport");
         }
     }
 }

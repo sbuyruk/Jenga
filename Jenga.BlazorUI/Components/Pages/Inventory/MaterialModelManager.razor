@@ -9,7 +9,7 @@
 @inject IJSRuntime JS
 
 <h3>Malzeme Model Yönetimi</h3>
-<MaterialModelListComponent Models="@models" Brands="@brands" />
+<MaterialModelTable Models="@models" Brands="@brands" />
 
 @code {
     private List<MaterialModel> models = new();
@@ -24,7 +24,6 @@
             brands = await MaterialBrandService.GetAllAsync();
             _dataLoaded = true;
             StateHasChanged();
-            await JS.InvokeVoidAsync("initMaterialModelTableWithExport");
         }
     }
 }

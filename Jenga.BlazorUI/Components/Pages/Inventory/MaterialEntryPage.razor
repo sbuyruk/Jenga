@@ -47,7 +47,6 @@
             materialUnits = await MaterialUnitService.GetAllAsync();
             _dataLoaded = true;
             StateHasChanged();
-            await JS.InvokeVoidAsync("initMaterialEntryTableWithExport");
         }
     }
 

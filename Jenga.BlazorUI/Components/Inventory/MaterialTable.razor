@@ -1,0 +1,170 @@
+﻿@using Jenga.BlazorUI.Components.Common
+@using Jenga.BlazorUI.Services.Common
+@using Jenga.DataAccess.Services.Inventory
+@using Jenga.Models.Inventory
+@using Jenga.Utility.Toast
+@inject IToastService ToastService
+@inject IModalService ModalService
+@inject IMaterialService MaterialService
+
+<div class="d-flex justify-content-end mb-2">
+    <button class="btn btn-success" @onclick="OpenNewMaterialModal" type="button">
+        <i class="bi bi-plus-lg"></i> Yeni Malzeme
+    </button>
+</div>
+
+@if (Materials?.Any() != true)
+{
+    <p>Malzeme bulunamadı.</p>
+}
+else
+{
+    <GenericTable TItem="Material"
+                  Items="Materials"
+                  PageSize="10"
+                  PageSizeOptions="new[] { 10, 20, 50, 100 }"
+                  TableHeight="Auto"
+                  ShowSearch="true"
+                  ShowExport="true"
+                  ExportFileName="materials.xlsx"
+                  KeySelector="(m => m.Id)"
+                  TableClass="table-hover table-sm table-bordered">
+
+        <HeaderTemplate>
+            <th>Ad</th>
+            <th>Kategori</th>
+            <th>Birim</th>
+            <th>Varlık mı</th>
+            <th>Açıklama</th>
+            <th class="text-center">İşlemler</th>
+        </HeaderTemplate>
+
+        <RowTemplate Context="mat">
+            <td class="align-middle">@mat.MaterialName</td>
+            <td class="align-middle">@GetCategoryName(mat.CategoryId)</td>
+            <td class="align-middle">@GetUnitName(mat.MaterialUnitId)</td>
+            <td class="align-middle">@(mat.IsAsset ? "Evet" : "Hayır")</td>
+            <td class="align-middle">@mat.Aciklama</td>
+            <td class="text-center align-middle" style="white-space:nowrap;">
+                <button class="btn btn-sm btn-primary me-2" @onclick="() => OnEditClicked(mat)">Düzenle</button>
+                <button class="btn btn-sm btn-danger" @onclick="() => OnDeleteClicked(mat)">Sil</button>
+            </td>
+        </RowTemplate>
+    </GenericTable>
+}
+
+@if (showEditModal && selectedMaterial != null)
+{
+    <MaterialEditModal Material="@selectedMaterial"
+                      IsOpen="true"
+                      OnSave="HandleSave"
+                      OnClose="HideModal"
+                      Categories="Categories"
+                      MaterialUnits="MaterialUnits" />
+}
+
+@code {
+    [Parameter] public List<Material> Materials { get; set; } = new();
+    [Parameter] public List<MaterialUnit> MaterialUnits { get; set; } = new();
+    [Parameter] public List<MaterialCategory> Categories { get; set; } = new();
+
+    private readonly Dictionary<int, string> _categoryNameById = new();
+    private readonly Dictionary<int, string> _unitNameById = new();
+
+    private Material? selectedMaterial;
+    private bool showEditModal;
+
+    protected override void OnParametersSet()
+    {
+        _categoryNameById.Clear();
+        if (Categories != null)
+        {
+            foreach (var c in Categories)
+            {
+                _categoryNameById[c.Id] = c.CategoryName ?? string.Empty;
+            }
+        }
+
+        _unitNameById.Clear();
+        if (MaterialUnits != null)
+        {
+            foreach (var u in MaterialUnits)
+            {
+                _unitNameById[u.Id] = u.Name ?? string.Empty;
+            }
+        }
+    }
+
+    private string GetCategoryName(int categoryId)
+        => _categoryNameById.TryGetValue(categoryId, out var name) ? name : string.Empty;
+
+    private string GetUnitName(int unitId)
+        => _unitNameById.TryGetValue(unitId, out var name) ? name : string.Empty;
+
+    private async Task OnEditClicked(Material material)
+    {
+        selectedMaterial = await MaterialService.GetByIdWithRelationsAsync(material.Id);
+        showEditModal = true;
+    }
+
+    private async void HandleSave()
+    {
+        if (selectedMaterial != null)
+        {
+            if (selectedMaterial.Id == 0)
+            {
+                var saved = await MaterialService.AddAsync(selectedMaterial);
+                if (saved)
+                {
+                    Materials.Add(selectedMaterial);
+                }
+            }
+            else
+            {
+                await MaterialService.UpdateAsync(selectedMaterial);
+            }
+
+            showEditModal = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnDeleteClicked(Material material)
+    {
+        ModalService.ShowConfirmation(
+            "Silme Onayı",
+            $"'{material.MaterialName}' malzemesini silmek istediğinizden emin misiniz?",
+            async result =>
+            {
+                if (!result)
+                {
+                    return;
+                }
+
+                var deleted = await MaterialService.DeleteAsync(material.Id);
+                if (deleted)
+                {
+                    ToastService.ShowToast($"{material.MaterialName} silindi", ToastType.Success, 3000);
+                    Materials.Remove(material);
+                    StateHasChanged();
+                }
+                else
+                {
+                    ToastService.ShowToast("Silme işlemi başarısız oldu", ToastType.Error, 3000);
+                }
+            });
+    }
+
+    private void HideModal()
+    {
+        selectedMaterial = null;
+        showEditModal = false;
+    }
+
+    private Task OpenNewMaterialModal()
+    {
+        selectedMaterial = new Material();
+        showEditModal = true;
+        return Task.CompletedTask;
+    }
+}

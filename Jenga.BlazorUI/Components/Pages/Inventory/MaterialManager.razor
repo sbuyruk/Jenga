@@ -12,10 +12,10 @@
 @inject IJSRuntime JS
 
 <h3>Malzeme Yönetimi</h3>
-<MaterialListComponent 
-    Materials="@materials" 
-    Categories="@categories" 
-    MaterialUnits="@units"/>
+<MaterialTable
+    Materials="@materials"
+    Categories="@categories"
+    MaterialUnits="@units" />
 
 @code {
     private List<Material> materials = new();
@@ -33,7 +33,6 @@
             units = await MaterialUnitService.GetAllAsync();
             _dataLoaded = true;
             StateHasChanged();
-            await JS.InvokeVoidAsync("initMaterialTableWithExport");
         }
     }
 }

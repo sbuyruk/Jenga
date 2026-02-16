@@ -8,7 +8,7 @@
 @inject IJSRuntime JS
 
 <h3>Malzeme Kategori Yönetimi</h3>
-<MaterialCategoryListComponent Categories="@categories" />
+<MaterialCategoryTable Categories="@categories" />
 
 @code {
     private List<MaterialCategory> categories = new();
@@ -21,7 +21,6 @@
             categories = await MaterialCategoryService.GetAllAsync();
             _dataLoaded = true;
             StateHasChanged();
-            await JS.InvokeVoidAsync("initMaterialCategoryTableWithExport");
         }
     }
 }

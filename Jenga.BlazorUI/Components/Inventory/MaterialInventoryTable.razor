@@ -20,12 +20,26 @@
 else
 {
     <GenericTable TItem="InventoryRow"
+                  @ref="tableRef"
                   Items="inventoryRows"
                   TableHeight="Auto"
                   ShowSearch="true"
                   PageSize="10"
                   PageSizeOptions="new[] {5, 10, 20, 50}"
                   KeySelector="(r => r.MaterialId)">
+
+        <HeaderTemplate>
+            @HeaderCell("Malzeme", nameof(InventoryRow.MaterialName))
+            @HeaderCell("Kategori", nameof(InventoryRow.CategoryName))
+            @HeaderCell("Toplam Miktar", nameof(InventoryRow.TotalQuantity), "text-end")
+            @HeaderCell("Birim", nameof(InventoryRow.UnitSymbol))
+            @HeaderCell("Kritik", nameof(InventoryRow.CriticalStock), "text-center")
+            <th class="text-center">Yerler</th>
+            <th class="text-center">Hareketler</th>
+            <th class="text-center">Giriş</th>
+            <th class="text-center">Çıkış</th>
+            <th class="text-center">Transfer</th>
+        </HeaderTemplate>
 
         <RowTemplate Context="r">
             <td class="align-middle">@r.MaterialName</td>
@@ -515,4 +529,37 @@ else
         public bool HasCriticalStock { get; set; }
         public bool IsCritical { get; set; }
     }
+
+    private GenericTable<InventoryRow>? tableRef;
+
+    private RenderFragment HeaderCell(string title, string field, string? thClass = null) => __builder =>
+    {
+        var seq = 0;
+
+        __builder.OpenElement(seq++, "th");
+        if (!string.IsNullOrWhiteSpace(thClass))
+        {
+            __builder.AddAttribute(seq++, "class", thClass);
+        }
+        __builder.AddAttribute(seq++, "role", "button");
+        __builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, () => tableRef!.SortBy(field)));
+
+        __builder.OpenElement(seq++, "span");
+        __builder.AddAttribute(seq++, "class", "d-inline-flex align-items-center");
+
+        __builder.OpenElement(seq++, "span");
+        __builder.AddContent(seq++, title);
+        __builder.CloseElement();
+
+        if (tableRef?.CurrentSortField == field)
+        {
+            __builder.OpenElement(seq++, "i");
+            __builder.AddAttribute(seq++, "class", $"gt-sort-indicator bi {(tableRef.CurrentSortDescending ? "bi-caret-down-fill" : "bi-caret-up-fill")} ms-2");
+            __builder.AddAttribute(seq++, "aria-hidden", "true");
+            __builder.CloseElement();
+        }
+
+        __builder.CloseElement(); // span
+        __builder.CloseElement(); // th
+    };
 }
