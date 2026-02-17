@@ -51,11 +51,42 @@
         return negative ? -n : n;
     };
 
-    const hasFraction = (n) => Number.isFinite(n) && Math.abs(n % 1) > 1e-9;
+    // Metinden "ondalık var mı" tespiti:
+    // - TR: "... ,dd" (dd = 00 dahil) => ondalık var
+    // - DOT: "... .dd" (dd = 00 dahil) => ondalık var (hatalı kayıt senaryosu)
+    // Ek: "111.222.333" gibi binlik ayırıcılı değerleri de "formatlı sayı sütunu" kabul et
+    const textHasDecimalPart = (value) => {
+        if (value === null || value === undefined) return false;
+
+        let s = String(value).trim();
+        if (!s) return false;
+
+        // Rakam yoksa sayı değildir
+        if (!/\d/.test(s)) return false;
+
+        // boşluk + NBSP kaldır
+        s = s.replace(/\u00A0/g, "").replace(/\s/g, "");
+
+        // Sonda ",dd" varsa (",00" dahil)
+        if (/,(\d{1,2})$/.test(s)) return true;
+
+        // Sonda ".dd" varsa (".00" dahil) => bozuk veri olasılığı
+        if (/\.(\d{1,2})$/.test(s)) return true;
+
+        // Binlik ayırıcı sinyali: "1.234" veya "111.222.333" gibi
+        if (/\d\.\d/.test(s)) return true;
+
+        // Virgül içeriyorsa (ondalık veya başka lokal format) formatlı kabul et
+        if (/,/.test(s)) return true;
+
+        return false;
+    };
 
     const range = window.XLSX.utils.decode_range(ws["!ref"] || "A1:A1");
 
     // 1) Ensure cells exist + normalize string -> number
+    //    Not: başlık satırlarını (thead=3) sayıya çevirmiyoruz.
+    //    Ayrıca "kolonda ondalık var mı" tespiti için ham metni saklıyoruz.
     for (let R = range.s.r; R <= range.e.r; ++R) {
         for (let C = range.s.c; C <= range.e.c; ++C) {
             const addr = window.XLSX.utils.encode_cell({ r: R, c: C });
@@ -70,6 +101,11 @@
                 continue;
             }
 
+            // Ham metni sakla (ondalık tespiti için)
+            if (cell._raw === undefined) {
+                cell._raw = cell.v;
+            }
+
             if (cell.t === "s") {
                 const parsed = tryParseTrNumber(cell.v);
                 if (parsed !== null) {
@@ -81,22 +117,24 @@
     }
 
     // 2) Column scan: if any decimal exists in the column => format whole column as 0.00
+    //    Burada parse edilmiş değere değil, ham metne bakıyoruz (",00" da ondalık sayılır)
     const colHasFraction = {};
     for (let C = range.s.c; C <= range.e.c; ++C) {
         colHasFraction[C] = false;
     }
 
     for (let R = range.s.r; R <= range.e.r; ++R) {
+        const isHeaderRow = R <= 2; // thead = 3 satır
+        if (isHeaderRow) {
+            continue;
+        }
+
         for (let C = range.s.c; C <= range.e.c; ++C) {
             const addr = window.XLSX.utils.encode_cell({ r: R, c: C });
             const cell = ws[addr];
             if (!cell) continue;
 
-            const isNumber = cell.t === "n" || typeof cell.v === "number";
-            if (!isNumber) continue;
-
-            const n = Number(cell.v);
-            if (hasFraction(n)) {
+            if (textHasDecimalPart(cell._raw ?? cell.v)) {
                 colHasFraction[C] = true;
             }
         }
@@ -109,7 +147,6 @@
             const cell = ws[addr];
             if (!cell) continue;
 
-            const isNumber = cell.t === "n" || typeof cell.v === "number";
             const isHeaderRow = R <= 2;
 
             const domRow = table.rows?.[R];
@@ -129,6 +166,17 @@
                 left: (makeRowThick || isOuterLeft) ? borderThick : borderThin,
                 right: (makeRowThick || isOuterRight) ? borderThick : borderThin
             };
+
+            // Kolon "ondalıklı" ise ve hücre string kaldıysa, bir kez daha sayıya çevirmeyi dene
+            if (!isHeaderRow && colHasFraction[C] && cell.t === "s") {
+                const parsed = tryParseTrNumber(cell.v);
+                if (parsed !== null) {
+                    cell.v = parsed;
+                    cell.t = "n";
+                }
+            }
+
+            const isNumber = cell.t === "n" || typeof cell.v === "number";
 
             cell.s.alignment = cell.s.alignment || {};
             cell.s.alignment.vertical = "center";

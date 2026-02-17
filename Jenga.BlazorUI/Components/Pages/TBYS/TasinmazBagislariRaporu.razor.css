@@ -1,0 +1,70 @@
+﻿.tbys-report-table {
+    /* Bootstrap .table { width: 100%; } override */
+    width: auto;
+    max-width: 1500px; /* ihtiyaca göre 1100/1300 yapabilirsin */
+    margin-inline: auto; /* yatay ortala */
+}
+
+@media (max-width: 1600px) {
+    .tbys-report-table {
+        max-width: 100%;
+        width: 100%;
+    }
+}
+
+.tbys-report-table th,
+.tbys-report-table td {
+    padding: 0.2rem 0.3rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tbys-report-table thead th {
+    white-space: normal;
+    line-height: 1.1;
+    
+    word-break: break-word;
+    hyphens: auto;
+}
+
+.tbys-report-table thead th.col-nowrap {
+    white-space: nowrap;
+    word-break: normal;
+    hyphens: none;
+}
+
+.tbys-report-table th.col-count,
+.tbys-report-table td.col-count {
+    width: 32px;
+    padding-left: 0.15rem;
+    padding-right: 0.15rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.tbys-report-table th.col-total,
+.tbys-report-table td.col-total {
+    width: 44px;
+}
+
+.tbys-report-table th.col-il,
+.tbys-report-table td.col-il {
+    width: 140px;
+}
+
+.tbys-report-table th.col-money,
+.tbys-report-table td.col-money {
+    width: 150px;
+}
+
+@media (max-width: 1200px) {
+    .tbys-report-table th.col-il,
+    .tbys-report-table td.col-il {
+        width: 130px;
+    }
+
+    .tbys-report-table th.col-money,
+    .tbys-report-table td.col-money {
+        width: 96px;
+    }
+}

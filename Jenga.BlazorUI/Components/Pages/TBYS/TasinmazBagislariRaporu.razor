@@ -33,14 +33,17 @@
 </div>
 
 <div id="reportRoot" class="print-area">
-    <div class="text-center fw-bold mb-1">@($"{SelectedYear} YILI TAŞINMAZ BAĞIŞLARI")</div>
 
-    <div class="table-responsive">
-        <table id="@TableId" class="table table-bordered table-sm align-middle text-center">
+    <div >
+        <table id="@TableId" class="table table-bordered table-sm align-middle text-center tbys-report-table">
             <thead class="table-light">
                 <tr>
-                    <th rowspan="3" style="width:48px;">Sıra</th>
-                    <th rowspan="3" style="min-width:140px;">İller</th>
+                    <th colspan="17" class="text-center fw-bold mb-1">@($"{SelectedYear} YILI TAŞINMAZ BAĞIŞLARI")
+                    </th>
+                </tr>
+                <tr>
+                    <th rowspan="2" class="col-nowrap">Sıra</th>
+                    <th rowspan="2" class="col-il">İller</th>
 
                     <th colspan="2">Bina</th>
                     <th colspan="2">Mesken</th>
@@ -48,25 +51,23 @@
                     <th colspan="2">Arsa</th>
                     <th colspan="2">Tarla</th>
 
-                    <th rowspan="2">TM</th>
-                    <th rowspan="2">ÇM</th>
-                    <th rowspan="2">Toplam</th>
+                    <th rowspan="2" class="col-nowrap">TM</th>
+                    <th rowspan="2" class="col-nowrap">ÇM</th>
+                    <th rowspan="2" class="col-nowrap">Toplam</th>
 
-                    <th rowspan="3" class="text-end" style="min-width:140px;">Emlak Beyan Değeri TL</th>
-                    <th rowspan="3" class="text-end" style="min-width:140px;">Tahmini Rayiç Değeri TL</th>
+                    <th rowspan="2">Emlak Beyan Değeri TL</th>
+                    <th rowspan="2">Tahmini Rayiç Değeri TL</th>
                 </tr>
 
                 <tr>
-                    <th>TM</th><th>ÇM</th>
-                    <th>TM</th><th>ÇM</th>
-                    <th>TM</th><th>ÇM</th>
-                    <th>TM</th><th>ÇM</th>
-                    <th>TM</th><th>ÇM</th>
+                    <th class="col-nowrap">TM</th><th class="col-nowrap">ÇM</th>
+                    <th class="col-nowrap">TM</th><th class="col-nowrap">ÇM</th>
+                    <th class="col-nowrap">TM</th><th class="col-nowrap">ÇM</th>
+                    <th class="col-nowrap">TM</th><th class="col-nowrap">ÇM</th>
+                    <th class="col-nowrap">TM</th><th class="col-nowrap">ÇM</th>
                 </tr>
 
-                <tr>
-                    <th colspan="13"></th>
-                </tr>
+
             </thead>
 
             <tbody>
@@ -91,27 +92,27 @@
                                 <td>@sıra</td>
                                 <td class="text-start">@r.Il</td>
 
-                                <td>@r.BinaTM</td>
-                                <td>@r.BinaCM</td>
+                                <td class="col-count">@r.BinaTM</td>
+                                <td class="col-count">@r.BinaCM</td>
 
-                                <td>@r.MeskenTM</td>
-                                <td>@r.MeskenCM</td>
+                                <td class="col-count">@r.MeskenTM</td>
+                                <td class="col-count">@r.MeskenCM</td>
 
-                                <td>@r.IsyeriTM</td>
-                                <td>@r.IsyeriCM</td>
+                                <td class="col-count">@r.IsyeriTM</td>
+                                <td class="col-count">@r.IsyeriCM</td>
 
-                                <td>@r.ArsaTM</td>
-                                <td>@r.ArsaCM</td>
+                                <td class="col-count">@r.ArsaTM</td>
+                                <td class="col-count">@r.ArsaCM</td>
 
-                                <td>@r.TarlaTM</td>
-                                <td>@r.TarlaCM</td>
+                                <td class="col-count">@r.TarlaTM</td>
+                                <td class="col-count">@r.TarlaCM</td>
 
-                                <td>@r.ToplamTM</td>
-                                <td>@r.ToplamCM</td>
-                                <td>@r.Toplam</td>
+                                <td class="col-count">@r.ToplamTM</td>
+                                <td class="col-count">@r.ToplamCM</td>
+                                <td class="col-total">@r.Toplam</td>
 
-                                <td class="text-end">@r.EmlakBeyanDegeriTl.ToString("N2")</td>
-                                <td class="text-end">@r.TahminiRayicDegeriTl.ToString("N2")</td>
+                                <td class="text-end col-money">@r.EmlakBeyanDegeriTl.ToString("N2")</td>
+                                <td class="text-end col-money">@r.TahminiRayicDegeriTl.ToString("N2")</td>
                             </tr>
                             sıra++;
                         }
@@ -138,8 +139,8 @@
                             <td>@block.Total.ToplamCM</td>
                             <td>@block.Total.Toplam</td>
 
-                            <td class="text-end">@block.Total.EmlakBeyanDegeriTl.ToString("N2")</td>
-                            <td class="text-end">@block.Total.TahminiRayicDegeriTl.ToString("N2")</td>
+                            <td class="text-end col-money">@block.Total.EmlakBeyanDegeriTl.ToString("N2")</td>
+                            <td class="text-end col-money">@block.Total.TahminiRayicDegeriTl.ToString("N2")</td>
                         </tr>
                     }
 
