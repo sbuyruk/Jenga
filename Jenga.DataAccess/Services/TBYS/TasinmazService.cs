@@ -21,6 +21,15 @@ namespace Jenga.DataAccess.Services.TBYS
         public async Task<List<Tasinmaz>> GetAllAsync(CancellationToken cancellationToken = default)
             => await _unitOfWork.Tasinmaz.GetAllAsync(cancellationToken);
 
+        public async Task<List<Tasinmaz>> GetByEnvanterDurumuAsync(int envanterdeMi, CancellationToken cancellationToken = default)
+        {
+            var list = await _unitOfWork.Tasinmaz.GetAllByFilterAsync(x => x.EnvanterdeMi == envanterdeMi);
+            return list.ToList();
+        }
+
+        public Task<List<Tasinmaz>> GetEnvanterdekilerAsync(CancellationToken cancellationToken = default)
+            => GetByEnvanterDurumuAsync(1, cancellationToken);
+
         public async Task<Tasinmaz?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
             => await _unitOfWork.Tasinmaz.GetByIdAsync(id, cancellationToken);
 
@@ -31,7 +40,6 @@ namespace Jenga.DataAccess.Services.TBYS
         {
             if (tasinmaz == null) throw new ArgumentNullException(nameof(tasinmaz));
 
-            // Optional: check unique EmlakSicilNo if provided
             var sicil = (tasinmaz.EmlakSicilNo ?? string.Empty).Trim();
             if (!string.IsNullOrWhiteSpace(sicil) && await ExistsByEmlakSicilNoAsync(sicil, null, cancellationToken))
             {
@@ -41,7 +49,6 @@ namespace Jenga.DataAccess.Services.TBYS
 
             try
             {
-                // repository AddAsync may already call SaveChanges; keep consistent behavior
                 await _unitOfWork.Tasinmaz.AddAsync(tasinmaz, cancellationToken);
                 await _unitOfWork.Tasinmaz.SaveChangesAsync(cancellationToken);
                 _tasinmazCache = null;
@@ -67,7 +74,6 @@ namespace Jenga.DataAccess.Services.TBYS
 
             try
             {
-                // Update signature in repositories may accept modifiedBy; pass null to keep behavior consistent
                 await _unitOfWork.Tasinmaz.UpdateAsync(tasinmaz, null, cancellationToken);
                 await _unitOfWork.Tasinmaz.SaveChangesAsync(cancellationToken);
                 _tasinmazCache = null;
@@ -82,8 +88,6 @@ namespace Jenga.DataAccess.Services.TBYS
 
         public async Task<bool> DeleteAsync(int tasinmazId, CancellationToken cancellationToken = default)
         {
-            // If you have other repositories that reference Tasinmaz, check them here (similar to MaterialService).
-            // For now remove if exists.
             var entity = await _unitOfWork.Tasinmaz.GetByIdAsync(tasinmazId, cancellationToken);
             if (entity != null)
             {
@@ -92,26 +96,24 @@ namespace Jenga.DataAccess.Services.TBYS
                 _tasinmazCache = null;
                 return true;
             }
+
             return false;
         }
 
         public async Task<bool> AnyAsync(Expression<Func<Tasinmaz, bool>> predicate, CancellationToken cancellationToken = default)
             => await _unitOfWork.Tasinmaz.AnyAsync(predicate, cancellationToken);
 
-        // Helpers
         public async Task<string> GetEmlakSicilNoAsync(int id, CancellationToken cancellationToken = default)
         {
             if (_tasinmazCache == null)
                 _tasinmazCache = await GetAllAsync(cancellationToken);
+
             var item = _tasinmazCache.FirstOrDefault(x => x.Id == id);
             return item?.EmlakSicilNo ?? string.Empty;
         }
 
         public async Task<(bool CanDelete, string? Reason)> CanDeleteAsync(int id)
-        {
-            // Extend this with repository checks if there are FK relations to Tasinmaz_Table.
-            return (true, null);
-        }
+            => (true, null);
 
         public async Task<bool> ExistsByEmlakSicilNoAsync(string emlakSicilNo, int? excludeId = null, CancellationToken cancellationToken = default)
         {

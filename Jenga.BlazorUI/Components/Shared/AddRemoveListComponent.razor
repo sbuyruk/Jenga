@@ -1,4 +1,5 @@
-﻿@typeparam TItem
+﻿@using Jenga.BlazorUI.Components.Common
+@typeparam TItem
 @typeparam TSelect
 
 <div class="text-center fw-bold" colspan="2">
@@ -15,27 +16,28 @@
     </select>
     <button type="button" class="btn btn-success m-2 col-4" @onclick="AddItem">Ekle</button>
 </div>
-<div style="max-height: 250px; overflow-y: auto; overflow-x: auto;">
-    <table class="table table-striped display">
-        <thead>
-            <tr>
-                <th>@ListHeader</th>
-                <th>İşlem</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var item in Items)
-            {
-                <tr>
-                    <td>@GetListDisplay(item)</td>
-                    <td>
-                        <button type="button" class="btn btn-sm btn-danger ms-2" @onclick="() => RemoveItem(item)">Çıkar</button>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-</div>
+
+<GenericTable TItem="TItem"
+              Items="Items"
+              SearchTextSelector="GetListDisplay"
+              TableHeight="Auto"
+              TableClass="table-striped display table-hover table-sm"
+              ShowSearch="true"
+              ShowCopy="false"
+              ShowExport="false"
+              PageSize="5">
+    <HeaderTemplate>
+        <th>@ListHeader</th>
+        <th>İşlem</th>
+    </HeaderTemplate>
+
+    <RowTemplate Context="item">
+        <td>@GetListDisplay(item)</td>
+        <td>
+            <button type="button" class="btn btn-sm btn-danger ms-2" @onclick="() => RemoveItem(item)">Çıkar</button>
+        </td>
+    </RowTemplate>
+</GenericTable>
 
 @code {
     [Parameter] public string Title { get; set; }

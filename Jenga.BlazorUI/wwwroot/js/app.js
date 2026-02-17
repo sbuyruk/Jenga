@@ -6,7 +6,6 @@
         return;
     }
 
-    // varsa eski instance'ı temizle (yeniden render vb. durumlar için)
     const existing = window.bootstrap.ScrollSpy.getInstance(scrollEl);
     if (existing) {
         existing.dispose();
@@ -18,7 +17,6 @@
         smoothScroll: true
     });
 
-    // anchor sayısı dinamik değişebilir -> refresh
     window.bootstrap.ScrollSpy.getInstance(scrollEl)?.refresh();
 };
 
@@ -30,8 +28,17 @@ window.scrollSpyScrollTo = (scrollElementId, sectionId) => {
         return;
     }
 
-    // container içindeki pozisyonu hesapla
     const top = target.offsetTop;
-
     scrollEl.scrollTo({ top, behavior: 'smooth' });
+};
+
+window.printElementById = (elementId) => {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+
+    const original = document.body.innerHTML;
+    document.body.innerHTML = el.outerHTML;
+    window.print();
+    document.body.innerHTML = original;
+    window.location.reload();
 };

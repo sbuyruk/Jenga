@@ -6,6 +6,9 @@ namespace Jenga.DataAccess.Services.TBYS
     public interface ITasinmazService
     {
         Task<List<Tasinmaz>> GetAllAsync(CancellationToken cancellationToken = default);
+        Task<List<Tasinmaz>> GetByEnvanterDurumuAsync(int envanterdeMi, CancellationToken cancellationToken = default);
+        Task<List<Tasinmaz>> GetEnvanterdekilerAsync(CancellationToken cancellationToken = default);
+
         Task<Tasinmaz?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
         Task<Tasinmaz?> GetByIdWithRelationsAsync(int id, CancellationToken cancellationToken = default);
         Task<bool> AddAsync(Tasinmaz tasinmaz, CancellationToken cancellationToken = default);

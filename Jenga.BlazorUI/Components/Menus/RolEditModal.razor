@@ -135,15 +135,4 @@
         if (OnClose.HasDelegate)
             await OnClose.InvokeAsync();
     }
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (Role.RoleMenus != null)
-        {
-            await JS.InvokeVoidAsync("initCustomDataTable");
-        }
-        if (Role.PersonelRoles!=null)
-        {
-            // await JS.InvokeVoidAsync("initCustomDataTable1");
-        }
-    }
 }

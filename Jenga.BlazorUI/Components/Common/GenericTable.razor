@@ -26,13 +26,13 @@
             </label>
             @if (ShowCopy)
             {
-                <button class="btn btn-sm btn-outline-secondary ms-2" @onclick="CopyToClipboard" title="Kopyala" aria-label="Kopyala">
+                <button type="button" class="btn btn-sm btn-outline-secondary ms-2" @onclick="CopyToClipboard" title="Kopyala" aria-label="Kopyala">
                     <i class="bi bi-clipboard me-1" aria-hidden="true"></i> Kopyala
                 </button>
             }
             @if (ShowExport)
             {
-                <button class="btn btn-sm btn-secondary ms-2" @onclick="ExportToExcel" title="Excel'e Aktar" aria-label="Excel'e Aktar">
+                <button type="button" class="btn btn-sm btn-secondary ms-2" @onclick="ExportToExcel" title="Excel'e Aktar" aria-label="Excel'e Aktar">
                     <i class="bi bi-download me-1" aria-hidden="true"></i> Excel'e Aktar
                 </button>
             }
@@ -91,17 +91,17 @@
     </div>
 
     <div class="gt-pagination">
-        <button class="btn btn-sm btn-outline-secondary" @onclick="FirstPage" disabled="@(currentPage == 1)" title="İlk Sayfa" aria-label="İlk Sayfa">
+        <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="FirstPage" disabled="@(currentPage == 1)" title="İlk Sayfa" aria-label="İlk Sayfa">
             <i class="bi bi-skip-backward-fill" aria-hidden="true"></i>
         </button>
-        <button class="btn btn-sm btn-outline-secondary" @onclick="PrevPage" disabled="@(currentPage == 1)" title="Önceki" aria-label="Önceki">
+        <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="PrevPage" disabled="@(currentPage == 1)" title="Önceki" aria-label="Önceki">
             <i class="bi bi-chevron-left" aria-hidden="true"></i>
         </button>
         <span class="mx-2 align-middle">Sayfa @currentPage / @totalPages</span>
-        <button class="btn btn-sm btn-outline-secondary" @onclick="NextPage" disabled="@(currentPage == totalPages)" title="Sonraki" aria-label="Sonraki">
+        <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="NextPage" disabled="@(currentPage == totalPages)" title="Sonraki" aria-label="Sonraki">
             <i class="bi bi-chevron-right" aria-hidden="true"></i>
         </button>
-        <button class="btn btn-sm btn-outline-secondary" @onclick="LastPage" disabled="@(currentPage == totalPages)" title="Son Sayfa" aria-label="Son Sayfa">
+        <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="LastPage" disabled="@(currentPage == totalPages)" title="Son Sayfa" aria-label="Son Sayfa">
             <i class="bi bi-skip-forward-fill" aria-hidden="true"></i>
         </button>
     </div>
@@ -112,6 +112,8 @@
     [Parameter] public IEnumerable<TItem> Items { get; set; } = Array.Empty<TItem>();
     [Parameter] public RenderFragment<TItem> RowTemplate { get; set; }
     [Parameter] public RenderFragment HeaderTemplate { get; set; }
+
+    [Parameter] public Func<TItem, string?>? SearchTextSelector { get; set; }
 
     // NEW: Export customization (optional)
     [Parameter] public IReadOnlyList<string>? ExportHeaders { get; set; }
@@ -339,7 +341,7 @@
 
         PagedItems = filtered.Skip((currentPage - 1) * PageSize).Take(PageSize).ToList();
 
-        StateHasChanged();
+        // StateHasChanged();
     }
 
     // public helper to allow parent to trigger sort when custom HeaderTemplate is used
@@ -356,13 +358,21 @@
     {
         if (item == null) return false;
 
-        // Build a combined searchable string for the item -- try all top-level properties
+        if (SearchTextSelector != null)
+        {
+            var s = SearchTextSelector(item);
+            return !string.IsNullOrWhiteSpace(s)
+                && s.Contains(q, StringComparison.OrdinalIgnoreCase);
+        }
+
+        // Eski davranış (fallback)
         var sb = new StringBuilder();
         foreach (var p in props)
         {
             object val;
             try { val = p.GetValue(item); }
             catch { val = null; }
+
             var part = ToSearchString(val, 0);
             if (!string.IsNullOrEmpty(part))
             {
@@ -372,8 +382,8 @@
         }
 
         var hay = sb.ToString();
-        if (string.IsNullOrEmpty(hay)) return false;
-        return hay.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0;
+        return !string.IsNullOrEmpty(hay)
+            && hay.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
     // recursive serializer to plain searchable string (depth-limited)
