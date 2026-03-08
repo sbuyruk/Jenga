@@ -119,7 +119,7 @@
             iller = await IlService.GetAllAsync(cancellationToken);
             bolgeler = await BolgeService.GetAllAsync(cancellationToken);
 
-            odemeler = await OdemeService.GetAllAsync(cancellationToken);
+            odemeler = await OdemeService.GetAllAsyncKiralar(cancellationToken);
 
             PrepareKiraGeliriChart();
             PrepareKiraAylikSon3YilChart();

@@ -58,9 +58,31 @@
                                          Height="360px" />
                 </div>
             </div>
+            <div>
 
+            </div>
             <hr />
-
+            <div class="d-flex flex-wrap gap-3">
+                <div class="mt-4 text-center">
+                    <h5>Yıl Bazında Taşınmaz Bağışları</h5>
+                    <div class="mb-2 fw-semibold" style="max-width: 200px;">
+                        <label class="form-label mb-1">Yıl Seçiniz</label>
+                        <select class="form-select form-select-sm"
+                                @bind="SelectedYear"
+                                @bind:after="StateHasChanged">
+                            @foreach (var y in Years)
+                            {
+                                <option value="@y">@y</option>
+                            }
+                        </select>
+                    </div>
+                    <YilBazindaTasinmazBagisTable Tasinmazlar="tasinmazlar ?? new List<Tasinmaz>()"
+                                                  Years="Years"
+                                                  SelectedYear="SelectedYear"
+                                                  SelectedYearChanged="OnSelectedYearChanged" />
+                </div>
+            </div>
+            <hr />
             <div class="d-flex flex-wrap gap-3">
                 <div>
                     <GenericChart TItem="YearCountItem"
@@ -81,6 +103,10 @@
                                   GridPaddingBottom="40" />
                 </div>
             </div>
+
+            <hr />
+
+
         }
 
         <div class="d-flex justify-content-center mt-4">
@@ -107,6 +133,9 @@
     private readonly List<PieItem> kullanimChartItems = new();
     private readonly List<YearCountItem> bagisYilChartItems = new();
 
+    private int SelectedYear { get; set; } = DateTime.Now.Year;
+    private List<int> Years { get; } = Enumerable.Range(DateTime.Now.Year - 9, 10).Reverse().ToList();
+
     protected override async Task OnInitializedAsync()
     {
         _cts = new CancellationTokenSource();
@@ -119,7 +148,7 @@
         loadFailed = false;
         try
         {
-            tasinmazlar = await TasinmazService.GetAllAsync(cancellationToken);
+            tasinmazlar = await TasinmazService.GetEnvanterdekilerAsync(cancellationToken);
             bagiscilar = await TasinmazBagisciService.GetAllAsync(cancellationToken);
             iller = await IlService.GetAllAsync(cancellationToken);
             bolgeler = await BolgeService.GetAllAsync(cancellationToken);
@@ -208,6 +237,13 @@
                 Value = count
             });
         }
+    }
+
+    private Task OnSelectedYearChanged(int year)
+    {
+        SelectedYear = year;
+        StateHasChanged();
+        return Task.CompletedTask;
     }
 
     public void Dispose()

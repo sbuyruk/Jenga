@@ -10,6 +10,7 @@ namespace Jenga.DataAccess.Services.TBYS
     public interface IOdemeService
     {
         Task<List<Odeme>> GetAllAsync(CancellationToken cancellationToken = default);
+        Task<List<Odeme>> GetAllAsyncKiralar(CancellationToken cancellationToken = default);
         Task<Odeme?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
         Task<Odeme?> GetByIdWithRelationsAsync(int id, CancellationToken cancellationToken = default);
         Task<List<Odeme>> GetBySozlesmeIdAsync(int sozlesmeId, CancellationToken cancellationToken = default);

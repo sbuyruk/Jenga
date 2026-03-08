@@ -17,6 +17,10 @@
                         <th rowspan="2">Kiraya Verilmeme Sebebi</th>
                         @foreach (var reg in RegionList)
                         {
+                            if (reg.Id == ProjectConstants.BOLGE_YURTDISI_INT || reg.Id == ProjectConstants.BOLGE_GENELMUDURLUK_INT)
+                            {
+                                continue;
+                            }
                             <th colspan="2">@((reg.KisaAdi ?? reg.Adi) ?? "Bölge")</th>
                         }
                         <th colspan="3">Toplam</th>
@@ -24,6 +28,10 @@
                     <tr class="text-center">
                         @foreach (var reg in RegionList)
                         {
+                            if (reg.Id == ProjectConstants.BOLGE_YURTDISI_INT || reg.Id == ProjectConstants.BOLGE_GENELMUDURLUK_INT)
+                            {
+                                continue;
+                            }
                             <th>TM</th>
                             <th>ÇM</th>
                         }
@@ -41,6 +49,10 @@
 
                             @foreach (var reg in RegionList)
                             {
+                                if (reg.Id == ProjectConstants.BOLGE_YURTDISI_INT || reg.Id == ProjectConstants.BOLGE_GENELMUDURLUK_INT)
+                                {
+                                    continue;
+                                }
                                 var cell = Matrix.TryGetValue(key, out var map) && map.TryGetValue(reg.Id, out var cc) ? cc : new CellCounts();
                                 <td class="text-end">@cell.TM</td>
                                 <td class="text-end">@cell.CM</td>
@@ -62,6 +74,10 @@
                         <th>Toplam</th>
                         @foreach (var reg in RegionList)
                         {
+                            if (reg.Id == ProjectConstants.BOLGE_YURTDISI_INT || reg.Id == ProjectConstants.BOLGE_GENELMUDURLUK_INT)
+                            {
+                                continue;
+                            }
                             var colTM = RowKeys.Sum(rk => Matrix.TryGetValue(rk, out var cmap) && cmap.TryGetValue(reg.Id, out var cc) ? cc.TM : 0);
                             var colCM = RowKeys.Sum(rk => Matrix.TryGetValue(rk, out var cmap) && cmap.TryGetValue(reg.Id, out var cc) ? cc.CM : 0);
                             <th class="text-end">@colTM</th>

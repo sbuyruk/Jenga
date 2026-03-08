@@ -237,7 +237,7 @@ namespace Jenga.Models.TBYS
         [Column("EmlakBeyanDegeri", TypeName = "money")]
         public decimal? EmlakBeyanDegeri { get; set; }
 
-        [Column("GuncelRayicDegeri", TypeName = "money")]
-        public decimal? GuncelRayicDegeri { get; set; }
+        [Column("YaklasikPiyasaDegeri", TypeName = "money")]
+        public decimal? YaklasikPiyasaDegeri { get; set; }
     }
 }

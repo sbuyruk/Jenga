@@ -24,6 +24,9 @@ namespace Jenga.DataAccess.Services.TBYS
         public async Task<List<Odeme>> GetAllAsync(CancellationToken cancellationToken = default)
             => await _unitOfWork.Odeme.GetAllAsync(cancellationToken);
 
+        public async Task<List<Odeme>> GetAllAsyncKiralar(CancellationToken cancellationToken = default)
+            => await _unitOfWork.Odeme.GetAllWithOdemePlaniAsync(cancellationToken);
+
         public async Task<Odeme?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
             => await _unitOfWork.Odeme.GetByIdAsync(id, cancellationToken);
 

@@ -99,7 +99,7 @@
 
         req.Content = builder =>
         {
-            builder.OpenComponent(0, typeof(Jenga.BlazorUI.Components.TBYS.KiralıkOlmayanChart));
+            builder.OpenComponent(0, typeof(Jenga.BlazorUI.Components.TBYS.KiralikOlmayanChart));
             builder.AddAttribute(1, "Tasinmazlar", (Tasinmazlar ?? Enumerable.Empty<Tasinmaz>())
                 .Where(t => t != null
                             && t.EnvanterdeMi == 1

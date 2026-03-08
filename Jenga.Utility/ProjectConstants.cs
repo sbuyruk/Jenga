@@ -148,11 +148,12 @@
         public const string BOLGE_GENELMUDURLUK = "Genel Md.lük";
         public const string BOLGE_TEMSILCILIGI = "Bölge Temsilciliği";
 
+        public const int BOLGE_HEPSI_INT = 0;
         public const int BOLGE_ANKARA_INT = 1;
         public const int BOLGE_ISTANBUL_INT = 2;
         public const int BOLGE_IZMIR_INT = 3;
         public const int BOLGE_MERSIN_INT = 4;
-        public const int BOLGE_HEPSI_INT = 5;
+        public const int BOLGE_YURTDISI_INT = 5;
         public const int BOLGE_GENELMUDURLUK_INT = 8;
         //Malzeme
         public const string MALZEMEHAREKETI_GIRIS = "Giriş";

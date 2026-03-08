@@ -11,5 +11,6 @@ namespace Jenga.DataAccess.Repositories.IRepository.TBYS
         Task<List<Odeme>> GetBySozlesmeIdAsync(int sozlesmeId, CancellationToken cancellationToken = default);
         Task<List<Odeme>> GetByKiraciIdAsync(int kiraciId, CancellationToken cancellationToken = default);
         Task<List<Odeme>> GetByOdemePlaniIdAsync(int odemePlaniId, CancellationToken cancellationToken = default);
+        Task<List<Odeme>> GetAllWithOdemePlaniAsync(CancellationToken cancellationToken = default);
     }
 }
