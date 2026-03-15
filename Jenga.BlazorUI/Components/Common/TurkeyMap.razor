@@ -1,0 +1,64 @@
+﻿@using Microsoft.JSInterop
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+<div class="turkey-map-root">
+    <div id="@_mapElementId" class="turkey-map-canvas"></div>
+</div>
+
+@code {
+    [Parameter] public EventCallback<int> OnProvinceClick { get; set; }
+
+    private readonly string _mapElementId = $"tr-map-{Guid.NewGuid():N}";
+    private DotNetObjectReference<TurkeyMap>? _dotNetRef;
+    private bool _jsInitialized;
+    private bool _isDisposed;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_isDisposed || _jsInitialized)
+        {
+            return;
+        }
+
+        _dotNetRef ??= DotNetObjectReference.Create(this);
+
+        try
+        {
+            await JS.InvokeVoidAsync("turkiyeMap.init", _mapElementId, _dotNetRef);
+            _jsInitialized = true;
+        }
+        catch (InvalidOperationException)
+        {
+            // prerender/dispose geçişlerinde görülebilir
+        }
+        catch (JSDisconnectedException)
+        {
+            // circuit kopmuş olabilir
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnProvinceClickedFromJs(int provinceId)
+    {
+        if (_isDisposed)
+        {
+            return;
+        }
+
+        await OnProvinceClick.InvokeAsync(provinceId);
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        _isDisposed = true;
+
+        // Circuit disconnect sırasında JS çağrısı yapmıyoruz.
+        // Bu sayede JSDisconnectedException tamamen engellenir.
+        _dotNetRef?.Dispose();
+        _dotNetRef = null;
+        _jsInitialized = false;
+
+        return ValueTask.CompletedTask;
+    }
+}

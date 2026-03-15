@@ -131,6 +131,7 @@
     [Parameter] public bool ShowCopy { get; set; } = true;
     [Parameter] public bool ShowExport { get; set; } = true;
     [Parameter] public string ExportFileName { get; set; } = null; // if null, auto-generated
+    [Parameter] public bool ExportOnlyCurrentPage { get; set; } // default: tüm sayfalar
 
     private readonly string _tableId = $"gt-{Guid.NewGuid():N}";
 
@@ -232,36 +233,40 @@
             ? $"export-{DateTime.Now:yyyyMMddHHmmss}.xlsx"
             : ExportFileName;
 
-        // Export should be based on *filtered* (not paged) to include all rows.
+        var module = await GetGenericTableExportModuleAsync();
+        var sourceItems = ExportOnlyCurrentPage ? PagedItems : filtered;
+
         IReadOnlyList<string> headers;
         List<IReadOnlyList<object?>> rows;
 
-        if (ExportHeaders != null && ExportHeaders.Count > 0)
+        // HeaderTemplate varsa başlıkları DOM'dan al (ekrandaki başlık sırası)
+        string[] tableHeaders = Array.Empty<string>();
+        if (HeaderTemplate != null)
         {
-            headers = ExportHeaders;
+            tableHeaders = await module.InvokeAsync<string[]>("getTableHeaderTexts", _tableId);
         }
-        else
-        {
-            headers = Columns.Select(c => c.DisplayName).ToArray();
-        }
+
+        headers = (ExportHeaders != null && ExportHeaders.Count > 0)
+            ? ExportHeaders
+            : (tableHeaders.Length > 0
+                ? tableHeaders
+                : Columns.Select(c => c.DisplayName).ToArray());
 
         if (ExportRow != null)
         {
-            rows = filtered.Select(item => ExportRow(item)).ToList();
+            rows = sourceItems.Select(item => ExportRow(item)).ToList();
         }
         else
         {
-            rows = filtered
+            rows = sourceItems
                 .Select(item => (IReadOnlyList<object?>)Columns.Select(c => c.Property.GetValue(item)).ToArray())
                 .ToList();
         }
 
-        // Convert values using the same formatter at export time
         var formattedRows = rows
             .Select(r => r.Select(FormatValue).ToArray())
             .ToArray();
 
-        var module = await GetGenericTableExportModuleAsync();
         await module.InvokeVoidAsync("downloadXlsx", fileName, headers, formattedRows);
     }
 

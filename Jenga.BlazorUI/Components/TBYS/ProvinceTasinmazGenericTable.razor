@@ -1,0 +1,231 @@
+﻿@using System.Globalization
+@using Jenga.BlazorUI.Components.Common
+@using Jenga.Models.TBYS
+
+<div class="province-tasinmaz-wrap">
+    <GenericTable TItem="TableRow"
+                  Items="_rows"
+                  PageSize="10"
+                  PageSizeOptions="new[] { 10, 20, 50, 100 }"
+                  TableHeight="Auto"
+                  ShowSearch="true"
+                  ShowExport="true"
+                  ExportFileName="@ExportFileName"
+                  ExportHeaders="TableExportHeaders"
+                  ExportRow="BuildExportRow"
+                  KeySelector="@(x => x.Id)"
+                  TableClass="province-tasinmaz-table table-hover table-sm table-bordered small">
+        <HeaderTemplate>
+            <th class="col-sira text-center">Sıra</th>
+            <th class="col-bagisci">Bağışçı</th>
+            <th class="col-sagvefat">Sağ/Vefat</th>
+            <th class="col-adres">Adres</th>
+            <th class="col-ilce">İlçe</th>
+            <th class="col-mulk">Mülk Şekli</th>
+            <th class="col-cinsi">Cinsi</th>
+            <th class="col-kira">Kira Durumu</th>
+            <th class="col-beyan text-end">Eml.Bey.Değ.</th>
+            <th class="col-rayic text-end">Tah.Ray.Değ.</th>
+            <th class="col-beyan text-end">Muh.Kay.Değ.</th>
+            <th class="col-rayic text-end">Yak.Piy.Değ.</th>
+        </HeaderTemplate>
+
+        <RowTemplate Context="row">
+            <td class="col-sira text-center">@row.Sira</td>
+            <td class="col-bagisci">@row.BagisciAdSoyad</td>
+            <td class="col-sagvefat">@row.BagisciSagVefat</td>
+            <td class="col-adres" title="@row.Adres">
+                <span class="address-clamp">@row.Adres</span>
+            </td>
+            <td class="col-ilce">@row.Ilcesi</td>
+            <td class="col-mulk"><span class="@GetMulkiyetBadgeClass(row.MulkiyetSekli)">@row.MulkiyetSekli</span></td>
+            <td class="col-cinsi">@row.Cinsi</td>
+            <td class="col-kira"><span class="@GetKiraBadgeClass(row.KiraDurumu)">@row.KiraDurumu</span></td>
+            <td class="col-beyan text-end">@row.EmlakBeyanDegeri</td>
+            <td class="col-rayic text-end">@row.TahminiRayicDegeri</td>
+            <td class="col-beyan text-end">@row.MuhasebeyeKayitliDeger</td>
+            <td class="col-rayic text-end">@row.YaklasikPiyasaDegeri</td>
+        </RowTemplate>
+    </GenericTable>
+</div>
+
+@code {
+    [Parameter] public List<Tasinmaz> Items { get; set; } = new();
+    [Parameter] public List<TasinmazBagisci> Bagiscilar { get; set; } = new();
+    [Parameter] public string ExportFileName { get; set; } = "il-tasinmazlari.xlsx";
+
+    private static readonly CultureInfo TrCulture = new("tr-TR");
+    private readonly List<TableRow> _rows = new();
+
+    private static readonly IReadOnlyList<string> TableExportHeaders = new[]
+    {
+        "Sıra",
+        "Bağışçı",
+        "Sağ/Vefat",
+        "Adres",
+        "İlçe",
+        "Mülk Şekli",
+        "Cinsi",
+        "Kira Durumu",
+        "Eml.Bey.Değ.",
+        "Tah.Ray.Değ.",
+        "Muh.Kay.Değ.",
+        "Yak.Piy.Değ."
+    };
+
+    private static IReadOnlyList<object?> BuildExportRow(TableRow row)
+    {
+        return new object?[]
+        {
+            row.Sira,
+            row.BagisciAdSoyad,
+            row.BagisciSagVefat,
+            row.Adres,
+            row.Ilcesi,
+            row.MulkiyetSekli,
+            row.Cinsi,
+            row.KiraDurumu,
+            row.EmlakBeyanDegeri,
+            row.TahminiRayicDegeri,
+            row.MuhasebeyeKayitliDeger,
+            row.YaklasikPiyasaDegeri
+        };
+    }
+
+    protected override void OnParametersSet()
+    {
+        _rows.Clear();
+
+        var bagisciById = Bagiscilar
+            .GroupBy(x => x.Id)
+            .ToDictionary(g => g.Key, g => g.First());
+
+        var mapped = Items
+            .Select(item =>
+            {
+                TasinmazBagisci? bagisci = null;
+
+                if (item.BagisciId.HasValue)
+                {
+                    bagisciById.TryGetValue(item.BagisciId.Value, out bagisci);
+                }
+
+                return new TableRow
+                {
+                    Id = item.Id,
+                    Cinsi = item.Cinsi ?? "-",
+                    Ilcesi = item.Ilcesi ?? "-",
+                    MulkiyetSekli = item.MulkiyetSekli ?? "-",
+                    KiraDurumu = item.KiraDurumu ?? "-",
+                    BagisciAdSoyad = BuildBagisciAdSoyad(bagisci),
+                    BagisciSagVefat = string.IsNullOrWhiteSpace(bagisci?.Sag_vefat) ? "-" : bagisci!.Sag_vefat!,
+                    EmlakBeyanDegeriValue = item.EmlakBeyanDegeri ?? 0m,
+                    EmlakBeyanDegeri = item.EmlakBeyanDegeri.HasValue
+                        ? item.EmlakBeyanDegeri.Value.ToString("C2", TrCulture)
+                        : "-",
+                    TahminiRayicDegeriValue = item.TahminiRayicDegeri ?? 0m,
+                    TahminiRayicDegeri = item.TahminiRayicDegeri.HasValue
+                        ? item.TahminiRayicDegeri.Value.ToString("C2", TrCulture)
+                        : "-",
+                    MuhasebeyeKayitliDegerValue = item.MuhasebeyeKayitliDeger ?? 0m,
+                    MuhasebeyeKayitliDeger = item.MuhasebeyeKayitliDeger.HasValue
+                        ? item.MuhasebeyeKayitliDeger.Value.ToString("C2", TrCulture)
+                        : "-",
+                    YaklasikPiyasaDegeriValue = item.YaklasikPiyasaDegeri ?? 0m,
+                    YaklasikPiyasaDegeri = item.YaklasikPiyasaDegeri.HasValue
+                        ? item.YaklasikPiyasaDegeri.Value.ToString("C2", TrCulture)
+                        : "-",
+                    Adres = item.Adres ?? "-"
+                };
+            })
+            .OrderByDescending(x => x.TahminiRayicDegeriValue)
+            .ToList();
+
+        for (var i = 0; i < mapped.Count; i++)
+        {
+            mapped[i].Sira = i + 1;
+        }
+
+        _rows.AddRange(mapped);
+    }
+
+    private static string BuildBagisciAdSoyad(TasinmazBagisci? bagisci)
+    {
+        if (bagisci is null)
+        {
+            return "-";
+        }
+
+        var adSoyad = $"{bagisci.Adi} {bagisci.Soyadi}".Trim();
+        return string.IsNullOrWhiteSpace(adSoyad) ? "-" : adSoyad;
+    }
+
+    private static string Shorten(string? text, int maxLength)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return "-";
+        }
+
+        var value = text.Trim();
+        return value.Length <= maxLength ? value : $"{value[..maxLength]}...";
+    }
+
+    private static string GetMulkiyetBadgeClass(string? value)
+    {
+        if (string.Equals(value, "TM", StringComparison.OrdinalIgnoreCase))
+        {
+            return "badge text-bg-primary";
+        }
+
+        if (string.Equals(value, "ÇM", StringComparison.OrdinalIgnoreCase))
+        {
+            return "badge text-bg-warning";
+        }
+
+        return "badge text-bg-secondary";
+    }
+
+    private static string GetKiraBadgeClass(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return "badge text-bg-secondary";
+        }
+
+        var normalized = value.Trim().ToLower(TrCulture);
+
+        if (normalized.Contains("kiraland"))
+        {
+            return "badge text-bg-success";
+        }
+
+        if (normalized.Contains("kirada değil") || normalized.Contains("kirada degil"))
+        {
+            return "badge text-bg-warning";
+        }
+
+        return "badge text-bg-secondary";
+    }
+
+    private sealed class TableRow
+    {
+        public int Id { get; set; }
+        public int Sira { get; set; }
+        public string Cinsi { get; set; } = "";
+        public string Ilcesi { get; set; } = "";
+        public string MulkiyetSekli { get; set; } = "";
+        public string KiraDurumu { get; set; } = "";
+        public string BagisciAdSoyad { get; set; } = "";
+        public string BagisciSagVefat { get; set; } = "";
+        public decimal EmlakBeyanDegeriValue { get; set; }
+        public string EmlakBeyanDegeri { get; set; } = "";
+        public decimal TahminiRayicDegeriValue { get; set; }
+        public string TahminiRayicDegeri { get; set; } = "";
+        public decimal MuhasebeyeKayitliDegerValue { get; set; }
+        public string MuhasebeyeKayitliDeger { get; set; } = "";
+        public decimal YaklasikPiyasaDegeriValue { get; set; }
+        public string YaklasikPiyasaDegeri { get; set; } = "";
+        public string Adres { get; set; } = "";
+    }
+}

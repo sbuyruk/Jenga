@@ -6,12 +6,14 @@
 @using Jenga.Models.TBYS
 @using Jenga.DataAccess.Services.Common
 @using Jenga.DataAccess.Services.TBYS
+@using Jenga.BlazorUI.Services.Common
 @inject ITasinmazService TasinmazService
 @inject ITasinmazBagisciService TasinmazBagisciService
 @inject IBagisService BagisService
 @inject IIlService IlService
 @inject IBolgeService BolgeService
 @inject NavigationManager NavigationManager
+@inject IModalService ModalService
 @implements IDisposable
 
 <div class="admin-overview p-3 manager-summary-layout">
@@ -26,64 +28,89 @@
         }
         else
         {
-            <div class="d-flex flex-wrap gap-5">
-                <div>
-                    <TasinmazCard Tasinmazlar="@tasinmazlar"
-                                 Iller="@iller"
-                                 Bolgeler="@bolgeler"
-                                 Height="360px" />
+            <div class="summary-top-block">
+                <div class="w-100">
+                    <h5 class="mb-3 text-center">Taşınmaz ve Bağışçı Bilgileri</h5>
                 </div>
 
-                <div>
-                    <GenericChart TItem="PieItem"
-                                  Items="kullanimChartItems"
-                                  LabelSelector="@(p => p.Label)"
-                                  ValueSelector="@(p => p.Value)"
-                                  Title="Taşınmaz Cinsleri"
-                                  SeriesName="Cins"
-                                  Type="GenericChart<PieItem>.GenericChartType.Pie"
-                                  Height="360px"
-                                  Width="430px"
-                                  ShowLegend="false"
-                                  ShowDataLabels="true"
-                                  ColorPalette="@_piePalette"
-                                  GridPaddingBottom="40" />
-                </div>
-
-                <div>
-                    <TasinmazBagisciCard Bagiscilar="@bagiscilar"
-                                         Iller="@iller"
-                                         Bolgeler="@bolgeler"
-                                         Bagislar="@bagislar"
-                                         Height="360px" />
-                </div>
-            </div>
-            <div>
-
-            </div>
-            <hr />
-            <div class="d-flex flex-wrap gap-3">
-                <div class="mt-4 text-center">
-                    <h5>Yıl Bazında Taşınmaz Bağışları</h5>
-                    <div class="mb-2 fw-semibold" style="max-width: 200px;">
-                        <label class="form-label mb-1">Yıl Seçiniz</label>
-                        <select class="form-select form-select-sm"
-                                @bind="SelectedYear"
-                                @bind:after="StateHasChanged">
-                            @foreach (var y in Years)
-                            {
-                                <option value="@y">@y</option>
-                            }
-                        </select>
+                <div class="d-flex flex-wrap gap-5 justify-content-center summary-top-row">
+                    <div>
+                        <TasinmazCard Tasinmazlar="@tasinmazlar"
+                                     Iller="@iller"
+                                     Bolgeler="@bolgeler"
+                                     Height="360px" />
                     </div>
-                    <YilBazindaTasinmazBagisTable Tasinmazlar="tasinmazlar ?? new List<Tasinmaz>()"
-                                                  Years="Years"
-                                                  SelectedYear="SelectedYear"
-                                                  SelectedYearChanged="OnSelectedYearChanged" />
+
+                    <div>
+                        <GenericChart TItem="PieItem"
+                                      Items="kullanimChartItems"
+                                      LabelSelector="@(p => p.Label)"
+                                      ValueSelector="@(p => p.Value)"
+                                      Title="Taşınmaz Cinsleri"
+                                      SeriesName="Cins"
+                                      Type="GenericChart<PieItem>.GenericChartType.Pie"
+                                      Height="360px"
+                                      Width="430px"
+                                      ShowLegend="false"
+                                      ShowDataLabels="true"
+                                      ColorPalette="@_piePalette"
+                                      GridPaddingBottom="40" />
+                    </div>
+
+                    <div>
+                        <TasinmazBagisciCard Bagiscilar="@bagiscilar"
+                                             Iller="@iller"
+                                             Bolgeler="@bolgeler"
+                                             Bagislar="@bagislar"
+                                             Height="360px" />
+                    </div>
+                </div>
+            </div>
+
+            <hr />
+
+            <div class="d-flex flex-wrap gap-3">
+                <div class="w-100 map-summary-block">
+
+                    <div class="map-surface">
+                        <h5 class="mb-3 text-center">Türkiye Haritası (İl Bazında Taşınmazlar)</h5>
+                        <div class="map-host">
+                            <TurkeyMap OnProvinceClick="OnProvinceClickAsync" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <hr />
+
+            <div class="d-flex flex-wrap gap-3">
+                <div class="w-100 year-summary-block">
+                    <div class="year-surface">
+                        <div class="year-host">
+                            <h5 class="mb-3 text-center">Yıl Bazında Taşınmaz Bağışları</h5>
+
+                            <div class="mb-2 fw-semibold year-filter mx-auto">
+                                <label class="form-label mb-1">Yıl Seçiniz</label>
+                                <select class="form-select form-select-sm"
+                                        @bind="SelectedYear"
+                                        @bind:after="StateHasChanged">
+                                    @foreach (var y in Years)
+                                    {
+                                        <option value="@y">@y</option>
+                                    }
+                                </select>
+                            </div>
+
+                            <YilBazindaTasinmazBagisTable Tasinmazlar="tasinmazlar ?? new List<Tasinmaz>()"
+                                                          Years="Years"
+                                                          SelectedYear="SelectedYear"
+                                                          SelectedYearChanged="OnSelectedYearChanged" />
+                        </div>
+                    </div>
                 </div>
             </div>
             <hr />
-            <div class="d-flex flex-wrap gap-3">
+            <div class="d-flex flex-wrap gap-3 justify-content-center">
                 <div>
                     <GenericChart TItem="YearCountItem"
                                   Items="bagisYilChartItems"
@@ -107,6 +134,7 @@
             <hr />
 
 
+
         }
 
         <div class="d-flex justify-content-center mt-4">
@@ -115,7 +143,8 @@
                  loading="lazy"
                  data-bs-toggle="tooltip"
                  data-bs-placement="top"
-                 title="Mr.ÇALIŞ is bussy as ever" />
+                 title="Mr. Zekayi ÇALIŞ is currently keeping all Tasinmaz data up to date..."
+" />
         </div>
     </div>
 </div>
@@ -146,6 +175,7 @@
     {
         isLoading = true;
         loadFailed = false;
+
         try
         {
             tasinmazlar = await TasinmazService.GetEnvanterdekilerAsync(cancellationToken);
@@ -178,8 +208,11 @@
     private void PrepareTasinmazCinsleriChart()
     {
         kullanimChartItems.Clear();
+
         if (tasinmazlar == null || !tasinmazlar.Any())
+        {
             return;
+        }
 
         var filtered = tasinmazlar.Where(x => x != null && x.EnvanterdeMi == 1);
 
@@ -246,6 +279,32 @@
         return Task.CompletedTask;
     }
 
+    private async Task OnProvinceClickAsync(int provinceId)
+    {
+        var il = iller?.FirstOrDefault(x => x.Id == provinceId);
+        var ilAdi = il?.IlAdi?.Trim() ?? provinceId.ToString();
+
+        var rows = (tasinmazlar ?? [])
+            .Where(x => x is not null && x.EnvanterdeMi == 1 && x.IlId == provinceId)
+            .ToList();
+
+        RenderFragment content = builder =>
+        {
+            builder.OpenComponent<ProvinceTasinmazGenericTable>(0);
+            builder.AddAttribute(1, "Items", rows);
+            builder.AddAttribute(2, "ExportFileName", $"{ilAdi}-tasinmazlari.xlsx");
+            builder.AddAttribute(3, "Bagiscilar", bagiscilar ?? new List<TasinmazBagisci>());
+            builder.CloseComponent();
+        };
+
+        await ModalService.Show(new ModalRequest
+        {
+            Title = $"{ilAdi} İlinde Bulunan Taşınmazlar ({rows.Count} kayıt)",
+            Content = content,
+            ShowConfirmationButtons = false
+        });
+    }
+
     public void Dispose()
     {
         _cts?.Cancel();
@@ -266,20 +325,20 @@
 
     private static readonly string[] _piePalette =
     [
-        "#2563EB", // blue
-        "#7C3AED", // violet
-        "#06B6D4", // cyan
-        "#10B981", // emerald
-        "#F59E0B", // amber
-        "#EF4444", // red
-        "#F97316", // orange
-        "#84CC16", // lime
-        "#EC4899", // pink
-        "#64748B"  // slate
+        "#2563EB",
+        "#7C3AED",
+        "#06B6D4",
+        "#10B981",
+        "#F59E0B",
+        "#EF4444",
+        "#F97316",
+        "#84CC16",
+        "#EC4899",
+        "#64748B"
     ];
 
     private static readonly string[] _barPalette =
     [
-        "#0EA5E9" // sky
+        "#0EA5E9"
     ];
 }

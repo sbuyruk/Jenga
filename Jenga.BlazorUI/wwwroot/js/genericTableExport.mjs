@@ -230,3 +230,9 @@ function readBodyRows(table) {
 
     return rows;
 }
+
+export function getTableHeaderTexts(tableId) {
+    const table = document.getElementById(tableId);
+    if (!table) return [];
+    return readHeaderTexts(table);
+}

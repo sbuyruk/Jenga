@@ -1,0 +1,82 @@
+﻿@using System.Globalization
+@using Jenga.Models.NBYS
+
+<div class="table-responsive">
+    <table class="table table-sm table-bordered align-middle mb-0">
+        <thead class="table-light">
+            <tr>
+                <th class="text-center" style="width:64px;">#</th>
+                <th class="text-center" style="width:120px;">Yıl</th>
+                <th class="text-end">Tekil Bağışçı</th>
+                <th class="text-end">Toplam Bağış</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var row in _rows)
+            {
+                <tr>
+                    <td class="text-center">@row.Sira</td>
+                    <td class="text-center">@row.Yil</td>
+                    <td class="text-end">@row.TekilBagisciSayisi.ToString("N0", TrCulture)</td>
+                    <td class="text-end">@row.ToplamBagis.ToString("N0", TrCulture)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    [Parameter] public List<NakitBagisHareket> Items { get; set; } = new();
+    [Parameter] public int Years { get; set; } = 10;
+
+    private static readonly CultureInfo TrCulture = new("tr-TR");
+    private readonly List<YearlyRow> _rows = new();
+
+    protected override void OnParametersSet()
+    {
+        _rows.Clear();
+
+        var currentYear = DateTime.Now.Year;
+        var startYear = currentYear - (Years - 1);
+
+        var yearly = Enumerable.Range(startYear, Years)
+            .Select(year =>
+            {
+                var yearItems = Items
+                    .Where(x => x.BagisTarihi.HasValue && x.BagisTarihi.Value.Year == year)
+                    .ToList();
+
+                var donorCount = yearItems
+                    .Where(x => x.BagisciId.HasValue)
+                    .Select(x => x.BagisciId!.Value)
+                    .Distinct()
+                    .Count();
+
+                var total = yearItems.Sum(x => x.BagisMiktari) ?? 0m;
+
+                return new YearlyRow
+                {
+                    Yil = year,
+                    TekilBagisciSayisi = donorCount,
+                    ToplamBagis = total
+                };
+            })
+            .OrderByDescending(x => x.Yil)
+            .ToList();
+
+        for (var i = 0; i < yearly.Count; i++)
+        {
+            yearly[i].Sira = i + 1;
+        }
+
+        _rows.AddRange(yearly);
+    }
+
+    private sealed class YearlyRow
+    {
+        public int Sira { get; set; }
+        public int Yil { get; set; }
+        public int TekilBagisciSayisi { get; set; }
+        public decimal ToplamBagis { get; set; }
+    }
+}

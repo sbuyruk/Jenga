@@ -1,0 +1,60 @@
+﻿.province-tasinmaz-wrap ::deep .province-tasinmaz-table {
+    table-layout: auto !important;
+}
+
+.province-tasinmaz-wrap ::deep .province-tasinmaz-table .col-sira {
+    width: 64px;
+    white-space: nowrap;
+}
+
+.province-tasinmaz-wrap ::deep .province-tasinmaz-table .col-cinsi {
+    width: 120px;
+}
+
+.province-tasinmaz-wrap ::deep .province-tasinmaz-table .col-ilce {
+    width: 120px;
+}
+
+.province-tasinmaz-wrap ::deep .province-tasinmaz-table .col-mulk {
+    width: 110px;
+}
+
+.province-tasinmaz-wrap ::deep .province-tasinmaz-table .col-kira {
+    width: 180px;
+}
+
+.province-tasinmaz-wrap ::deep .province-tasinmaz-table .col-beyan,
+.province-tasinmaz-wrap ::deep .province-tasinmaz-table .col-rayic {
+    width: 100px;
+    white-space: nowrap;
+}
+
+.province-tasinmaz-wrap ::deep .province-tasinmaz-table .col-adres {
+    min-width: 260px;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    word-break: break-word;
+}
+
+.province-tasinmaz-wrap ::deep .province-tasinmaz-table .col-adres .address-clamp {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+
+    /* Firefox fallback için */
+    line-height: 1.35;
+    max-height: calc(1.35em * 2);
+}
+
+.province-tasinmaz-wrap ::deep .province-tasinmaz-table .col-kira .badge {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    white-space: normal !important;
+    word-break: break-word;
+    line-height: 1.35;
+    max-height: calc(1.35em * 2);
+}

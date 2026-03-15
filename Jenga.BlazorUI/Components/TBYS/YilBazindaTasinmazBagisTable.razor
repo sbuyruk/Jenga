@@ -66,27 +66,27 @@
                                 <td>@sira</td>
                                 <td class="text-start">@r.Il</td>
 
-                                <td class="col-count">@r.BinaTM</td>
-                                <td class="col-count">@r.BinaCM</td>
+                                <td class="col-count">@DisplayCount(r.BinaTM)</td>
+                                <td class="col-count">@DisplayCount(r.BinaCM)</td>
 
-                                <td class="col-count">@r.MeskenTM</td>
-                                <td class="col-count">@r.MeskenCM</td>
+                                <td class="col-count">@DisplayCount(r.MeskenTM)</td>
+                                <td class="col-count">@DisplayCount(r.MeskenCM)</td>
 
-                                <td class="col-count">@r.IsyeriTM</td>
-                                <td class="col-count">@r.IsyeriCM</td>
+                                <td class="col-count">@DisplayCount(r.IsyeriTM)</td>
+                                <td class="col-count">@DisplayCount(r.IsyeriCM)</td>
 
-                                <td class="col-count">@r.ArsaTM</td>
-                                <td class="col-count">@r.ArsaCM</td>
+                                <td class="col-count">@DisplayCount(r.ArsaTM)</td>
+                                <td class="col-count">@DisplayCount(r.ArsaCM)</td>
 
-                                <td class="col-count">@r.TarlaTM</td>
-                                <td class="col-count">@r.TarlaCM</td>
+                                <td class="col-count">@DisplayCount(r.TarlaTM)</td>
+                                <td class="col-count">@DisplayCount(r.TarlaCM)</td>
 
-                                <td class="col-count">@r.ToplamTM</td>
-                                <td class="col-count">@r.ToplamCM</td>
-                                <td class="col-total">@r.Toplam</td>
+                                <td class="col-count">@DisplayCount(r.ToplamTM)</td>
+                                <td class="col-count">@DisplayCount(r.ToplamCM)</td>
+                                <td class="col-total">@DisplayCount(r.Toplam)</td>
 
-                                <td class="text-end col-money">@r.EmlakBeyanDegeriTl.ToString("N2")</td>
-                                <td class="text-end col-money">@r.TahminiRayicDegeriTl.ToString("N2")</td>
+                                <td class="text-end col-money">@DisplayMoney(r.EmlakBeyanDegeriTl)</td>
+                                <td class="text-end col-money">@DisplayMoney(r.TahminiRayicDegeriTl)</td>
                             </tr>
                             sira++;
                         }
@@ -94,54 +94,54 @@
                         <tr class="fw-bold">
                             <td colspan="2" class="text-start">TOPLAM</td>
 
-                            <td>@block.Total.BinaTM</td>
-                            <td>@block.Total.BinaCM</td>
+                            <td>@DisplayCount(block.Total.BinaTM)</td>
+                            <td>@DisplayCount(block.Total.BinaCM)</td>
 
-                            <td>@block.Total.MeskenTM</td>
-                            <td>@block.Total.MeskenCM</td>
+                            <td>@DisplayCount(block.Total.MeskenTM)</td>
+                            <td>@DisplayCount(block.Total.MeskenCM)</td>
 
-                            <td>@block.Total.IsyeriTM</td>
-                            <td>@block.Total.IsyeriCM</td>
+                            <td>@DisplayCount(block.Total.IsyeriTM)</td>
+                            <td>@DisplayCount(block.Total.IsyeriCM)</td>
 
-                            <td>@block.Total.ArsaTM</td>
-                            <td>@block.Total.ArsaCM</td>
+                            <td>@DisplayCount(block.Total.ArsaTM)</td>
+                            <td>@DisplayCount(block.Total.ArsaCM)</td>
 
-                            <td>@block.Total.TarlaTM</td>
-                            <td>@block.Total.TarlaCM</td>
+                            <td>@DisplayCount(block.Total.TarlaTM)</td>
+                            <td>@DisplayCount(block.Total.TarlaCM)</td>
 
-                            <td>@block.Total.ToplamTM</td>
-                            <td>@block.Total.ToplamCM</td>
-                            <td>@block.Total.Toplam</td>
+                            <td>@DisplayCount(block.Total.ToplamTM)</td>
+                            <td>@DisplayCount(block.Total.ToplamCM)</td>
+                            <td>@DisplayCount(block.Total.Toplam)</td>
 
-                            <td class="text-end col-money">@block.Total.EmlakBeyanDegeriTl.ToString("N2")</td>
-                            <td class="text-end col-money">@block.Total.TahminiRayicDegeriTl.ToString("N2")</td>
+                            <td class="text-end col-money">@DisplayMoney(block.Total.EmlakBeyanDegeriTl)</td>
+                            <td class="text-end col-money">@DisplayMoney(block.Total.TahminiRayicDegeriTl)</td>
                         </tr>
                     }
 
                     <tr class="table-secondary fw-bold">
                         <td colspan="2" class="text-start">Genel Toplam</td>
 
-                        <td>@GrandTotal.BinaTM</td>
-                        <td>@GrandTotal.BinaCM</td>
+                        <td>@DisplayCount(GrandTotal.BinaTM)</td>
+                        <td>@DisplayCount(GrandTotal.BinaCM)</td>
 
-                        <td>@GrandTotal.MeskenTM</td>
-                        <td>@GrandTotal.MeskenCM</td>
+                        <td>@DisplayCount(GrandTotal.MeskenTM)</td>
+                        <td>@DisplayCount(GrandTotal.MeskenCM)</td>
 
-                        <td>@GrandTotal.IsyeriTM</td>
-                        <td>@GrandTotal.IsyeriCM</td>
+                        <td>@DisplayCount(GrandTotal.IsyeriTM)</td>
+                        <td>@DisplayCount(GrandTotal.IsyeriCM)</td>
 
-                        <td>@GrandTotal.ArsaTM</td>
-                        <td>@GrandTotal.ArsaCM</td>
+                        <td>@DisplayCount(GrandTotal.ArsaTM)</td>
+                        <td>@DisplayCount(GrandTotal.ArsaCM)</td>
 
-                        <td>@GrandTotal.TarlaTM</td>
-                        <td>@GrandTotal.TarlaCM</td>
+                        <td>@DisplayCount(GrandTotal.TarlaTM)</td>
+                        <td>@DisplayCount(GrandTotal.TarlaCM)</td>
 
-                        <td>@GrandTotal.ToplamTM</td>
-                        <td>@GrandTotal.ToplamCM</td>
-                        <td>@GrandTotal.Toplam</td>
+                        <td>@DisplayCount(GrandTotal.ToplamTM)</td>
+                        <td>@DisplayCount(GrandTotal.ToplamCM)</td>
+                        <td>@DisplayCount(GrandTotal.Toplam)</td>
 
-                        <td class="text-end">@GrandTotal.EmlakBeyanDegeriTl.ToString("N2")</td>
-                        <td class="text-end">@GrandTotal.TahminiRayicDegeriTl.ToString("N2")</td>
+                        <td class="text-end">@DisplayMoney(GrandTotal.EmlakBeyanDegeriTl)</td>
+                        <td class="text-end">@DisplayMoney(GrandTotal.TahminiRayicDegeriTl)</td>
                     </tr>
                 }
             </tbody>
@@ -382,6 +382,12 @@
 
         return Category.Unknown;
     }
+
+    private static string DisplayCount(int value)
+        => value == 0 ? string.Empty : value.ToString();
+
+    private static string DisplayMoney(decimal value)
+        => value == 0m ? string.Empty : value.ToString("N2", TrCulture);
 
     private sealed class RegionBlock
     {
