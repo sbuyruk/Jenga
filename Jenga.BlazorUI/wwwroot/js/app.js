@@ -42,3 +42,5 @@ window.printElementById = (elementId) => {
     document.body.innerHTML = original;
     window.location.reload();
 };
+
+window.isMobileViewport = () => window.innerWidth < 768;

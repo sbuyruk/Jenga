@@ -2,9 +2,12 @@
 
 /* Scrollable container for menu content; size controlled by MainLayout sidebar */
 .nav-scrollable {
-    display: block;
+    display: flex;
+    flex-direction: column;
     width: 100%;
-    overflow: hidden;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
     transition: width 180ms ease;
     box-sizing: border-box;
 }
@@ -22,6 +25,12 @@
 }
 
 /* Brand area */
+.brand {
+    padding: 12px 0 8px 0;
+    display: flex;
+    align-items: center;
+}
+
 .brand .title {
     font-weight: 800;
     color: var(--text);
@@ -33,6 +42,12 @@
     font-size: 13px;
     color: var(--muted);
     margin-bottom: 8px;
+}
+
+.brand-logo {
+    cursor: pointer;
+    max-width: 100%;
+    height: auto;
 }
 
 /* Sidebar link list */
@@ -87,4 +102,16 @@
     .nav-scrollable {
         height: auto;
     }
+}
+
+.loading-text {
+    color: var(--muted);
+    padding: 12px;
+    font-size: 0.9rem;
+}
+
+hr {
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    margin: 8px 0;
 }

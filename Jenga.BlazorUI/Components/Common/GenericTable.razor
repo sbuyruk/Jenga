@@ -69,21 +69,29 @@
                 {
                     @foreach (var item in PagedItems)
                     {
-                        <tr @onclick="() => OnRowClickedInternal(item)" class="gt-row" @key="GetKey(item)">
+                        <tr @onclick="() => OnRowClickedInternal(item)" class="@GetRowClass(item)" @key="GetKey(item)">
                             @RowTemplate(item)
                         </tr>
+                        @if (DetailRowTemplate != null)
+                        {
+                            @DetailRowTemplate(item)
+                        }
                     }
                 }
                 else
                 {
                     @foreach (var item in PagedItems)
                     {
-                        <tr @onclick="() => OnRowClickedInternal(item)" class="gt-row" @key="GetKey(item)">
+                        <tr @onclick="() => OnRowClickedInternal(item)" class="@GetRowClass(item)" @key="GetKey(item)">
                             @foreach (var col in Columns)
                             {
                                 <td>@FormatValue(col.Property.GetValue(item))</td>
                             }
                         </tr>
+                        @if (DetailRowTemplate != null)
+                        {
+                            @DetailRowTemplate(item)
+                        }
                     }
                 }
             </tbody>
@@ -112,8 +120,10 @@
     [Parameter] public IEnumerable<TItem> Items { get; set; } = Array.Empty<TItem>();
     [Parameter] public RenderFragment<TItem> RowTemplate { get; set; }
     [Parameter] public RenderFragment HeaderTemplate { get; set; }
+    [Parameter] public RenderFragment<TItem> DetailRowTemplate { get; set; }
 
     [Parameter] public Func<TItem, string?>? SearchTextSelector { get; set; }
+    [Parameter] public Func<TItem, string?>? RowClassSelector { get; set; }
 
     // NEW: Export customization (optional)
     [Parameter] public IReadOnlyList<string>? ExportHeaders { get; set; }
@@ -125,13 +135,13 @@
     [Parameter] public bool ShowSearch { get; set; } = true;
     [Parameter] public string PlaceholderSearch { get; set; } = "Ara...";
     [Parameter] public EventCallback<TItem> OnRowClicked { get; set; }
-    [Parameter] public Func<TItem, object> KeySelector { get; set; } // optional for @key
+    [Parameter] public Func<TItem, object> KeySelector { get; set; }
 
     [Parameter] public string TableClass { get; set; } = null;
     [Parameter] public bool ShowCopy { get; set; } = true;
     [Parameter] public bool ShowExport { get; set; } = true;
-    [Parameter] public string ExportFileName { get; set; } = null; // if null, auto-generated
-    [Parameter] public bool ExportOnlyCurrentPage { get; set; } // default: tüm sayfalar
+    [Parameter] public string ExportFileName { get; set; } = null;
+    [Parameter] public bool ExportOnlyCurrentPage { get; set; }
 
     private readonly string _tableId = $"gt-{Guid.NewGuid():N}";
 
@@ -162,6 +172,14 @@
             const string defaultClasses = "table gt-table";
             return string.IsNullOrWhiteSpace(TableClass) ? defaultClasses : $"{defaultClasses} {TableClass}".Trim();
         }
+    }
+
+    private string GetRowClass(TItem item)
+    {
+        var baseClass = "gt-row";
+        if (RowClassSelector == null) return baseClass;
+        var custom = RowClassSelector(item);
+        return string.IsNullOrWhiteSpace(custom) ? baseClass : $"{baseClass} {custom}";
     }
 
     private string SearchText

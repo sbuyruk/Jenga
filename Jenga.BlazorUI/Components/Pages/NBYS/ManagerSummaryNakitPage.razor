@@ -2,7 +2,6 @@
 @using System.Globalization
 @using Jenga.BlazorUI.Components.Common
 @using Jenga.BlazorUI.Components.NBYS
-@using Jenga.BlazorUI.Components.TBYS
 @using Jenga.BlazorUI.Services.Common
 @using Jenga.DataAccess.Services.Common
 @using Jenga.DataAccess.Services.NBYS
@@ -84,57 +83,7 @@
                      data-bs-target="#manager-scrollspy-nav"
                      data-bs-smooth-scroll="true"
                      tabindex="0">
-
-                    <section id="gunluk" class="manager-section d-flex flex-wrap gap-3">
-                        <GenericChart TItem="DayAmount"
-                                      Series="bagislarBuAyGunlukSeries"
-                                      LabelSelector="@(x => x.Label)"
-                                      ValueSelector="@(x => x.Amount)"
-                                      Title="Günlük Nakit Bağış Gelirleri (Bu Ay)"
-                                      Type="GenericChart<DayAmount>.GenericChartType.Bar"
-                                      ShowDataLabels="true"
-                                      ShowLegend="false"
-                                      Height="300px"
-                                      Width="590px"
-                                      GridPaddingBottom="40"
-                                      ColorPalette="@_nbysPalette2"
-                                      LockToMonthCategories="false" />
-
-                        <GenericChart TItem="DayCount"
-                                      Series="bagiscilarBuAyGunlukSeries"
-                                      LabelSelector="@(x => x.Label)"
-                                      ValueSelector="@(x => x.Count)"
-                                      Title="Günlük Tekil Bağışçı Sayısı (Bu Ay)"
-                                      Type="GenericChart<DayCount>.GenericChartType.Bar"
-                                      ShowDataLabels="true"
-                                      ShowLegend="false"
-                                      Height="300px"
-                                      Width="590px"
-                                      GridPaddingBottom="40"
-                                      ColorPalette="@_nbysPalette3"
-                                      LockToMonthCategories="false" />
-                    </section>
-                    <hr class="section-separator" />
-
-                    <section id="il-harita" class="manager-section w-100">
-                        <div class="d-flex flex-wrap gap-3 justify-content-center w-100 mx-auto">
-                            <div class="w-100">
-                                <div class="card turkey-map-panel">
-                                    <div class="card-header bg-transparent border-0 pb-0">
-                                        <h5 class="mb-0 text-center">Türkiye Haritası (İl Bazında Nakit Bağışlar)</h5>
-                                    </div>
-
-                                    <div class="card-body pt-3">
-                                        <div class="map-host">
-                                            <TurkeyMap OnProvinceClick="OnNakitProvinceClickAsync" />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-                    <hr class="section-separator" />
-
+                     @* kayan yazı *@
                     <section id="ticker" class="manager-section w-100">
                         <div class="ticker-wrapper p3 pauseable">
                             <div class="ticker text-center" aria-label="Bilgilendirme">
@@ -172,6 +121,57 @@
                     </section>
 
                     <hr class="section-separator" />
+                    <section id="gunluk" class="manager-section d-flex flex-wrap gap-3">
+                        <GenericChart TItem="DayAmount"
+                                      Series="bagislarBuAyGunlukSeries"
+                                      LabelSelector="@(x => x.Label)"
+                                      ValueSelector="@(x => x.Amount)"
+                                      Title="Günlük Nakit Bağış Gelirleri (Bu Ay)"
+                                      Type="GenericChart<DayAmount>.GenericChartType.Bar"
+                                      ShowDataLabels="false"
+                                      ShowLegend="false"
+                                      Height="300px"
+                                      Width="590px"
+                                      GridPaddingBottom="40"
+                                      ColorPalette="@_nbysPalette2"
+                                      LockToMonthCategories="false" />
+
+                        <GenericChart TItem="DayCount"
+                                      Series="bagiscilarBuAyGunlukSeries"
+                                      LabelSelector="@(x => x.Label)"
+                                      ValueSelector="@(x => x.Count)"
+                                      Title="Günlük Tekil Bağışçı Sayısı (Bu Ay)"
+                                      Type="GenericChart<DayCount>.GenericChartType.Bar"
+                                      ShowDataLabels="false"
+                                      ShowLegend="false"
+                                      Height="300px"
+                                      Width="590px"
+                                      GridPaddingBottom="40"
+                                      ColorPalette="@_nbysPalette3"
+                                      LockToMonthCategories="false" />
+                    </section>
+                    <hr class="section-separator" />
+
+                    <section id="il-harita" class="manager-section w-100">
+                        <div class="d-flex flex-wrap gap-3 justify-content-center w-100 mx-auto">
+                            <div class="w-100">
+                                <div class="card turkey-map-panel">
+                                    <div class="card-header bg-transparent border-0 pb-0">
+                                        <h5 class="mb-0 text-center">Türkiye Haritası (İl Bazında Nakit Bağışlar)</h5>
+                                    </div>
+
+                                    <div class="card-body pt-3">
+                                        <div class="map-host">
+                                            <TurkeyMap OnProvinceClick="OnNakitProvinceClickAsync" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    <hr class="section-separator" />
+
+                    
 
                     <section id="aylik-kartlar" class="manager-section w-100">
                         @if (monthlyCards.Count == 0)
@@ -297,7 +297,7 @@
                                       ValueSelector="@(x => x.Amount)"
                                       Title="Aylık Nakit Bağış Gelirleri (Son 5 Yıl)"
                                       Type="GenericChart<MonthAmount>.GenericChartType.Bar"
-                                      ShowDataLabels="true"
+                                      ShowDataLabels="false"
                                       ShowLegend="false"
                                       Height="460px"
                                       Width="1200px"
@@ -315,7 +315,7 @@
                                       ValueSelector="@(x => x.Amount)"
                                       Title="Yıllık Nakit Bağış Tutarı (Son 10 Yıl)"
                                       Type="GenericChart<YearAmount>.GenericChartType.Bar"
-                                      ShowDataLabels="true"
+                                      ShowDataLabels="false"
                                       ShowLegend="false"
                                       Height="400px"
                                       Width="590px"
@@ -336,7 +336,7 @@
                                       Height="400px"
                                       Width="590px"
                                       GridPaddingBottom="40"
-                                      ColorPalette="@_nbysPalette5"
+                                      ColorPalette="@_nbysPalette4"
                                       LockToMonthCategories="false"
                                       XAxisLabelRotateDegrees="0"
                                       XAxisLabelsAlwaysRotate="false" />
@@ -415,22 +415,12 @@
         "#FEE440",
     ];
 
-    private static readonly string[] _nbysPalette5 =
-    [
-        "#00BBF9",
-        "#9B5DE5",
-        "#F15BB5",
-        "#00F5D4",
-        "#FEE440",
-    ];
-
     private const int LastYears = 5;
     private const int Since = 2005;
     private const int Last10Years = 10;
 
     private List<NakitBagisHareket>? nakitBagislarLastYears;
     private List<NakitBagisHareket>? nakitBagislarSince;
-    private List<NakitBagisci> _nakitBagiscilar = new();
 
     private Dictionary<int, int?> _donorProvinceIdByDonorId = new();
     private Dictionary<int, string> _ilNameById = new();
@@ -553,7 +543,6 @@
             await InvokeAsync(StateHasChanged);
 
             var bagiscilar = await NakitBagisciService.GetAllAsync(cancellationToken);
-            _nakitBagiscilar = bagiscilar;
             _donorProvinceIdByDonorId = bagiscilar
                 .Where(x => x != null)
                 .GroupBy(x => x.Id)
@@ -564,7 +553,7 @@
 
             nakitBagislarSince = await NakitBagisHareketService.GetLastYearsAsync(years, cancellationToken);
 
-            loadingMessage = "Türkiya haritası ve İller yükleniyor...";
+            loadingMessage = "Türkiye haritası ve İller yükleniyor...";
             await InvokeAsync(StateHasChanged);
 
             var iller = await IlService.GetAllAsync(cancellationToken);
@@ -608,9 +597,10 @@
             loadingMessage = "Tamamlandı.";
             await InvokeAsync(StateHasChanged);
         }
-        catch
+        catch (Exception ex)
         {
             loadFailed = true;
+            loadingMessage = $"Hata: {ex.Message}";
 
             bagislarSon5YilSeries.Clear();
             bagislarBuAyGunlukSeries.Clear();
@@ -1068,13 +1058,12 @@
             return;
         }
 
-        var now = DateTime.Now;
-        var yearNow = now.Year;
+        var yearNow = DateTime.Now.Year;
 
         var items = nakitBagislarSince
             .Where(x => x?.BagisTarihi != null
-                        && x.BagisTarihi.Value.Year == yearNow
-                        && x.BagisciId != null)
+                        && x.BagisciId != null
+                        && x.BagisTarihi.Value.Year == yearNow)
             .Select(x => x!)
             .ToList();
 
@@ -1083,71 +1072,63 @@
             return;
         }
 
-        var currentYearDonorFirstDonationDate = nakitBagislarSince
+        var currentYearDonorFirstDonationMonthByDonor = nakitBagislarSince
             .Where(x => x?.BagisTarihi != null && x.BagisciId != null)
             .Select(x => x!)
             .GroupBy(x => x.BagisciId!.Value)
             .Select(g => new { DonorId = g.Key, FirstDonationDate = g.Min(v => v.BagisTarihi!.Value) })
             .Where(x => x.FirstDonationDate.Year == yearNow)
-            .ToDictionary(x => x.DonorId, x => x.FirstDonationDate);
+            .ToDictionary(x => x.DonorId, x => x.FirstDonationDate.Month);
 
-        var provinceIds = items
-            .Select(x => x.BagisciId!.Value)
-            .Distinct()
-            .Select(donorId =>
+        var grouped = items
+            .Select(x =>
             {
+                var donorId = x.BagisciId!.Value;
                 _donorProvinceIdByDonorId.TryGetValue(donorId, out var provinceId);
-                return provinceId;
-            })
-            .Where(provinceId => provinceId != null)
-            .Select(provinceId => provinceId!.Value)
-            .Distinct()
-            .OrderBy(x => x)
-            .ToList();
 
-        foreach (var provinceId in provinceIds)
+                return new
+                {
+                    Donation = x,
+                    DonorId = donorId,
+                    ProvinceId = provinceId
+                };
+            })
+            .Where(x => x.ProvinceId != null)
+            .GroupBy(x => new
+            {
+                ProvinceId = x.ProvinceId!.Value,
+                Month = x.Donation.BagisTarihi!.Value.Month
+            });
+
+        foreach (var group in grouped)
         {
+            var provinceId = group.Key.ProvinceId;
+            var month = group.Key.Month;
+
             var provinceName =
                 _ilNameById.TryGetValue(provinceId, out var name) && !string.IsNullOrWhiteSpace(name)
                     ? name
                     : provinceId.ToString(_trCulture);
 
-            for (var month = 1; month <= 12; month++)
+            var donorIds = group
+                .Select(x => x.DonorId)
+                .Distinct()
+                .ToList();
+
+            var donorCount = donorIds.Count;
+            var newDonorCount = donorIds.Count(donorId =>
+                currentYearDonorFirstDonationMonthByDonor.TryGetValue(donorId, out var firstMonth)
+                && firstMonth == month);
+
+            currentYearProvinceMonthlyRows.Add(new ProvinceMonthlyDonorRow
             {
-                var monthItems = items
-                    .Where(x => x.BagisTarihi != null
-                                && x.BagisTarihi.Value.Month == month
-                                && x.BagisciId != null
-                                && _donorProvinceIdByDonorId.TryGetValue(x.BagisciId.Value, out var donorProvinceId)
-                                && donorProvinceId == provinceId)
-                    .ToList();
-
-                if (monthItems.Count == 0)
-                {
-                    continue;
-                }
-
-                var donorIds = monthItems
-                    .Select(x => x.BagisciId!.Value)
-                    .Distinct()
-                    .ToList();
-
-                var donorCount = donorIds.Count;
-
-                var newDonorCount = donorIds.Count(donorId =>
-                    currentYearDonorFirstDonationDate.TryGetValue(donorId, out var firstDonationDate)
-                    && firstDonationDate.Month == month);
-
-                currentYearProvinceMonthlyRows.Add(new ProvinceMonthlyDonorRow
-                {
-                    ProvinceId = provinceId,
-                    ProvinceName = provinceName,
-                    Month = month,
-                    MonthLabel = new DateTime(2000, month, 1).ToString("MMMM", _trCulture),
-                    DonorCount = donorCount,
-                    NewDonorCount = newDonorCount
-                });
-            }
+                ProvinceId = provinceId,
+                ProvinceName = provinceName,
+                Month = month,
+                MonthLabel = new DateTime(2000, month, 1).ToString("MMMM", _trCulture),
+                DonorCount = donorCount,
+                NewDonorCount = newDonorCount
+            });
         }
 
         currentYearProvinceMonthlyRows.Sort((a, b) =>

@@ -125,6 +125,7 @@
                         Persons="persons"
                         Brands="brands"
                         Models="models"
+                        Categories="categories"
                         IsOpen="isEntryOpen"
                         OnSave="OnEntryModalSave"
                         OnClose="CloseEntryModal" />
@@ -139,6 +140,7 @@
                        MaterialInventories="materialInventories"
                        IsOpen="isExitOpen"
                        OnSave="OnExitModalSave"
+                       OnSaveWithAssets="OnExitAssetIdsReceived"
                        OnClose="CloseExitModal" />
 
 <MaterialCategoryEditModal Category="selectedCategory"
@@ -165,6 +167,7 @@
                              IsOpen="isTransferOpen"
                              InitialSelectedFromInventoryId="modalInitialFromInventoryId"
                              OnSave="OnTransferModalSave"
+                             OnSaveWithAssets="OnTransferAssetIdsReceived"
                              OnClose="CloseTransferModal" />
 
 @code {
@@ -210,6 +213,8 @@
     private Material? editingMaterial;
     private MaterialTransfer? editingTransfer;
     private int? modalInitialFromInventoryId;
+    private List<int>? pendingTransferAssetIds;
+    private List<int>? pendingExitAssetIds;
 
     protected override async Task OnInitializedAsync()
     {
@@ -489,19 +494,35 @@
             "Giriş", () => isEntryOpen = false);
     }
 
+    private void OnTransferAssetIdsReceived(List<int> assetIds)
+    {
+        pendingTransferAssetIds = assetIds?.ToList();
+    }
+
+    private void OnExitAssetIdsReceived(List<int> assetIds)
+    {
+        pendingExitAssetIds = assetIds?.ToList();
+    }
+
     private async Task OnExitModalSave()
     {
         if (editingExit == null) return;
+        var assetIds = pendingExitAssetIds;
+        pendingExitAssetIds = null;
+
         await ExecuteTransaction(async () =>
-            await MaterialExitService.AddAsync(editingExit, CancellationToken.None),
+            await MaterialExitService.AddAsync(editingExit, assetIds, CancellationToken.None),
             "Çıkış", () => isExitOpen = false);
     }
 
     private async Task OnTransferModalSave(MaterialTransfer? transfer)
     {
         if (transfer == null) return;
+        var assetIds = pendingTransferAssetIds;
+        pendingTransferAssetIds = null;
+
         await ExecuteTransaction(async () =>
-            await MaterialTransferService.AddAsync(transfer, httpContextAccessor.HttpContext?.User?.Identity?.Name, CancellationToken.None),
+            await MaterialTransferService.AddAsync(transfer, httpContextAccessor.HttpContext?.User?.Identity?.Name, assetIds, CancellationToken.None),
             "Transfer", () => isTransferOpen = false);
     }
 

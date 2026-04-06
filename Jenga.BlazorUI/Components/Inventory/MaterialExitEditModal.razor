@@ -8,6 +8,7 @@
 
 @inject IMaterialService MaterialService
 @inject IMaterialExitService MaterialExitService
+@inject IMaterialAssetService MaterialAssetService
 @inject IToastService ToastService
 
 @if (IsOpen)
@@ -20,7 +21,6 @@
                     <button type="button" class="btn-close" @onclick="OnClose" aria-label="Kapat"></button>
                 </div>
                 <div class="modal-body">
-                    <!-- Malzeme Seçimi -->
                     <div class="mb-3">
                         <label class="form-label">Malzeme</label>
                         @if (IsMaterialFixed && MaterialExit != null && MaterialExit.MaterialId > 0)
@@ -43,27 +43,41 @@
                         }
                     </div>
 
-                    <div class="row g-2 mb-3">
-                        <div class="col-8">
-                            <label class="form-label">Miktar</label>
-                            <input class="form-control" type="number" @bind="MaterialExit!.Quantity" min="1" max="@AvailableQuantity" />
-
-                            @if (ShowQuantityError)
-                            {
-                                <div class="text-danger small mt-1">Miktar en az 1 olmalıdır.</div>
-                            }
-                            @if (ShowExceedsError)
-                            {
-                                <div class="text-danger small mt-1">Girilen miktar mevcut stoktan (@AvailableQuantity) fazla olamaz.</div>
-                            }
+                    @if (!IsSelectedMaterialAsset)
+                    {
+                        <div class="row g-2 mb-3">
+                            <div class="col-8">
+                                <label class="form-label">Miktar</label>
+                                <input class="form-control" type="number" @bind="MaterialExit!.Quantity" min="1" max="@AvailableQuantity" />
+                                @if (ShowQuantityError)
+                                {
+                                    <div class="text-danger small mt-1">Miktar en az 1 olmalıdır.</div>
+                                }
+                                @if (ShowExceedsError)
+                                {
+                                    <div class="text-danger small mt-1">Girilen miktar mevcut stoktan (@AvailableQuantity) fazla olamaz.</div>
+                                }
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label">Birim</label>
+                                <input class="form-control" value="@SelectedUnitName" disabled />
+                            </div>
                         </div>
-                        <div class="col-4">
-                            <label class="form-label">Birim</label>
-                            <input class="form-control" value="@SelectedUnitName" disabled />
+                    }
+                    else
+                    {
+                        <div class="row g-2 mb-3">
+                            <div class="col-8">
+                                <label class="form-label">Seçilen</label>
+                                <input class="form-control" value="@($"{selectedAssetIds.Count} adet")" disabled />
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label">Birim</label>
+                                <input class="form-control" value="@SelectedUnitName" disabled />
+                            </div>
                         </div>
-                    </div>
+                    }
 
-                    <!-- Çıkış Yeri Seçimi (Tek DDL: Kaynak Stok - RAW inventory kayıtları) -->
                     <div class="mb-3 bg-light p-3 rounded border">
                         <label class="form-label fw-bold">Çıkış Yeri (Kaynak Stok)</label>
 
@@ -86,9 +100,45 @@
                         {
                             <div class="text-danger small mt-1">Lütfen geçerli bir kaynak stok seçiniz.</div>
                         }
+
+                        @if (IsSelectedMaterialAsset && SelectedSourceId != 0)
+                        {
+                            <div class="mt-3 border-top pt-2">
+                                <label class="form-label fw-semibold">
+                                    <i class="bi bi-cpu me-1"></i> Çıkış Yapılacak Demirbaşları Seçin
+                                </label>
+                                @if (!availableAssets.Any())
+                                {
+                                    <div class="text-muted small">Bu kaynakta aktif demirbaş bulunamadı.</div>
+                                }
+                                else
+                                {
+                                    <div class="list-group list-group-flush" style="max-height:200px; overflow-y:auto;">
+                                        @foreach (var asset in availableAssets)
+                                        {
+                                            var isChecked = selectedAssetIds.Contains(asset.Id);
+                                            <label class="list-group-item list-group-item-action d-flex align-items-center gap-2 py-1 @(isChecked ? "list-group-item-danger" : "")">
+                                                <input type="checkbox" class="form-check-input mt-0"
+                                                       checked="@isChecked"
+                                                       @onchange="() => ToggleAsset(asset.Id)" />
+                                                <span class="fw-semibold">@(asset.SerialNumber ?? $"ID:{asset.Id}")</span>
+                                                @if (!string.IsNullOrEmpty(asset.Barcode))
+                                                {
+                                                    <span class="text-muted small">BC: @asset.Barcode</span>
+                                                }
+                                                <span class="badge bg-success ms-auto">@GetAssetStatusLabel(asset.Status)</span>
+                                            </label>
+                                        }
+                                    </div>
+                                    @if (selectedAssetIds.Count == 0)
+                                    {
+                                        <div class="text-danger small mt-1">En az bir demirbaş seçmelisiniz.</div>
+                                    }
+                                }
+                            </div>
+                        }
                     </div>
 
-                    <!-- Çıkış Tipi ve Tarih -->
                     <div class="mb-3">
                         <label class="form-label">Çıkış Sebebi</label>
                         <select class="form-select" @bind="MaterialExit.ExitType">
@@ -130,7 +180,7 @@
     #region Models
     public class InventoryOption
     {
-        public int InventoryId { get; set; } // MaterialInventory.Id (assumed)
+        public int InventoryId { get; set; }
         public int? LocationId { get; set; }
         public int? PersonelId { get; set; }
         public int? BrandId { get; set; }
@@ -138,10 +188,9 @@
         public int Quantity { get; set; }
     }
 
-    // Single unified dropdown option (maps 1:1 to a MaterialInventory record)
     public class SourceOption
     {
-        public int Id { get; set; } // will use InventoryId
+        public int Id { get; set; }
         public int? LocationId { get; set; }
         public int? PersonelId { get; set; }
         public int? BrandId { get; set; }
@@ -159,23 +208,21 @@
     [Parameter] public List<Personel> Persons { get; set; } = new();
     [Parameter] public List<MaterialBrand> Brands { get; set; } = new();
     [Parameter] public List<MaterialModel> Models { get; set; } = new();
-
     [Parameter] public List<MaterialInventory> MaterialInventories { get; set; } = new();
     [Parameter] public bool IsOpen { get; set; }
-
     [Parameter] public EventCallback OnSave { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
     [Parameter] public bool IsMaterialFixed { get; set; } = false;
+    [Parameter] public EventCallback<List<int>> OnSaveWithAssets { get; set; }
     #endregion
 
     #region State
-    // selection sync guard to avoid re-entrancy
-    private bool _isSyncingSelection;
-
     private List<InventoryOption> AvailableInventoryOptions { get; set; } = new();
     private List<SourceOption> SourceOptions { get; set; } = new();
 
-    // bound to the single dropdown (holds InventoryId)
+    private List<MaterialAsset> availableAssets = new();
+    private List<int> selectedAssetIds = new();
+
     private int _selectedSourceId;
     private int SelectedSourceId
     {
@@ -184,8 +231,9 @@
         {
             if (_selectedSourceId == value) return;
             _selectedSourceId = value;
-            // update MaterialExit fields immediately when user picks a source
             SyncSelectedSourceToMaterialExit();
+            selectedAssetIds.Clear();
+            _ = LoadAvailableAssets();
         }
     }
 
@@ -194,7 +242,6 @@
         var sel = SourceOptions.FirstOrDefault(s => s.Id == SelectedSourceId);
         if (sel != null && MaterialExit != null)
         {
-            // Normalize zeros to null to avoid 0 getting interpreted as "has value but zero"
             MaterialExit.LocationId = sel.LocationId;
             MaterialExit.PersonelId = sel.PersonelId;
             MaterialExit.BrandId = (sel.BrandId.HasValue && sel.BrandId.Value != 0) ? sel.BrandId : null;
@@ -204,6 +251,11 @@
     #endregion
 
     #region Computed Properties
+    private bool IsSelectedMaterialAsset =>
+        MaterialExit != null
+        && MaterialExit.MaterialId > 0
+        && Materials.FirstOrDefault(m => m.Id == MaterialExit.MaterialId)?.IsAsset == true;
+
     private int MaterialId
     {
         get => MaterialExit?.MaterialId ?? 0;
@@ -214,16 +266,13 @@
                 MaterialExit.MaterialId = value;
                 var selectedMaterial = Materials.FirstOrDefault(m => m.Id == value);
                 if (selectedMaterial != null)
-                {
                     MaterialExit.MaterialUnitId = selectedMaterial.MaterialUnitId;
-                }
                 else
-                {
                     MaterialExit.MaterialUnitId = 0;
-                }
             }
-            // reset selections when material changes
             SelectedSourceId = 0;
+            selectedAssetIds.Clear();
+            availableAssets.Clear();
             RecalculateDerived();
         }
     }
@@ -249,39 +298,37 @@
     {
         get
         {
-            if (MaterialExit == null) return 0;
-            if (SelectedSourceId == 0) return 0;
-
+            if (MaterialExit == null || SelectedSourceId == 0) return 0;
             var sel = SourceOptions.FirstOrDefault(s => s.Id == SelectedSourceId);
             return sel?.Quantity ?? 0;
         }
     }
 
-    private bool ShowQuantityError => MaterialExit != null && MaterialExit.Quantity < 1;
-    private bool ShowExceedsError => MaterialExit != null && AvailableQuantity > 0 && MaterialExit.Quantity > AvailableQuantity;
+    private bool ShowQuantityError => !IsSelectedMaterialAsset && MaterialExit != null && MaterialExit.Quantity < 1;
+    private bool ShowExceedsError => !IsSelectedMaterialAsset && MaterialExit != null && AvailableQuantity > 0 && MaterialExit.Quantity > AvailableQuantity;
     private bool ShowLocationError => SelectedSourceId == 0;
     private bool ShowExitTypeError => MaterialExit != null && !MaterialExit.ExitType.HasValue;
 
-    private bool IsSaveDisabled =>
-        MaterialExit == null ||
-        ShowLocationError ||
-        ShowQuantityError ||
-        ShowExceedsError ||
-        ShowExitTypeError;
+    private bool IsSaveDisabled
+    {
+        get
+        {
+            if (MaterialExit == null || ShowLocationError || ShowExitTypeError) return true;
+            if (IsSelectedMaterialAsset)
+                return selectedAssetIds.Count == 0;
+            return ShowQuantityError || ShowExceedsError;
+        }
+    }
     #endregion
 
     protected override void OnParametersSet()
     {
-        if (MaterialExit != null && IsOpen)
-        {
-            // selected source will be set after RecalculateDerived
-        }
-
+        selectedAssetIds.Clear();
+        availableAssets.Clear();
         RecalculateDerived();
 
         if (MaterialExit != null && IsOpen)
         {
-            // Try to find exact inventory row that matches exit's location/person/brand/model
             var existing = SourceOptions.FirstOrDefault(s =>
                 (s.LocationId ?? 0) == (MaterialExit.LocationId ?? 0) &&
                 (s.PersonelId ?? 0) == (MaterialExit.PersonelId ?? 0) &&
@@ -290,28 +337,68 @@
 
             if (existing != null)
             {
-                SelectedSourceId = existing.Id;
+                _selectedSourceId = existing.Id;
                 SyncSelectedSourceToMaterialExit();
+                _ = LoadAvailableAssets();
             }
             else if (SourceOptions.Count == 1)
             {
-                var only = SourceOptions.First();
-                SelectedSourceId = only.Id;
+                _selectedSourceId = SourceOptions.First().Id;
                 SyncSelectedSourceToMaterialExit();
+                _ = LoadAvailableAssets();
             }
             else
             {
-                SelectedSourceId = 0;
+                _selectedSourceId = 0;
             }
         }
     }
+
+    private async Task LoadAvailableAssets()
+    {
+        availableAssets.Clear();
+        if (!IsSelectedMaterialAsset || SelectedSourceId == 0 || MaterialExit == null) return;
+
+        var opt = SourceOptions.FirstOrDefault(o => o.Id == SelectedSourceId);
+        if (opt == null) return;
+
+        var allAssets = await MaterialAssetService.GetByMaterialIdAsync(MaterialExit.MaterialId);
+        availableAssets = allAssets
+            .Where(a => a.Status == AssetStatus.Active
+                && a.LocationId == opt.LocationId
+                && a.PersonelId == opt.PersonelId
+                && a.BrandId == opt.BrandId
+                && a.ModelId == opt.ModelId)
+            .ToList();
+
+        StateHasChanged();
+    }
+
+    private void ToggleAsset(int assetId)
+    {
+        if (selectedAssetIds.Contains(assetId))
+            selectedAssetIds.Remove(assetId);
+        else
+            selectedAssetIds.Add(assetId);
+
+        if (IsSelectedMaterialAsset && MaterialExit != null)
+            MaterialExit.Quantity = selectedAssetIds.Count;
+    }
+
+    private string GetAssetStatusLabel(AssetStatus status) => status switch
+    {
+        AssetStatus.Active => "Aktif",
+        AssetStatus.InRepair => "Onarımda",
+        AssetStatus.Retired => "Hurda",
+        AssetStatus.Lost => "Kayıp",
+        _ => status.ToString()
+    };
 
     private void RecalculateDerived()
     {
         if (MaterialExit == null) return;
         var matId = MaterialExit.MaterialId;
 
-        // RAW inventory kayıtlarını al
         AvailableInventoryOptions = MaterialInventories
             .Where(mi => mi.MaterialId == matId && mi.Quantity > 0)
             .Select(mi => new InventoryOption
@@ -319,7 +406,6 @@
                 InventoryId = mi.Id,
                 LocationId = mi.LocationId,
                 PersonelId = mi.PersonelId,
-                // normalize 0 -> null here to avoid 0 being treated as a valid id
                 BrandId = (mi.BrandId.HasValue && mi.BrandId.Value != 0) ? mi.BrandId : null,
                 ModelId = (mi.ModelId.HasValue && mi.ModelId.Value != 0) ? mi.ModelId : null,
                 Quantity = mi.Quantity
@@ -328,31 +414,17 @@
 
         BuildSourceOptions();
 
-        // Eğer mevcut SelectedSourceId hala geçerliyse koru
         if (SourceOptions.Any(s => s.Id == SelectedSourceId))
             return;
 
-        // 1) MaterialExit içindeki değerlere tam uyan inventory kaydını bulup seç
         var match = SourceOptions.FirstOrDefault(s =>
             (s.LocationId ?? 0) == (MaterialExit.LocationId ?? 0) &&
             (s.PersonelId ?? 0) == (MaterialExit.PersonelId ?? 0) &&
             (s.BrandId ?? 0) == (MaterialExit.BrandId ?? 0) &&
             (s.ModelId ?? 0) == (MaterialExit.ModelId ?? 0));
 
-        if (match != null)
-        {
-            SelectedSourceId = match.Id; // setter sync yapacak
-            return;
-        }
-
-        // 2) Sadece 1 seçenek varsa onu seç
-        if (SourceOptions.Count == 1)
-        {
-            SelectedSourceId = SourceOptions[0].Id;
-            return;
-        }
-
-        // 3) Aksi halde temizle
+        if (match != null) { SelectedSourceId = match.Id; return; }
+        if (SourceOptions.Count == 1) { SelectedSourceId = SourceOptions[0].Id; return; }
         SelectedSourceId = 0;
     }
 
@@ -361,7 +433,6 @@
         SourceOptions = AvailableInventoryOptions
             .Select(opt =>
             {
-                // Determine base name: person or location
                 string baseName;
                 if (opt.PersonelId.HasValue && opt.LocationId.HasValue)
                 {
@@ -369,9 +440,9 @@
                     var l = Locations.FirstOrDefault(ll => ll.Id == opt.LocationId.Value);
                     var pName = p != null ? $"{p.Adi} {p.Soyadi}" : $"Personel {opt.PersonelId}";
                     var lName = l != null ? InventoryUIHelper.GetLocationFullName(l.Id, Locations) : $"Lokasyon {opt.LocationId}";
-                    baseName = lName + "/" + pName+" - ";
+                    baseName = lName + "/" + pName + " - ";
                 }
-                else if(opt.PersonelId.HasValue)
+                else if (opt.PersonelId.HasValue)
                 {
                     var p = Persons.FirstOrDefault(pp => pp.Id == opt.PersonelId.Value);
                     baseName = p != null ? $"{p.Adi} {p.Soyadi}" : $"Personel {opt.PersonelId}";
@@ -427,7 +498,6 @@
             {
                 MaterialExit.LocationId = sel.LocationId;
                 MaterialExit.PersonelId = sel.PersonelId;
-                // Ensure zeros are converted to null so service normalization keeps actual values
                 MaterialExit.BrandId = (sel.BrandId.HasValue && sel.BrandId.Value != 0) ? sel.BrandId : null;
                 MaterialExit.ModelId = (sel.ModelId.HasValue && sel.ModelId.Value != 0) ? sel.ModelId : null;
             }
@@ -438,6 +508,14 @@
                 MaterialExit.BrandId = null;
                 MaterialExit.ModelId = null;
             }
+
+            if (IsSelectedMaterialAsset)
+                MaterialExit.Quantity = selectedAssetIds.Count;
+        }
+
+        if (IsSelectedMaterialAsset && OnSaveWithAssets.HasDelegate)
+        {
+            await OnSaveWithAssets.InvokeAsync(selectedAssetIds);
         }
 
         await OnSave.InvokeAsync();

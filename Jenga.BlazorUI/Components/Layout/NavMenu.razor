@@ -2,28 +2,26 @@
 @using Jenga.Models.Common
 @inject NavigationManager Navigation
 
-<div class="nav-scrollable @(IsCollapsed ? "collapsed" : "")" id="main-nav">
+<div class="nav-scrollable" id="main-nav">
     <nav class="nav flex-column">
-        <aside class="treeview-sidebar @(IsCollapsed ? "collapsed" : "")">
-            <div class="brand" style="padding:12px 0 8px 0;">
-                <div class="brand-content" style="display:flex;align-items:center;gap:8px;">
-                    <NavLink href="/" style="display:inline-block;">
-                        <img src="/images/jenga-logo-sm.png" alt="Jenga logo" width="150" loading="lazy" style="cursor:pointer;" />
-                    </NavLink>
-                </div>
-            </div>
-            <hr />
-            @if (Items == null || !Items.Any())
-            {
-                <p>Yükleniyor…</p>
-            }
-            else
-            {
-                <RecursiveMenu Items="Items" />
-            }
-
-            <div style="flex:1"></div>
-        </aside>
+        <div class="brand">
+            <NavLink href="/">
+                <img src="/images/jenga-logo-sm.png"
+                     alt="Jenga logo"
+                     width="150"
+                     loading="lazy"
+                     class="brand-logo" />
+            </NavLink>
+        </div>
+        <hr />
+        @if (Items == null || !Items.Any())
+        {
+            <p class="loading-text">Yükleniyor…</p>
+        }
+        else
+        {
+            <RecursiveMenu Items="Items" />
+        }
     </nav>
 </div>
 
@@ -32,5 +30,5 @@
     public List<MenuItem>? Items { get; set; }
 
     [Parameter]
-    public bool IsCollapsed { get; set; } = false;
+    public bool IsCollapsed { get; set; }
 }

@@ -178,7 +178,7 @@ else
 
             if (selectedExit.Id == 0)
             {
-                await MaterialExitService.AddAsync(selectedExit, CancellationToken.None);
+                await MaterialExitService.AddAsync(selectedExit,null, CancellationToken.None);
                 MaterialExits.Add(selectedExit);
             }
             else

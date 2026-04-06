@@ -38,6 +38,8 @@ namespace Jenga.DataAccess.Data
         public DbSet<MaterialAssignment> MaterialAssignment_Table { get; set; }
         public DbSet<MaterialExit> MaterialExit_Table { get; set; }
         public DbSet<MaterialTransfer> MaterialTransfer_Table { get; set; }
+        public DbSet<MaterialAsset> MaterialAsset_Table { get; set; }
+        public DbSet<MaterialAssetLog> MaterialAssetLog_Table { get; set; }
 
         //IKYS
         public DbSet<Personel> Personel_Table { get; set; }
@@ -58,7 +60,7 @@ namespace Jenga.DataAccess.Data
         public DbSet<NakitBagisHareket> NakitBagisHareket_Table { get; set; }
         public DbSet<Armagan> Armagan_Table { get; set; }
         public DbSet<BankaTanim> BankaTanim_Table { get; set; }
-
+        public DbSet<YasalFaiz> YasalFaiz_Table { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

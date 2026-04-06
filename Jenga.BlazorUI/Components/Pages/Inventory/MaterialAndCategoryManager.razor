@@ -28,7 +28,7 @@
            @bind="searchTerm"
            @bind:event="oninput" />
     <button class="btn btn-success" @onclick="OpenCreateModal" type="button">
-        <i class="bi bi-plus-lg"></i> Yeni Malzeme Tanımla
+        <i class="bi bi-plus-lg"></i> Yeni Kategori Tanımla
     </button>
 </div>
 
@@ -63,6 +63,7 @@
 
     <MaterialEditModal Material="selectedMaterial"
                        Categories="categories"
+                       MaterialUnits="materialUnits"
                        IsOpen="isMaterialEditOpen"
                        OnSave="OnModalMaterialSave"
                        OnClose="OnModalMaterialClose" />
@@ -73,6 +74,7 @@
     private List<MaterialCategory> categories = new();
     private List<MaterialBrand> brands = new();
     private List<Material> materials = new();
+    private List<MaterialUnit> materialUnits = new();
     private List<TreeItem<MaterialCategoryNode>> categoryTree = new();
     private bool _dataLoaded;
     private string searchTerm = "";
@@ -108,18 +110,16 @@
         categories = await MaterialCategoryService.GetAllAsync();
         brands = await MaterialBrandService.GetAllAsync();
         materials = await MaterialService.GetAllAsync();
+        materialUnits = await MaterialUnitService.GetAllAsync();
 
-        // Kategorileri MaterialCategoryNode'a dönüştür
         var categoryNodes = categories.Select(c => new MaterialCategoryNode { Category = c }).ToList();
 
-        // Kategori ağacını oluştur
         categoryTree = TreeHelper.BuildTree<MaterialCategoryNode>(
             categoryNodes,
             node => node.Category.Id.ToString(),
             node => node.Category.ParentCategoryId?.ToString()
         );
 
-        // Malzemeleri ilgili kategoriye ekle
         foreach (var mat in materials)
         {
             var parentId = mat.CategoryId.ToString();
@@ -188,34 +188,43 @@
             ToastService.ShowToast("Kategori bilgisi bulunamadı", ToastType.Error, 5000);
             return;
         }
+
         (bool canDelete, string? reason) = await MaterialCategoryService.CanDeleteAsync(item.Data.Category.Id);
         if (!canDelete)
         {
             ToastService.ShowToast(reason ?? "Bilinmeyen bir hata oluştu", ToastType.Error, 5000);
             return;
         }
+
         string categoryName = item.Data.Category.CategoryName ?? "Kategori";
-        ModalService.ShowConfirmation(
-            "Silme Onayı",
-            $"'{categoryName}' kaydını silmek istediğinizden emin misiniz?",
-            async result =>
+
+        await ModalService.Show(new ModalRequest
+        {
+            Title = "Silme Onayı",
+            Message = $"'{categoryName}' kaydını silmek istediğinizden emin misiniz?",
+            ShowConfirmationButtons = true,
+            DialogClass = "modal-sm",
+            OnResult = async result =>
             {
-                if (result)
+                if (!result)
                 {
-                    var deleted = await MaterialCategoryService.DeleteAsync(item.Data.Category.Id);
-                    if (deleted)
-                    {
-                        ToastService.ShowToast($"{categoryName} silindi", ToastType.Success, 3000);
-                        categories = await MaterialCategoryService.GetAllAsync();
-                        await RefreshData();
-                        StateHasChanged();
-                    }
-                    else
-                    {
-                        ToastService.ShowToast($"Silme işlemi başarısız oldu", ToastType.Error, 3000);
-                    }
+                    return;
                 }
-            });
+
+                var deleted = await MaterialCategoryService.DeleteAsync(item.Data.Category.Id);
+                if (deleted)
+                {
+                    ToastService.ShowToast($"{categoryName} silindi", ToastType.Success, 3000);
+                    categories = await MaterialCategoryService.GetAllAsync();
+                    await RefreshData();
+                    StateHasChanged();
+                }
+                else
+                {
+                    ToastService.ShowToast("Silme işlemi başarısız oldu", ToastType.Error, 3000);
+                }
+            }
+        });
     }
 
     // Event Handlers - Modal

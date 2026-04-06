@@ -1,6 +1,5 @@
 ﻿using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.Models.Inventory;
-using Jenga.DataAccess.Services.IKYS;
 using System.Linq.Expressions;
 
 namespace Jenga.DataAccess.Services.Inventory
@@ -10,15 +9,21 @@ namespace Jenga.DataAccess.Services.Inventory
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMaterialInventoryService _materialInventoryService;
         private readonly IMaterialMovementService _materialMovementService;
+        private readonly IMaterialAssetService _materialAssetService;
+        private readonly IMaterialAssetLogService _materialAssetLogService;
 
         public MaterialTransferService(
             IUnitOfWork unitOfWork,
             IMaterialInventoryService materialInventoryService,
-            IMaterialMovementService materialMovementService)
+            IMaterialMovementService materialMovementService,
+            IMaterialAssetService materialAssetService,
+            IMaterialAssetLogService materialAssetLogService)
         {
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
             _materialInventoryService = materialInventoryService ?? throw new ArgumentNullException(nameof(materialInventoryService));
             _materialMovementService = materialMovementService ?? throw new ArgumentNullException(nameof(materialMovementService));
+            _materialAssetService = materialAssetService ?? throw new ArgumentNullException(nameof(materialAssetService));
+            _materialAssetLogService = materialAssetLogService ?? throw new ArgumentNullException(nameof(materialAssetLogService));
         }
 
         public async Task<List<MaterialTransfer>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -30,27 +35,20 @@ namespace Jenga.DataAccess.Services.Inventory
         public Task<bool> AnyAsync(Expression<Func<MaterialTransfer, bool>> predicate)
             => _unitOfWork.MaterialTransfer.AnyAsync(predicate);
 
-        public async Task<bool> AddAsync(MaterialTransfer transfer, string? modifiedBy = null, CancellationToken cancellationToken = default)
+        public async Task<bool> AddAsync(MaterialTransfer transfer, string? modifiedBy = null, List<int>? selectedAssetIds = null, CancellationToken cancellationToken = default)
         {
             if (transfer == null) throw new ArgumentNullException(nameof(transfer));
 
-            // 1. Transfer kaydını ekle
             await _unitOfWork.MaterialTransfer.AddAsync(transfer, cancellationToken);
             await _unitOfWork.MaterialTransfer.SaveChangesAsync(cancellationToken);
 
-            // 2. ID'leri temizle (0 -> null)
-            // UI'dan gelen veriye güveniyoruz ve 0 olan ID'leri null yapıyoruz.
             int? actualFromLocation = transfer.FromLocationId != 0 ? transfer.FromLocationId : null;
             int? actualToLocation = transfer.ToLocationId != 0 ? transfer.ToLocationId : null;
-
-            // PersonelId'ler için de 0 kontrolü
             int? actualFromPerson = (transfer.FromPersonId.HasValue && transfer.FromPersonId != 0) ? transfer.FromPersonId : null;
             int? actualToPerson = (transfer.ToPersonId.HasValue && transfer.ToPersonId != 0) ? transfer.ToPersonId : null;
-
             int? actualBrand = (transfer.BrandId.HasValue && transfer.BrandId != 0) ? transfer.BrandId : null;
             int? actualModel = (transfer.ModelId.HasValue && transfer.ModelId != 0) ? transfer.ModelId : null;
 
-            // 3. KAYNAK stoktan düş
             await _materialInventoryService.AddOrUpdateInventoryAsync(
                 transfer.MaterialId,
                 actualFromLocation,
@@ -62,7 +60,6 @@ namespace Jenga.DataAccess.Services.Inventory
                 actualModel,
                 cancellationToken);
 
-            // 4. HEDEF stoğa ekle
             await _materialInventoryService.AddOrUpdateInventoryAsync(
                 transfer.MaterialId,
                 actualToLocation,
@@ -74,7 +71,6 @@ namespace Jenga.DataAccess.Services.Inventory
                 actualModel,
                 cancellationToken);
 
-            // 5. Hareket Logu
             var movement = new MaterialMovement
             {
                 MaterialId = transfer.MaterialId,
@@ -92,10 +88,86 @@ namespace Jenga.DataAccess.Services.Inventory
                 BrandId = actualBrand,
                 ModelId = actualModel
             };
-
             await _materialMovementService.AddAsync(movement, cancellationToken);
 
+            var material = await _unitOfWork.Material.GetByIdAsync(transfer.MaterialId, cancellationToken);
+            if (material != null && material.IsAsset)
+            {
+                await TransferAssetsAsync(
+                    transfer.MaterialId,
+                    transfer.Quantity,
+                    actualFromLocation,
+                    actualFromPerson,
+                    actualToLocation,
+                    actualToPerson,
+                    actualBrand,
+                    actualModel,
+                    modifiedBy,
+                    selectedAssetIds,
+                    cancellationToken);
+            }
+
             return true;
+        }
+
+        private async Task TransferAssetsAsync(
+            int materialId,
+            int quantity,
+            int? fromLocationId,
+            int? fromPersonId,
+            int? toLocationId,
+            int? toPersonId,
+            int? brandId,
+            int? modelId,
+            string? modifiedBy,
+            List<int>? selectedAssetIds,
+            CancellationToken cancellationToken)
+        {
+            List<MaterialAsset> assetsToTransfer;
+
+            if (selectedAssetIds != null && selectedAssetIds.Count > 0)
+            {
+                var allAssets = await _materialAssetService.GetByMaterialIdAsync(materialId, cancellationToken);
+                assetsToTransfer = allAssets
+                    .Where(a => selectedAssetIds.Contains(a.Id) && a.Status == AssetStatus.Active)
+                    .ToList();
+            }
+            else
+            {
+                var sourceAssets = await _materialAssetService.GetByMaterialIdAsync(materialId, cancellationToken);
+                assetsToTransfer = sourceAssets
+                    .Where(a => a.Status == AssetStatus.Active
+                        && a.LocationId == fromLocationId
+                        && a.PersonelId == fromPersonId
+                        && a.BrandId == brandId
+                        && a.ModelId == modelId)
+                    .Take(quantity)
+                    .ToList();
+            }
+
+            foreach (var asset in assetsToTransfer)
+            {
+                var log = new MaterialAssetLog
+                {
+                    MaterialAssetId = asset.Id,
+                    FromPersonelId = asset.PersonelId,
+                    ToPersonelId = toPersonId,
+                    FromLocationId = asset.LocationId,
+                    ToLocationId = toLocationId,
+                    TransactionDate = DateTime.Now,
+                    TransactionType = "Transfer",
+                    Aciklama = $"Transfer #{asset.SerialNumber ?? asset.Id.ToString()}",
+                    Olusturan = modifiedBy,
+                    OlusturmaTarihi = DateTime.Now
+                };
+                await _materialAssetLogService.AddAsync(log, cancellationToken);
+
+                asset.LocationId = toLocationId;
+                asset.PersonelId = toPersonId;
+                asset.Degistiren = modifiedBy;
+                asset.DegistirmeTarihi = DateTime.Now;
+                await _materialAssetService.UpdateAsync(asset, cancellationToken);
+            }
         }
 
         public async Task<bool> UpdateAsync(MaterialTransfer yeniTransfer, CancellationToken cancellationToken = default)

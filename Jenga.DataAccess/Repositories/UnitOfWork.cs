@@ -41,6 +41,8 @@ namespace Jenga.DataAccess.Repositories
             MaterialAssignment = new MaterialAssignmentRepository(_contextFactory);
             MaterialExit = new MaterialExitRepository(_contextFactory);
             MaterialTransfer = new MaterialTransferRepository(_contextFactory);
+            MaterialAsset = new MaterialAssetRepository(_contextFactory);
+            MaterialAssetLog = new MaterialAssetLogRepository(_contextFactory);
 
             // Ortak
             Bolge = new BolgeRepository(_contextFactory);
@@ -60,6 +62,7 @@ namespace Jenga.DataAccess.Repositories
             SozlesmeTasinmaz = new SozlesmeTasinmazRepository(_contextFactory);
             OdemePlani = new OdemePlaniRepository(_contextFactory);
             Odeme = new OdemeRepository(_contextFactory);
+            YasalFaiz = new YasalFaizRepository(_contextFactory);
 
             // NBYS
             NakitBagisci = new NakitBagisciRepository(_contextFactory);
@@ -90,6 +93,8 @@ namespace Jenga.DataAccess.Repositories
         public IMaterialAssignmentRepository MaterialAssignment { get; private set; }
         public IMaterialExitRepository MaterialExit { get; private set; }
         public IMaterialTransferRepository MaterialTransfer { get; private set; }
+        public IMaterialAssetRepository MaterialAsset { get; private set; }
+        public IMaterialAssetLogRepository MaterialAssetLog { get; private set; }
 
         // IKYS
         public IPersonelRepository Personel { get; private set; }
@@ -104,6 +109,7 @@ namespace Jenga.DataAccess.Repositories
         public ISozlesmeTasinmazRepository SozlesmeTasinmaz { get; private set; }
         public IOdemePlaniRepository OdemePlani { get; private set; }
         public IOdemeRepository Odeme { get; private set; }
+        public IYasalFaizRepository YasalFaiz { get; private set; }
 
         // NBYS
         public INakitBagisciRepository NakitBagisci { get; private set; }

@@ -1,45 +1,50 @@
 ﻿@using Jenga.Models.TBYS
+@using Jenga.Utility
 @using Microsoft.AspNetCore.Components
 @using System.Globalization
 
 <div class="card summary-card kira-yenileme-card" style="@CardStyle">
     <div class="card-header">
-        <strong>@(string.IsNullOrWhiteSpace(Title) ? "Kira Yenileme" : Title)</strong>
+        <strong>@(string.IsNullOrWhiteSpace(Title) ? "Kira Sözleşmeleri" : Title)</strong>
     </div>
 
     <div class="card-body">
         @if (TotalCount > 0)
         {
             <div class="d-flex align-items-center mb-2">
-                <div class="flex-grow-1">Geçen ay yenilenen sözleşme</div>
-                <div class="fw-bold">@LastMonthRenewedCount Adet</div>
-            </div>
-            <div class="d-flex align-items-center mb-2">
-                <div class="flex-grow-1">Geçen ay kira artış oranı</div>
-                <div class="fw-bold">@FormatPercent(LastMonthIncreaseRate)</div>
-            </div>
-
-            <hr />
-
-            <div class="d-flex align-items-center mb-2">
-                <div class="flex-grow-1">Bu ay yenilenen sözleşme</div>
-                <div class="fw-bold">@ThisMonthRenewedCount Adet</div>
-            </div>
-            <div class="d-flex align-items-center mb-2">
-                <div class="flex-grow-1">Bu ay yenilenecek sözleşme</div>
+                <div class="flex-grow-1">Yenilenecek toplam</div>
                 <div class="fw-bold">@ThisMonthDueCount Adet</div>
             </div>
             <div class="d-flex align-items-center mb-2">
-                <div class="flex-grow-1">Bu ay kira artış oranı</div>
+                <div class="flex-grow-1">Şu ana kadar yenilenen</div>
+                <div class="fw-bold">@ThisMonthRenewedCount Adet</div>
+            </div>
+            <div class="d-flex align-items-center mb-2">
+                <div class="flex-grow-1">Yeni kiralanan</div>
+                <div class="fw-bold">@ThisMonth1stCount Adet</div>
+            </div>
+            <div class="d-flex align-items-center mb-2">
+                <div class="flex-grow-1">TÜFE </div>
+                <div class="fw-bold">@FormatTufe(ThisMonthTufe)</div>
+            </div>
+            <div class="d-flex align-items-center mb-2">
+                <div class="flex-grow-1">Ortalama artış oranı</div>
                 <div class="fw-bold">@FormatPercent(ThisMonthIncreaseRate)</div>
             </div>
-
-            <hr />
-
-            <div class="d-flex align-items-center">
-                <div class="flex-grow-1">Gelecek ay yenilenecek sözleşme</div>
-                <div class="fw-bold">@NextMonthDueCount Adet</div>
+            <div class="d-flex align-items-center mb-2">
+                <div class="fw-semibold">* @ThisMonthEqualsTufe kiracının artışı TÜFE oranında,</div>
             </div>
+            <div class="d-flex align-items-center mb-2">
+                <div class="fw-semibold">* @ThisMonthAboveTufeCount kiracının artışı TÜFE oranının üzerinde gerçekleşmiştir.</div>
+            </div>
+            <hr />
+            <div class="d-flex align-items-center mb-2">
+                <div class="text-muted small"> * 5/10 yıllık kiracılar ile yasal sürece tabi kiracıların artışları TÜFE'den farklıdır</div>
+            </div>
+@*             <div class="d-flex align-items-center">
+                <div class="flex-grow-1">Gelecek ay yenilenecek</div>
+                <div class="fw-bold">@NextMonthDueCount Adet</div>
+            </div> *@
         }
         else
         {
@@ -50,23 +55,24 @@
 
 @code {
     [Parameter] public IEnumerable<KiraSozlesme>? Sozlesmeler { get; set; }
+    [Parameter] public IEnumerable<YasalFaiz>? YasalFaizler { get; set; }
     [Parameter] public string? Title { get; set; }
     [Parameter] public DateTime? TodayOverride { get; set; }
-
     [Parameter] public string? Height { get; set; }
 
     private string? CardStyle => string.IsNullOrWhiteSpace(Height) ? null : $"height: {Height};";
 
     private int TotalCount { get; set; }
 
-    private int LastMonthRenewedCount { get; set; }
-    private decimal? LastMonthIncreaseRate { get; set; }
-
     private int ThisMonthRenewedCount { get; set; }
     private int ThisMonthDueCount { get; set; }
+    private int ThisMonth1stCount { get; set; }
     private decimal? ThisMonthIncreaseRate { get; set; }
+    private decimal? ThisMonthTufe { get; set; }
 
     private int NextMonthDueCount { get; set; }
+    private int ThisMonthAboveTufeCount { get; set; }
+    private int ThisMonthEqualsTufe { get; set; }
 
     protected override void OnParametersSet()
     {
@@ -89,29 +95,45 @@
         var lastMonthEndExclusive = thisMonthStart;
         var nextMonthEndExclusive = nextMonthStart.AddMonths(1);
 
-        var lastMonthRenewed = list.Where(s => s.SozBasTar.HasValue
-                                              && s.SozBasTar.Value.Date >= lastMonthStart
-                                              && s.SozBasTar.Value.Date < lastMonthEndExclusive)
-                                   .ToList();
+        var thisMonthRenewed = list.Where(s => s.SozBitTar.HasValue
+                                      && (!(s.Aktif ?? false))
+                                      && (s.SozlesmeDurumu?.Equals(ProjectConstants.KIRASOZLESME_DURUMU_YENILENDI) ?? false)
+                                      && s.SozBitTar.Value.Date < nextMonthStart
+                                      && s.SozBitTar.Value.Date >= thisMonthStart)
+                           .ToList();
+        var thisMonthDue = list.Where(s => s.SozBitTar.HasValue
+                              && (s.Aktif ?? false)
+                              && (s.SozlesmeDurumu?.Equals(ProjectConstants.KIRASOZLESME_DURUMU_DEVAM) ?? false)
+                              && s.SozBitTar.Value.Date < nextMonthStart
+                              && s.SozBitTar.Value.Date >= thisMonthStart)
+                   .ToList();
 
-        var thisMonthRenewed = list.Where(s => s.SozBasTar.HasValue
-                                              && s.SozBasTar.Value.Date >= thisMonthStart
-                                              && s.SozBasTar.Value.Date < nextMonthStart)
-                                   .ToList();
+        var thisMonth1st = list.Where(s => s.SozBasTar.HasValue
+                              && (s.Aktif ?? false)
+                              && (s.IlkSozlesmeTar == s.SozBasTar)
+                              && (s.SozlesmeDurumu?.Equals(ProjectConstants.KIRASOZLESME_DURUMU_DEVAM) ?? false)
+                              && s.SozBasTar.Value.Date < nextMonthStart
+                              && s.SozBasTar.Value.Date >= thisMonthStart)
+                   .ToList();
 
-        LastMonthRenewedCount = lastMonthRenewed.Count;
         ThisMonthRenewedCount = thisMonthRenewed.Count;
 
-        ThisMonthDueCount = list.Count(s => s.SozBitTar.HasValue
-                                            && s.SozBitTar.Value.Date >= thisMonthStart
-                                            && s.SozBitTar.Value.Date < nextMonthStart);
+        ThisMonthDueCount = thisMonthDue.Count;
+        ThisMonth1stCount = thisMonth1st.Count;
 
         NextMonthDueCount = list.Count(s => s.SozBitTar.HasValue
+                                            && (s.Aktif ?? false)
                                             && s.SozBitTar.Value.Date >= nextMonthStart
                                             && s.SozBitTar.Value.Date < nextMonthEndExclusive);
 
-        LastMonthIncreaseRate = CalculateAverageIncreaseRateWithin(list, lastMonthStart, lastMonthEndExclusive);
         ThisMonthIncreaseRate = CalculateAverageIncreaseRateWithin(list, thisMonthStart, nextMonthStart);
+
+        ThisMonthTufe = (YasalFaizler ?? Enumerable.Empty<YasalFaiz>())
+            .FirstOrDefault(f => f.Yil == today.Year && f.Ay == today.Month)
+            ?.Tufe;
+
+        ThisMonthAboveTufeCount = CountAboveTufe(list, thisMonthStart, nextMonthStart, ThisMonthTufe);
+        ThisMonthEqualsTufe = CountEqualsTufe(list, thisMonthStart, nextMonthStart, ThisMonthTufe);
     }
 
     private static decimal? CalculateAverageIncreaseRateWithin(
@@ -167,6 +189,94 @@
         return sumRates / rateCount;
     }
 
+    private static int CountAboveTufe(
+        List<KiraSozlesme> all,
+        DateTime startInclusive,
+        DateTime endExclusive,
+        decimal? tufeRate)
+    {
+        if (tufeRate == null)
+            return 0;
+
+        var tufeAsRate = tufeRate.Value / 100m;
+
+        var renewedInWindow = all
+            .Where(s => s.KiraciId.HasValue
+                        && s.SozBasTar.HasValue
+                        && s.SozBasTar.Value.Date >= startInclusive
+                        && s.SozBasTar.Value.Date < endExclusive
+                        && s.KiraBedeli.HasValue)
+            .ToList();
+
+        int count = 0;
+
+        foreach (var renewed in renewedInWindow)
+        {
+            var prev = all
+                .Where(p => p.KiraciId == renewed.KiraciId
+                            && p.SozBasTar.HasValue
+                            && p.SozBasTar.Value.Date < renewed.SozBasTar!.Value.Date
+                            && p.KiraBedeli.HasValue
+                            && p.KiraBedeli.Value > 0m)
+                .OrderByDescending(p => p.SozBasTar!.Value)
+                .FirstOrDefault();
+
+            if (prev == null)
+                continue;
+
+            var rate = (renewed.KiraBedeli!.Value - prev.KiraBedeli!.Value) / prev.KiraBedeli!.Value;
+
+            if (rate - tufeAsRate > 0.01m)
+                count++;
+        }
+
+        return count;
+    }
+
+    private static int CountEqualsTufe(
+        List<KiraSozlesme> all,
+        DateTime startInclusive,
+        DateTime endExclusive,
+        decimal? tufeRate)
+    {
+        if (tufeRate == null)
+            return 0;
+
+        var tufeAsRate = tufeRate.Value / 100m;
+
+        var renewedInWindow = all
+            .Where(s => s.KiraciId.HasValue
+                        && s.SozBasTar.HasValue
+                        && s.SozBasTar.Value.Date >= startInclusive
+                        && s.SozBasTar.Value.Date < endExclusive
+                        && s.KiraBedeli.HasValue)
+            .ToList();
+
+        int count = 0;
+
+        foreach (var renewed in renewedInWindow)
+        {
+            var prev = all
+                .Where(p => p.KiraciId == renewed.KiraciId
+                            && p.SozBasTar.HasValue
+                            && p.SozBasTar.Value.Date < renewed.SozBasTar!.Value.Date
+                            && p.KiraBedeli.HasValue
+                            && p.KiraBedeli.Value > 0m)
+                .OrderByDescending(p => p.SozBasTar!.Value)
+                .FirstOrDefault();
+
+            if (prev == null)
+                continue;
+
+            var rate = (renewed.KiraBedeli!.Value - prev.KiraBedeli!.Value) / prev.KiraBedeli!.Value;
+
+            if (Math.Abs(rate - tufeAsRate) <= 0.01m)
+                count++;
+        }
+
+        return count;
+    }
+
     private static string FormatPercent(decimal? rate)
     {
         if (!rate.HasValue)
@@ -175,5 +285,13 @@
         }
 
         return rate.Value.ToString("P1", CultureInfo.GetCultureInfo("tr-TR"));
+    }
+
+    private static string FormatTufe(decimal? value)
+    {
+        if (!value.HasValue)
+            return "-";
+
+        return value.Value.ToString("N2", CultureInfo.GetCultureInfo("tr-TR")) + "%";
     }
 }

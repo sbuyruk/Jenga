@@ -1,8 +1,5 @@
 window.turkiyeMap = (function () {
-    let _dotNetRef = null;
-    let _paper = null;
-    let _container = null;
-    let _resizeHandler = null;
+    const _maps = new Map();
 
     function getRegionColor(region) {
         switch (region) {
@@ -16,18 +13,18 @@ window.turkiyeMap = (function () {
     }
 
     function init(mapElementId, dotNetRef) {
-        _dotNetRef = dotNetRef;
-        _container = document.getElementById(mapElementId);
+        dispose(mapElementId);
 
-        if (!_container || typeof Raphael === "undefined" || typeof paths === "undefined") {
+        const container = document.getElementById(mapElementId);
+        if (!container || typeof Raphael === "undefined" || typeof paths === "undefined") {
             return;
         }
 
-        _container.innerHTML = "";
+        container.innerHTML = "";
 
-        const width = Math.max(_container.clientWidth || 980, 980);
+        const width = Math.max(container.clientWidth || 980, 980);
         const height = 560;
-        _paper = Raphael(mapElementId, width, height);
+        const paper = Raphael(mapElementId, width, height);
 
         const attributes = {
             fill: "#666",
@@ -48,7 +45,7 @@ window.turkiyeMap = (function () {
                 continue;
             }
 
-            const obj = _paper.path(item.path);
+            const obj = paper.path(item.path);
             obj.attr(attributes);
 
             if (countyKey === "blank") {
@@ -63,22 +60,31 @@ window.turkiyeMap = (function () {
 
             obj.click(function () {
                 const provinceId = parseInt(item.county, 10);
-                if (!Number.isNaN(provinceId) && _dotNetRef) {
-                    _dotNetRef.invokeMethodAsync("OnProvinceClickedFromJs", provinceId);
+                if (!Number.isNaN(provinceId) && dotNetRef) {
+                    dotNetRef.invokeMethodAsync("OnProvinceClickedFromJs", provinceId);
                 }
             });
 
             drawn.push(obj);
         }
 
-        fitToContent(drawn);
+        const fit = () => fitToContent(paper, container, drawn);
+        fit();
 
-        _resizeHandler = () => fitToContent(drawn);
-        window.addEventListener("resize", _resizeHandler);
+        const resizeHandler = () => fit();
+        window.addEventListener("resize", resizeHandler);
+
+        _maps.set(mapElementId, {
+            dotNetRef,
+            paper,
+            container,
+            drawn,
+            resizeHandler
+        });
     }
 
-    function fitToContent(drawn) {
-        if (!_paper || !_container || !drawn || drawn.length === 0) {
+    function fitToContent(paper, container, drawn) {
+        if (!paper || !container || !drawn || drawn.length === 0) {
             return;
         }
 
@@ -104,27 +110,28 @@ window.turkiyeMap = (function () {
         const vbHeight = maxY - minY;
         const aspect = vbWidth / vbHeight;
 
-        const targetWidth = Math.max(_container.clientWidth || 980, 700);
+        const targetWidth = Math.max(container.clientWidth || 980, 700);
         const targetHeight = Math.round(targetWidth / aspect);
 
-        _paper.setSize(targetWidth, targetHeight);
-        _paper.setViewBox(minX, minY, vbWidth, vbHeight, true);
+        paper.setSize(targetWidth, targetHeight);
+        paper.setViewBox(minX, minY, vbWidth, vbHeight, true);
     }
 
-    function dispose() {
-        if (_resizeHandler) {
-            window.removeEventListener("resize", _resizeHandler);
-            _resizeHandler = null;
+    function dispose(mapElementId) {
+        const mapState = _maps.get(mapElementId);
+        if (!mapState) {
+            return;
         }
 
-        _dotNetRef = null;
-
-        if (_paper) {
-            _paper.remove();
-            _paper = null;
+        if (mapState.resizeHandler) {
+            window.removeEventListener("resize", mapState.resizeHandler);
         }
 
-        _container = null;
+        if (mapState.paper) {
+            mapState.paper.remove();
+        }
+
+        _maps.delete(mapElementId);
     }
 
     return {

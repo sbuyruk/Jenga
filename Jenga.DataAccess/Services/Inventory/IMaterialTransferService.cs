@@ -7,7 +7,7 @@ namespace Jenga.DataAccess.Services.Inventory
     {
         Task<List<MaterialTransfer>> GetAllAsync(CancellationToken cancellationToken = default);
         Task<MaterialTransfer?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
-        Task<bool> AddAsync(MaterialTransfer transfer, string? modifiedBy = null, CancellationToken cancellationToken = default);
+        Task<bool> AddAsync(MaterialTransfer transfer, string? modifiedBy = null, List<int>? selectedAssetIds = null, CancellationToken cancellationToken = default);
         Task<bool> UpdateAsync(MaterialTransfer transfer, CancellationToken cancellationToken = default);
         Task<bool> DeleteAsync(MaterialTransfer transfer, CancellationToken cancellationToken = default);
         Task<bool> AnyAsync(Expression<Func<MaterialTransfer, bool>> predicate);

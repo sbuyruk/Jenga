@@ -34,7 +34,7 @@
                         {
                             <select class="form-select" @bind="MaterialId">
                                 <option value="0">Seçiniz</option>
-                                @foreach (var mat in DropdownMaterials)
+                                @foreach (var mat in Materials)
                                 {
                                     <option value="@mat.Id">@mat.MaterialName</option>
                                 }
@@ -201,19 +201,6 @@
                 MaterialEntry.BrandId = value;
                 OnBrandChanged();
             }
-        }
-    }
-
-    private IEnumerable<Material> DropdownMaterials
-    {
-        get
-        {
-            if (IsOpen && MaterialEntry != null && MaterialEntry.MaterialId > 0)
-            {
-                var single = Materials.Where(m => m.Id == MaterialEntry.MaterialId);
-                if (single.Any()) return single;
-            }
-            return Materials;
         }
     }
 

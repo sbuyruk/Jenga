@@ -1,0 +1,419 @@
+﻿@using Jenga.Models.TBYS
+@using Jenga.Utility
+@using System.Text
+@using System.Text.RegularExpressions
+@using System.Globalization
+
+<div class="tasinmaz-year-dashboard container-fluid px-0">
+    @if (ShowYearSelector)
+    {
+        <div class="d-flex justify-content-center mb-3">
+            <div class="year-filter text-center">
+                <label class="form-label mb-1">Yıl Seçiniz</label>
+                <select class="form-select form-select-sm"
+                        @bind="SelectedYear">
+                    @foreach (var y in Years)
+                    {
+                        <option value="@y">@y</option>
+                    }
+                </select>
+            </div>
+        </div>
+    }
+
+    <div class="row gx-2 gy-2 mb-3">
+        <div class="col-6 col-md-3">
+            <div class="card stat-card h-100">
+                <div class="card-body p-2 text-center">
+                    <div class="text-muted small">Toplam Bağış Adedi</div>
+                    <div class="fw-bold fs-5">@TotalCount</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <div class="card stat-card h-100">
+                <div class="card-body p-2">
+                    <div class="tm-cm-pair d-flex align-items-center justify-content-center">
+                        <div class="split text-center">
+                            <div class="text-muted small">Tam Hisse Adedi</div>
+                            <div class="fw-bold fs-5">@TamCount</div>
+                        </div>
+
+                        <div class="split text-center">
+                            <div class="text-muted small">Hisseli Adedi</div>
+                            <div class="fw-bold fs-5">@HisseliCount</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- NEW: Tam Mülkiyet (TM) -->
+        <div class="col-6 col-md-3">
+            <div class="card stat-card h-100">
+                <div class="card-body p-2">
+                    <div class="tm-cm-pair d-flex align-items-center justify-content-center">
+                        <div class="split text-center">
+                            <div class="text-muted small">Tam Mülkiyet (TM)</div>
+                            <div class="fw-bold fs-5">@TamMulkiyetCount</div>
+                        </div>
+
+                        <div class="split text-center">
+                            <div class="text-muted small">Çıplak Mülkiyet (ÇM)</div>
+                            <div class="fw-bold fs-5">@CiplakMulkiyetCount</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <div class="card stat-card h-100">
+                <div class="card-body p-2 text-center">
+                    <div class="text-muted small">Bina Adedi</div>
+                    <div class="fw-bold fs-5">@BinaCount</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <div class="card stat-card h-100">
+                <div class="card-body p-2 text-center">
+                    <div class="text-muted small">Mesken Adedi</div>
+                    <div class="fw-bold fs-5">@MeskenCount</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <div class="card stat-card h-100">
+                <div class="card-body p-2 text-center">
+                    <div class="text-muted small">İşyeri Adedi</div>
+                    <div class="fw-bold fs-5">@IsyeriCount</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <div class="card stat-card h-100">
+                <div class="card-body p-2 text-center">
+                    <div class="text-muted small">Arsa Adedi</div>
+                    <div class="fw-bold fs-5">@ArsaCount</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <div class="card stat-card h-100">
+                <div class="card-body p-2 text-center">
+                    <div class="text-muted small">Tarla Adedi</div>
+                    <div class="fw-bold fs-5">@TarlaCount</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <div class="card stat-card h-100">
+                <div class="card-body p-2 text-center">
+                    <div class="text-muted small">Tahmini Rayiç (TL)</div>
+                    <div class="fw-bold fs-6">@TahminiRayicDegeri.ToString("N0", CultureInfo.CurrentCulture) ₺</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <div class="card stat-card h-100">
+                <div class="card-body p-2 text-center">
+                    <div class="text-muted small">Emlak Beyan Değeri (TL)</div>
+                    <div class="fw-bold fs-6">@EmlakBeyanDegeri.ToString("N0", CultureInfo.CurrentCulture) ₺</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <div class="card stat-card h-100">
+                <div class="card-body p-2 text-center">
+                    <div class="text-muted small">Yaklaşık Piyasa (TL)</div>
+                    <div class="fw-bold fs-6">@YaklasikPiyasaDegeri.ToString("N0", CultureInfo.CurrentCulture) ₺</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <div class="card shadow-sm">
+            <div class="card-body p-2">
+                <h6 class="card-title mb-2">Bölge / İl Özeti</h6>
+
+                <div class="table-responsive" style="max-height:360px; overflow:auto;">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="table-light position-sticky top-0">
+                            <tr>
+                                <th style="min-width:140px">İl</th>
+                                <th style="min-width:140px">Cins</th>
+                                <th class="text-end">Adet</th>
+                                <th class="text-end">Emlak Beyan (TL)</th>
+                                <th class="text-end">Tahmini Rayiç (TL)</th>
+                                <th class="text-end">Yaklaşık Piyasa (TL)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (groupedByIl.Any())
+                            {
+                                foreach (var g in groupedByIl)
+                                {
+                                    <tr class="table-secondary">
+                                        <td colspan="2" class="fw-semibold">@g.Key</td>
+                                        <td class="text-end fw-semibold">@g.Value.TotalCount</td>
+                                        <td class="text-end fw-semibold">@g.Value.EmlakBeyan.ToString("N0")</td>
+                                        <td class="text-end fw-semibold">@g.Value.TahminiRayic.ToString("N0")</td>
+                                        <td class="text-end fw-semibold">@g.Value.YaklasikPiyasa.ToString("N0")</td>
+                                    </tr>
+
+                                    foreach (var item in g.Value.Items)
+                                    {
+                                        <tr>
+                                            <td>@item.Ili</td>
+                                            <td>@(string.IsNullOrWhiteSpace(item.KullanimSekli) ? "–" : item.KullanimSekli)</td>
+                                            <td class="text-end">1</td>
+                                            <td class="text-end">@item.EmlakBeyanDegeri?.ToString("N0")</td>
+                                            <td class="text-end">@item.TahminiRayicDegeri?.ToString("N0")</td>
+                                            <td class="text-end">@item.YaklasikPiyasaDegeri?.ToString("N0")</td>
+                                        </tr>
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                <tr><td colspan="6" class="text-center text-muted">Seçilen yıl için kayıt yok.</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="accordion" id="topAccordion">
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingTop">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTop" aria-expanded="false" aria-controls="collapseTop">
+                    Yıl Detayları — En Çok Kayıtlı İller
+                </button>
+            </h2>
+            <div id="collapseTop" class="accordion-collapse collapse" aria-labelledby="headingTop" data-bs-parent="#topAccordion">
+                <div class="accordion-body p-2">
+                    <ul class="list-group list-group-flush">
+                        @foreach (var t in topIlList)
+                        {
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>@t.IlAdi</div>
+                                <div class="badge bg-primary rounded-pill">@t.Count</div>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public List<Tasinmaz> Tasinmazlar { get; set; } = new();
+
+    [Parameter, EditorRequired]
+    public List<int> Years { get; set; } = new();
+
+    [Parameter]
+    public bool ShowYearSelector { get; set; } = true;
+
+    private int _selectedYear;
+
+    [Parameter]
+    public int SelectedYear
+    {
+        get => _selectedYear;
+        set
+        {
+            if (_selectedYear == value) return;
+            _selectedYear = value;
+            _ = SelectedYearChanged.InvokeAsync(value);
+            ComputeSummary();
+        }
+    }
+
+    [Parameter]
+    public EventCallback<int> SelectedYearChanged { get; set; }
+
+    private int TotalCount { get; set; }
+    private int TamCount { get; set; }
+    private int HisseliCount { get; set; }
+
+    // New: type counts
+    private int BinaCount { get; set; }
+    private int MeskenCount { get; set; }
+    private int IsyeriCount { get; set; }
+    private int ArsaCount { get; set; }
+    private int TarlaCount { get; set; }
+
+    private int TamMulkiyetCount { get; set; }
+    private int CiplakMulkiyetCount { get; set; }
+
+    private decimal TahminiRayicDegeri { get; set; }
+    private decimal YaklasikPiyasaDegeri { get; set; }
+    private decimal EmlakBeyanDegeri { get; set; }
+
+    private List<(string IlAdi, int Count)> topIlList = new();
+    private Dictionary<string, IlSummary> groupedByIl = new();
+
+    protected override void OnParametersSet()
+    {
+        ComputeSummary();
+    }
+
+    private void ComputeSummary()
+    {
+        var filtered = Tasinmazlar
+            .Where(t => TryParseYear(t.BagisYili) == SelectedYear)
+            .ToList();
+
+        TotalCount = filtered.Count;
+
+        // Tam / Hisseli using constants
+        TamCount = filtered.Count(t =>
+            string.Equals((t.TamHisse ?? string.Empty).Trim(), ProjectConstants.TAM_HISSE, StringComparison.OrdinalIgnoreCase));
+
+        HisseliCount = filtered.Count(t =>
+            string.Equals((t.TamHisse ?? string.Empty).Trim(), ProjectConstants.HISSELI, StringComparison.OrdinalIgnoreCase));
+
+        // Mulkiyet using constants
+        TamMulkiyetCount = filtered.Count(t =>
+            string.Equals((t.MulkiyetSekli ?? string.Empty).Trim(), ProjectConstants.MULKIYET_SEKLI_TM, StringComparison.OrdinalIgnoreCase));
+
+        CiplakMulkiyetCount = filtered.Count(t =>
+            string.Equals((t.MulkiyetSekli ?? string.Empty).Trim(), ProjectConstants.MULKIYET_SEKLI_CM, StringComparison.OrdinalIgnoreCase));
+
+        // Type counts: use GetCategory on KullanimSekli first, fallback to Cinsi via GetCategory
+        BinaCount = filtered.Count(t =>
+            GetCategory(t.KullanimSekli) == Category.Bina ||
+            GetCategory(t.Cinsi) == Category.Bina);
+
+        MeskenCount = filtered.Count(t =>
+            GetCategory(t.KullanimSekli) == Category.Mesken ||
+            GetCategory(t.Cinsi) == Category.Mesken);
+
+        IsyeriCount = filtered.Count(t =>
+            GetCategory(t.KullanimSekli) == Category.Isyeri ||
+            GetCategory(t.Cinsi) == Category.Isyeri);
+
+        ArsaCount = filtered.Count(t =>
+            GetCategory(t.KullanimSekli) == Category.Arsa ||
+            GetCategory(t.Cinsi) == Category.Arsa);
+
+        TarlaCount = filtered.Count(t =>
+            GetCategory(t.KullanimSekli) == Category.Tarla ||
+            GetCategory(t.Cinsi) == Category.Tarla);
+
+        // monetary sums
+        TahminiRayicDegeri = filtered.Sum(t => t.TahminiRayicDegeri ?? 0m);
+        YaklasikPiyasaDegeri = filtered.Sum(t => t.YaklasikPiyasaDegeri ?? 0m);
+        EmlakBeyanDegeri = filtered.Sum(t => t.EmlakBeyanDegeri ?? 0m);
+
+        groupedByIl = filtered
+            .GroupBy(t => t.Ili ?? "—")
+            .ToDictionary(
+                g => g.Key,
+                g => new IlSummary
+                {
+                    TotalCount = g.Count(),
+                    TahminiRayic = g.Sum(x => x.TahminiRayicDegeri ?? 0m),
+                    YaklasikPiyasa = g.Sum(x => x.YaklasikPiyasaDegeri ?? 0m),
+                    EmlakBeyan = g.Sum(x => x.EmlakBeyanDegeri ?? 0m),
+                    Items = g.ToList()
+                });
+
+        topIlList = groupedByIl
+            .OrderByDescending(kv => kv.Value.TotalCount)
+            .Take(10)
+            .Select(kv => (IlAdi: kv.Key, Count: kv.Value.TotalCount))
+            .ToList();
+    }
+
+    private static int? TryParseYear(string? yearText)
+    {
+        if (string.IsNullOrWhiteSpace(yearText)) return null;
+        return int.TryParse(yearText.Trim(), out var y) ? y : null;
+    }
+
+    private static string NormalizeTamHisse(string? tamHisse) =>
+        string.IsNullOrWhiteSpace(tamHisse) ? string.Empty : tamHisse.Trim();
+
+    private static string NormalizeMulkiyetSekli(string? s) =>
+        string.IsNullOrWhiteSpace(s) ? string.Empty : s.Trim();
+
+    private static string NormalizeCinsi(string? c) =>
+        string.IsNullOrWhiteSpace(c) ? string.Empty : c.Trim();
+
+    private enum Category { Unknown, Bina, Mesken, Isyeri, Arsa, Tarla }
+
+    private static Category GetCategory(string? kullanimSekli)
+    {
+        var value = (kullanimSekli ?? string.Empty).Trim();
+
+        if (string.Equals(value, ProjectConstants.KULLANIMSEKLI_ISHANI, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(value, ProjectConstants.KULLANIMSEKLI_APT, StringComparison.OrdinalIgnoreCase))
+        {
+            return Category.Bina;
+        }
+
+        if (string.Equals(value, ProjectConstants.KULLANIMSEKLI_MESKEN, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(value, ProjectConstants.KULLANIMSEKLI_MEV, StringComparison.OrdinalIgnoreCase))
+        {
+            return Category.Mesken;
+        }
+
+        if (string.Equals(value, ProjectConstants.KULLANIMSEKLI_ARSA, StringComparison.OrdinalIgnoreCase))
+        {
+            return Category.Arsa;
+        }
+
+        if (string.Equals(value, ProjectConstants.KULLANIMSEKLI_TARLA, StringComparison.OrdinalIgnoreCase))
+        {
+            return Category.Tarla;
+        }
+
+        if (string.Equals(value, ProjectConstants.KULLANIMSEKLI_ISYERI, StringComparison.OrdinalIgnoreCase))
+        {
+            return Category.Isyeri;
+        }
+
+        return Category.Unknown;
+    }
+
+    // normalize helper (keep or add if not present)
+    private static string NormalizeForComparison(string? s)
+    {
+        if (string.IsNullOrWhiteSpace(s)) return string.Empty;
+        var normalized = s.Trim().ToLowerInvariant().Normalize(NormalizationForm.FormD);
+        var sb = new StringBuilder();
+        foreach (var ch in normalized)
+        {
+            var cat = CharUnicodeInfo.GetUnicodeCategory(ch);
+            if (cat != UnicodeCategory.NonSpacingMark) sb.Append(ch);
+        }
+        var cleaned = sb.ToString().Normalize(NormalizationForm.FormC);
+        cleaned = Regex.Replace(cleaned, @"\s+", " ").Replace('ı', 'i');
+        return cleaned;
+    }
+
+    private sealed class IlSummary
+    {
+        public int TotalCount { get; init; }
+        public decimal TahminiRayic { get; init; }
+        public decimal YaklasikPiyasa { get; init; }
+        public decimal EmlakBeyan { get; init; }
+        public List<Tasinmaz> Items { get; init; } = new();
+    }
+}

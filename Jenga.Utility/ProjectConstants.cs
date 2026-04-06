@@ -10,6 +10,9 @@
         // Mulkiyet abbreviations (TM = Tam Mülkiyet, ÇM = Çıplak Mülkiyet)
         public const string MULKIYET_SEKLI_TM = "TM";
         public const string MULKIYET_SEKLI_CM = "ÇM";
+        // Tam / Hisseli tokens (for TamHisse comparisons)
+        public const string TAM_HISSE = "Tam";
+        public const string HISSELI = "Hisseli";
         //Kiraya Uygunluk
         public const string KIRAYA_UYGUN = "Kiraya Uygun";
         public const string KIRAYA_UYGUN_DEGIL = "Kiraya Uygun Değil";
@@ -37,6 +40,16 @@
         public static string SOSYALGUVENCE_EMEKLISANDIGI = "Emekli Sandığı";
         public static string SOSYALGUVENCE_SSK = "SSK";
         public static string SOSYALGUVENCE_BAGKUR = "Bağkur";
+
+        //KiraSozleme durumu
+        public const string KIRASOZLESME_DURUMU_DEVAM = "Devam Ediyor";
+        public const string KIRASOZLESME_DURUMU_YENILENDI = "Yenilendi";
+        public const string KIRASOZLESME_DURUMU_BITTI = "Bitti";
+        public const string KIRASOZLESME_DURUMU_TAKIP = "Takip Listesine Eklendi";
+        public const string KIRASOZLESME_DURUMU_FESIH = "Feshedildi";
+        public const string KIRASOZLESME_DURUMU_ILERITARİHLİ = "İleri Tarihli";
+        public const string KIRASOZLESME_DURUMU_TAKIPSONUCLANDI = "Takip Sonuçlandı";
+
         //IKYS
         public static int PER_CALISIYOR_INT = 1;
         public static string PER_CALISIYOR = "Çalışıyor";
@@ -162,5 +175,7 @@
 
         public const int MALZEMENINGELDIGI_YER_BOS_INT = 1;
         public const int MALZEMENINGITTIGI_YER_BOS_INT = 1;
+
+
     }
 }

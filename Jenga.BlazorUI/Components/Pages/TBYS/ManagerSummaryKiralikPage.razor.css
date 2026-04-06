@@ -1,0 +1,44 @@
+﻿.manager-summary-content .d-flex.flex-wrap {
+    gap: 16px;
+}
+
+.manager-summary-content .d-flex.flex-wrap > div {
+    min-width: 0;
+    flex-shrink: 1;
+}
+
+/* Üst satır chart: masaüstünde 630px, mobilde tam genişlik — scroll ile */
+.kira-chart-wrapper {
+    max-width: 100%;
+}
+
+/* Alt satır chart: tam genişlik — taşarsa scroll */
+.kira-chart-wide-wrapper {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+/* Chart kolonları: taşarsa yatay scroll — chart boyutunu bozmadan */
+.kira-chart-wrapper,
+.kira-chart-wide-wrapper {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+}
+
+.chart-scroll-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+}
+
+@media (max-width: 767.98px) {
+    .manager-summary-content .d-flex.flex-wrap {
+        flex-direction: column;
+    }
+
+    .manager-summary-content .d-flex.flex-wrap > div {
+        width: 100%;
+    }
+}

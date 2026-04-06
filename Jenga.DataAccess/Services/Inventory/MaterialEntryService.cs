@@ -9,15 +9,18 @@ namespace Jenga.DataAccess.Services.Inventory
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMaterialInventoryService _materialInventoryService;
         private readonly IMaterialMovementService _materialMovementService;
+        private readonly IMaterialAssetService _materialAssetService;
 
         public MaterialEntryService(
             IUnitOfWork unitOfWork,
             IMaterialInventoryService materialInventoryService,
-            IMaterialMovementService materialMovementService)
+            IMaterialMovementService materialMovementService,
+            IMaterialAssetService materialAssetService)
         {
             _unitOfWork = unitOfWork;
             _materialInventoryService = materialInventoryService;
             _materialMovementService = materialMovementService;
+            _materialAssetService = materialAssetService;
         }
 
         public async Task<List<MaterialEntry>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -31,13 +34,11 @@ namespace Jenga.DataAccess.Services.Inventory
             await _unitOfWork.MaterialEntry.AddAsync(entry, cancellationToken);
             await _unitOfWork.MaterialEntry.SaveChangesAsync(cancellationToken);
 
-            // Normalize incoming zero IDs to null
             int? actualLocationId = entry.LocationId != 0 ? entry.LocationId : null;
             int? actualPersonnelId = (entry.PersonelId.HasValue && entry.PersonelId.Value != 0) ? entry.PersonelId : null;
             int? actualBrandId = (entry.BrandId.HasValue && entry.BrandId.Value != 0) ? entry.BrandId : null;
             int? actualModelId = (entry.ModelId.HasValue && entry.ModelId.Value != 0) ? entry.ModelId : null;
 
-            // Update inventory - pass brand/model from entry if provided
             await _materialInventoryService.AddOrUpdateInventoryAsync(
                 entry.MaterialId,
                 actualLocationId,
@@ -53,6 +54,28 @@ namespace Jenga.DataAccess.Services.Inventory
             await _materialMovementService.AddMovementForEntryAsync(
                 entry, "Giriş", "MaterialEntry eklendi", modifiedBy, cancellationToken
             );
+
+            var material = await _unitOfWork.Material.GetByIdAsync(entry.MaterialId, cancellationToken);
+            if (material != null && material.IsAsset)
+            {
+                for (int i = 0; i < entry.Quantity; i++)
+                {
+                    var asset = new MaterialAsset
+                    {
+                        MaterialId = entry.MaterialId,
+                        BrandId = actualBrandId,
+                        ModelId = actualModelId,
+                        LocationId = actualLocationId,
+                        PersonelId = actualPersonnelId,
+                        PurchaseDate = entry.EntryDate,
+                        Status = AssetStatus.Active,
+                        Aciklama = $"MaterialEntry #{entry.Id} ile otomatik oluşturuldu",
+                        Olusturan = modifiedBy,
+                        OlusturmaTarihi = DateTime.Now
+                    };
+                    await _materialAssetService.AddAsync(asset, cancellationToken);
+                }
+            }
 
             return true;
         }
@@ -72,7 +95,6 @@ namespace Jenga.DataAccess.Services.Inventory
 
             currentUserName ??= Environment.UserName;
 
-            // ID normalization
             int? newLocation = entry.LocationId != 0 ? entry.LocationId : null;
             int? newPersonnel = (entry.PersonelId.HasValue && entry.PersonelId.Value != 0) ? entry.PersonelId : null;
             int? newBrand = (entry.BrandId.HasValue && entry.BrandId.Value != 0) ? entry.BrandId : null;
@@ -99,7 +121,6 @@ namespace Jenga.DataAccess.Services.Inventory
             }
             else if (materialChanged || locationChanged || unitChanged || personnelChanged || brandChanged || modelChanged)
             {
-                // Revert old inventory (subtract old quantity) using old brand/model
                 await _materialInventoryService.AddOrUpdateInventoryAsync(
                     oldEntry.MaterialId,
                     oldLocation,
@@ -111,7 +132,6 @@ namespace Jenga.DataAccess.Services.Inventory
                     oldModel,
                     cancellationToken);
 
-                // Add new inventory using new brand/model
                 await _materialInventoryService.AddOrUpdateInventoryAsync(
                     entry.MaterialId,
                     newLocation,
@@ -158,7 +178,6 @@ namespace Jenga.DataAccess.Services.Inventory
             int? brand = (entryToDelete.BrandId.HasValue && entryToDelete.BrandId.Value != 0) ? entryToDelete.BrandId : null;
             int? model = (entryToDelete.ModelId.HasValue && entryToDelete.ModelId.Value != 0) ? entryToDelete.ModelId : null;
 
-            // 1. Subtract from inventory
             await _materialInventoryService.AddOrUpdateInventoryAsync(
                 entryToDelete.MaterialId,
                 location,
@@ -171,7 +190,6 @@ namespace Jenga.DataAccess.Services.Inventory
                 cancellationToken
             );
 
-            // 2. If stock <= 0 remove inventory record (cleanup)
             var inventoryRecord = await _materialInventoryService.GetByMaterialLocationAsync(
                 entryToDelete.MaterialId,
                 location,
@@ -185,7 +203,6 @@ namespace Jenga.DataAccess.Services.Inventory
                 await _materialInventoryService.DeleteAsync(inventoryRecord, cancellationToken);
             }
 
-            // 3. Delete the entry
             await DeleteAsync(entryToDelete, cancellationToken);
 
             await _materialMovementService.AddMovementForEntryAsync(

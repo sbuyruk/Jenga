@@ -3,7 +3,6 @@ using Jenga.Models.Enums;
 using Jenga.Models.Inventory;
 using Jenga.Utility.Helpers;
 using System.Linq.Expressions;
-using System;
 
 namespace Jenga.DataAccess.Services.Inventory
 {
@@ -12,39 +11,42 @@ namespace Jenga.DataAccess.Services.Inventory
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMaterialInventoryService _materialInventoryService;
         private readonly IMaterialMovementService _materialMovementService;
+        private readonly IMaterialAssetService _materialAssetService;
+        private readonly IMaterialAssetLogService _materialAssetLogService;
 
         public MaterialExitService(
              IUnitOfWork unitOfWork,
              IMaterialInventoryService materialInventoryService,
-             IMaterialMovementService materialMovementService)
+             IMaterialMovementService materialMovementService,
+             IMaterialAssetService materialAssetService,
+             IMaterialAssetLogService materialAssetLogService)
         {
             _unitOfWork = unitOfWork;
             _materialInventoryService = materialInventoryService;
             _materialMovementService = materialMovementService;
+            _materialAssetService = materialAssetService;
+            _materialAssetLogService = materialAssetLogService;
         }
+
         public async Task<List<MaterialExit>> GetAllAsync(CancellationToken cancellationToken = default)
             => await _unitOfWork.MaterialExit.GetAllAsync(cancellationToken);
 
         public async Task<MaterialExit?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
             => await _unitOfWork.MaterialExit.GetByIdAsync(id, cancellationToken);
 
-        public async Task AddAsync(MaterialExit exit, CancellationToken cancellationToken = default)
+        public async Task AddAsync(MaterialExit exit, List<int>? selectedAssetIds = null, CancellationToken cancellationToken = default)
         {
-            // 1. MaterialExit kaydını ekle
             await _unitOfWork.MaterialExit.AddAsync(exit, cancellationToken);
             await _unitOfWork.MaterialExit.SaveChangesAsync(cancellationToken);
 
-            // Get the material to access its unit
             var material = await _unitOfWork.Material.GetByIdAsync(exit.MaterialId, cancellationToken);
             if (material == null) throw new Exception("Malzeme bulunamadı!");
 
-            // Normalize 0 -> null for optional ids
             int? actualLocation = exit.LocationId != 0 ? exit.LocationId : null;
             int? actualPerson = (exit.PersonelId.HasValue && exit.PersonelId.Value != 0) ? exit.PersonelId : null;
             int? actualBrand = (exit.BrandId.HasValue && exit.BrandId.Value != 0) ? exit.BrandId : null;
             int? actualModel = (exit.ModelId.HasValue && exit.ModelId.Value != 0) ? exit.ModelId : null;
 
-            // 2. MaterialInventory'den miktarı düş (include brand/model)
             await _materialInventoryService.AddOrUpdateInventoryAsync(
                 exit.MaterialId,
                 actualLocation,
@@ -56,7 +58,6 @@ namespace Jenga.DataAccess.Services.Inventory
                 actualModel,
                 cancellationToken);
 
-            // 3. MaterialMovement logu ekle (include brand/model)
             string operation = EnumHelper.GetEnumDescription((MaterialExitType)exit.ExitType.Value);
             var movement = new MaterialMovement
             {
@@ -77,14 +78,88 @@ namespace Jenga.DataAccess.Services.Inventory
                 ModelId = actualModel
             };
             await _materialMovementService.AddAsync(movement, cancellationToken);
+
+            if (material.IsAsset)
+            {
+                await RetireAssetsAsync(
+                    exit.MaterialId,
+                    exit.Quantity,
+                    actualLocation,
+                    actualPerson,
+                    actualBrand,
+                    actualModel,
+                    operation,
+                    exit.Olusturan,
+                    selectedAssetIds,
+                    cancellationToken);
+            }
         }
+
+        private async Task RetireAssetsAsync(
+            int materialId,
+            int quantity,
+            int? locationId,
+            int? personelId,
+            int? brandId,
+            int? modelId,
+            string exitReason,
+            string? modifiedBy,
+            List<int>? selectedAssetIds,
+            CancellationToken cancellationToken)
+        {
+            List<MaterialAsset> assetsToRetire;
+
+            if (selectedAssetIds != null && selectedAssetIds.Count > 0)
+            {
+                var allAssets = await _materialAssetService.GetByMaterialIdAsync(materialId, cancellationToken);
+                assetsToRetire = allAssets
+                    .Where(a => selectedAssetIds.Contains(a.Id) && a.Status == AssetStatus.Active)
+                    .ToList();
+            }
+            else
+            {
+                var allAssets = await _materialAssetService.GetByMaterialIdAsync(materialId, cancellationToken);
+                assetsToRetire = allAssets
+                    .Where(a => a.Status == AssetStatus.Active
+                        && a.LocationId == locationId
+                        && a.PersonelId == personelId
+                        && a.BrandId == brandId
+                        && a.ModelId == modelId)
+                    .Take(quantity)
+                    .ToList();
+            }
+
+            foreach (var asset in assetsToRetire)
+            {
+                var log = new MaterialAssetLog
+                {
+                    MaterialAssetId = asset.Id,
+                    FromPersonelId = asset.PersonelId,
+                    ToPersonelId = null,
+                    FromLocationId = asset.LocationId,
+                    ToLocationId = null,
+                    TransactionDate = DateTime.Now,
+                    TransactionType = $"Çıkış ({exitReason})",
+                    Aciklama = $"Çıkış: {asset.SerialNumber ?? asset.Id.ToString()} — {exitReason}",
+                    Olusturan = modifiedBy,
+                    OlusturmaTarihi = DateTime.Now
+                };
+                await _materialAssetLogService.AddAsync(log, cancellationToken);
+
+                asset.Status = AssetStatus.Retired;
+                asset.PersonelId = null;
+                asset.LocationId = null;
+                asset.Degistiren = modifiedBy;
+                asset.DegistirmeTarihi = DateTime.Now;
+                await _materialAssetService.UpdateAsync(asset, cancellationToken);
+            }
+        }
+
         public async Task UpdateAsync(MaterialExit newExit, CancellationToken cancellationToken = default)
         {
-            // Eski kaydı çek
             var oldExit = await GetByIdAsync(newExit.Id, cancellationToken);
             if (oldExit == null) throw new Exception("Kayıt bulunamadı!");
 
-            // Normalize ids (0->null)
             int? oldLocation = oldExit.LocationId != 0 ? oldExit.LocationId : null;
             int? oldPerson = (oldExit.PersonelId.HasValue && oldExit.PersonelId.Value != 0) ? oldExit.PersonelId : null;
             int? oldBrand = (oldExit.BrandId.HasValue && oldExit.BrandId.Value != 0) ? oldExit.BrandId : null;
@@ -95,7 +170,6 @@ namespace Jenga.DataAccess.Services.Inventory
             int? newBrand = (newExit.BrandId.HasValue && newExit.BrandId.Value != 0) ? newExit.BrandId : null;
             int? newModel = (newExit.ModelId.HasValue && newExit.ModelId.Value != 0) ? newExit.ModelId : null;
 
-            // Eski miktarı envantere geri ekle (include old brand/model)
             await _materialInventoryService.AddOrUpdateInventoryAsync(
                 oldExit.MaterialId,
                 oldLocation,
@@ -107,7 +181,6 @@ namespace Jenga.DataAccess.Services.Inventory
                 oldModel,
                 cancellationToken);
 
-            // Yeni miktarı envanterden düş (include new brand/model)
             await _materialInventoryService.AddOrUpdateInventoryAsync(
                 newExit.MaterialId,
                 newLocation,
@@ -119,7 +192,6 @@ namespace Jenga.DataAccess.Services.Inventory
                 newModel,
                 cancellationToken);
 
-            // MaterialMovement logu ekle (include brand/model)
             string operation = EnumHelper.GetEnumDescription((MaterialExitType)newExit.ExitType.Value);
             await _materialMovementService.AddAsync(new MaterialMovement
             {
@@ -138,20 +210,17 @@ namespace Jenga.DataAccess.Services.Inventory
                 ModelId = newModel
             }, cancellationToken);
 
-            // Kayıt güncelle
             await _unitOfWork.MaterialExit.UpdateAsync(newExit);
             await _unitOfWork.MaterialExit.SaveChangesAsync(cancellationToken);
         }
 
         public async Task DeleteAsync(MaterialExit exit, CancellationToken cancellationToken = default)
         {
-            // Normalize ids
             int? location = exit.LocationId != 0 ? exit.LocationId : null;
             int? person = (exit.PersonelId.HasValue && exit.PersonelId.Value != 0) ? exit.PersonelId : null;
             int? brand = (exit.BrandId.HasValue && exit.BrandId.Value != 0) ? exit.BrandId : null;
             int? model = (exit.ModelId.HasValue && exit.ModelId.Value != 0) ? exit.ModelId : null;
 
-            // Envantere miktarı geri ekle (include brand/model)
             await _materialInventoryService.AddOrUpdateInventoryAsync(
                 exit.MaterialId,
                 location,
@@ -163,7 +232,6 @@ namespace Jenga.DataAccess.Services.Inventory
                 model,
                 cancellationToken);
 
-            // MaterialMovement logu ekle (include brand/model)
             await _materialMovementService.AddAsync(new MaterialMovement
             {
                 MaterialId = exit.MaterialId,
@@ -181,14 +249,13 @@ namespace Jenga.DataAccess.Services.Inventory
                 ModelId = model
             }, cancellationToken);
 
-            // Kayıt sil
             _unitOfWork.MaterialExit.Remove(exit);
             await _unitOfWork.MaterialExit.SaveChangesAsync(cancellationToken);
         }
+
         public Task<bool> AnyAsync(Expression<Func<MaterialExit, bool>> predicate)
         {
             return _unitOfWork.MaterialExit.AnyAsync(predicate);
         }
-
     }
 }

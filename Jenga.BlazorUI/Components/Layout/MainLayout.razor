@@ -1,9 +1,9 @@
-﻿@using Jenga.BlazorUI.Components.Menus
-@using Jenga.BlazorUI.Components.Common
+﻿@using Jenga.BlazorUI.Components.Common
 @using Jenga.BlazorUI.Components.Toast
 @using Jenga.BlazorUI.Services.Common
 @using Jenga.BlazorUI.Services.Presence
 @using Microsoft.AspNetCore.Components.Routing
+@using Microsoft.JSInterop
 @implements IDisposable
 
 @inherits LayoutComponentBase
@@ -14,45 +14,47 @@
 @inject NavigationManager Nav
 @inject PresenceHeartbeatService PresenceHeartbeatService
 @inject UserNavigationLogService UserNavigationLogService
+@inject IJSRuntime JS
 
-<div class="page">
-    <input id="navtoggle" type="checkbox" class="nav-toggle-checkbox" aria-label="Toggle navigation"
-           @bind="NavChecked" />
+<div class="page @(MenuState.IsOpen ? "sidebar-open" : "sidebar-closed")">
 
-    <div class="sidebar @(MenuState.IsOpen ? "open" : (MenuState.IsCollapsed ? "collapsed" : ""))" role="navigation" aria-expanded="@MenuState.IsOpen">
-        <NavMenu Items="MenuState.MenuItems" IsCollapsed="@(MenuState.IsCollapsed)" />
-    </div>
+    <aside class="sidebar" role="navigation" aria-label="Ana menü">
+        <NavMenu Items="MenuState.MenuItems" IsCollapsed="@(!MenuState.IsOpen)" />
+    </aside>
 
-    <div class="sidebar-overlay @(MenuState.IsOpen ? "visible" : "")" @onclick="CloseSidebar"></div>
+    @if (MenuState.IsOpen)
+    {
+        <div class="sidebar-overlay" @onclick="CloseSidebar"></div>
+    }
 
-    <main>
-        <div class="top-row px-4 d-flex justify-content-between align-items-center">
+    <div class="main-area">
+        <header class="top-row">
             <div class="d-flex align-items-center">
-                <label for="navtoggle" class="sidebar-toggle" aria-controls="main-nav" aria-label="Toggle sidebar" role="button" tabindex="0">
+                <button type="button"
+                        class="sidebar-toggle"
+                        aria-label="Menüyü aç/kapat"
+                        @onclick="ToggleSidebar">
                     <span class="hamburger" aria-hidden="true">
                         <span></span>
                         <span></span>
                         <span></span>
                     </span>
-                    <span class="visually-hidden">Toggle sidebar</span>
-                </label>
+                </button>
 
-                <div class="header-left" style="display:flex;align-items:center;gap:14px">
-                    <img id="logo" alt="Logo" src="/images/logo-light.png" class="site-logo" />
-                </div>
+                <img id="logo" alt="Logo" src="/images/logo-light.png" class="site-logo" />
             </div>
 
             <div class="d-flex align-items-center gap-3">
-                <div class="d-flex align-items-center">
-                    <NavLink href="/" class="navbar-brand">@(_windowsUser.Length > 0 ? _windowsUser : "Jenga.BlazorUI")</NavLink>
-                </div>
+                <NavLink href="/" class="navbar-brand">
+                    @(_windowsUser.Length > 0 ? _windowsUser : "Jenga.BlazorUI")
+                </NavLink>
             </div>
-        </div>
+        </header>
 
         <article class="content px-4">
             @Body
         </article>
-    </main>
+    </div>
 </div>
 
 <div id="blazor-error-ui" data-nosnippet>
@@ -64,17 +66,6 @@
 @code {
     private string _windowsUser = string.Empty;
     private Jenga.Models.IKYS.Personel? _personel;
-
-    private bool NavChecked
-    {
-        get => MenuState.IsOpen;
-        set
-        {
-            if (value == MenuState.IsOpen) return;
-            MenuState.SetOpen(value);
-        }
-    }
-
     private bool _initialUrlLogged;
 
     protected override async Task OnInitializedAsync()
@@ -84,9 +75,7 @@
         await MenuState.EnsureLoadedAsync(personelId);
 
         if (_personel != null)
-        {
             _windowsUser = $"{_personel.Adi} {_personel.Soyadi}";
-        }
 
         MenuState.OnChange += MenuStateChanged;
         Nav.LocationChanged += OnLocationChanged;
@@ -95,31 +84,39 @@
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
-        {
             await LogCurrentUrlAsync(source: "firstRender");
-        }
 
         await base.OnAfterRenderAsync(firstRender);
     }
 
+    private void ToggleSidebar() => MenuState.ToggleOpen();
+
+    private void CloseSidebar() => MenuState.SetOpen(false);
+
+    private void MenuStateChanged() => InvokeAsync(StateHasChanged);
+
     private async void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
+        try
+        {
+            var isMobile = await JS.InvokeAsync<bool>("isMobileViewport");
+            if (isMobile)
+                CloseSidebar();
+        }
+        catch (JSDisconnectedException) { }
+
         await LogUrlAsync(e.Location, source: "LocationChanged");
     }
 
-    private Task LogCurrentUrlAsync(string source)
-        => LogUrlAsync(Nav.Uri, source);
+    private Task LogCurrentUrlAsync(string source) => LogUrlAsync(Nav.Uri, source);
 
     private async Task LogUrlAsync(string absoluteUri, string source)
     {
         try
         {
-            // NOTE: ilk render’da çift logu engellemek için
             if (source == "firstRender")
             {
-                if (_initialUrlLogged)
-                    return;
-
+                if (_initialUrlLogged) return;
                 _initialUrlLogged = true;
             }
 
@@ -128,23 +125,12 @@
             var url = "/" + pathOnly.TrimStart('/');
 
             Console.WriteLine($"[NAV] {source} -> {url}");
-
             await UserNavigationLogService.LogAsync(url);
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"UserNavigationLogService.LogAsync failed ({source}): {ex}");
         }
-    }
-
-    private void MenuStateChanged()
-    {
-        InvokeAsync(StateHasChanged);
-    }
-
-    private void CloseSidebar()
-    {
-        MenuState.SetOpen(false);
     }
 
     private PeriodicTimer? _presenceTimer;
@@ -163,13 +149,9 @@
             try
             {
                 while (await _presenceTimer.WaitForNextTickAsync(_presenceCts.Token))
-                {
                     await PresenceHeartbeatService.TouchAsync(_presenceCts.Token);
-                }
             }
-            catch (OperationCanceledException)
-            {
-            }
+            catch (OperationCanceledException) { }
         }, _presenceCts.Token);
     }
 
@@ -177,7 +159,6 @@
     {
         MenuState.OnChange -= MenuStateChanged;
         Nav.LocationChanged -= OnLocationChanged;
-
         _presenceCts?.Cancel();
         _presenceTimer?.Dispose();
         _presenceCts?.Dispose();

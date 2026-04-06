@@ -47,6 +47,29 @@
             <td class="col-rayic text-end">@row.YaklasikPiyasaDegeri</td>
         </RowTemplate>
     </GenericTable>
+
+    <div class="card mt-3 shadow-sm">
+        <div class="card-body py-3">
+            <div class="row g-3 text-end">
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="text-muted small">Toplam Emlak Beyan Değeri</div>
+                    <div class="fw-semibold text-end">@FormatCurrency(_toplamEmlakBeyanDegeri)</div>
+                </div>
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="text-muted small">Toplam Tahmini Rayiç Değeri</div>
+                    <div class="fw-semibold text-end">@FormatCurrency(_toplamTahminiRayicDegeri)</div>
+                </div>
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="text-muted small">Toplam Muhasebeye Kayıtlı Değer</div>
+                    <div class="fw-semibold text-end">@FormatCurrency(_toplamMuhasebeyeKayitliDeger)</div>
+                </div>
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="text-muted small">Toplam Yaklaşık Piyasa Değeri</div>
+                    <div class="fw-semibold text-end">@FormatCurrency(_toplamYaklasikPiyasaDegeri)</div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 @code {
@@ -56,6 +79,11 @@
 
     private static readonly CultureInfo TrCulture = new("tr-TR");
     private readonly List<TableRow> _rows = new();
+
+    private decimal _toplamEmlakBeyanDegeri;
+    private decimal _toplamTahminiRayicDegeri;
+    private decimal _toplamMuhasebeyeKayitliDeger;
+    private decimal _toplamYaklasikPiyasaDegeri;
 
     private static readonly IReadOnlyList<string> TableExportHeaders = new[]
     {
@@ -147,6 +175,16 @@
         }
 
         _rows.AddRange(mapped);
+
+        _toplamEmlakBeyanDegeri = mapped.Sum(x => x.EmlakBeyanDegeriValue);
+        _toplamTahminiRayicDegeri = mapped.Sum(x => x.TahminiRayicDegeriValue);
+        _toplamMuhasebeyeKayitliDeger = mapped.Sum(x => x.MuhasebeyeKayitliDegerValue);
+        _toplamYaklasikPiyasaDegeri = mapped.Sum(x => x.YaklasikPiyasaDegeriValue);
+    }
+
+    private static string FormatCurrency(decimal value)
+    {
+        return value.ToString("C2", TrCulture);
     }
 
     private static string BuildBagisciAdSoyad(TasinmazBagisci? bagisci)
@@ -158,17 +196,6 @@
 
         var adSoyad = $"{bagisci.Adi} {bagisci.Soyadi}".Trim();
         return string.IsNullOrWhiteSpace(adSoyad) ? "-" : adSoyad;
-    }
-
-    private static string Shorten(string? text, int maxLength)
-    {
-        if (string.IsNullOrWhiteSpace(text))
-        {
-            return "-";
-        }
-
-        var value = text.Trim();
-        return value.Length <= maxLength ? value : $"{value[..maxLength]}...";
     }
 
     private static string GetMulkiyetBadgeClass(string? value)

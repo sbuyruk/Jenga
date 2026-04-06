@@ -69,6 +69,8 @@ builder.Services.AddScoped<IMaterialExitService, MaterialExitService>();
 builder.Services.AddScoped<IMaterialTransferService, MaterialTransferService>();
 builder.Services.AddScoped<ILocationService, LocationService>();
 builder.Services.AddScoped<IPersonelLocationService, PersonelLocationService>();
+builder.Services.AddScoped<IMaterialAssetService, MaterialAssetService>();
+builder.Services.AddScoped<IMaterialAssetLogService, MaterialAssetLogService>();
 //TBYS Services
 builder.Services.AddScoped<ITasinmazService, TasinmazService>();
 builder.Services.AddScoped<ITasinmazBagisciService, TasinmazBagisciService>();
@@ -89,6 +91,8 @@ builder.Services.AddScoped<IPersonelService, PersonelService>();
 builder.Services.AddScoped<INakitBagisciService, NakitBagisciService>();
 builder.Services.AddScoped<INakitBagisHareketService, NakitBagisHareketService>();
 builder.Services.AddScoped<IBankaTanimService, BankaTanimService>();
+//Yasal Faiz Service
+builder.Services.AddScoped<IYasalFaizService, YasalFaizService>();
 
 //Currentusername alırken httpContextAcces.. kullanmak için
 builder.Services.AddHttpContextAccessor();

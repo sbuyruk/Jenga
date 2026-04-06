@@ -21,6 +21,7 @@
 else
 {
     <GenericTable TItem="MaterialBrand"
+                  @ref="brandTable"
                   Items="Brands"
                   PageSize="10"
                   PageSizeOptions="new[] { 10, 20, 50, 100 }"
@@ -32,9 +33,24 @@ else
                   TableClass="table-hover table-sm table-bordered">
 
         <HeaderTemplate>
-            <th>Ad</th>
-            <th>Kategori</th>
-            <th>Açıklama</th>
+            <th role="button" @onclick="() => OnSort(nameof(MaterialBrand.BrandName))">
+                <span class="d-inline-flex align-items-center">
+                    <span>Ad</span>
+                    <i class="@GetSortIcon(nameof(MaterialBrand.BrandName))"></i>
+                </span>
+            </th>
+            <th role="button" @onclick="() => OnSort(nameof(MaterialBrand.CategoryId))">
+                <span class="d-inline-flex align-items-center">
+                    <span>Kategori</span>
+                    <i class="@GetSortIcon(nameof(MaterialBrand.CategoryId))"></i>
+                </span>
+            </th>
+            <th role="button" @onclick="() => OnSort(nameof(MaterialBrand.Aciklama))">
+                <span class="d-inline-flex align-items-center">
+                    <span>Açıklama</span>
+                    <i class="@GetSortIcon(nameof(MaterialBrand.Aciklama))"></i>
+                </span>
+            </th>
             <th class="text-center">İşlemler</th>
         </HeaderTemplate>
 
@@ -66,6 +82,7 @@ else
 
     private readonly Dictionary<int, string> _categoryNameById = new();
 
+    private GenericTable<MaterialBrand>? brandTable;
     private MaterialBrand? selectedBrand;
     private bool showEditModal;
 
@@ -84,6 +101,23 @@ else
 
     private string GetCategoryName(int? categoryId)
         => categoryId.HasValue && _categoryNameById.TryGetValue(categoryId.Value, out var name) ? name : string.Empty;
+
+    private void OnSort(string field)
+    {
+        brandTable?.SortBy(field);
+    }
+
+    private string GetSortIcon(string field)
+    {
+        if (brandTable?.CurrentSortField != field)
+        {
+            return "bi bi-arrow-down-up ms-2 text-muted";
+        }
+
+        return brandTable.CurrentSortDescending
+            ? "bi bi-caret-down-fill ms-2"
+            : "bi bi-caret-up-fill ms-2";
+    }
 
     private void OnEditClicked(MaterialBrand brand)
     {

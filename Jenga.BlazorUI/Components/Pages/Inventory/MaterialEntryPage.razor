@@ -13,6 +13,7 @@
 @inject IPersonelService PersonelService
 @inject IMaterialBrandService MaterialBrandService
 @inject IMaterialModelService MaterialModelService
+@inject IMaterialCategoryService MaterialCategoryService
 @inject IJSRuntime JS
 
 <h3>Malzeme Girişleri</h3>
@@ -22,7 +23,8 @@
                             Personels="@personels"
                             MaterialUnits="@materialUnits"
                             Brands="@brands"
-                            Models="@models"/>
+                            Models="@models"
+                            Categories="@categories"/>
 
 @code {
     private List<MaterialEntry> materialEntries = new();
@@ -32,6 +34,7 @@
     private List<Personel> personels = new();
     private List<MaterialBrand> brands = new();
     private List<MaterialModel> models = new();
+    private List<MaterialCategory> categories = new();
     private bool _dataLoaded;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -44,6 +47,7 @@
             personels = await PersonelService.GetCalisanPersonelAsync();
             brands = await MaterialBrandService.GetAllAsync();
             models = await MaterialModelService.GetAllAsync();
+            categories = await MaterialCategoryService.GetAllAsync();
             materialUnits = await MaterialUnitService.GetAllAsync();
             _dataLoaded = true;
             StateHasChanged();

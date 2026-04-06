@@ -1,0 +1,174 @@
+﻿@page "/inventory/asset-manager"
+@rendermode InteractiveServer
+
+@using Jenga.BlazorUI.Components.Inventory
+@using Jenga.BlazorUI.Services.Common
+@using Jenga.DataAccess.Services.IKYS
+@using Jenga.DataAccess.Services.Inventory
+@using Jenga.Models.IKYS
+@using Jenga.Models.Inventory
+@using Jenga.Utility.Toast
+
+@inject IMaterialAssetService MaterialAssetService
+@inject IMaterialService MaterialService
+@inject IMaterialBrandService MaterialBrandService
+@inject IMaterialModelService MaterialModelService
+@inject ILocationService LocationService
+@inject IPersonelService PersonelService
+
+<h5 class="mb-3"><i class="bi bi-cpu me-2"></i>Demirbaş Yönetimi</h5>
+
+<!-- FILTERS -->
+<div class="card shadow-sm mb-3">
+    <div class="card-body py-2">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small mb-1">Malzeme</label>
+                <select class="form-select form-select-sm" @bind="filterMaterialId">
+                    <option value="">Tümü</option>
+                    @foreach (var m in assetMaterials)
+                    {
+                        <option value="@m.Id">@m.MaterialName</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small mb-1">Durum</label>
+                <select class="form-select form-select-sm" @bind="filterStatus">
+                    <option value="">Tümü</option>
+                    @foreach (var s in Enum.GetValues<AssetStatus>())
+                    {
+                        <option value="@s">@GetStatusLabel(s)</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small mb-1">Seri No / Barkod</label>
+                <input class="form-control form-control-sm" placeholder="Ara..." @bind="searchTerm" @bind:event="oninput" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small mb-1">Personel</label>
+                <select class="form-select form-select-sm" @bind="filterPersonelId">
+                    <option value="">Tümü</option>
+                    @foreach (var p in persons)
+                    {
+                        <option value="@p.Id">@p.Adi @p.Soyadi</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2 d-flex gap-1">
+                <button class="btn btn-sm btn-outline-primary flex-fill" @onclick="ApplyFilters">
+                    <i class="bi bi-funnel"></i> Filtrele
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" @onclick="ClearFilters">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ASSET TABLE -->
+<div class="card shadow-sm">
+    <div class="card-header bg-primary-subtle d-flex justify-content-between align-items-center">
+        <span><strong>@filteredAssets.Count</strong> demirbaş kayıtlı</span>
+        <button class="btn btn-sm btn-outline-secondary" @onclick="LoadAllData">
+            <i class="bi bi-arrow-clockwise"></i> Yenile
+        </button>
+    </div>
+    <div class="card-body p-0">
+        <MaterialAssetTable Assets="filteredAssets"
+                            Materials="materials"
+                            Brands="brands"
+                            Models="models"
+                            Locations="locations"
+                            Persons="persons"
+                            OnDataChanged="LoadAllData" />
+    </div>
+</div>
+
+@code {
+    private List<MaterialAsset> allAssets = new();
+    private List<MaterialAsset> filteredAssets = new();
+    private List<Material> materials = new();
+    private List<Material> assetMaterials = new();
+    private List<MaterialBrand> brands = new();
+    private List<MaterialModel> models = new();
+    private List<Location> locations = new();
+    private List<Personel> persons = new();
+
+    private int? filterMaterialId;
+    private AssetStatus? filterStatus;
+    private int? filterPersonelId;
+    private string searchTerm = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAllData();
+    }
+
+    private async Task LoadAllData()
+    {
+        var t1 = MaterialAssetService.GetAllAsync();
+        var t2 = MaterialService.GetAllAsync();
+        var t3 = MaterialBrandService.GetAllAsync();
+        var t4 = MaterialModelService.GetAllAsync();
+        var t5 = LocationService.GetAllAsync();
+        var t6 = PersonelService.GetCalisanPersonelAsync();
+
+        await Task.WhenAll(t1, t2, t3, t4, t5, t6);
+
+        allAssets = t1.Result;
+        materials = t2.Result;
+        brands = t3.Result;
+        models = t4.Result;
+        locations = t5.Result;
+        persons = t6.Result;
+
+        assetMaterials = materials.Where(m => m.IsAsset).ToList();
+
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        var query = allAssets.AsEnumerable();
+
+        if (filterMaterialId.HasValue)
+            query = query.Where(a => a.MaterialId == filterMaterialId.Value);
+
+        if (filterStatus.HasValue)
+            query = query.Where(a => a.Status == filterStatus.Value);
+
+        if (filterPersonelId.HasValue)
+            query = query.Where(a => a.PersonelId == filterPersonelId.Value);
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var term = searchTerm.Trim();
+            query = query.Where(a =>
+                (a.SerialNumber != null && a.SerialNumber.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
+                (a.Barcode != null && a.Barcode.Contains(term, StringComparison.OrdinalIgnoreCase)));
+        }
+
+        filteredAssets = query.ToList();
+    }
+
+    private void ClearFilters()
+    {
+        filterMaterialId = null;
+        filterStatus = null;
+        filterPersonelId = null;
+        searchTerm = "";
+        ApplyFilters();
+    }
+
+    private string GetStatusLabel(AssetStatus status) => status switch
+    {
+        AssetStatus.Active => "Aktif",
+        AssetStatus.InRepair => "Onarımda",
+        AssetStatus.Retired => "Hurda",
+        AssetStatus.Lost => "Kayıp",
+        _ => status.ToString()
+    };
+}

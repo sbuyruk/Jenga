@@ -7,6 +7,7 @@
 @using Jenga.DataAccess.Services.Common
 @using Jenga.DataAccess.Services.TBYS
 @using Jenga.BlazorUI.Services.Common
+@using Jenga.Utility
 @inject ITasinmazService TasinmazService
 @inject ITasinmazBagisciService TasinmazBagisciService
 @inject IBagisService BagisService
@@ -20,7 +21,7 @@
     <div>
         @if (isLoading)
         {
-            <div class="text-muted">Yükleniyor...</div>
+            <div class="d-flex text-muted justify-content-center">Yükleniyor...</div>
         }
         else if (loadFailed)
         {
@@ -69,8 +70,8 @@
 
             <hr />
 
-            <div class="d-flex flex-wrap gap-3">
-                <div class="w-100 map-summary-block">
+            <div class="d-flex flex-wrap gap-3 justify-content-center">
+                <div class="map-summary-block">
 
                     <div class="map-surface">
                         <h5 class="mb-3 text-center">Türkiye Haritası (İl Bazında Taşınmazlar)</h5>
@@ -83,28 +84,16 @@
 
             <hr />
 
-            <div class="d-flex flex-wrap gap-3">
-                <div class="w-100 year-summary-block">
+            <div class="d-flex flex-wrap gap-3 justify-content-center">
+                <div class="year-summary-block">
                     <div class="year-surface">
                         <div class="year-host">
                             <h5 class="mb-3 text-center">Yıl Bazında Taşınmaz Bağışları</h5>
 
-                            <div class="mb-2 fw-semibold year-filter mx-auto">
-                                <label class="form-label mb-1">Yıl Seçiniz</label>
-                                <select class="form-select form-select-sm"
-                                        @bind="SelectedYear"
-                                        @bind:after="StateHasChanged">
-                                    @foreach (var y in Years)
-                                    {
-                                        <option value="@y">@y</option>
-                                    }
-                                </select>
-                            </div>
-
-                            <YilBazindaTasinmazBagisTable Tasinmazlar="tasinmazlar ?? new List<Tasinmaz>()"
-                                                          Years="Years"
-                                                          SelectedYear="SelectedYear"
-                                                          SelectedYearChanged="OnSelectedYearChanged" />
+                            <TasinmazYearDashboard Tasinmazlar="tasinmazBagislar ?? new List<Tasinmaz>()"
+                                                   Years="Years"
+                                                   SelectedYear="SelectedYear"
+                                                   SelectedYearChanged="OnSelectedYearChanged" />
                         </div>
                     </div>
                 </div>
@@ -116,6 +105,7 @@
                                   Items="bagisYilChartItems"
                                   LabelSelector="@(x => x.Label)"
                                   ValueSelector="@(x => x.Value)"
+                                  TooltipExtraSelector="@(x => $"Tam hisse Adedi={x.TamHisseAdedi}\nHisseli Adedi={x.HisseliAdedi}\nTahmini Rayiç Değeri={x.TahminiRayicDegeri:N0} ₺\nYaklaşık Piyasa Değeri={x.YaklasikPiyasaDegeri:N0} ₺")"
                                   Title="Taşınmaz Bağış Adedi (Son 10 Yıl)"
                                   SeriesName="Bağış Adedi"
                                   Type="GenericChart<YearCountItem>.GenericChartType.Bar"
@@ -143,14 +133,15 @@
                  loading="lazy"
                  data-bs-toggle="tooltip"
                  data-bs-placement="top"
-                 title="Mr. Zekayi ÇALIŞ is currently keeping all Tasinmaz data up to date..."
-" />
+                 title="Burada yayınlanan tüm Taşınmaz verileri Emlak Direktörlüğü tarafından girilmektedir. İrtibat için Zekayi ÇALIŞ, dahili tel: 229" />
         </div>
     </div>
 </div>
 
 @code {
     private List<Tasinmaz>? tasinmazlar;
+    private List<Tasinmaz>? tumTasinmazlar;
+    private List<Tasinmaz>? tasinmazBagislar;
     private List<TasinmazBagisci>? bagiscilar;
     private List<Il>? iller;
     private List<Bolge>? bolgeler;
@@ -179,6 +170,7 @@
         try
         {
             tasinmazlar = await TasinmazService.GetEnvanterdekilerAsync(cancellationToken);
+            tumTasinmazlar = await TasinmazService.GetAllAsync(cancellationToken);
             bagiscilar = await TasinmazBagisciService.GetAllAsync(cancellationToken);
             iller = await IlService.GetAllAsync(cancellationToken);
             bolgeler = await BolgeService.GetAllAsync(cancellationToken);
@@ -236,40 +228,86 @@
     {
         bagisYilChartItems.Clear();
 
-        if (tasinmazlar == null || tasinmazlar.Count == 0)
+        if (tumTasinmazlar == null || tumTasinmazlar.Count == 0)
         {
             return;
         }
 
+        tasinmazBagislar = tumTasinmazlar
+            .Where(t => t is not null && t.BagisYili != null &&
+                t.EnvanterdeMi == 1 ||
+                (
+                    t.EnvanterdeMi == 0 &&
+                    string.Equals(t.EnvanterdenCikmaSebebi?.Trim(), "Satış", StringComparison.OrdinalIgnoreCase)
+                ))
+            .ToList();
+
         var currentYear = DateTime.Now.Year;
         var startYear = currentYear - 9;
 
-        var yearCounts = tasinmazlar
-            .Where(t => t is not null && t.EnvanterdeMi == 1)
-            .Select(t =>
+        var yearSummaries = tasinmazBagislar
+            .Select(t => new
             {
-                if (string.IsNullOrWhiteSpace(t.BagisYili))
-                {
-                    return (int?)null;
-                }
-
-                return int.TryParse(t.BagisYili.Trim(), out var y) ? y : (int?)null;
+                Year = TryParseYear(t.BagisYili),
+                TamHisse = NormalizeTamHisse(t.TamHisse),
+                TahminiRayicDegeri = t.TahminiRayicDegeri ?? 0m,
+                YaklasikPiyasaDegeri = t.YaklasikPiyasaDegeri ?? 0m
             })
-            .Where(y => y.HasValue && y.Value >= startYear && y.Value <= currentYear)
-            .Select(y => y!.Value)
-            .GroupBy(y => y)
-            .ToDictionary(g => g.Key, g => g.Count());
+            .Where(x => x.Year.HasValue && x.Year.Value >= startYear && x.Year.Value <= currentYear)
+            .GroupBy(x => x.Year!.Value)
+            .ToDictionary(
+                g => g.Key,
+                g => new
+                {
+                    Total = g.Count(),
+                    Tam = g.Count(x => string.Equals(x.TamHisse, ProjectConstants.TAM_HISSE, StringComparison.OrdinalIgnoreCase)),
+                    Hisseli = g.Count(x => string.Equals(x.TamHisse, ProjectConstants.HISSELI, StringComparison.OrdinalIgnoreCase)),
+                    TahminiRayicDegeri = g.Sum(x => x.TahminiRayicDegeri),
+                    YaklasikPiyasaDegeri = g.Sum(x => x.YaklasikPiyasaDegeri)
+                });
 
         for (var year = startYear; year <= currentYear; year++)
         {
-            yearCounts.TryGetValue(year, out var count);
+            var total = 0;
+            var tam = 0;
+            var hisseli = 0;
+            var tahminiRayic = 0m;
+            var yaklasikPiyasa = 0m;
+
+            if (yearSummaries.TryGetValue(year, out var summary))
+            {
+                total = summary.Total;
+                tam = summary.Tam;
+                hisseli = summary.Hisseli;
+                tahminiRayic = summary.TahminiRayicDegeri;
+                yaklasikPiyasa = summary.YaklasikPiyasaDegeri;
+            }
 
             bagisYilChartItems.Add(new YearCountItem
             {
                 Label = year.ToString(),
-                Value = count
+                Value = total,
+                TamHisseAdedi = tam,
+                HisseliAdedi = hisseli,
+                TahminiRayicDegeri = tahminiRayic,
+                YaklasikPiyasaDegeri = yaklasikPiyasa
             });
         }
+    }
+
+    private static int? TryParseYear(string? yearText)
+    {
+        if (string.IsNullOrWhiteSpace(yearText))
+        {
+            return null;
+        }
+
+        return int.TryParse(yearText.Trim(), out var year) ? year : null;
+    }
+
+    private static string NormalizeTamHisse(string? tamHisse)
+    {
+        return string.IsNullOrWhiteSpace(tamHisse) ? string.Empty : tamHisse.Trim();
     }
 
     private Task OnSelectedYearChanged(int year)
@@ -321,6 +359,10 @@
     {
         public string Label { get; set; } = "";
         public decimal Value { get; set; }
+        public int TamHisseAdedi { get; set; }
+        public int HisseliAdedi { get; set; }
+        public decimal TahminiRayicDegeri { get; set; }
+        public decimal YaklasikPiyasaDegeri { get; set; }
     }
 
     private static readonly string[] _piePalette =

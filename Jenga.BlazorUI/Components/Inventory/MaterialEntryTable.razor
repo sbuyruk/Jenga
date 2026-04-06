@@ -131,7 +131,8 @@ else
                             Persons="@Personels"
                             MaterialUnits="@MaterialUnits"
                             Brands="@Brands"
-                            Models="@Models" />
+                            Models="@Models"
+                            Categories="@Categories" />
 }
 
 @code {
@@ -143,6 +144,7 @@ else
     [Parameter] public List<Location> Locations { get; set; } = new();
     [Parameter] public List<MaterialBrand> Brands { get; set; } = new();
     [Parameter] public List<MaterialModel> Models { get; set; } = new();
+    [Parameter] public List<MaterialCategory> Categories { get; set; } = new();
     [Parameter] public List<Personel> Personels { get; set; } = new();
     [Parameter] public EventCallback OnRefresh { get; set; }
 

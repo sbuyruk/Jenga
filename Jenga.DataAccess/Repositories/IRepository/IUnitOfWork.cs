@@ -3,7 +3,6 @@ using Jenga.DataAccess.Repositories.IRepository.IKYS;
 using Jenga.DataAccess.Repositories.IRepository.Inventory;
 using Jenga.DataAccess.Repositories.IRepository.NBYS;
 using Jenga.DataAccess.Repositories.IRepository.TBYS;
-using Jenga.DataAccess.Services.TBYS;
 
 namespace Jenga.DataAccess.Repositories.IRepository
 {
@@ -22,6 +21,8 @@ namespace Jenga.DataAccess.Repositories.IRepository
         IMaterialAssignmentRepository MaterialAssignment { get; }
         IMaterialExitRepository MaterialExit { get; }
         IMaterialTransferRepository MaterialTransfer { get; }
+        IMaterialAssetRepository MaterialAsset { get; }
+        IMaterialAssetLogRepository MaterialAssetLog { get; }
         // Common
         IMenuItemRepository MenuItem { get; }
         IRoleRepository Role { get; }
@@ -44,7 +45,7 @@ namespace Jenga.DataAccess.Repositories.IRepository
         ISozlesmeTasinmazRepository SozlesmeTasinmaz { get; }
         IOdemePlaniRepository OdemePlani { get; }
         IOdemeRepository Odeme { get; }
-
+        IYasalFaizRepository YasalFaiz { get; }
         //NBYS
         INakitBagisciRepository NakitBagisci { get; }
         INakitBagisHareketRepository NakitBagisHareket { get; }
