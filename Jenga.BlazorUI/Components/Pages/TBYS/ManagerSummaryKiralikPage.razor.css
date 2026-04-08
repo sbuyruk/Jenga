@@ -1,44 +1,89 @@
-﻿.manager-summary-content .d-flex.flex-wrap {
+﻿.manager-summary-content .row.g-3 {
     gap: 16px;
 }
 
-.manager-summary-content .d-flex.flex-wrap > div {
+/* Ensure columns don't force charts to overflow unexpectedly */
+.manager-summary-content .kira-chart-col {
     min-width: 0;
     flex-shrink: 1;
 }
 
-/* Üst satır chart: masaüstünde 630px, mobilde tam genişlik — scroll ile */
-.kira-chart-wrapper {
-    max-width: 100%;
-}
-
-/* Alt satır chart: tam genişlik — taşarsa scroll */
-.kira-chart-wide-wrapper {
+/* top-row card containers — restored visual style for small cards */
+.component-wide-container {
     width: 100%;
-    display: flex;
+    max-width: 800px;
+    height: 360px;
+    box-sizing: border-box;
+    align-content: center;
+    border-radius: 0.5rem;
+    background-color: var(--surface);
+    background-image: radial-gradient(rgba(180,190,210,0.4) 1px, transparent 1px), radial-gradient(rgba(180,190,210,0.4) 1px, transparent 1px);
+    background-size: 22px 22px;
+    background-position: 0 0, 12px 12px;
+}
+
+/* center and limit bottom image */
+.manager-summary-content img[alt="Zekayi"] {
+    display: block;
+    margin: 18px auto 36px;
+    max-width: 220px;
+    height: auto;
+    border-radius: 6px;
+}
+
+/* top-row card containers — restored visual style for small cards */
+.component-container {
+    width: 100%;
+    max-width: 600px;
+    height: 360px;
+    box-sizing: border-box;
+    align-content: center;
+    border-radius: 0.5rem;
+    background-color: var(--surface);
+    background-image:
+        radial-gradient(rgba(180,190,210,0.4) 1px, transparent 1px),
+        radial-gradient(rgba(180,190,210,0.4) 1px, transparent 1px);
+    background-size: 22px 22px;
+    background-position: 0 0, 12px 12px;
+}
+
+/* shared small layout */
+.summary-top-row {
     justify-content: center;
+    align-items: center;
+    gap: 1.5rem;
 }
 
-/* Chart kolonları: taşarsa yatay scroll — chart boyutunu bozmadan */
-.kira-chart-wrapper,
-.kira-chart-wide-wrapper {
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
+.summary-top-row > div {
+    flex: 0 0 auto;
 }
 
-.chart-scroll-wrapper {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    max-width: 100%;
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .component-container {
+        max-width: 100%;
+        height: 350px;
+    }
+
+    .summary-top-row {
+        gap: 1rem;
+    }
+
+    .component-wide-inner {
+        max-width: 100%;
+        padding: 0;
+    }
+
+}
+
+@media (max-width: 480px) {
+    .component-container {
+        height: 300px;
+    }
 }
 
 @media (max-width: 767.98px) {
-    .manager-summary-content .d-flex.flex-wrap {
-        flex-direction: column;
-    }
-
-    .manager-summary-content .d-flex.flex-wrap > div {
+    .manager-summary-content .kira-chart-col {
         width: 100%;
     }
 }

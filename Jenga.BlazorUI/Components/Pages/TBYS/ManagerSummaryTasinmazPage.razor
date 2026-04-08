@@ -34,15 +34,15 @@
                     <h5 class="mb-3 text-center">Taşınmaz ve Bağışçı Bilgileri</h5>
                 </div>
 
-                <div class="d-flex flex-wrap gap-5 justify-content-center summary-top-row">
+                <div class="d-flex flex-wrap summary-top-row">
                     <div>
                         <TasinmazCard Tasinmazlar="@tasinmazlar"
-                                     Iller="@iller"
-                                     Bolgeler="@bolgeler"
-                                     Height="360px" />
+                                      Iller="@iller"
+                                      Bolgeler="@bolgeler"
+                                      Height="360px" />
                     </div>
 
-                    <div>
+                    <div class="component-container component-container--pie">
                         <GenericChart TItem="PieItem"
                                       Items="kullanimChartItems"
                                       LabelSelector="@(p => p.Label)"
@@ -50,8 +50,8 @@
                                       Title="Taşınmaz Cinsleri"
                                       SeriesName="Cins"
                                       Type="GenericChart<PieItem>.GenericChartType.Pie"
-                                      Height="360px"
-                                      Width="430px"
+                                      Height="100%"
+                                      Width="100%"
                                       ShowLegend="false"
                                       ShowDataLabels="true"
                                       ColorPalette="@_piePalette"
@@ -74,7 +74,7 @@
                 <div class="map-summary-block">
 
                     <div class="map-surface">
-                        <h5 class="mb-3 text-center">Türkiye Haritası (İl Bazında Taşınmazlar)</h5>
+                        <h5 class="mb-3 text-center">Taşınmaz Haritası </h5>
                         <div class="map-host">
                             <TurkeyMap OnProvinceClick="OnProvinceClickAsync" />
                         </div>
@@ -99,25 +99,27 @@
                 </div>
             </div>
             <hr />
-            <div class="d-flex flex-wrap gap-3 justify-content-center">
-                <div>
-                    <GenericChart TItem="YearCountItem"
-                                  Items="bagisYilChartItems"
-                                  LabelSelector="@(x => x.Label)"
-                                  ValueSelector="@(x => x.Value)"
-                                  TooltipExtraSelector="@(x => $"Tam hisse Adedi={x.TamHisseAdedi}\nHisseli Adedi={x.HisseliAdedi}\nTahmini Rayiç Değeri={x.TahminiRayicDegeri:N0} ₺\nYaklaşık Piyasa Değeri={x.YaklasikPiyasaDegeri:N0} ₺")"
-                                  Title="Taşınmaz Bağış Adedi (Son 10 Yıl)"
-                                  SeriesName="Bağış Adedi"
-                                  Type="GenericChart<YearCountItem>.GenericChartType.Bar"
-                                  Height="460px"
-                                  Width="975px"
-                                  ShowLegend="false"
-                                  ShowDataLabels="true"
-                                  ColorPalette="@_barPalette"
-                                  XAxisLabelRotateDegrees="-45"
-                                  XAxisLabelsAlwaysRotate="true"
-                                  XAxisHideOverlappingLabels="true"
-                                  GridPaddingBottom="40" />
+            <div class="page-container">
+                <div class="content-wrapper">
+                    <div class="component-container">
+                        <GenericChart TItem="YearCountItem"
+                                      Items="bagisYilChartItems"
+                                      LabelSelector="@(x => x.Label)"
+                                      ValueSelector="@(x => x.Value)"
+                                      TooltipExtraSelector="@(x => $"Tam hisse Adedi={x.TamHisseAdedi}\nHisseli Adedi={x.HisseliAdedi}\nTahmini Rayiç Değeri={x.TahminiRayicDegeri:N0} ₺\nYaklaşık Piyasa Değeri={x.YaklasikPiyasaDegeri:N0} ₺")"
+                                      Title="Taşınmaz Bağış Adedi (Son 10 Yıl)"
+                                      SeriesName="Bağış Adedi"
+                                      Type="GenericChart<YearCountItem>.GenericChartType.Bar"
+                                      ShowLegend="false"
+                                      ShowDataLabels="true"
+                                      ColorPalette="@_barPalette"
+                                      XAxisLabelRotateDegrees="-45"
+                                      XAxisLabelsAlwaysRotate="true"
+                                      XAxisHideOverlappingLabels="true"
+                                      GridPaddingBottom="40"
+                                      Width="100%"
+                                      Height="100%" />
+                    </div>
                 </div>
             </div>
 
@@ -133,6 +135,7 @@
                  loading="lazy"
                  data-bs-toggle="tooltip"
                  data-bs-placement="top"
+                 border-radius="0.5rem"
                  title="Burada yayınlanan tüm Taşınmaz verileri Emlak Direktörlüğü tarafından girilmektedir. İrtibat için Zekayi ÇALIŞ, dahili tel: 229" />
         </div>
     </div>

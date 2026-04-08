@@ -2,6 +2,7 @@
 @using System.Globalization
 @using ApexCharts
 
+
 <div class="generic-chart" style="@ChartStyle">
     @if (!HasRenderableData)
     {
@@ -9,48 +10,47 @@
     }
     else
     {
-        <div class="generic-chart-inner">
-            @if (!string.IsNullOrWhiteSpace(Title))
-            {
-                <div class="generic-chart-title">@Title</div>
-            }
+        @if (!string.IsNullOrWhiteSpace(Title))
+        {
+            <div class="generic-chart-title">@Title</div>
+        }
 
-            <div class="generic-chart-stage">
-                <ApexChart TItem="ChartPoint"
-                           @key="_renderKey"
-                           @ref="_chart"
-                           Options="@_options">
-                    @if (_seriesPoints.Count > 0 && IsXYChart(Type))
-                    {
-                        foreach (var s in _seriesPoints)
-                        {
-                            <ApexPointSeries TItem="ChartPoint"
-                                             Items="@s.Points"
-                                             Name="@s.Name"
-                                             XValue="p => p.Label"
-                                             YValue="p => p.Value"
-                                             ShowDataLabels="ShowDataLabels"
-                                             SeriesType="@GetSeriesType(Type)" />
-                        }
-                    }
-                    else
+        <div class="generic-chart-stage">
+            <ApexChart TItem="ChartPoint"
+                       @ref="_chart"
+                       Options="@_options">
+
+                @if (_seriesPoints.Count > 0 && IsXYChart(Type))
+                {
+                    foreach (var s in _seriesPoints)
                     {
                         <ApexPointSeries TItem="ChartPoint"
-                                         Items="@_points"
-                                         Name="@SeriesName"
+                                         Items="@s.Points"
+                                         Name="@s.Name"
                                          XValue="p => p.Label"
                                          YValue="p => p.Value"
                                          ShowDataLabels="ShowDataLabels"
                                          SeriesType="@GetSeriesType(Type)" />
                     }
-                </ApexChart>
-            </div>
+                }
+                else
+                {
+                    <ApexPointSeries TItem="ChartPoint"
+                                     Items="@_points"
+                                     Name="@SeriesName"
+                                     XValue="p => p.Label"
+                                     YValue="p => p.Value"
+                                     ShowDataLabels="ShowDataLabels"
+                                     SeriesType="@GetSeriesType(Type)" />
+                }
+
+            </ApexChart>
         </div>
     }
 </div>
 
-@code
-{
+@code {
+
     public enum GenericChartType
     {
         Bar,
@@ -71,7 +71,7 @@
     private readonly List<string> _xCategories = new();
     private readonly List<string> _tooltipExtras = new();
 
-    private long _renderKey;
+    private bool _initialized;
 
     [Parameter] public IEnumerable<TItem>? Items { get; set; }
     [Parameter] public IReadOnlyList<GenericSeries>? Series { get; set; }
@@ -113,19 +113,19 @@
         Type == GenericChartType.Bar &&
         BarDataLabelsOnTop;
 
+    private bool IsFluid => IsPercentage(Width) || IsPercentage(Height);
+
     private string? ChartStyle
     {
         get
         {
             var parts = new List<string>();
 
+            if (!string.IsNullOrWhiteSpace(Width))
+                parts.Add($"width: {Width};");
+
             if (!string.IsNullOrWhiteSpace(Height))
                 parts.Add($"height: {Height};");
-
-            if (IsPercentage(Width))
-                parts.Add($"width: {Width};");
-            else if (!string.IsNullOrWhiteSpace(Width))
-                parts.Add($"max-width: {Width}; width: 100%;");
 
             return parts.Count > 0 ? string.Join(" ", parts) : null;
         }
@@ -136,18 +136,23 @@
         BuildSeriesPoints();
         BuildPoints();
         BuildOptions();
-        _renderKey++;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!firstRender && AutoUpdate && _chart is not null)
+        if (firstRender)
+        {
+            _initialized = true;
+            return;
+        }
+
+        if (_initialized && AutoUpdate && _chart is not null)
         {
             try
             {
                 await _chart.UpdateSeriesAsync(true);
             }
-            catch
+            catch (ObjectDisposedException)
             {
             }
         }
@@ -204,7 +209,7 @@
                     if (!labelOrder.ContainsKey(label))
                     {
                         labelOrder[label] = order++;
-                      }
+                    }
                 }
             }
 
@@ -246,8 +251,7 @@
         var jsNumberFormatter =
             "function (val) { try { return (val ?? 0).toLocaleString(); } catch(e) { return val; } }";
 
-        var jsYAxisFormatter =
-            "function (val) { try { return (val ?? 0).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); } catch(e) { return val; } }";
+        var jsYAxisFormatter = BuildJsYAxisFormatter();
 
         var jsTooltipCustom = BuildTooltipCustomJs();
 
@@ -266,6 +270,7 @@
 
         var hasMultiSeriesXY = _seriesPoints.Count > 0 && IsXYChart(Type);
         var chartWidthPx = IsPercentage(Width) ? null : TryParsePxToInt(Width);
+        var chartHeightPx = IsPercentage(Height) ? null : TryParsePxToInt(Height);
 
         _options = new ApexChartOptions<ChartPoint>
         {
@@ -273,8 +278,8 @@
             {
                 Toolbar = new Toolbar { Show = false },
                 Animations = new Animations { Enabled = true },
-                Height = TryParsePxToInt(Height),
-                Width = IsPercentage(Width) ? null : chartWidthPx
+                Height = IsFluid ? "100%" : (object?)chartHeightPx,
+                Width = IsFluid ? "100%" : (object?)chartWidthPx
             },
             Colors = palette.ToList(),
             DataLabels = new DataLabels
@@ -332,11 +337,25 @@
                     Bottom = GridPaddingBottom
                 }
             },
-            Responsive = BuildResponsiveBreakpoints(chartWidthPx)
+            Responsive = IsFluid ? null : BuildResponsiveBreakpoints(chartWidthPx)
         };
     }
 
-    // Verilen genişlik px değerine göre küçük ekran breakpoint'leri üretir
+    private static string BuildJsYAxisFormatter()
+    {
+        return "function (val) {"
+               + "try {"
+               + "  var v = val ?? 0;"
+               + "  var abs = Math.abs(v);"
+               + "  var sign = v < 0 ? '-' : '';"
+               + "  if (abs >= 1e9) return sign + (Math.abs(v) / 1e9).toLocaleString('tr-TR', { maximumFractionDigits: 1 }) + 'B';"
+               + "  if (abs >= 1e6) return sign + (Math.abs(v) / 1e6).toLocaleString('tr-TR', { maximumFractionDigits: 1 }) + 'M';"
+               + "  if (abs >= 1e3) return sign + (Math.abs(v) / 1e3).toLocaleString('tr-TR', { maximumFractionDigits: 1 }) + 'K';"
+               + "  return v.toLocaleString('tr-TR', { maximumFractionDigits: 2 });"
+               + "} catch(e) { return val; }"
+               + "}";
+    }
+
     private static List<Responsive<ChartPoint>>? BuildResponsiveBreakpoints(int? chartWidthPx)
     {
         if (chartWidthPx is null or <= 0)

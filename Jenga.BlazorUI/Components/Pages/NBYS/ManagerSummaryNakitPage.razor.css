@@ -8,7 +8,7 @@ body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: #f5f7fa;
     min-height: 100vh;
-    padding: 20px;
+    padding: 8px;
 }
 
 .page-container {
@@ -47,12 +47,24 @@ body {
     overflow-y: auto;
     padding-right: 10px;
     order: 1;
+    display: flex; /* 🔴 EKLE */
+    flex-direction: column; /* 🔴 EKLE */
+    align-items: center; /* 🔴 EKLE (ORTALAR) */
 }
-
 .manager-section {
     scroll-margin-top: 12px;
 }
-
+.ticker-wrapper,
+.monthly-cards-container {
+    width: 100%;
+    max-width: 1200px;
+}
+.manager-summary-content {
+    width: 100%;
+    max-width: 1200px; /* 🔴 içerik genişlik limiti */
+    margin: 0 auto; /* 🔴 ortalama */
+    box-sizing: border-box;
+}
 /* Kayan Banner */
 .ticker-wrapper {
     background: #ff6b6b;
@@ -62,7 +74,6 @@ body {
     overflow: hidden;
     box-shadow: 0 4px 15px rgba(0,0,0,0.2);
     margin-bottom: 20px;
-    width: 1200px;
 }
 
 .ticker {
@@ -155,10 +166,6 @@ body {
     border: 0;
 }
 
-.monthly-cards-container {
-    width: 1200px;
-}
-
 .turkey-map-panel {
     background:
         radial-gradient(1100px 380px at 10% 10%, rgba(37, 99, 235, 0.16), transparent 62%),
@@ -176,7 +183,7 @@ body {
 
 .map-host {
     width: 100%;
-    max-width: 980px;
+    max-width: 100%;
     margin: 0 auto;
 }
 
@@ -199,3 +206,33 @@ body {
     display: block;
     margin: 0 auto;
 }
+@media (max-width: 991.98px) {
+
+    .manager-scrollspy-layout {
+        display: block;
+    }
+
+    .manager-scrollspy-nav {
+        display: none;
+    }
+}
+.chart-wrapper {
+    width: 100%;
+    display: flex;
+    justify-content: center; /* 🔴 ortalar */
+    align-items: stretch;
+}
+
+    .chart-wrapper > * {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+    }
+.manager-summary-content .d-flex.flex-wrap {
+    justify-content: center; /* 🔴 ortalama */
+}
+
+    .manager-summary-content .d-flex.flex-wrap > div {
+        flex: 1 1 500px; /* 🔴 dengeli kolon */
+        max-width: 100%;
+    }

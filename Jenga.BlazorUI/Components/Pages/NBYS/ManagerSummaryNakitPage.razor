@@ -122,33 +122,35 @@
 
                     <hr class="section-separator" />
                     <section id="gunluk" class="manager-section d-flex flex-wrap gap-3">
-                        <GenericChart TItem="DayAmount"
-                                      Series="bagislarBuAyGunlukSeries"
-                                      LabelSelector="@(x => x.Label)"
-                                      ValueSelector="@(x => x.Amount)"
-                                      Title="Günlük Nakit Bağış Gelirleri (Bu Ay)"
-                                      Type="GenericChart<DayAmount>.GenericChartType.Bar"
-                                      ShowDataLabels="false"
-                                      ShowLegend="false"
-                                      Height="300px"
-                                      Width="590px"
-                                      GridPaddingBottom="40"
-                                      ColorPalette="@_nbysPalette2"
-                                      LockToMonthCategories="false" />
+                        <div style="flex: 0 0 48%; max-width: 48%;">
+                            <GenericChart TItem="DayAmount"
+                                          Series="bagislarBuAyGunlukSeries"
+                                          LabelSelector="@(x => x.Label)"
+                                          ValueSelector="@(x => x.Amount)"
+                                          Title="Günlük Nakit Bağış Gelirleri (Bu Ay)"
+                                          Type="GenericChart<DayAmount>.GenericChartType.Bar"
+                                          ShowDataLabels="false"
+                                          ShowLegend="false"
+                                          GridPaddingBottom="40"
+                                          ColorPalette="@_nbysPalette2"
+                                          LockToMonthCategories="false"
+                                          Width="600px" />
+                        </div>
 
-                        <GenericChart TItem="DayCount"
-                                      Series="bagiscilarBuAyGunlukSeries"
-                                      LabelSelector="@(x => x.Label)"
-                                      ValueSelector="@(x => x.Count)"
-                                      Title="Günlük Tekil Bağışçı Sayısı (Bu Ay)"
-                                      Type="GenericChart<DayCount>.GenericChartType.Bar"
-                                      ShowDataLabels="false"
-                                      ShowLegend="false"
-                                      Height="300px"
-                                      Width="590px"
-                                      GridPaddingBottom="40"
-                                      ColorPalette="@_nbysPalette3"
-                                      LockToMonthCategories="false" />
+                        <div style="flex: 0 0 48%; max-width: 48%;">
+                            <GenericChart TItem="DayCount"
+                                          Series="bagiscilarBuAyGunlukSeries"
+                                          LabelSelector="@(x => x.Label)"
+                                          ValueSelector="@(x => x.Count)"
+                                          Title="Günlük Tekil Bağışçı Sayısı (Bu Ay)"
+                                          Type="GenericChart<DayCount>.GenericChartType.Bar"
+                                          ShowDataLabels="false"
+                                          ShowLegend="false"
+                                          GridPaddingBottom="40"
+                                          ColorPalette="@_nbysPalette3"
+                                          LockToMonthCategories="false"
+                                          Width="600px" />
+                        </div>
                     </section>
                     <hr class="section-separator" />
 
@@ -299,11 +301,10 @@
                                       Type="GenericChart<MonthAmount>.GenericChartType.Bar"
                                       ShowDataLabels="false"
                                       ShowLegend="false"
-                                      Height="460px"
-                                      Width="1200px"
                                       GridPaddingBottom="40"
                                       ColorPalette="@_nbysPalette3"
-                                      LockToMonthCategories="true" />
+                                      LockToMonthCategories="true" 
+                                      Width="800px"/>
                     </section>
 
                     <hr class="section-separator" />
@@ -317,13 +318,12 @@
                                       Type="GenericChart<YearAmount>.GenericChartType.Bar"
                                       ShowDataLabels="false"
                                       ShowLegend="false"
-                                      Height="400px"
-                                      Width="590px"
                                       GridPaddingBottom="40"
                                       ColorPalette="@_nbysPalette3"
                                       LockToMonthCategories="false"
                                       XAxisLabelRotateDegrees="0"
-                                      XAxisLabelsAlwaysRotate="false" />
+                                      XAxisLabelsAlwaysRotate="false" 
+                                      Width="600px"/>
 
                         <GenericChart TItem="YearCount"
                                       Series="bagiscilarSon10YilYillikTekilSeries"
@@ -333,13 +333,12 @@
                                       Type="GenericChart<YearCount>.GenericChartType.Bar"
                                       ShowDataLabels="true"
                                       ShowLegend="false"
-                                      Height="400px"
-                                      Width="590px"
                                       GridPaddingBottom="40"
                                       ColorPalette="@_nbysPalette4"
                                       LockToMonthCategories="false"
                                       XAxisLabelRotateDegrees="0"
-                                      XAxisLabelsAlwaysRotate="false" />
+                                      XAxisLabelsAlwaysRotate="false"
+                                      Width="600px" />
                     </section>
 
 

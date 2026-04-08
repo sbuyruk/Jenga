@@ -7,135 +7,144 @@
 <div class="tasinmaz-year-dashboard container-fluid px-0">
     @if (ShowYearSelector)
     {
-        <div class="d-flex justify-content-center mb-3">
-            <div class="year-filter text-center">
-                <label class="form-label mb-1">Yıl Seçiniz</label>
-                <select class="form-select form-select-sm"
-                        @bind="SelectedYear">
-                    @foreach (var y in Years)
-                    {
-                        <option value="@y">@y</option>
-                    }
-                </select>
-            </div>
+        <div class="year-selector mb-3">
+            <span class="year-selector-label"><i class="bi bi-calendar3"></i> Yıl</span>
+            @foreach (var y in Years)
+            {
+                <button type="button"
+                        class="year-pill @(y == SelectedYear ? "active" : "")"
+                        @onclick="() => SelectedYear = y">
+                    @y
+                </button>
+            }
         </div>
     }
 
     <div class="row gx-2 gy-2 mb-3">
-        <div class="col-6 col-md-3">
-            <div class="card stat-card h-100">
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="card stat-card stat-accent-indigo h-100">
                 <div class="card-body p-2 text-center">
-                    <div class="text-muted small">Toplam Bağış Adedi</div>
-                    <div class="fw-bold fs-5">@TotalCount</div>
+                    <div class="stat-icon"><i class="bi bi-gift"></i></div>
+                    <div class="stat-label">Toplam Bağış</div>
+                    <div class="stat-value">@TotalCount</div>
                 </div>
             </div>
         </div>
 
-        <div class="col-6 col-md-3">
-            <div class="card stat-card h-100">
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="card stat-card stat-accent-blue h-100">
                 <div class="card-body p-2">
-                    <div class="tm-cm-pair d-flex align-items-center justify-content-center">
+                    <div class="tm-cm-pair">
                         <div class="split text-center">
-                            <div class="text-muted small">Tam Hisse Adedi</div>
-                            <div class="fw-bold fs-5">@TamCount</div>
+                            <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
+                            <div class="stat-label">Tam Hisse</div>
+                            <div class="stat-value">@TamCount</div>
                         </div>
-
                         <div class="split text-center">
-                            <div class="text-muted small">Hisseli Adedi</div>
-                            <div class="fw-bold fs-5">@HisseliCount</div>
+                            <div class="stat-icon"><i class="bi bi-pie-chart"></i></div>
+                            <div class="stat-label">Hisseli</div>
+                            <div class="stat-value">@HisseliCount</div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- NEW: Tam Mülkiyet (TM) -->
-        <div class="col-6 col-md-3">
-            <div class="card stat-card h-100">
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="card stat-card stat-accent-teal h-100">
                 <div class="card-body p-2">
-                    <div class="tm-cm-pair d-flex align-items-center justify-content-center">
+                    <div class="tm-cm-pair">
                         <div class="split text-center">
-                            <div class="text-muted small">Tam Mülkiyet (TM)</div>
-                            <div class="fw-bold fs-5">@TamMulkiyetCount</div>
+                            <div class="stat-icon"><i class="bi bi-key"></i></div>
+                            <div class="stat-label">Tam Mülkiyet</div>
+                            <div class="stat-value">@TamMulkiyetCount</div>
                         </div>
-
                         <div class="split text-center">
-                            <div class="text-muted small">Çıplak Mülkiyet (ÇM)</div>
-                            <div class="fw-bold fs-5">@CiplakMulkiyetCount</div>
+                            <div class="stat-icon"><i class="bi bi-unlock"></i></div>
+                            <div class="stat-label">Çıplak Mülk.</div>
+                            <div class="stat-value">@CiplakMulkiyetCount</div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-6 col-md-3">
-            <div class="card stat-card h-100">
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="card stat-card stat-accent-amber h-100">
                 <div class="card-body p-2 text-center">
-                    <div class="text-muted small">Bina Adedi</div>
-                    <div class="fw-bold fs-5">@BinaCount</div>
+                    <div class="stat-icon"><i class="bi bi-building"></i></div>
+                    <div class="stat-label">Bina</div>
+                    <div class="stat-value">@BinaCount</div>
                 </div>
             </div>
         </div>
 
-        <div class="col-6 col-md-3">
-            <div class="card stat-card h-100">
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="card stat-card stat-accent-rose h-100">
                 <div class="card-body p-2 text-center">
-                    <div class="text-muted small">Mesken Adedi</div>
-                    <div class="fw-bold fs-5">@MeskenCount</div>
+                    <div class="stat-icon"><i class="bi bi-house-door"></i></div>
+                    <div class="stat-label">Mesken</div>
+                    <div class="stat-value">@MeskenCount</div>
                 </div>
             </div>
         </div>
 
-        <div class="col-6 col-md-3">
-            <div class="card stat-card h-100">
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="card stat-card stat-accent-purple h-100">
                 <div class="card-body p-2 text-center">
-                    <div class="text-muted small">İşyeri Adedi</div>
-                    <div class="fw-bold fs-5">@IsyeriCount</div>
+                    <div class="stat-icon"><i class="bi bi-shop"></i></div>
+                    <div class="stat-label">İşyeri</div>
+                    <div class="stat-value">@IsyeriCount</div>
                 </div>
             </div>
         </div>
 
-        <div class="col-6 col-md-3">
-            <div class="card stat-card h-100">
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="card stat-card stat-accent-green h-100">
                 <div class="card-body p-2 text-center">
-                    <div class="text-muted small">Arsa Adedi</div>
-                    <div class="fw-bold fs-5">@ArsaCount</div>
+                    <div class="stat-icon"><i class="bi bi-map"></i></div>
+                    <div class="stat-label">Arsa</div>
+                    <div class="stat-value">@ArsaCount</div>
                 </div>
             </div>
         </div>
 
-        <div class="col-6 col-md-3">
-            <div class="card stat-card h-100">
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="card stat-card stat-accent-lime h-100">
                 <div class="card-body p-2 text-center">
-                    <div class="text-muted small">Tarla Adedi</div>
-                    <div class="fw-bold fs-5">@TarlaCount</div>
+                    <div class="stat-icon"><i class="bi bi-tree"></i></div>
+                    <div class="stat-label">Tarla</div>
+                    <div class="stat-value">@TarlaCount</div>
                 </div>
             </div>
         </div>
 
-        <div class="col-6 col-md-3">
-            <div class="card stat-card h-100">
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="card stat-card stat-accent-cyan h-100">
                 <div class="card-body p-2 text-center">
-                    <div class="text-muted small">Tahmini Rayiç (TL)</div>
-                    <div class="fw-bold fs-6">@TahminiRayicDegeri.ToString("N0", CultureInfo.CurrentCulture) ₺</div>
+                    <div class="stat-icon"><i class="bi bi-cash-stack"></i></div>
+                    <div class="stat-label">Tahmini Rayiç</div>
+                    <div class="stat-value stat-value-money">@TahminiRayicDegeri.ToString("N0", CultureInfo.CurrentCulture) ₺</div>
                 </div>
             </div>
         </div>
 
-        <div class="col-6 col-md-3">
-            <div class="card stat-card h-100">
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="card stat-card stat-accent-sky h-100">
                 <div class="card-body p-2 text-center">
-                    <div class="text-muted small">Emlak Beyan Değeri (TL)</div>
-                    <div class="fw-bold fs-6">@EmlakBeyanDegeri.ToString("N0", CultureInfo.CurrentCulture) ₺</div>
+                    <div class="stat-icon"><i class="bi bi-receipt"></i></div>
+                    <div class="stat-label">Emlak Beyan</div>
+                    <div class="stat-value stat-value-money">@EmlakBeyanDegeri.ToString("N0", CultureInfo.CurrentCulture) ₺</div>
                 </div>
             </div>
         </div>
 
-        <div class="col-6 col-md-3">
-            <div class="card stat-card h-100">
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="card stat-card stat-accent-orange h-100">
                 <div class="card-body p-2 text-center">
-                    <div class="text-muted small">Yaklaşık Piyasa (TL)</div>
-                    <div class="fw-bold fs-6">@YaklasikPiyasaDegeri.ToString("N0", CultureInfo.CurrentCulture) ₺</div>
+                    <div class="stat-icon"><i class="bi bi-graph-up-arrow"></i></div>
+                    <div class="stat-label">Yaklaşık Piyasa</div>
+                    <div class="stat-value stat-value-money">@YaklasikPiyasaDegeri.ToString("N0", CultureInfo.CurrentCulture) ₺</div>
                 </div>
             </div>
         </div>
@@ -144,7 +153,7 @@
     <div class="mb-3">
         <div class="card shadow-sm">
             <div class="card-body p-2">
-                <h6 class="card-title mb-2">Bölge / İl Özeti</h6>
+                <h6 class="card-title mb-2">İl Özeti</h6>
 
                 <div class="table-responsive" style="max-height:360px; overflow:auto;">
                     <table class="table table-sm table-hover mb-0">
@@ -195,27 +204,37 @@
         </div>
     </div>
 
-    <div class="accordion" id="topAccordion">
-        <div class="accordion-item">
-            <h2 class="accordion-header" id="headingTop">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTop" aria-expanded="false" aria-controls="collapseTop">
-                    Yıl Detayları — En Çok Kayıtlı İller
-                </button>
-            </h2>
-            <div id="collapseTop" class="accordion-collapse collapse" aria-labelledby="headingTop" data-bs-parent="#topAccordion">
-                <div class="accordion-body p-2">
-                    <ul class="list-group list-group-flush">
-                        @foreach (var t in topIlList)
-                        {
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                <div>@t.IlAdi</div>
-                                <div class="badge bg-primary rounded-pill">@t.Count</div>
-                            </li>
-                        }
-                    </ul>
-                </div>
-            </div>
+    <div class="card shadow-sm">
+        <div class="card-header p-2 d-flex align-items-center"
+             style="cursor:pointer"
+             @onclick="() => isTopIlOpen = !isTopIlOpen">
+            <span class="me-2">
+                @if (isTopIlOpen)
+                {
+                    <i class="bi bi-chevron-down" aria-hidden="true"></i>
+                }
+                else
+                {
+                    <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                }
+            </span>
+            <span class="fw-semibold">En Çok Taşınmaz Bağışı Alınan İller</span>
         </div>
+
+        @if (isTopIlOpen)
+        {
+            <div class="card-body p-2">
+                <ul class="list-group list-group-flush">
+                    @foreach (var t in topIlList)
+                    {
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>@t.IlAdi</div>
+                            <div class="badge bg-primary rounded-pill">@t.Count</div>
+                        </li>
+                    }
+                </ul>
+            </div>
+        }
     </div>
 </div>
 
@@ -251,7 +270,6 @@
     private int TamCount { get; set; }
     private int HisseliCount { get; set; }
 
-    // New: type counts
     private int BinaCount { get; set; }
     private int MeskenCount { get; set; }
     private int IsyeriCount { get; set; }
@@ -268,6 +286,8 @@
     private List<(string IlAdi, int Count)> topIlList = new();
     private Dictionary<string, IlSummary> groupedByIl = new();
 
+    private bool isTopIlOpen = false;
+
     protected override void OnParametersSet()
     {
         ComputeSummary();
@@ -281,21 +301,18 @@
 
         TotalCount = filtered.Count;
 
-        // Tam / Hisseli using constants
         TamCount = filtered.Count(t =>
             string.Equals((t.TamHisse ?? string.Empty).Trim(), ProjectConstants.TAM_HISSE, StringComparison.OrdinalIgnoreCase));
 
         HisseliCount = filtered.Count(t =>
             string.Equals((t.TamHisse ?? string.Empty).Trim(), ProjectConstants.HISSELI, StringComparison.OrdinalIgnoreCase));
 
-        // Mulkiyet using constants
         TamMulkiyetCount = filtered.Count(t =>
             string.Equals((t.MulkiyetSekli ?? string.Empty).Trim(), ProjectConstants.MULKIYET_SEKLI_TM, StringComparison.OrdinalIgnoreCase));
 
         CiplakMulkiyetCount = filtered.Count(t =>
             string.Equals((t.MulkiyetSekli ?? string.Empty).Trim(), ProjectConstants.MULKIYET_SEKLI_CM, StringComparison.OrdinalIgnoreCase));
 
-        // Type counts: use GetCategory on KullanimSekli first, fallback to Cinsi via GetCategory
         BinaCount = filtered.Count(t =>
             GetCategory(t.KullanimSekli) == Category.Bina ||
             GetCategory(t.Cinsi) == Category.Bina);
@@ -316,7 +333,6 @@
             GetCategory(t.KullanimSekli) == Category.Tarla ||
             GetCategory(t.Cinsi) == Category.Tarla);
 
-        // monetary sums
         TahminiRayicDegeri = filtered.Sum(t => t.TahminiRayicDegeri ?? 0m);
         YaklasikPiyasaDegeri = filtered.Sum(t => t.YaklasikPiyasaDegeri ?? 0m);
         EmlakBeyanDegeri = filtered.Sum(t => t.EmlakBeyanDegeri ?? 0m);
@@ -392,7 +408,6 @@
         return Category.Unknown;
     }
 
-    // normalize helper (keep or add if not present)
     private static string NormalizeForComparison(string? s)
     {
         if (string.IsNullOrWhiteSpace(s)) return string.Empty;

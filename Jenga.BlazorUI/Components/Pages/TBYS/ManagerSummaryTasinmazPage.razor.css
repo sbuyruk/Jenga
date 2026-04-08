@@ -1,4 +1,14 @@
-﻿.map-summary-block h5 {
+﻿.summary-top-row {
+    justify-content: center;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.summary-top-row > div {
+    flex: 0 0 auto;
+}
+
+.map-summary-block h5 {
     font-weight: 600;
 }
 
@@ -13,22 +23,20 @@
     padding: 12px;
     box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
     box-sizing: border-box;
-    overflow: hidden; /* panelin içeriğin dikey/soldan taşmasını engelle */
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
 
-/* Host: panel içindeki alan artık tam genişliği kullanır ama görsel denge için bir cap var */
 .map-host {
     width: 100%;
-    max-width: 1100px;   /* çok geniş ekranlarda görsel olarak dengeli kalması için limit */
+    max-width: 1100px;
     margin: 0 auto;
-    padding: 0;          /* iç boşluğu canvas'e bırakma, harita kendi gutter'ını kullanacak */
+    padding: 0;
     box-sizing: border-box;
 }
 
-/* Root: haritanın merkezlenmesi ve esnek davranışı */
 .map-host ::deep .turkey-map-root {
     display: flex;
     justify-content: center;
@@ -37,22 +45,19 @@
     box-sizing: border-box;
 }
 
-/* Canvas: responsive boyutlandırma, yatay boşlukları kaldırır, dikey taşmayı sınırlar */
 .map-host ::deep .turkey-map-canvas {
     width: 100%;
     max-width: 100%;
-    /* responsive genişlik aralığı (mobilten büyük ekranlara kadar) */
     width: clamp(680px, 90vw, 980px);
-    aspect-ratio: 16 / 6;     /* haritanın oranını korur, paneli dikey taşmaktan korur */
+    aspect-ratio: 16 / 6;
     min-height: 260px;
-    max-height: 520px;       /* çok uzun olmasını engeller */
+    max-height: 520px;
     display: block;
     margin: 0 auto;
     box-sizing: border-box;
-    overflow: hidden;        /* SVG dışa taşarsa gizle */
+    overflow: hidden;
 }
 
-/* SVG: haritayı tamamen canvas alanına uydur */
 .map-host ::deep .turkey-map-canvas svg {
     width: 100% !important;
     height: 100% !important;
@@ -62,12 +67,91 @@
     box-sizing: border-box;
 }
 
-/* Küçük ekranlar için ince ayar */
 @media (max-width: 700px) {
     .map-host ::deep .turkey-map-canvas {
         width: 95vw;
         aspect-ratio: 14 / 8;
         min-height: 220px;
         max-height: 420px;
+    }
+}
+
+.year-summary-block {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+.year-surface {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.year-host {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.page-container {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+.content-wrapper {
+    /*width: 100%;*/
+    max-width: 900px;
+    padding: 12px;
+    box-sizing: border-box;
+}
+
+.component-container {
+    width: 100%;
+    max-width: 600px;
+    height: 500px;
+    /*margin: 0 auto;*/
+    box-sizing: border-box;
+    align-content: center;
+    border-radius: 0.5rem;
+    background-color: var(--surface);
+    background-image: radial-gradient(rgba(180,190,210,0.4) 1px, transparent 1px), radial-gradient(rgba(180,190,210,0.4) 1px, transparent 1px);
+    background-size: 22px 22px;
+    background-position: 0 0, 12px 12px;
+}
+
+.component-container--pie {
+    max-width: 430px;
+    height: 360px;
+}
+
+@media (max-width: 768px) {
+    .component-container {
+        max-width: 100%;
+        height: 350px;
+    }
+
+    .component-container--pie {
+        height: 300px;
+    }
+
+    .summary-top-row {
+        gap: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .component-container {
+        height: 300px;
+    }
+
+    .component-container--pie {
+        height: 260px;
+    }
+
+    .content-wrapper {
+        padding: 8px;
     }
 }
