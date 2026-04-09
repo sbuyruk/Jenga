@@ -8,20 +8,6 @@
     flex-shrink: 1;
 }
 
-/* top-row card containers — restored visual style for small cards */
-.component-wide-container {
-    width: 100%;
-    max-width: 800px;
-    height: 360px;
-    box-sizing: border-box;
-    align-content: center;
-    border-radius: 0.5rem;
-    background-color: var(--surface);
-    background-image: radial-gradient(rgba(180,190,210,0.4) 1px, transparent 1px), radial-gradient(rgba(180,190,210,0.4) 1px, transparent 1px);
-    background-size: 22px 22px;
-    background-position: 0 0, 12px 12px;
-}
-
 /* center and limit bottom image */
 .manager-summary-content img[alt="Zekayi"] {
     display: block;
@@ -43,6 +29,19 @@
     background-image:
         radial-gradient(rgba(180,190,210,0.4) 1px, transparent 1px),
         radial-gradient(rgba(180,190,210,0.4) 1px, transparent 1px);
+    background-size: 22px 22px;
+    background-position: 0 0, 12px 12px;
+}
+/* top-row card containers — restored visual style for small cards */
+.component-wide-container {
+    width: 100%;
+    max-width: 800px;
+    height: 360px;
+    box-sizing: border-box;
+    align-content: center;
+    border-radius: 0.5rem;
+    background-color: var(--surface);
+    background-image: radial-gradient(rgba(180,190,210,0.4) 1px, transparent 1px), radial-gradient(rgba(180,190,210,0.4) 1px, transparent 1px);
     background-size: 22px 22px;
     background-position: 0 0, 12px 12px;
 }

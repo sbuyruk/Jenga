@@ -84,7 +84,7 @@
                      data-bs-smooth-scroll="true"
                      tabindex="0">
                      @* kayan yazı *@
-                    <section id="ticker" class="manager-section w-100">
+                    <section id="ticker" class="manager-section ">
                         <div class="ticker-wrapper p3 pauseable">
                             <div class="ticker text-center" aria-label="Bilgilendirme">
                                 <div class="ticker-track">
@@ -122,7 +122,7 @@
 
                     <hr class="section-separator" />
                     <section id="gunluk" class="manager-section d-flex flex-wrap gap-3">
-                        <div style="flex: 0 0 48%; max-width: 48%;">
+                        <div class="component-container">
                             <GenericChart TItem="DayAmount"
                                           Series="bagislarBuAyGunlukSeries"
                                           LabelSelector="@(x => x.Label)"
@@ -134,10 +134,11 @@
                                           GridPaddingBottom="40"
                                           ColorPalette="@_nbysPalette2"
                                           LockToMonthCategories="false"
-                                          Width="600px" />
+                                          Height="100%"
+                                          Width="100%" />
                         </div>
 
-                        <div style="flex: 0 0 48%; max-width: 48%;">
+                        <div class="component-container">
                             <GenericChart TItem="DayCount"
                                           Series="bagiscilarBuAyGunlukSeries"
                                           LabelSelector="@(x => x.Label)"
@@ -149,24 +150,19 @@
                                           GridPaddingBottom="40"
                                           ColorPalette="@_nbysPalette3"
                                           LockToMonthCategories="false"
-                                          Width="600px" />
+                                          Height="100%"
+                                          Width="100%" />
                         </div>
                     </section>
                     <hr class="section-separator" />
 
-                    <section id="il-harita" class="manager-section w-100">
-                        <div class="d-flex flex-wrap gap-3 justify-content-center w-100 mx-auto">
-                            <div class="w-100">
-                                <div class="card turkey-map-panel">
-                                    <div class="card-header bg-transparent border-0 pb-0">
-                                        <h5 class="mb-0 text-center">Türkiye Haritası (İl Bazında Nakit Bağışlar)</h5>
-                                    </div>
+                    <section id="il-harita" class="d-flex flex-wrap gap-3 justify-content-center">
+                        <div class="map-summary-block">
 
-                                    <div class="card-body pt-3">
-                                        <div class="map-host">
-                                            <TurkeyMap OnProvinceClick="OnNakitProvinceClickAsync" />
-                                        </div>
-                                    </div>
+                            <div class="map-surface">
+                                <h5 class="mb-3 text-center">Nakit Bağış Haritası </h5>
+                                <div class="map-host">
+                                    <TurkeyMap OnProvinceClick="OnNakitProvinceClickAsync" />
                                 </div>
                             </div>
                         </div>
@@ -207,7 +203,8 @@
                             }
                             else
                             {
-                                <div class="table-responsive text-center" style="max-width:700px">
+
+                                <div class="table-responsive text-center" style="max-width:700px;border-radius:8px">
                                     <h5 class="mb-3">@DateTime.Now.Year Yılı İl Bazlı Bağışçı Çizelgesi</h5>
                                     <GenericTable @ref="_ilAyTable"
                                                   TItem="ProvinceMonthlyDonorRow"
@@ -219,7 +216,7 @@
                                                   ShowExport="true"
                                                   ExportFileName="@($"il-bazli-bagisci-{DateTime.Now:yyyy}.xlsx")"
                                                   KeySelector="@(x => $"{x.ProvinceId}-{x.Month}")"
-                                                  TableClass="table-hover table-sm table-bordered">
+                                                  TableClass="table-hover table-sm ">
                                         <HeaderTemplate>
                                             <th @onclick="() => _ilAyTable?.SortBy(nameof(ProvinceMonthlyDonorRow.ProvinceName))"
                                                 role="button"
@@ -262,24 +259,7 @@
                                         </HeaderTemplate>
 
                                         <RowTemplate Context="row">
-                                            @{
-                                                var hasSort = !string.IsNullOrWhiteSpace(_ilAyTable?.CurrentSortField);
-                                                var hasSearch = !string.IsNullOrWhiteSpace(_ilAyTable?.CurrentSearchText);
-                                                var isGroupedView = !hasSort && !hasSearch;
-                                            }
-
-                                            @if (isGroupedView)
-                                            {
-                                                if (row.IsProvinceFirstRow)
-                                                {
-                                                    <td style="white-space:nowrap;" rowspan="@row.ProvinceRowSpan">@row.ProvinceName</td>
-                                                }
-                                            }
-                                            else
-                                            {
-                                                <td style="white-space:nowrap;">@row.ProvinceName</td>
-                                            }
-
+                                            <td style="white-space:nowrap;">@row.ProvinceName</td>
                                             <td>@row.MonthLabel</td>
                                             <td class="text-end">@row.DonorCount.ToString("N0", _trCulture)</td>
                                             <td class="text-end">@row.NewDonorCount.ToString("N0", _trCulture)</td>
@@ -292,53 +272,62 @@
 
                     <hr class="section-separator" />
 
-                    <section id="son5yil" class="manager-section d-flex flex-wrap gap-3 justify-content-center w-100">
-                        <GenericChart TItem="MonthAmount"
-                                      Series="bagislarSon5YilSeries"
-                                      LabelSelector="@(x => x.Label)"
-                                      ValueSelector="@(x => x.Amount)"
-                                      Title="Aylık Nakit Bağış Gelirleri (Son 5 Yıl)"
-                                      Type="GenericChart<MonthAmount>.GenericChartType.Bar"
-                                      ShowDataLabels="false"
-                                      ShowLegend="false"
-                                      GridPaddingBottom="40"
-                                      ColorPalette="@_nbysPalette3"
-                                      LockToMonthCategories="true" 
-                                      Width="800px"/>
+                    <section id="son5yil" class="manager-section">
+                        <div class="component-wide-container">
+                            <GenericChart TItem="MonthAmount"
+                                          Series="bagislarSon5YilSeries"
+                                          LabelSelector="@(x => x.Label)"
+                                          ValueSelector="@(x => x.Amount)"
+                                          Title="Aylık Nakit Bağış Gelirleri (Son 5 Yıl)"
+                                          Type="GenericChart<MonthAmount>.GenericChartType.Bar"
+                                          ShowDataLabels="false"
+                                          ShowLegend="false"
+                                          GridPaddingBottom="40"
+                                          ColorPalette="@_nbysPalette3"
+                                          LockToMonthCategories="true"
+                                          Width="100%"
+                                          Height="100%" />
+                        </div>
                     </section>
 
                     <hr class="section-separator" />
 
                     <section id="son10yil" class="manager-section d-flex flex-wrap gap-3 justify-content-center w-100">
-                        <GenericChart TItem="YearAmount"
-                                      Series="bagislarSon10YilYillikTutarSeries"
-                                      LabelSelector="@(x => x.Label)"
-                                      ValueSelector="@(x => x.Amount)"
-                                      Title="Yıllık Nakit Bağış Tutarı (Son 10 Yıl)"
-                                      Type="GenericChart<YearAmount>.GenericChartType.Bar"
-                                      ShowDataLabels="false"
-                                      ShowLegend="false"
-                                      GridPaddingBottom="40"
-                                      ColorPalette="@_nbysPalette3"
-                                      LockToMonthCategories="false"
-                                      XAxisLabelRotateDegrees="0"
-                                      XAxisLabelsAlwaysRotate="false" 
-                                      Width="600px"/>
+                        <div class="component-container">
+                            <GenericChart TItem="YearAmount"
+                                          Series="bagislarSon10YilYillikTutarSeries"
+                                          LabelSelector="@(x => x.Label)"
+                                          ValueSelector="@(x => x.Amount)"
+                                          Title="Yıllık Nakit Bağış Tutarı (Son 10 Yıl)"
+                                          Type="GenericChart<YearAmount>.GenericChartType.Bar"
+                                          ShowDataLabels="false"
+                                          ShowLegend="false"
+                                          GridPaddingBottom="40"
+                                          ColorPalette="@_nbysPalette3"
+                                          LockToMonthCategories="false"
+                                          XAxisLabelRotateDegrees="0"
+                                          XAxisLabelsAlwaysRotate="false"
+                                          Width="100%"
+                                          Height="100%"/>
+                        </div>
 
-                        <GenericChart TItem="YearCount"
-                                      Series="bagiscilarSon10YilYillikTekilSeries"
-                                      LabelSelector="@(x => x.Label)"
-                                      ValueSelector="@(x => x.Count)"
-                                      Title="Yıllık Tekil Bağışçı Sayısı (Son 10 Yıl)"
-                                      Type="GenericChart<YearCount>.GenericChartType.Bar"
-                                      ShowDataLabels="true"
-                                      ShowLegend="false"
-                                      GridPaddingBottom="40"
-                                      ColorPalette="@_nbysPalette4"
-                                      LockToMonthCategories="false"
-                                      XAxisLabelRotateDegrees="0"
-                                      XAxisLabelsAlwaysRotate="false"
-                                      Width="600px" />
+                        <div class="component-container">
+                            <GenericChart TItem="YearCount"
+                                          Series="bagiscilarSon10YilYillikTekilSeries"
+                                          LabelSelector="@(x => x.Label)"
+                                          ValueSelector="@(x => x.Count)"
+                                          Title="Yıllık Tekil Bağışçı Sayısı (Son 10 Yıl)"
+                                          Type="GenericChart<YearCount>.GenericChartType.Bar"
+                                          ShowDataLabels="true"
+                                          ShowLegend="false"
+                                          GridPaddingBottom="40"
+                                          ColorPalette="@_nbysPalette4"
+                                          LockToMonthCategories="false"
+                                          XAxisLabelRotateDegrees="0"
+                                          XAxisLabelsAlwaysRotate="false"
+                                          Width="100%"
+                                          Height="100%"/>
+                        </div>
                     </section>
 
 
@@ -1138,38 +1127,38 @@
             return a.Month.CompareTo(b.Month);
         });
 
-        ApplyProvinceRowSpans(currentYearProvinceMonthlyRows);
+        // ApplyProvinceRowSpans(currentYearProvinceMonthlyRows);
     }
 
-    private static void ApplyProvinceRowSpans(List<ProvinceMonthlyDonorRow> rows)
-    {
-        if (rows.Count == 0)
-        {
-            return;
-        }
+    // private static void ApplyProvinceRowSpans(List<ProvinceMonthlyDonorRow> rows)
+    // {
+    //     if (rows.Count == 0)
+    //     {
+    //         return;
+    //     }
 
-        for (var i = 0; i < rows.Count; i++)
-        {
-            rows[i].IsProvinceFirstRow = false;
-            rows[i].ProvinceRowSpan = 0;
-        }
+    //     for (var i = 0; i < rows.Count; i++)
+    //     {
+    //         rows[i].IsProvinceFirstRow = false;
+    //         rows[i].ProvinceRowSpan = 0;
+    //     }
 
-        var index = 0;
-        while (index < rows.Count)
-        {
-            var provinceId = rows[index].ProvinceId;
+    //     var index = 0;
+    //     while (index < rows.Count)
+    //     {
+    //         var provinceId = rows[index].ProvinceId;
 
-            var start = index;
-            while (index < rows.Count && rows[index].ProvinceId == provinceId)
-            {
-                index++;
-            }
+    //         var start = index;
+    //         while (index < rows.Count && rows[index].ProvinceId == provinceId)
+    //         {
+    //             index++;
+    //         }
 
-            var span = index - start;
-            rows[start].IsProvinceFirstRow = true;
-            rows[start].ProvinceRowSpan = span;
-        }
-    }
+    //         var span = index - start;
+    //         rows[start].IsProvinceFirstRow = true;
+    //         rows[start].ProvinceRowSpan = span;
+    //     }
+    // }
 
     public void Dispose()
     {
