@@ -1,26 +1,9 @@
-﻿* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: #f5f7fa;
-    min-height: 100vh;
-    padding: 8px;
-}
-
-.page-container {
-    max-width: 1800px;
-    margin: 0 auto;
-}
-
+/* ── Scrollspy Layout ─────────────────────────────────────── */
 .manager-scrollspy-layout {
     display: grid;
     grid-template-columns: 1fr 200px;
-    gap: 10px;
-    align-items: start;
+    gap: 16px;
+    align-items: start; 
 }
 
 .manager-scrollspy-nav {
@@ -42,44 +25,39 @@ body {
 }
 
 .manager-scrollspy-content {
+    order: 1;
     position: relative;
     height: calc(100vh - 140px);
     overflow-y: auto;
     padding-right: 10px;
-    order: 1;
-    display: flex; /* 🔴 EKLE */
-    flex-direction: column; /* 🔴 EKLE */
-    align-items: center; /* 🔴 EKLE (ORTALAR) */
 }
+
 .manager-section {
     scroll-margin-top: 12px;
 }
-.ticker-wrapper,
-.monthly-cards-container {
-    width: 100%;
-    max-width: 1200px;
-}
-.manager-summary-content {
-    width: 100%;
-    max-width: 1200px; /* 🔴 içerik genişlik limiti */
-    margin: 0 auto; /* 🔴 ortalama */
-    box-sizing: border-box;
-}
-/* Kayan Banner */
+
+/* ── Ticker Banner ────────────────────────────────────────── */
 .ticker-wrapper {
-    background: #ff6b6b;
-    color: white;
+    width: 100%;
     padding: 15px 0;
     border-radius: 10px;
     overflow: hidden;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
     margin-bottom: 20px;
+    color: white;
+}
+
+.ticker-wrapper.p3 {
+    background: linear-gradient(135deg, var(--p3) 0%, var(--muted) 100%);
+}
+
+.ticker-wrapper.pauseable:hover .ticker-track {
+    animation-play-state: paused;
 }
 
 .ticker {
     display: flex;
     white-space: nowrap;
-    gap: 0;
 }
 
 .ticker-track {
@@ -99,63 +77,16 @@ body {
     gap: 10px;
 }
 
-    .ticker-item i {
-        font-size: 20px;
-    }
+.ticker-item i {
+    font-size: 20px;
+}
 
 @keyframes ticker-scroll {
-    0% {
-        transform: translateX(0);
-    }
-
-    100% {
-        transform: translateX(-100%);
-    }
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-100%); }
 }
 
-/* Farklı Renkli Banner Örnekleri */
-.ticker-wrapper.p3 {
-    background: linear-gradient(135deg, var(--p3) 0%, var(--muted) 100%);
-}
-
-.ticker-wrapper.blue {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-.ticker-wrapper.green {
-    background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%);
-}
-
-.ticker-wrapper.orange {
-    background: linear-gradient(135deg, #f7971e 0%, #ffd200 100%);
-}
-
-.ticker-wrapper.dark {
-    background: linear-gradient(135deg, #232526 0%, #414345 100%);
-}
-
-.ticker-wrapper.gradient-1 {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-}
-
-.ticker-wrapper.cyan {
-    background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
-}
-
-/* Hız Varyasyonları */
-.ticker.slow {
-    animation: scroll 45s linear infinite;
-}
-
-.ticker.fast {
-    animation: scroll 15s linear infinite;
-}
-
-/* Hover ile Durdurma */
-.ticker-wrapper.pauseable:hover .ticker-track {
-    animation-play-state: paused;
-}
-
+/* ── Section Separator ───────────────────────────────────── */
 .section-separator {
     width: 70%;
     margin-block: 2rem;
@@ -166,136 +97,22 @@ body {
     border: 0;
 }
 
-.turkey-map-panel {
+/* ── Map Section ─────────────────────────────────────────── */
+.map-summary-block {
+    width: 100%;
+    overflow: hidden;
+}
+
+.map-summary-block h5 {
+    font-weight: 600;
+}
+
+.map-surface {
     background:
         radial-gradient(1100px 380px at 10% 10%, rgba(37, 99, 235, 0.16), transparent 62%),
         radial-gradient(900px 320px at 88% 14%, rgba(124, 58, 237, 0.14), transparent 60%),
         radial-gradient(850px 300px at 20% 88%, rgba(6, 182, 212, 0.10), transparent 58%),
         linear-gradient(140deg, #f8fafc 0%, #eef2ff 52%, #f8fafc 100%);
-    border: 1px solid #dbe3f0;
-    border-radius: 14px;
-    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
-}
-
-.turkey-map-panel h5 {
-    font-weight: 600;
-}
-
-.map-host {
-    width: 100%;
-    max-width: 100%;
-    margin: 0 auto;
-}
-
-.map-host ::deep .turkey-map-root {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 460px;
-}
-
-.map-host ::deep .turkey-map-canvas {
-    width: 100%;
-    max-width: 920px;
-    min-height: 440px;
-}
-
-.map-host ::deep .turkey-map-canvas svg {
-    width: 100% !important;
-    height: auto !important;
-    display: block;
-    margin: 0 auto;
-}
-@media (max-width: 991.98px) {
-
-    .manager-scrollspy-layout {
-        display: block;
-    }
-
-    .manager-scrollspy-nav {
-        display: none;
-    }
-}
-.chart-wrapper {
-    width: 100%;
-    display: flex;
-    justify-content: center; /* 🔴 ortalar */
-    align-items: stretch;
-}
-
-    .chart-wrapper > * {
-        width: 100%;
-        max-width: 100%;
-        min-width: 0;
-    }
-.manager-summary-content .d-flex.flex-wrap {
-    justify-content: center; /* 🔴 ortalama */
-}
-
-    .manager-summary-content .d-flex.flex-wrap > div {
-        flex: 1 1 500px; /* 🔴 dengeli kolon */
-        max-width: 100%;
-    }
-
-/* top-row card containers — restored visual style for small cards */
-.component-container {
-    max-width: 600px;
-    width: 580px;
-    height: 360px;
-    box-sizing: border-box;
-    align-content: center;
-    border-radius: 0.5rem;
-    background-color: var(--surface);
-    background-image: radial-gradient(rgba(180,190,210,0.4) 1px, transparent 1px), radial-gradient(rgba(180,190,210,0.4) 1px, transparent 1px);
-    background-size: 22px 22px;
-    background-position: 0 0, 12px 12px;
-}
-/* top-row card containers — restored visual style for small cards */
-.component-wide-container {
-    max-width: 1000px;
-    width: 800px;
-    height: 360px;
-    box-sizing: border-box;
-    align-content: center;
-    border-radius: 0.5rem;
-    background-color: var(--surface);
-    background-image: radial-gradient(rgba(180,190,210,0.4) 1px, transparent 1px), radial-gradient(rgba(180,190,210,0.4) 1px, transparent 1px);
-    background-size: 22px 22px;
-    background-position: 0 0, 12px 12px;
-}
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .component-container {
-        max-width: 100%;
-        height: 350px;
-    }
-
-    .summary-top-row {
-        gap: 1rem;
-    }
-
-    .component-wide-inner {
-        max-width: 100%;
-        padding: 0;
-    }
-}
-
-@media (max-width: 480px) {
-    .component-container {
-        height: 300px;
-    }
-}
-
-@media (max-width: 767.98px) {
-    .manager-summary-content .kira-chart-col {
-        width: 100%;
-    }
-}
-.map-summary-block h5 {
-    font-weight: 600;
-}
-.map-surface {
-    background: radial-gradient(1100px 380px at 10% 10%, rgba(37, 99, 235, 0.16), transparent 62%), radial-gradient(900px 320px at 88% 14%, rgba(124, 58, 237, 0.14), transparent 60%), radial-gradient(850px 300px at 20% 88%, rgba(6, 182, 212, 0.10), transparent 58%), linear-gradient(140deg, #f8fafc 0%, #eef2ff 52%, #f8fafc 100%);
     border: 1px solid #dbe3f0;
     border-radius: 14px;
     padding: 12px;
@@ -305,4 +122,111 @@ body {
     display: flex;
     flex-direction: column;
     gap: 8px;
+}
+
+.map-host {
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.map-host ::deep .turkey-map-root {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.map-host ::deep .turkey-map-canvas {
+    width: clamp(680px, 90vw, 980px);
+    max-width: 100%;
+    aspect-ratio: 16 / 6;
+    min-height: 260px;
+    max-height: 520px;
+    display: block;
+    margin: 0 auto;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.map-host ::deep .turkey-map-canvas svg {
+    width: 100% !important;
+    height: 100% !important;
+    display: block;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* ── Chart Containers ────────────────────────────────────── */
+.component-container {
+    width: 100%;
+    max-width: 600px;
+    height: 360px;
+    box-sizing: border-box;
+    align-content: center;
+    border-radius: 0.5rem;
+    background-color: var(--surface);
+    background-image:
+        radial-gradient(rgba(180, 190, 210, 0.4) 1px, transparent 1px),
+        radial-gradient(rgba(180, 190, 210, 0.4) 1px, transparent 1px);
+    background-size: 22px 22px;
+    background-position: 0 0, 12px 12px;
+}
+
+.component-wide-container {
+    width: 100%;
+    max-width: 1000px;
+    height: 360px;
+    margin: 0 auto;
+    box-sizing: border-box;
+    align-content: center;
+    border-radius: 0.5rem;
+    background-color: var(--surface);
+    background-image:
+        radial-gradient(rgba(180, 190, 210, 0.4) 1px, transparent 1px),
+        radial-gradient(rgba(180, 190, 210, 0.4) 1px, transparent 1px);
+    background-size: 22px 22px;
+    background-position: 0 0, 12px 12px;
+}
+
+/* ── Responsive Breakpoints ──────────────────────────────── */
+@media (max-width: 991px) {
+    .manager-scrollspy-layout {
+        display: block;
+    }
+
+    .manager-scrollspy-nav {
+        display: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .component-container,
+    .component-wide-container {
+        max-width: 100%;
+        height: 300px;
+    }
+
+    .ticker-item {
+        font-size: 15px;
+        padding: 0 30px;
+    }
+
+    .map-host ::deep .turkey-map-canvas {
+        width: 95vw;
+        aspect-ratio: 14 / 8;
+        min-height: 220px;
+        max-height: 380px;
+    }
+}
+
+@media (max-width: 480px) {
+    .component-container,
+    .component-wide-container {
+        height: 260px;
+    }
 }
