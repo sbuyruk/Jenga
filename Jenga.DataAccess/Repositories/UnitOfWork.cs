@@ -6,8 +6,10 @@ using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.DataAccess.Repositories.IRepository.Common;
 using Jenga.DataAccess.Repositories.IRepository.IKYS;
 using Jenga.DataAccess.Repositories.IRepository.Inventory;
+using Jenga.DataAccess.Repositories.IRepository.FTK;
 using Jenga.DataAccess.Repositories.IRepository.NBYS;
 using Jenga.DataAccess.Repositories.IRepository.TBYS;
+using Jenga.DataAccess.Repositories.FTK;
 using Jenga.DataAccess.Repositories.NBYS;
 using Jenga.DataAccess.Repositories.TBYS;
 using Jenga.Models.TBYS;
@@ -69,6 +71,13 @@ namespace Jenga.DataAccess.Repositories
             NakitBagisHareket = new NakitBagisHareketRepository(_contextFactory);
             Armagan = new ArmaganRepository(_contextFactory);
             BankaTanim = new BankaTanimRepository(_contextFactory);
+            ArmaganTanim = new ArmaganTanimRepository(_contextFactory);
+            DuzenliNakitBagisci = new DuzenliNakitBagisciRepository(_contextFactory);
+
+            // FTK
+            Ftk = new FtkRepository(_contextFactory);
+            FtkIslem = new FtkIslemRepository(_contextFactory);
+            FtkKisi = new FtkKisiRepository(_contextFactory);
         }
 
         // Common
@@ -116,5 +125,12 @@ namespace Jenga.DataAccess.Repositories
         public INakitBagisHareketRepository NakitBagisHareket { get; private set; }
         public IArmaganRepository Armagan { get; private set; }
         public IBankaTanimRepository BankaTanim { get; private set; }
+        public IArmaganTanimRepository ArmaganTanim { get; private set; }
+        public IDuzenliNakitBagisciRepository DuzenliNakitBagisci { get; private set; }
+
+        // FTK
+        public IFtkRepository Ftk { get; private set; }
+        public IFtkIslemRepository FtkIslem { get; private set; }
+        public IFtkKisiRepository FtkKisi { get; private set; }
     }
 }

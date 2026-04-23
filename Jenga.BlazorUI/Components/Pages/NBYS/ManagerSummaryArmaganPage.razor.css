@@ -1,0 +1,436 @@
+/* ── Genel Düzen ──────────────────────────────────────────── */
+.armagan-overview {
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 8px;
+    box-sizing: border-box;
+}
+
+/* Ay filtre butonları (pill) */
+.ay-filter-group .btn {
+    border-radius: 999px;
+    padding: 4px 10px;
+    min-width: 44px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    box-shadow: none;
+    border: 0;
+    font-size: 0.85rem;
+}
+
+.ay-filter-group .btn-outline-primary {
+    background: #fff;
+    color: #1f2937; /* slate-800 */
+    border: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.ay-filter-group .btn-outline-primary:hover {
+    background: rgba(15, 23, 42, 0.03);
+}
+
+.ay-filter-group .btn-primary {
+    background: linear-gradient(135deg,#6D28D9,#5B21B6);
+    border: 0;
+    color: #fff;
+    box-shadow: 0 6px 14px rgba(99, 102, 241, 0.18);
+}
+
+.ay-filter-group .btn:focus {
+    box-shadow: 0 0 0 4px rgba(99,102,241,0.12);
+}
+
+.ay-filter-group .btn + .btn {
+    margin-left: 6px;
+}
+
+/* Prevent the group from stretching full width */
+.ay-filter-group {
+    display: inline-flex;
+    gap: 6px;
+}
+
+@media (max-width: 576px) {
+    .ay-filter-group .btn {
+        padding: 4px 8px;
+        height: 28px;
+        font-size: 0.78rem;
+    }
+}
+
+/* ── Scrollspy Grid ───────────────────────────────────────── */
+.armagan-scrollspy-layout {
+    display: grid;
+    grid-template-columns: 1fr 210px;
+    gap: 18px;
+    align-items: start;
+}
+
+.armagan-scrollspy-nav {
+    position: sticky;
+    top: 12px;
+    order: 2;
+    background: var(--card-bg, #fff);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 10px;
+    padding: 12px 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.armagan-nav-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--p3, #9E2A3A);
+    padding: 4px 10px 8px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.07);
+    margin-bottom: 6px;
+}
+
+.armagan-scrollspy-nav .nav-link {
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-size: 0.82rem;
+    color: var(--muted, #6b6b6b);
+    transition: background 0.15s, color 0.15s;
+}
+
+.armagan-scrollspy-nav .nav-link:hover {
+    background: rgba(37, 99, 235, 0.07);
+    color: var(--text, #1E1E1E);
+}
+
+.armagan-scrollspy-nav .nav-link.active {
+    background: rgba(37, 99, 235, 0.12);
+    color: #1D40AE;
+    font-weight: 700;
+}
+
+.armagan-scrollspy-content {
+    order: 1;
+    position: relative;
+    height: calc(100vh - 120px);
+    overflow-y: auto;
+    padding-right: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(100, 116, 139, 0.4) transparent;
+}
+
+.armagan-section {
+    scroll-margin-top: 12px;
+}
+
+/* ── Ticker Banner ────────────────────────────────────────── */
+.armagan-ticker-wrapper {
+    width: 100%;
+    padding: 14px 0;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+    margin-bottom: 20px;
+    background: linear-gradient(135deg, var(--p3, #9E2A3A) 0%, #2563EB 100%);
+    color: #fff;
+}
+
+.armagan-ticker-wrapper.pauseable:hover .armagan-ticker-track {
+    animation-play-state: paused;
+}
+
+.armagan-ticker {
+    display: flex;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.armagan-ticker-track {
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+    flex-shrink: 0;
+    animation: armagan-ticker-scroll 45s linear infinite;
+}
+
+.armagan-ticker-item {
+    padding: 0 48px;
+    font-size: 16px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.armagan-ticker-item i {
+    font-size: 18px;
+}
+
+@keyframes armagan-ticker-scroll {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-100%); }
+}
+
+/* ── Section Separator ───────────────────────────────────── */
+.armagan-separator {
+    width: 65%;
+    margin-block: 2rem;
+    margin-inline: auto;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.25), transparent);
+    opacity: 1;
+    border: 0;
+}
+
+/* ── KPI Kartları ─────────────────────────────────────────── */
+.kpi-card {
+    border-radius: 14px;
+    padding: 18px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.07);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    min-height: 105px;
+    height: 100%;
+}
+
+.kpi-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.11);
+}
+
+.kpi-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 1.4rem;
+    color: #fff;
+}
+
+.kpi-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.kpi-label {
+    font-size: 0.73rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.7;
+    margin-bottom: 3px;
+}
+
+.kpi-value {
+    font-size: 1.55rem;
+    font-weight: 700;
+    line-height: 1.15;
+    margin-bottom: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.kpi-sub {
+    font-size: 0.75rem;
+    opacity: 0.65;
+}
+
+/* Renk temaları */
+.kpi-blue   { background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%); border: 1px solid #BFDBFE; color: #1E3A8A; }
+.kpi-blue   .kpi-icon { background: linear-gradient(135deg, #2563EB, #1D4ED8); }
+
+.kpi-gold {
+    background: linear-gradient(135deg, #FFF8E1 0%, #FFECB3 100%);
+    border: 1px solid #FFD54F;
+    color: #5B3A00; /* darker brown for readable text on pale gold */
+}
+.kpi-gold .kpi-icon {
+    background: linear-gradient(135deg, #FFD54F, #FFB300);
+}
+
+.kpi-silver {
+    /* Slightly brighter, subtle silver highlight */
+    background: linear-gradient(135deg, #FFFFFF 0%, #FAFBFD 50%, #F3F6F9 100%);
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    color: #2F3B45; /* slightly darker neutral for improved contrast */
+}
+.kpi-silver .kpi-icon {
+    /* slightly darker, more metallic circle */
+    background: linear-gradient(135deg, #E9EEF2 0%, #D6DBE0 100%);
+    border: 1px solid rgba(15, 23, 42, 0.06);
+    box-shadow: inset 0 -6px 14px rgba(15, 23, 42, 0.08), 0 1px 0 rgba(255,255,255,0.35);
+}
+
+.kpi-bronze {
+    background: linear-gradient(135deg, #FFF6F0 0%, #FDE8D8 100%);
+    border: 1px solid #D4A373;
+    color: #5A2E0D; /* dark warm brown for readable text on pale bronze */
+}
+.kpi-bronze .kpi-icon {
+    background: linear-gradient(135deg, #CD7F32, #B66A2E);
+}
+
+.kpi-purple { background: linear-gradient(135deg, #F5F3FF 0%, #EDE9FE 100%); border: 1px solid #DDD6FE; color: #3B0764; }
+.kpi-purple .kpi-icon { background: linear-gradient(135deg, #7C3AED, #6D28D9); }
+
+.kpi-orange { background: linear-gradient(135deg, #FFF7ED 0%, #FED7AA 100%); border: 1px solid #FDBA74; color: #7C2D12; }
+.kpi-orange .kpi-icon { background: linear-gradient(135deg, #F97316, #EA580C); }
+
+.kpi-teal   { background: linear-gradient(135deg, #F0FDFA 0%, #CCFBF1 100%); border: 1px solid #99F6E4; color: #134E4A; }
+.kpi-teal   .kpi-icon { background: linear-gradient(135deg, #14B8A6, #0D9488); }
+
+.kpi-red    { background: linear-gradient(135deg, #FFF1F2 0%, #FFE4E6 100%); border: 1px solid #FECDD3; color: #881337; }
+.kpi-red    .kpi-icon { background: linear-gradient(135deg, #F43F5E, #E11D48); }
+
+.kpi-indigo { background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%); border: 1px solid #C7D2FE; color: #1E1B4B; }
+.kpi-indigo .kpi-icon { background: linear-gradient(135deg, #6366F1, #4F46E5); }
+
+/* ── Grafik Kapları ───────────────────────────────────────── */
+.armagan-chart-container {
+    width: 100%;
+    max-width: 580px;
+    height: 360px;
+    box-sizing: border-box;
+    align-content: center;
+    border-radius: 10px;
+    background-color: var(--surface, #FFF8F8);
+    background-image:
+        radial-gradient(rgba(180, 190, 210, 0.4) 1px, transparent 1px),
+        radial-gradient(rgba(180, 190, 210, 0.4) 1px, transparent 1px);
+    background-size: 22px 22px;
+    background-position: 0 0, 11px 11px;
+}
+
+.armagan-wide-container {
+    width: 100%;
+    max-width: 1020px;
+    height: 360px;
+    margin: 0 auto;
+    box-sizing: border-box;
+    align-content: center;
+    border-radius: 10px;
+    background-color: var(--surface, #FFF8F8);
+    background-image:
+        radial-gradient(rgba(180, 190, 210, 0.4) 1px, transparent 1px),
+        radial-gradient(rgba(180, 190, 210, 0.4) 1px, transparent 1px);
+    background-size: 22px 22px;
+    background-position: 0 0, 11px 11px;
+}
+
+/* ── Armağan Türü Tablosu ─────────────────────────────────── */
+.armagan-tur-table {
+    width: 100%;
+    max-width: 400px;
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.07);
+    border-radius: 10px;
+    padding: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* ── Bronz Rozet ─────────────────────────────────────────── */
+.badge-bronze {
+    background-color: #CD7F32;
+    color: #fff;
+}
+
+/* ── Responsive Breakpoints ──────────────────────────────── */
+@media (max-width: 1199px) {
+    .kpi-value {
+        font-size: 1.35rem;
+    }
+}
+
+@media (max-width: 991px) {
+    .armagan-scrollspy-layout {
+        display: block;
+    }
+
+    .armagan-scrollspy-nav {
+        position: static;
+        order: 0;
+        margin-bottom: 1rem;
+        border-radius: 8px;
+    }
+
+    .armagan-scrollspy-nav .nav {
+        flex-direction: row !important;
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+
+    .armagan-scrollspy-nav .nav-link {
+        font-size: 0.78rem;
+        padding: 5px 8px;
+    }
+
+    .armagan-nav-title {
+        display: none;
+    }
+
+    .armagan-scrollspy-content {
+        height: auto;
+        overflow-y: visible;
+        padding-right: 0;
+    }
+
+    .armagan-chart-container,
+    .armagan-wide-container {
+        height: 320px;
+    }
+}
+
+@media (max-width: 767px) {
+    .armagan-chart-container,
+    .armagan-wide-container {
+        height: 280px;
+        max-width: 100%;
+    }
+
+    .armagan-tur-table {
+        max-width: 100%;
+    }
+
+    .kpi-value {
+        font-size: 1.2rem;
+    }
+
+    .armagan-ticker-item {
+        font-size: 13px;
+        padding: 0 24px;
+    }
+
+    .armagan-separator {
+        width: 85%;
+        margin-block: 1.25rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .kpi-card {
+        padding: 14px 16px;
+        gap: 12px;
+        min-height: 90px;
+    }
+
+    .kpi-icon {
+        width: 44px;
+        height: 44px;
+        font-size: 1.1rem;
+    }
+
+    .kpi-value {
+        font-size: 1.1rem;
+    }
+
+    .kpi-label {
+        font-size: 0.68rem;
+    }
+}

@@ -1,4 +1,5 @@
 ﻿using Jenga.DataAccess.Repositories.IRepository.Common;
+using Jenga.DataAccess.Repositories.IRepository.FTK;
 using Jenga.DataAccess.Repositories.IRepository.IKYS;
 using Jenga.DataAccess.Repositories.IRepository.Inventory;
 using Jenga.DataAccess.Repositories.IRepository.NBYS;
@@ -51,5 +52,11 @@ namespace Jenga.DataAccess.Repositories.IRepository
         INakitBagisHareketRepository NakitBagisHareket { get; }
         IArmaganRepository Armagan { get; }
         IBankaTanimRepository BankaTanim { get; }
+        IArmaganTanimRepository ArmaganTanim { get; }
+        IDuzenliNakitBagisciRepository DuzenliNakitBagisci { get; }
+        //FTK
+        IFtkRepository Ftk { get; }
+        IFtkIslemRepository FtkIslem { get; }
+        IFtkKisiRepository FtkKisi { get; }
     }
 }

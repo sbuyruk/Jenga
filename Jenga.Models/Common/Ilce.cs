@@ -25,5 +25,8 @@ namespace Jenga.Models.Common
         [Required]
         [DisplayName("İlçe Adı")]
         public string? IlceAdi { get; set; }
+        [Required]
+        [DisplayName("Aktif")]
+        public bool? Aktif { get; set; }
     }
 }

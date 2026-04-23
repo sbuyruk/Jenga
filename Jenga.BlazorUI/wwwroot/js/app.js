@@ -28,7 +28,9 @@ window.scrollSpyScrollTo = (scrollElementId, sectionId) => {
         return;
     }
 
-    const top = target.offsetTop;
+    const containerRect = scrollEl.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+    const top = scrollEl.scrollTop + (targetRect.top - containerRect.top);
     scrollEl.scrollTo({ top, behavior: 'smooth' });
 };
 

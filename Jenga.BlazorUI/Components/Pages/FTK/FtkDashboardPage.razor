@@ -1,0 +1,817 @@
+@page "/ftk/dashboard"
+@using System.Globalization
+@using Jenga.BlazorUI.Components.Common
+@using Microsoft.JSInterop
+@using Jenga.Models.FTK
+@using Jenga.Models.Common
+@using Jenga.DataAccess.Services.FTK
+@using Jenga.DataAccess.Services.Common
+@rendermode InteractiveServer
+@inject IJSRuntime JS
+@inject IFtkService FtkService
+@inject IFtkIslemService FtkIslemService
+@inject IIlService IlService
+@inject IIlceService IlceService
+@inject IBolgeService BolgeService
+
+<div class="py-4 px-2">
+    <div class="ftk-overview">
+        @if (_isLoading)
+        {
+            <div class="text-center">
+                <div class="d-flex justify-content-center mt-4">
+                    <img src="/images/coding.gif"
+                         alt="coding"
+                         loading="lazy"
+                         data-bs-toggle="tooltip"
+                         data-bs-placement="top"
+                         title="FTK verileri hazırlanıyor..."
+                         class="img-fluid rounded-4 shadow"
+                         style="max-width: 220px; height: auto;" />
+                </div>
+                <div class="text-muted mt-2">FTK verileri yükleniyor...</div>
+            </div>
+        }
+        else
+        {
+            <div class="ftk-scrollspy-layout">
+
+                @* ── Scrollspy Nav ── *@
+                <nav id="ftk-scrollspy-nav" class="ftk-scrollspy-nav">
+                    <div class="nav nav-pills flex-column gap-1">
+                        <div class="ftk-nav-title">
+                            <i class="bi bi-people-fill me-1"></i> FTK
+                        </div>
+                        <a class="nav-link"
+                           href="#ozet"
+                           @onclick:preventDefault="true"
+                           @onclick='() => ScrollToAsync("ozet")'>
+                            <i class="bi bi-grid-1x2-fill me-1"></i>Özet
+                        </a>
+
+                        <a class="nav-link"
+                           href="#bolge-dagilim"
+                           @onclick:preventDefault="true"
+                           @onclick='() => ScrollToAsync("bolge-dagilim")'>
+                            <i class="bi bi-pie-chart-fill me-1"></i>Bölge Dağılımı
+                        </a>
+                        <a class="nav-link"
+                           href="#gorev-dagilim"
+                           @onclick:preventDefault="true"
+                           @onclick='() => ScrollToAsync("gorev-dagilim")'>
+                            <i class="bi bi-person-badge-fill me-1"></i>Görev Dağılımı
+                        </a>
+                        <a class="nav-link"
+                               href="#turkiye-haritasi"
+                               @onclick:preventDefault="true"
+                               @onclick='() => ScrollToAsync("turkiye-haritasi")'>
+                            <i class="bi bi-map-fill me-1"></i>Türkiye Haritası
+                        </a>
+                        <a class="nav-link"
+                           href="#yillik-trend"
+                           @onclick:preventDefault="true"
+                           @onclick='() => ScrollToAsync("yillik-trend")'>
+                            <i class="bi bi-graph-up-arrow me-1"></i>FTK Kuruluş Yılları
+                        </a>
+                        <a class="nav-link"
+                           href="#ftk-listesi"
+                           @onclick:preventDefault="true"
+                           @onclick='() => ScrollToAsync("ftk-listesi")'>
+                            <i class="bi bi-table me-1"></i>Bölgelere Göre FTK Listesi
+                        </a>
+                    </div>
+                </nav>
+
+                @* ── Scrollspy Content ── *@
+                <div id="ftk-scrollspy-content"
+                     class="ftk-scrollspy-content"
+                     data-bs-spy="scroll"
+                     data-bs-target="#ftk-scrollspy-nav"
+                     data-bs-smooth-scroll="true"
+                     tabindex="0">
+
+                    @* ── KPI Özet ── *@
+                    <section id="ozet" class="ftk-section">
+                        <div class="row g-3">
+                            <div class="col-12 col-sm-6 col-xl-4">
+                                <div class="kpi-card kpi-blue">
+                                    <div class="kpi-icon"><i class="bi bi-building"></i></div>
+                                    <div class="kpi-body">
+                                        <div class="kpi-label">Toplam FTK Sayısı</div>
+                                        <div class="kpi-value">@_toplamFtkSayisi.ToString("N0", _trCulture)</div>
+                                        <div class="kpi-sub">İl / İlçe bazlı kurul</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-sm-6 col-xl-4">
+                                <div class="kpi-card kpi-teal">
+                                    <div class="kpi-icon"><i class="bi bi-people"></i></div>
+                                    <div class="kpi-body">
+                                        <div class="kpi-label">Toplam FTK Üye Sayısı</div>
+                                        <div class="kpi-value">@_toplamUyeSayisi.ToString("N0", _trCulture)</div>
+                                        <div class="kpi-sub">Aktif kişi kaydı olan üyeler</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-sm-6 col-xl-4">
+                                <div class="kpi-card kpi-purple">
+                                    <div class="kpi-icon"><i class="bi bi-building-x"></i></div>
+                                    <div class="kpi-body">
+                                        <div class="kpi-label">Kurulu Olmayan İl/İlçe</div>
+                                        <div class="kpi-value">@_kurulOlmayanSayisi.ToString("N0", _trCulture)</div>
+                                        <div class="kpi-sub">FTK kurulmamış birim sayısı</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-sm-6 col-xl-4">
+                                <div class="kpi-card kpi-gold">
+                                    <div class="kpi-icon"><i class="bi bi-calendar-check"></i></div>
+                                    <div class="kpi-body">
+                                        <div class="kpi-label">@DateTime.Today.Year Yılı Kurulan</div>
+                                        <div class="kpi-value">@_buYilKurulan.ToString("N0", _trCulture)</div>
+                                        <div class="kpi-sub">Yeni kurulan FTK sayısı</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-sm-6 col-xl-4">
+                                <div class="kpi-card kpi-green">
+                                    <div class="kpi-icon"><i class="bi bi-arrow-repeat"></i></div>
+                                    <div class="kpi-body">
+                                        <div class="kpi-label">@DateTime.Today.Year Yılı Güncellenen</div>
+                                        <div class="kpi-value">@_buYilGuncellenen.ToString("N0", _trCulture)</div>
+                                        <div class="kpi-sub">Bu yıl güncellenen FTK</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-sm-6 col-xl-4">
+                                <div class="kpi-card kpi-red">
+                                    <div class="kpi-icon"><i class="bi bi-exclamation-triangle"></i></div>
+                                    <div class="kpi-body">
+                                        <div class="kpi-label">5+ Yıldır Güncellenmeyen</div>
+                                        <div class="kpi-value">@_eskiFtkSayisi.ToString("N0", _trCulture)</div>
+                                        <div class="kpi-sub">@_guncellemeTar</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <hr class="ftk-separator" />
+
+                    @* ── Bölge Dağılımı ── *@
+                    <section id="bolge-dagilim" class="ftk-section">
+                        <h5 class="text-center mb-3 fw-semibold">Bölgelere Göre FTK Dağılımı</h5>
+                        <div class="d-flex flex-wrap gap-3 justify-content-center align-items-start">
+                            <div class="ftk-chart-container">
+                                <GenericChart TItem="PieItem"
+                                              Items="_bolgeDagilimItems"
+                                              LabelSelector="@(p => p.Label)"
+                                              ValueSelector="@(p => p.Value)"
+                                              Title="Bölge Bazlı FTK Dağılımı (Adet)"
+                                              SeriesName="FTK"
+                                              Type="GenericChart<PieItem>.GenericChartType.Donut"
+                                              Height="100%"
+                                              Width="100%"
+                                              ShowLegend="true"
+                                              ShowDataLabels="true"
+                                              ColorPalette="@_mainPalette" />
+                            </div>
+                            <div class="ftk-bolge-table align-self-center">
+                                <div class="table-responsive">
+                                    <table class="table table-hover table-sm mb-0 small">
+                                        <thead>
+                                            <tr>
+                                                <th>Bölge</th>
+                                                <th class="text-end">FTK</th>
+                                                <th class="text-end">Üye</th>
+                                                <th class="text-end">Pay %</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @{ var toplamFtk = _bolgeSatirlar.Sum(r => r.FtkSayisi); }
+                                            @foreach (var satir in _bolgeSatirlar)
+                                            {
+                                                <tr>
+                                                    <td class="fw-medium">@satir.BolgeAdi</td>
+                                                    <td class="text-end">@satir.FtkSayisi.ToString("N0", _trCulture)</td>
+                                                    <td class="text-end">@satir.UyeSayisi.ToString("N0", _trCulture)</td>
+                                                    <td class="text-end text-muted">
+                                                        @(toplamFtk > 0 ? $"%{(satir.FtkSayisi * 100m / toplamFtk):N1}" : "-")
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                        <tfoot class="table-secondary">
+                                            <tr class="fw-semibold">
+                                                <td>Toplam</td>
+                                                <td class="text-end">@toplamFtk.ToString("N0", _trCulture)</td>
+                                                <td class="text-end">@_bolgeSatirlar.Sum(r => r.UyeSayisi).ToString("N0", _trCulture)</td>
+                                                <td class="text-end">%100</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <hr class="ftk-separator" />
+
+                    @* ── Görev Dağılımı ── *@
+                    <section id="gorev-dagilim" class="ftk-section">
+                        <h5 class="text-center mb-3 fw-semibold">FTK Görevlerine Göre Üye Dağılımı</h5>
+                        <div class="d-flex flex-wrap gap-3 justify-content-center align-items-start">
+                            <div class="ftk-chart-container">
+                                <GenericChart TItem="PieItem"
+                                              Items="_gorevDagilimItems"
+                                              LabelSelector="@(p => p.Label)"
+                                              ValueSelector="@(p => p.Value)"
+                                              Title="Görev Bazlı Üye Dağılımı (Adet)"
+                                              SeriesName="Üye"
+                                              Type="GenericChart<PieItem>.GenericChartType.Donut"
+                                              Height="100%"
+                                              Width="100%"
+                                              ShowLegend="true"
+                                              ShowDataLabels="true"
+                                              ColorPalette="@_mainPalette" />
+                            </div>
+                            <div class="ftk-bolge-table align-self-center">
+                                <div class="table-responsive">
+                                    <table class="table table-hover table-sm mb-0 small">
+                                        <thead>
+                                            <tr>
+                                                <th>Görev</th>
+                                                <th class="text-end">Üye</th>
+                                                <th class="text-end">Pay %</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @{ var toplamUye = _gorevSatirlar.Sum(r => r.UyeSayisi); }
+                                            @foreach (var satir in _gorevSatirlar)
+                                            {
+                                                <tr>
+                                                    <td class="fw-medium">@satir.Gorev</td>
+                                                    <td class="text-end">@satir.UyeSayisi.ToString("N0", _trCulture)</td>
+                                                    <td class="text-end text-muted">
+                                                        @(toplamUye > 0 ? $"%{(satir.UyeSayisi * 100m / toplamUye):N1}" : "-")
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                        <tfoot class="table-secondary">
+                                            <tr class="fw-semibold">
+                                                <td>Toplam</td>
+                                                <td class="text-end">@toplamUye.ToString("N0", _trCulture)</td>
+                                                <td class="text-end">%100</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    
+                    <hr class="ftk-separator" />
+
+                    @* ── Türkiye Haritası ── *@
+                    <section id="turkiye-haritasi" class="ftk-section">
+                        <h5 class="text-center mb-3 fw-semibold">İllere Göre FTK Dağılımı</h5>
+                        <p class="text-center text-muted small mb-3">
+                            <i class="bi bi-hand-index me-1"></i>Bir ile tıklayarak o ilin FTK listesini görüntüleyin.
+                        </p>
+                        <div class="ftk-map-wrapper">
+                            <TurkeyMap OnProvinceClick="OnMapProvinceClick" />
+                        </div>
+                    </section>
+                    <hr class="ftk-separator" />
+
+                    @* ── Yıllık Trend ── *@
+                    <section id="yillik-trend" class="ftk-section">
+                        <div class="ftk-wide-container">
+                            <GenericChart TItem="YearItem"
+                                          Items="_yillikTrendItems"
+                                          LabelSelector="@(x => x.Label)"
+                                          ValueSelector="@(x => x.Value)"
+                                          Title="Yıllara Göre FTK Kuruluş Sayısı"
+                                          SeriesName="FTK"
+                                          Type="GenericChart<YearItem>.GenericChartType.Bar"
+                                          ShowDataLabels="true"
+                                          ShowLegend="false"
+                                          GridPaddingBottom="20"
+                                          ColorPalette="@_mainPalette"
+                                          Width="100%"
+                                          Height="100%" />
+                        </div>
+                    </section>
+
+                    <hr class="ftk-separator" />
+
+                    @* ── FTK Listesi ── *@
+                    <section id="ftk-listesi" class="ftk-section text-center">
+                        <h5 class="mb-3 fw-semibold">Bölgelere Göre FTK Listesi</h5>
+                        @if (_bolgeFiltreler.Count > 0)
+                        {
+                            <div class="justify-content-center mb-3">
+                                <div class="btn-group ftk-filter-group" role="group" aria-label="Bölge filtresi">
+                                    <button type="button"
+                                            class="btn btn-sm @(_secilenBolge == null ? "btn-primary" : "btn-outline-primary")"
+                                            @onclick="() => SelectBolge(null)">
+                                        <i class="bi bi-globe2 me-1"></i>Tüm Bölgeler
+                                    </button>
+                                    @foreach (var bolge in _bolgeFiltreler)
+                                    {
+                                        <button type="button"
+                                                class="btn btn-sm @(_secilenBolge == bolge ? "btn-primary" : "btn-outline-primary")"
+                                                @onclick="() => SelectBolge(bolge)">
+                                            @bolge
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+                        }
+                        <GenericTable TItem="FtkSatir"
+                                      @ref="_ftkListesiTable"
+                                      Items="_ftkListesiFiltered"
+                                      SearchTextSelector="@(r => $"{r.IlAdi} {r.IlceAdi} {r.BolgeAdi}")"
+                                      TableClass="table-hover table-sm align-middle"
+                                      TableHeight="Auto"
+                                      PageSize="15"
+                                      PageSizeOptions="@(new[] { 15, 30, 50, 100 })"
+                                      ShowCopy="false"
+                                      ShowExport="false">
+                            <HeaderTemplate>
+                                <th role="button" @onclick="() => SortFtkField(nameof(FtkSatir.BolgeAdi))">
+                                    <span class="d-inline-flex align-items-center">
+                                        <span>Bölge</span>
+                                        <i class="@GetFtkSortIcon(nameof(FtkSatir.BolgeAdi))"></i>
+                                    </span>
+                                </th>
+                                <th role="button" @onclick="() => SortFtkField(nameof(FtkSatir.IlAdi))">
+                                    <span class="d-inline-flex align-items-center">
+                                        <span>İl</span>
+                                        <i class="@GetFtkSortIcon(nameof(FtkSatir.IlAdi))"></i>
+                                    </span>
+                                </th>
+                                <th role="button" @onclick="() => SortFtkField(nameof(FtkSatir.IlceAdi))">
+                                    <span class="d-inline-flex align-items-center">
+                                        <span>İlçe</span>
+                                        <i class="@GetFtkSortIcon(nameof(FtkSatir.IlceAdi))"></i>
+                                    </span>
+                                </th>
+                                <th role="button" @onclick="() => SortFtkField(nameof(FtkSatir.KurulusTarihi))">
+                                    <span class="d-inline-flex align-items-center">
+                                        <span>Kuruluş Tarihi</span>
+                                        <i class="@GetFtkSortIcon(nameof(FtkSatir.KurulusTarihi))"></i>
+                                    </span>
+                                </th>
+                                <th role="button" @onclick="() => SortFtkField(nameof(FtkSatir.GuncellemeTarihi))">
+                                    <span class="d-inline-flex align-items-center">
+                                        <span>Güncelleme Tarihi</span>
+                                        <i class="@GetFtkSortIcon(nameof(FtkSatir.GuncellemeTarihi))"></i>
+                                    </span>
+                                </th>
+                                <th class="text-end">Üye Sayısı</th>
+                            </HeaderTemplate>
+                            <RowTemplate Context="row">
+                                <td>@row.BolgeAdi</td>
+                                <td class="fw-medium">@row.IlAdi</td>
+                                <td>@row.IlceAdi</td>
+                                <td style="white-space:nowrap;">
+                                    @(row.KurulusTarihi.HasValue ? row.KurulusTarihi.Value.ToString("dd.MM.yyyy", _trCulture) : "-")
+                                </td>
+                                <td style="white-space:nowrap;">
+                                    @if (row.GuncellemeTarihi.HasValue)
+                                    {
+                                        var yil = (DateTime.Today - row.GuncellemeTarihi.Value).TotalDays / 365.25;
+                                        <span class="@(yil >= 3 ? "text-danger fw-semibold" : "")">
+                                            @row.GuncellemeTarihi.Value.ToString("dd.MM.yyyy", _trCulture)
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td class="text-end">@row.UyeSayisi</td>
+                            </RowTemplate>
+                        </GenericTable>
+                    </section>
+
+                    <div style="height: 40px;"></div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@* ── İl FTK Modal ── *@
+@if (_mapModalVisible)
+{
+    <div class="modal fade show d-block" tabindex="-1" role="dialog" style="background:rgba(0,0,0,.45);">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-geo-alt-fill me-2 text-primary"></i>@_mapModalIlAdi – FTK Listesi
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="CloseMapModal"></button>
+                </div>
+                <div class="modal-body p-0">
+                    @if (_mapModalRows.Count == 0)
+                    {
+                        <div class="text-center text-muted py-5">
+                            <i class="bi bi-info-circle fs-3 d-block mb-2"></i>
+                            Bu ile ait FTK üye kaydı bulunamadı.
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="px-3 py-2 border-bottom bg-light d-flex align-items-center gap-2">
+                            <i class="bi bi-people-fill text-primary"></i>
+                            <span class="small text-muted">Toplam <strong>@_mapModalRows.Count</strong> üye</span>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover table-sm align-middle mb-0 small">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th>İlçe / Birim</th>
+                                        <th>Görev</th>
+                                        <th>Ad Soyad</th>
+                                        <th>Ünvan</th>
+                                        <th style="white-space:nowrap;">Kuruluş Tarihi</th>
+                                        <th style="white-space:nowrap;">Güncelleme Tarihi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var uye in _mapModalRows)
+                                    {
+                                        <tr>
+                                            <td class="fw-medium">@uye.IlceAdi</td>
+                                            <td>
+                                                <span class="badge rounded-pill bg-primary-subtle text-primary-emphasis">
+                                                    @uye.Gorev
+                                                </span>
+                                            </td>
+                                            <td>@uye.AdiSoyadi</td>
+                                            <td class="text-muted">@uye.Unvani</td>
+                                            <td style="white-space:nowrap;">
+                                                @(uye.KurulusTarihi.HasValue
+                                                    ? uye.KurulusTarihi.Value.ToString("dd.MM.yyyy", _trCulture)
+                                                    : "-")
+                                            </td>
+                                            <td style="white-space:nowrap;">
+                                                @if (uye.GuncellemeTarihi.HasValue)
+                                                {
+                                                    var yil = (DateTime.Today - uye.GuncellemeTarihi.Value).TotalDays / 365.25;
+                                                    <span class="@(yil >= 3 ? "text-danger fw-semibold" : "")">
+                                                        @uye.GuncellemeTarihi.Value.ToString("dd.MM.yyyy", _trCulture)
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">-</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" @onclick="CloseMapModal">Kapat</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private bool _isLoading = true;
+    private bool _scrollSpyInitialized;
+
+    private static readonly CultureInfo _trCulture = new("tr-TR");
+
+    // ── Yüklenen veriler ──────────────────────────────
+    private List<Ftk>      _ftkler   = [];
+    private List<FtkIslem> _islemler = [];
+
+    // ── KPI değerleri ─────────────────────────────────
+    private int _toplamFtkSayisi;
+    private int _toplamUyeSayisi;
+    private int _buYilKurulan;
+    private int _buYilGuncellenen;
+    private int _eskiFtkSayisi;
+    private string _guncellemeTar;
+    private int _kurulOlmayanSayisi;
+
+    // ── Chart verileri ────────────────────────────────
+    private readonly List<PieItem>  _bolgeDagilimItems = new();
+    private readonly List<PieItem>  _gorevDagilimItems = new();
+    private readonly List<YearItem> _yillikTrendItems  = new();
+
+    // ── Tablo verileri ────────────────────────────────
+    private readonly List<BolgeSatir> _bolgeSatirlar   = new();
+    private readonly List<GorevSatir> _gorevSatirlar   = new();
+    private readonly List<FtkSatir>   _ftkListesi      = new();
+    private List<FtkSatir>            _ftkListesiFiltered = new();
+    private List<string>              _bolgeFiltreler  = new();
+    private string?                   _secilenBolge;
+
+    private GenericTable<FtkSatir>?  _ftkListesiTable;
+
+    // ── Harita modal ──────────────────────────────────
+    private bool                                     _mapModalVisible;
+    private string                                   _mapModalIlAdi = "";
+    private List<ModalUyeSatir>                      _mapModalRows  = [];
+    private Dictionary<int, string>                  _ilIdToAdi     = [];
+    private Dictionary<int, List<ModalUyeSatir>>     _uyelerByIl    = [];
+
+    // ── Renk paleti ───────────────────────────────────
+    private static readonly string[] _mainPalette =
+    [
+        "#2563EB", "#10B981", "#F59E0B", "#EF4444", "#7C3AED",
+        "#06B6D4", "#F97316", "#9B5DE5", "#8AC926", "#1982C4",
+        "#FF6B6B", "#4ECDC4"
+    ];
+
+    // ── Yaşam döngüsü ─────────────────────────────────
+    protected override async Task OnInitializedAsync()
+    {
+        _isLoading = true;
+        int currentYear = DateTime.Today.Year;
+        var fiveYearsAgo = new DateTime(DateTime.Today.AddYears(-5).Year,1,1);
+        _guncellemeTar = new DateTime(DateTime.Today.AddYears(-5).Year, 1, 1).ToString("dd.MM.yyyy", _trCulture) + "'den bu güne kadar";
+        var ftkTask      = FtkService.GetLatestPerIslemAsync();
+        var islemTask    = FtkIslemService.GetAllAsync();
+        var ilTask = IlService.GetAktifIllerAsync();
+        var ilceTask = IlceService.GetAktifIlcelerAsync();
+        var bolgeTask    = BolgeService.GetAllAsync();
+
+        await Task.WhenAll(ftkTask, islemTask, ilTask, ilceTask, bolgeTask);
+
+        _islemler = islemTask.Result;
+        _ftkler   = ftkTask.Result;
+
+
+        var iller     = ilTask.Result;
+        var ilceler   = ilceTask.Result;
+        var bolgeler  = bolgeTask.Result;
+        var ilDict    = iller.ToDictionary(i => i.Id);
+        var ilceDict  = ilceler.ToDictionary(i => i.Id);
+        var bolgeDict = bolgeler.ToDictionary(b => b.Id);
+        // FtkIslem_Table: FTK birimi başına tek kayıt → tarihler için birincil kaynak
+        var islemDict = _islemler.ToDictionary(i => i.Id);
+
+        // ── KPI ──────────────────────────────────────
+        // Gerçek FTK birimi sayısı = FTK_Table'da distinct (Ili, Ilcesi) ikilisi
+        // (Ilcesi = -1 → İl FTK, diğerleri → İlçe FTK)
+        var _tumFtklar = ftkTask.Result
+            .Where(f => f.Ili.HasValue && f.Ilcesi.HasValue)
+            .Select(f => (f.Ili!.Value, f.Ilcesi!.Value))
+            .Distinct()
+            .ToList();
+        _toplamFtkSayisi = _tumFtklar.Count;
+        _toplamUyeSayisi   = _ftkler.Count;
+        _buYilKurulan      = _islemler.Count(i => i.KurulusTarihi.HasValue && i.KurulusTarihi.Value.Year == currentYear);
+        _buYilGuncellenen  = _islemler.Count(i => i.GuncellemeTarihi.HasValue && i.GuncellemeTarihi.Value.Year == currentYear);
+        _eskiFtkSayisi     = _islemler.Count(i => i.GuncellemeTarihi.HasValue && i.GuncellemeTarihi.Value < fiveYearsAgo
+                                                || !i.GuncellemeTarihi.HasValue);
+        // (Toplam il + Toplam ilçe) - Kurulu FTK birim sayısı
+        var kuruluBirimSayisi = _islemler
+            .Where(i => i.Ili.HasValue && i.Ilcesi.HasValue)
+            .Select(i => (i.Ili!.Value, i.Ilcesi!.Value))
+            .Distinct()
+            .Count();
+        int ilSayisi = iller.Where(i => i.Id > 0 && i.Id < 82).ToList().Count;
+        _kurulOlmayanSayisi = (iller.Count + ilceler.Count) - kuruluBirimSayisi;
+
+        // ── Bölge Dağılımı ────────────────────────────
+        // FTK_Table'dan bölge bazlı distinct (Ili,Ilcesi) sayısı ve üye sayısı
+        var ftkPerBolge = ftkTask.Result
+            .Where(f => f.BolgeId.HasValue && f.Ili.HasValue && f.Ilcesi.HasValue)
+            .GroupBy(f => f.BolgeId!.Value)
+            .ToDictionary(
+                g => g.Key,
+                g => (FtkSayisi: g.Select(f => (f.Ili!.Value, f.Ilcesi!.Value)).Distinct().Count(),
+                      UyeSayisi: g.Count()));
+
+        var bolgeGruplari = bolgeler
+            .Select(b =>
+            {
+                ftkPerBolge.TryGetValue(b.Id, out var counts);
+                return new BolgeSatir { BolgeAdi = b.Adi ?? "Bilinmiyor", FtkSayisi = counts.FtkSayisi, UyeSayisi = counts.UyeSayisi };
+            })
+            .Where(r => r.FtkSayisi > 0)
+            .OrderByDescending(r => r.FtkSayisi)
+            .ToList();
+        _bolgeSatirlar.AddRange(bolgeGruplari);
+        _bolgeDagilimItems.AddRange(bolgeGruplari.Select(r => new PieItem { Label = r.BolgeAdi, Value = r.FtkSayisi }));
+
+        // ── Görev Dağılımı ────────────────────────────
+        var gorevGruplari = _ftkler
+            .Where(f => !string.IsNullOrWhiteSpace(f.FtkGorevi))
+            .GroupBy(f => f.FtkGorevi!)
+            .Select(g => new GorevSatir { Gorev = g.Key, UyeSayisi = g.Count() })
+            .OrderByDescending(r => r.UyeSayisi)
+            .ToList();
+        _gorevSatirlar.AddRange(gorevGruplari);
+        _gorevDagilimItems.AddRange(gorevGruplari.Select(r => new PieItem { Label = r.Gorev, Value = r.UyeSayisi }));
+
+        // ── Yıllık Trend ──────────────────────────────
+        var yillikGrup = _islemler
+            .Where(i => i.KurulusTarihi.HasValue)
+            .GroupBy(i => i.KurulusTarihi!.Value.Year)
+            .Select(g => new YearItem { Year = g.Key, Label = g.Key.ToString(), Value = g.Count() })
+            .OrderBy(y => y.Year)
+            .ToList();
+        _yillikTrendItems.AddRange(yillikGrup);
+
+        // ── FTK Listesi ───────────────────────────────
+        // FtkIslemId bazlı gruplama: her grup = bir FTK birimi, g.Count() = tüm üye sayısı
+        // Ili/Ilcesi null olan satırlar dahil edilir (üye sayısına girer), lookup sadece first'ten yapılır
+        _ftkListesi.AddRange(
+            ftkTask.Result
+                .Where(f => f.FtkIslemId.HasValue)
+                .GroupBy(f => f.FtkIslemId!.Value)
+                .Select(g =>
+                {
+                    // GetLatestPerIslemAsync zaten MAX(Sayaç) filtreler;
+                    // MaxBy ile grupta kesin olarak en yüksek Sayaç kaydını al
+                    var first    = g.MaxBy(x => x.Sayac ?? 0)!;
+                    islemDict.TryGetValue(g.Key, out var islem);
+                    var ilAdi    = first.Ili.HasValue    && ilDict.TryGetValue(first.Ili.Value,    out var il)   ? il.IlAdi    ?? "-" : "-";
+                    var ilceAdi  = first.Ilcesi.HasValue
+                                   ? (first.Ilcesi.Value == -1
+                                      ? "(İl FTK)"
+                                      : ilceDict.TryGetValue(first.Ilcesi.Value, out var ilce) ? ilce.IlceAdi ?? "-" : "-")
+                                   : "-";
+                    var bolgeAdi = first.BolgeId.HasValue && bolgeDict.TryGetValue(first.BolgeId.Value, out var b) ? b.Adi : "-";
+                    return new FtkSatir
+                    {
+                        IslemId          = g.Key,
+                            IlId             = first.Ili ?? 0,
+                            BolgeAdi         = bolgeAdi,
+                        IlAdi            = ilAdi,
+                        IlceAdi          = ilceAdi,
+                        // FtkIslem_Table birincil, FTK_Table (MAX Sayaç) fallback
+                        KurulusTarihi    = islem?.KurulusTarihi    ?? first.KurulusTarihi,
+                        GuncellemeTarihi = islem?.GuncellemeTarihi ?? first.GuncellemeTarihi,
+                        UyeSayisi        = g.Count()
+                    };
+                })
+                .OrderBy(r => r.BolgeAdi)
+                .ThenBy(r => r.IlAdi)
+                .ThenBy(r => r.IlceAdi));
+
+        _bolgeFiltreler = _ftkListesi
+            .Select(r => r.BolgeAdi)
+            .Where(b => b != "-")
+            .Distinct()
+            .OrderBy(b => b)
+            .ToList();
+
+        _ilIdToAdi = iller.ToDictionary(i => i.Id, i => i.IlAdi ?? "-");
+
+        // ── Harita modal: il bazında üye lookup ───────
+        _uyelerByIl = ftkTask.Result
+            .Where(f => f.Ili.HasValue)
+            .GroupBy(f => f.Ili!.Value)
+            .ToDictionary(
+                g => g.Key,
+                g => g.Select(f =>
+                {
+                    islemDict.TryGetValue(f.FtkIslemId ?? 0, out var islemUye);
+                    var ilceAdiUye = f.Ilcesi.HasValue
+                        ? (f.Ilcesi.Value == -1
+                           ? "(İl FTK)"
+                           : ilceDict.TryGetValue(f.Ilcesi.Value, out var ilceUye)
+                             ? ilceUye.IlceAdi ?? "-" : "-")
+                        : "-";
+                    return new ModalUyeSatir
+                    {
+                        IlceAdi          = ilceAdiUye,
+                        Gorev            = f.FtkGorevi    ?? "-",
+                        AdiSoyadi        = $"{f.Adi} {f.Soyadi}".Trim(),
+                        Unvani           = f.Unvani       ?? "-",
+                        KurulusTarihi    = islemUye?.KurulusTarihi    ?? f.KurulusTarihi,
+                        GuncellemeTarihi = islemUye?.GuncellemeTarihi ?? f.GuncellemeTarihi,
+                    };
+                })
+                .OrderBy(u => u.IlceAdi)
+                .ThenBy(u => u.Gorev)
+                .ThenBy(u => u.AdiSoyadi)
+                .ToList());
+
+        ApplyFtkFilter();
+
+        _isLoading = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_scrollSpyInitialized || _isLoading)
+            return;
+
+        _scrollSpyInitialized = true;
+        await JS.InvokeVoidAsync("initScrollSpy", "ftk-scrollspy-content", "ftk-scrollspy-nav", 12);
+    }
+
+    private Task ScrollToAsync(string sectionId)
+        => JS.InvokeVoidAsync("scrollSpyScrollTo", "ftk-scrollspy-content", sectionId).AsTask();
+
+    // ── Filtre ───────────────────────────────────────
+    private void SelectBolge(string? bolge)
+    {
+        _secilenBolge = bolge;
+        ApplyFtkFilter();
+    }
+
+    private void ApplyFtkFilter()
+    {
+        _ftkListesiFiltered = _secilenBolge == null
+            ? [.. _ftkListesi]
+            : _ftkListesi.Where(r => r.BolgeAdi == _secilenBolge).ToList();
+    }
+
+    // ── Sıralama yardımcıları ─────────────────────────
+    private void SortFtkField(string field) => _ftkListesiTable?.SortBy(field);
+
+    // ── Harita tıklama ────────────────────────────────
+    private void OnMapProvinceClick(int ilId)
+    {
+        _mapModalIlAdi   = _ilIdToAdi.TryGetValue(ilId, out var ad) ? ad : ilId.ToString();
+        _mapModalRows    = _uyelerByIl.TryGetValue(ilId, out var uyeler) ? uyeler : [];
+        _mapModalVisible = true;
+    }
+
+    private void CloseMapModal() => _mapModalVisible = false;
+
+    private string GetFtkSortIcon(string field)
+    {
+        if (_ftkListesiTable?.CurrentSortField != field)
+            return "bi bi-arrow-down-up ms-2 text-muted";
+        return _ftkListesiTable.CurrentSortDescending
+            ? "bi bi-caret-down-fill ms-2"
+            : "bi bi-caret-up-fill ms-2";
+    }
+
+    private static string GetUyelikBadgeClass(string? durum) => durum switch
+    {
+        "Aktif"   => "bg-success",
+        "Pasif"   => "bg-secondary",
+        "İzinli"  => "bg-warning text-dark",
+        _         => "bg-info text-dark"
+    };
+
+    // ── İç DTO sınıfları ──────────────────────────────
+    private class PieItem
+    {
+        public string  Label { get; set; } = "";
+        public decimal Value { get; set; }
+    }
+
+    private class YearItem
+    {
+        public int     Year  { get; set; }
+        public string  Label { get; set; } = "";
+        public decimal Value { get; set; }
+    }
+
+    private class BolgeSatir
+    {
+        public string BolgeAdi  { get; set; } = "";
+        public int    FtkSayisi { get; set; }
+        public int    UyeSayisi { get; set; }
+    }
+
+    private class GorevSatir
+    {
+        public string Gorev     { get; set; } = "";
+        public int    UyeSayisi { get; set; }
+    }
+
+    private class FtkSatir
+    {
+        public int       IslemId          { get; set; }
+        public int       IlId             { get; set; }
+        public string    BolgeAdi         { get; set; } = "";
+        public string    IlAdi            { get; set; } = "";
+        public string    IlceAdi          { get; set; } = "";
+        public DateTime? KurulusTarihi    { get; set; }
+        public DateTime? GuncellemeTarihi { get; set; }
+        public int       UyeSayisi        { get; set; }
+    }
+
+    private class ModalUyeSatir
+    {
+        public string    IlceAdi          { get; set; } = "";
+        public string    Gorev            { get; set; } = "";
+        public string    AdiSoyadi        { get; set; } = "";
+        public string    Unvani           { get; set; } = "";
+        public DateTime? KurulusTarihi    { get; set; }
+        public DateTime? GuncellemeTarihi { get; set; }
+    }
+
+    }

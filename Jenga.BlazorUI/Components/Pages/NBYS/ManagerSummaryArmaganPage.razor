@@ -1,0 +1,871 @@
+@page "/nbys/armagan-summary"
+@using System.Globalization
+@using Jenga.BlazorUI.Components.Common
+@using Microsoft.JSInterop
+@using Jenga.Models.NBYS
+@using Jenga.DataAccess.Services.NBYS
+@using Jenga.DataAccess.Services.Common
+@using Jenga.Models.Common
+@using Jenga.DataAccess.Services.TBYS
+@using Jenga.Models.TBYS
+@rendermode InteractiveServer
+@inject IJSRuntime JS
+@inject IArmaganService ArmaganService
+@inject IArmaganTanimService ArmaganTanimService
+@inject INakitBagisciService NakitBagisciService
+@inject IIlService IlService
+@inject IBolgeService BolgeService
+@inject IBagisService BagisService
+
+<div class="py-4 px-2">
+    <div class="armagan-overview">
+        @if (isLoading)
+        {
+            <div class="text-center">
+                <div class="d-flex justify-content-center mt-4">
+                    <img src="/images/coding.gif"
+                         alt="coding"
+                         loading="lazy"
+                         data-bs-toggle="tooltip"
+                         data-bs-placement="top"
+                         title="Armağan verileri hazırlanıyor..."
+                         class="img-fluid rounded-4 shadow"
+                         style="max-width: 220px; height: auto;" />
+                </div>
+                <div class="text-muted mt-2">Armağan verileri yükleniyor...</div>
+            </div>
+        }
+        else
+        {
+            <div class="armagan-scrollspy-layout">
+
+                @* ── Scrollspy Nav ── *@
+                <nav id="armagan-scrollspy-nav" class="armagan-scrollspy-nav">
+                    <div class="nav nav-pills flex-column gap-1">
+                        <div class="armagan-nav-title">
+                            <i class="bi bi-award-fill me-1"></i> Armağan
+                        </div>
+                        <a class="nav-link"
+                           href="#ozet"
+                           @onclick:preventDefault="true"
+                           @onclick='() => ScrollToAsync("ozet")'>
+                            <i class="bi bi-grid-1x2-fill me-1"></i>Özet
+                        </a>
+                        <a class="nav-link"
+                           href="#armagan-turleri"
+                           @onclick:preventDefault="true"
+                           @onclick='() => ScrollToAsync("armagan-turleri")'>
+                            <i class="bi bi-award-fill me-1"></i>Armağan Türleri
+                        </a>
+                        <a class="nav-link"
+                           href="#aylik-dagilim"
+                           @onclick:preventDefault="true"
+                           @onclick='() => ScrollToAsync("aylik-dagilim")'>
+                            <i class="bi bi-calendar3 me-1"></i>Aylık Dağılım
+                        </a>
+                        <a class="nav-link"
+                           href="#durum-doviz"
+                           @onclick:preventDefault="true"
+                           @onclick='() => ScrollToAsync("durum-doviz")'>
+                            <i class="bi bi-pie-chart-fill me-1"></i>Durum &amp; Döviz
+                        </a>
+@*                         <a class="nav-link"
+                           href="#son5yil"
+                           @onclick:preventDefault="true"
+                           @onclick='() => ScrollToAsync("son5yil")'>
+                            <i class="bi bi-graph-up-arrow me-1"></i>Son 5 Yıl
+                        </a> *@
+                        <a class="nav-link"
+                           href="#son-armaganlar"
+                           @onclick:preventDefault="true"
+                           @onclick='() => ScrollToAsync("son-armaganlar")'>
+                            <i class="bi bi-clock-history me-1"></i>Armağanlar (Son 3 Ay)
+                        </a>
+                    </div>
+                </nav>
+
+                @* ── Scrollspy Content ── *@
+                <div id="armagan-scrollspy-content"
+                     class="armagan-scrollspy-content"
+                     data-bs-spy="scroll"
+                     data-bs-target="#armagan-scrollspy-nav"
+                     data-bs-smooth-scroll="true"
+                     tabindex="0">
+
+                    @* ── Ticker ── *@
+                    <section id="ticker" class="armagan-section">
+                        <div class="armagan-ticker-wrapper pauseable">
+                            <div class="armagan-ticker" aria-label="Armağan özet bilgisi">
+                                <div class="armagan-ticker-track" aria-hidden="true">
+                                    <span class="armagan-ticker-item">
+                                        <i class="bi bi-award"></i> @TickerText1
+                                    </span>
+                                    @foreach (var tickerItem in _armaganTanimTickerItems)
+                                    {
+                                        <span class="armagan-ticker-item">
+                                            <i class="bi bi-award"></i> @tickerItem
+                                        </span>
+                                    }
+                                    <span class="armagan-ticker-item">
+                                        <i class="bi bi-award"></i> @TickerText2
+                                    </span>
+                                    <span class="armagan-ticker-item">
+                                        <i class="bi bi-bi-award"></i> @TickerText3
+                                    </span>
+                                </div>
+                                <div class="armagan-ticker-track" aria-hidden="true">
+                                    <span class="armagan-ticker-item">
+                                        <i class="bi bi-award"></i> @TickerText1
+                                    </span>
+                                    @foreach (var tickerItem in _armaganTanimTickerItems)
+                                    {
+                                        <span class="armagan-ticker-item">
+                                            <i class="bi bi-award-fill"></i> @tickerItem
+                                        </span>
+                                    }
+                                    <span class="armagan-ticker-item">
+                                        <i class="bi bi-award"></i> @TickerText2
+                                    </span>
+                                    <span class="armagan-ticker-item">
+                                        <i class="bi bi-award"></i> @TickerText3
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <hr class="armagan-separator" />
+
+                    @* ── KPI Özet ── *@
+                    <section id="ozet" class="armagan-section">
+                        <div class="row g-3">
+                            <div class="col-12 col-sm-6 col-xl-3">
+                                <div class="kpi-card kpi-blue">
+                                    <div class="kpi-icon"><i class="bi bi-award"></i></div>
+                                    <div class="kpi-body">
+                                        <div class="kpi-label">@DateTime.Today.Year YILI TOPLAMI</div>
+                                        <div class="kpi-value">@_buYilArmaganSayisi.ToString("N0", _trCulture)</div>
+                                        <div class="kpi-sub">Geçen Yıl: @_gecenYilArmaganSayisi.ToString("N0", _trCulture) adet</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-sm-6 col-xl-3">
+                                <div class="kpi-card kpi-gold">
+                                    <div class="kpi-icon"><i class="bi bi-award"></i></div>
+                                    <div class="kpi-body">
+                                        <div class="kpi-label">Altın Madalya</div>
+                                        <div class="kpi-value">@_buYilAltinSayisi.ToString("N0", _trCulture)</div>
+                                        <div class="kpi-sub">Geçen Yıl: @_gecenYilAltinSayisi.ToString("N0", _trCulture) adet</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-sm-6 col-xl-3">
+                                <div class="kpi-card kpi-silver">
+                                    <div class="kpi-icon"><i class="bi bi-award"></i></div>
+                                    <div class="kpi-body">
+                                        <div class="kpi-label">Gümüş Madalya</div>
+                                        <div class="kpi-value">@_buYilGumusSayisi.ToString("N0", _trCulture)</div>
+                                        <div class="kpi-sub">Geçen Yıl: @_gecenYilGumusSayisi.ToString("N0", _trCulture) adet</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-sm-6 col-xl-3">
+                                <div class="kpi-card kpi-bronze">
+                                    <div class="kpi-icon"><i class="bi bi-award"></i></div>
+                                    <div class="kpi-body">
+                                        <div class="kpi-label">Bronz Madalya</div>
+                                        <div class="kpi-value">@_buYilBronzSayisi.ToString("N0", _trCulture)</div>
+                                        <div class="kpi-sub">Geçen Yıl: @_gecenYilBronzSayisi.ToString("N0", _trCulture) adet</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-sm-6 col-xl-3">
+                                <div class="kpi-card kpi-red">
+                                    <div class="kpi-icon"><i class="bi bi-award"></i></div>
+                                    <div class="kpi-body">
+                                        <div class="kpi-label">Teşekkür Belgesi</div>
+                                        <div class="kpi-value">@_buYilTesekkurSayisi.ToString("N0", _trCulture)</div>
+                                        <div class="kpi-sub">Geçen Yıl: @_gecenYilTesekkurSayisi.ToString("N0", _trCulture) adet</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-sm-6 col-xl-3">
+                                <div class="kpi-card kpi-purple">
+                                    <div class="kpi-icon"><i class="bi bi-award"></i></div>
+                                    <div class="kpi-body">
+                                        <div class="kpi-label">Düzenli Bağışçı Belgesi</div>
+                                        <div class="kpi-value">@_buYilDuzenliBagisciSayisi.ToString("N0", _trCulture)</div>
+                                        <div class="kpi-sub">Geçen Yıl: @_gecenYilTesekkurSayisi.ToString("N0", _trCulture) adet</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-sm-6 col-xl-3">
+                                <div class="kpi-card kpi-teal">
+                                    <div class="kpi-icon"><i class="bi bi-house-fill"></i></div>
+                                    <div class="kpi-body">
+                                        <div class="kpi-label">Taşınmaz Armağan Belgesi</div>
+                                        <div class="kpi-value">@_buYilTasinmazArmaganSayisi.ToString("N0", _trCulture)</div>
+                                        <div class="kpi-sub">Geçen Yıl: @_gecenYilTasinmazArmaganSayisi.ToString("N0", _trCulture) adet</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <hr class="armagan-separator" />
+
+                    @* ── Armağan Türleri ── *@
+                    <section id="armagan-turleri" class="armagan-section">
+                        <h5 class="text-center mb-3 fw-semibold">Armağan Türlerine Göre Dağılım</h5>
+                        <div class="d-flex flex-wrap gap-3 justify-content-center align-items-start">
+                            <div class="armagan-chart-container">
+                                <GenericChart TItem="PieItem"
+                                              Items="_armaganTurleriItems"
+                                              LabelSelector="@(p => p.Label)"
+                                              ValueSelector="@(p => p.Value)"
+                                              Title="@($"{DateTime.Today.Year} Yılı Armağan Türleri (Adet)")"
+                                              SeriesName="Adet"
+                                              Type="GenericChart<PieItem>.GenericChartType.Donut"
+                                              Height="100%"
+                                              Width="100%"
+                                              ShowLegend="true"
+                                              ShowDataLabels="true"
+                                              ColorPalette="@_statusPalette" />
+                            </div>
+                            <div class="armagan-tur-table align-self-center">
+                                <div class="table-responsive">
+                                    <table class="table table-hover table-sm mb-0 small">
+                                        <thead>
+                                            <tr>
+                                                <th>Armağan Türü</th>
+                                                <th class="text-end">Adet</th>
+                                                <th class="text-end">Ort. Tutar (₺)</th>
+                                                <th class="text-end">Pay %</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @{ var toplamAdet = _armaganTurleriDetay.Sum(t => t.Adet); }
+                                            @foreach (var tur in _armaganTurleriDetay)
+                                            {
+                                                <tr>
+                                                    <td class="fw-medium">@tur.Adi</td>
+                                                    <td class="text-end">@tur.Adet.ToString("N0", _trCulture)</td>
+                                                    <td class="text-end">@tur.OrtTutar.ToString("N0", _trCulture)</td>
+                                                    <td class="text-end text-muted">
+                                                        @(toplamAdet > 0 ? $"%{(tur.Adet * 100m / toplamAdet):N1}" : "-")
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                        <tfoot class="table-secondary">
+                                            <tr class="fw-semibold">
+                                                <td>Toplam</td>
+                                                <td class="text-end">@toplamAdet.ToString("N0", _trCulture)</td>
+                                                <td class="text-end">—</td>
+                                                <td class="text-end">%100</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <hr class="armagan-separator" />
+
+                    @* ── Aylık Dağılım ── *@
+                    <section id="aylik-dagilim" class="armagan-section">
+                        <div class="armagan-wide-container">
+                            <GenericChart TItem="MonthlyAmount"
+                                          Series="_aylikTurSeries"
+                                          LabelSelector="@(x => x.Label)"
+                                          ValueSelector="@(x => x.Amount)"
+                                          Title="@($"{DateTime.Now.Year} Yılı Aylık Armağan Dağılımı (Adet)")"
+                                          Type="GenericChart<MonthlyAmount>.GenericChartType.Bar"
+                                          ShowDataLabels="false"
+                                          ShowLegend="true"
+                                          GridPaddingBottom="40"
+                                          ColorPalette="@_statusPalette"
+                                          LockToMonthCategories="true"
+                                          Width="100%"
+                                          Height="100%" />
+                        </div>
+                    </section>
+
+                    <hr class="armagan-separator" />
+
+                    @* ── Durum & Döviz ── *@
+                    <section id="durum-doviz" class="armagan-section">
+                        <div class="d-flex flex-wrap gap-3 justify-content-center">
+                            <div class="armagan-chart-container">
+                                <GenericChart TItem="PieItem"
+                                              Items="_durumDagilimItems"
+                                              LabelSelector="@(p => p.Label)"
+                                              ValueSelector="@(p => p.Value)"
+                                              Title="Armağan Durum Dağılımı"
+                                              SeriesName="Adet"
+                                              Type="GenericChart<PieItem>.GenericChartType.Pie"
+                                              Height="100%"
+                                              Width="100%"
+                                              ShowLegend="true"
+                                              ShowDataLabels="true"
+                                              ColorPalette="@_statusPalette" />
+                            </div>
+                        </div>
+                    </section>
+
+                    <hr class="armagan-separator" />
+
+@*                     @* ── Son 5 Yıl Trendi ── 
+                    <section id="son5yil" class="armagan-section">
+                        <div class="d-flex flex-wrap gap-3 justify-content-center">
+                            <div class="armagan-wide-container">
+                                <GenericChart TItem="YearlyAmount"
+                                              Series="_son5YilSeries"
+                                              LabelSelector="@(x => x.Label)"
+                                              ValueSelector="@(x => x.Amount)"
+                                              Title="Yıllık Armağan Sayıları — Son 5 Yıl (Adet)"
+                                              Type="GenericChart<YearlyAmount>.GenericChartType.Bar"
+                                              ShowDataLabels="false"
+                                              ShowLegend="true"
+                                              GridPaddingBottom="40"
+                                              ColorPalette="@_statusPalette"
+                                              XAxisLabelRotateDegrees="0"
+                                              XAxisLabelsAlwaysRotate="false"
+                                              Width="100%"
+                                              Height="100%" />
+                            </div>
+                        </div>
+                    </section> *@
+
+                    <hr class="armagan-separator" />
+
+                    @* ── Son Armağanlar ── *@
+                    <section id="son-armaganlar" class="armagan-section text-center">
+                        <h5 class="mb-3 fw-semibold">Armağanlar (Son 3 Ay)</h5>
+                        <div class="justify-content-center mb-2">
+                            <div class="btn-group ay-filter-group" role="group" aria-label="Ay filtresi">
+                                @foreach (var ay in _ayFiltreler)
+                                {
+                                    <button type="button"
+                                            class="btn btn-sm @(_secilenAy.Year == ay.Year && _secilenAy.Month == ay.Month ? "btn-primary" : "btn-outline-primary")"
+                                            @onclick="() => SelectMonth(ay.Year, ay.Month)">
+                                        @ay.Label
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                        @if (_bolgeFiltreler.Count > 0)
+                        {
+                            <div class="justify-content-center mb-3">
+                                <div class="btn-group ay-filter-group" role="group" aria-label="Bölge filtresi">
+                                    <button type="button"
+                                            class="btn btn-sm @(_secilenBolge == null ? "btn-danger" : "btn-outline-primary")"
+                                            @onclick="() => SelectBolge(null)">
+                                        <i class="bi bi-globe2 me-1"></i>Tüm Bölgeler
+                                    </button>
+                                    @foreach (var bolge in _bolgeFiltreler)
+                                    {
+                                        <button type="button"
+                                                class="btn btn-sm @(_secilenBolge == bolge ? "btn-danger" : "btn-outline-primary")"
+                                                @onclick="() => SelectBolge(bolge)">
+                                            @bolge
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+                        }
+                        <GenericTable TItem="SonArmaganRow"
+                                      @ref="_sonArmaganlarTable"
+                                      Items="_sonArmaganlarFiltered"
+                                      SearchTextSelector="@(a => $"{a.BagisciAdi} {a.ArmaganTur} {a.Durum} {a.IlAdi} {a.BolgeAdi}")"
+                                      TableClass="table-hover table-sm align-middle"
+                                      TableHeight="Auto"
+                                      PageSize="10"
+                                      PageSizeOptions="@(new[] { 10, 20, 50 })"
+                                      ShowCopy="false"
+                                      ShowExport="false">
+                            <HeaderTemplate>
+                                <th role="button" @onclick="() => SortByArmaganField(nameof(SonArmaganRow.BagisciAdi))">
+                                    <span class="d-inline-flex align-items-center">
+                                        <span>Bağışçı</span>
+                                        <i class="@GetArmaganSortIcon(nameof(SonArmaganRow.BagisciAdi))"></i>
+                                    </span>
+                                </th>
+                                <th role="button" @onclick="() => SortByArmaganField(nameof(SonArmaganRow.BolgeAdi))">
+                                    <span class="d-inline-flex align-items-center">
+                                        <span>Bölge</span>
+                                        <i class="@GetArmaganSortIcon(nameof(SonArmaganRow.BolgeAdi))"></i>
+                                    </span>
+                                </th>
+                                <th role="button" @onclick="() => SortByArmaganField(nameof(SonArmaganRow.IlAdi))">
+                                    <span class="d-inline-flex align-items-center">
+                                        <span>İl</span>
+                                        <i class="@GetArmaganSortIcon(nameof(SonArmaganRow.IlAdi))"></i>
+                                    </span>
+                                </th>
+                                <th role="button" class="text-end" style="white-space:nowrap;" @onclick="() => SortByArmaganField(nameof(SonArmaganRow.Tutar))">
+                                    <span class="d-inline-flex align-items-center">
+                                        <span>Tutar</span>
+                                        <i class="@GetArmaganSortIcon(nameof(SonArmaganRow.Tutar))"></i>
+                                    </span>
+                                </th>
+                                <th role="button" style="white-space:nowrap;" @onclick="() => SortByArmaganField(nameof(SonArmaganRow.Tarih))">
+                                    <span class="d-inline-flex align-items-center">
+                                        <span>Tarih</span>
+                                        <i class="@GetArmaganSortIcon(nameof(SonArmaganRow.Tarih))"></i>
+                                    </span>
+                                </th>
+                                <th role="button" @onclick="() => SortByArmaganField(nameof(SonArmaganRow.ArmaganTur))">
+                                    <span class="d-inline-flex align-items-center">
+                                        <span>Armağan</span>
+                                        <i class="@GetArmaganSortIcon(nameof(SonArmaganRow.ArmaganTur))"></i>
+                                    </span>
+                                </th>
+                                <th role="button" @onclick="() => SortByArmaganField(nameof(SonArmaganRow.Durum))">
+                                    <span class="d-inline-flex align-items-center">
+                                        <span>Durum</span>
+                                        <i class="@GetArmaganSortIcon(nameof(SonArmaganRow.Durum))"></i>
+                                    </span>
+                                </th>
+                                <th class="text-center">Düzenli Bağış</th>
+                                <th class="text-center">Çoklu Bağış</th>
+                            </HeaderTemplate>
+                            <RowTemplate Context="arm">
+                                <td class="fw-medium">@arm.BagisciAdi</td>
+                                <td>@arm.BolgeAdi</td>
+                                <td>@arm.IlAdi</td>
+                                <td class="text-end">@arm.Tutar.ToString("N2", _trCulture)</td>
+                                <td style="white-space:nowrap;">@arm.Tarih.ToString("dd.MM.yyyy", _trCulture)</td>
+                                <td>@arm.ArmaganTur</td>
+                                <td>
+                                    <span class="badge @GetDurumBadgeClass(arm.Durum)">
+                                        @(arm.Durum == "Gönderilmedi" ? "Hazırlık Aşamasında" : arm.Durum)
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    @if (arm.DuzenliBagis)
+                                    {
+                                        <i class="bi bi-check-circle-fill text-success" title="Düzenli Bağış"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-dash text-muted"></i>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    @if (arm.CokluBagis)
+                                    {
+                                        <i class="bi bi-check-circle-fill text-success" title="Çoklu Bağış"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-dash text-muted"></i>
+                                    }
+                                </td>
+                            </RowTemplate>
+                        </GenericTable>
+                    </section>
+
+                    <div style="height: 40px;"></div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private bool isLoading = true;
+    private bool _scrollSpyInitialized;
+
+    private static readonly CultureInfo _trCulture = new("tr-TR");
+
+    // ── Yüklenen veri ──────────────────────────────────
+    private List<Armagan> _armaganlar = [];
+
+    // ── KPI değerleri ──────────────────────────────────
+    private int    _toplamArmaganSayisi;
+    private int    _buYilArmaganSayisi;
+    private int    _gecenYilArmaganSayisi;
+    private decimal _toplamTutar;
+    private decimal _buYilTutar;
+    private int    _aktifBagisciSayisi;
+    private int    _bekleyenSayisi;
+    private int    _gecersizSayisi;
+    private int _duzenliBagisKayitSayisi;
+    private decimal _duzenliBagisToplamTutar;
+    private int    _iadeSayisi;
+    private decimal _iadeToplami;
+    private int    _yabancıDovizSayisi;
+
+    // ArmaganTanim bazlı sayılar (Id: 4=Altın, 3=Gümüş, 2=Bronz, 1=Teşekkür)
+    private int _buYilAltinSayisi;
+    private int _buYilGumusSayisi;
+    private int _buYilBronzSayisi;
+    private int _buYilTesekkurSayisi;
+    private int _buYilDuzenliBagisciSayisi;
+    private int _buYilTasinmazArmaganSayisi;
+    private int _gecenYilTasinmazArmaganSayisi;
+    private int _gecenYilAltinSayisi;
+    private int _gecenYilGumusSayisi;
+    private int _gecenYilBronzSayisi;
+    private int _gecenYilTesekkurSayisi;
+    private int _gecenYilDuzenliBagisciSayisi;
+    // ── Ticker metinleri ───────────────────────────────
+    private string TickerText1 = "";
+    private string TickerText2 = "";
+    private string TickerText3 = "";
+    private List<string> _armaganTanimTickerItems = []; // ArmaganTanim limit bilgileri (Id: 4=Altın, 3=Gümüş, 2=Bronz, 1=Teşekkür)
+
+    // ── Chart veri listeleri ───────────────────────────
+    private readonly List<PieItem>       _armaganTurleriItems  = new();
+    private readonly List<ArmaganTurDetay> _armaganTurleriDetay = new();
+    private readonly List<GenericChart<MonthlyAmount>.GenericSeries> _aylikTurSeries = new();
+    private readonly List<PieItem>       _durumDagilimItems    = new();
+    private readonly List<GenericChart<YearlyAmount>.GenericSeries> _son5YilSeries = new();
+
+    // ── Tablo verileri ─────────────────────────────────
+    private readonly List<TopDonorRow>    _topBagiscilar  = new();
+    private readonly List<SonArmaganRow>  _sonArmaganlar  = new();
+    private List<SonArmaganRow>           _sonArmaganlarFiltered = new();
+    private (int Year, int Month)         _secilenAy;
+    private List<(int Year, int Month, string Label)> _ayFiltreler = new();
+    private string?                       _secilenBolge;
+    private List<string>                  _bolgeFiltreler = new();
+    private GenericTable<SonArmaganRow>?  _sonArmaganlarTable;
+
+    // ── Renk paletleri ─────────────────────────────────
+    private static readonly string[] _armaganPalette =
+    [
+        "#2563EB", "#7C3AED", "#06B6D4", "#10B981", "#F59E0B", "#EF4444", "#F97316"
+    ];
+
+    private static readonly string[] _palette2 =
+    [
+        "#9B5DE5", "#F15BB5", "#FEE440", "#00BBF9", "#00F5D4",
+        "#FF595E", "#FFCA3A", "#8AC926", "#1982C4", "#6A4C93",
+        "#FF6B6B", "#4ECDC4"
+    ];
+
+    private static readonly string[] _palette3 =
+    [
+        "#2563EB", "#7C3AED", "#06B6D4", "#10B981", "#F59E0B"
+    ];
+
+    private static readonly string[] _statusPalette =
+    [
+
+        "#10B981",//  → Yeşil
+        "#FF7F0E",//  → Turuncu
+        "#2563EB",//  → Mavi
+        "#D62728",//  → Kırmızı
+        "#9467BD",//  → Mor
+        "#8C564B",//  → Kahverengi
+        "#E377C2",//  → Pembe
+        "#7F7F7F",//  → Gri
+        "#BCBD22",//  → Zeytin Yeşili
+        "#17BECF",//  → Turkuaz
+    ];
+
+    // ── Yaşam döngüsü ──────────────────────────────────
+    protected override async Task OnInitializedAsync()
+    {
+        isLoading = true;
+        var minTarih = new DateTime(2005, 1, 1);
+        _armaganlar = (await ArmaganService.GetAllAsync())
+            .Where(a => a.Tarih.HasValue && a.Tarih.Value >= minTarih)
+            .ToList();
+        int currentYear = DateTime.Now.Year;
+        int previousYear = DateTime.Now.AddYears(-1).Year;
+
+        _buYilArmaganSayisi = _armaganlar.Count(a => a.Tarih.HasValue && a.Tarih.Value.Year == currentYear);
+        _gecenYilArmaganSayisi = _armaganlar.Count(a => a.Tarih.HasValue && a.Tarih.Value.Year == previousYear);
+
+        _buYilAltinSayisi    = _armaganlar.Count(a => a.ArmaganTanimId == 4 && a.Tarih.HasValue && a.Tarih.Value.Year == currentYear);
+        _buYilGumusSayisi    = _armaganlar.Count(a => a.ArmaganTanimId == 3 && a.Tarih.HasValue && a.Tarih.Value.Year == currentYear);
+        _buYilBronzSayisi    = _armaganlar.Count(a => a.ArmaganTanimId == 2 && a.Tarih.HasValue && a.Tarih.Value.Year == currentYear);
+        _buYilTesekkurSayisi = _armaganlar.Count(a => a.ArmaganTanimId == 1 && a.Tarih.HasValue && a.Tarih.Value.Year == currentYear);
+        _buYilDuzenliBagisciSayisi = _armaganlar.Count(a => a.ArmaganTanimId == 9 && a.Tarih.HasValue && a.Tarih.Value.Year == currentYear);
+       
+        _gecenYilAltinSayisi    = _armaganlar.Count(a => a.ArmaganTanimId == 4 && a.Tarih.HasValue && a.Tarih.Value.Year == previousYear);
+        _gecenYilGumusSayisi    = _armaganlar.Count(a => a.ArmaganTanimId == 3 && a.Tarih.HasValue && a.Tarih.Value.Year == previousYear);
+        _gecenYilBronzSayisi    = _armaganlar.Count(a => a.ArmaganTanimId == 2 && a.Tarih.HasValue && a.Tarih.Value.Year == previousYear);
+        _gecenYilTesekkurSayisi = _armaganlar.Count(a => a.ArmaganTanimId == 1 && a.Tarih.HasValue && a.Tarih.Value.Year == previousYear);
+        _gecenYilDuzenliBagisciSayisi = _armaganlar.Count(a => a.ArmaganTanimId == 9 && a.Tarih.HasValue && a.Tarih.Value.Year == previousYear);
+
+        var bagisList = await BagisService.GetAllAsync();
+        _buYilTasinmazArmaganSayisi   = bagisList.Count(b => b.ArmaganTarihi.HasValue && b.ArmaganTarihi.Value.Year == currentYear  && b.BagisciId.HasValue);
+        _gecenYilTasinmazArmaganSayisi = bagisList.Count(b => b.ArmaganTarihi.HasValue && b.ArmaganTarihi.Value.Year == previousYear && b.BagisciId.HasValue);
+
+        var armaganTanimlar = await ArmaganTanimService.GetAllAsync();
+        _armaganTanimTickerItems = armaganTanimlar
+            .Where(t => t.Id is >= 1 and <= 3)
+            .OrderByDescending(t => t.Id)
+            .Select(t =>
+                $"{t.Armagan} belgesi, ₺{(t.OzelKisiAltLimit ?? 0).ToString("N0", _trCulture)}" +
+                $" ile ₺{(t.OzelKisiUstLimit ?? 0).ToString("N0", _trCulture)} arasında bağış yapan bağışçılarımıza verilmektedir.")
+            .ToList();
+
+        TickerText1 = armaganTanimlar
+            .Where(t => t.Id == 4)
+            .Select(t =>
+                $"{t.Armagan} belgesi, ₺{(t.OzelKisiAltLimit ?? 0).ToString("N0", _trCulture)}" +
+                $" ve üzerinde bağış yapan bağışçılarımıza verilmektedir.")
+            .FirstOrDefault() ?? "";
+
+        // Armağan Türlerine Göre Dağılım – gerçek veri
+        var aktifTanimIdler = armaganTanimlar
+            .Where(t => t.Aktif == true)
+            .Select(t => t.Id)
+            .ToHashSet();
+
+        var turGruplari = _armaganlar
+            .Where(a => a.ArmaganTanimId.HasValue
+                     && aktifTanimIdler.Contains(a.ArmaganTanimId!.Value)
+                     && a.Tarih.HasValue && a.Tarih.Value.Year == currentYear)
+            .GroupBy(a => a.ArmaganTanimId!.Value)
+            .Select(g =>
+            {
+                var tanim = armaganTanimlar.FirstOrDefault(t => t.Id == g.Key);
+                return new ArmaganTurDetay
+                {
+                    Adi      = tanim?.Armagan ?? $"Tür #{g.Key}",
+                    Adet     = g.Count(),
+                    OrtTutar = g.Any(a => a.BagisMiktari.HasValue)
+                                 ? g.Where(a => a.BagisMiktari.HasValue).Average(a => a.BagisMiktari!.Value)
+                                 : 0m
+                };
+            })
+            .OrderByDescending(t => t.Adet)
+            .ToList();
+        _armaganTurleriDetay.AddRange(turGruplari);
+        _armaganTurleriItems.AddRange(turGruplari.Select(t => new PieItem { Label = t.Adi, Value = t.Adet }));
+
+        // Aylık Dağılım – gerçek veri (türe göre adet)
+        var ayAdlari = new[] { "Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara" };
+        foreach (var tanim in armaganTanimlar.Where(t => t.Aktif == true).OrderBy(t => t.Id ).ThenBy(t => t.Id))
+        {
+            var aylikSayilar = _armaganlar
+                .Where(a => a.ArmaganTanimId == tanim.Id && a.Tarih.HasValue && a.Tarih.Value.Year == currentYear)
+                .GroupBy(a => a.Tarih!.Value.Month)
+                .ToDictionary(g => g.Key, g => (decimal)g.Count());
+            var ayItems = Enumerable.Range(1, 12)
+                .Select(m => new MonthlyAmount { Month = m, Label = ayAdlari[m - 1], Amount = aylikSayilar.TryGetValue(m, out var cnt) ? cnt : 0m })
+                .ToList();
+            _aylikTurSeries.Add(new GenericChart<MonthlyAmount>.GenericSeries(tanim.Armagan ?? $"Tür #{tanim.Id}", ayItems));
+        }
+
+        // Durum Dağılımı – gerçek veri
+        _durumDagilimItems.AddRange(
+            _armaganlar
+                .Where(a => a.Tarih.HasValue && a.Tarih.Value.Year == currentYear && !string.IsNullOrWhiteSpace(a.Durum))
+                .GroupBy(a => a.Durum switch
+                {
+                    "Erken Gönderildi"             => "Gönderildi",
+                    "Gönderilmedi"                 => "Hazırlık Aşamasında",
+                    _                              => a.Durum!
+                })
+                .Select(g => new PieItem { Label = g.Key, Value = g.Count() })
+                .OrderByDescending(p => p.Value));
+
+        // Son 5 Yıl Trendi – gerçek veri (türe göre adet)
+        var son5Yil = Enumerable.Range(currentYear - 4, 5).ToArray();
+        foreach (var tanim in armaganTanimlar.Where(t => t.Aktif == true).OrderBy(t => t.Id))
+        {
+            var yillikSayilar = _armaganlar
+                .Where(a => a.ArmaganTanimId == tanim.Id && a.Tarih.HasValue && son5Yil.Contains(a.Tarih.Value.Year))
+                .GroupBy(a => a.Tarih!.Value.Year)
+                .ToDictionary(g => g.Key, g => (decimal)g.Count());
+            var yilItems = son5Yil
+                .Select(y => new YearlyAmount { Year = y, Label = y.ToString(), Amount = yillikSayilar.TryGetValue(y, out var cnt) ? cnt : 0m })
+                .ToList();
+            _son5YilSeries.Add(new GenericChart<YearlyAmount>.GenericSeries(tanim.Armagan ?? $"Tür #{tanim.Id}", yilItems));
+        }
+
+        // Son Armağanlar – gerçek veri
+        var tanimAdi = armaganTanimlar.ToDictionary(t => t.Id, t => t.Armagan ?? $"Tür #{t.Id}");
+        var bagiscilar = await NakitBagisciService.GetAllAsync();
+        var bagisciDict = bagiscilar.ToDictionary(b => b.Id);
+        var iller = await IlService.GetAllAsync();
+        var ilDict = iller.ToDictionary(i => i.Id);
+        var bolgeler = await BolgeService.GetAllAsync();
+        var bolgeDict = bolgeler.ToDictionary(b => b.Id);
+        _sonArmaganlar.AddRange(
+            _armaganlar
+                .Where(a => a.Tarih.HasValue && a.Tarih.Value >= DateTime.Today.AddMonths(-3))
+                .OrderByDescending(a => a.Tarih)
+                .Select(a =>
+                {
+                    var bagisciAdi = "-";
+                    var ilAdi = "-";
+                    var bolgeAdi = "-";
+                    if (a.BagisciId.HasValue && bagisciDict.TryGetValue(a.BagisciId.Value, out var b))
+                    {
+                        bagisciAdi = $"{b.Adi} {b.Soyadi}".Trim();
+                        if (b.Ili.HasValue && ilDict.TryGetValue(b.Ili.Value, out var il))
+                        {
+                            ilAdi = il.IlAdi ?? "-";
+                            if (il.BolgeId.HasValue && bolgeDict.TryGetValue(il.BolgeId.Value, out var bolge))
+                                bolgeAdi = bolge.Adi;
+                        }
+                    }
+                    else if (!string.IsNullOrWhiteSpace(a.BelgedeYazanIsim))
+                        bagisciAdi = a.BelgedeYazanIsim;
+                    return new SonArmaganRow
+                    {
+                        Tarih        = a.Tarih!.Value,
+                        BagisciAdi   = bagisciAdi,
+                        IlAdi        = ilAdi,
+                        BolgeAdi     = bolgeAdi,
+                        ArmaganTur   = a.ArmaganTanimId.HasValue && tanimAdi.TryGetValue(a.ArmaganTanimId.Value, out var ad) ? ad : "-",
+                        Tutar        = a.BagisMiktari ?? 0m,
+                        Doviz        = a.DovizCinsi ?? "TRY",
+                        Durum        = a.Durum ?? "-",
+                        DuzenliBagis = a.DuzenliBagis ?? false,
+                        CokluBagis = a.CokluBagis ?? false
+                    };
+                }));
+
+        // Ay filtreleri
+        _ayFiltreler = Enumerable.Range(0, 3)
+            .Select(i => DateTime.Today.AddMonths(-i))
+            .Select(d => (d.Year, d.Month, Label: $"{_trCulture.DateTimeFormat.GetAbbreviatedMonthName(d.Month)} {d.Year}"))
+            .ToList();
+        _secilenAy = (_ayFiltreler[0].Year, _ayFiltreler[0].Month);
+        _bolgeFiltreler = _sonArmaganlar
+            .Select(a => a.BolgeAdi)
+            .Where(b => b != "-")
+            .Distinct()
+            .OrderBy(b => b)
+            .ToList();
+        ApplyFilters();
+
+        // Ticker
+        TickerText2 = $"Bu yıl {_buYilArmaganSayisi:N0} adet bağışçımıza armağan belgeleri verilmiştir.";
+        TickerText3 = $"Verilen armağanların {_buYilAltinSayisi:N0} adedi Altın, {_buYilGumusSayisi:N0} adedi Gümüş, {_buYilBronzSayisi:N0} adedi Bronz, {_buYilTesekkurSayisi:N0} adedi Teşekkür şeklinde gerçekleşmiştir. Ayrıca {_buYilDuzenliBagisciSayisi:N0} adet düzenli bağışçıya belgeleri verilmiştir.";
+
+        isLoading = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_scrollSpyInitialized || isLoading)
+            return;
+
+        _scrollSpyInitialized = true;
+        await JS.InvokeVoidAsync("initScrollSpy", "armagan-scrollspy-content", "armagan-scrollspy-nav", 12);
+    }
+
+    private Task ScrollToAsync(string sectionId)
+        => JS.InvokeVoidAsync("scrollSpyScrollTo", "armagan-scrollspy-content", sectionId).AsTask();
+
+    // ── Yardımcı metodlar ─────────────────────────────
+    private static string GetDurumBadgeClass(string durum) => durum switch
+    {
+        "Gönderildi"                       => "bg-success",
+        "E-Devletten Belge Gönderildi"     => "bg-success",
+        "Erken Gönderildi"                 => "bg-success",
+        "Kontrol Edildi"                   => "bg-primary",
+        "Kontol Edildi"                    => "bg-primary",
+        "Ertelendi"                        => "bg-warning text-dark",
+        "Ulasilamadi"                      => "bg-warning text-dark",
+        "Iade Edildi"                      => "bg-danger",
+        "Parasi Iade Edildi"               => "bg-danger",
+        "Daha Önce Belgesi Iade Edildi"    => "bg-danger",
+        "Afet Nedeniyle Gönderilmedi"      => "bg-secondary",
+        "Gönderilmedi"                     => "bg-info",
+        "Belge Istemiyor"                  => "bg-secondary",
+        _                                  => "bg-secondary"
+    };
+
+    private void SortByArmaganField(string field) => _sonArmaganlarTable?.SortBy(field);
+
+    private string GetArmaganSortIcon(string field)
+    {
+        if (_sonArmaganlarTable?.CurrentSortField != field)
+            return "bi bi-arrow-down-up ms-2 text-muted";
+        return _sonArmaganlarTable.CurrentSortDescending
+            ? "bi bi-caret-down-fill ms-2"
+            : "bi bi-caret-up-fill ms-2";
+    }
+
+    private void SelectMonth(int year, int month)
+    {
+        _secilenAy = (year, month);
+        ApplyFilters();
+    }
+
+    private void SelectBolge(string? bolge)
+    {
+        _secilenBolge = bolge;
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        _sonArmaganlarFiltered = _sonArmaganlar
+            .Where(a => a.Tarih.Year == _secilenAy.Year && a.Tarih.Month == _secilenAy.Month)
+            .Where(a => _secilenBolge == null || a.BolgeAdi == _secilenBolge)
+            .ToList();
+    }
+
+    private static string GetDovizBadgeClass(string doviz) => doviz switch
+    {
+        "TRY" => "bg-danger",
+        "USD" => "bg-dark",
+        "EUR" => "bg-info text-dark",
+        "GBP" => "bg-secondary",
+        _     => "bg-light text-dark"
+    };
+
+    // ── İç DTO sınıfları ──────────────────────────────
+    private class PieItem
+    {
+        public string Label  { get; set; } = "";
+        public decimal Value { get; set; }
+    }
+
+    private class MonthlyAmount
+    {
+        public int     Month  { get; set; }
+        public string  Label  { get; set; } = "";
+        public decimal Amount { get; set; }
+    }
+
+    private class YearlyAmount
+    {
+        public int     Year   { get; set; }
+        public string  Label  { get; set; } = "";
+        public decimal Amount { get; set; }
+    }
+
+    private class ArmaganTurDetay
+    {
+        public string  Adi      { get; set; } = "";
+        public int     Adet     { get; set; }
+        public decimal OrtTutar { get; set; }
+    }
+
+    private class TopDonorRow
+    {
+        public string   BagisciAdi   { get; set; } = "";
+        public bool     TuzelKisi    { get; set; }
+        public int      ArmaganAdedi { get; set; }
+        public decimal  ToplamTutar  { get; set; }
+        public DateTime SonArmagan   { get; set; }
+    }
+
+    private class SonArmaganRow
+    {
+        public DateTime Tarih       { get; set; }
+        public string   BagisciAdi  { get; set; } = "";
+        public string   IlAdi       { get; set; } = "";
+        public string   BolgeAdi    { get; set; } = "";
+        public string   ArmaganTur  { get; set; } = "";
+        public decimal  Tutar       { get; set; }
+        public string   Doviz       { get; set; } = "";
+        public string   Durum       { get; set; } = "";
+        public bool     DuzenliBagis { get; set; }
+        public bool     CokluBagis { get; set; }
+    }
+}

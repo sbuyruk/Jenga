@@ -6,5 +6,6 @@ namespace Jenga.DataAccess.Repositories.IRepository.Common
     {
         Task SaveAsync(CancellationToken cancellationToken = default);
         Task<List<Ilce>> GetByIlIdAsync(int ilId, CancellationToken cancellationToken = default);
+        Task<List<Ilce>> GetAktifIlcelerAsync(CancellationToken cancellationToken = default);
     }
 }

@@ -1,0 +1,971 @@
+﻿@page "/tbys/tasinmaz-dashboard"
+@rendermode InteractiveServer
+
+@using Jenga.BlazorUI.Components.Common
+@using Jenga.BlazorUI.Components.TBYS
+@using Jenga.BlazorUI.Services.Common
+@using Jenga.DataAccess.Services.Common
+@using Jenga.DataAccess.Services.TBYS
+@using Jenga.Models.Common
+@using Jenga.Models.TBYS
+@using Jenga.Utility
+@using System.Globalization
+@using Microsoft.AspNetCore.Components
+@using Microsoft.JSInterop
+
+@inject ITasinmazService TasinmazService
+@inject IIlService IlService
+@inject IBolgeService BolgeService
+@inject ITasinmazBagisciService TasinmazBagisciService
+@inject IModalService ModalService
+@inject IJSRuntime JS
+@implements IDisposable
+
+<div class="tasinmaz-dashboard container-fluid px-0 px-sm-2">
+    @if (_isLoading)
+    {
+        <div class="d-flex justify-content-center align-items-center py-5">
+            <div class="spinner-border text-primary me-3" role="status"></div>
+            <span class="text-muted">Veriler yükleniyor…</span>
+        </div>
+    }
+    else if (_loadFailed)
+    {
+        <div class="alert alert-danger d-flex align-items-center gap-2">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            Veri yüklenirken bir hata oluştu.
+            <button class="btn btn-sm btn-outline-danger ms-auto" @onclick="RefreshAsync">Tekrar Dene</button>
+        </div>
+    }
+    else
+    {
+        <div class="db-scrollspy-layout">
+
+            <!-- ── Scrollspy Nav ────────────────────────────────────── -->
+            <nav id="db-scrollspy-nav" class="db-scrollspy-nav">
+                <div class="nav nav-pills flex-column gap-1">
+                    <div class="db-nav-title">
+                        <i class="bi bi-buildings me-1"></i> Taşınmaz
+                    </div>
+                    <a class="nav-link" href="#bolge-ozeti" @onclick:preventDefault="true" @onclick='() => ScrollToAsync("bolge-ozeti")'>
+                        <i class="bi bi-table me-1"></i>Bölge Özeti
+                    </a>
+                    <a class="nav-link" href="#envanter-ozeti" @onclick:preventDefault="true" @onclick='() => ScrollToAsync("envanter-ozeti")'>
+                        <i class="bi bi-grid-1x2-fill me-1"></i>Envanter Özeti
+                    </a>
+                    <a class="nav-link" href="#finansal-degerler" @onclick:preventDefault="true" @onclick='() => ScrollToAsync("finansal-degerler")'>
+                        <i class="bi bi-cash-stack me-1"></i>Finansal Değerler
+                    </a>
+                    <a class="nav-link" href="#cinsi-dagilim" @onclick:preventDefault="true" @onclick='() => ScrollToAsync("cinsi-dagilim")'>
+                        <i class="bi bi-pie-chart-fill me-1"></i>Cinsi Dağılımı
+                    </a>
+                    <a class="nav-link" href="#grafikler" @onclick:preventDefault="true" @onclick='() => ScrollToAsync("grafikler")'>
+                        <i class="bi bi-bar-chart-fill me-1"></i>Grafikler
+                    </a>
+                    <a class="nav-link" href="#harita" @onclick:preventDefault="true" @onclick='() => ScrollToAsync("harita")'>
+                        <i class="bi bi-map-fill me-1"></i>Türkiye Haritası
+                    </a>
+                    <a class="nav-link" href="#il-listeleri" @onclick:preventDefault="true" @onclick='() => ScrollToAsync("il-listeleri")'>
+                        <i class="bi bi-list-ol me-1"></i>İl Listeleri
+                    </a>
+                    <a class="nav-link" href="#kira-uygunluk" @onclick:preventDefault="true" @onclick='() => ScrollToAsync("kira-uygunluk")'>
+                        <i class="bi bi-house-check-fill me-1"></i>Kira Uygunluk
+                    </a>
+                </div>
+            </nav>
+
+            <!-- ── Scrollspy Content ─────────────────────────────────── -->
+            <div id="db-scrollspy-content"
+                 class="db-scrollspy-content"
+                 data-bs-spy="scroll"
+                 data-bs-target="#db-scrollspy-nav"
+                 data-bs-smooth-scroll="true"
+                 tabindex="0">
+
+    <!-- ── Sayfa Başlığı ──────────────────────────────────────────── -->
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+        <div>
+            <h5 class="mb-0 fw-bold"><i class="bi bi-buildings me-2 text-primary"></i>Taşınmaz Envanter Durumu</h5>
+            <small class="text-muted">Envantteki tüm taşınmazların anlık özeti</small>
+        </div>
+        <button class="btn btn-sm btn-outline-secondary"
+                @onclick="RefreshAsync"
+                disabled="@_isLoading">
+            <i class="bi bi-arrow-clockwise @(_isLoading ? "spin" : "")"></i>
+            @(_isLoading ? "Yükleniyor..." : "Yenile")
+        </button>
+    </div>
+
+
+        <!-- ── BÖLGE ÖZETİ (Tam Genişlik) ───────────────────────────────── -->
+        <section id="bolge-ozeti" class="db-section">
+        <div class="section-label">Bölge Özeti</div>
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-header db-collapsible-header"
+                         @onclick="() => _isBolgeOpen = !_isBolgeOpen"
+                         role="button">
+                        <span>
+                            <i class="bi @(_isBolgeOpen ? "bi-chevron-down" : "bi-chevron-right") me-2"></i>
+                            <strong>Bölge Özeti</strong>
+                        </span>
+                        <small class="text-muted">@_bolgeSummaries.Count bölge</small>
+                    </div>
+                    @if (_isBolgeOpen)
+                    {
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover table-bordered mb-0 db-bolge-table">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Bölge</th>
+                                            <th class="text-center">Toplam</th>
+                                            <th class="text-center">TM</th>
+                                            <th class="text-center">ÇM</th>
+                                            <th class="text-end">Emlak Beyan Değeri</th>
+                                            <th class="text-end">Tah.Ray.Değeri</th>
+                                            <th class="text-end">Muh.Kay.Değeri</th>
+                                            <th class="text-end">Yak.Piy.Değeri</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var b in _bolgeSummaries)
+                                        {
+                                            <tr>
+                                                <td class="fw-semibold">@b.BolgeAdi</td>
+                                                <td class="text-center">@b.Adet</td>
+                                                <td class="text-center text-primary">@b.TM</td>
+                                                <td class="text-center text-info">@b.CM</td>
+                                                <td class="text-end">@(b.EmlakBeyan == 0 ? "–" : b.EmlakBeyan.ToString("N0", TrCulture))</td>
+                                                <td class="text-end">@(b.TahminiRayic == 0 ? "–" : b.TahminiRayic.ToString("N0", TrCulture))</td>
+                                                <td class="text-end">@(b.MuhasebeyeKayitli == 0 ? "–" : b.MuhasebeyeKayitli.ToString("N0", TrCulture))</td>
+                                                <td class="text-end">@(b.YaklasikPiyasa == 0 ? "–" : b.YaklasikPiyasa.ToString("N0", TrCulture))</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                    <tfoot class="table-secondary fw-bold">
+                                        <tr>
+                                            <td>Toplam</td>
+                                            <td class="text-center">@ToplamAdet</td>
+                                            <td class="text-center">@TamMulkAdet</td>
+                                            <td class="text-center">@CiplakMulkAdet</td>
+                                            <td class="text-end">@(ToplamEmlakBeyan == 0 ? "–" : ToplamEmlakBeyan.ToString("N0", TrCulture))</td>
+                                            <td class="text-end">@(ToplamTahminiRayic == 0 ? "–" : ToplamTahminiRayic.ToString("N0", TrCulture))</td>
+                                            <td class="text-end">@(ToplamYaklasikPiyasa == 0 ? "–" : ToplamYaklasikPiyasa.ToString("N0", TrCulture))</td>
+                                            <td class="text-end">@(ToplamMuhasebeyeKayitli == 0 ? "–" : ToplamMuhasebeyeKayitli.ToString("N0", TrCulture))</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+        <hr class="db-separator" />
+        </section>
+
+        <!-- ── BÖLÜM 1 : Adet KPI Kartları ──────────────────────────── -->
+        <section id="envanter-ozeti" class="db-section">
+        <div class="section-label">Envanter Özeti</div>
+        <div class="row g-2 mb-3">
+            <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+                <div class="card db-stat-card db-accent-indigo h-100">
+                    <div class="card-body db-stat-body text-center">
+                        <div class="db-stat-icon"><i class="bi bi-buildings"></i></div>
+                        <div class="db-stat-label">Toplam Taşınmaz</div>
+                        <div class="db-stat-value">@FormatCount(ToplamAdet)</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+                <div class="card db-stat-card db-accent-blue h-100">
+                    <div class="card-body db-stat-body text-center">
+                        <div class="db-stat-icon"><i class="bi bi-check-circle"></i></div>
+                        <div class="db-stat-label">Tam Mülkiyet</div>
+                        <div class="db-stat-value">@FormatCount(TamMulkAdet)</div>
+                        <div class="db-stat-sub">%@Percent(TamMulkAdet)</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+                <div class="card db-stat-card db-accent-teal h-100">
+                    <div class="card-body db-stat-body text-center">
+                        <div class="db-stat-icon"><i class="bi bi-pie-chart"></i></div>
+                        <div class="db-stat-label">Çıplak Mülkiyet</div>
+                        <div class="db-stat-value">@FormatCount(CiplakMulkAdet)</div>
+                        <div class="db-stat-sub">%@Percent(CiplakMulkAdet)</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+                <div class="card db-stat-card db-accent-green h-100">
+                    <div class="card-body db-stat-body text-center">
+                        <div class="db-stat-icon"><i class="bi bi-key"></i></div>
+                        <div class="db-stat-label">Kiraya Uygun</div>
+                        <div class="db-stat-value">@FormatCount(KirayaUygunAdet)</div>
+                        <div class="db-stat-sub">%@Percent(KirayaUygunAdet)</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+                <div class="card db-stat-card db-accent-rose h-100">
+                    <div class="card-body db-stat-body text-center">
+                        <div class="db-stat-icon"><i class="bi bi-x-circle"></i></div>
+                        <div class="db-stat-label">Kiraya Uygun Değil</div>
+                        <div class="db-stat-value">@FormatCount(KirayaUygunDegilAdet)</div>
+                        <div class="db-stat-sub">%@Percent(KirayaUygunDegilAdet)</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+                <div class="card db-stat-card db-accent-amber h-100">
+                    <div class="card-body db-stat-body text-center">
+                        <div class="db-stat-icon"><i class="bi bi-geo-alt"></i></div>
+                        <div class="db-stat-label">İl</div>
+                        <div class="db-stat-value">@FormatCount(ToplamIlAdet)</div>
+                        <div class="db-stat-sub">@FormatCount(ToplamBolgeAdet) bölge</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <hr class="db-separator" />
+        </section>
+
+        <!-- ── BÖLÜM 2 : Değer KPI Kartları ─────────────────────────── -->
+        <section id="finansal-degerler" class="db-section">
+        <div class="section-label">Finansal Değerler</div>
+        <div class="row g-2 mb-3">
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="card db-money-card h-100">
+                    <div class="card-body db-money-body">
+                        <div class="db-money-icon text-sky"><i class="bi bi-receipt"></i></div>
+                        <div>
+                            <div class="db-money-label">Emlak Beyan Değeri</div>
+                            <div class="db-money-value">@FormatMoney(ToplamEmlakBeyan)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="card db-money-card h-100">
+                    <div class="card-body db-money-body">
+                        <div class="db-money-icon text-cyan"><i class="bi bi-cash-stack"></i></div>
+                        <div>
+                            <div class="db-money-label">Tahmini Rayiç Değeri</div>
+                            <div class="db-money-value">@FormatMoney(ToplamTahminiRayic)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="card db-money-card h-100">
+                    <div class="card-body db-money-body">
+                        <div class="db-money-icon text-teal"><i class="bi bi-journal-check"></i></div>
+                        <div>
+                            <div class="db-money-label">Muhasebeye Kayıtlı Değer</div>
+                            <div class="db-money-value">@FormatMoney(ToplamMuhasebeyeKayitli)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="card db-money-card h-100">
+                    <div class="card-body db-money-body">
+                        <div class="db-money-icon text-orange"><i class="bi bi-graph-up-arrow"></i></div>
+                        <div>
+                            <div class="db-money-label">Yaklaşık Piyasa Değeri</div>
+                            <div class="db-money-value">@FormatMoney(ToplamYaklasikPiyasa)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <hr class="db-separator" />
+        </section>
+
+        <!-- ── BÖLÜM 3 : Cinsi Dağılımı ──────────────────────────────── -->
+        <section id="cinsi-dagilim" class="db-section">
+        <div class="section-label">Taşınmaz Cinsi Dağılımı</div>
+        <div class="row g-2 mb-4">
+            <div class="col-6 col-sm-4 col-md-2">
+                <div class="card db-cinsi-card db-accent-purple h-100 text-center">
+                    <div class="card-body db-cinsi-body">
+                        <i class="bi bi-building db-cinsi-icon"></i>
+                        <div class="db-cinsi-label">Bina</div>
+                        <div class="db-cinsi-value">@FormatCount(BinaAdet)</div>
+                        <div class="db-cinsi-sub">%@Percent(BinaAdet)</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-sm-4 col-md-2">
+                <div class="card db-cinsi-card db-accent-sky h-100 text-center">
+                    <div class="card-body db-cinsi-body">
+                        <i class="bi bi-house-door db-cinsi-icon"></i>
+                        <div class="db-cinsi-label">Mesken</div>
+                        <div class="db-cinsi-value">@FormatCount(MeskenAdet)</div>
+                        <div class="db-cinsi-sub">%@Percent(MeskenAdet)</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-sm-4 col-md-2">
+                <div class="card db-cinsi-card db-accent-orange h-100 text-center">
+                    <div class="card-body db-cinsi-body">
+                        <i class="bi bi-shop db-cinsi-icon"></i>
+                        <div class="db-cinsi-label">İşyeri</div>
+                        <div class="db-cinsi-value">@FormatCount(IsyeriAdet)</div>
+                        <div class="db-cinsi-sub">%@Percent(IsyeriAdet)</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-sm-4 col-md-2">
+                <div class="card db-cinsi-card db-accent-lime h-100 text-center">
+                    <div class="card-body db-cinsi-body">
+                        <i class="bi bi-map db-cinsi-icon"></i>
+                        <div class="db-cinsi-label">Arsa</div>
+                        <div class="db-cinsi-value">@FormatCount(ArsaAdet)</div>
+                        <div class="db-cinsi-sub">%@Percent(ArsaAdet)</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-sm-4 col-md-2">
+                <div class="card db-cinsi-card db-accent-cyan h-100 text-center">
+                    <div class="card-body db-cinsi-body">
+                        <i class="bi bi-tree db-cinsi-icon"></i>
+                        <div class="db-cinsi-label">Tarla</div>
+                        <div class="db-cinsi-value">@FormatCount(TarlaAdet)</div>
+                        <div class="db-cinsi-sub">%@Percent(TarlaAdet)</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-sm-4 col-md-2">
+                <div class="card db-cinsi-card db-accent-slate h-100 text-center">
+                    <div class="card-body db-cinsi-body">
+                        <i class="bi bi-three-dots db-cinsi-icon"></i>
+                        <div class="db-cinsi-label">Diğer</div>
+                        <div class="db-cinsi-value">@FormatCount(DigerAdet)</div>
+                        <div class="db-cinsi-sub">%@Percent(DigerAdet)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <hr class="db-separator" />
+        </section>
+
+        <!-- ── BÖLÜM 4 : Grafikler ────────────────────────────────────── -->
+        <section id="grafikler" class="db-section">
+        <div class="section-label">Grafikler</div>
+        <div class="row g-3 mb-4">
+            <div class="col-12 col-md-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body p-2">
+                        <GenericChart TItem="PieItem"
+                                      Items="_cinsiChartItems"
+                                      LabelSelector="@(p => p.Label)"
+                                      ValueSelector="@(p => p.Value)"
+                                      Title="Cinsi Dağılımı"
+                                      SeriesName="Adet"
+                                      Type="GenericChart<PieItem>.GenericChartType.Donut"
+                                      Height="420px"
+                                      ShowLegend="true"
+                                      ShowDataLabels="true"
+                                      ColorPalette="@_piePalette"
+                                      GridPaddingBottom="20" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body p-2">
+                        <GenericChart TItem="PieItem"
+                                      Items="_mulkiyetChartItems"
+                                      LabelSelector="@(p => p.Label)"
+                                      ValueSelector="@(p => p.Value)"
+                                      Title="Mülkiyet Şekli"
+                                      SeriesName="Adet"
+                                      Type="GenericChart<PieItem>.GenericChartType.Donut"
+                                      Height="420px"
+                                      ShowLegend="true"
+                                      ShowDataLabels="true"
+                                      ColorPalette="@_mulkiyetPalette"
+                                      GridPaddingBottom="20" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body p-2">
+                        <GenericChart TItem="PieItem"
+                                      Items="_bolgeChartItems"
+                                      LabelSelector="@(p => p.Label)"
+                                      ValueSelector="@(p => p.Value)"
+                                      Title="Bölge Bazında Taşınmaz Adedi"
+                                      SeriesName="Adet"
+                                      Type="GenericChart<PieItem>.GenericChartType.Bar"
+                                      Height="420px"
+                                      ShowLegend="false"
+                                      ShowDataLabels="true"
+                                      ColorPalette="@_barPalette"
+                                      XAxisLabelRotateDegrees="-35"
+                                      XAxisLabelsAlwaysRotate="true"
+                                      GridPaddingBottom="40" />
+                    </div>
+                </div>
+            </div>
+        </div>
+        <hr class="db-separator" />
+        </section>
+
+        <!-- ── BÖLÜM 5 : Türkiye Haritası ────────────────────────────── -->
+        <section id="harita" class="db-section">
+        <div class="section-label">Taşınmaz Haritası</div>
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow-sm db-map-card">
+                    <div class="card-body p-2 p-md-3">
+                        <TurkeyMap OnProvinceClick="OnProvinceClickAsync" />
+                    </div>
+                </div>
+            </div>
+        </div>
+        <hr class="db-separator" />
+        </section>
+
+        <!-- ── BÖLÜM 6 :  Taşınmaz Olan/Olmayan İller ── -->
+        <section id="il-listeleri" class="db-section">
+        <div class="row g-3 mb-4">
+            <!-- Top İller -->
+            <div class="col-12 col-lg-3">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header db-collapsible-header"
+                         @onclick="() => _isTopIlOpen = !_isTopIlOpen"
+                         role="button">
+                        <span>
+                            <i class="bi @(_isTopIlOpen ? "bi-chevron-down" : "bi-chevron-right") me-2"></i>
+                            <strong>En Fazla Taşınmaz Olan İller</strong>
+                        </span>
+                        <small class="text-muted">İlk 15</small>
+                    </div>
+                    @if (_isTopIlOpen)
+                    {
+                        <div class="card-body p-0">
+                            <ul class="list-group list-group-flush">
+                                @{var rank = 1;}
+                                @foreach (var il in _topIller)
+                                {
+                                    <li class="list-group-item d-flex justify-content-between align-items-center py-2">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="db-rank-badge @GetRankClass(rank)">@rank</span>
+                                            <span>@il.IlAdi</span>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="db-bar-track">
+                                                <div class="db-bar-fill" style="width:@(il.Count * 100 / Math.Max(_topIller[0].Count, 1))%"></div>
+                                            </div>
+                                            <span class="badge bg-primary rounded-pill">@il.Count</span>
+                                        </div>
+                                    </li>
+                                    rank++;
+                                }
+                            </ul>
+                        </div>
+                    }
+                </div>
+            </div>
+            <!-- Bottom İller -->
+            <div class="col-12 col-lg-3">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header db-collapsible-header"
+                         @onclick="() => _isBottomIlOpen = !_isBottomIlOpen"
+                         role="button">
+                        <span>
+                            <i class="bi @(_isBottomIlOpen ? "bi-chevron-down" : "bi-chevron-right") me-2"></i>
+                            <strong>En Az Taşınmaz Olan İller</strong>
+                        </span>
+                        <small class="text-muted">Son 15</small>
+                    </div>
+                    @if (_isBottomIlOpen)
+                    {
+                        <div class="card-body p-0">
+                            <ul class="list-group list-group-flush">
+                                @{var brank = 1;}
+                                @foreach (var il in _bottomIller)
+                                {
+                                    <li class="list-group-item d-flex justify-content-between align-items-center py-2">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="db-rank-badge">@brank</span>
+                                            <span>@il.IlAdi</span>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="db-bar-track">
+                                                <div class="db-bar-fill bg-warning" style="width:@(il.Count * 100 / Math.Max(_topIller.Count > 0 ? _topIller[0].Count : 1, 1))%"></div>
+                                            </div>
+                                            <span class="badge bg-warning text-dark rounded-pill">@il.Count</span>
+                                        </div>
+                                    </li>
+                                    brank++;
+                                }
+                            </ul>
+                        </div>
+                    }
+                </div>
+            </div>
+             <!-- Hiç Taşınmaz Bulunmayan İller -->
+            <div class="col-12 col-lg-6">
+                <div class="card shadow-sm h-100 border-danger-subtle">
+                    <div class="card-header db-collapsible-header"
+                         @onclick="() => _isNoTasinmazIlOpen = !_isNoTasinmazIlOpen"
+                         role="button">
+                        <span>
+                            <i class="bi @(_isNoTasinmazIlOpen ? "bi-chevron-down" : "bi-chevron-right") me-2"></i>
+                            <strong class="text-danger">Hiç Taşınmaz Bulunmayan İller</strong>
+                        </span>
+                        <span class="badge bg-danger rounded-pill">@_noTasinmazIller.Count il</span>
+                    </div>
+                    @if (_isNoTasinmazIlOpen)
+                    {
+                        <div class="card-body">
+                            <div class="d-flex flex-wrap gap-2">
+                                @foreach (var ilAdi in _noTasinmazIller)
+                                {
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2">@ilAdi</span>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+        </div>
+        <hr class="db-separator" />
+        </section>
+
+        <!-- ── BÖLÜM 7 : Kiraya Uygunluk ──────────────────────── -->
+        <section id="kira-uygunluk" class="db-section">
+        <div class="section-label">Kiraya Uygunluk Dağılımı – İl Bazında</div>
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-body p-2">
+                        <GenericChart TItem="PieItem"
+                                      Items="_kiraUygunlukIlChartItems"
+                                      LabelSelector="@(p => p.Label)"
+                                      ValueSelector="@(p => p.Value)"
+                                      Title="Kiraya Uygun Taşınmazlar – İl Dağılımı"
+                                      SeriesName="Adet"
+                                      Type="GenericChart<PieItem>.GenericChartType.Bar"
+                                      Height="420px"
+                                      ShowLegend="false"
+                                      ShowDataLabels="true"
+                                      ColorPalette="@_greenBarPalette"
+                                      XAxisLabelRotateDegrees="-45"
+                                      XAxisLabelsAlwaysRotate="true"
+                                      XAxisHideOverlappingLabels="true"
+                                      GridPaddingBottom="50" />
+                    </div>
+                </div>
+            </div>
+        </div>
+        </section>
+
+            </div><!-- /db-scrollspy-content -->
+        </div><!-- /db-scrollspy-layout -->
+    }
+
+    <!-- ── Sorumlu Bilgisi ──────────────────────────────────────── -->
+    <div class="d-flex justify-content-center mt-4 mb-2">
+        <img src="/images/zekayi.gif"
+             alt="Zekayi"
+             loading="lazy"
+             data-bs-toggle="tooltip"
+             data-bs-placement="top"
+             style="border-radius:0.5rem"
+             title="Burada yayınlanan tüm Taşınmaz verileri Emlak Direktörlüğü tarafından girilmektedir. İrtibat için Zekayi ÇALIŞ, dahili tel: 229" />
+    </div>
+</div>
+
+@code {
+    // ── Veriler ────────────────────────────────────────────────────
+    private List<Tasinmaz> _tasinmazlar = new();
+    private List<Il> _iller = new();
+    private List<Bolge> _bolgeler = new();
+    private List<TasinmazBagisci> _bagiscilar = new();
+
+    private bool _isLoading;
+    private bool _loadFailed;
+    private CancellationTokenSource? _cts;
+
+    // ── Lookups ────────────────────────────────────────────────────
+    private readonly Dictionary<int, Il> _ilById = new();
+    private readonly Dictionary<int, Bolge> _bolgeById = new();
+
+    // ── KPI Sayım ──────────────────────────────────────────────────
+    private int ToplamAdet;
+    private int TamMulkAdet;
+    private int CiplakMulkAdet;
+    private int KirayaUygunAdet;
+    private int KirayaUygunDegilAdet;
+    private int ToplamIlAdet;
+    private int ToplamBolgeAdet;
+
+    // ── KPI Değer ──────────────────────────────────────────────────
+    private decimal ToplamEmlakBeyan;
+    private decimal ToplamTahminiRayic;
+    private decimal ToplamMuhasebeyeKayitli;
+    private decimal ToplamYaklasikPiyasa;
+
+    // ── Cinsi ──────────────────────────────────────────────────────
+    private int BinaAdet;
+    private int MeskenAdet;
+    private int IsyeriAdet;
+    private int ArsaAdet;
+    private int TarlaAdet;
+    private int DigerAdet;
+
+    // ── Grafik Verileri ────────────────────────────────────────────
+    private List<PieItem> _cinsiChartItems = new();
+    private List<PieItem> _mulkiyetChartItems = new();
+    private List<PieItem> _bolgeChartItems = new();
+    private List<PieItem> _kiraUygunlukIlChartItems = new();
+
+    // ── Tablo Verileri ─────────────────────────────────────────────
+    private List<BolgeSummary> _bolgeSummaries = new();
+    private List<(string IlAdi, int Count)> _topIller = new();
+    private List<(string IlAdi, int Count)> _bottomIller = new();
+    private List<string> _noTasinmazIller = new();
+
+    // ── UI Durumu ──────────────────────────────────────────────────
+    private bool _isBolgeOpen = true;
+    private bool _isTopIlOpen = true;
+    private bool _isBottomIlOpen = true;
+    private bool _isNoTasinmazIlOpen = true;
+    private bool _scrollSpyInitialized;
+
+    private static readonly CultureInfo TrCulture = CultureInfo.GetCultureInfo("tr-TR");
+
+    // ── Yaşam Döngüsü ──────────────────────────────────────────────
+    protected override async Task OnInitializedAsync()
+    {
+        _cts = new CancellationTokenSource();
+        await LoadAsync(_cts.Token);
+    }
+
+    private async Task RefreshAsync()
+    {
+        _cts?.Cancel();
+        _cts = new CancellationTokenSource();
+        await LoadAsync(_cts.Token);
+    }
+
+    private async Task LoadAsync(CancellationToken ct)
+    {
+        _isLoading = true;
+        _loadFailed = false;
+        StateHasChanged();
+
+        try
+        {
+            var t1 = TasinmazService.GetEnvanterdekilerAsync(ct);
+            var t2 = IlService.GetAktifIllerAsync(ct);
+            var t3 = BolgeService.GetAllAsync(ct);
+            var t4 = TasinmazBagisciService.GetAllAsync(ct);
+
+            await Task.WhenAll(t1, t2, t3, t4);
+
+            _tasinmazlar = t1.Result;
+            _iller = t2.Result;
+            _bolgeler = t3.Result;
+            _bagiscilar = t4.Result;
+
+            BuildLookups();
+            Compute();
+        }
+        catch
+        {
+            _loadFailed = true;
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void BuildLookups()
+    {
+        _ilById.Clear();
+        foreach (var il in _iller.Where(x => x.Id != 0))
+            _ilById[il.Id] = il;
+
+        _bolgeById.Clear();
+        foreach (var b in _bolgeler.Where(x => x.Id != 0))
+            _bolgeById[b.Id] = b;
+    }
+
+    private void Compute()
+    {
+        var list = _tasinmazlar;
+
+        // ── Sayım KPI ────────────────────────────────────────────
+        ToplamAdet = list.Count;
+        TamMulkAdet = list.Count(x => IsTM(x.MulkiyetSekli));
+        CiplakMulkAdet = list.Count(x => IsCM(x.MulkiyetSekli));
+        KirayaUygunAdet = list.Count(x =>
+            string.Equals((x.KirayaUygunluk ?? "").Trim(), ProjectConstants.KIRAYA_UYGUN, StringComparison.OrdinalIgnoreCase));
+        KirayaUygunDegilAdet = ToplamAdet - KirayaUygunAdet;
+        ToplamIlAdet = list.Select(GetIlName).Where(n => n != "-").Distinct().Count();
+
+        // ── Değer KPI ─────────────────────────────────────────────
+        ToplamEmlakBeyan = list.Sum(x => x.EmlakBeyanDegeri ?? 0m);
+        ToplamTahminiRayic = list.Sum(x => x.TahminiRayicDegeri ?? 0m);
+        ToplamMuhasebeyeKayitli = list.Sum(x => x.MuhasebeyeKayitliDeger ?? 0m);
+        ToplamYaklasikPiyasa = list.Sum(x => x.YaklasikPiyasaDegeri ?? 0m);
+
+        // ── Cinsi ─────────────────────────────────────────────────
+        BinaAdet = list.Count(x => GetCat(x.KullanimSekli) == Cat.Bina);
+        MeskenAdet = list.Count(x => GetCat(x.KullanimSekli) == Cat.Mesken);
+        IsyeriAdet = list.Count(x => GetCat(x.KullanimSekli) == Cat.Isyeri);
+        ArsaAdet = list.Count(x => GetCat(x.KullanimSekli) == Cat.Arsa);
+        TarlaAdet = list.Count(x => GetCat(x.KullanimSekli) == Cat.Tarla);
+        DigerAdet = ToplamAdet - BinaAdet - MeskenAdet - IsyeriAdet - ArsaAdet - TarlaAdet;
+
+        // ── Grafik: Cinsi Donut ────────────────────────────────────
+        _cinsiChartItems = new List<PieItem>
+        {
+            new() { Label = "Mesken",  Value = MeskenAdet },
+            new() { Label = "Tarla",   Value = TarlaAdet },
+            new() { Label = "İşyeri",  Value = IsyeriAdet },
+            new() { Label = "Arsa",    Value = ArsaAdet },
+            new() { Label = "Bina",    Value = BinaAdet },
+        };
+        if (DigerAdet > 0)
+            _cinsiChartItems.Add(new() { Label = "Diğer", Value = DigerAdet });
+
+        // ── Grafik: Mülkiyet Donut ─────────────────────────────────
+        _mulkiyetChartItems = new List<PieItem>
+        {
+            new() { Label = "Tam Mülkiyet",    Value = TamMulkAdet },
+            new() { Label = "Çıplak Mülkiyet", Value = CiplakMulkAdet },
+        };
+
+        // ── Bölge Özeti ───────────────────────────────────────────
+        _bolgeSummaries = list
+            .GroupBy(x => GetBolgeName(x.IlId))
+            .OrderBy(g => g.Key)
+            .Select(g => new BolgeSummary
+            {
+                BolgeAdi = g.Key,
+                Adet = g.Count(),
+                TM = g.Count(x => IsTM(x.MulkiyetSekli)),
+                CM = g.Count(x => IsCM(x.MulkiyetSekli)),
+                EmlakBeyan = g.Sum(x => x.EmlakBeyanDegeri ?? 0m),
+                TahminiRayic = g.Sum(x => x.TahminiRayicDegeri ?? 0m),
+                MuhasebeyeKayitli = g.Sum(x => x.MuhasebeyeKayitliDeger ?? 0m),
+                YaklasikPiyasa = g.Sum(x => x.YaklasikPiyasaDegeri ?? 0m)
+            })
+            .ToList();
+
+        ToplamBolgeAdet = _bolgeSummaries.Count;
+
+        // ── Grafik: Bölge Bar ──────────────────────────────────────
+        _bolgeChartItems = _bolgeSummaries
+            .Select(b => new PieItem { Label = b.BolgeAdi, Value = b.Adet })
+            .ToList();
+
+        // ── Top / Bottom İller ────────────────────────────────────
+        var ilGroups = list
+            .GroupBy(GetIlName)
+            .Where(g => g.Key != "-")
+            .Select(g => (IlAdi: g.Key, Count: g.Count()))
+            .OrderByDescending(x => x.Count)
+            .ToList();
+
+        _topIller = ilGroups.Take(15).ToList();
+        _bottomIller = ilGroups.OrderBy(x => x.Count).Take(15).ToList();
+
+        var illerWithTasinmaz = new HashSet<string>(ilGroups.Select(x => x.IlAdi), StringComparer.OrdinalIgnoreCase);
+        _noTasinmazIller = _iller
+            .Where(x => x.Id != 0 && !illerWithTasinmaz.Contains(x.IlAdi ?? ""))
+            .Select(x => x.IlAdi ?? "")
+            .Where(n => !string.IsNullOrWhiteSpace(n))
+            .OrderBy(n => n)
+            .ToList();
+
+        // ── Grafik: Kiraya Uygun İl Bar ────────────────────────────
+        _kiraUygunlukIlChartItems = list
+            .Where(x => string.Equals((x.KirayaUygunluk ?? "").Trim(), ProjectConstants.KIRAYA_UYGUN, StringComparison.OrdinalIgnoreCase))
+            .GroupBy(GetIlName)
+            .Select(g => new PieItem { Label = g.Key, Value = g.Count() })
+            .OrderByDescending(p => p.Value)
+            .Take(20)
+            .ToList();
+    }
+
+    // ── Harita Tıklama ─────────────────────────────────────────────
+    private async Task OnProvinceClickAsync(int provinceId)
+    {
+        var il = _iller.FirstOrDefault(x => x.Id == provinceId);
+        var ilAdi = il?.IlAdi?.Trim() ?? provinceId.ToString();
+        var rows = _tasinmazlar.Where(x => x.IlId == provinceId).ToList();
+
+        if (rows.Count == 0)
+        {
+            await ModalService.Show(new ModalRequest
+            {
+                Title = $"{ilAdi} – Taşınmaz Yok",
+                DialogClass = "modal-sm",
+                Content = builder =>
+                {
+                    builder.OpenElement(0, "div");
+                    builder.AddAttribute(1, "class", "d-flex flex-column align-items-center gap-3 py-4 text-muted");
+                    builder.OpenElement(2, "i");
+                    builder.AddAttribute(3, "class", "bi bi-building-slash fs-1");
+                    builder.CloseElement();
+                    builder.OpenElement(4, "p");
+                    builder.AddAttribute(5, "class", "mb-0 fs-6");
+                    builder.AddContent(6, $"{ilAdi} ilinde envanterde kayıtlı taşınmaz bulunmamaktadır.");
+                    builder.CloseElement();
+                    builder.CloseElement();
+                },
+                ShowConfirmationButtons = false
+            });
+            return;
+        }
+
+        RenderFragment content = builder =>
+        {
+            builder.OpenComponent<ProvinceTasinmazGenericTable>(0);
+            builder.AddAttribute(1, "Items", rows);
+            builder.AddAttribute(2, "ExportFileName", $"{ilAdi}-tasinmazlari.xlsx");
+            builder.AddAttribute(3, "Bagiscilar", _bagiscilar);
+            builder.CloseComponent();
+        };
+
+        await ModalService.Show(new ModalRequest
+        {
+            Title = $"{ilAdi} – Taşınmazlar ({rows.Count} kayıt)",
+            Content = content,
+            ShowConfirmationButtons = false
+        });
+    }
+
+    // ── Yardımcı Metotlar ──────────────────────────────────────────
+    private string GetBolgeName(int? ilId)
+    {
+        if (!ilId.HasValue || ilId.Value == 0) return "Bölgesiz";
+        if (!_ilById.TryGetValue(ilId.Value, out var il)) return "Bölgesiz";
+        if (!il.BolgeId.HasValue) return "Bölgesiz";
+        if (_bolgeById.TryGetValue(il.BolgeId.Value, out var bolge))
+        {
+            var n = (bolge.KisaAdi ?? "").Trim();
+            return string.IsNullOrWhiteSpace(n) ? "Bölgesiz" : n;
+        }
+        return "Bölgesiz";
+    }
+
+    private string GetIlName(Tasinmaz t)
+    {
+        if (t.IlId.HasValue && _ilById.TryGetValue(t.IlId.Value, out var il))
+        {
+            var n = (il.IlAdi ?? "").Trim();
+            if (!string.IsNullOrWhiteSpace(n)) return n;
+        }
+        var fb = (t.Ili ?? "").Trim();
+        return string.IsNullOrWhiteSpace(fb) ? "-" : fb;
+    }
+
+    private static bool IsTM(string? v) =>
+        string.Equals((v ?? "").Trim(), ProjectConstants.MULKIYET_SEKLI_TM, StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsCM(string? v) =>
+        string.Equals((v ?? "").Trim(), ProjectConstants.MULKIYET_SEKLI_CM, StringComparison.OrdinalIgnoreCase);
+
+    private static Cat GetCat(string? v)
+    {
+        var s = (v ?? "").Trim();
+        if (s == ProjectConstants.KULLANIMSEKLI_ISHANI || s == ProjectConstants.KULLANIMSEKLI_APT) return Cat.Bina;
+        if (s == ProjectConstants.KULLANIMSEKLI_MESKEN || s == ProjectConstants.KULLANIMSEKLI_MEV) return Cat.Mesken;
+        if (s == ProjectConstants.KULLANIMSEKLI_ARSA) return Cat.Arsa;
+        if (s == ProjectConstants.KULLANIMSEKLI_TARLA) return Cat.Tarla;
+        if (s == ProjectConstants.KULLANIMSEKLI_ISYERI) return Cat.Isyeri;
+        return Cat.Unknown;
+    }
+
+    private string Percent(int count)
+        => ToplamAdet == 0 ? "0" : ((count * 100.0) / ToplamAdet).ToString("F1", TrCulture);
+
+    private static string FormatMoney(decimal v)
+        => v == 0m ? "–" : v.ToString("N0", CultureInfo.GetCultureInfo("tr-TR")) + " ₺";
+
+    private static string FormatCount(int v)
+        => v.ToString("N0", CultureInfo.GetCultureInfo("tr-TR"));
+
+    private static string GetRankClass(int rank) => rank switch
+    {
+        1 => "db-rank-gold",
+        2 => "db-rank-silver",
+        3 => "db-rank-bronze",
+        _ => "db-rank-default"
+    };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_scrollSpyInitialized || _isLoading) return;
+        _scrollSpyInitialized = true;
+        await JS.InvokeVoidAsync("initScrollSpy", "db-scrollspy-content", "db-scrollspy-nav");
+    }
+
+    private ValueTask ScrollToAsync(string sectionId)
+        => JS.InvokeVoidAsync("scrollSpyScrollTo", "db-scrollspy-content", sectionId);
+
+    public void Dispose()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+    }
+
+    // ── İç Tipler ──────────────────────────────────────────────────
+    private enum Cat { Unknown, Bina, Mesken, Isyeri, Arsa, Tarla }
+
+    private sealed class PieItem
+    {
+        public string Label { get; set; } = "";
+        public decimal Value { get; set; }
+    }
+
+    private sealed class BolgeSummary
+    {
+        public string BolgeAdi { get; set; } = "";
+        public int Adet { get; set; }
+        public int TM { get; set; }
+        public int CM { get; set; }
+        public decimal EmlakBeyan { get; set; }
+        public decimal TahminiRayic { get; set; }
+        public decimal MuhasebeyeKayitli { get; set; }
+        public decimal YaklasikPiyasa { get; set; }
+    }
+
+    // ── Renk Paletleri ─────────────────────────────────────────────
+    private static readonly string[] _piePalette =
+        ["#2563EB", "#7C3AED", "#06B6D4", "#10B981", "#F59E0B", "#EF4444", "#F97316", "#84CC16"];
+
+    private static readonly string[] _mulkiyetPalette =
+        ["#2563EB", "#0d9488"];
+
+    private static readonly string[] _barPalette =
+        ["#6366f1"];
+
+    private static readonly string[] _greenBarPalette =
+        ["#16a34a"];
+}

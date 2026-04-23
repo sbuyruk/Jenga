@@ -1,0 +1,353 @@
+/* ── Genel Düzen ──────────────────────────────────────────── */
+.ftk-overview {
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 8px;
+    box-sizing: border-box;
+}
+
+/* ── Filtre butonları ─────────────────────────────────────── */
+.ftk-filter-group .btn {
+    border-radius: 999px;
+    padding: 4px 10px;
+    min-width: 44px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    box-shadow: none;
+    font-size: 0.85rem;
+}
+
+.ftk-filter-group .btn-outline-primary {
+    background: #fff;
+    color: #1f2937;
+    border: 1px solid rgba(15, 23, 42, 0.12);
+}
+
+.ftk-filter-group .btn-outline-primary:hover {
+    background: rgba(15, 23, 42, 0.04);
+}
+
+.ftk-filter-group .btn-primary {
+    background: linear-gradient(135deg, #2563EB, #1D4ED8);
+    border: 0;
+    color: #fff;
+    box-shadow: 0 6px 14px rgba(37, 99, 235, 0.22);
+}
+
+.ftk-filter-group .btn:focus {
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+}
+
+.ftk-filter-group {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+@media (max-width: 576px) {
+    .ftk-filter-group .btn {
+        padding: 4px 8px;
+        height: 28px;
+        font-size: 0.78rem;
+    }
+}
+
+/* ── Scrollspy Grid ───────────────────────────────────────── */
+.ftk-scrollspy-layout {
+    display: grid;
+    grid-template-columns: 1fr 210px;
+    gap: 18px;
+    align-items: start;
+}
+
+.ftk-scrollspy-nav {
+    position: sticky;
+    top: 12px;
+    order: 2;
+    background: var(--card-bg, #fff);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 10px;
+    padding: 12px 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.ftk-nav-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--p3, #2563EB);
+    padding: 4px 10px 8px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.07);
+    margin-bottom: 6px;
+}
+
+.ftk-scrollspy-nav .nav-link {
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-size: 0.82rem;
+    color: var(--muted, #6b6b6b);
+    transition: background 0.15s, color 0.15s;
+}
+
+.ftk-scrollspy-nav .nav-link:hover {
+    background: rgba(37, 99, 235, 0.07);
+    color: var(--text, #1E1E1E);
+}
+
+.ftk-scrollspy-nav .nav-link.active {
+    background: rgba(37, 99, 235, 0.12);
+    color: #1D40AE;
+    font-weight: 700;
+}
+
+.ftk-scrollspy-content {
+    order: 1;
+    position: relative;
+    height: calc(100vh - 120px);
+    overflow-y: auto;
+    padding-right: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(100, 116, 139, 0.4) transparent;
+}
+
+.ftk-section {
+    scroll-margin-top: 12px;
+    padding-bottom: 8px;
+}
+
+/* ── Bölüm ayırıcı ───────────────────────────────────────── */
+.ftk-separator {
+    border: none;
+    border-top: 1px solid rgba(0, 0, 0, 0.07);
+    margin: 20px 0;
+}
+
+/* ── Chart container ─────────────────────────────────────── */
+.ftk-chart-container {
+/*    width: 360px;
+    height: 340px;
+    min-width: 260px;
+    flex-shrink: 0;
+*/
+    width: 100%;
+    max-width: 580px;
+    height: 360px;
+    box-sizing: border-box;
+    align-content: center;
+    border-radius: 10px;
+    background-color: var(--surface, #FFF8F8);
+    background-image: radial-gradient(rgba(180, 190, 210, 0.4) 1px, transparent 1px), radial-gradient(rgba(180, 190, 210, 0.4) 1px, transparent 1px);
+    background-size: 22px 22px;
+    background-position: 0 0, 11px 11px;
+}
+
+
+.ftk-wide-container {
+    width: 100%;
+    min-height: 320px;
+    height: 360px;
+    margin: 0 auto;
+    box-sizing: border-box;
+    align-content: center;
+    border-radius: 10px;
+    background-color: var(--surface, #FFF8F8);
+    background-image: radial-gradient(rgba(180, 190, 210, 0.4) 1px, transparent 1px), radial-gradient(rgba(180, 190, 210, 0.4) 1px, transparent 1px);
+    background-size: 22px 22px;
+    background-position: 0 0, 11px 11px;
+}
+
+/* ── Bölge / Görev tablosu yanyana ───────────────────────── */
+.ftk-bolge-table {
+    min-width: 280px;
+    max-width: 480px;
+    flex: 1 1 280px;
+}
+
+/* ── KPI Kartlar ─────────────────────────────────────────── */
+.kpi-card {
+    border-radius: 14px;
+    padding: 18px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.07);
+    transition: box-shadow 0.2s, transform 0.15s;
+    background: #fff;
+    border-left: 5px solid transparent;
+}
+
+.kpi-card:hover {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px);
+}
+
+.kpi-icon {
+    font-size: 2rem;
+    line-height: 1;
+    opacity: 0.85;
+    flex-shrink: 0;
+}
+
+.kpi-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.kpi-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #6b7280;
+    margin-bottom: 2px;
+}
+
+.kpi-value {
+    font-size: 1.75rem;
+    font-weight: 800;
+    line-height: 1.1;
+    color: #111827;
+}
+
+.kpi-sub {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    margin-top: 2px;
+}
+
+/* Colour variants */
+.kpi-blue   { border-left-color: #2563EB; }
+.kpi-blue   .kpi-icon { color: #2563EB; }
+
+.kpi-teal   { border-left-color: #0D9488; }
+.kpi-teal   .kpi-icon { color: #0D9488; }
+
+.kpi-purple { border-left-color: #7C3AED; }
+.kpi-purple .kpi-icon { color: #7C3AED; }
+
+.kpi-gold   { border-left-color: #D97706; }
+.kpi-gold   .kpi-icon { color: #D97706; }
+
+.kpi-green  { border-left-color: #16A34A; }
+.kpi-green  .kpi-icon { color: #16A34A; }
+
+.kpi-red    { border-left-color: #DC2626; }
+.kpi-red    .kpi-icon { color: #DC2626; }
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 991px) {
+    .ftk-scrollspy-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .ftk-scrollspy-nav {
+        order: 1;
+        position: static;
+        display: flex;
+        overflow-x: auto;
+        padding: 8px 10px;
+    }
+
+    .ftk-scrollspy-nav .nav {
+        flex-direction: row !important;
+        flex-wrap: nowrap;
+        gap: 4px;
+    }
+
+    .ftk-nav-title {
+        display: none;
+    }
+
+    .ftk-scrollspy-nav .nav-link {
+        white-space: nowrap;
+        padding: 5px 10px;
+        font-size: 0.78rem;
+    }
+
+    .ftk-scrollspy-content {
+        order: 2;
+        height: auto;
+        max-height: none;
+        overflow-y: visible;
+    }
+
+    .ftk-chart-container {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .ftk-wide-container {
+        height: 280px;
+    }
+}
+
+@media (max-width: 576px) {
+    .kpi-value {
+        font-size: 1.4rem;
+    }
+
+    .kpi-card {
+        padding: 14px 16px;
+    }
+
+    .ftk-bolge-table {
+        width: 100%;
+        max-width: 100%;
+    }
+}
+
+/* ── Türkiye Haritası Wrapper ────────────────────────────── */
+.ftk-map-wrapper {
+    width: 100%;
+    box-sizing: border-box;
+    border-radius: 14px;
+    padding: 20px 16px 12px;
+    background-color: #f0f4ff;
+    background-image:
+        radial-gradient(rgba(37, 99, 235, 0.12) 1px, transparent 1px),
+        radial-gradient(rgba(37, 99, 235, 0.12) 1px, transparent 1px);
+    background-size: 22px 22px;
+    background-position: 0 0, 11px 11px;
+    box-shadow: 0 2px 12px rgba(37, 99, 235, 0.10);
+    border: 1px solid rgba(37, 99, 235, 0.12);
+    overflow: hidden;
+}
+
+/* child component içindeki elemanları hedefle */
+.ftk-map-wrapper ::deep .turkey-map-root {
+    width: 100%;
+    overflow: hidden;
+}
+
+.ftk-map-wrapper ::deep .turkey-map-canvas {
+    width: 100%;
+    line-height: 0;
+    overflow: hidden;
+}
+
+/* Raphael'ın ürettiği SVG'yi sınırla */
+.ftk-map-wrapper ::deep .turkey-map-canvas svg {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    display: block;
+    cursor: pointer;
+}
+
+@media (max-width: 768px) {
+    .ftk-map-wrapper {
+        padding: 14px 8px 8px;
+        border-radius: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .ftk-map-wrapper {
+        padding: 10px 4px 6px;
+    }
+}

@@ -24,5 +24,8 @@ namespace Jenga.Models.Common
         [ValidateNever]
         [DisplayName("Bölge Id")]
         public int? BolgeId { get; set; }
+        [ValidateNever]
+        [DisplayName("Aktif")]
+        public bool? Aktif { get; set; }
     }
 }

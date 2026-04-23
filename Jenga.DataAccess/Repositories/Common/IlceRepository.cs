@@ -1,6 +1,7 @@
 ﻿using Jenga.DataAccess.Data;
 using Jenga.DataAccess.Repositories.IRepository.Common;
 using Jenga.Models.Common;
+using Jenga.Models.FTK;
 using Microsoft.EntityFrameworkCore;
 
 namespace Jenga.DataAccess.Repositories.Common
@@ -27,6 +28,20 @@ namespace Jenga.DataAccess.Repositories.Common
                 .AsNoTracking()
                 .Where(x => x.IlId == ilId)
                 .ToListAsync(cancellationToken);
+        }
+        public async Task<List<Ilce>> GetAktifIlcelerAsync(CancellationToken cancellationToken = default)
+        {
+            await using var db = _dbFactory.CreateDbContext();
+            var ilceSet = db.Set<Ilce>().AsNoTracking();
+
+            // WHERE Sayac = (SELECT MAX(Sayac) FROM FTK_Table WHERE FTKIslemId = A.FTKIslemId)
+            return await (
+                from i in ilceSet
+                where i.IlceAdi != null
+                   && i.IlceAdi != "Merkez"
+                   && i.Aktif == true
+                select i
+            ).ToListAsync(cancellationToken);
         }
     }
 }

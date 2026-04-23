@@ -1,4 +1,5 @@
 ﻿using Jenga.Models.Common;
+using Jenga.Models.FTK;
 using Jenga.Models.IKYS;
 using Jenga.Models.Inventory;
 using Jenga.Models.NBYS;
@@ -60,7 +61,13 @@ namespace Jenga.DataAccess.Data
         public DbSet<NakitBagisHareket> NakitBagisHareket_Table { get; set; }
         public DbSet<Armagan> Armagan_Table { get; set; }
         public DbSet<BankaTanim> BankaTanim_Table { get; set; }
+        public DbSet<ArmaganTanim> ArmaganTanim_Table { get; set; }
+        public DbSet<DuzenliNakitBagisci> DuzenliNakitBagisci_Table { get; set; }
         public DbSet<YasalFaiz> YasalFaiz_Table { get; set; }
+        //FTK
+        public DbSet<Ftk> FTK_Table { get; set; }
+        public DbSet<FtkIslem> FTKIslem_Table { get; set; }
+        public DbSet<FtkKisi> FTKKisi_Table { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

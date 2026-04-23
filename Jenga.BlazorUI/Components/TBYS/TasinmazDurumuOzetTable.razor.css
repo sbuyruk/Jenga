@@ -1,0 +1,45 @@
+.tbys-durum-ozet-table {
+    width: auto;
+    max-width: 100%;
+    margin-inline: auto;
+    font-size: 0.78rem;
+}
+
+.tbys-durum-ozet-table th,
+.tbys-durum-ozet-table td {
+    padding: 0.2rem 0.3rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tbys-durum-ozet-table thead th {
+    white-space: normal;
+    line-height: 1.1;
+    word-break: break-word;
+    hyphens: auto;
+}
+
+.tbys-durum-ozet-table thead th.col-nowrap {
+    white-space: nowrap;
+    word-break: normal;
+    hyphens: none;
+}
+
+.tbys-durum-ozet-table .col-count {
+    width: 52px;
+    font-variant-numeric: tabular-nums;
+}
+
+.tbys-durum-ozet-table .col-total {
+    width: 62px;
+}
+
+.tbys-durum-ozet-table .col-bolge {
+    min-width: 100px;
+}
+
+.tbys-durum-ozet-table .col-money {
+    min-width: 90px;
+    font-variant-numeric: tabular-nums;
+}

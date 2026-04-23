@@ -1,0 +1,48 @@
+.tbys-durum-detail-table {
+    width: auto;
+    max-width: 100%;
+    margin-inline: auto;
+    font-size: 0.72rem;
+}
+
+.tbys-durum-detail-table th,
+.tbys-durum-detail-table td {
+    padding: 0.15rem 0.25rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tbys-durum-detail-table thead th {
+    white-space: normal;
+    line-height: 1.1;
+    word-break: break-word;
+    hyphens: auto;
+}
+
+.tbys-durum-detail-table thead th.col-nowrap {
+    white-space: nowrap;
+    word-break: normal;
+    hyphens: none;
+}
+
+.tbys-durum-detail-table .col-count {
+    width: 30px;
+    padding-left: 0.1rem;
+    padding-right: 0.1rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.tbys-durum-detail-table .col-total {
+    width: 40px;
+}
+
+.tbys-durum-detail-table .col-il {
+    min-width: 90px;
+    max-width: 140px;
+}
+
+.tbys-durum-detail-table .col-money {
+    min-width: 80px;
+    font-variant-numeric: tabular-nums;
+}

@@ -83,5 +83,8 @@ namespace Jenga.DataAccess.Services.Common
 
         public async Task<bool> AnyAsync(Expression<Func<Il, bool>> predicate, CancellationToken cancellationToken = default)
             => await _unitOfWork.Il.AnyAsync(predicate, cancellationToken);
+        
+        public async Task<List<Il>> GetAktifIllerAsync(CancellationToken cancellationToken = default)
+            => await _unitOfWork.Il.GetAktifIllerAsync(cancellationToken);
     }
 }

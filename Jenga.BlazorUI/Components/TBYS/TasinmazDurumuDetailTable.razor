@@ -1,0 +1,469 @@
+@using Microsoft.AspNetCore.Components
+@using Microsoft.JSInterop
+@using Jenga.DataAccess.Services.Common
+@using Jenga.Models.Common
+@using Jenga.Models.TBYS
+@using Jenga.Utility
+@using System.Globalization
+
+@inject IJSRuntime JS
+@inject IIlService IlService
+@inject IBolgeService BolgeService
+
+<div id="@ReportRootId" class="print-area">
+    <div>
+        <table id="@TableId" class="table table-bordered table-sm align-middle text-center tbys-durum-detail-table">
+            <thead class="table-light">
+                <tr>
+                    <th colspan="23" class="text-center fw-bold">TAŞINMAZ ENVANTER DURUMU – BÖLGE DETAYI</th>
+                </tr>
+                <tr>
+                    <th rowspan="2" class="col-nowrap">Sıra</th>
+                    <th rowspan="2" class="col-il">İller</th>
+
+                    <th colspan="2">Bina</th>
+                    <th colspan="2">Mesken</th>
+                    <th colspan="2">İşyeri</th>
+                    <th colspan="2">Arsa</th>
+                    <th colspan="2">Tarla</th>
+
+                    <th rowspan="2" class="col-nowrap">TM</th>
+                    <th rowspan="2" class="col-nowrap">ÇM</th>
+                    <th rowspan="2" class="col-nowrap">Toplam</th>
+
+                    <th colspan="2">Eml.Bey.Değeri</th>
+                    <th colspan="2">Tah.Ray.Değeri</th>
+                    <th colspan="2">Muh.Kayıtlı Değ.</th>
+                    <th colspan="2">Yak.Piy.Değeri</th>
+                </tr>
+                <tr>
+                    <th class="col-nowrap">TM</th><th class="col-nowrap">ÇM</th>
+                    <th class="col-nowrap">TM</th><th class="col-nowrap">ÇM</th>
+                    <th class="col-nowrap">TM</th><th class="col-nowrap">ÇM</th>
+                    <th class="col-nowrap">TM</th><th class="col-nowrap">ÇM</th>
+                    <th class="col-nowrap">TM</th><th class="col-nowrap">ÇM</th>
+                    <th class="col-nowrap">TM</th><th class="col-nowrap">ÇM</th>
+                    <th class="col-nowrap">TM</th><th class="col-nowrap">ÇM</th>
+                    <th class="col-nowrap">TM</th><th class="col-nowrap">ÇM</th>
+                    <th class="col-nowrap">TM</th><th class="col-nowrap">ÇM</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @if (RegionBlocks.Count == 0)
+                {
+                    <tr>
+                        <td colspan="23" class="text-muted text-center">Kayıt bulunamadı.</td>
+                    </tr>
+                }
+                else
+                {
+                    foreach (var block in RegionBlocks)
+                    {
+                        <tr class="table-secondary fw-bold">
+                            <td colspan="23" class="text-center">@block.RegionName.ToUpper(TrCulture)</td>
+                        </tr>
+
+                        var sira = 1;
+                        foreach (var r in block.Rows)
+                        {
+                            <tr>
+                                <td>@sira</td>
+                                <td class="text-start">@r.Il</td>
+
+                                <td class="col-count">@DisplayCount(r.BinaTM)</td>
+                                <td class="col-count">@DisplayCount(r.BinaCM)</td>
+
+                                <td class="col-count">@DisplayCount(r.MeskenTM)</td>
+                                <td class="col-count">@DisplayCount(r.MeskenCM)</td>
+
+                                <td class="col-count">@DisplayCount(r.IsyeriTM)</td>
+                                <td class="col-count">@DisplayCount(r.IsyeriCM)</td>
+
+                                <td class="col-count">@DisplayCount(r.ArsaTM)</td>
+                                <td class="col-count">@DisplayCount(r.ArsaCM)</td>
+
+                                <td class="col-count">@DisplayCount(r.TarlaTM)</td>
+                                <td class="col-count">@DisplayCount(r.TarlaCM)</td>
+
+                                <td class="col-count">@DisplayCount(r.ToplamTM)</td>
+                                <td class="col-count">@DisplayCount(r.ToplamCM)</td>
+                                <td class="col-total">@DisplayCount(r.Toplam)</td>
+
+                                <td class="text-end col-money">@DisplayMoney(r.EmlakBeyanTM)</td>
+                                <td class="text-end col-money">@DisplayMoney(r.EmlakBeyanCM)</td>
+
+                                <td class="text-end col-money">@DisplayMoney(r.TahminiRayicTM)</td>
+                                <td class="text-end col-money">@DisplayMoney(r.TahminiRayicCM)</td>
+
+                                <td class="text-end col-money">@DisplayMoney(r.MuhasebeyeKayitliTM)</td>
+                                <td class="text-end col-money">@DisplayMoney(r.MuhasebeyeKayitliCM)</td>
+
+                                <td class="text-end col-money">@DisplayMoney(r.YaklasikPiyasaTM)</td>
+                                <td class="text-end col-money">@DisplayMoney(r.YaklasikPiyasaCM)</td>
+                            </tr>
+                            sira++;
+                        }
+
+                        <tr class="fw-bold">
+                            <td colspan="2" class="text-start">TOPLAM</td>
+
+                            <td>@DisplayCount(block.Total.BinaTM)</td>
+                            <td>@DisplayCount(block.Total.BinaCM)</td>
+
+                            <td>@DisplayCount(block.Total.MeskenTM)</td>
+                            <td>@DisplayCount(block.Total.MeskenCM)</td>
+
+                            <td>@DisplayCount(block.Total.IsyeriTM)</td>
+                            <td>@DisplayCount(block.Total.IsyeriCM)</td>
+
+                            <td>@DisplayCount(block.Total.ArsaTM)</td>
+                            <td>@DisplayCount(block.Total.ArsaCM)</td>
+
+                            <td>@DisplayCount(block.Total.TarlaTM)</td>
+                            <td>@DisplayCount(block.Total.TarlaCM)</td>
+
+                            <td>@DisplayCount(block.Total.ToplamTM)</td>
+                            <td>@DisplayCount(block.Total.ToplamCM)</td>
+                            <td>@DisplayCount(block.Total.Toplam)</td>
+
+                            <td class="text-end col-money">@DisplayMoney(block.Total.EmlakBeyanTM)</td>
+                            <td class="text-end col-money">@DisplayMoney(block.Total.EmlakBeyanCM)</td>
+
+                            <td class="text-end col-money">@DisplayMoney(block.Total.TahminiRayicTM)</td>
+                            <td class="text-end col-money">@DisplayMoney(block.Total.TahminiRayicCM)</td>
+
+                            <td class="text-end col-money">@DisplayMoney(block.Total.MuhasebeyeKayitliTM)</td>
+                            <td class="text-end col-money">@DisplayMoney(block.Total.MuhasebeyeKayitliCM)</td>
+
+                            <td class="text-end col-money">@DisplayMoney(block.Total.YaklasikPiyasaTM)</td>
+                            <td class="text-end col-money">@DisplayMoney(block.Total.YaklasikPiyasaCM)</td>
+                        </tr>
+                    }
+
+                    <tr class="table-secondary fw-bold">
+                        <td colspan="2" class="text-start">Genel Toplam</td>
+
+                        <td>@DisplayCount(GrandTotal.BinaTM)</td>
+                        <td>@DisplayCount(GrandTotal.BinaCM)</td>
+
+                        <td>@DisplayCount(GrandTotal.MeskenTM)</td>
+                        <td>@DisplayCount(GrandTotal.MeskenCM)</td>
+
+                        <td>@DisplayCount(GrandTotal.IsyeriTM)</td>
+                        <td>@DisplayCount(GrandTotal.IsyeriCM)</td>
+
+                        <td>@DisplayCount(GrandTotal.ArsaTM)</td>
+                        <td>@DisplayCount(GrandTotal.ArsaCM)</td>
+
+                        <td>@DisplayCount(GrandTotal.TarlaTM)</td>
+                        <td>@DisplayCount(GrandTotal.TarlaCM)</td>
+
+                        <td>@DisplayCount(GrandTotal.ToplamTM)</td>
+                        <td>@DisplayCount(GrandTotal.ToplamCM)</td>
+                        <td>@DisplayCount(GrandTotal.Toplam)</td>
+
+                        <td class="text-end">@DisplayMoney(GrandTotal.EmlakBeyanTM)</td>
+                        <td class="text-end">@DisplayMoney(GrandTotal.EmlakBeyanCM)</td>
+
+                        <td class="text-end">@DisplayMoney(GrandTotal.TahminiRayicTM)</td>
+                        <td class="text-end">@DisplayMoney(GrandTotal.TahminiRayicCM)</td>
+
+                        <td class="text-end">@DisplayMoney(GrandTotal.MuhasebeyeKayitliTM)</td>
+                        <td class="text-end">@DisplayMoney(GrandTotal.MuhasebeyeKayitliCM)</td>
+
+                        <td class="text-end">@DisplayMoney(GrandTotal.YaklasikPiyasaTM)</td>
+                        <td class="text-end">@DisplayMoney(GrandTotal.YaklasikPiyasaCM)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string TableId { get; set; } = "tasinmazDurumuDetailTable";
+    [Parameter] public string ReportRootId { get; set; } = "tasinmazDurumuDetailReportRoot";
+    [Parameter] public List<Tasinmaz> Tasinmazlar { get; set; } = new();
+
+    private List<RegionBlock> RegionBlocks { get; set; } = new();
+    private Totals GrandTotal { get; set; } = new();
+
+    private readonly Dictionary<int, Il> _ilById = new();
+    private readonly Dictionary<int, Bolge> _bolgeById = new();
+
+    private static readonly CultureInfo TrCulture = CultureInfo.GetCultureInfo("tr-TR");
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadLookupsAsync();
+        Recompute();
+    }
+
+    protected override void OnParametersSet()
+    {
+        Recompute();
+    }
+
+    private async Task LoadLookupsAsync()
+    {
+        _ilById.Clear();
+        _bolgeById.Clear();
+
+        var ils = await IlService.GetAllAsync();
+        foreach (var il in ils.Where(x => x.Id != 0))
+            _ilById[il.Id] = il;
+
+        var bolgeler = await BolgeService.GetAllAsync();
+        foreach (var bolge in bolgeler.Where(x => x.Id != 0))
+            _bolgeById[bolge.Id] = bolge;
+    }
+
+    private void Recompute()
+    {
+        var list = Tasinmazlar ?? new List<Tasinmaz>();
+
+        var groupsByRegion = list
+            .GroupBy(x => GetRegionName(x.IlId))
+            .OrderBy(g => g.Key);
+
+        RegionBlocks = groupsByRegion
+            .Select(g => BuildRegionBlock(g.Key, g.ToList()))
+            .ToList();
+
+        foreach (var block in RegionBlocks)
+            block.Total = Totals.FromRows(block.Rows);
+
+        GrandTotal = Totals.FromTotals(RegionBlocks.Select(x => x.Total).ToList());
+    }
+
+    public async Task ExportExcelAsync()
+        => await JS.InvokeVoidAsync("exportTableToXlsx", TableId, "Tasinmaz_Durumu_Detay.xlsx");
+
+    public async Task PrintAsync()
+        => await JS.InvokeVoidAsync("printElementById", ReportRootId);
+
+    private RegionBlock BuildRegionBlock(string regionName, List<Tasinmaz> items)
+    {
+        var rows = items
+            .GroupBy(x => GetIlName(x))
+            .OrderBy(g => g.Key)
+            .Select(g => BuildRow(g.Key, g.ToList()))
+            .ToList();
+
+        return new RegionBlock
+        {
+            RegionName = $"{regionName} Bölgesi",
+            Rows = rows
+        };
+    }
+
+    private static Row BuildRow(string il, List<Tasinmaz> items)
+    {
+        var r = new Row { Il = il };
+
+        foreach (var t in items)
+        {
+            var isTm = IsTm(t.MulkiyetSekli);
+            var isCm = IsCm(t.MulkiyetSekli);
+            var cat = GetCategory(t.KullanimSekli);
+
+            switch (cat)
+            {
+                case Category.Bina:
+                    if (isTm) r.BinaTM++;
+                    if (isCm) r.BinaCM++;
+                    break;
+                case Category.Mesken:
+                    if (isTm) r.MeskenTM++;
+                    if (isCm) r.MeskenCM++;
+                    break;
+                case Category.Isyeri:
+                    if (isTm) r.IsyeriTM++;
+                    if (isCm) r.IsyeriCM++;
+                    break;
+                case Category.Arsa:
+                    if (isTm) r.ArsaTM++;
+                    if (isCm) r.ArsaCM++;
+                    break;
+                case Category.Tarla:
+                    if (isTm) r.TarlaTM++;
+                    if (isCm) r.TarlaCM++;
+                    break;
+            }
+
+            if (isTm)
+            {
+                r.EmlakBeyanTM += t.EmlakBeyanDegeri ?? 0m;
+                r.TahminiRayicTM += t.TahminiRayicDegeri ?? 0m;
+                r.MuhasebeyeKayitliTM += t.MuhasebeyeKayitliDeger ?? 0m;
+                r.YaklasikPiyasaTM += t.YaklasikPiyasaDegeri ?? 0m;
+            }
+            if (isCm)
+            {
+                r.EmlakBeyanCM += t.EmlakBeyanDegeri ?? 0m;
+                r.TahminiRayicCM += t.TahminiRayicDegeri ?? 0m;
+                r.MuhasebeyeKayitliCM += t.MuhasebeyeKayitliDeger ?? 0m;
+                r.YaklasikPiyasaCM += t.YaklasikPiyasaDegeri ?? 0m;
+            }
+        }
+
+        r.ToplamTM = r.BinaTM + r.MeskenTM + r.IsyeriTM + r.ArsaTM + r.TarlaTM;
+        r.ToplamCM = r.BinaCM + r.MeskenCM + r.IsyeriCM + r.ArsaCM + r.TarlaCM;
+        r.Toplam = r.ToplamTM + r.ToplamCM;
+
+        return r;
+    }
+
+    private string GetRegionName(int? ilId)
+    {
+        if (!ilId.HasValue || ilId.Value == 0) return "Bölgesiz";
+        if (!_ilById.TryGetValue(ilId.Value, out var il)) return "Bölgesiz";
+        if (!il.BolgeId.HasValue || il.BolgeId.Value == 0) return "Bölgesiz";
+        if (_bolgeById.TryGetValue(il.BolgeId.Value, out var bolge))
+        {
+            var name = (bolge.KisaAdi ?? string.Empty).Trim();
+            return string.IsNullOrWhiteSpace(name) ? "Bölgesiz" : name;
+        }
+        return "Bölgesiz";
+    }
+
+    private string GetIlName(Tasinmaz t)
+    {
+        if (t.IlId.HasValue && t.IlId.Value != 0 && _ilById.TryGetValue(t.IlId.Value, out var il))
+        {
+            var name = (il.IlAdi ?? string.Empty).Trim();
+            if (!string.IsNullOrWhiteSpace(name)) return name;
+        }
+        var fallback = (t.Ili ?? string.Empty).Trim();
+        return string.IsNullOrWhiteSpace(fallback) ? "-" : fallback;
+    }
+
+    private static bool IsTm(string? mulkiyetSekli)
+        => string.Equals((mulkiyetSekli ?? string.Empty).Trim(), ProjectConstants.MULKIYET_SEKLI_TM, StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsCm(string? mulkiyetSekli)
+        => string.Equals((mulkiyetSekli ?? string.Empty).Trim(), ProjectConstants.MULKIYET_SEKLI_CM, StringComparison.OrdinalIgnoreCase);
+
+    private static Category GetCategory(string? kullanimSekli)
+    {
+        var value = (kullanimSekli ?? string.Empty).Trim();
+        if (string.Equals(value, ProjectConstants.KULLANIMSEKLI_ISHANI, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(value, ProjectConstants.KULLANIMSEKLI_APT, StringComparison.OrdinalIgnoreCase))
+            return Category.Bina;
+        if (string.Equals(value, ProjectConstants.KULLANIMSEKLI_MESKEN, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(value, ProjectConstants.KULLANIMSEKLI_MEV, StringComparison.OrdinalIgnoreCase))
+            return Category.Mesken;
+        if (string.Equals(value, ProjectConstants.KULLANIMSEKLI_ARSA, StringComparison.OrdinalIgnoreCase))
+            return Category.Arsa;
+        if (string.Equals(value, ProjectConstants.KULLANIMSEKLI_TARLA, StringComparison.OrdinalIgnoreCase))
+            return Category.Tarla;
+        if (string.Equals(value, ProjectConstants.KULLANIMSEKLI_ISYERI, StringComparison.OrdinalIgnoreCase))
+            return Category.Isyeri;
+        return Category.Unknown;
+    }
+
+    private static string DisplayCount(int value)
+        => value == 0 ? string.Empty : value.ToString();
+
+    private static string DisplayMoney(decimal value)
+        => value == 0m ? string.Empty : value.ToString("N2", TrCulture);
+
+    private sealed class RegionBlock
+    {
+        public string RegionName { get; set; } = "";
+        public List<Row> Rows { get; set; } = new();
+        public Totals Total { get; set; } = new();
+    }
+
+    private enum Category { Unknown = 0, Bina = 1, Mesken = 2, Isyeri = 3, Arsa = 4, Tarla = 5 }
+
+    private sealed class Row
+    {
+        public string Il { get; set; } = "";
+        public int BinaTM { get; set; }
+        public int BinaCM { get; set; }
+        public int MeskenTM { get; set; }
+        public int MeskenCM { get; set; }
+        public int IsyeriTM { get; set; }
+        public int IsyeriCM { get; set; }
+        public int ArsaTM { get; set; }
+        public int ArsaCM { get; set; }
+        public int TarlaTM { get; set; }
+        public int TarlaCM { get; set; }
+        public int ToplamTM { get; set; }
+        public int ToplamCM { get; set; }
+        public int Toplam { get; set; }
+        public decimal EmlakBeyanTM { get; set; }
+        public decimal EmlakBeyanCM { get; set; }
+        public decimal TahminiRayicTM { get; set; }
+        public decimal TahminiRayicCM { get; set; }
+        public decimal MuhasebeyeKayitliTM { get; set; }
+        public decimal MuhasebeyeKayitliCM { get; set; }
+        public decimal YaklasikPiyasaTM { get; set; }
+        public decimal YaklasikPiyasaCM { get; set; }
+    }
+
+    private sealed class Totals
+    {
+        public int BinaTM { get; set; }
+        public int BinaCM { get; set; }
+        public int MeskenTM { get; set; }
+        public int MeskenCM { get; set; }
+        public int IsyeriTM { get; set; }
+        public int IsyeriCM { get; set; }
+        public int ArsaTM { get; set; }
+        public int ArsaCM { get; set; }
+        public int TarlaTM { get; set; }
+        public int TarlaCM { get; set; }
+        public int ToplamTM { get; set; }
+        public int ToplamCM { get; set; }
+        public int Toplam { get; set; }
+        public decimal EmlakBeyanTM { get; set; }
+        public decimal EmlakBeyanCM { get; set; }
+        public decimal TahminiRayicTM { get; set; }
+        public decimal TahminiRayicCM { get; set; }
+        public decimal MuhasebeyeKayitliTM { get; set; }
+        public decimal MuhasebeyeKayitliCM { get; set; }
+        public decimal YaklasikPiyasaTM { get; set; }
+        public decimal YaklasikPiyasaCM { get; set; }
+
+        public static Totals FromRows(List<Row> rows)
+        {
+            var t = new Totals();
+            foreach (var r in rows)
+            {
+                t.BinaTM += r.BinaTM; t.BinaCM += r.BinaCM;
+                t.MeskenTM += r.MeskenTM; t.MeskenCM += r.MeskenCM;
+                t.IsyeriTM += r.IsyeriTM; t.IsyeriCM += r.IsyeriCM;
+                t.ArsaTM += r.ArsaTM; t.ArsaCM += r.ArsaCM;
+                t.TarlaTM += r.TarlaTM; t.TarlaCM += r.TarlaCM;
+                t.ToplamTM += r.ToplamTM; t.ToplamCM += r.ToplamCM; t.Toplam += r.Toplam;
+                t.EmlakBeyanTM += r.EmlakBeyanTM; t.EmlakBeyanCM += r.EmlakBeyanCM;
+                t.TahminiRayicTM += r.TahminiRayicTM; t.TahminiRayicCM += r.TahminiRayicCM;
+                t.MuhasebeyeKayitliTM += r.MuhasebeyeKayitliTM; t.MuhasebeyeKayitliCM += r.MuhasebeyeKayitliCM;
+                t.YaklasikPiyasaTM += r.YaklasikPiyasaTM; t.YaklasikPiyasaCM += r.YaklasikPiyasaCM;
+            }
+            return t;
+        }
+
+        public static Totals FromTotals(List<Totals> totals)
+        {
+            var t = new Totals();
+            foreach (var s in totals)
+            {
+                t.BinaTM += s.BinaTM; t.BinaCM += s.BinaCM;
+                t.MeskenTM += s.MeskenTM; t.MeskenCM += s.MeskenCM;
+                t.IsyeriTM += s.IsyeriTM; t.IsyeriCM += s.IsyeriCM;
+                t.ArsaTM += s.ArsaTM; t.ArsaCM += s.ArsaCM;
+                t.TarlaTM += s.TarlaTM; t.TarlaCM += s.TarlaCM;
+                t.ToplamTM += s.ToplamTM; t.ToplamCM += s.ToplamCM; t.Toplam += s.Toplam;
+                t.EmlakBeyanTM += s.EmlakBeyanTM; t.EmlakBeyanCM += s.EmlakBeyanCM;
+                t.TahminiRayicTM += s.TahminiRayicTM; t.TahminiRayicCM += s.TahminiRayicCM;
+                t.MuhasebeyeKayitliTM += s.MuhasebeyeKayitliTM; t.MuhasebeyeKayitliCM += s.MuhasebeyeKayitliCM;
+                t.YaklasikPiyasaTM += s.YaklasikPiyasaTM; t.YaklasikPiyasaCM += s.YaklasikPiyasaCM;
+            }
+            return t;
+        }
+    }
+}

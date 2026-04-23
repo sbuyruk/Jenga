@@ -15,5 +15,6 @@ namespace Jenga.DataAccess.Services.Common
         Task<bool> UpdateAsync(Il il, CancellationToken cancellationToken = default);
         Task<bool> DeleteAsync(int ilId, CancellationToken cancellationToken = default);
         Task<bool> AnyAsync(Expression<Func<Il, bool>> predicate, CancellationToken cancellationToken = default);
+        Task<List<Il>> GetAktifIllerAsync(CancellationToken cancellationToken = default);
     }
 }

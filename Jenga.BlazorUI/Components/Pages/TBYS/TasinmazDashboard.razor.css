@@ -1,0 +1,440 @@
+/* ═══════════════════════════════════════════════════════════════
+   TasinmazDashboard.razor.css
+   Mobile-first, fully responsive
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Kök ──────────────────────────────────────────────────────── */
+.tasinmaz-dashboard {
+    max-width: 100%;
+    overflow-x: hidden;
+    box-sizing: border-box;
+}
+
+/* ── Bölüm Başlığı ────────────────────────────────────────────── */
+.tasinmaz-dashboard .section-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: #6b7280;
+    margin-bottom: 0.4rem;
+    padding-left: 0.1rem;
+}
+
+/* ── Spinner animasyonu ───────────────────────────────────────── */
+.tasinmaz-dashboard .spin {
+    animation: db-spin 0.9s linear infinite;
+    display: inline-block;
+}
+
+@keyframes db-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   STAT CARDS  (Sayım KPI)
+   ════════════════════════════════════════════════════════════════ */
+.tasinmaz-dashboard .db-stat-card {
+    border: none;
+    border-left: 3px solid var(--db-accent, #6b7280);
+    border-radius: 0.65rem;
+    background: var(--db-accent-bg, #fafafa);
+    box-shadow: 0 1px 4px rgba(0,0,0,.07);
+    transition: transform 160ms ease, box-shadow 160ms ease, border-left-width 160ms ease;
+    overflow: hidden;
+}
+
+.tasinmaz-dashboard .db-stat-card:hover {
+    transform: translateY(-2px);
+    border-left-width: 5px;
+    box-shadow: 0 6px 18px rgba(0,0,0,.10);
+}
+
+.tasinmaz-dashboard .db-stat-body {
+    padding: 0.6rem 0.4rem !important;
+}
+
+.tasinmaz-dashboard .db-stat-icon {
+    font-size: 1.1rem;
+    color: var(--db-accent, #6b7280);
+    opacity: 0.85;
+    margin-bottom: 0.1rem;
+}
+
+.tasinmaz-dashboard .db-stat-label {
+    font-size: 0.68rem;
+    color: #6b7280;
+    line-height: 1.2;
+    margin-bottom: 0.15rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tasinmaz-dashboard .db-stat-value {
+    font-size: 1.4rem;
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--db-accent, #374151);
+    font-variant-numeric: tabular-nums;
+}
+
+.tasinmaz-dashboard .db-stat-sub {
+    font-size: 0.68rem;
+    color: #9ca3af;
+    margin-top: 0.1rem;
+}
+
+/* Accent tokens */
+.tasinmaz-dashboard .db-accent-indigo { --db-accent: #4f46e5; --db-accent-bg: #eef2ff; }
+.tasinmaz-dashboard .db-accent-blue   { --db-accent: #2563eb; --db-accent-bg: #eff6ff; }
+.tasinmaz-dashboard .db-accent-teal   { --db-accent: #0d9488; --db-accent-bg: #f0fdfa; }
+.tasinmaz-dashboard .db-accent-green  { --db-accent: #16a34a; --db-accent-bg: #f0fdf4; }
+.tasinmaz-dashboard .db-accent-rose   { --db-accent: #e11d48; --db-accent-bg: #fff1f2; }
+.tasinmaz-dashboard .db-accent-amber  { --db-accent: #d97706; --db-accent-bg: #fffbeb; }
+.tasinmaz-dashboard .db-accent-purple { --db-accent: #7c3aed; --db-accent-bg: #f5f3ff; }
+.tasinmaz-dashboard .db-accent-sky    { --db-accent: #0284c7; --db-accent-bg: #f0f9ff; }
+.tasinmaz-dashboard .db-accent-orange { --db-accent: #ea580c; --db-accent-bg: #fff7ed; }
+.tasinmaz-dashboard .db-accent-lime   { --db-accent: #65a30d; --db-accent-bg: #f7fee7; }
+.tasinmaz-dashboard .db-accent-cyan   { --db-accent: #0891b2; --db-accent-bg: #ecfeff; }
+.tasinmaz-dashboard .db-accent-slate  { --db-accent: #475569; --db-accent-bg: #f8fafc; }
+
+/* ════════════════════════════════════════════════════════════════
+   MONEY CARDS  (Finansal KPI)
+   ════════════════════════════════════════════════════════════════ */
+.tasinmaz-dashboard .db-money-card {
+    border: none;
+    border-radius: 0.65rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,.07);
+    transition: box-shadow 160ms ease;
+}
+
+.tasinmaz-dashboard .db-money-card:hover {
+    box-shadow: 0 4px 14px rgba(0,0,0,.10);
+}
+
+.tasinmaz-dashboard .db-money-body {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem !important;
+}
+
+.tasinmaz-dashboard .db-money-icon {
+    font-size: 1.6rem;
+    flex: 0 0 auto;
+    opacity: 0.8;
+}
+
+.tasinmaz-dashboard .db-money-label {
+    font-size: 0.72rem;
+    color: #6b7280;
+    line-height: 1.2;
+    margin-bottom: 0.15rem;
+}
+
+.tasinmaz-dashboard .db-money-value {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #111827;
+    font-variant-numeric: tabular-nums;
+    word-break: break-word;
+    line-height: 1.2;
+}
+
+/* Bootstrap text color helpers used inline */
+.tasinmaz-dashboard .text-sky    { color: #0284c7; }
+.tasinmaz-dashboard .text-cyan   { color: #0891b2; }
+.tasinmaz-dashboard .text-teal   { color: #0d9488; }
+.tasinmaz-dashboard .text-orange { color: #ea580c; }
+
+/* ════════════════════════════════════════════════════════════════
+   CİNSİ CARDS
+   ════════════════════════════════════════════════════════════════ */
+.tasinmaz-dashboard .db-cinsi-card {
+    border: none;
+    border-top: 3px solid var(--db-accent, #6b7280);
+    border-radius: 0.55rem;
+    background: var(--db-accent-bg, #fafafa);
+    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.tasinmaz-dashboard .db-cinsi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 14px rgba(0,0,0,.10);
+}
+
+.tasinmaz-dashboard .db-cinsi-body {
+    padding: 0.6rem 0.25rem !important;
+}
+
+.tasinmaz-dashboard .db-cinsi-icon {
+    font-size: 1.2rem;
+    color: var(--db-accent, #6b7280);
+    display: block;
+    margin-bottom: 0.2rem;
+}
+
+.tasinmaz-dashboard .db-cinsi-label {
+    font-size: 0.72rem;
+    color: #374151;
+    font-weight: 600;
+    margin-bottom: 0.1rem;
+}
+
+.tasinmaz-dashboard .db-cinsi-value {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--db-accent, #111827);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+}
+
+.tasinmaz-dashboard .db-cinsi-sub {
+    font-size: 0.65rem;
+    color: #9ca3af;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   CHART CARD  (min yükseklik – mobilde sıkışmasın)
+   ════════════════════════════════════════════════════════════════ */
+.tasinmaz-dashboard .card .generic-chart {
+    min-height: 320px;
+}
+
+@media (min-width: 768px) {
+    .tasinmaz-dashboard .card .generic-chart {
+        min-height: 620px;
+    }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   HARİTA CARD
+   ════════════════════════════════════════════════════════════════ */
+.tasinmaz-dashboard .db-map-card {
+    border-radius: 0.75rem;
+    background:
+        radial-gradient(900px 300px at 10% 10%, rgba(37,99,235,.12), transparent 60%),
+        radial-gradient(700px 260px at 88% 14%, rgba(124,58,237,.10), transparent 58%),
+        linear-gradient(140deg, #f8fafc 0%, #eef2ff 55%, #f8fafc 100%);
+    border: 1px solid #dbe3f0;
+    box-shadow: 0 4px 16px rgba(15,23,42,.07);
+    overflow: hidden;
+}
+
+/* Harita SVG genişliği – mobilde kırılmasın */
+.tasinmaz-dashboard .db-map-card ::deep .turkey-map-canvas {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    min-height: 180px;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   KATLANABİLİR BAŞLIK
+   ════════════════════════════════════════════════════════════════ */
+.tasinmaz-dashboard .db-collapsible-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+    padding: 0.6rem 0.9rem;
+    transition: background 120ms;
+}
+
+.tasinmaz-dashboard .db-collapsible-header:hover {
+    background: rgba(0,0,0,.03);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   BÖLGE TABLOSU
+   ════════════════════════════════════════════════════════════════ */
+.tasinmaz-dashboard .db-bolge-table {
+    font-size: 0.82rem;
+    margin-bottom: 0;
+}
+
+.tasinmaz-dashboard .db-bolge-table th,
+.tasinmaz-dashboard .db-bolge-table td {
+    white-space: nowrap;
+    padding: 0.3rem 0.5rem;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   TOP İLLER LİSTESİ
+   ════════════════════════════════════════════════════════════════ */
+.tasinmaz-dashboard .db-rank-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.4rem;
+    height: 1.4rem;
+    border-radius: 50%;
+    font-size: 0.65rem;
+    font-weight: 700;
+    flex: 0 0 auto;
+}
+
+.tasinmaz-dashboard .db-rank-gold    { background: #fbbf24; color: #78350f; }
+.tasinmaz-dashboard .db-rank-silver  { background: #9ca3af; color: #fff; }
+.tasinmaz-dashboard .db-rank-bronze  { background: #d97706; color: #fff; }
+.tasinmaz-dashboard .db-rank-default { background: #e5e7eb; color: #374151; }
+
+/* Mini bar */
+.tasinmaz-dashboard .db-bar-track {
+    width: 60px;
+    height: 6px;
+    background: #e5e7eb;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.tasinmaz-dashboard .db-bar-fill {
+    height: 100%;
+    background: #6366f1;
+    border-radius: 999px;
+    transition: width 400ms ease;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   RESPONSIVE  –  ufak ekranlarda font ve spacing küçültme
+   ════════════════════════════════════════════════════════════════ */
+@media (max-width: 575px) {
+    .tasinmaz-dashboard .db-stat-value  { font-size: 1.15rem; }
+    .tasinmaz-dashboard .db-cinsi-value { font-size: 1.1rem; }
+    .tasinmaz-dashboard .db-money-value { font-size: 0.9rem; }
+    .tasinmaz-dashboard .db-money-body  { gap: 0.4rem; padding: 0.5rem 0.6rem !important; }
+    .tasinmaz-dashboard .db-bar-track   { width: 40px; }
+}
+
+@media (min-width: 576px) and (max-width: 767px) {
+    .tasinmaz-dashboard .db-stat-value  { font-size: 1.25rem; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Scrollspy Layout
+   ══════════════════════════════════════════════════════════════ */
+
+/* Desktop: content sol, nav sağ */
+.db-scrollspy-layout {
+    display: grid;
+    grid-template-columns: 1fr 200px;
+    gap: 18px;
+    align-items: start;
+}
+
+.db-scrollspy-nav {
+    position: sticky;
+    top: 12px;
+    order: 2;
+    background: var(--card-bg, #fff);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 10px;
+    padding: 12px 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.db-nav-title {
+    font-size: 0.76rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--p3, #2563EB);
+    padding: 4px 10px 8px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.07);
+    margin-bottom: 6px;
+}
+
+.db-scrollspy-nav .nav-link {
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-size: 0.81rem;
+    color: var(--muted, #6b6b6b);
+    transition: background 0.15s, color 0.15s;
+}
+
+.db-scrollspy-nav .nav-link:hover {
+    background: rgba(37, 99, 235, 0.07);
+    color: var(--text, #1E1E1E);
+}
+
+.db-scrollspy-nav .nav-link.active {
+    background: rgba(37, 99, 235, 0.12);
+    color: #1D40AE;
+    font-weight: 700;
+}
+
+.db-scrollspy-content {
+    order: 1;
+    height: calc(100vh - 120px);
+    overflow-y: auto;
+    padding-right: 6px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(100, 116, 139, 0.4) transparent;
+}
+
+.db-section {
+    scroll-margin-top: 12px;
+    padding-bottom: 4px;
+}
+
+/* ── Section Separator ───────────────────────────────────── */
+.db-separator {
+    width: 65%;
+    margin-block: 2rem;
+    margin-inline: auto;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.25), transparent);
+    opacity: 1;
+    border: 0;
+}
+
+/* Mobil: nav üstte yatay kaydırılabilir pill bar */
+@media (max-width: 991px) {
+    .db-scrollspy-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .db-scrollspy-nav {
+        order: 1;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        display: flex;
+        overflow-x: auto;
+        padding: 6px 8px;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+        border-top: none;
+        scrollbar-width: none;
+    }
+
+    .db-scrollspy-nav::-webkit-scrollbar { display: none; }
+
+    .db-scrollspy-nav .nav {
+        flex-direction: row !important;
+        flex-wrap: nowrap;
+        gap: 4px;
+    }
+
+    .db-nav-title {
+        display: none;
+    }
+
+    .db-scrollspy-nav .nav-link {
+        white-space: nowrap;
+        padding: 5px 10px;
+        font-size: 0.76rem;
+    }
+
+    .db-scrollspy-content {
+        order: 2;
+        height: auto;
+        max-height: none;
+        overflow-y: visible;
+        padding-right: 0;
+    }
+}

@@ -6,5 +6,7 @@ namespace Jenga.DataAccess.Repositories.IRepository.Common
 {
     public interface IIlRepository : IRepository<Il>
     {
+        Task<List<Il>> GetAktifIllerAsync(CancellationToken cancellationToken = default);
     }
+
 }

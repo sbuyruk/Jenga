@@ -1,0 +1,71 @@
+@page "/tbys/tasinmaz-durumu"
+@rendermode InteractiveServer
+
+@using Jenga.BlazorUI.Components.TBYS
+@using Jenga.DataAccess.Services.TBYS
+@using Jenga.Models.TBYS
+@using Microsoft.AspNetCore.Components
+
+@inject ITasinmazService TasinmazService
+
+<div class="no-print d-flex align-items-end gap-2 mb-3">
+    <div class="btn-group" role="group">
+        <button type="button"
+                class="btn btn-sm @(ActiveTab == Tab.Ozet ? "btn-primary" : "btn-outline-primary")"
+                @onclick="() => ActiveTab = Tab.Ozet">
+            Özet
+        </button>
+        <button type="button"
+                class="btn btn-sm @(ActiveTab == Tab.Detay ? "btn-primary" : "btn-outline-primary")"
+                @onclick="() => ActiveTab = Tab.Detay">
+            Bölge Detayı
+        </button>
+    </div>
+
+    <button class="btn btn-sm btn-outline-secondary" @onclick="RefreshAsync">Yenile</button>
+    <button class="btn btn-sm btn-success" @onclick="ExportExcelAsync">Excel</button>
+    <button class="btn btn-sm btn-primary" @onclick="PrintAsync">Yazdır</button>
+</div>
+
+@if (ActiveTab == Tab.Ozet)
+{
+    <TasinmazDurumuOzetTable @ref="_ozetTable"
+                             Tasinmazlar="@Tasinmazlar" />
+}
+else
+{
+    <TasinmazDurumuDetailTable @ref="_detailTable"
+                               Tasinmazlar="@Tasinmazlar" />
+}
+
+@code {
+    private enum Tab { Ozet, Detay }
+
+    private TasinmazDurumuOzetTable? _ozetTable;
+    private TasinmazDurumuDetailTable? _detailTable;
+
+    private Tab ActiveTab { get; set; } = Tab.Ozet;
+    private List<Tasinmaz> Tasinmazlar { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+        => await RefreshAsync();
+
+    private async Task RefreshAsync()
+        => Tasinmazlar = await TasinmazService.GetEnvanterdekilerAsync();
+
+    private async Task ExportExcelAsync()
+    {
+        if (ActiveTab == Tab.Ozet && _ozetTable is not null)
+            await _ozetTable.ExportExcelAsync();
+        else if (ActiveTab == Tab.Detay && _detailTable is not null)
+            await _detailTable.ExportExcelAsync();
+    }
+
+    private async Task PrintAsync()
+    {
+        if (ActiveTab == Tab.Ozet && _ozetTable is not null)
+            await _ozetTable.PrintAsync();
+        else if (ActiveTab == Tab.Detay && _detailTable is not null)
+            await _detailTable.PrintAsync();
+    }
+}

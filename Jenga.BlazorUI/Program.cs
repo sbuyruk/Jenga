@@ -15,6 +15,7 @@ using Microsoft.EntityFrameworkCore;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 using System.Globalization;
 using Microsoft.AspNetCore.Localization;
+using Jenga.DataAccess.Services.FTK;
 using Jenga.DataAccess.Services.NBYS;
 using Jenga.BlazorUI.Services.Presence;
 using Microsoft.AspNetCore.Components.Server.Circuits;
@@ -82,6 +83,7 @@ builder.Services.AddScoped<IOdemeService, OdemeService>();
 //Common Services
 builder.Services.AddScoped<IBagisService, BagisService>();
 builder.Services.AddScoped<IIlService, IlService>();
+builder.Services.AddScoped<IIlceService, IlceService>();
 builder.Services.AddScoped<IBolgeService, BolgeService>();
 builder.Services.AddScoped<CurrentUserService>();
 builder.Services.AddScoped<ImpersonationService>();
@@ -91,8 +93,15 @@ builder.Services.AddScoped<IPersonelService, PersonelService>();
 builder.Services.AddScoped<INakitBagisciService, NakitBagisciService>();
 builder.Services.AddScoped<INakitBagisHareketService, NakitBagisHareketService>();
 builder.Services.AddScoped<IBankaTanimService, BankaTanimService>();
+builder.Services.AddScoped<IArmaganService, ArmaganService>();
+builder.Services.AddScoped<IArmaganTanimService, ArmaganTanimService>();
+builder.Services.AddScoped<IDuzenliNakitBagisciService, DuzenliNakitBagisciService>();
 //Yasal Faiz Service
 builder.Services.AddScoped<IYasalFaizService, YasalFaizService>();
+//FTK Services
+builder.Services.AddScoped<IFtkService, FtkService>();
+builder.Services.AddScoped<IFtkIslemService, FtkIslemService>();
+builder.Services.AddScoped<IFtkKisiService, FtkKisiService>();
 
 //Currentusername alırken httpContextAcces.. kullanmak için
 builder.Services.AddHttpContextAccessor();
