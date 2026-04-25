@@ -1,0 +1,307 @@
+/* ═══════════════════════════════════════════════════════════════
+   TasinmazBagisDashboard.razor.css
+   Mobile-first, fully responsive – aynı token sistemi
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Kök ──────────────────────────────────────────────────────── */
+.bagis-dashboard {
+    max-width: 100%;
+    overflow-x: hidden;
+    box-sizing: border-box;
+}
+
+/* ── Bölüm Başlığı ────────────────────────────────────────────── */
+.bagis-dashboard .section-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: #6b7280;
+    margin-bottom: 0.4rem;
+    padding-left: 0.1rem;
+}
+
+/* ── Spinner ──────────────────────────────────────────────────── */
+.bagis-dashboard .spin {
+    animation: bd-spin 0.9s linear infinite;
+    display: inline-block;
+}
+
+@keyframes bd-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   STAT CARDS
+   ════════════════════════════════════════════════════════════════ */
+.bagis-dashboard .db-stat-card {
+    border: none;
+    border-left: 3px solid var(--db-accent, #6b7280);
+    border-radius: 0.65rem;
+    background: var(--db-accent-bg, #fafafa);
+    box-shadow: 0 1px 4px rgba(0,0,0,.07);
+    transition: transform 160ms ease, box-shadow 160ms ease, border-left-width 160ms ease;
+    overflow: hidden;
+}
+
+.bagis-dashboard .db-stat-card:hover {
+    transform: translateY(-2px);
+    border-left-width: 5px;
+    box-shadow: 0 6px 18px rgba(0,0,0,.10);
+}
+
+.bagis-dashboard .db-stat-body {
+    padding: 0.6rem 0.4rem !important;
+}
+
+.bagis-dashboard .db-stat-icon {
+    font-size: 1.1rem;
+    color: var(--db-accent, #6b7280);
+    opacity: 0.85;
+    margin-bottom: 0.1rem;
+}
+
+.bagis-dashboard .db-stat-label {
+    font-size: 0.68rem;
+    color: #6b7280;
+    line-height: 1.2;
+    margin-bottom: 0.15rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.bagis-dashboard .db-stat-value {
+    font-size: 1.4rem;
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--db-accent, #374151);
+    font-variant-numeric: tabular-nums;
+}
+
+.bagis-dashboard .db-stat-sub {
+    font-size: 0.68rem;
+    color: #9ca3af;
+    margin-top: 0.1rem;
+}
+
+/* Accent token'lar */
+.bagis-dashboard .db-accent-indigo { --db-accent: #4f46e5; --db-accent-bg: #eef2ff; }
+.bagis-dashboard .db-accent-blue   { --db-accent: #2563eb; --db-accent-bg: #eff6ff; }
+.bagis-dashboard .db-accent-teal   { --db-accent: #0d9488; --db-accent-bg: #f0fdfa; }
+.bagis-dashboard .db-accent-green  { --db-accent: #16a34a; --db-accent-bg: #f0fdf4; }
+.bagis-dashboard .db-accent-rose   { --db-accent: #e11d48; --db-accent-bg: #fff1f2; }
+.bagis-dashboard .db-accent-amber  { --db-accent: #d97706; --db-accent-bg: #fffbeb; }
+.bagis-dashboard .db-accent-purple { --db-accent: #7c3aed; --db-accent-bg: #f5f3ff; }
+.bagis-dashboard .db-accent-sky    { --db-accent: #0284c7; --db-accent-bg: #f0f9ff; }
+.bagis-dashboard .db-accent-orange { --db-accent: #ea580c; --db-accent-bg: #fff7ed; }
+.bagis-dashboard .db-accent-lime   { --db-accent: #65a30d; --db-accent-bg: #f7fee7; }
+.bagis-dashboard .db-accent-cyan   { --db-accent: #0891b2; --db-accent-bg: #ecfeff; }
+.bagis-dashboard .db-accent-slate  { --db-accent: #475569; --db-accent-bg: #f8fafc; }
+
+/* ════════════════════════════════════════════════════════════════
+   TABLO
+   ════════════════════════════════════════════════════════════════ */
+.bagis-dashboard .db-bolge-table {
+    font-size: 0.82rem;
+    margin-bottom: 0;
+}
+
+.bagis-dashboard .db-bolge-table th,
+.bagis-dashboard .db-bolge-table td {
+    white-space: nowrap;
+    padding: 0.3rem 0.5rem;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   MINI BAR
+   ════════════════════════════════════════════════════════════════ */
+.bagis-dashboard .db-bar-track {
+    width: 60px;
+    height: 6px;
+    background: #e5e7eb;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.bagis-dashboard .db-bar-fill {
+    height: 100%;
+    background: #16a34a;
+    border-radius: 999px;
+    transition: width 400ms ease;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   SIRA BADGE
+   ════════════════════════════════════════════════════════════════ */
+.bagis-dashboard .db-rank-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.4rem;
+    height: 1.4rem;
+    border-radius: 50%;
+    font-size: 0.65rem;
+    font-weight: 700;
+    flex: 0 0 auto;
+}
+
+.bagis-dashboard .db-rank-gold    { background: #fbbf24; color: #78350f; }
+.bagis-dashboard .db-rank-silver  { background: #9ca3af; color: #fff; }
+.bagis-dashboard .db-rank-bronze  { background: #d97706; color: #fff; }
+.bagis-dashboard .db-rank-default { background: #e5e7eb; color: #374151; }
+
+/* ════════════════════════════════════════════════════════════════
+   KATLANABİLİR BAŞLIK
+   ════════════════════════════════════════════════════════════════ */
+.bagis-dashboard .db-collapsible-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+    padding: 0.6rem 0.9rem;
+    transition: background 120ms;
+}
+
+.bagis-dashboard .db-collapsible-header:hover {
+    background: rgba(0,0,0,.03);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   SEPARATöR
+   ════════════════════════════════════════════════════════════════ */
+.db-separator {
+    width: 65%;
+    margin-block: 2rem;
+    margin-inline: auto;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.25), transparent);
+    opacity: 1;
+    border: 0;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   CHART MIN-HEIGHT
+   ════════════════════════════════════════════════════════════════ */
+.bagis-dashboard .card .generic-chart {
+    min-height: 280px;
+}
+
+@media (min-width: 768px) {
+    .bagis-dashboard .card .generic-chart {
+        min-height: 360px;
+    }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   RESPONSIVE — ufak ekranlarda küçültme
+   ════════════════════════════════════════════════════════════════ */
+@media (max-width: 575px) {
+    .bagis-dashboard .db-stat-value { font-size: 1.15rem; }
+    .bagis-dashboard .db-bar-track  { width: 40px; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Scrollspy Layout (TasinmazDashboard ile aynı)
+   ══════════════════════════════════════════════════════════════ */
+.db-scrollspy-layout {
+    display: grid;
+    grid-template-columns: 1fr 200px;
+    gap: 18px;
+    align-items: start;
+}
+
+.db-scrollspy-nav {
+    position: sticky;
+    top: 12px;
+    order: 2;
+    background: var(--card-bg, #fff);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 10px;
+    padding: 12px 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.db-nav-title {
+    font-size: 0.76rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #16a34a;
+    padding: 4px 10px 8px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.07);
+    margin-bottom: 6px;
+}
+
+.db-scrollspy-nav .nav-link {
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-size: 0.81rem;
+    color: var(--muted, #6b6b6b);
+    transition: background 0.15s, color 0.15s;
+}
+
+.db-scrollspy-nav .nav-link:hover {
+    background: rgba(22, 163, 74, 0.07);
+    color: var(--text, #1E1E1E);
+}
+
+.db-scrollspy-nav .nav-link.active {
+    background: rgba(22, 163, 74, 0.12);
+    color: #15803d;
+    font-weight: 700;
+}
+
+.db-scrollspy-content {
+    order: 1;
+    height: calc(100vh - 120px);
+    overflow-y: auto;
+    padding-right: 6px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(100, 116, 139, 0.4) transparent;
+}
+
+.db-section {
+    scroll-margin-top: 12px;
+    padding-bottom: 4px;
+}
+
+/* Mobil: nav üstte yatay pill bar */
+@media (max-width: 991px) {
+    .db-scrollspy-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .db-scrollspy-nav {
+        order: 1;
+        position: static;
+        overflow-x: auto;
+        white-space: nowrap;
+        padding: 8px 10px;
+        border-radius: 8px;
+    }
+
+    .db-scrollspy-nav .nav {
+        flex-direction: row !important;
+        flex-wrap: nowrap;
+        gap: 4px !important;
+    }
+
+    .db-nav-title {
+        display: none;
+    }
+
+    .db-scrollspy-nav .nav-link {
+        padding: 5px 10px;
+        font-size: 0.76rem;
+        white-space: nowrap;
+    }
+
+    .db-scrollspy-content {
+        order: 2;
+        height: auto;
+        overflow-y: visible;
+        padding-right: 0;
+    }
+}

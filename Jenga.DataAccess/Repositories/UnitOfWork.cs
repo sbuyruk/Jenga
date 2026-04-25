@@ -12,7 +12,6 @@ using Jenga.DataAccess.Repositories.IRepository.TBYS;
 using Jenga.DataAccess.Repositories.FTK;
 using Jenga.DataAccess.Repositories.NBYS;
 using Jenga.DataAccess.Repositories.TBYS;
-using Jenga.Models.TBYS;
 using Microsoft.EntityFrameworkCore;
 
 namespace Jenga.DataAccess.Repositories
@@ -54,6 +53,21 @@ namespace Jenga.DataAccess.Repositories
             // IKYS
             Personel = new PersonelRepository(_contextFactory);
             PersonelLocation = new PersonelLocationRepository(_contextFactory);
+            Aile = new AileRepository(_contextFactory);
+            DereceKademeDegisim = new DereceKademeDegisimRepository(_contextFactory);
+            EgitimSeviyesi = new EgitimSeviyesiRepository(_contextFactory);
+            GorevOnay = new GorevOnayRepository(_contextFactory);
+            BirimTanim = new BirimTanimRepository(_contextFactory);
+            GorevTanim = new GorevTanimRepository(_contextFactory);
+            IletisimBilgileri = new IletisimBilgileriRepository(_contextFactory);
+            IzinDonem = new IzinDonemRepository(_contextFactory);
+            IzinTalep = new IzinTalepRepository(_contextFactory);
+            IzinHareket = new IzinHareketRepository(_contextFactory);
+            IzinTanim = new IzinTanimRepository(_contextFactory);
+            Kimlik = new KimlikRepository(_contextFactory);
+            IsBilgileri = new IsBilgileriRepository(_contextFactory);
+            YabanciDil = new YabanciDilRepository(_contextFactory);
+            TahsilTanim = new TahsilTanimRepository(_contextFactory);
 
             // TBYS
             Tasinmaz = new TasinmazRepository(_contextFactory);
@@ -65,6 +79,10 @@ namespace Jenga.DataAccess.Repositories
             OdemePlani = new OdemePlaniRepository(_contextFactory);
             Odeme = new OdemeRepository(_contextFactory);
             YasalFaiz = new YasalFaizRepository(_contextFactory);
+            BagisciTalepleri = new BagisciTalepleriRepository(_contextFactory);
+            BagisciYakinlari = new BagisciYakinlariRepository(_contextFactory);
+            TasinmazTaahhut = new TasinmazTaahhutRepository(_contextFactory);
+            Vasiyetci = new VasiyetciRepository(_contextFactory);
 
             // NBYS
             NakitBagisci = new NakitBagisciRepository(_contextFactory);
@@ -108,6 +126,21 @@ namespace Jenga.DataAccess.Repositories
         // IKYS
         public IPersonelRepository Personel { get; private set; }
         public IPersonelLocationRepository PersonelLocation { get; private set; }
+        public IAileRepository Aile { get; private set; }
+        public IDereceKademeDegisimRepository DereceKademeDegisim { get; private set; }
+        public IEgitimSeviyesiRepository EgitimSeviyesi { get; private set; }
+        public IGorevOnayRepository GorevOnay { get; private set; }
+        public IBirimTanimRepository BirimTanim { get; private set; }
+        public IGorevTanimRepository GorevTanim { get; private set; }
+        public IIletisimBilgileriRepository IletisimBilgileri { get; private set; }
+        public IIzinDonemRepository IzinDonem { get; private set; }
+        public IIzinTalepRepository IzinTalep { get; private set; }
+        public IIzinHareketRepository IzinHareket { get; private set; }
+        public IIzinTanimRepository IzinTanim { get; private set; }
+        public IKimlikRepository Kimlik { get; private set; }
+        public IIsBilgileriRepository IsBilgileri { get; private set; }
+        public IYabanciDilRepository YabanciDil { get; private set; }
+        public ITahsilTanimRepository TahsilTanim { get; private set; }
 
         // TBYS
         public ITasinmazRepository Tasinmaz { get; private set; }
@@ -119,6 +152,10 @@ namespace Jenga.DataAccess.Repositories
         public IOdemePlaniRepository OdemePlani { get; private set; }
         public IOdemeRepository Odeme { get; private set; }
         public IYasalFaizRepository YasalFaiz { get; private set; }
+        public IBagisciTalepleriRepository BagisciTalepleri { get; private set; }
+        public IBagisciYakinlariRepository BagisciYakinlari { get; private set; }
+        public ITasinmazTaahhutRepository TasinmazTaahhut { get; private set; }
+        public IVasiyetciRepository Vasiyetci { get; private set; }
 
         // NBYS
         public INakitBagisciRepository NakitBagisci { get; private set; }

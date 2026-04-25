@@ -80,6 +80,10 @@ builder.Services.AddScoped<IKiraSozlesmeService, KiraSozlesmeService>();
 builder.Services.AddScoped<ISozlesmeTasinmazService, SozlesmeTasinmazService>();
 builder.Services.AddScoped<IOdemePlaniService, OdemePlaniService>();
 builder.Services.AddScoped<IOdemeService, OdemeService>();
+builder.Services.AddScoped<IBagisciTalepleriService, BagisciTalepleriService>();
+builder.Services.AddScoped<IBagisciYakinlariService, BagisciYakinlariService>();
+builder.Services.AddScoped<ITasinmazTaahhutService, TasinmazTaahhutService>();
+builder.Services.AddScoped<IVasiyetciService, VasiyetciService>();
 //Common Services
 builder.Services.AddScoped<IBagisService, BagisService>();
 builder.Services.AddScoped<IIlService, IlService>();
@@ -89,6 +93,21 @@ builder.Services.AddScoped<CurrentUserService>();
 builder.Services.AddScoped<ImpersonationService>();
 //IKYS Service 
 builder.Services.AddScoped<IPersonelService, PersonelService>();
+builder.Services.AddScoped<IKimlikService, KimlikService>();
+builder.Services.AddScoped<IIsBilgileriService, IsBilgileriService>();
+builder.Services.AddScoped<IIletisimBilgileriService, IletisimBilgileriService>();
+builder.Services.AddScoped<IAileService, AileService>();
+builder.Services.AddScoped<IDereceKademeDegisimService, DereceKademeDegisimService>();
+builder.Services.AddScoped<IEgitimSeviyesiService, EgitimSeviyesiService>();
+builder.Services.AddScoped<IGorevOnayService, GorevOnayService>();
+builder.Services.AddScoped<IBirimTanimService, BirimTanimService>();
+builder.Services.AddScoped<IGorevTanimService, GorevTanimService>();
+builder.Services.AddScoped<IIzinTanimService, IzinTanimService>();
+builder.Services.AddScoped<IIzinDonemService, IzinDonemService>();
+builder.Services.AddScoped<IIzinTalepService, IzinTalepService>();
+builder.Services.AddScoped<IIzinHareketService, IzinHareketService>();
+builder.Services.AddScoped<IYabanciDilService, YabanciDilService>();
+builder.Services.AddScoped<ITahsilTanimService, TahsilTanimService>();
 //NBYS Services
 builder.Services.AddScoped<INakitBagisciService, NakitBagisciService>();
 builder.Services.AddScoped<INakitBagisHareketService, NakitBagisHareketService>();

@@ -1,0 +1,813 @@
+@page "/ikys/personel-dashboard"
+@rendermode InteractiveServer
+
+@using Jenga.BlazorUI.Components.Common
+@using Jenga.BlazorUI.Services.Common
+@using Jenga.DataAccess.Services.IKYS
+@using Jenga.Models.IKYS
+@using Jenga.Utility
+@using System.Globalization
+@using Microsoft.JSInterop
+
+@inject IPersonelService PersonelService
+@inject IIsBilgileriService IsBilgileriService
+@inject IBirimTanimService BirimTanimService
+@inject IDereceKademeDegisimService DereceKademeDegisimService
+@inject IGorevOnayService GorevOnayService
+@inject IIzinDonemService IzinDonemService
+@inject IIzinTalepService IzinTalepService
+@inject IIzinHareketService IzinHareketService
+@inject IIzinTanimService IzinTanimService
+@inject ITahsilTanimService TahsilTanimService
+@inject IKimlikService KimlikService
+@inject IJSRuntime JS
+@implements IDisposable
+
+<div class="personel-dashboard container-fluid px-0 px-sm-2">
+    @if (_isLoading)
+    {
+        <div class="d-flex justify-content-center align-items-center py-5">
+            <div class="spinner-border text-primary me-3" role="status"></div>
+            <span class="text-muted">Veriler yükleniyor…</span>
+        </div>
+    }
+    else if (_loadFailed)
+    {
+        <div class="alert alert-danger d-flex align-items-center gap-2">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            Veri yüklenirken bir hata oluştu.
+            <button class="btn btn-sm btn-outline-danger ms-auto" @onclick="RefreshAsync">Tekrar Dene</button>
+        </div>
+    }
+    else
+    {
+        <div class="pd-scrollspy-layout">
+
+            <!-- ── Scrollspy Nav ─────────────────────────────── -->
+            <nav id="pd-scrollspy-nav" class="pd-scrollspy-nav">
+                <div class="nav nav-pills flex-column gap-1">
+                    <div class="pd-nav-title">
+                        <i class="bi bi-people-fill me-1"></i> İK Dashboard
+                    </div>
+                    <a class="nav-link" href="#genel-ozet" @onclick:preventDefault="true" @onclick='() => ScrollToAsync("genel-ozet")'>
+                        <i class="bi bi-grid-1x2-fill me-1"></i>Genel Özet
+                    </a>
+                    <a class="nav-link" href="#tahsil-durumu" @onclick:preventDefault="true" @onclick='() => ScrollToAsync("tahsil-durumu")'>
+                        <i class="bi bi-mortarboard-fill me-1"></i>Tahsil Durumu
+                    </a>
+                    <a class="nav-link" href="#yas-dagilimi" @onclick:preventDefault="true" @onclick='() => ScrollToAsync("yas-dagilimi")'>
+                        <i class="bi bi-bar-chart-fill me-1"></i>Yaş Dağılımı
+                    </a>
+                    <a class="nav-link" href="#izin-ozeti" @onclick:preventDefault="true" @onclick='() => ScrollToAsync("izin-ozeti")'>
+                        <i class="bi bi-calendar-check-fill me-1"></i>İzin Özeti
+                    </a>
+                    <a class="nav-link" href="#egitim-kariyer" @onclick:preventDefault="true" @onclick='() => ScrollToAsync("egitim-kariyer")'>
+                        <i class="bi bi-mortarboard-fill me-1"></i>Derece/Kademe Değişimleri
+                    </a>
+                    <a class="nav-link" href="#personel-listesi" @onclick:preventDefault="true" @onclick='() => ScrollToAsync("personel-listesi")'>
+                        <i class="bi bi-table me-1"></i>Personel Listesi
+                    </a>
+                </div>
+            </nav>
+
+            <!-- ── Scrollspy Content ─────────────────────────── -->
+            <div id="pd-scrollspy-content"
+                 class="pd-scrollspy-content"
+                 data-bs-spy="scroll"
+                 data-bs-target="#pd-scrollspy-nav"
+                 data-bs-smooth-scroll="true"
+                 tabindex="0">
+
+                <!-- ── Sayfa Başlığı ──────────────────────────────── -->
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                    <div>
+                        <h5 class="mb-0 fw-bold"><i class="bi bi-people-fill me-2 text-primary"></i>İnsan Kaynakları Dashboard</h5>
+                        <small class="text-muted">Tüm personelin anlık özeti</small>
+                    </div>
+                    <button class="btn btn-sm btn-outline-secondary"
+                            @onclick="RefreshAsync"
+                            disabled="@_isLoading">
+                        <i class="bi bi-arrow-clockwise @(_isLoading ? "spin" : "")"></i>
+                        @(_isLoading ? "Yükleniyor..." : "Yenile")
+                    </button>
+                </div>
+
+                <!-- ════════════════════════════════════════════════
+                     BÖLÜM 1 – GENEL ÖZET KPI
+                ════════════════════════════════════════════════ -->
+                <section id="genel-ozet" class="pd-section">
+                    <div class="section-label">Genel Özet</div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+                            <div class="card pd-stat-card pd-accent-indigo h-100">
+                                <div class="card-body pd-stat-body text-center">
+                                    <div class="pd-stat-icon"><i class="bi bi-people"></i></div>
+                                    <div class="pd-stat-label">Toplam Personel</div>
+                                    <div class="pd-stat-value">@_toplamPersonel</div>
+                                    <div class="pd-stat-sub">aktif çalışan</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+                            <div class="card pd-stat-card pd-accent-green h-100">
+                                <div class="card-body pd-stat-body text-center">
+                                    <div class="pd-stat-icon"><i class="bi bi-person-check"></i></div>
+                                    <div class="pd-stat-label">Kadrolu Çalışan</div>
+                                    <div class="pd-stat-value">@_kadroluPersonel</div>
+                                    <div class="pd-stat-sub">%@Percent(_kadroluPersonel, _toplamPersonel)</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+                            <div class="card pd-stat-card pd-accent-rose h-100">
+                                <div class="card-body pd-stat-body text-center">
+                                    <div class="pd-stat-icon"><i class="bi bi-person-dash"></i></div>
+                                    <div class="pd-stat-label">Kadro Harici</div>
+                                    <div class="pd-stat-value">@_kadroHariciPersonel</div>
+                                    <div class="pd-stat-sub">%@Percent(_kadroHariciPersonel, _toplamPersonel)</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+                            <div class="card pd-stat-card pd-accent-slate h-100">
+                                <div class="card-body pd-stat-body text-center">
+                                    <div class="pd-stat-icon"><i class="bi bi-arrow-up-right-circle"></i></div>
+                                    <div class="pd-stat-label">Bu Yıl Terfi Alan</div>
+                                    <div class="pd-stat-value">@_buYilTerfi</div>
+                                    <div class="pd-stat-sub">Çalışan</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+                            <div class="card pd-stat-card pd-accent-orange h-100">
+                                <div class="card-body pd-stat-body text-center">
+                                    <div class="pd-stat-icon"><i class="bi bi-person-badge"></i></div>
+                                    <div class="pd-stat-label">Yaş Ortalaması</div>
+                                    <div class="pd-stat-value">@_yasOrtalaması</div>
+                                    <div class="pd-stat-sub">Yaş</div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- İzin hızlı KPI'ları -->
+                    </div>
+
+                    <hr class="pd-separator" />
+                </section>
+
+                <!-- ════════════════════════════════════════════════
+                     BÖLÜM 2 – TAHSİL DURUMU
+                ════════════════════════════════════════════════ -->
+                <section id="tahsil-durumu" class="pd-section">
+                    <div class="section-label">Tahsil Durumu</div>
+                    <div class="d-flex flex-wrap gap-3 justify-content-center align-items-start mb-3">
+                        <div class="pd-chart-container">
+                            <GenericChart TItem="PieItem"
+                                          Items="_tahsilDagilimItems"
+                                          LabelSelector="@(p => p.Label)"
+                                          ValueSelector="@(p => p.Value)"
+                                          Title="Çalışanların Tahsil Seviyesi Dağılımı"
+                                          SeriesName="Personel"
+                                          Type="GenericChart<PieItem>.GenericChartType.Donut"
+                                          Height="100%"
+                                          Width="100%"
+                                          ShowLegend="true"
+                                          ShowDataLabels="true"
+                                          ColorPalette="@_mainPalette" />
+                        </div>
+                        <div class="pd-birim-table align-self-center">
+                            <div class="table-responsive">
+                                <table class="table table-hover table-sm mb-0 small">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Tahsil Seviyesi</th>
+                                            <th class="text-end">Personel</th>
+                                            <th class="text-end">Pay %</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var t in _tahsilSatirlar)
+                                        {
+                                            <tr>
+                                                <td class="fw-medium">@t.TahsilAdi</td>
+                                                <td class="text-end">@t.PersonelSayisi</td>
+                                                <td class="text-end text-muted">
+                                                    @(_toplamPersonel > 0 ? $"%{(t.PersonelSayisi * 100m / _toplamPersonel):N1}" : "–")
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                    <tfoot class="table-secondary fw-bold">
+                                        <tr>
+                                            <td>Toplam</td>
+                                            <td class="text-end">@_tahsilSatirlar.Sum(t => t.PersonelSayisi)</td>
+                                            <td class="text-end">%100</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <hr class="pd-separator" />
+                </section>
+
+                <!-- ════════════════════════════════════════════════
+                     BÖLÜM 7 – YAŞ DAĞILIMI
+                ════════════════════════════════════════════════ -->
+                <section id="yas-dagilimi" class="pd-section">
+                    <div class="section-label">Yaş Dağılımı</div>
+
+                    <div class="row g-3 mb-3">
+                        <!-- Yaş grubu donut chart -->
+                        <div class="col-12 col-lg-6">
+                            <div class="card shadow-sm h-100">
+                                <div class="card-header fw-semibold">
+                                    <i class="bi bi-bar-chart-fill me-1 text-primary"></i>Yaş Grubu Dağılımı
+                                </div>
+                                <div class="card-body p-0" style="height:280px;">
+                                    <GenericChart TItem="PieItem"
+                                                  Items="_yasDagilimItems"
+                                                  LabelSelector="@(p => p.Label)"
+                                                  ValueSelector="@(p => p.Value)"
+                                                  Title=""
+                                                  SeriesName="Personel"
+                                                  Type="GenericChart<PieItem>.GenericChartType.Donut"
+                                                  Height="100%"
+                                                  Width="100%"
+                                                  ShowLegend="true"
+                                                  ShowDataLabels="true"
+                                                  ColorPalette="@_mainPalette" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Yaş grubu tablo -->
+                        <div class="col-12 col-lg-6">
+                            <div class="card shadow-sm h-100">
+                                <div class="card-header fw-semibold">
+                                    <i class="bi bi-table me-1 text-primary"></i>Yaş Grubu Detayı
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-hover mb-0 small">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Yaş Grubu</th>
+                                                    <th class="text-end">Personel</th>
+                                                    <th class="text-end">Ort. Yaş</th>
+                                                    <th class="text-end">Pay %</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var y in _yasSatirlar)
+                                                {
+                                                    <tr>
+                                                        <td class="fw-medium">@y.YasGrubu</td>
+                                                        <td class="text-end">@y.PersonelSayisi</td>
+                                                        <td class="text-end">@y.OrtYas</td>
+                                                        <td class="text-end">%@Percent(y.PersonelSayisi, _yasSatirlar.Sum(x => x.PersonelSayisi))</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                            <tfoot class="table-light fw-bold">
+                                                <tr>
+                                                    <td>Toplam</td>
+                                                    <td class="text-end">@_yasSatirlar.Sum(y => y.PersonelSayisi)</td>
+                                                    <td class="text-end">–</td>
+                                                    <td class="text-end">%100</td>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <hr class="pd-separator" />
+                </section>
+
+                <!-- ════════════════════════════════════════════════
+                     BÖLÜM 3 – İZİN ÖZETİ
+                ════════════════════════════════════════════════ -->
+                <section id="izin-ozeti" class="pd-section">
+                    <div class="section-label">İzin Özeti</div>
+
+                    <!-- Kalan İzin Toplam Dağılımı (Kadrolu Personel) -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-12 col-lg-5">
+                            <div class="card shadow-sm h-100">
+                                <div class="card-header fw-semibold">
+                                    <i class="bi bi-pie-chart-fill me-1 text-success"></i>Kalan İzin Toplam Dağılımı (Kadrolu)
+                                </div>
+                                <div class="card-body p-0" style="height:300px;">
+                                    <GenericChart TItem="PieItem"
+                                                  Items="_kalanIzinGrupItems"
+                                                  LabelSelector="@(p => p.Label)"
+                                                  ValueSelector="@(p => p.Value)"
+                                                  Title=""
+                                                  SeriesName="Personel"
+                                                  Type="GenericChart<PieItem>.GenericChartType.Donut"
+                                                  Height="100%"
+                                                  Width="100%"
+                                                  ShowLegend="true"
+                                                  ShowDataLabels="true"
+                                                  ColorPalette="@(new[]{"#EF4444","#F59E0B","#10B981","#2563EB","#7C3AED"})" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-7">
+                            <div class="card shadow-sm h-100">
+                                <div class="card-header fw-semibold">
+                                    <i class="bi bi-table me-1 text-success"></i>Personel Bazlı Kalan İzin Toplamı (Kadrolu)
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="table-responsive" style="max-height:300px; overflow-y:auto;">
+                                        <table class="table table-sm table-hover mb-0 small">
+                                            <thead class="table-light sticky-top">
+                                                <tr>
+                                                    <th>Personel</th>
+                                                    <th class="text-end">Kalan İzin Toplamı</th>
+                                                    <th>Grup</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var s in _kalanIzinPersonelSatirlar)
+                                                {
+                                                    <tr>
+                                                        <td class="fw-medium">@s.AdSoyad</td>
+                                                        <td class="text-end fw-semibold" style="color:@s.GrupRengi">@s.KalanIzinToplami.ToString("N0", _trCulture)</td>
+                                                        <td><span class="badge" style="background-color:@s.GrupRengi">@s.GrupAdi</span></td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bekleyen İzin Talepleri -->
+                    @if (_bekleyenTalepSatirlar.Count > 0)
+                    {
+                        <div class="card shadow-sm mb-3">
+                            <div class="card-header fw-semibold d-flex justify-content-between align-items-center"
+                                 role="button"
+                                 @onclick="() => _isTalepOpen = !_isTalepOpen">
+                                <span>
+                                    <i class="bi @(_isTalepOpen ? "bi-chevron-down" : "bi-chevron-right") me-2"></i>
+                                    <i class="bi bi-hourglass-split text-warning me-1"></i>Bekleyen İzin Talepleri
+                                </span>
+                                <span class="badge bg-warning text-dark">@_bekleyenTalepSatirlar.Count</span>
+                            </div>
+                            @if (_isTalepOpen)
+                            {
+                                <div class="card-body p-0">
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-hover mb-0 small">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Personel</th>
+                                                    <th>İzin Tipi</th>
+                                                    <th>Başlangıç</th>
+                                                    <th>Bitiş</th>
+                                                    <th class="text-end">Süre</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var t in _bekleyenTalepSatirlar)
+                                                {
+                                                    <tr>
+                                                        <td class="fw-medium">@t.PersonelAdSoyad</td>
+                                                        <td>@t.IzinTipiAdi</td>
+                                                        <td>@(t.Baslangic?.ToString("dd.MM.yyyy") ?? "–")</td>
+                                                        <td>@(t.Bitis?.ToString("dd.MM.yyyy") ?? "–")</td>
+                                                        <td class="text-end">@t.Sure</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    <hr class="pd-separator" />
+                </section>
+
+                <!-- ════════════════════════════════════════════════
+                     BÖLÜM 5 – DERECE/KADEME DEĞİŞİMLERİ
+                ════════════════════════════════════════════════ -->
+                <section id="egitim-kariyer" class="pd-section">
+                    <div class="section-label">DERECE/KADEME DEĞİŞİMLERİ</div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-12">
+                            <div class="card shadow-sm">
+                                <div class="card-header fw-semibold">
+                                    <i class="bi bi-arrow-up-circle-fill me-1 text-success"></i>Bu Yıl Derece/Kademe Değişimleri
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="table-responsive" style="max-height:260px; overflow-y:auto;">
+                                        <table class="table table-sm table-hover mb-0 small">
+                                            <thead class="table-light sticky-top">
+                                                <tr>
+                                                    <th>Personel</th>
+                                                    <th>Değişim</th>
+                                                    <th>Tarihi</th>
+                                                    <th class="text-end">Derece</th>
+                                                    <th class="text-end">Kademe</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var dk in _buYilDkDegisim)
+                                                {
+                                                    <tr>
+                                                        <td class="fw-medium">@dk.PersonelAdSoyad</td>
+                                                        <td><span class="badge bg-success-subtle text-success">@dk.Degisim</span></td>
+                                                        <td>@(dk.DegisimTarihi?.ToString("dd.MM.yyyy") ?? "–")</td>
+                                                        <td class="text-end">@dk.Derece</td>
+                                                        <td class="text-end">@dk.Kademe</td>
+                                                    </tr>
+                                                }
+                                                @if (_buYilDkDegisim.Count == 0)
+                                                {
+                                                    <tr><td colspan="5" class="text-center text-muted py-3">Bu yıl kaydı bulunmuyor.</td></tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <hr class="pd-separator" />
+                </section>
+
+                <!-- ════════════════════════════════════════════════
+                     BÖLÜM 8 – PERSONEL LİSTESİ
+                ════════════════════════════════════════════════ -->
+                <section id="personel-listesi" class="pd-section">
+                    <div class="section-label">Personel Listesi</div>
+
+                    <GenericTable TItem="PersonelSatir"
+                                  @ref="_personelTable"
+                                  Items="_personelFiltered"
+                                  SearchTextSelector="@(r => $"{r.AdSoyad} {r.BirimAdi} {r.Unvan}")"
+                                  TableClass="table-hover table-sm align-middle"
+                                  TableHeight="Auto"
+                                  PageSize="20"
+                                  PageSizeOptions="@(new[] { 20, 50, 100 })"
+                                  ShowCopy="false"
+                                  ShowExport="true">
+                        <HeaderTemplate>
+                            <th>Ad Soyad</th>
+                            <th>Birim</th>
+                            <th>Ünvan</th>
+                            <th>Başlama Tarihi</th>
+                        </HeaderTemplate>
+                        <RowTemplate Context="row">
+                            <td class="fw-medium">@row.AdSoyad</td>
+                            <td>@row.BirimAdi</td>
+                            <td>@row.Unvan</td>
+                            <td>@(row.BaslamaTarihi?.ToString("dd.MM.yyyy") ?? "–")</td>
+                        </RowTemplate>
+                    </GenericTable>
+
+                    <div style="height:40px;"></div>
+                </section>
+
+            </div><!-- scrollspy-content -->
+        </div><!-- scrollspy-layout -->
+    }
+</div>
+
+@code {
+    // ── Yükleme durumu ───────────────────────────────────────────
+    private bool _isLoading  = true;
+    private bool _loadFailed = false;
+    private bool _scrollSpyInitialized;
+
+    private static readonly CultureInfo _trCulture = new("tr-TR");
+
+    // ── Ham veriler ──────────────────────────────────────────────
+    private List<Personel>             _personeller       = [];
+    private List<IsBilgileri>          _isBilgileriList   = [];
+    private List<BirimTanim>           _birimler          = [];
+    private List<DereceKademeDegisim>  _dkDegisimler      = [];
+    private List<GorevOnay>            _gorevOnaylar      = [];
+    private List<IzinDonem>            _izinDonemleri     = [];
+    private List<IzinTalep>            _izinTalepler      = [];
+    private List<IzinHareket>          _izinHareketler    = [];
+    private List<IzinTanim>            _izinTanimlar      = [];
+    private List<TahsilTanim>          _tahsilTanimlar    = [];
+    private List<Kimlik>               _kimlikler         = [];
+
+    // ── KPI değerleri ────────────────────────────────────────────
+    private int _toplamPersonel;
+    private int _kadroluPersonel;
+    private int _kadroHariciPersonel;
+    private int _buYilTerfi;
+    private double _yasOrtalaması;
+
+    // ── Chart verileri ───────────────────────────────────────────
+    private readonly List<PieItem> _birimDagilimItems  = [];
+    private readonly List<PieItem> _izinTipiItems      = [];
+    private readonly List<PieItem> _tahsilDagilimItems = [];
+    private readonly List<PieItem> _yasDagilimItems    = [];
+
+    // ── Tablo verileri ───────────────────────────────────────────
+    private readonly List<TahsilSatir>      _tahsilSatirlar      = [];
+    private readonly List<YasSatir>         _yasSatirlar         = [];
+    private readonly List<BirimSatir>       _birimSatirlar       = [];
+    private readonly List<AktifDonemSatir>  _aktifDonemSatirlar  = [];
+    private readonly List<TalepSatir>       _bekleyenTalepSatirlar = [];
+    private readonly List<PieItem>                    _kalanIzinGrupItems         = [];
+    private readonly List<KalanIzinPersonelSatir>     _kalanIzinPersonelSatirlar  = [];
+    private readonly List<DkDegisimSatir>   _buYilDkDegisim      = [];
+    private readonly List<PersonelSatir>    _personelSatirlar    = [];
+
+    // ── Personel listesi ──────────────────────────────────────────
+    private List<PersonelSatir>   _personelFiltered = [];
+    private GenericTable<PersonelSatir>? _personelTable;
+
+    // ── Collapse state ───────────────────────────────────────────
+    private bool _isTalepOpen  = true;
+
+    // ── Renk paleti ──────────────────────────────────────────────
+    private static readonly string[] _mainPalette =
+    [
+        "#2563EB", "#10B981", "#F59E0B", "#EF4444", "#7C3AED",
+        "#06B6D4", "#F97316", "#9B5DE5", "#8AC926", "#1982C4",
+        "#FF6B6B", "#4ECDC4"
+    ];
+
+    // ── Yaşam döngüsü ────────────────────────────────────────────
+    protected override async Task OnInitializedAsync() => await LoadDataAsync();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_scrollSpyInitialized && !_isLoading)
+        {
+            _scrollSpyInitialized = true;
+            await JS.InvokeVoidAsync("initScrollSpy", "pd-scrollspy-content", "pd-scrollspy-nav", 12);
+        }
+    }
+
+    public void Dispose() { }
+
+    private async Task RefreshAsync()
+    {
+        _isLoading  = true;
+        _loadFailed = false;
+        StateHasChanged();
+        await LoadDataAsync();
+    }
+
+    private ValueTask ScrollToAsync(string id)
+        => JS.InvokeVoidAsync("scrollSpyScrollTo", "pd-scrollspy-content", id);
+
+    private async Task LoadDataAsync()
+    {
+        try
+        {
+            var t1  = PersonelService.GetCalisanPersonelAsync();
+            var t2  = IsBilgileriService.GetAllAsync();
+            var t3  = BirimTanimService.GetAllAsync();
+            var t5  = DereceKademeDegisimService.GetAllAsync();
+            var t6  = GorevOnayService.GetAllAsync();
+            var t7  = IzinDonemService.GetAllAsync();
+            var t8  = IzinTalepService.GetAllAsync();
+            var t9  = IzinHareketService.GetAllAsync();
+            var t10 = IzinTanimService.GetAllAsync();
+            var t12 = TahsilTanimService.GetAllAsync();
+            var t13 = KimlikService.GetAllAsync();
+
+            await Task.WhenAll(t1, t2, t3, t5, t6, t7, t8, t9, t10, t12, t13);
+
+            _personeller      = t1.Result;
+            _isBilgileriList  = t2.Result;
+            _birimler         = t3.Result;
+            _dkDegisimler     = t5.Result;
+            _gorevOnaylar     = t6.Result;
+            _izinDonemleri    = t7.Result;
+            _izinTalepler     = t8.Result;
+            _izinHareketler   = t9.Result;
+            _izinTanimlar     = t10.Result;
+            _tahsilTanimlar   = t12.Result;
+            _kimlikler        = t13.Result;
+
+            BuildMetrics();
+        }
+        catch
+        {
+            _loadFailed = true;
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void BuildMetrics()
+    {
+        int thisYear = DateTime.Today.Year;
+
+        // ── Lookup sözlükleri ───────────────────────────────────
+        var personelDict = _personeller.ToDictionary(p => p.Id);
+        var birimDict    = _birimler.ToDictionary(b => b.Id);
+        var izinTanimDict= _izinTanimlar.ToDictionary(i => i.Id, i => i.Adi ?? "Bilinmiyor");
+
+        // _personeller zaten GetCalisanPersonelAsync ile sadece aktif çalışanları içeriyor
+        var aktifPersonelIds = _personeller.Select(p => p.Id).ToHashSet();
+
+        // Aktif personellerin IsBilgileri kayıtları
+        var aktifIsBilgileri = _isBilgileriList
+            .Where(ib => aktifPersonelIds.Contains(ib.PersonelId))
+            .ToList();
+
+        // ── KPI ─────────────────────────────────────────────────
+        _toplamPersonel      = _personeller.Count;
+        _kadroluPersonel     = _personeller.Count(p => p.Tipi == ProjectConstants.PER_TIPI_KADROLU);
+        _kadroHariciPersonel = _personeller.Count(p => p.Tipi == ProjectConstants.PER_TIPI_KADRO_HARICI);
+        _buYilTerfi          = _dkDegisimler.Count(d => d.DegisimTarihi.HasValue && d.DegisimTarihi.Value.Year == thisYear);
+
+        var today = DateTime.Today;
+        var yaslar = _kimlikler
+            .Where(k => aktifPersonelIds.Contains(k.PersonelId) && k.DogumTar.HasValue)
+            .Select(k => today.Year - k.DogumTar!.Value.Year -
+                         (today < k.DogumTar.Value.AddYears(today.Year - k.DogumTar.Value.Year) ? 1 : 0))
+            .ToList();
+        _yasOrtalaması = yaslar.Count > 0 ? Math.Round(yaslar.Average(), 1) : 0;
+
+        // ── Birim dağılım tablosu & chart ───────────────────────
+        _birimSatirlar.Clear();
+        _birimDagilimItems.Clear();
+        var birimGrup = aktifIsBilgileri
+            .Where(ib => ib.BirimId.HasValue)
+            .GroupBy(ib => ib.BirimId!.Value)
+            .OrderByDescending(g => g.Count())
+            .ToList();
+        foreach (var g in birimGrup)
+        {
+            var adi = birimDict.TryGetValue(g.Key, out var b) ? (b.Adi ?? "–") : "–";
+            _birimSatirlar.Add(new(adi, g.Count()));
+            _birimDagilimItems.Add(new PieItem(adi, g.Count()));
+        }
+
+        // ── İzin tipi dağılımı (bu yıl gerçekleşen) ─────────────
+        _izinTipiItems.Clear();
+        var izinGrup = _izinHareketler
+            .Where(h => h.BaslangicTarihi.HasValue && h.BaslangicTarihi.Value.Year == thisYear && h.IzinTipi.HasValue)
+            .GroupBy(h => h.IzinTipi!.Value)
+            .OrderByDescending(g => g.Count())
+            .ToList();
+        foreach (var g in izinGrup)
+        {
+            var adi = izinTanimDict.TryGetValue(g.Key, out var tAdi) ? tAdi : $"Tip {g.Key}";
+            _izinTipiItems.Add(new PieItem(adi, g.Count()));
+        }
+
+        // ── Aktif izin dönemi tablosu ────────────────────────────
+        _aktifDonemSatirlar.Clear();
+        var aktifDonemler = _izinDonemleri
+            .Where(d => d.BaslangicTarihi <= DateTime.Today && d.BitisTarihi >= DateTime.Today)
+            .ToList();
+        foreach (var d in aktifDonemler)
+        {
+            var per = d.PersonelId.HasValue && personelDict.TryGetValue(d.PersonelId.Value, out var px) ? $"{px.Adi} {px.Soyadi}" : "–";
+            var tip = d.IzinTipi.HasValue && izinTanimDict.TryGetValue(d.IzinTipi.Value, out var tAdi) ? tAdi : $"Tip {d.IzinTipi}";
+            _aktifDonemSatirlar.Add(new(per, tip, d.IzinHakki ?? "–", d.KullanilanIzin ?? "–", d.KalanIzin ?? "–"));
+        }
+
+        // ── Bekleyen izin talepleri ──────────────────────────────
+        _bekleyenTalepSatirlar.Clear();
+        foreach (var t in _izinTalepler.Where(t => t.Aktif == true && t.OnayDurumu == null))
+        {
+            var per = t.PersonelId.HasValue && personelDict.TryGetValue(t.PersonelId.Value, out var px) ? $"{px.Adi} {px.Soyadi}" : "–";
+            var tip = t.IzinTipi.HasValue && izinTanimDict.TryGetValue(t.IzinTipi.Value, out var tAdi) ? tAdi : $"Tip {t.IzinTipi}";
+            _bekleyenTalepSatirlar.Add(new(per, tip, t.BaslangicTarihi, t.BitisTarihi, t.Sure ?? "–"));
+        }
+
+        // ── Kalan İzin Toplam dağılımı (Kadrolu personel) ──────────────────────
+        _kalanIzinGrupItems.Clear();
+        _kalanIzinPersonelSatirlar.Clear();
+        var kadroluIds = _personeller
+            .Where(p => p.Tipi == ProjectConstants.PER_TIPI_KADROLU)
+            .Select(p => p.Id)
+            .ToHashSet();
+        var kalanIzinPerPersonel = _izinDonemleri
+            .Where(d => d.PersonelId.HasValue && kadroluIds.Contains(d.PersonelId.Value))
+            .GroupBy(d => d.PersonelId!.Value)
+            .Select(g => new
+            {
+                PersonelId       = g.Key,
+                KalanIzinToplami = g.Sum(d => decimal.TryParse(d.KalanIzin, System.Globalization.NumberStyles.Any, CultureInfo.InvariantCulture, out var v) ? v : 0m)
+            })
+            .ToList();
+        var kalanGrupLabels = new[] { "Negatif (< 0 Gün)", "0 – 20 Gün", "21 – 40 Gün", "41 – 60 Gün", "> 60 Gün" };
+        var kalanGrupRenkler = new[] { "#EF4444", "#F59E0B", "#10B981", "#2563EB", "#7C3AED" };
+        var kalanGrpCounts = new int[5];
+        foreach (var item in kalanIzinPerPersonel)
+        {
+            var perAd = personelDict.TryGetValue(item.PersonelId, out var pxx) ? $"{pxx.Adi} {pxx.Soyadi}" : "–";
+            int gi = item.KalanIzinToplami < 0 ? 0
+                   : item.KalanIzinToplami <= 20 ? 1
+                   : item.KalanIzinToplami <= 40 ? 2
+                   : item.KalanIzinToplami <= 60 ? 3 : 4;
+            kalanGrpCounts[gi]++;
+            _kalanIzinPersonelSatirlar.Add(new(perAd, item.KalanIzinToplami, kalanGrupLabels[gi], kalanGrupRenkler[gi]));
+        }
+        _kalanIzinPersonelSatirlar.Sort((a, b) => a.KalanIzinToplami.CompareTo(b.KalanIzinToplami));
+        for (int i = 0; i < kalanGrupLabels.Length; i++)
+            if (kalanGrpCounts[i] > 0)
+                _kalanIzinGrupItems.Add(new PieItem(kalanGrupLabels[i], kalanGrpCounts[i]));
+
+        // ── Tahsil düzeyi dağılımı ───────────────────────────────
+        _tahsilDagilimItems.Clear();
+        _tahsilSatirlar.Clear();
+        var tahsilLabels = _tahsilTanimlar.ToDictionary(t => (int?)t.Id, t => t.TahsilDurumu ?? $"Tahsil {t.Id}");
+        var tahsilGrup = _personeller
+            .Where(p => aktifPersonelIds.Contains(p.Id) && p.Tahsili.HasValue)
+            .GroupBy(p => p.Tahsili)
+            .OrderBy(g => g.Key)
+            .ToList();
+        foreach (var g in tahsilGrup)
+        {
+            var lbl = tahsilLabels.TryGetValue(g.Key, out var ln) ? ln : $"Tahsil {g.Key}";
+            _tahsilDagilimItems.Add(new PieItem(lbl, g.Count()));
+            _tahsilSatirlar.Add(new TahsilSatir(lbl, g.Count()));
+        }
+
+        // ── Bu yıl derece/kademe değişimleri ─────────────────────
+        _buYilDkDegisim.Clear();
+        foreach (var dk in _dkDegisimler.Where(d => d.DegisimTarihi.HasValue && d.DegisimTarihi.Value.Year == thisYear).OrderByDescending(d => d.DegisimTarihi))
+        {
+            var per = dk.PersonelId.HasValue && personelDict.TryGetValue(dk.PersonelId.Value, out var px) ? $"{px.Adi} {px.Soyadi}" : "–";
+            _buYilDkDegisim.Add(new(per, dk.Degisim ?? "–", dk.DegisimTarihi, dk.Derece, dk.Kademe));
+        }
+
+        // ── Yaş grubu dağılımı
+        _yasDagilimItems.Clear();
+        _yasSatirlar.Clear();
+        var kimlikDict = _kimlikler
+            .Where(k => k.DogumTar.HasValue)
+            .GroupBy(k => k.PersonelId)
+            .ToDictionary(g => g.Key, g => g.First().DogumTar!.Value);
+        var yasGruplari = new[] { "18-25", "26-35", "36-45", "46-55", "56+" };
+        var yasGrupSayilari = new int[yasGruplari.Length];
+        var yasGrupToplam   = new double[yasGruplari.Length];
+        foreach (var p in _personeller.Where(p => aktifPersonelIds.Contains(p.Id)))
+        {
+            if (!kimlikDict.TryGetValue(p.Id, out var dogum)) continue;
+            int yas = today.Year - dogum.Year - (today < dogum.AddYears(today.Year - dogum.Year) ? 1 : 0);
+            int idx = yas <= 25 ? 0 : yas <= 35 ? 1 : yas <= 45 ? 2 : yas <= 55 ? 3 : 4;
+            yasGrupSayilari[idx]++;
+            yasGrupToplam[idx] += yas;
+        }
+        for (int i = 0; i < yasGruplari.Length; i++)
+        {
+            if (yasGrupSayilari[i] == 0) continue;
+            var ortYas = (decimal)(yasGrupToplam[i] / yasGrupSayilari[i]);
+            _yasDagilimItems.Add(new PieItem(yasGruplari[i], yasGrupSayilari[i]));
+            _yasSatirlar.Add(new YasSatir(yasGruplari[i], yasGrupSayilari[i], Math.Round(ortYas, 1)));
+        }
+
+        // ── Personel listesi ─────────────────────────────────────
+        _personelSatirlar.Clear();
+        var isDict = _isBilgileriList.GroupBy(ib => ib.PersonelId).ToDictionary(g => g.Key, g => g.First());
+        foreach (var p in _personeller
+            .Where(px => isDict.TryGetValue(px.Id, out _))
+            .OrderBy(px => isDict.TryGetValue(px.Id, out var ibx) ? (ibx?.ProtokolSiraNo ?? int.MaxValue) : int.MaxValue))
+        {
+            isDict.TryGetValue(p.Id, out var ib);
+            var birimAdi = ib?.BirimId.HasValue == true && birimDict.TryGetValue(ib.BirimId.Value, out var bx) ? bx.Adi ?? "–" : "–";
+            var unvan = ib?.UnvanTanim?.Adi ?? "–";
+            _personelSatirlar.Add(new($"{p.Adi} {p.Soyadi}", birimAdi, unvan, ib?.BaslamaTar));
+        }
+        _personelFiltered = _personelSatirlar;
+    }
+
+    // ── Yardımcı metodlar ───────────────────────────────────────
+    private static string Percent(int parca, int toplam)
+        => toplam == 0 ? "0" : ((decimal)parca / toplam * 100m).ToString("N1", CultureInfo.InvariantCulture);
+
+    private static string KalanIzinRenk(string? kalan)
+    {
+        if (string.IsNullOrEmpty(kalan)) return "";
+        if (decimal.TryParse(kalan, out var v) && v <= 0) return "text-danger fw-semibold";
+        if (decimal.TryParse(kalan, out v) && v <= 5)    return "text-warning";
+        return "";
+    }
+
+    // ── İç veri sınıfları ───────────────────────────────────────
+    private record PieItem(string Label, decimal Value);
+    private record TahsilSatir(string TahsilAdi, int PersonelSayisi);
+    private record YasSatir(string YasGrubu, int PersonelSayisi, decimal OrtYas);
+    private record BirimSatir(string BirimAdi, int PersonelSayisi);
+    private record AktifDonemSatir(string PersonelAdSoyad, string IzinTipiAdi, string? IzinHakki, string? KullanilanIzin, string? KalanIzin);
+    private record TalepSatir(string PersonelAdSoyad, string IzinTipiAdi, DateTime? Baslangic, DateTime? Bitis, string Sure);
+    private record DkDegisimSatir(string PersonelAdSoyad, string Degisim, DateTime? DegisimTarihi, int? Derece, int? Kademe);
+    private record PersonelSatir(string AdSoyad, string BirimAdi, string Unvan, DateTime? BaslamaTarihi);
+    private record KalanIzinPersonelSatir(string AdSoyad, decimal KalanIzinToplami, string GrupAdi, string GrupRengi);
+}

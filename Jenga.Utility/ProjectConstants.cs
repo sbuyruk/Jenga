@@ -55,6 +55,8 @@
         public static string PER_CALISIYOR = "Çalışıyor";
         public static int PER_AYRILDI_INT = 0;
         public static string PER_AYRILDI = "Ayrıldı";
+        public const int PER_TIPI_KADROLU = 1;
+        public const int PER_TIPI_KADRO_HARICI = 2;
         //MTS
         public const string MTS_ANIOBJESISTOKLU = "Stoklu";
         public const string MTS_ANIOBJESISTOKSUZ = "Stoksuz";

@@ -44,8 +44,24 @@ namespace Jenga.DataAccess.Data
 
         //IKYS
         public DbSet<Personel> Personel_Table { get; set; }
+        public DbSet<Kimlik> Kimlik_Table { get; set; }
         public DbSet<IsBilgileri> IsBilgileri_Table { get; set; }
+        public DbSet<IletisimBilgileri> IletisimBilgileri_Table { get; set; }
         public DbSet<PersonelLocation> PersonelLocation_Table { get; set; }
+        public DbSet<Aile> Aile_Table { get; set; }
+        public DbSet<DereceKademeDegisim> DereceKademeDegisim_Table { get; set; }
+        public DbSet<EgitimSeviyesi> EgitimSeviyesi_Table { get; set; }
+        public DbSet<GorevOnay> GorevOnay_Table { get; set; }
+        public DbSet<BirimTanim> BirimTanim_Table { get; set; }
+        public DbSet<GorevTanim> GorevTanim_Table { get; set; }
+        public DbSet<IzinTanim> IzinTanim_Table { get; set; }
+        public DbSet<IzinDonem> IzinDonem_Table { get; set; }
+        public DbSet<IzinTalep> IzinTalep_Table { get; set; }
+        public DbSet<IzinHareket> IzinHareket_Table { get; set; }
+        public DbSet<YabanciDil> YabanciDil_Table { get; set; }
+        public DbSet<TahsilTanim> TahsilTanim_Table { get; set; }
+        // IKYS bölümüne diğer DbSet'lerin yanına eklenecek:
+        public DbSet<UnvanTanim> UnvanTanim_Table { get; set; }
 
         // TBYS
         public DbSet<Tasinmaz> Tasinmaz_Table { get; set; }
@@ -56,6 +72,10 @@ namespace Jenga.DataAccess.Data
         public DbSet<SozlesmeTasinmaz> SozlesmeTasinmaz_Table { get; set; }
         public DbSet<OdemePlani> OdemePlani_Table { get; set; }
         public DbSet<Odeme> Odeme_Table { get; set; }
+        public DbSet<BagisciTalepleri> BagisciTalepleri_Table { get; set; }
+        public DbSet<BagisciYakinlari> BagisciYakinlari_Table { get; set; }
+        public DbSet<TasinmazTaahhut> TasinmazTaahhut_Table { get; set; }
+        public DbSet<Vasiyetci> Vasiyetci_Table { get; set; }
         //NBYS
         public DbSet<NakitBagisci> NakitBagisci_Table { get; set; }
         public DbSet<NakitBagisHareket> NakitBagisHareket_Table { get; set; }
@@ -68,7 +88,7 @@ namespace Jenga.DataAccess.Data
         public DbSet<Ftk> FTK_Table { get; set; }
         public DbSet<FtkIslem> FTKIslem_Table { get; set; }
         public DbSet<FtkKisi> FTKKisi_Table { get; set; }
-
+        
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<UserPresenceSession>()

@@ -58,4 +58,7 @@ public class IsBilgileri : BaseModel
     //[Required]
     [DisplayName("İzin Dönemi Başlama Tarihi")]
     public DateTime? IzinDonemiBasTar { get; set; }
+    [ValidateNever]
+    [DisplayName("Protokol Sıra No")]
+    public short? ProtokolSiraNo { get; set; }
 }

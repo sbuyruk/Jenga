@@ -2,8 +2,11 @@
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Jenga.Models.IKYS;
+
+[Table("UnvanTanim_Table")]
 public class UnvanTanim : BaseModel
 {
     [Required]
@@ -17,3 +20,4 @@ public class UnvanTanim : BaseModel
     public string? KisaAdi { get; set; }
 
 }
+

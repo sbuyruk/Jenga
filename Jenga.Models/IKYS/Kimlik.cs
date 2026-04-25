@@ -43,9 +43,9 @@ public class Kimlik : BaseModel
     public string KanGrubu { get; set; }
     [ValidateNever]
     [DisplayName("Doğumgünü Kutlama")]
-    public bool DogumGunuKutlama { get; set; }
+    public bool? DogumGunuKutlama { get; set; }
     [ValidateNever]
     [DisplayName("Evlilik Kutlama")]
-    public bool EvlilikKutlama { get; set; }
+    public bool? EvlilikKutlama { get; set; }
 
 }

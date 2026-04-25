@@ -1,0 +1,1330 @@
+@page "/tbys/tasinmaz-bagis-dashboard"
+@rendermode InteractiveServer
+
+@using Jenga.BlazorUI.Components.Common
+@using Jenga.BlazorUI.Services.Common
+@using Jenga.DataAccess.Services.TBYS
+@using Jenga.DataAccess.Services.Common
+@using Jenga.Models.TBYS
+@using Jenga.Models.Common
+@using System.Globalization
+@using Microsoft.JSInterop
+
+@inject ITasinmazService TasinmazService
+@inject ITasinmazBagisciService BagisciService
+@inject IBagisService BagisService
+@inject IVasiyetciService VasiyetciService
+@inject IBagisciTalepleriService TalepleriService
+@inject IBagisciYakinlariService YakinlariService
+@inject ITasinmazTaahhutService TaahhutService
+@inject IIlService IlService
+@inject IBolgeService BolgeService
+@inject IModalService ModalService
+@inject IJSRuntime JS
+@implements IDisposable
+
+<div class="bagis-dashboard container-fluid px-0 px-sm-2">
+    @if (_isLoading)
+    {
+        <div class="d-flex justify-content-center align-items-center py-5">
+            <div class="spinner-border text-primary me-3" role="status"></div>
+            <span class="text-muted">Veriler yükleniyor…</span>
+        </div>
+    }
+    else if (_loadFailed)
+    {
+        <div class="alert alert-danger d-flex align-items-center gap-2">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            Veri yüklenirken bir hata oluştu.
+            <button class="btn btn-sm btn-outline-danger ms-auto" @onclick="RefreshAsync">Tekrar Dene</button>
+        </div>
+    }
+    else
+    {
+        <div class="db-scrollspy-layout">
+
+            <!-- ── Scrollspy Nav ──────────────────────────────────── -->
+            <nav id="bd-scrollspy-nav" class="db-scrollspy-nav">
+                <div class="nav nav-pills flex-column gap-1">
+                    <div class="db-nav-title">
+                        <i class="bi bi-gift me-1"></i> Bağış &amp; Bağışçı
+                    </div>
+                    <a class="nav-link" href="#genel-bakis" @onclick:preventDefault="true" @onclick='() => ScrollToAsync("genel-bakis")'>
+                        <i class="bi bi-grid-1x2-fill me-1"></i>Genel Bakış
+                    </a>
+                    <a class="nav-link" href="#bagisci-profili" @onclick:preventDefault="true" @onclick='() => ScrollToAsync("bagisci-profili")'>
+                        <i class="bi bi-people-fill me-1"></i>Bağışçı Profili
+                    </a>
+                    <a class="nav-link" href="#bagis-analizi" @onclick:preventDefault="true" @onclick='() => ScrollToAsync("bagis-analizi")'>
+                        <i class="bi bi-bar-chart-fill me-1"></i>Bağış Analizi
+                    </a>
+                    <a class="nav-link" href="#bolge-dagilim" @onclick:preventDefault="true" @onclick='() => ScrollToAsync("bolge-dagilim")'>
+                        <i class="bi bi-map-fill me-1"></i>Bölge Dağılımı
+                    </a>
+                    <a class="nav-link" href="#vasiyetciler" @onclick:preventDefault="true" @onclick='() => ScrollToAsync("vasiyetciler")'>
+                        <i class="bi bi-file-earmark-text-fill me-1"></i>Vasiyetçiler
+                    </a>
+                    <a class="nav-link" href="#taahhutler" @onclick:preventDefault="true" @onclick='() => ScrollToAsync("taahhutler")'>
+                        <i class="bi bi-pen-fill me-1"></i>Taahhütler
+                    </a>
+                    </div>
+            </nav>
+
+            <!-- ── Scrollspy Content ──────────────────────────────── -->
+            <div id="bd-scrollspy-content"
+                 class="db-scrollspy-content"
+                 data-bs-spy="scroll"
+                 data-bs-target="#bd-scrollspy-nav"
+                 data-bs-smooth-scroll="true"
+                 tabindex="0">
+
+                <!-- ── Sayfa Başlığı ──────────────────────────────── -->
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                    <div>
+                        <h5 class="mb-0 fw-bold"><i class="bi bi-gift me-2 text-success"></i>Taşınmaz Bağış &amp; Bağışçı Özeti</h5>
+                        <small class="text-muted">Tüm bağışçı, bağış, taahhüt ve vasiyet verilerinin anlık özeti</small>
+                    </div>
+                    <button class="btn btn-sm btn-outline-secondary"
+                            @onclick="RefreshAsync"
+                            disabled="@_isLoading">
+                        <i class="bi bi-arrow-clockwise @(_isLoading ? "spin" : "")"></i>
+                        @(_isLoading ? "Yükleniyor..." : "Yenile")
+                    </button>
+                </div>
+
+                <!-- ════════════════════════════════════════════════
+                     BÖLÜM 1 — GENEL BAKIŞ (KPI Kartlar)
+                     ════════════════════════════════════════════════ -->
+                <section id="genel-bakis" class="db-section">
+                    <div class="section-label">Genel Bakış</div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+                            <div class="card db-stat-card db-accent-green h-100">
+                                <div class="card-body db-stat-body text-center">
+                                    <div class="db-stat-icon"><i class="bi bi-people-fill"></i></div>
+                                    <div class="db-stat-label">Toplam Bağışçı</div>
+                                    <div class="db-stat-value">@FormatCount(_bagiscilar.Count)</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+                            <div class="card db-stat-card db-accent-indigo h-100">
+                                <div class="card-body db-stat-body text-center">
+                                    <div class="db-stat-icon"><i class="bi bi-person-check-fill"></i></div>
+                                    <div class="db-stat-label">Sağ Bağışçı</div>
+                                    <div class="db-stat-value">@FormatCount(_yasayan)</div>
+                                    <div class="db-stat-sub">%@Percent(_yasayan, _bagiscilar.Count)</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+                            <div class="card db-stat-card db-accent-slate h-100">
+                                <div class="card-body db-stat-body text-center">
+                                    <div class="db-stat-icon"><i class="bi bi-person-dash-fill"></i></div>
+                                    <div class="db-stat-label">Vefat/Lağv/Mülga </div>
+                                    <div class="db-stat-value">@FormatCount(_vefat)</div>
+                                    <div class="db-stat-sub">%@Percent(_vefat, _bagiscilar.Count)</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+                            <div class="card db-stat-card db-accent-teal h-100">
+                                <div class="card-body db-stat-body text-center">
+                                    <div class="db-stat-icon"><i class="bi bi-check-circle-fill"></i></div>
+                                    <div class="db-stat-label">Envanterdeki Bağış</div>
+                                    <div class="db-stat-value">@FormatCount(_envanterdeki)</div>
+                                    <div class="db-stat-sub">%@Percent(_envanterdeki, _bagislar.Count)</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+                            <div class="card db-stat-card db-accent-rose h-100">
+                                <div class="card-body db-stat-body text-center">
+                                    <div class="db-stat-icon"><i class="bi bi-chat-dots-fill"></i></div>
+                                    <div class="db-stat-label">Bağışçı Talebi</div>
+                                    <div class="db-stat-value">@FormatCount(_talepler.Count)</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+                            <div class="card db-stat-card db-accent-sky h-100">
+                                <div class="card-body db-stat-body text-center">
+                                    <div class="db-stat-icon"><i class="bi bi-person-lines-fill"></i></div>
+                                    <div class="db-stat-label">Kayıtlı Yakın</div>
+                                    <div class="db-stat-value">@FormatCount(_yakinlar.Count)</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+                            <div class="card db-stat-card db-accent-cyan h-100">
+                                <div class="card-body db-stat-body text-center">
+                                    <div class="db-stat-icon"><i class="bi bi-map-fill"></i></div>
+                                    <div class="db-stat-label">Temsil Edilen İl</div>
+                                    <div class="db-stat-value">@FormatCount(_ilSayisi)</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <hr class="db-separator" />
+                </section>
+
+                <!-- ════════════════════════════════════════════════
+                     BÖLÜM 2 — BAĞIŞÇI PROFİLİ
+                     ════════════════════════════════════════════════ -->
+                <section id="bagisci-profili" class="db-section">
+                    <div class="section-label">Bağışçı Profili</div>
+                    <div class="row g-3 mb-3">
+                        <!-- Sol: Meslek Dağılımı -->
+                        <div class="col-12 col-lg-6">
+                            <div class="card shadow-sm h-100">
+                                <div class="card-header db-collapsible-header"
+                                     @onclick="() => _isMeslekOpen = !_isMeslekOpen"
+                                     role="button">
+                                    <span>
+                                        <i class="bi @(_isMeslekOpen ? "bi-chevron-down" : "bi-chevron-right") me-2"></i>
+                                        <strong>Meslek Dağılımı</strong>
+                                    </span>
+                                    <small class="text-muted">İlk 15 meslek</small>
+                                </div>
+                                @if (_isMeslekOpen)
+                                {
+                                    <div class="card-body p-0">
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-hover table-bordered mb-0 db-bolge-table">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>#</th>
+                                                        <th>Meslek</th>
+                                                        <th class="text-center">Bağışçı</th>
+                                                        <th class="text-end">Oran</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @{
+                                                        var meslekler = _bagiscilar
+                                                            .GroupBy(x => string.IsNullOrWhiteSpace(x.Meslegi) ? "Bilinmiyor" : x.Meslegi!.Trim())
+                                                            .Select(g => (Meslek: g.Key, Adet: g.Count()))
+                                                            .OrderByDescending(x => x.Adet)
+                                                            .Take(15)
+                                                            .ToList();
+                                                        var meslekMax = meslekler.FirstOrDefault().Adet;
+                                                    }
+                                                    @foreach (var (meslek, adet, idx) in meslekler.Select((m, i) => (m.Meslek, m.Adet, i)))
+                                                    {
+                                                        <tr>
+                                                            <td class="text-muted">@(idx + 1)</td>
+                                                            <td>@meslek</td>
+                                                            <td class="text-center fw-semibold">@adet</td>
+                                                            <td class="text-end">
+                                                                <div class="d-flex align-items-center justify-content-end gap-1">
+                                                                    <div class="db-bar-track">
+                                                                        <div class="db-bar-fill" style="width:@(meslekMax > 0 ? adet * 100 / meslekMax : 0)%"></div>
+                                                                    </div>
+                                                                    <span class="text-muted" style="font-size:0.72rem">%@Percent(adet, _bagiscilar.Count)</span>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Sağ: İl Dağılımı + Yaş Profili -->
+                        <div class="col-12 col-lg-6">
+                            <div class="card shadow-sm mb-3">
+                                <div class="card-header db-collapsible-header"
+                                     @onclick="() => _isIlDagOpen = !_isIlDagOpen"
+                                     role="button">
+                                    <span>
+                                        <i class="bi @(_isIlDagOpen ? "bi-chevron-down" : "bi-chevron-right") me-2"></i>
+                                        <strong>İl Bazında Bağışçılar</strong>
+                                    </span>
+                                    <small class="text-muted">İlk 10 il</small>
+                                </div>
+                                @if (_isIlDagOpen)
+                                {
+                                    <div class="card-body p-0">
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-hover table-bordered mb-0 db-bolge-table">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>#</th>
+                                                        <th>İl</th>
+                                                        <th class="text-center">Bağışçı</th>
+                                                        <th class="text-end">Oran</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @{
+                                                        var iller = _bagiscilar
+                                                            .GroupBy(x => string.IsNullOrWhiteSpace(x.Ili) ? "Bilinmiyor" : x.Ili!.Trim())
+                                                            .Select(g => (Il: g.Key, Adet: g.Count()))
+                                                            .OrderByDescending(x => x.Adet)
+                                                            .Take(10)
+                                                            .ToList();
+                                                        var ilMax = iller.FirstOrDefault().Adet;
+                                                    }
+                                                    @foreach (var (il, adet, idx) in iller.Select((x, i) => (x.Il, x.Adet, i)))
+                                                    {
+                                                        var badgeClass = idx == 0 ? "db-rank-gold" : idx == 1 ? "db-rank-silver" : idx == 2 ? "db-rank-bronze" : "db-rank-default";
+                                                        <tr>
+                                                            <td><span class="db-rank-badge @badgeClass">@(idx + 1)</span></td>
+                                                            <td>@il</td>
+                                                            <td class="text-center fw-semibold">@adet</td>
+                                                            <td class="text-end">
+                                                                <div class="d-flex align-items-center justify-content-end gap-1">
+                                                                    <div class="db-bar-track">
+                                                                        <div class="db-bar-fill" style="width:@(ilMax > 0 ? adet * 100 / ilMax : 0)%"></div>
+                                                                    </div>
+                                                                    <span class="text-muted" style="font-size:0.72rem">%@Percent(adet, _bagiscilar.Count)</span>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+
+                            <!-- Yaş Grupları -->
+                            <div class="card shadow-sm">
+                                <div class="card-header">
+                                    <strong><i class="bi bi-bar-chart-steps me-1"></i>Yaş Grupları</strong>
+                                    <small class="text-muted ms-2">(Bağışçının bağış tarihindeki yaşı)</small>
+                                </div>
+                                <div class="card-body p-2">
+                                    <div class="row g-1">
+                                        @foreach (var yas in _yasGruplari)
+                                        {
+                                            <div class="col-6 col-sm-4">
+                                                <div class="card db-stat-card db-accent-blue h-100">
+                                                    <div class="card-body db-stat-body text-center">
+                                                        <div class="db-stat-label">@yas.Etiket</div>
+                                                        <div class="db-stat-value" style="font-size:1.1rem">@yas.Adet</div>
+                                                        <div class="db-stat-sub">%@Percent(yas.Adet, _yasGruplari.Sum(y => y.Adet))</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bağışçı Meslek Grafiği -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-12">
+                            <div class="card shadow-sm">
+                                <div class="card-header"><strong><i class="bi bi-bar-chart me-1"></i>En Çok Bağış Yapan Bağışçılar (İlk 15)</strong></div>
+                                <div class="card-body">
+                                    <GenericChart TItem="ChartItem"
+                                                  Items="_topBagisciItems"
+                                                  LabelSelector="@(x => x.Label)"
+                                                  ValueSelector="@(x => x.Value)"
+                                                  Title="Bağışçı Başına Bağış Adedi"
+                                                  SeriesName="Bağış"
+                                                  Type="GenericChart<ChartItem>.GenericChartType.Bar"
+                                                  Height="360px"
+                                                  ShowLegend="false"
+                                                  ShowDataLabels="true"
+                                                  ColorPalette="@_greenPalette"
+                                                  XAxisLabelRotateDegrees="-35"
+                                                  XAxisLabelsAlwaysRotate="true"
+                                                  XAxisHideOverlappingLabels="true"
+                                                  GridPaddingBottom="40" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <hr class="db-separator" />
+                </section>
+
+                <!-- ════════════════════════════════════════════════
+                     BÖLÜM 3 — BAĞIŞ ANALİZİ
+                     ════════════════════════════════════════════════ -->
+                <section id="bagis-analizi" class="db-section">
+                    <div class="section-label">Bağış Analizi</div>
+                    <div class="row g-3 mb-3">
+                        <!-- Yıl Bazında Bar Chart -->
+                        <div class="col-12">
+                            <div class="card shadow-sm">
+                                <div class="card-header"><strong><i class="bi bi-calendar3 me-1"></i>Yıl Bazında Bağış Adedi (Son 15 Yıl)</strong></div>
+                                <div class="card-body">
+                                    <GenericChart TItem="ChartItem"
+                                                  Items="_yilBazindaItems"
+                                                  LabelSelector="@(x => x.Label)"
+                                                  ValueSelector="@(x => x.Value)"
+                                                  Title="Yıllık Bağış Adedi"
+                                                  SeriesName="Bağış"
+                                                  Type="GenericChart<ChartItem>.GenericChartType.Bar"
+                                                  Height="360px"
+                                                  ShowLegend="false"
+                                                  ShowDataLabels="true"
+                                                  ColorPalette="@_bluePalette"
+                                                  XAxisLabelRotateDegrees="-45"
+                                                  XAxisLabelsAlwaysRotate="true"
+                                                  XAxisHideOverlappingLabels="true"
+                                                  GridPaddingBottom="40" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- En Değerli & En Yeni Bağışlar -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-12 col-md-6">
+                            <div class="card shadow-sm">
+                                <div class="card-header"><strong><i class="bi bi-trophy-fill text-warning me-1"></i>En Değerli 10 Bağış</strong></div>
+                                <div class="card-body p-0">
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-hover table-bordered mb-0 db-bolge-table">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Yıl</th>
+                                                    <th>Cinsi</th>
+                                                    <th class="text-end">Tah. Rayiç (₺)</th>
+                                                    <th class="text-end">Yak. Piyasa (₺)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @{
+                                                    var enDegerli = _bagislar
+                                                        .Where(x => x.Envanterde && x.TasinmazId.HasValue)
+                                                        .Select(x => new { Bagis = x, Tasinmaz = _tasinmazlar.FirstOrDefault(t => t.Id == x.TasinmazId!.Value) })
+                                                        .Where(x => x.Tasinmaz != null)
+                                                        .Select(x => new
+                                                        {
+                                                            x.Bagis,
+                                                            x.Tasinmaz,
+                                                            SortDeger = x.Tasinmaz!.YaklasikPiyasaDegeri > 0
+                                                                ? x.Tasinmaz.YaklasikPiyasaDegeri!.Value
+                                                                : x.Tasinmaz.TahminiRayicDegeri > 0
+                                                                    ? x.Tasinmaz.TahminiRayicDegeri!.Value
+                                                                    : (x.Tasinmaz.EmlakBeyanDegeri ?? 0m)
+                                                        })
+                                                        .OrderByDescending(x => x.SortDeger)
+                                                        .Take(10)
+                                                        .ToList();
+                                                }
+                                                @foreach (var item in enDegerli)
+                                                {
+                                                    var rayic  = item.Tasinmaz!.TahminiRayicDegeri  ?? 0m;
+                                                    var piyasa = item.Tasinmaz!.YaklasikPiyasaDegeri ?? 0m;
+                                                    <tr>
+                                                        <td class="fw-semibold">@(item.Bagis.BagisYili?.ToString() ?? "–")</td>
+                                                        <td>@(item.Tasinmaz!.Cinsi ?? "–")</td>
+                                                        <td class="text-end font-monospace">@(rayic == 0 ? "–" : rayic.ToString("N0", TrCulture))</td>
+                                                        <td class="text-end font-monospace">
+                                                            @if (piyasa == 0)
+                                                            {
+                                                                <span class="text-muted fst-italic" style="font-size:0.72rem">Değerlemesi Henüz Yapılmadı</span>
+                                                            }
+                                                            else
+                                                            {
+                                                                @piyasa.ToString("N0", TrCulture)
+                                                            }
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <div class="card shadow-sm">
+                                <div class="card-header"><strong><i class="bi bi-clock me-1"></i>En Yeni 10 Bağış</strong></div>
+                                <div class="card-body p-0">
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-hover table-bordered mb-0 db-bolge-table">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Yıl</th>
+                                                    <th>Tarih</th>
+                                                    <th>Cinsi</th>
+                                                    <th class="text-end">Tah. Rayiç (₺)</th>
+                                                    <th class="text-end">Yak. Piyasa (₺)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var b in _bagislar.Where(x => x.Envanterde && x.BagisYili.HasValue).OrderByDescending(x => x.BagisYili).ThenByDescending(x => x.BagisTarihi).Take(10))
+                                                {
+                                                    var tasinmaz = b.TasinmazId.HasValue ? _tasinmazlar.FirstOrDefault(t => t.Id == b.TasinmazId.Value) : null;
+                                                    var piyasa   = tasinmaz?.YaklasikPiyasaDegeri ?? 0m;
+                                                    var rayic    = tasinmaz?.TahminiRayicDegeri   ?? 0m;
+                                                    <tr>
+                                                        <td class="fw-semibold">@b.BagisYili</td>
+                                                        <td>@(b.BagisTarihi?.ToString("dd.MM.yyyy") ?? "–")</td>
+                                                        <td>@(tasinmaz?.Cinsi ?? "–")</td>
+                                                        <td class="text-end font-monospace">@(rayic == 0 ? "–" : rayic.ToString("N0", TrCulture))</td>
+                                                        <td class="text-end font-monospace">
+                                                            @if (piyasa == 0)
+                                                            {
+                                                                <span class="text-muted fst-italic" style="font-size:0.72rem">Değerlemesi Henüz Yapılmadı</span>
+                                                            }
+                                                            else
+                                                            {
+                                                                @piyasa.ToString("N0", TrCulture)
+                                                            }
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <hr class="db-separator" />
+                </section>
+
+                <!-- ════════════════════════════════════════════════
+                     BÖLÜM 4 — BAĞIŞÇILARIN BÖLGE DAĞILIMI
+                     ════════════════════════════════════════════════ -->
+                <section id="bolge-dagilim" class="db-section">
+                    <div class="section-label">Bölge Dağılımı</div>
+
+                    <div class="row g-3 mb-3">
+                        <!-- Grafik -->
+                        <div class="col-12 col-lg-7">
+                            <div class="card shadow-sm h-100">
+                                <div class="card-header">
+                                    <strong><i class="bi bi-bar-chart-fill me-1"></i>Bölgelere Göre Bağışçı Sayısı</strong>
+                                    <small class="text-muted ms-2">(bağışçının kayıtlı ikamet adresine göre)</small>
+                                </div>
+                                <div class="card-body">
+                                    <GenericChart TItem="ChartItem"
+                                                  Items="_bolgeDagilimItems"
+                                                  LabelSelector="@(x => x.Label)"
+                                                  ValueSelector="@(x => x.Value)"
+                                                  Title="Bölge Bazında Bağışçı"
+                                                  SeriesName="Bağışçı"
+                                                  Type="GenericChart<ChartItem>.GenericChartType.Bar"
+                                                  Height="360px"
+                                                  ShowLegend="false"
+                                                  ShowDataLabels="true"
+                                                  ColorPalette="@_greenPalette"
+                                                  XAxisLabelRotateDegrees="-35"
+                                                  XAxisLabelsAlwaysRotate="true"
+                                                  XAxisHideOverlappingLabels="true"
+                                                  GridPaddingBottom="40" />
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Tablo -->
+                        <div class="col-12 col-lg-5">
+                            <div class="card shadow-sm h-100">
+                                <div class="card-header">
+                                    <strong><i class="bi bi-table me-1"></i>Bölge Dağılım Tablosu</strong>
+                                    <small class="text-muted ms-2">(ikamet adresine göre)</small>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-hover table-bordered mb-0 db-bolge-table">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Bölge</th>
+                                                    <th class="text-center">Bağışçı</th>
+                                                    <th class="text-center">Yaşayan</th>
+                                                    <th class="text-center">Vefat</th>
+                                                    <th class="text-end">Oran</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @{
+                                                    var ilIdToBolgeId = _iller.Where(x => x.BolgeId.HasValue)
+                                                        .ToDictionary(x => x.Id, x => x.BolgeId!.Value);
+                                                    var bolgeIdToAdi = _bolgeler
+                                                        .ToDictionary(x => x.Id, x => x.Adi);
+
+                                                    var bolgeSatirlar = _bagiscilar
+                                                        .Where(x => x.IlId.HasValue && ilIdToBolgeId.ContainsKey(x.IlId.Value))
+                                                        .GroupBy(x => ilIdToBolgeId[x.IlId!.Value])
+                                                        .Select(g => new
+                                                        {
+                                                            BolgeAdi  = bolgeIdToAdi.TryGetValue(g.Key, out var ad) ? ad : $"#{g.Key}",
+                                                            Adet      = g.Count(),
+                                                            Yasayan   = g.Count(x => !string.Equals(x.Sag_vefat, "Vefat", StringComparison.OrdinalIgnoreCase)),
+                                                            Vefat     = g.Count(x =>  string.Equals(x.Sag_vefat, "Vefat", StringComparison.OrdinalIgnoreCase))
+                                                        })
+                                                        .OrderByDescending(x => x.Adet)
+                                                        .ToList();
+
+                                                    var bilinmiyor = _bagiscilar.Count(x =>
+                                                        !x.IlId.HasValue || !ilIdToBolgeId.ContainsKey(x.IlId.Value));
+                                                    var toplamTablo = bolgeSatirlar.Sum(x => x.Adet);
+                                                }
+                                                @foreach (var s in bolgeSatirlar)
+                                                {
+                                                    <tr>
+                                                        <td class="fw-semibold">@s.BolgeAdi</td>
+                                                        <td class="text-center">@s.Adet</td>
+                                                        <td class="text-center text-success">@s.Yasayan</td>
+                                                        <td class="text-center text-secondary">@s.Vefat</td>
+                                                        <td class="text-end">
+                                                            <div class="d-flex align-items-center justify-content-end gap-1">
+                                                                <div class="db-bar-track">
+                                                                    <div class="db-bar-fill" style="width:@(toplamTablo > 0 ? s.Adet * 100 / toplamTablo : 0)%"></div>
+                                                                </div>
+                                                                <span class="text-muted" style="font-size:0.72rem">%@Percent(s.Adet, _bagiscilar.Count)</span>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                }
+                                                @if (bilinmiyor > 0)
+                                                {
+                                                    <tr class="table-warning">
+                                                        <td class="fst-italic text-muted">Bölge Belirtilmemiş</td>
+                                                        <td class="text-center">@bilinmiyor</td>
+                                                        <td class="text-center">–</td>
+                                                        <td class="text-center">–</td>
+                                                        <td class="text-end text-muted" style="font-size:0.72rem">%@Percent(bilinmiyor, _bagiscilar.Count)</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                            <tfoot class="table-secondary fw-bold">
+                                                <tr>
+                                                    <td>Toplam</td>
+                                                    <td class="text-center">@_bagiscilar.Count</td>
+                                                    <td class="text-center text-success">@_yasayan</td>
+                                                    <td class="text-center text-secondary">@_vefat</td>
+                                                    <td></td>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <hr class="db-separator" />
+                </section>
+
+                <!-- ════════════════════════════════════════════════
+                     BÖLÜM 5 — VASİYETÇİLER
+                     ════════════════════════════════════════════════ -->
+                <section id="vasiyetciler" class="db-section">
+                    <div class="section-label">Vasiyetçiler</div>
+
+                    <!-- KPI Kartlar -->
+                    <div class="row g-2 mb-3">
+                        <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+                            <div class="card db-stat-card db-accent-amber h-100">
+                                <div class="card-body db-stat-body text-center">
+                                    <div class="db-stat-icon"><i class="bi bi-file-earmark-text-fill"></i></div>
+                                    <div class="db-stat-label">Toplam Vasiyetçi</div>
+                                    <div class="db-stat-value">@FormatCount(_vasiyetciler.Count)</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+                            <div class="card db-stat-card db-accent-green h-100">
+                                <div class="card-body db-stat-body text-center">
+                                    <div class="db-stat-icon"><i class="bi bi-person-check"></i></div>
+                                    <div class="db-stat-label">Sağ</div>
+                                    <div class="db-stat-value">@FormatCount(_vasiyetciler.Count(x => x.SagVefat == "1"))</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+                            <div class="card db-stat-card db-accent-slate h-100">
+                                <div class="card-body db-stat-body text-center">
+                                    <div class="db-stat-icon"><i class="bi bi-person-dash"></i></div>
+                                    <div class="db-stat-label">Vefat Eden</div>
+                                    <div class="db-stat-value">@FormatCount(_vasiyetciler.Count(x => x.SagVefat == "2"))</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+                            <div class="card db-stat-card db-accent-amber h-100">
+                                <div class="card-body db-stat-body text-center">
+                                    <div class="db-stat-icon"><i class="bi bi-question-circle"></i></div>
+                                    <div class="db-stat-label">Bilinmiyor</div>
+                                    <div class="db-stat-value">@FormatCount(_vasiyetciler.Count(x => x.SagVefat == "3" || string.IsNullOrWhiteSpace(x.SagVefat)))</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+                            <div class="card db-stat-card db-accent-purple h-100">
+                                <div class="card-body db-stat-body text-center">
+                                    <div class="db-stat-icon"><i class="bi bi-journal-check"></i></div>
+                                    <div class="db-stat-label">Aktif Vasiyet</div>
+                                    <div class="db-stat-value">@FormatCount(_vasiyetciler.Count(x => string.Equals(x.VasiyetinDurumu, "Geçerli", StringComparison.OrdinalIgnoreCase)))</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+                            <div class="card db-stat-card db-accent-sky h-100">
+                                <div class="card-body db-stat-body text-center">
+                                    <div class="db-stat-icon"><i class="bi bi-building"></i></div>
+                                    <div class="db-stat-label">Noterde Düzenlenen</div>
+                                    <div class="db-stat-value">@FormatCount(_vasiyetciler.Count(x => !string.IsNullOrWhiteSpace(x.Noter)))</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <!-- Vasiyet Tipi Dağılımı -->
+                        <div class="col-12 col-lg-6">
+                            <div class="card shadow-sm h-100">
+                                <div class="card-header"><strong><i class="bi bi-pie-chart me-1"></i>Vasiyet Tipi</strong></div>
+                                <div class="card-body">
+                                    <GenericChart TItem="ChartItem"
+                                                  Items="_vasiyetTipiItems"
+                                                  LabelSelector="@(x => x.Label)"
+                                                  ValueSelector="@(x => x.Value)"
+                                                  Title="Vasiyet Tipi Dağılımı"
+                                                  SeriesName="Vasiyetçi"
+                                                  Type="GenericChart<ChartItem>.GenericChartType.Pie"
+                                                  Height="380px"
+                                                  ShowLegend="true"
+                                                  ShowDataLabels="true"
+                                                  ColorPalette="@_vasiyetTipiPalette" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Vasiyet Durumu Dağılımı -->
+                        <div class="col-12 col-lg-6">
+                            <div class="card shadow-sm h-100">
+                                <div class="card-header"><strong><i class="bi bi-pie-chart me-1"></i>Vasiyet Durumu</strong></div>
+                                <div class="card-body">
+                                    <GenericChart TItem="ChartItem"
+                                                  Items="_vasiyetDurumuItems"
+                                                  LabelSelector="@(x => x.Label)"
+                                                  ValueSelector="@(x => x.Value)"
+                                                  Title="Vasiyet Durumu Dağılımı"
+                                                  SeriesName="Vasiyetçi"
+                                                  Type="GenericChart<ChartItem>.GenericChartType.Pie"
+                                                  Height="380px"
+                                                  ShowLegend="true"
+                                                  ShowDataLabels="true"
+                                                  ColorPalette="@_vasiyetDurumuPalette" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Vasiyetçi Tablosu -->
+                        <div class="col-12">
+                            <div class="card shadow-sm h-100">
+                                <div class="card-header db-collapsible-header"
+                                     @onclick="() => _isVasiyetOpen = !_isVasiyetOpen"
+                                     role="button">
+                                    <span>
+                                        <i class="bi @(_isVasiyetOpen ? "bi-chevron-down" : "bi-chevron-right") me-2"></i>
+                                        <strong>Son 15 Vasiyet</strong>
+                                    </span>
+                                    <small class="text-muted">tarihe göre</small>
+                                </div>
+                                @if (_isVasiyetOpen)
+                                {
+                                    <div class="card-body p-0">
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-hover table-bordered mb-0 db-bolge-table">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>Ad Soyad</th>
+                                                        <th>Vasiyet Tarihi</th>
+                                                        <th>Sağlık</th>
+                                                        <th>Durum</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach (var v in _vasiyetciler.Where(x => x.VasiyetTarihi.HasValue).OrderByDescending(x => x.VasiyetTarihi).Take(15))
+                                                    {
+                                                        <tr>
+                                                            <td>@($"{v.Adi} {v.Soyadi}".Trim())</td>
+                                                            <td>@v.VasiyetTarihi!.Value.ToString("dd.MM.yyyy")</td>
+                                                            <td>
+                                                                @{
+                                                                    var (saglikLabel, saglikClass) = v.SagVefat switch
+                                                                    {
+                                                                        "1" => ("Sağ",         "bg-success"),
+                                                                        "2" => ("Vefat",       "bg-secondary"),
+                                                                        "3" => ("Bilinmiyor",  "bg-warning text-dark"),
+                                                                        _   => ("–",            "bg-light text-muted")
+                                                                    };
+                                                                }
+                                                                <span class="badge @saglikClass">@saglikLabel</span>
+                                                            </td>
+                                                            <td>
+                                                                <span class="badge @(string.Equals(v.VasiyetinDurumu, "Aktif", StringComparison.OrdinalIgnoreCase) ? "bg-success" : "bg-secondary")">
+                                                                    @(v.VasiyetinDurumu ?? "–")
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    <hr class="db-separator" />
+                </section>
+
+                <!-- ════════════════════════════════════════════════
+                     BÖLÜM 6 — TAAHHÜTLER
+                     ════════════════════════════════════════════════ -->
+                <section id="taahhutler" class="db-section">
+                    <div class="section-label">Taahhütler</div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+                            <div class="card db-stat-card db-accent-purple h-100">
+                                <div class="card-body db-stat-body text-center">
+                                    <div class="db-stat-icon"><i class="bi bi-pen-fill"></i></div>
+                                    <div class="db-stat-label">Toplam Taahhüt</div>
+                                    <div class="db-stat-value">@FormatCount(_taahhutler.Count)</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+                            <div class="card db-stat-card db-accent-green h-100">
+                                <div class="card-body db-stat-body text-center">
+                                    <div class="db-stat-icon"><i class="bi bi-hourglass-split"></i></div>
+                                    <div class="db-stat-label">Taahhüdü Devam Eden</div>
+                                    <div class="db-stat-value">@FormatCount(_taahhutler.Count(x =>
+                                    {
+                                        if (!x.BagisciId.HasValue) return false;
+                                        var b = _bagiscilar.FirstOrDefault(b => b.Id == x.BagisciId.Value);
+                                        return b != null && !string.Equals(b.Sag_vefat, "Vefat", StringComparison.OrdinalIgnoreCase);
+                                    }))</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+                            <div class="card db-stat-card db-accent-teal h-100">
+                                <div class="card-body db-stat-body text-center">
+                                    <div class="db-stat-icon"><i class="bi bi-hourglass-bottom"></i></div>
+                                    <div class="db-stat-label">Taahhüdü Sona Eren</div>
+                                    <div class="db-stat-value">@FormatCount(_taahhutler.Count(x =>
+                                    {
+                                        if (!x.BagisciId.HasValue) return false;
+                                        var b = _bagiscilar.FirstOrDefault(b => b.Id == x.BagisciId.Value);
+                                        return b != null && string.Equals(b.Sag_vefat, "Vefat", StringComparison.OrdinalIgnoreCase);
+                                    }))</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Taahhüt Listesi -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-12">
+                            <div class="card shadow-sm">
+                                <div class="card-header db-collapsible-header"
+                                     @onclick="() => _isTaahhutOpen = !_isTaahhutOpen"
+                                     role="button">
+                                    <span>
+                                        <i class="bi @(_isTaahhutOpen ? "bi-chevron-down" : "bi-chevron-right") me-2"></i>
+                                        <strong>Taahhüt Listesi <span class="badge bg-success ms-1" style="font-size:0.7rem">Sağ Bağışçılar</span></strong>
+                                    </span>
+                                    @{
+                                        var _sagTaahhutler = _taahhutler.Where(x =>
+                                            x.BagisciId.HasValue &&
+                                            _bagiscilar.Any(b => b.Id == x.BagisciId.Value &&
+                                                !string.Equals(b.Sag_vefat, "Vefat", StringComparison.OrdinalIgnoreCase))
+                                        )
+                                        .OrderByDescending(x => x.OlusturmaTarihi)
+                                        .DistinctBy(x => x.BagisciId)
+                                        .ToList();
+                                    }
+                                    <small class="text-muted">@_sagTaahhutler.Count kayıt</small>
+                                </div>
+                                @if (_isTaahhutOpen)
+                                {
+                                    <div class="card-body p-0">
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-hover table-bordered mb-0 db-bolge-table">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>Ad Soyad</th>
+                                                        <th>Evrak Sayısı</th>
+                                                        <th>Evrak Tarihi</th>
+                                                        <th>Taahhüt Açıklaması</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach (var t in _sagTaahhutler.Take(50))
+                                                    {
+                                                        var bagisci = t.BagisciId.HasValue
+                                                            ? _bagiscilar.FirstOrDefault(b => b.Id == t.BagisciId.Value)
+                                                            : null;
+                                                        var adSoyad = bagisci != null
+                                                            ? $"{bagisci.Adi} {bagisci.Soyadi}".Trim()
+                                                            : $"{t.Adi} {t.Soyadi}".Trim();
+                                                        <tr>
+                                                            <td>@adSoyad</td>
+                                                            <td>@(t.EvrakSayisi ?? "–")</td>
+                                                            <td>@(t.EvrakTarihi?.ToString("dd.MM.yyyy") ?? "–")</td>
+                                                            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">@(t.TaahhutAciklama ?? "–")</td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        @if (_sagTaahhutler.Count > 50)
+                                        {
+                                            <div class="p-2 text-muted text-center" style="font-size:0.8rem">
+                                                İlk 50 kayıt gösteriliyor. Tümü için liste sayfasını ziyaret edin.
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    <hr class="db-separator" />
+                </section>
+
+                <section id="talepler-yakinlar-removed" class="d-none">
+                    <div class="section-label">Talepler &amp; Yakınlar</div>
+                    <div class="row g-3 mb-3">
+                        <!-- Yakınlık Derecesi Dağılımı -->
+                        <div class="col-12 col-lg-5">
+                            <div class="card shadow-sm h-100">
+                                <div class="card-header"><strong><i class="bi bi-pie-chart me-1"></i>Yakınlık Derecesi Dağılımı</strong></div>
+                                <div class="card-body">
+                                    <GenericChart TItem="ChartItem"
+                                                  Items="_yakinlikItems"
+                                                  LabelSelector="@(x => x.Label)"
+                                                  ValueSelector="@(x => x.Value)"
+                                                  Title="Yakınlık Derecesi"
+                                                  SeriesName="Yakın"
+                                                  Type="GenericChart<ChartItem>.GenericChartType.Donut"
+                                                  Height="320px"
+                                                  ShowLegend="true"
+                                                  ShowDataLabels="true"
+                                                  ColorPalette="@_skyPalette" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Talepler Tablosu -->
+                        <div class="col-12 col-lg-7">
+                            <div class="card shadow-sm h-100">
+                                <div class="card-header db-collapsible-header"
+                                     @onclick="() => _isTalepOpen = !_isTalepOpen"
+                                     role="button">
+                                    <span>
+                                        <i class="bi @(_isTalepOpen ? "bi-chevron-down" : "bi-chevron-right") me-2"></i>
+                                        <strong>Bağışçı Talepleri</strong>
+                                    </span>
+                                    <small class="text-muted">@_talepler.Count kayıt</small>
+                                </div>
+                                @if (_isTalepOpen)
+                                {
+                                    <div class="card-body p-0">
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-hover table-bordered mb-0 db-bolge-table">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>Talep</th>
+                                                        <th>İrtibat</th>
+                                                        <th>Tarih</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach (var t in _talepler.Take(40))
+                                                    {
+                                                        <tr>
+                                                            <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">@(t.Talep ?? "–")</td>
+                                                            <td>@(t.Irtibat ?? "–")</td>
+                                                            <td>@(t.Tarih ?? "–")</td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        @if (_talepler.Count > 40)
+                                        {
+                                            <div class="p-2 text-muted text-center" style="font-size:0.8rem">
+                                                İlk 40 kayıt gösteriliyor.
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Yakınlar Özet Tablosu -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-12">
+                            <div class="card shadow-sm">
+                                <div class="card-header db-collapsible-header"
+                                     @onclick="() => _isYakinOpen = !_isYakinOpen"
+                                     role="button">
+                                    <span>
+                                        <i class="bi @(_isYakinOpen ? "bi-chevron-down" : "bi-chevron-right") me-2"></i>
+                                        <strong>Bağışçı Yakınları Özeti</strong>
+                                    </span>
+                                    <small class="text-muted">@_yakinlar.Count kayıt</small>
+                                </div>
+                                @if (_isYakinOpen)
+                                {
+                                    <div class="card-body p-0">
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-hover table-bordered mb-0 db-bolge-table">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>Ad Soyad</th>
+                                                        <th>Yakınlık</th>
+                                                        <th>Telefon</th>
+                                                        <th class="text-center">Sıra</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach (var y in _yakinlar.OrderBy(x => x.Sira).Take(50))
+                                                    {
+                                                        <tr>
+                                                            <td>@(y.AdSoyad ?? "–")</td>
+                                                            <td>@(y.YakinlikDerecesi ?? "–")</td>
+                                                            <td>@(y.Telefon ?? "–")</td>
+                                                            <td class="text-center">@(y.Sira?.ToString() ?? "–")</td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        @if (_yakinlar.Count > 50)
+                                        {
+                                            <div class="p-2 text-muted text-center" style="font-size:0.8rem">
+                                                İlk 50 kayıt gösteriliyor.
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ── Zekayi Gif Footer ───────────────────────── -->
+                <div class="d-flex justify-content-center mt-4 mb-2">
+                    <img src="/images/zekayi.gif"
+                         alt="Zekayi"
+                         loading="lazy"
+                         data-bs-toggle="tooltip"
+                         data-bs-placement="top"
+                         title="Burada yayınlanan tüm Bağış ve Bağışçı verileri Emlak Direktörlüğü tarafından girilmektedir. İrtibat için Zekayi ÇALIŞ, dahili tel: 229" />
+                </div>
+
+            </div> <!-- /db-scrollspy-content -->
+        </div> <!-- /db-scrollspy-layout -->
+    }
+</div>
+
+@code {
+    private static readonly CultureInfo TrCulture = new("tr-TR");
+
+    // ── Veri ────────────────────────────────────────────────────
+    private List<TasinmazBagisci> _bagiscilar  = [];
+    private List<Bagis>           _bagislar    = [];
+    private List<Tasinmaz>        _tasinmazlar = [];
+    private List<Il>              _iller       = [];
+    private List<Bolge>           _bolgeler    = [];
+    private List<Vasiyetci>       _vasiyetciler = [];
+    private List<TasinmazTaahhut> _taahhutler   = [];
+    private List<BagisciTalepleri> _talepler    = [];
+    private List<BagisciYakinlari> _yakinlar    = [];
+
+    // ── Hesaplanan sayaçlar ──────────────────────────────────────
+    private int _yasayan;
+    private int _vefat;
+    private int _envanterdeki;
+    private int _ilSayisi;
+
+    // ── Grafik verileri ─────────────────────────────────────────
+    private readonly List<ChartItem> _topBagisciItems  = [];
+    private readonly List<ChartItem> _yilBazindaItems  = [];
+    private readonly List<ChartItem> _bolgeDagilimItems = [];
+    private readonly List<ChartItem> _vasiyetTipiItems   = [];
+    private readonly List<ChartItem> _vasiyetDurumuItems = [];
+    private readonly List<ChartItem> _yakinlikItems      = [];
+
+    // ── Yaş Grupları ─────────────────────────────────────────────
+    private readonly List<YasGrubu> _yasGruplari = [];
+
+    // ── UI Durum ─────────────────────────────────────────────────
+    private bool _isLoading;
+    private bool _loadFailed;
+    private bool _isMeslekOpen = true;
+    private bool _isIlDagOpen  = true;
+    private bool _isVasiyetOpen = true;
+    private bool _isTaahhutOpen = false;
+    private bool _isTalepOpen   = false;
+    private bool _isYakinOpen   = false;
+    private CancellationTokenSource? _cts;
+
+    // ── Renk Paletleri ──────────────────────────────────────────
+    private static readonly string[] _greenPalette =
+        ["#16a34a","#4ade80","#15803d","#86efac","#166534","#bbf7d0","#14532d","#6ee7b7"];
+    private static readonly string[] _bluePalette =
+        ["#2563eb","#60a5fa","#1d4ed8","#93c5fd","#1e40af","#bfdbfe","#1e3a8a","#dbeafe"];
+    private static readonly string[] _amberPalette =
+        ["#d97706","#fbbf24","#b45309","#fde68a","#92400e","#fef3c7","#451a03"];
+    // Vasiyet Tipi: birbirinden ayrık tonlar (turuncu, mavi, mor, yeşil, kırmızı, teal)
+    private static readonly string[] _vasiyetTipiPalette =
+        ["#f97316","#3b82f6","#8b5cf6","#22c55e","#ef4444","#14b8a6","#f59e0b","#ec4899"];
+    // Vasiyet Durumu: anlamlı renkler (geçerli=yeşil, iptal=kırmızı, işlem=mavi, gerçekleşti=mor, diğer=gri)
+    private static readonly string[] _vasiyetDurumuPalette =
+        ["#16a34a","#dc2626","#2563eb","#7c3aed","#ea580c","#0891b2","#64748b","#d97706"];
+    private static readonly string[] _skyPalette =
+        ["#0284c7","#38bdf8","#0369a1","#7dd3fc","#075985","#bae6fd","#0c4a6e"];
+
+    // ────────────────────────────────────────────────────────────
+    protected override async Task OnInitializedAsync()
+    {
+        _cts = new CancellationTokenSource();
+        await LoadDataAsync(_cts.Token);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("initScrollSpy", "bd-scrollspy-content", "bd-scrollspy-nav");
+        }
+    }
+
+    private async Task RefreshAsync()
+    {
+        _cts?.Cancel();
+        _cts = new CancellationTokenSource();
+        await LoadDataAsync(_cts.Token);
+    }
+
+    private async Task LoadDataAsync(CancellationToken ct)
+    {
+        _isLoading = true;
+        _loadFailed = false;
+        StateHasChanged();
+
+        try
+        {
+            var t1 = BagisciService.GetAllAsync(ct);
+            var t2 = BagisService.GetAllAsync(ct);
+            var t3 = VasiyetciService.GetAllAsync(ct);
+            var t4 = TaahhutService.GetAllAsync(ct);
+            var t5 = TalepleriService.GetAllAsync(ct);
+            var t6 = YakinlariService.GetAllAsync(ct);
+            var t7 = TasinmazService.GetAllAsync(ct);
+            var t8 = IlService.GetAllAsync(ct);
+            var t9 = BolgeService.GetAllAsync(ct);
+
+            await Task.WhenAll(t1, t2, t3, t4, t5, t6, t7, t8, t9);
+
+            _bagiscilar   = t1.Result;
+            _bagislar     = t2.Result;
+            _vasiyetciler = t3.Result;
+            _taahhutler   = t4.Result;
+            _talepler     = t5.Result;
+            _yakinlar     = t6.Result;
+            _tasinmazlar  = t7.Result;
+            _iller        = t8.Result;
+            _bolgeler     = t9.Result;
+
+            ComputeCounters();
+            PrepareCharts();
+        }
+        catch
+        {
+            _loadFailed = true;
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ComputeCounters()
+    {
+        _yasayan     = _bagiscilar.Count(x => string.Equals(x.Sag_vefat, "Sağ", StringComparison.OrdinalIgnoreCase));
+        _vefat       = _bagiscilar.Count(x =>  !string.Equals(x.Sag_vefat, "Sağ", StringComparison.OrdinalIgnoreCase));
+        _envanterdeki = _bagislar.Count(x => x.Envanterde);
+        _ilSayisi    = _bagiscilar
+            .Where(x => !string.IsNullOrWhiteSpace(x.Ili))
+            .Select(x => x.Ili!.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Count();
+    }
+
+    private void PrepareCharts()
+    {
+        PrepareTopBagisciChart();
+        PrepareYilBazindaChart();
+        PrepareBolgeDagilimChart();
+        PrepareVasiyetTipiChart();
+        PrepareVasiyetDurumuChart();
+        PrepareYakinlikChart();
+        PrepareYasGruplari();
+    }
+
+    private void PrepareTopBagisciChart()
+    {
+        _topBagisciItems.Clear();
+        var groups = _bagislar
+            .Where(x => x.BagisciId.HasValue)
+            .GroupBy(x => x.BagisciId!.Value)
+            .Select(g => new { BagisciId = g.Key, Adet = g.Count() })
+            .OrderByDescending(x => x.Adet)
+            .Take(15)
+            .ToList();
+
+        foreach (var g in groups)
+        {
+            var bagisci = _bagiscilar.FirstOrDefault(b => b.Id == g.BagisciId);
+            var ad = bagisci is null ? $"#{g.BagisciId}" : $"{bagisci.Adi} {bagisci.Soyadi}".Trim();
+            _topBagisciItems.Add(new ChartItem { Label = ad, Value = g.Adet });
+        }
+    }
+
+    private void PrepareYilBazindaChart()
+    {
+        _yilBazindaItems.Clear();
+        var currentYear = DateTime.Now.Year;
+        var startYear   = currentYear - 14;
+
+        var yearCounts = _bagislar
+            .Where(x => x.BagisYili.HasValue && x.BagisYili.Value >= startYear && x.BagisYili.Value <= currentYear)
+            .GroupBy(x => x.BagisYili!.Value)
+            .ToDictionary(g => g.Key, g => g.Count());
+
+        for (var yr = startYear; yr <= currentYear; yr++)
+        {
+            _yilBazindaItems.Add(new ChartItem
+            {
+                Label = yr.ToString(),
+                Value = yearCounts.TryGetValue(yr, out var c) ? c : 0
+            });
+        }
+    }
+
+    private void PrepareBolgeDagilimChart()
+    {
+        _bolgeDagilimItems.Clear();
+
+        var ilIdToBolgeId = _iller
+            .Where(x => x.BolgeId.HasValue)
+            .ToDictionary(x => x.Id, x => x.BolgeId!.Value);
+        var bolgeIdToAdi = _bolgeler.ToDictionary(x => x.Id, x => x.Adi);
+
+        var groups = _bagiscilar
+            .Where(x => x.IlId.HasValue && ilIdToBolgeId.ContainsKey(x.IlId.Value))
+            .GroupBy(x => ilIdToBolgeId[x.IlId!.Value])
+            .Select(g => new ChartItem
+            {
+                Label = bolgeIdToAdi.TryGetValue(g.Key, out var ad) ? ad : $"#{g.Key}",
+                Value = g.Count()
+            })
+            .OrderByDescending(x => x.Value);
+
+        _bolgeDagilimItems.AddRange(groups);
+    }
+
+    private void PrepareVasiyetTipiChart()
+    {
+        _vasiyetTipiItems.Clear();
+        var groups = _vasiyetciler
+            .GroupBy(x => string.IsNullOrWhiteSpace(x.VasiyetTipi) ? "Belirtilmemiş" : x.VasiyetTipi!.Trim())
+            .Select(g => new ChartItem { Label = g.Key, Value = g.Count() })
+            .OrderByDescending(x => x.Value);
+
+        _vasiyetTipiItems.AddRange(groups);
+    }
+
+    private void PrepareVasiyetDurumuChart()
+    {
+        _vasiyetDurumuItems.Clear();
+        var groups = _vasiyetciler
+            .GroupBy(x => string.IsNullOrWhiteSpace(x.VasiyetinDurumu) ? "Belirtilmemiş" : x.VasiyetinDurumu!.Trim())
+            .Select(g => new ChartItem { Label = g.Key, Value = g.Count() })
+            .OrderByDescending(x => x.Value);
+
+        _vasiyetDurumuItems.AddRange(groups);
+    }
+
+    private void PrepareYakinlikChart()
+    {
+        _yakinlikItems.Clear();
+        var groups = _yakinlar
+            .GroupBy(x => string.IsNullOrWhiteSpace(x.YakinlikDerecesi) ? "Bilinmiyor" : x.YakinlikDerecesi!.Trim())
+            .Select(g => new ChartItem { Label = g.Key, Value = g.Count() })
+            .OrderByDescending(x => x.Value);
+
+        _yakinlikItems.AddRange(groups);
+    }
+
+    private void PrepareYasGruplari()
+    {
+        _yasGruplari.Clear();
+
+        // Her bağışçı için ilk bağış tarihini bul
+        var ilkBagisTarihleri = _bagislar
+            .Where(x => x.BagisciId.HasValue && x.BagisTarihi.HasValue)
+            .GroupBy(x => x.BagisciId!.Value)
+            .ToDictionary(g => g.Key, g => g.Min(b => b.BagisTarihi!.Value));
+
+        var yaslar = _bagiscilar
+            .Where(x => x.DogumTarihi.HasValue && ilkBagisTarihleri.ContainsKey(x.Id))
+            .Select(x =>
+            {
+                var bagTarihi = ilkBagisTarihleri[x.Id];
+                var yas = bagTarihi.Year - x.DogumTarihi!.Value.Year;
+                if (x.DogumTarihi.Value.Date > bagTarihi.AddYears(-yas)) yas--;
+                return yas;
+            })
+            .ToList();
+
+        _yasGruplari.Add(new YasGrubu("< 40",       yaslar.Count(y => y < 40)));
+        _yasGruplari.Add(new YasGrubu("40–54",      yaslar.Count(y => y >= 40 && y < 55)));
+        _yasGruplari.Add(new YasGrubu("55–69",      yaslar.Count(y => y >= 55 && y < 70)));
+        _yasGruplari.Add(new YasGrubu("70–84",      yaslar.Count(y => y >= 70 && y < 85)));
+        _yasGruplari.Add(new YasGrubu("85+",        yaslar.Count(y => y >= 85)));
+        _yasGruplari.Add(new YasGrubu("Bilinmiyor", _bagiscilar.Count(x =>
+            !x.DogumTarihi.HasValue || !ilkBagisTarihleri.ContainsKey(x.Id))));
+    }
+
+    // ── JS Yardımcı ──────────────────────────────────────────────
+    private async Task ScrollToAsync(string sectionId)
+    {
+        await JS.InvokeVoidAsync("scrollSpyScrollTo", "bd-scrollspy-content", sectionId);
+    }
+
+    // ── Format Yardımcıları ─────────────────────────────────────
+    private static string FormatCount(int value) =>
+        value >= 1000 ? value.ToString("N0", new CultureInfo("tr-TR")) : value.ToString();
+
+    private static string Percent(int part, int total) =>
+        total == 0 ? "0" : Math.Round(part * 100.0 / total, 1).ToString("F1", CultureInfo.InvariantCulture);
+
+    // ── IDisposable ──────────────────────────────────────────────
+    public void Dispose()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+    }
+
+    // ── İç Tipler ────────────────────────────────────────────────
+    private sealed class ChartItem
+    {
+        public string  Label { get; set; } = "";
+        public decimal Value { get; set; }
+    }
+
+    private sealed record YasGrubu(string Etiket, int Adet);
+}

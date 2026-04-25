@@ -26,9 +26,12 @@ public class Personel : BaseModel
     [DisplayName("Asker/Sivil")]
     public string? Asker_sivil { get; set; }
     [ValidateNever]
+    [DisplayName("Tipi")]
+    public int? Tipi { get; set; }
+    [ValidateNever]
     public Kimlik Kimlik { get; set; }
     [ValidateNever]
     public IletisimBilgileri IletisimBilgileri { get; set; }
     [ValidateNever]
     public IsBilgileri IsBilgileri { get; set; }
-}
+    }

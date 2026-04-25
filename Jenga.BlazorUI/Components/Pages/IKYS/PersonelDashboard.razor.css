@@ -1,0 +1,246 @@
+/* ═══════════════════════════════════════════════════════════════
+   PersonelDashboard.razor.css
+   İnsan Kaynakları Dashboard – Mobile-first, fully responsive
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Kök ──────────────────────────────────────────────────────── */
+.personel-dashboard {
+    max-width: 100%;
+    overflow-x: hidden;
+    box-sizing: border-box;
+}
+
+/* ── Bölüm Başlığı ────────────────────────────────────────────── */
+.personel-dashboard .section-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: #6b7280;
+    margin-bottom: 0.4rem;
+    padding-left: 0.1rem;
+}
+
+/* ── Spinner animasyonu ───────────────────────────────────────── */
+.personel-dashboard .spin {
+    animation: pd-spin 0.9s linear infinite;
+    display: inline-block;
+}
+
+@keyframes pd-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SCROLLSPY LAYOUT
+   ══════════════════════════════════════════════════════════════ */
+.pd-scrollspy-layout {
+    display: grid;
+    grid-template-columns: 1fr 210px;
+    gap: 18px;
+    align-items: start;
+}
+
+.pd-scrollspy-nav {
+    position: sticky;
+    top: 12px;
+    order: 2;
+    background: var(--card-bg, #fff);
+    border: 1px solid rgba(0,0,0,.08);
+    border-radius: 10px;
+    padding: 12px 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.06);
+}
+
+.pd-nav-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #2563EB;
+    padding: 4px 10px 8px;
+    border-bottom: 1px solid rgba(0,0,0,.07);
+    margin-bottom: 6px;
+}
+
+.pd-scrollspy-nav .nav-link {
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-size: 0.82rem;
+    color: #6b6b6b;
+    transition: background 0.15s, color 0.15s;
+}
+
+.pd-scrollspy-nav .nav-link:hover {
+    background: rgba(37,99,235,.07);
+    color: #1E1E1E;
+}
+
+.pd-scrollspy-nav .nav-link.active {
+    background: rgba(37,99,235,.12);
+    color: #1D40AE;
+    font-weight: 700;
+}
+
+.pd-scrollspy-content {
+    order: 1;
+    position: relative;
+    height: calc(100vh - 120px);
+    overflow-y: auto;
+    padding-right: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(100,116,139,.4) transparent;
+}
+
+.pd-section {
+    scroll-margin-top: 12px;
+    padding-bottom: 8px;
+}
+
+.pd-separator {
+    border: none;
+    border-top: 1px solid rgba(0,0,0,.07);
+    margin: 20px 0;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STAT CARDS (KPI)
+   ══════════════════════════════════════════════════════════════ */
+.personel-dashboard .pd-stat-card {
+    border: none;
+    border-left: 3px solid var(--pd-accent, #6b7280);
+    border-radius: 0.65rem;
+    background: var(--pd-accent-bg, #fafafa);
+    box-shadow: 0 1px 4px rgba(0,0,0,.07);
+    transition: transform 160ms ease, box-shadow 160ms ease, border-left-width 160ms ease;
+    overflow: hidden;
+}
+
+.personel-dashboard .pd-stat-card:hover {
+    transform: translateY(-2px);
+    border-left-width: 5px;
+    box-shadow: 0 6px 18px rgba(0,0,0,.10);
+}
+
+.personel-dashboard .pd-stat-body {
+    padding: 0.6rem 0.4rem !important;
+}
+
+.personel-dashboard .pd-stat-icon {
+    font-size: 1.1rem;
+    color: var(--pd-accent, #6b7280);
+    opacity: 0.85;
+    margin-bottom: 0.1rem;
+}
+
+.personel-dashboard .pd-stat-label {
+    font-size: 0.68rem;
+    color: #6b7280;
+    line-height: 1.2;
+    margin-bottom: 0.15rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.personel-dashboard .pd-stat-value {
+    font-size: 1.4rem;
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--pd-accent, #374151);
+    font-variant-numeric: tabular-nums;
+}
+
+.personel-dashboard .pd-stat-sub {
+    font-size: 0.68rem;
+    color: #9ca3af;
+    margin-top: 0.1rem;
+}
+
+/* Accent token tanımları */
+.personel-dashboard .pd-accent-indigo { --pd-accent: #4f46e5; --pd-accent-bg: #eef2ff; }
+.personel-dashboard .pd-accent-blue   { --pd-accent: #2563eb; --pd-accent-bg: #eff6ff; }
+.personel-dashboard .pd-accent-teal   { --pd-accent: #0d9488; --pd-accent-bg: #f0fdfa; }
+.personel-dashboard .pd-accent-green  { --pd-accent: #16a34a; --pd-accent-bg: #f0fdf4; }
+.personel-dashboard .pd-accent-rose   { --pd-accent: #e11d48; --pd-accent-bg: #fff1f2; }
+.personel-dashboard .pd-accent-amber  { --pd-accent: #d97706; --pd-accent-bg: #fffbeb; }
+.personel-dashboard .pd-accent-purple { --pd-accent: #7c3aed; --pd-accent-bg: #f5f3ff; }
+.personel-dashboard .pd-accent-sky    { --pd-accent: #0284c7; --pd-accent-bg: #f0f9ff; }
+.personel-dashboard .pd-accent-orange { --pd-accent: #ea580c; --pd-accent-bg: #fff7ed; }
+.personel-dashboard .pd-accent-lime   { --pd-accent: #65a30d; --pd-accent-bg: #f7fee7; }
+.personel-dashboard .pd-accent-cyan   { --pd-accent: #0891b2; --pd-accent-bg: #ecfeff; }
+.personel-dashboard .pd-accent-slate  { --pd-accent: #475569; --pd-accent-bg: #f8fafc; }
+
+/* ══════════════════════════════════════════════════════════════
+   CHART & TABLE CONTAINER
+   ══════════════════════════════════════════════════════════════ */
+.personel-dashboard .pd-chart-container {
+    width: 100%;
+    max-width: 580px;
+    height: 360px;
+    box-sizing: border-box;
+    align-content: center;
+    border-radius: 10px;
+    background-color: var(--surface, #F8FAFF);
+    background-image: radial-gradient(rgba(180,190,210,.4) 1px, transparent 1px),
+                      radial-gradient(rgba(180,190,210,.4) 1px, transparent 1px);
+    background-size: 22px 22px;
+    background-position: 0 0, 11px 11px;
+}
+
+.personel-dashboard .pd-birim-table {
+    flex: 1 1 300px;
+    max-width: 500px;
+}
+
+/* ── Collapsible card header ─────────────────────────────────── */
+.personel-dashboard .card-header[role="button"] {
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: background 0.15s;
+}
+
+.personel-dashboard .card-header[role="button"]:hover {
+    background: rgba(0,0,0,.03);
+}
+
+/* ── Responsive breakpoints ──────────────────────────────────── */
+@media (max-width: 768px) {
+    .pd-scrollspy-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .pd-scrollspy-nav {
+        position: static;
+        order: 1;
+        display: flex;
+        overflow-x: auto;
+        padding: 8px;
+    }
+
+    .pd-scrollspy-nav .nav {
+        flex-direction: row !important;
+        flex-wrap: nowrap;
+        gap: 4px !important;
+        white-space: nowrap;
+    }
+
+    .pd-scrollspy-nav .nav-link {
+        padding: 5px 8px;
+        font-size: 0.75rem;
+    }
+
+    .pd-nav-title {
+        display: none;
+    }
+
+    .pd-scrollspy-content {
+        order: 2;
+        height: auto;
+        overflow-y: visible;
+        padding-right: 0;
+    }
+}
