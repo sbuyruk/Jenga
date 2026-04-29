@@ -15,7 +15,7 @@
         <table id="@TableId" class="table table-bordered table-sm align-middle text-center tbys-report-table">
             <thead class="table-light">
                 <tr>
-                    <th colspan="17" class="text-center fw-bold mb-1">@($"{SelectedYear} YILI TAŞINMAZ BAĞIŞLARI")</th>
+                    <th colspan="19" class="text-center fw-bold mb-1">@($"{SelectedYear} YILI TAŞINMAZ BAĞIŞLARI")</th>
                 </tr>
                 <tr>
                     <th rowspan="2" class="col-nowrap">Sıra</th>
@@ -32,7 +32,9 @@
                     <th rowspan="2" class="col-nowrap">Toplam</th>
 
                     <th rowspan="2">Emlak Beyan Değeri TL</th>
+                    <th rowspan="2">Muhasebeye Kayıtlı Değer TL</th>
                     <th rowspan="2">Tahmini Rayiç Değeri TL</th>
+                    <th rowspan="2">Yaklaşık Piyasa Değeri TL</th>
                 </tr>
 
                 <tr>
@@ -48,7 +50,7 @@
                 @if (RegionBlocks.Count == 0)
                 {
                     <tr>
-                        <td colspan="17" class="text-muted text-center">Kayıt bulunamadı.</td>
+                        <td colspan="19" class="text-muted text-center">Kayıt bulunamadı.</td>
                     </tr>
                 }
                 else
@@ -56,7 +58,7 @@
                     foreach (var block in RegionBlocks)
                     {
                         <tr class="table-secondary fw-bold">
-                            <td colspan="17" class="text-center">@block.RegionName.ToUpper(TrCulture)</td>
+                            <td colspan="19" class="text-center">@block.RegionName.ToUpper(TrCulture)</td>
                         </tr>
 
                         var sira = 1;
@@ -86,7 +88,9 @@
                                 <td class="col-total">@DisplayCount(r.Toplam)</td>
 
                                 <td class="text-end col-money">@DisplayMoney(r.EmlakBeyanDegeriTl)</td>
+                                <td class="text-end col-money">@DisplayMoney(r.MuhasebeyeKayitliDegerTl)</td>
                                 <td class="text-end col-money">@DisplayMoney(r.TahminiRayicDegeriTl)</td>
+                                <td class="text-end col-money">@DisplayMoney(r.YaklasikPiyasaDegeriTl)</td>
                             </tr>
                             sira++;
                         }
@@ -114,7 +118,9 @@
                             <td>@DisplayCount(block.Total.Toplam)</td>
 
                             <td class="text-end col-money">@DisplayMoney(block.Total.EmlakBeyanDegeriTl)</td>
+                            <td class="text-end col-money">@DisplayMoney(block.Total.MuhasebeyeKayitliDegerTl)</td>
                             <td class="text-end col-money">@DisplayMoney(block.Total.TahminiRayicDegeriTl)</td>
+                            <td class="text-end col-money">@DisplayMoney(block.Total.YaklasikPiyasaDegeriTl)</td>
                         </tr>
                     }
 
@@ -141,7 +147,9 @@
                         <td>@DisplayCount(GrandTotal.Toplam)</td>
 
                         <td class="text-end">@DisplayMoney(GrandTotal.EmlakBeyanDegeriTl)</td>
+                        <td class="text-end">@DisplayMoney(GrandTotal.MuhasebeyeKayitliDegerTl)</td>
                         <td class="text-end">@DisplayMoney(GrandTotal.TahminiRayicDegeriTl)</td>
+                        <td class="text-end">@DisplayMoney(GrandTotal.YaklasikPiyasaDegeriTl)</td>
                     </tr>
                 }
             </tbody>
@@ -253,7 +261,9 @@
         {
             Il = il,
             EmlakBeyanDegeriTl = items.Sum(x => x.EmlakBeyanDegeri ?? 0m),
-            TahminiRayicDegeriTl = items.Sum(x => x.TahminiRayicDegeri ?? 0m)
+            MuhasebeyeKayitliDegerTl = items.Sum(x => x.MuhasebeyeKayitliDeger ?? 0m),
+            TahminiRayicDegeriTl = items.Sum(x => x.TahminiRayicDegeri ?? 0m),
+            YaklasikPiyasaDegeriTl = items.Sum(x => x.YaklasikPiyasaDegeri ?? 0m)
         };
 
         foreach (var t in items)
@@ -431,7 +441,9 @@
         public int Toplam { get; set; }
 
         public decimal EmlakBeyanDegeriTl { get; set; }
+        public decimal MuhasebeyeKayitliDegerTl { get; set; }
         public decimal TahminiRayicDegeriTl { get; set; }
+        public decimal YaklasikPiyasaDegeriTl { get; set; }
     }
 
     private sealed class Totals
@@ -457,7 +469,9 @@
         public int Toplam { get; set; }
 
         public decimal EmlakBeyanDegeriTl { get; set; }
+        public decimal MuhasebeyeKayitliDegerTl { get; set; }
         public decimal TahminiRayicDegeriTl { get; set; }
+        public decimal YaklasikPiyasaDegeriTl { get; set; }
 
         public static Totals FromRows(List<Row> rows)
         {
@@ -485,7 +499,9 @@
                 t.Toplam += r.Toplam;
 
                 t.EmlakBeyanDegeriTl += r.EmlakBeyanDegeriTl;
+                t.MuhasebeyeKayitliDegerTl += r.MuhasebeyeKayitliDegerTl;
                 t.TahminiRayicDegeriTl += r.TahminiRayicDegeriTl;
+                t.YaklasikPiyasaDegeriTl += r.YaklasikPiyasaDegeriTl;
             }
 
             return t;
@@ -517,7 +533,9 @@
                 t.Toplam += s.Toplam;
 
                 t.EmlakBeyanDegeriTl += s.EmlakBeyanDegeriTl;
+                t.MuhasebeyeKayitliDegerTl += s.MuhasebeyeKayitliDegerTl;
                 t.TahminiRayicDegeriTl += s.TahminiRayicDegeriTl;
+                t.YaklasikPiyasaDegeriTl += s.YaklasikPiyasaDegeriTl;
             }
 
             return t;

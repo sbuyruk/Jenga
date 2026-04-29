@@ -18,6 +18,7 @@
 @inject IBolgeService BolgeService
 @inject ITasinmazBagisciService TasinmazBagisciService
 @inject IModalService ModalService
+@inject ILogger<TasinmazDashboard> Logger
 @inject IJSRuntime JS
 @implements IDisposable
 
@@ -82,502 +83,524 @@
                  data-bs-smooth-scroll="true"
                  tabindex="0">
 
-    <!-- ── Sayfa Başlığı ──────────────────────────────────────────── -->
-    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
-        <div>
-            <h5 class="mb-0 fw-bold"><i class="bi bi-buildings me-2 text-primary"></i>Taşınmaz Envanter Durumu</h5>
-            <small class="text-muted">Envantteki tüm taşınmazların anlık özeti</small>
-        </div>
-        <button class="btn btn-sm btn-outline-secondary"
-                @onclick="RefreshAsync"
-                disabled="@_isLoading">
-            <i class="bi bi-arrow-clockwise @(_isLoading ? "spin" : "")"></i>
-            @(_isLoading ? "Yükleniyor..." : "Yenile")
-        </button>
-    </div>
+                <!-- ── Sayfa Başlığı ──────────────────────────────────────────── -->
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                    <div>
+                        <h5 class="mb-0 fw-bold"><i class="bi bi-buildings me-2 text-primary"></i>Taşınmaz Envanteri</h5>
+                        <small class="text-muted">Envanterdeki tüm taşınmazların anlık özeti</small>
+                    </div>
+                    <button class="btn btn-sm btn-outline-secondary"
+                            @onclick="RefreshAsync"
+                            disabled="@_isLoading">
+                        <i class="bi bi-arrow-clockwise @(_isLoading ? "spin" : "")"></i>
+                        @(_isLoading ? "Yükleniyor..." : "Yenile")
+                    </button>
+                </div>
 
 
-        <!-- ── BÖLGE ÖZETİ (Tam Genişlik) ───────────────────────────────── -->
-        <section id="bolge-ozeti" class="db-section">
-        <div class="section-label">Bölge Özeti</div>
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card shadow-sm">
-                    <div class="card-header db-collapsible-header"
-                         @onclick="() => _isBolgeOpen = !_isBolgeOpen"
-                         role="button">
-                        <span>
-                            <i class="bi @(_isBolgeOpen ? "bi-chevron-down" : "bi-chevron-right") me-2"></i>
-                            <strong>Bölge Özeti</strong>
-                        </span>
-                        <small class="text-muted">@_bolgeSummaries.Count bölge</small>
-                    </div>
-                    @if (_isBolgeOpen)
-                    {
-                        <div class="card-body p-0">
-                            <div class="table-responsive">
-                                <table class="table table-sm table-hover table-bordered mb-0 db-bolge-table">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>Bölge</th>
-                                            <th class="text-center">Toplam</th>
-                                            <th class="text-center">TM</th>
-                                            <th class="text-center">ÇM</th>
-                                            <th class="text-end">Emlak Beyan Değeri</th>
-                                            <th class="text-end">Tah.Ray.Değeri</th>
-                                            <th class="text-end">Muh.Kay.Değeri</th>
-                                            <th class="text-end">Yak.Piy.Değeri</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach (var b in _bolgeSummaries)
-                                        {
-                                            <tr>
-                                                <td class="fw-semibold">@b.BolgeAdi</td>
-                                                <td class="text-center">@b.Adet</td>
-                                                <td class="text-center text-primary">@b.TM</td>
-                                                <td class="text-center text-info">@b.CM</td>
-                                                <td class="text-end">@(b.EmlakBeyan == 0 ? "–" : b.EmlakBeyan.ToString("N0", TrCulture))</td>
-                                                <td class="text-end">@(b.TahminiRayic == 0 ? "–" : b.TahminiRayic.ToString("N0", TrCulture))</td>
-                                                <td class="text-end">@(b.MuhasebeyeKayitli == 0 ? "–" : b.MuhasebeyeKayitli.ToString("N0", TrCulture))</td>
-                                                <td class="text-end">@(b.YaklasikPiyasa == 0 ? "–" : b.YaklasikPiyasa.ToString("N0", TrCulture))</td>
-                                            </tr>
-                                        }
-                                    </tbody>
-                                    <tfoot class="table-secondary fw-bold">
-                                        <tr>
-                                            <td>Toplam</td>
-                                            <td class="text-center">@ToplamAdet</td>
-                                            <td class="text-center">@TamMulkAdet</td>
-                                            <td class="text-center">@CiplakMulkAdet</td>
-                                            <td class="text-end">@(ToplamEmlakBeyan == 0 ? "–" : ToplamEmlakBeyan.ToString("N0", TrCulture))</td>
-                                            <td class="text-end">@(ToplamTahminiRayic == 0 ? "–" : ToplamTahminiRayic.ToString("N0", TrCulture))</td>
-                                            <td class="text-end">@(ToplamYaklasikPiyasa == 0 ? "–" : ToplamYaklasikPiyasa.ToString("N0", TrCulture))</td>
-                                            <td class="text-end">@(ToplamMuhasebeyeKayitli == 0 ? "–" : ToplamMuhasebeyeKayitli.ToString("N0", TrCulture))</td>
-                                        </tr>
-                                    </tfoot>
-                                </table>
-                            </div>
-                        </div>
-                    }
-                </div>
-            </div>
-        </div>
-        <hr class="db-separator" />
-        </section>
-
-        <!-- ── BÖLÜM 1 : Adet KPI Kartları ──────────────────────────── -->
-        <section id="envanter-ozeti" class="db-section">
-        <div class="section-label">Envanter Özeti</div>
-        <div class="row g-2 mb-3">
-            <div class="col-6 col-sm-4 col-md-3 col-xl-2">
-                <div class="card db-stat-card db-accent-indigo h-100">
-                    <div class="card-body db-stat-body text-center">
-                        <div class="db-stat-icon"><i class="bi bi-buildings"></i></div>
-                        <div class="db-stat-label">Toplam Taşınmaz</div>
-                        <div class="db-stat-value">@FormatCount(ToplamAdet)</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-6 col-sm-4 col-md-3 col-xl-2">
-                <div class="card db-stat-card db-accent-blue h-100">
-                    <div class="card-body db-stat-body text-center">
-                        <div class="db-stat-icon"><i class="bi bi-check-circle"></i></div>
-                        <div class="db-stat-label">Tam Mülkiyet</div>
-                        <div class="db-stat-value">@FormatCount(TamMulkAdet)</div>
-                        <div class="db-stat-sub">%@Percent(TamMulkAdet)</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-6 col-sm-4 col-md-3 col-xl-2">
-                <div class="card db-stat-card db-accent-teal h-100">
-                    <div class="card-body db-stat-body text-center">
-                        <div class="db-stat-icon"><i class="bi bi-pie-chart"></i></div>
-                        <div class="db-stat-label">Çıplak Mülkiyet</div>
-                        <div class="db-stat-value">@FormatCount(CiplakMulkAdet)</div>
-                        <div class="db-stat-sub">%@Percent(CiplakMulkAdet)</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-6 col-sm-4 col-md-3 col-xl-2">
-                <div class="card db-stat-card db-accent-green h-100">
-                    <div class="card-body db-stat-body text-center">
-                        <div class="db-stat-icon"><i class="bi bi-key"></i></div>
-                        <div class="db-stat-label">Kiraya Uygun</div>
-                        <div class="db-stat-value">@FormatCount(KirayaUygunAdet)</div>
-                        <div class="db-stat-sub">%@Percent(KirayaUygunAdet)</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-6 col-sm-4 col-md-3 col-xl-2">
-                <div class="card db-stat-card db-accent-rose h-100">
-                    <div class="card-body db-stat-body text-center">
-                        <div class="db-stat-icon"><i class="bi bi-x-circle"></i></div>
-                        <div class="db-stat-label">Kiraya Uygun Değil</div>
-                        <div class="db-stat-value">@FormatCount(KirayaUygunDegilAdet)</div>
-                        <div class="db-stat-sub">%@Percent(KirayaUygunDegilAdet)</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-6 col-sm-4 col-md-3 col-xl-2">
-                <div class="card db-stat-card db-accent-amber h-100">
-                    <div class="card-body db-stat-body text-center">
-                        <div class="db-stat-icon"><i class="bi bi-geo-alt"></i></div>
-                        <div class="db-stat-label">İl</div>
-                        <div class="db-stat-value">@FormatCount(ToplamIlAdet)</div>
-                        <div class="db-stat-sub">@FormatCount(ToplamBolgeAdet) bölge</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <hr class="db-separator" />
-        </section>
-
-        <!-- ── BÖLÜM 2 : Değer KPI Kartları ─────────────────────────── -->
-        <section id="finansal-degerler" class="db-section">
-        <div class="section-label">Finansal Değerler</div>
-        <div class="row g-2 mb-3">
-            <div class="col-12 col-sm-6 col-xl-3">
-                <div class="card db-money-card h-100">
-                    <div class="card-body db-money-body">
-                        <div class="db-money-icon text-sky"><i class="bi bi-receipt"></i></div>
-                        <div>
-                            <div class="db-money-label">Emlak Beyan Değeri</div>
-                            <div class="db-money-value">@FormatMoney(ToplamEmlakBeyan)</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-12 col-sm-6 col-xl-3">
-                <div class="card db-money-card h-100">
-                    <div class="card-body db-money-body">
-                        <div class="db-money-icon text-cyan"><i class="bi bi-cash-stack"></i></div>
-                        <div>
-                            <div class="db-money-label">Tahmini Rayiç Değeri</div>
-                            <div class="db-money-value">@FormatMoney(ToplamTahminiRayic)</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-12 col-sm-6 col-xl-3">
-                <div class="card db-money-card h-100">
-                    <div class="card-body db-money-body">
-                        <div class="db-money-icon text-teal"><i class="bi bi-journal-check"></i></div>
-                        <div>
-                            <div class="db-money-label">Muhasebeye Kayıtlı Değer</div>
-                            <div class="db-money-value">@FormatMoney(ToplamMuhasebeyeKayitli)</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-12 col-sm-6 col-xl-3">
-                <div class="card db-money-card h-100">
-                    <div class="card-body db-money-body">
-                        <div class="db-money-icon text-orange"><i class="bi bi-graph-up-arrow"></i></div>
-                        <div>
-                            <div class="db-money-label">Yaklaşık Piyasa Değeri</div>
-                            <div class="db-money-value">@FormatMoney(ToplamYaklasikPiyasa)</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <hr class="db-separator" />
-        </section>
-
-        <!-- ── BÖLÜM 3 : Cinsi Dağılımı ──────────────────────────────── -->
-        <section id="cinsi-dagilim" class="db-section">
-        <div class="section-label">Taşınmaz Cinsi Dağılımı</div>
-        <div class="row g-2 mb-4">
-            <div class="col-6 col-sm-4 col-md-2">
-                <div class="card db-cinsi-card db-accent-purple h-100 text-center">
-                    <div class="card-body db-cinsi-body">
-                        <i class="bi bi-building db-cinsi-icon"></i>
-                        <div class="db-cinsi-label">Bina</div>
-                        <div class="db-cinsi-value">@FormatCount(BinaAdet)</div>
-                        <div class="db-cinsi-sub">%@Percent(BinaAdet)</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-6 col-sm-4 col-md-2">
-                <div class="card db-cinsi-card db-accent-sky h-100 text-center">
-                    <div class="card-body db-cinsi-body">
-                        <i class="bi bi-house-door db-cinsi-icon"></i>
-                        <div class="db-cinsi-label">Mesken</div>
-                        <div class="db-cinsi-value">@FormatCount(MeskenAdet)</div>
-                        <div class="db-cinsi-sub">%@Percent(MeskenAdet)</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-6 col-sm-4 col-md-2">
-                <div class="card db-cinsi-card db-accent-orange h-100 text-center">
-                    <div class="card-body db-cinsi-body">
-                        <i class="bi bi-shop db-cinsi-icon"></i>
-                        <div class="db-cinsi-label">İşyeri</div>
-                        <div class="db-cinsi-value">@FormatCount(IsyeriAdet)</div>
-                        <div class="db-cinsi-sub">%@Percent(IsyeriAdet)</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-6 col-sm-4 col-md-2">
-                <div class="card db-cinsi-card db-accent-lime h-100 text-center">
-                    <div class="card-body db-cinsi-body">
-                        <i class="bi bi-map db-cinsi-icon"></i>
-                        <div class="db-cinsi-label">Arsa</div>
-                        <div class="db-cinsi-value">@FormatCount(ArsaAdet)</div>
-                        <div class="db-cinsi-sub">%@Percent(ArsaAdet)</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-6 col-sm-4 col-md-2">
-                <div class="card db-cinsi-card db-accent-cyan h-100 text-center">
-                    <div class="card-body db-cinsi-body">
-                        <i class="bi bi-tree db-cinsi-icon"></i>
-                        <div class="db-cinsi-label">Tarla</div>
-                        <div class="db-cinsi-value">@FormatCount(TarlaAdet)</div>
-                        <div class="db-cinsi-sub">%@Percent(TarlaAdet)</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-6 col-sm-4 col-md-2">
-                <div class="card db-cinsi-card db-accent-slate h-100 text-center">
-                    <div class="card-body db-cinsi-body">
-                        <i class="bi bi-three-dots db-cinsi-icon"></i>
-                        <div class="db-cinsi-label">Diğer</div>
-                        <div class="db-cinsi-value">@FormatCount(DigerAdet)</div>
-                        <div class="db-cinsi-sub">%@Percent(DigerAdet)</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <hr class="db-separator" />
-        </section>
-
-        <!-- ── BÖLÜM 4 : Grafikler ────────────────────────────────────── -->
-        <section id="grafikler" class="db-section">
-        <div class="section-label">Grafikler</div>
-        <div class="row g-3 mb-4">
-            <div class="col-12 col-md-4">
-                <div class="card h-100 shadow-sm">
-                    <div class="card-body p-2">
-                        <GenericChart TItem="PieItem"
-                                      Items="_cinsiChartItems"
-                                      LabelSelector="@(p => p.Label)"
-                                      ValueSelector="@(p => p.Value)"
-                                      Title="Cinsi Dağılımı"
-                                      SeriesName="Adet"
-                                      Type="GenericChart<PieItem>.GenericChartType.Donut"
-                                      Height="420px"
-                                      ShowLegend="true"
-                                      ShowDataLabels="true"
-                                      ColorPalette="@_piePalette"
-                                      GridPaddingBottom="20" />
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-12 col-md-4">
-                <div class="card h-100 shadow-sm">
-                    <div class="card-body p-2">
-                        <GenericChart TItem="PieItem"
-                                      Items="_mulkiyetChartItems"
-                                      LabelSelector="@(p => p.Label)"
-                                      ValueSelector="@(p => p.Value)"
-                                      Title="Mülkiyet Şekli"
-                                      SeriesName="Adet"
-                                      Type="GenericChart<PieItem>.GenericChartType.Donut"
-                                      Height="420px"
-                                      ShowLegend="true"
-                                      ShowDataLabels="true"
-                                      ColorPalette="@_mulkiyetPalette"
-                                      GridPaddingBottom="20" />
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-12 col-md-4">
-                <div class="card h-100 shadow-sm">
-                    <div class="card-body p-2">
-                        <GenericChart TItem="PieItem"
-                                      Items="_bolgeChartItems"
-                                      LabelSelector="@(p => p.Label)"
-                                      ValueSelector="@(p => p.Value)"
-                                      Title="Bölge Bazında Taşınmaz Adedi"
-                                      SeriesName="Adet"
-                                      Type="GenericChart<PieItem>.GenericChartType.Bar"
-                                      Height="420px"
-                                      ShowLegend="false"
-                                      ShowDataLabels="true"
-                                      ColorPalette="@_barPalette"
-                                      XAxisLabelRotateDegrees="-35"
-                                      XAxisLabelsAlwaysRotate="true"
-                                      GridPaddingBottom="40" />
-                    </div>
-                </div>
-            </div>
-        </div>
-        <hr class="db-separator" />
-        </section>
-
-        <!-- ── BÖLÜM 5 : Türkiye Haritası ────────────────────────────── -->
-        <section id="harita" class="db-section">
-        <div class="section-label">Taşınmaz Haritası</div>
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card shadow-sm db-map-card">
-                    <div class="card-body p-2 p-md-3">
-                        <TurkeyMap OnProvinceClick="OnProvinceClickAsync" />
-                    </div>
-                </div>
-            </div>
-        </div>
-        <hr class="db-separator" />
-        </section>
-
-        <!-- ── BÖLÜM 6 :  Taşınmaz Olan/Olmayan İller ── -->
-        <section id="il-listeleri" class="db-section">
-        <div class="row g-3 mb-4">
-            <!-- Top İller -->
-            <div class="col-12 col-lg-3">
-                <div class="card shadow-sm h-100">
-                    <div class="card-header db-collapsible-header"
-                         @onclick="() => _isTopIlOpen = !_isTopIlOpen"
-                         role="button">
-                        <span>
-                            <i class="bi @(_isTopIlOpen ? "bi-chevron-down" : "bi-chevron-right") me-2"></i>
-                            <strong>En Fazla Taşınmaz Olan İller</strong>
-                        </span>
-                        <small class="text-muted">İlk 15</small>
-                    </div>
-                    @if (_isTopIlOpen)
-                    {
-                        <div class="card-body p-0">
-                            <ul class="list-group list-group-flush">
-                                @{var rank = 1;}
-                                @foreach (var il in _topIller)
+                <!-- ── BÖLGE ÖZETİ (Tam Genişlik) ───────────────────────────────── -->
+                <section id="bolge-ozeti" class="db-section">
+                    <div class="section-label">Bölge Özeti</div>
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card shadow-sm">
+                                <div class="card-header db-collapsible-header"
+                                     @onclick="() => _isBolgeOpen = !_isBolgeOpen"
+                                     role="button">
+                                    <span>
+                                        <i class="bi @(_isBolgeOpen ? "bi-chevron-down" : "bi-chevron-right") me-2"></i>
+                                        <strong>Bölge Özeti</strong>
+                                    </span>
+                                    <small class="text-muted">@_bolgeSummaries.Count bölge</small>
+                                </div>
+                                @if (_isBolgeOpen)
                                 {
-                                    <li class="list-group-item d-flex justify-content-between align-items-center py-2">
-                                        <div class="d-flex align-items-center gap-2">
-                                            <span class="db-rank-badge @GetRankClass(rank)">@rank</span>
-                                            <span>@il.IlAdi</span>
+                                    <div class="card-body p-0">
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-hover table-bordered mb-0 db-bolge-table">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>Bölge</th>
+                                                        <th class="text-center">Toplam</th>
+                                                        <th class="text-center">TM</th>
+                                                        <th class="text-center">ÇM</th>
+                                                        <th class="text-end">Emlak Beyan Değeri</th>
+                                                        <th class="text-end">Tah.Ray.Değeri</th>
+                                                        <th class="text-end">Muh.Kay.Değeri</th>
+                                                        <th class="text-end">Yak.Piy.Değeri</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach (var b in _bolgeSummaries)
+                                                    {
+                                                        <tr>
+                                                            <td class="fw-semibold">@b.BolgeAdi</td>
+                                                            <td class="text-center">@b.Adet</td>
+                                                            <td class="text-center text-primary">@b.TM</td>
+                                                            <td class="text-center text-info">@b.CM</td>
+                                                            <td class="text-end">@(b.EmlakBeyan == 0 ? "–" : b.EmlakBeyan.ToString("N0", TrCulture))</td>
+                                                            <td class="text-end">@(b.TahminiRayic == 0 ? "–" : b.TahminiRayic.ToString("N0", TrCulture))</td>
+                                                            <td class="text-end">@(b.MuhasebeyeKayitli == 0 ? "–" : b.MuhasebeyeKayitli.ToString("N0", TrCulture))</td>
+                                                            <td class="text-end">@(b.YaklasikPiyasa == 0 ? "–" : b.YaklasikPiyasa.ToString("N0", TrCulture))</td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                                <tfoot class="table-secondary fw-bold">
+                                                    <tr>
+                                                        <td>Toplam</td>
+                                                        <td class="text-center">@ToplamAdet</td>
+                                                        <td class="text-center">@TamMulkAdet</td>
+                                                        <td class="text-center">@CiplakMulkAdet</td>
+                                                        <td class="text-end">@(ToplamEmlakBeyan == 0 ? "–" : ToplamEmlakBeyan.ToString("N0", TrCulture))</td>
+                                                        <td class="text-end">@(ToplamTahminiRayic == 0 ? "–" : ToplamTahminiRayic.ToString("N0", TrCulture))</td>
+                                                        <td class="text-end">@(ToplamMuhasebeyeKayitli == 0 ? "–" : ToplamMuhasebeyeKayitli.ToString("N0", TrCulture))</td>
+                                                        <td class="text-end">@(ToplamYaklasikPiyasa == 0 ? "–" : ToplamYaklasikPiyasa.ToString("N0", TrCulture))</td>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
                                         </div>
-                                        <div class="d-flex align-items-center gap-2">
-                                            <div class="db-bar-track">
-                                                <div class="db-bar-fill" style="width:@(il.Count * 100 / Math.Max(_topIller[0].Count, 1))%"></div>
-                                            </div>
-                                            <span class="badge bg-primary rounded-pill">@il.Count</span>
-                                        </div>
-                                    </li>
-                                    rank++;
-                                }
-                            </ul>
-                        </div>
-                    }
-                </div>
-            </div>
-            <!-- Bottom İller -->
-            <div class="col-12 col-lg-3">
-                <div class="card shadow-sm h-100">
-                    <div class="card-header db-collapsible-header"
-                         @onclick="() => _isBottomIlOpen = !_isBottomIlOpen"
-                         role="button">
-                        <span>
-                            <i class="bi @(_isBottomIlOpen ? "bi-chevron-down" : "bi-chevron-right") me-2"></i>
-                            <strong>En Az Taşınmaz Olan İller</strong>
-                        </span>
-                        <small class="text-muted">Son 15</small>
-                    </div>
-                    @if (_isBottomIlOpen)
-                    {
-                        <div class="card-body p-0">
-                            <ul class="list-group list-group-flush">
-                                @{var brank = 1;}
-                                @foreach (var il in _bottomIller)
-                                {
-                                    <li class="list-group-item d-flex justify-content-between align-items-center py-2">
-                                        <div class="d-flex align-items-center gap-2">
-                                            <span class="db-rank-badge">@brank</span>
-                                            <span>@il.IlAdi</span>
-                                        </div>
-                                        <div class="d-flex align-items-center gap-2">
-                                            <div class="db-bar-track">
-                                                <div class="db-bar-fill bg-warning" style="width:@(il.Count * 100 / Math.Max(_topIller.Count > 0 ? _topIller[0].Count : 1, 1))%"></div>
-                                            </div>
-                                            <span class="badge bg-warning text-dark rounded-pill">@il.Count</span>
-                                        </div>
-                                    </li>
-                                    brank++;
-                                }
-                            </ul>
-                        </div>
-                    }
-                </div>
-            </div>
-             <!-- Hiç Taşınmaz Bulunmayan İller -->
-            <div class="col-12 col-lg-6">
-                <div class="card shadow-sm h-100 border-danger-subtle">
-                    <div class="card-header db-collapsible-header"
-                         @onclick="() => _isNoTasinmazIlOpen = !_isNoTasinmazIlOpen"
-                         role="button">
-                        <span>
-                            <i class="bi @(_isNoTasinmazIlOpen ? "bi-chevron-down" : "bi-chevron-right") me-2"></i>
-                            <strong class="text-danger">Hiç Taşınmaz Bulunmayan İller</strong>
-                        </span>
-                        <span class="badge bg-danger rounded-pill">@_noTasinmazIller.Count il</span>
-                    </div>
-                    @if (_isNoTasinmazIlOpen)
-                    {
-                        <div class="card-body">
-                            <div class="d-flex flex-wrap gap-2">
-                                @foreach (var ilAdi in _noTasinmazIller)
-                                {
-                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2">@ilAdi</span>
+                                    </div>
                                 }
                             </div>
                         </div>
-                    }
-                </div>
-            </div>
-
-        </div>
-        <hr class="db-separator" />
-        </section>
-
-        <!-- ── BÖLÜM 7 : Kiraya Uygunluk ──────────────────────── -->
-        <section id="kira-uygunluk" class="db-section">
-        <div class="section-label">Kiraya Uygunluk Dağılımı – İl Bazında</div>
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card shadow-sm">
-                    <div class="card-body p-2">
-                        <GenericChart TItem="PieItem"
-                                      Items="_kiraUygunlukIlChartItems"
-                                      LabelSelector="@(p => p.Label)"
-                                      ValueSelector="@(p => p.Value)"
-                                      Title="Kiraya Uygun Taşınmazlar – İl Dağılımı"
-                                      SeriesName="Adet"
-                                      Type="GenericChart<PieItem>.GenericChartType.Bar"
-                                      Height="420px"
-                                      ShowLegend="false"
-                                      ShowDataLabels="true"
-                                      ColorPalette="@_greenBarPalette"
-                                      XAxisLabelRotateDegrees="-45"
-                                      XAxisLabelsAlwaysRotate="true"
-                                      XAxisHideOverlappingLabels="true"
-                                      GridPaddingBottom="50" />
                     </div>
-                </div>
-            </div>
-        </div>
-        </section>
+                    <hr class="db-separator" />
+                </section>
+
+                <!-- ── BÖLÜM 1 : Adet KPI Kartları ──────────────────────────── -->
+                <section id="envanter-ozeti" class="db-section">
+                    <div class="section-label">Envanter Özeti</div>
+                    <div class="row g-2 mb-3">
+
+                        <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+                            <div class="card db-stat-card db-accent-indigo h-100">
+                                <div class="card-body db-stat-body text-center">
+                                    <div class="db-stat-icon"><i class="bi bi-buildings"></i></div>
+                                    <div class="db-stat-label">Toplam Taşınmaz</div>
+                                    <div class="db-stat-value">@FormatCount(ToplamAdet)</div>
+                                </div>
+                            </div>
+                        </div>
+
+@*                         <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+                            <div class="card db-stat-card db-accent-purple h-100">
+                                <div class="card-body db-stat-body text-center">
+                                    <div class="db-stat-icon"><i class="bi bi-clipboard-check"></i></div>
+                                    <div class="db-stat-label">Değerlemesi Yapılan</div>
+                                    <div class="db-stat-value">@FormatCount(DegerlemesiYapilanAdet)</div>
+                                </div>
+                            </div>
+                        </div> *@
+
+                        <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+                            <div class="card db-stat-card db-accent-blue h-100">
+                                <div class="card-body db-stat-body text-center">
+                                    <div class="db-stat-icon"><i class="bi bi-check-circle"></i></div>
+                                    <div class="db-stat-label">Tam Mülkiyet</div>
+                                    <div class="db-stat-value">@FormatCount(TamMulkAdet)</div>
+                                    <div class="db-stat-sub">%@Percent(TamMulkAdet)</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+                            <div class="card db-stat-card db-accent-teal h-100">
+                                <div class="card-body db-stat-body text-center">
+                                    <div class="db-stat-icon"><i class="bi bi-pie-chart"></i></div>
+                                    <div class="db-stat-label">Çıplak Mülkiyet</div>
+                                    <div class="db-stat-value">@FormatCount(CiplakMulkAdet)</div>
+                                    <div class="db-stat-sub">%@Percent(CiplakMulkAdet)</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+                            <div class="card db-stat-card db-accent-green h-100">
+                                <div class="card-body db-stat-body text-center">
+                                    <div class="db-stat-icon"><i class="bi bi-key"></i></div>
+                                    <div class="db-stat-label">Kiraya Uygun</div>
+                                    <div class="db-stat-value">@FormatCount(KirayaUygunAdet)</div>
+                                    <div class="db-stat-sub">%@Percent(KirayaUygunAdet)</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+                            <div class="card db-stat-card db-accent-rose h-100">
+                                <div class="card-body db-stat-body text-center">
+                                    <div class="db-stat-icon"><i class="bi bi-x-circle"></i></div>
+                                    <div class="db-stat-label">Kiraya Uygun Değil</div>
+                                    <div class="db-stat-value">@FormatCount(KirayaUygunDegilAdet)</div>
+                                    <div class="db-stat-sub">%@Percent(KirayaUygunDegilAdet)</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+                            <div class="card db-stat-card db-accent-amber h-100">
+                                <div class="card-body db-stat-body text-center">
+                                    <div class="db-stat-icon"><i class="bi bi-geo-alt"></i></div>
+                                    <div class="db-stat-label">Taşınmaz Bulunan</div>
+                                    <div class="db-stat-value">@FormatCount(ToplamIlAdet)</div>
+                                    <div class="db-stat-sub">Adet il</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <hr class="db-separator" />
+                </section>
+
+                <!-- ── BÖLÜM 2 : Değer KPI Kartları ─────────────────────────── -->
+                <section id="finansal-degerler" class="db-section">
+                    <div class="section-label">Finansal Değerler</div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-12 col-sm-6 col-xl-3">
+                            <div class="card db-money-card h-100">
+                                <div class="card-body db-money-body">
+                                    <div class="db-money-icon text-sky"><i class="bi bi-receipt"></i></div>
+                                    <div>
+                                        <div class="db-money-label">Emlak Beyan Değeri</div>
+                                        <div class="db-money-value">@FormatMoney(ToplamEmlakBeyan)</div>
+                                        <div class="db-stat-sub">Tüm taşınmazların toplamı</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-sm-6 col-xl-3">
+                            <div class="card db-money-card h-100">
+                                <div class="card-body db-money-body">
+                                    <div class="db-money-icon text-cyan"><i class="bi bi-cash-stack"></i></div>
+                                    <div>
+                                        <div class="db-money-label">Tahmini Rayiç Değeri</div>
+                                        <div class="db-money-value">@FormatMoney(ToplamTahminiRayic)</div>
+                                        <div class="db-stat-sub">Tüm taşınmazların toplamı</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-sm-6 col-xl-3">
+                            <div class="card db-money-card h-100">
+                                <div class="card-body db-money-body">
+                                    <div class="db-money-icon text-teal"><i class="bi bi-journal-check"></i></div>
+                                    <div>
+                                        <div class="db-money-label">Muhasebeye Kayıtlı Değer</div>
+                                        <div class="db-money-value">@FormatMoney(ToplamMuhasebeyeKayitli)</div>
+                                        <div class="db-stat-sub">Tüm taşınmazların toplamı</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-sm-6 col-xl-3">
+                            <div class="card db-money-card h-100">
+                                <div class="card-body db-money-body">
+                                    <div class="db-money-icon text-orange"><i class="bi bi-graph-up-arrow"></i></div>
+                                    <div>
+                                        <div class="db-money-label">Yaklaşık Piyasa Değeri</div>
+                                        <div class="db-money-value">@FormatMoney(ToplamYaklasikPiyasa)</div>
+                                        <div class="db-stat-sub">Tüm taşınmazların toplamı</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-sm-6 col-xl-3">
+                            <div class="card db-money-card h-100">
+                                <div class="card-body db-money-body">
+                                    <div class="db-money-icon" style="color:#7c3aed"><i class="bi bi-clipboard-check"></i></div>
+                                    <div>
+                                        <div class="db-money-label">Değerlemesi Yapılan</div>
+                                        <div class="db-money-value">@FormatCount(DegerlemesiYapilanAdet)</div>
+                                        <div class="db-stat-sub">Adet Taşınmaz</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <hr class="db-separator" />
+                </section>
+
+                <!-- ── BÖLÜM 3 : Cinsi Dağılımı ──────────────────────────────── -->
+                <section id="cinsi-dagilim" class="db-section">
+                    <div class="section-label">Taşınmaz Cinsi Dağılımı</div>
+                    <div class="row g-2 mb-4">
+                        <div class="col-6 col-sm-4 col-md-2">
+                            <div class="card db-cinsi-card db-accent-purple h-100 text-center">
+                                <div class="card-body db-cinsi-body">
+                                    <i class="bi bi-building db-cinsi-icon"></i>
+                                    <div class="db-cinsi-label">Bina</div>
+                                    <div class="db-cinsi-value">@FormatCount(BinaAdet)</div>
+                                    <div class="db-cinsi-sub">%@Percent(BinaAdet)</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-sm-4 col-md-2">
+                            <div class="card db-cinsi-card db-accent-sky h-100 text-center">
+                                <div class="card-body db-cinsi-body">
+                                    <i class="bi bi-house-door db-cinsi-icon"></i>
+                                    <div class="db-cinsi-label">Mesken</div>
+                                    <div class="db-cinsi-value">@FormatCount(MeskenAdet)</div>
+                                    <div class="db-cinsi-sub">%@Percent(MeskenAdet)</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-sm-4 col-md-2">
+                            <div class="card db-cinsi-card db-accent-orange h-100 text-center">
+                                <div class="card-body db-cinsi-body">
+                                    <i class="bi bi-shop db-cinsi-icon"></i>
+                                    <div class="db-cinsi-label">İşyeri</div>
+                                    <div class="db-cinsi-value">@FormatCount(IsyeriAdet)</div>
+                                    <div class="db-cinsi-sub">%@Percent(IsyeriAdet)</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-sm-4 col-md-2">
+                            <div class="card db-cinsi-card db-accent-lime h-100 text-center">
+                                <div class="card-body db-cinsi-body">
+                                    <i class="bi bi-map db-cinsi-icon"></i>
+                                    <div class="db-cinsi-label">Arsa</div>
+                                    <div class="db-cinsi-value">@FormatCount(ArsaAdet)</div>
+                                    <div class="db-cinsi-sub">%@Percent(ArsaAdet)</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-sm-4 col-md-2">
+                            <div class="card db-cinsi-card db-accent-cyan h-100 text-center">
+                                <div class="card-body db-cinsi-body">
+                                    <i class="bi bi-tree db-cinsi-icon"></i>
+                                    <div class="db-cinsi-label">Tarla</div>
+                                    <div class="db-cinsi-value">@FormatCount(TarlaAdet)</div>
+                                    <div class="db-cinsi-sub">%@Percent(TarlaAdet)</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <hr class="db-separator" />
+                </section>
+
+                <!-- ── BÖLÜM 4 : Grafikler ────────────────────────────────────── -->
+                <section id="grafikler" class="db-section">
+                    <div class="section-label">Grafikler</div>
+                    <div class="row g-3 mb-4">
+                        <div class="col-12 col-md-4">
+                            <div class="card h-100 shadow-sm">
+                                <div class="card-body p-2">
+                                    <GenericChart TItem="PieItem"
+                                                  Items="_cinsiChartItems"
+                                                  LabelSelector="@(p => p.Label)"
+                                                  ValueSelector="@(p => p.Value)"
+                                                  Title="Cinsi Dağılımı"
+                                                  SeriesName="Adet"
+                                                  Type="GenericChart<PieItem>.GenericChartType.Donut"
+                                                  Height="420px"
+                                                  ShowLegend="true"
+                                                  ShowDataLabels="true"
+                                                  ColorPalette="@_piePalette"
+                                                  GridPaddingBottom="20" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-4">
+                            <div class="card h-100 shadow-sm">
+                                <div class="card-body p-2">
+                                    <GenericChart TItem="PieItem"
+                                                  Items="_mulkiyetChartItems"
+                                                  LabelSelector="@(p => p.Label)"
+                                                  ValueSelector="@(p => p.Value)"
+                                                  Title="Mülkiyet Şekli"
+                                                  SeriesName="Adet"
+                                                  Type="GenericChart<PieItem>.GenericChartType.Donut"
+                                                  Height="420px"
+                                                  ShowLegend="true"
+                                                  ShowDataLabels="true"
+                                                  ColorPalette="@_mulkiyetPalette"
+                                                  GridPaddingBottom="20" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-4">
+                            <div class="card h-100 shadow-sm">
+                                <div class="card-body p-2">
+                                    <GenericChart TItem="PieItem"
+                                                  Items="_bolgeChartItems"
+                                                  LabelSelector="@(p => p.Label)"
+                                                  ValueSelector="@(p => p.Value)"
+                                                  Title="Bölge Bazında Taşınmaz Adedi"
+                                                  SeriesName="Adet"
+                                                  Type="GenericChart<PieItem>.GenericChartType.Bar"
+                                                  Height="420px"
+                                                  ShowLegend="false"
+                                                  ShowDataLabels="true"
+                                                  ColorPalette="@_barPalette"
+                                                  XAxisLabelRotateDegrees="-35"
+                                                  XAxisLabelsAlwaysRotate="true"
+                                                  GridPaddingBottom="40" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <hr class="db-separator" />
+                </section>
+
+                <!-- ── BÖLÜM 5 : Türkiye Haritası ────────────────────────────── -->
+                <section id="harita" class="db-section">
+                    <div class="section-label">Taşınmaz Haritası</div>
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card shadow-sm db-map-card">
+                                <div class="card-body p-2 p-md-3">
+                                    <TurkeyMap OnProvinceClick="OnProvinceClickAsync" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <hr class="db-separator" />
+                </section>
+
+                <!-- ── BÖLÜM 6 :  Taşınmaz Olan/Olmayan İller ── -->
+                <section id="il-listeleri" class="db-section">
+                    <div class="row g-3 mb-4">
+                        <!-- Top İller -->
+                        <div class="col-12 col-lg-3">
+                            <div class="card shadow-sm h-100">
+                                <div class="card-header db-collapsible-header"
+                                     @onclick="() => _isTopIlOpen = !_isTopIlOpen"
+                                     role="button">
+                                    <span>
+                                        <i class="bi @(_isTopIlOpen ? "bi-chevron-down" : "bi-chevron-right") me-2"></i>
+                                        <strong>En Fazla Taşınmaz Olan İller</strong>
+                                    </span>
+                                    <small class="text-muted">İlk 15</small>
+                                </div>
+                                @if (_isTopIlOpen)
+                                {
+                                    <div class="card-body p-0">
+                                        <ul class="list-group list-group-flush">
+                                            @{
+                                                var rank = 1;
+                                            }
+                                            @foreach (var il in _topIller)
+                                            {
+                                                <li class="list-group-item d-flex justify-content-between align-items-center py-2">
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <span class="db-rank-badge @GetRankClass(rank)">@rank</span>
+                                                        <span>@il.IlAdi</span>
+                                                    </div>
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <div class="db-bar-track">
+                                                            <div class="db-bar-fill" style="width:@(il.Count * 100 / Math.Max(_topIller[0].Count, 1))%"></div>
+                                                        </div>
+                                                        <span class="badge bg-primary rounded-pill">@il.Count</span>
+                                                    </div>
+                                                </li>
+                                                rank++;
+                                            }
+                                        </ul>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                        <!-- Bottom İller -->
+                        <div class="col-12 col-lg-3">
+                            <div class="card shadow-sm h-100">
+                                <div class="card-header db-collapsible-header"
+                                     @onclick="() => _isBottomIlOpen = !_isBottomIlOpen"
+                                     role="button">
+                                    <span>
+                                        <i class="bi @(_isBottomIlOpen ? "bi-chevron-down" : "bi-chevron-right") me-2"></i>
+                                        <strong>En Az Taşınmaz Olan İller</strong>
+                                    </span>
+                                    <small class="text-muted">Son 15</small>
+                                </div>
+                                @if (_isBottomIlOpen)
+                                {
+                                    <div class="card-body p-0">
+                                        <ul class="list-group list-group-flush">
+                                            @{
+                                                var brank = 1;
+                                            }
+                                            @foreach (var il in _bottomIller)
+                                            {
+                                                <li class="list-group-item d-flex justify-content-between align-items-center py-2">
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <span class="db-rank-badge">@brank</span>
+                                                        <span>@il.IlAdi</span>
+                                                    </div>
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <div class="db-bar-track">
+                                                            <div class="db-bar-fill bg-warning" style="width:@(il.Count * 100 / Math.Max(_topIller.Count > 0 ? _topIller[0].Count : 1, 1))%"></div>
+                                                        </div>
+                                                        <span class="badge bg-warning text-dark rounded-pill">@il.Count</span>
+                                                    </div>
+                                                </li>
+                                                brank++;
+                                            }
+                                        </ul>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                        <!-- Hiç Taşınmaz Bulunmayan İller -->
+                        <div class="col-12 col-lg-6">
+                            <div class="card shadow-sm h-100 border-danger-subtle">
+                                <div class="card-header db-collapsible-header"
+                                     @onclick="() => _isNoTasinmazIlOpen = !_isNoTasinmazIlOpen"
+                                     role="button">
+                                    <span>
+                                        <i class="bi @(_isNoTasinmazIlOpen ? "bi-chevron-down" : "bi-chevron-right") me-2"></i>
+                                        <strong class="text-danger">Hiç Taşınmaz Bulunmayan İller</strong>
+                                    </span>
+                                    <span class="badge bg-danger rounded-pill">@_noTasinmazIller.Count il</span>
+                                </div>
+                                @if (_isNoTasinmazIlOpen)
+                                {
+                                    <div class="card-body">
+                                        <div class="d-flex flex-wrap gap-2">
+                                            @foreach (var ilAdi in _noTasinmazIller)
+                                            {
+                                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2">@ilAdi</span>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                    </div>
+                    <hr class="db-separator" />
+                </section>
+
+                <!-- ── BÖLÜM 7 : Kiraya Uygunluk ──────────────────────── -->
+                <section id="kira-uygunluk" class="db-section">
+                    <div class="section-label">Kiraya Uygunluk Dağılımı – İl Bazında</div>
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card shadow-sm">
+                                <div class="card-body p-2">
+                                    <GenericChart TItem="PieItem"
+                                                  Items="_kiraUygunlukIlChartItems"
+                                                  LabelSelector="@(p => p.Label)"
+                                                  ValueSelector="@(p => p.Value)"
+                                                  Title="Kiraya Uygun Taşınmazlar – İl Dağılımı"
+                                                  SeriesName="Adet"
+                                                  Type="GenericChart<PieItem>.GenericChartType.Bar"
+                                                  Height="420px"
+                                                  ShowLegend="false"
+                                                  ShowDataLabels="true"
+                                                  ColorPalette="@_greenBarPalette"
+                                                  XAxisLabelRotateDegrees="-45"
+                                                  XAxisLabelsAlwaysRotate="true"
+                                                  XAxisHideOverlappingLabels="true"
+                                                  GridPaddingBottom="50" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
 
             </div><!-- /db-scrollspy-content -->
         </div><!-- /db-scrollspy-layout -->
@@ -618,6 +641,7 @@
     private int KirayaUygunDegilAdet;
     private int ToplamIlAdet;
     private int ToplamBolgeAdet;
+    private int DegerlemesiYapilanAdet;
 
     // ── KPI Değer ──────────────────────────────────────────────────
     private decimal ToplamEmlakBeyan;
@@ -725,6 +749,7 @@
             string.Equals((x.KirayaUygunluk ?? "").Trim(), ProjectConstants.KIRAYA_UYGUN, StringComparison.OrdinalIgnoreCase));
         KirayaUygunDegilAdet = ToplamAdet - KirayaUygunAdet;
         ToplamIlAdet = list.Select(GetIlName).Where(n => n != "-").Distinct().Count();
+        DegerlemesiYapilanAdet = list.Count(x => x.YaklasikPiyasaDegeri != null && x.YaklasikPiyasaDegeri > 0 && x.EnvanterdeMi == 1);
 
         // ── Değer KPI ─────────────────────────────────────────────
         ToplamEmlakBeyan = list.Sum(x => x.EmlakBeyanDegeri ?? 0m);

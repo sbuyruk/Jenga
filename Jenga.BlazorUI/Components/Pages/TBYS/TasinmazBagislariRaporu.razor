@@ -8,28 +8,46 @@
 
 @inject ITasinmazService TasinmazService
 
-<div class="no-print d-flex align-items-end gap-2 mb-3">
-    <div>
-        <label class="form-label mb-1">Yıl</label>
-        <select class="form-select form-select-sm"
-                @bind="SelectedYear"
-                @bind:after="OnYearChanged">
-            @foreach (var y in Years)
-            {
-                <option value="@y">@y</option>
-            }
-        </select>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-light fw-semibold">
+        <i class="bi bi-bar-chart"></i> Taşınmaz Bağışları Raporu
     </div>
-
-    <button class="btn btn-sm btn-outline-secondary" @onclick="RefreshAsync">Yenile</button>
-    <button class="btn btn-sm btn-success" @onclick="ExportExcelAsync">Excel</button>
-    <button class="btn btn-sm btn-primary" @onclick="PrintAsync">Yazdır</button>
+    <div class="card-body">
+        <div class="row align-items-end g-2 mb-3">
+            <div class="col-auto">
+                @* <label class="form-label mb-1">Yıl</label> *@
+                <select class="form-select form-select-sm"
+                        @bind="SelectedYear"
+                        @bind:after="OnYearChanged">
+                    @foreach (var y in Years)
+                    {
+                        <option value="@y">@y</option>
+                    }
+                </select>
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-sm btn-outline-secondary" @onclick="RefreshAsync">
+                    <i class="bi bi-arrow-clockwise"></i> Yenile
+                </button>
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-sm btn-success" @onclick="ExportExcelAsync">
+                    <i class="bi bi-file-earmark-excel"></i> Excel
+                </button>
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-sm btn-primary" @onclick="PrintAsync">
+                    <i class="bi bi-printer"></i> Yazdır
+                </button>
+            </div>
+        </div>
+        <YilBazindaTasinmazBagisTable @ref="_table"
+                                     Tasinmazlar="@Tasinmazlar"
+                                     Years="@Years"
+                                     @bind-SelectedYear="@SelectedYear" />
+    </div>
 </div>
-
-<YilBazindaTasinmazBagisTable @ref="_table"
-                             Tasinmazlar="@Tasinmazlar"
-                             Years="@Years"
-                             @bind-SelectedYear="@SelectedYear" />
 
 @code {
     private YilBazindaTasinmazBagisTable? _table;

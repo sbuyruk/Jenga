@@ -2,6 +2,7 @@
 @using Jenga.Models.Inventory
 @using Jenga.Models.IKYS
 @using Jenga.DataAccess.Services.Inventory
+@using Jenga.Utility.Logging
 @using Jenga.Utility.Toast
 @using Jenga.BlazorUI.Helpers
 @using Jenga.BlazorUI.Components.Common
@@ -12,6 +13,7 @@
 @inject IMaterialInventoryService MaterialInventoryService
 @inject IToastService ToastService
 @inject IHttpContextAccessor HttpContextAccessor
+@inject ILogService LogService
 
 @if (inventoryRows == null || !inventoryRows.Any())
 {
@@ -506,7 +508,8 @@ else
         }
         catch (Exception ex)
         {
-            ToastService.ShowToast($"Hata: {ex.Message}", ToastType.Error, 5000);
+            LogService.LogError("Malzeme transfer başarısız oldu", ex);
+            throw; //ToastService.ShowToast($"Hata: {ex.Message}", ToastType.Error, 5000);
         }
         finally
         {

@@ -14,6 +14,14 @@ public class DereceKademeDegisimRepository : Repository<DereceKademeDegisim>, ID
         _dbFactory = dbFactory;
     }
 
+    public async Task<List<DereceKademeDegisim>> GetDereceYukseltmeAsync(CancellationToken cancellationToken)
+    {
+        await using var db = _dbFactory.CreateDbContext();
+        return await db.DereceKademeDegisim_Table
+            .Where(x => x.Degisim == "Derece Yükseltme")
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task SaveAsync(CancellationToken cancellationToken = default)
     {
         await using var db = _dbFactory.CreateDbContext();

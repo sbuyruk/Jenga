@@ -73,12 +73,23 @@ namespace Jenga.DataAccess.Services.IKYS
             return await DeleteAsync(personel, cancellationToken);
         }
 
+        public async Task<List<Personel>>  GetKadroluPersonelAsync(CancellationToken cancellationToken = default)
+        {
+            // include IsBilgileri to evaluate working status
+            var list = (await _unitOfWork.Personel.GetAllAsync("IsBilgileri")).ToList();
+
+            var calisan = list.Where(p => p.IsBilgileri != null && p.IsBilgileri.CalismaDurumu != null
+                && p.IsBilgileri.CalismaDurumu.Equals("1") && p.Tipi == 1)
+                .ToList();
+
+            return calisan;
+        }
         public async Task<List<Personel>> GetCalisanPersonelAsync(CancellationToken cancellationToken = default)
         {
             // include IsBilgileri to evaluate working status
             var list = (await _unitOfWork.Personel.GetAllAsync("IsBilgileri")).ToList();
 
-            var calisan = list.Where(p => p.IsBilgileri != null
+            var calisan = list.Where(p => p.IsBilgileri != null && p.IsBilgileri.CalismaDurumu != null
                 && p.IsBilgileri.CalismaDurumu.Equals("1"))
                 .ToList();
 

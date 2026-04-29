@@ -39,7 +39,6 @@ namespace Jenga.DataAccess.Repositories
             Location = new LocationRepository(_contextFactory);
             MaterialInventory = new MaterialInventoryRepository(_contextFactory);
             MaterialMovement = new MaterialMovementRepository(_contextFactory);
-            MaterialAssignment = new MaterialAssignmentRepository(_contextFactory);
             MaterialExit = new MaterialExitRepository(_contextFactory);
             MaterialTransfer = new MaterialTransferRepository(_contextFactory);
             MaterialAsset = new MaterialAssetRepository(_contextFactory);
@@ -117,7 +116,6 @@ namespace Jenga.DataAccess.Repositories
         public ILocationRepository Location { get; private set; }
         public IMaterialInventoryRepository MaterialInventory { get; private set; }
         public IMaterialMovementRepository MaterialMovement { get; private set; }
-        public IMaterialAssignmentRepository MaterialAssignment { get; private set; }
         public IMaterialExitRepository MaterialExit { get; private set; }
         public IMaterialTransferRepository MaterialTransfer { get; private set; }
         public IMaterialAssetRepository MaterialAsset { get; private set; }

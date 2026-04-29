@@ -19,5 +19,6 @@ namespace Jenga.DataAccess.Services.IKYS
         Task<bool> UpdatePersonelAndSaveAsync(Personel personel, string? currentUserName, CancellationToken cancellationToken = default);
         Task<bool> DeletePersonelAndSaveAsync(Personel personel, string? currentUserName, CancellationToken cancellationToken = default);
         Task<List<Personel>> GetCalisanPersonelAsync(CancellationToken cancellationToken = default);
+        Task<List<Personel>> GetKadroluPersonelAsync(CancellationToken cancellationToken = default);
     }
 }

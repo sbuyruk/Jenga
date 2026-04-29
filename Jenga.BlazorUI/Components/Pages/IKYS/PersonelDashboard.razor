@@ -68,11 +68,14 @@
                     <a class="nav-link" href="#yas-dagilimi" @onclick:preventDefault="true" @onclick='() => ScrollToAsync("yas-dagilimi")'>
                         <i class="bi bi-bar-chart-fill me-1"></i>Yaş Dağılımı
                     </a>
+                    <a class="nav-link" href="#unvan-dagilimi" @onclick:preventDefault="true" @onclick='() => ScrollToAsync("unvan-dagilimi")'>
+                        <i class="bi bi-bar-chart-fill me-1"></i>Ünvan Dağılımı
+                    </a>
                     <a class="nav-link" href="#izin-ozeti" @onclick:preventDefault="true" @onclick='() => ScrollToAsync("izin-ozeti")'>
                         <i class="bi bi-calendar-check-fill me-1"></i>İzin Özeti
                     </a>
                     <a class="nav-link" href="#egitim-kariyer" @onclick:preventDefault="true" @onclick='() => ScrollToAsync("egitim-kariyer")'>
-                        <i class="bi bi-mortarboard-fill me-1"></i>Derece/Kademe Değişimleri
+                        <i class="bi bi-mortarboard-fill me-1"></i>Derece Alanlar
                     </a>
                     <a class="nav-link" href="#personel-listesi" @onclick:preventDefault="true" @onclick='() => ScrollToAsync("personel-listesi")'>
                         <i class="bi bi-table me-1"></i>Personel Listesi
@@ -123,8 +126,8 @@
                                 <div class="card-body pd-stat-body text-center">
                                     <div class="pd-stat-icon"><i class="bi bi-person-check"></i></div>
                                     <div class="pd-stat-label">Kadrolu Çalışan</div>
-                                    <div class="pd-stat-value">@_kadroluPersonel</div>
-                                    <div class="pd-stat-sub">%@Percent(_kadroluPersonel, _toplamPersonel)</div>
+                                    <div class="pd-stat-value">@_toplamKadroluPersonel</div>
+                                    <div class="pd-stat-sub">%@Percent(_toplamKadroluPersonel, _toplamPersonel)</div>
                                 </div>
                             </div>
                         </div>
@@ -139,12 +142,22 @@
                             </div>
                         </div>
                         <div class="col-6 col-sm-4 col-md-3 col-xl-2">
-                            <div class="card pd-stat-card pd-accent-slate h-100">
+                            <div class="card pd-stat-card pd-accent-blue h-100">
                                 <div class="card-body pd-stat-body text-center">
-                                    <div class="pd-stat-icon"><i class="bi bi-arrow-up-right-circle"></i></div>
-                                    <div class="pd-stat-label">Bu Yıl Terfi Alan</div>
-                                    <div class="pd-stat-value">@_buYilTerfi</div>
-                                    <div class="pd-stat-sub">Çalışan</div>
+                                    <div class="pd-stat-icon"><i class="bi bi-gender-male"></i></div>
+                                    <div class="pd-stat-label">Kadrolu Erkek</div>
+                                    <div class="pd-stat-value">@_erkekKadroluPersonel</div>
+                                    <div class="pd-stat-sub">Kişi</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+                            <div class="card pd-stat-card pd-accent-pink h-100">
+                                <div class="card-body pd-stat-body text-center">
+                                    <div class="pd-stat-icon"><i class="bi bi-gender-female"></i></div>
+                                    <div class="pd-stat-label">Kadrolu Kadın</div>
+                                    <div class="pd-stat-value">@_kadinKadroluPersonel</div>
+                                    <div class="pd-stat-sub">Kişi</div>
                                 </div>
                             </div>
                         </div>
@@ -155,6 +168,16 @@
                                     <div class="pd-stat-label">Yaş Ortalaması</div>
                                     <div class="pd-stat-value">@_yasOrtalaması</div>
                                     <div class="pd-stat-sub">Yaş</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+                            <div class="card pd-stat-card pd-accent-slate h-100">
+                                <div class="card-body pd-stat-body text-center">
+                                    <div class="pd-stat-icon"><i class="bi bi-arrow-up-right-circle"></i></div>
+                                    <div class="pd-stat-label">Bu Yıl Derece Alan</div>
+                                    <div class="pd-stat-value">@_buYilTerfi</div>
+                                    <div class="pd-stat-sub">Kişi</div>
                                 </div>
                             </div>
                         </div>
@@ -221,14 +244,12 @@
                 </section>
 
                 <!-- ════════════════════════════════════════════════
-                     BÖLÜM 7 – YAŞ DAĞILIMI
+                     BÖLÜM 3 – YAŞ DAĞILIMI
                 ════════════════════════════════════════════════ -->
                 <section id="yas-dagilimi" class="pd-section">
                     <div class="section-label">Yaş Dağılımı</div>
-
-                    <div class="row g-3 mb-3">
-                        <!-- Yaş grubu donut chart -->
-                        <div class="col-12 col-lg-6">
+                    <div class="d-flex flex-wrap gap-3 justify-content-center align-items-start mb-3">
+                        <div class="pd-chart-container">
                             <div class="card shadow-sm h-100">
                                 <div class="card-header fw-semibold">
                                     <i class="bi bi-bar-chart-fill me-1 text-primary"></i>Yaş Grubu Dağılımı
@@ -240,7 +261,7 @@
                                                   ValueSelector="@(p => p.Value)"
                                                   Title=""
                                                   SeriesName="Personel"
-                                                  Type="GenericChart<PieItem>.GenericChartType.Donut"
+                                                  Type="GenericChart<PieItem>.GenericChartType.Pie"
                                                   Height="100%"
                                                   Width="100%"
                                                   ShowLegend="true"
@@ -296,7 +317,62 @@
                 </section>
 
                 <!-- ════════════════════════════════════════════════
-                     BÖLÜM 3 – İZİN ÖZETİ
+                     BÖLÜM 4 – ÜNVAN DAĞILIMI
+                ════════════════════════════════════════════════ -->
+                <section id="unvan-dagilimi" class="pd-section">
+                    <div class="section-label">Ünvan Dağılımı (Kadrolu)</div>
+                    <div class="d-flex flex-wrap gap-3 justify-content-center align-items-start mb-3">
+                        <div class="pd-chart-container">
+                            <GenericChart TItem="PieItem"
+                                          Items="_unvanDagilimItems"
+                                          LabelSelector="@(p => p.Label)"
+                                          ValueSelector="@(p => p.Value)"
+                                          Title="Kadrolu Personel Ünvan Dağılımı"
+                                          SeriesName="Personel"
+                                          Type="GenericChart<PieItem>.GenericChartType.Donut"
+                                          Height="100%"
+                                          Width="100%"
+                                          ShowLegend="true"
+                                          ShowDataLabels="true"
+                                          ColorPalette="@_mainPalette" />
+                        </div>
+                        <div class="pd-birim-table align-self-center">
+                            <div class="table-responsive">
+                                <table class="table table-hover table-sm mb-0 small">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Ünvan</th>
+                                            <th class="text-end">Personel</th>
+                                            <th class="text-end">Pay %</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var t in _unvanSatirlar)
+                                        {
+                                            <tr>
+                                                <td class="fw-medium">@t.UnvanAdi</td>
+                                                <td class="text-end">@t.PersonelSayisi</td>
+                                                <td class="text-end text-muted">
+                                                    @(_toplamKadroluPersonel > 0 ? $"%{(t.PersonelSayisi * 100m / _toplamKadroluPersonel):N1}" : "–")
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                    <tfoot class="table-secondary fw-bold">
+                                        <tr>
+                                            <td>Toplam</td>
+                                            <td class="text-end">@_unvanSatirlar.Sum(t => t.PersonelSayisi)</td>
+                                            <td class="text-end">%100</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <hr class="pd-separator" />
+                </section>
+                <!-- ════════════════════════════════════════════════
+                     BÖLÜM 5 – İZİN ÖZETİ
                 ════════════════════════════════════════════════ -->
                 <section id="izin-ozeti" class="pd-section">
                     <div class="section-label">İzin Özeti</div>
@@ -315,7 +391,7 @@
                                                   ValueSelector="@(p => p.Value)"
                                                   Title=""
                                                   SeriesName="Personel"
-                                                  Type="GenericChart<PieItem>.GenericChartType.Donut"
+                                                  Type="GenericChart<PieItem>.GenericChartType.Pie"
                                                   Height="100%"
                                                   Width="100%"
                                                   ShowLegend="true"
@@ -405,16 +481,16 @@
                 </section>
 
                 <!-- ════════════════════════════════════════════════
-                     BÖLÜM 5 – DERECE/KADEME DEĞİŞİMLERİ
+                     BÖLÜM 6 – DERECE DEĞİŞİMLERİ
                 ════════════════════════════════════════════════ -->
                 <section id="egitim-kariyer" class="pd-section">
-                    <div class="section-label">DERECE/KADEME DEĞİŞİMLERİ</div>
+                    <div class="section-label">DERECE DEĞİŞİMLERİ</div>
 
                     <div class="row g-3 mb-3">
                         <div class="col-12">
                             <div class="card shadow-sm">
                                 <div class="card-header fw-semibold">
-                                    <i class="bi bi-arrow-up-circle-fill me-1 text-success"></i>Bu Yıl Derece/Kademe Değişimleri
+                                    <i class="bi bi-arrow-up-circle-fill me-1 text-success"></i>Bu Yıl Derece Değişimleri
                                 </div>
                                 <div class="card-body p-0">
                                     <div class="table-responsive" style="max-height:260px; overflow-y:auto;">
@@ -454,7 +530,7 @@
                 </section>
 
                 <!-- ════════════════════════════════════════════════
-                     BÖLÜM 8 – PERSONEL LİSTESİ
+                     BÖLÜM 7 – PERSONEL LİSTESİ
                 ════════════════════════════════════════════════ -->
                 <section id="personel-listesi" class="pd-section">
                     <div class="section-label">Personel Listesi</div>
@@ -493,7 +569,7 @@
 
 @code {
     // ── Yükleme durumu ───────────────────────────────────────────
-    private bool _isLoading  = true;
+    private bool _isLoading = true;
     private bool _loadFailed = false;
     private string? _loadError;
     private bool _scrollSpyInitialized;
@@ -501,48 +577,68 @@
     private static readonly CultureInfo _trCulture = new("tr-TR");
 
     // ── Ham veriler ──────────────────────────────────────────────
-    private List<Personel>             _personeller       = [];
-    private List<IsBilgileri>          _isBilgileriList   = [];
-    private List<BirimTanim>           _birimler          = [];
-    private List<DereceKademeDegisim>  _dkDegisimler      = [];
-    private List<GorevOnay>            _gorevOnaylar      = [];
-    private List<IzinDonem>            _izinDonemleri     = [];
-    private List<IzinTalep>            _izinTalepler      = [];
-    private List<IzinHareket>          _izinHareketler    = [];
-    private List<IzinTanim>            _izinTanimlar      = [];
-    private List<TahsilTanim>          _tahsilTanimlar    = [];
-    private List<Kimlik>               _kimlikler         = [];
+    private List<Personel> _personeller = [];
+    private List<Personel> _kadroluPersoneller = [];
+    private List<IsBilgileri> _isBilgileriList = [];
+    private List<BirimTanim> _birimler = [];
+    private List<DereceKademeDegisim> _dkDegisimler = [];
+    private List<GorevOnay> _gorevOnaylar = [];
+    private List<IzinDonem> _izinDonemleri = [];
+    private List<IzinTalep> _izinTalepler = [];
+    private List<IzinHareket> _izinHareketler = [];
+    private List<IzinTanim> _izinTanimlar = [];
+    private List<TahsilTanim> _tahsilTanimlar = [];
+    private List<Kimlik> _kimlikler = [];
 
     // ── KPI değerleri ────────────────────────────────────────────
     private int _toplamPersonel;
-    private int _kadroluPersonel;
+    private int _toplamKadroluPersonel;
     private int _kadroHariciPersonel;
     private int _buYilTerfi;
     private double _yasOrtalaması;
 
+    // Yeni KPI'lar
+    private int _erkekKadroluPersonel;
+    private int _kadinKadroluPersonel;
+
     // ── Chart verileri ───────────────────────────────────────────
-    private readonly List<PieItem> _birimDagilimItems  = [];
-    private readonly List<PieItem> _izinTipiItems      = [];
+    private readonly List<PieItem> _birimDagilimItems = [];
+    private readonly List<PieItem> _izinTipiItems = [];
     private readonly List<PieItem> _tahsilDagilimItems = [];
-    private readonly List<PieItem> _yasDagilimItems    = [];
+    private readonly List<PieItem> _yasDagilimItems = [];
+
+    // Ünvan dağılımı chart ve tablo verileri
+    private readonly List<PieItem> _unvanDagilimItems = [];
+    private readonly List<UnvanSatir> _unvanSatirlar = [];
+
+    private class UnvanSatir
+    {
+        public string UnvanAdi { get; set; }
+        public int PersonelSayisi { get; set; }
+        public UnvanSatir(string unvanAdi, int personelSayisi)
+        {
+            UnvanAdi = unvanAdi;
+            PersonelSayisi = personelSayisi;
+        }
+    }
 
     // ── Tablo verileri ───────────────────────────────────────────
-    private readonly List<TahsilSatir>      _tahsilSatirlar      = [];
-    private readonly List<YasSatir>         _yasSatirlar         = [];
-    private readonly List<BirimSatir>       _birimSatirlar       = [];
-    private readonly List<AktifDonemSatir>  _aktifDonemSatirlar  = [];
-    private readonly List<TalepSatir>       _bekleyenTalepSatirlar = [];
-    private readonly List<PieItem>                    _kalanIzinGrupItems         = [];
-    private readonly List<KalanIzinPersonelSatir>     _kalanIzinPersonelSatirlar  = [];
-    private readonly List<DkDegisimSatir>   _buYilDkDegisim      = [];
-    private readonly List<PersonelSatir>    _personelSatirlar    = [];
+    private readonly List<TahsilSatir> _tahsilSatirlar = [];
+    private readonly List<YasSatir> _yasSatirlar = [];
+    private readonly List<BirimSatir> _birimSatirlar = [];
+    private readonly List<AktifDonemSatir> _aktifDonemSatirlar = [];
+    private readonly List<TalepSatir> _bekleyenTalepSatirlar = [];
+    private readonly List<PieItem> _kalanIzinGrupItems = [];
+    private readonly List<KalanIzinPersonelSatir> _kalanIzinPersonelSatirlar = [];
+    private readonly List<DkDegisimSatir> _buYilDkDegisim = [];
+    private readonly List<PersonelSatir> _personelSatirlar = [];
 
     // ── Personel listesi ──────────────────────────────────────────
-    private List<PersonelSatir>   _personelFiltered = [];
+    private List<PersonelSatir> _personelFiltered = [];
     private GenericTable<PersonelSatir>? _personelTable;
 
     // ── Collapse state ───────────────────────────────────────────
-    private bool _isTalepOpen  = true;
+    private bool _isTalepOpen = true;
 
     // ── Renk paleti ──────────────────────────────────────────────
     private static readonly string[] _mainPalette =
@@ -568,7 +664,7 @@
 
     private async Task RefreshAsync()
     {
-        _isLoading  = true;
+        _isLoading = true;
         _loadFailed = false;
         StateHasChanged();
         await LoadDataAsync();
@@ -581,38 +677,40 @@
     {
         try
         {
-            var t1  = PersonelService.GetCalisanPersonelAsync();
-            var t2  = IsBilgileriService.GetAllAsync();
-            var t3  = BirimTanimService.GetAllAsync();
-            var t5  = DereceKademeDegisimService.GetAllAsync();
-            var t6  = GorevOnayService.GetAllAsync();
-            var t7  = IzinDonemService.GetAllAsync();
-            var t8  = IzinTalepService.GetAllAsync();
-            var t9  = IzinHareketService.GetAllAsync();
+            var t0 = PersonelService.GetCalisanPersonelAsync();
+            var t1 = PersonelService.GetKadroluPersonelAsync();
+            var t2 = IsBilgileriService.GetAllAsync();
+            var t3 = BirimTanimService.GetAllAsync();
+            var t5 = DereceKademeDegisimService.GetDereceYukseltmeAsync();
+            var t6 = GorevOnayService.GetAllAsync();
+            var t7 = IzinDonemService.GetAllAsync();
+            var t8 = IzinTalepService.GetAllAsync();
+            var t9 = IzinHareketService.GetAllAsync();
             var t10 = IzinTanimService.GetAllAsync();
             var t12 = TahsilTanimService.GetAllAsync();
             var t13 = KimlikService.GetAllAsync();
 
-            await Task.WhenAll(t1, t2, t3, t5, t6, t7, t8, t9, t10, t12, t13);
+            await Task.WhenAll(t0, t1, t2, t3, t5, t6, t7, t8, t9, t10, t12, t13);
 
-            _personeller      = t1.Result;
-            _isBilgileriList  = t2.Result;
-            _birimler         = t3.Result;
-            _dkDegisimler     = t5.Result;
-            _gorevOnaylar     = t6.Result;
-            _izinDonemleri    = t7.Result;
-            _izinTalepler     = t8.Result;
-            _izinHareketler   = t9.Result;
-            _izinTanimlar     = t10.Result;
-            _tahsilTanimlar   = t12.Result;
-            _kimlikler        = t13.Result;
+            _personeller = t0.Result;
+            _kadroluPersoneller = t1.Result;
+            _isBilgileriList = t2.Result;
+            _birimler = t3.Result;
+            _dkDegisimler = t5.Result;
+            _gorevOnaylar = t6.Result;
+            _izinDonemleri = t7.Result;
+            _izinTalepler = t8.Result;
+            _izinHareketler = t9.Result;
+            _izinTanimlar = t10.Result;
+            _tahsilTanimlar = t12.Result;
+            _kimlikler = t13.Result;
 
             BuildMetrics();
         }
         catch (Exception ex)
         {
             _loadFailed = true;
-            _loadError  = $"{ex.GetType().Name}: {ex.Message}";
+            _loadError = $"{ex.GetType().Name}: {ex.Message}";
             if (ex.InnerException is not null)
                 _loadError += $"\n└ {ex.InnerException.GetType().Name}: {ex.InnerException.Message}";
             Logger.LogError(ex, "PersonelDashboard veri yükleme hatası");
@@ -630,8 +728,8 @@
 
         // ── Lookup sözlükleri ───────────────────────────────────
         var personelDict = _personeller.ToDictionary(p => p.Id);
-        var birimDict    = _birimler.ToDictionary(b => b.Id);
-        var izinTanimDict= _izinTanimlar.ToDictionary(i => i.Id, i => i.Adi ?? "Bilinmiyor");
+        var birimDict = _birimler.ToDictionary(b => b.Id);
+        var izinTanimDict = _izinTanimlar.ToDictionary(i => i.Id, i => i.Adi ?? "Bilinmiyor");
 
         // _personeller zaten GetCalisanPersonelAsync ile sadece aktif çalışanları içeriyor
         var aktifPersonelIds = _personeller.Select(p => p.Id).ToHashSet();
@@ -642,10 +740,22 @@
             .ToList();
 
         // ── KPI ─────────────────────────────────────────────────
-        _toplamPersonel      = _personeller.Count;
-        _kadroluPersonel     = _personeller.Count(p => p.Tipi == ProjectConstants.PER_TIPI_KADROLU);
+        _toplamPersonel = _personeller.Count;
+        _toplamKadroluPersonel = _kadroluPersoneller.Count();
         _kadroHariciPersonel = _personeller.Count(p => p.Tipi == ProjectConstants.PER_TIPI_KADRO_HARICI);
-        _buYilTerfi          = _dkDegisimler.Count(d => d.DegisimTarihi.HasValue && d.DegisimTarihi.Value.Year == thisYear);
+        _buYilTerfi = _dkDegisimler.Count(d => d.DegisimTarihi.HasValue && d.DegisimTarihi.Value.Year == thisYear);
+
+        // Yeni KPI hesaplama
+        _erkekKadroluPersonel = _kadroluPersoneller.Count(p =>
+        {
+            var kimlik = _kimlikler.FirstOrDefault(k => k.PersonelId == p.Id);
+            return kimlik != null && kimlik.Cinsiyet != null && kimlik.Cinsiyet.Equals("Erkek", StringComparison.OrdinalIgnoreCase);
+        });
+        _kadinKadroluPersonel = _kadroluPersoneller.Count(p =>
+        {
+            var kimlik = _kimlikler.FirstOrDefault(k => k.PersonelId == p.Id);
+            return kimlik != null && kimlik.Cinsiyet != null && kimlik.Cinsiyet.Equals("Kadın", StringComparison.OrdinalIgnoreCase);
+        });
 
         var today = DateTime.Today;
         var yaslar = _kimlikler
@@ -716,7 +826,7 @@
             .GroupBy(d => d.PersonelId!.Value)
             .Select(g => new
             {
-                PersonelId       = g.Key,
+                PersonelId = g.Key,
                 KalanIzinToplami = g.Sum(d => decimal.TryParse(d.KalanIzin, System.Globalization.NumberStyles.Any, CultureInfo.InvariantCulture, out var v) ? v : 0m)
             })
             .ToList();
@@ -742,7 +852,7 @@
         _tahsilDagilimItems.Clear();
         _tahsilSatirlar.Clear();
         var tahsilLabels = _tahsilTanimlar.ToDictionary(t => (int?)t.Id, t => t.TahsilDurumu ?? $"Tahsil {t.Id}");
-        var tahsilGrup = _personeller
+        var tahsilGrup = _kadroluPersoneller
             .Where(p => aktifPersonelIds.Contains(p.Id) && p.Tahsili.HasValue)
             .GroupBy(p => p.Tahsili)
             .OrderBy(g => g.Key)
@@ -754,7 +864,7 @@
             _tahsilSatirlar.Add(new TahsilSatir(lbl, g.Count()));
         }
 
-        // ── Bu yıl derece/kademe değişimleri ─────────────────────
+        // ── Bu yıl derece değişimleri ─────────────────────
         _buYilDkDegisim.Clear();
         foreach (var dk in _dkDegisimler.Where(d => d.DegisimTarihi.HasValue && d.DegisimTarihi.Value.Year == thisYear).OrderByDescending(d => d.DegisimTarihi))
         {
@@ -771,8 +881,8 @@
             .ToDictionary(g => g.Key, g => g.First().DogumTar!.Value);
         var yasGruplari = new[] { "18-25", "26-35", "36-45", "46-55", "56+" };
         var yasGrupSayilari = new int[yasGruplari.Length];
-        var yasGrupToplam   = new double[yasGruplari.Length];
-        foreach (var p in _personeller.Where(p => aktifPersonelIds.Contains(p.Id)))
+        var yasGrupToplam = new double[yasGruplari.Length];
+        foreach (var p in _kadroluPersoneller.Where(p => aktifPersonelIds.Contains(p.Id)))
         {
             if (!kimlikDict.TryGetValue(p.Id, out var dogum)) continue;
             int yas = today.Year - dogum.Year - (today < dogum.AddYears(today.Year - dogum.Year) ? 1 : 0);
@@ -801,6 +911,25 @@
             _personelSatirlar.Add(new($"{p.Adi} {p.Soyadi}", birimAdi, unvan, ib?.BaslamaTar));
         }
         _personelFiltered = _personelSatirlar;
+        // Ünvan bilgileri
+        _unvanDagilimItems.Clear();
+        _unvanSatirlar.Clear();
+
+        var unvanGrup = _kadroluPersoneller
+            .Select(p =>
+            {
+                var isBilgi = _isBilgileriList.FirstOrDefault(ib => ib.PersonelId == p.Id);
+                return isBilgi?.UnvanTanim?.Adi ?? "–";
+            })
+            .GroupBy(u => u)
+            .OrderByDescending(g => g.Count())
+            .ToList();
+
+        foreach (var g in unvanGrup)
+        {
+            _unvanSatirlar.Add(new UnvanSatir(g.Key, g.Count()));
+            _unvanDagilimItems.Add(new PieItem(g.Key, g.Count()));
+        }
     }
 
     // ── Yardımcı metodlar ───────────────────────────────────────
@@ -811,7 +940,7 @@
     {
         if (string.IsNullOrEmpty(kalan)) return "";
         if (decimal.TryParse(kalan, out var v) && v <= 0) return "text-danger fw-semibold";
-        if (decimal.TryParse(kalan, out v) && v <= 5)    return "text-warning";
+        if (decimal.TryParse(kalan, out v) && v <= 5) return "text-warning";
         return "";
     }
 

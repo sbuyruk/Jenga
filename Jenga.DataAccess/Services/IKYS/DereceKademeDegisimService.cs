@@ -56,4 +56,7 @@ public class DereceKademeDegisimService : IDereceKademeDegisimService
         await _unitOfWork.DereceKademeDegisim.SaveChangesAsync(cancellationToken);
         return true;
     }
+    public async Task<List<DereceKademeDegisim>> GetDereceYukseltmeAsync(CancellationToken cancellationToken = default)
+    => await _unitOfWork.DereceKademeDegisim.GetDereceYukseltmeAsync(cancellationToken);
+
 }
