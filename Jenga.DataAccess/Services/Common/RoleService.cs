@@ -1,5 +1,4 @@
 ﻿using Jenga.DataAccess.Data;
-using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.Models.Common;
 using Jenga.Utility.Logging;
 using Microsoft.EntityFrameworkCore;
@@ -12,23 +11,21 @@ namespace Jenga.DataAccess.Services.Common
 {
     public class RoleService : IRoleService
     {
-        private readonly IUnitOfWork _unitOfWork;
         private readonly ILogService _logService;
         private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
 
         public RoleService(
-            IUnitOfWork unitOfWork,
             ILogService logService,
             IDbContextFactory<ApplicationDbContext> dbFactory)
         {
-            _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
             _logService = logService ?? throw new ArgumentNullException(nameof(logService));
             _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
         }
 
         public async Task<List<Role>> GetAllAsync(CancellationToken cancellationToken = default)
         {
-            return await _unitOfWork.Role.GetAllAsync(cancellationToken);
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.Set<Role>().AsNoTracking().ToListAsync(cancellationToken);
         }
 
         public async Task<bool> AddAsync(Role role, CancellationToken cancellationToken = default)
@@ -38,9 +35,9 @@ namespace Jenga.DataAccess.Services.Common
             role.Olusturan ??= Environment.UserName;
             role.OlusturmaTarihi ??= DateTime.Now;
 
-            // Add role (repository AddAsync commits)
-            await _unitOfWork.Role.AddAsync(role, cancellationToken);
-
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            await db.Set<Role>().AddAsync(role, cancellationToken);
+            await db.SaveChangesAsync(cancellationToken);
             return true;
         }
 
@@ -48,17 +45,30 @@ namespace Jenga.DataAccess.Services.Common
         {
             if (role == null) throw new ArgumentNullException(nameof(role));
 
-            role.Degistiren = Environment.UserName;
-            role.DegistirmeTarihi = DateTime.Now;
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            var trackedRole = await db.Set<Role>()
+                .FirstOrDefaultAsync(r => r.Id == role.Id, cancellationToken);
+            if (trackedRole == null)
+                throw new InvalidOperationException($"Güncellenecek Role bulunamadı (Id={role.Id}).");
 
-            await _unitOfWork.Role.UpdateAsync(role, null, cancellationToken);
+            db.Entry(trackedRole).CurrentValues.SetValues(role);
+            trackedRole.Degistiren = Environment.UserName;
+            trackedRole.DegistirmeTarihi = DateTime.Now;
+
+            await db.SaveChangesAsync(cancellationToken);
             return true;
         }
 
         public async Task<Role?> GetByIdWithRelationsAsync(int id, CancellationToken cancellationToken = default)
         {
-            // Delegate to repository which already includes navigation properties
-            return await _unitOfWork.Role.GetByIdWithRelationsAsync(id, cancellationToken);
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.Set<Role>()
+                .Include(r => r.PersonelRoles!)
+                    .ThenInclude(pr => pr.Personel)
+                .Include(r => r.RoleMenus!)
+                    .ThenInclude(rm => rm.Menu)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
         }
 
         public async Task<bool> DeleteAsync(Role role, CancellationToken cancellationToken = default)
