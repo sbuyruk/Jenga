@@ -159,50 +159,85 @@ namespace Jenga.DataAccess.Services.Common
         {
             if (role == null) throw new ArgumentNullException(nameof(role));
 
-            // Update role scalars
-            role.Degistiren = Environment.UserName;
-            role.DegistirmeTarihi = DateTime.Now;
-            await _unitOfWork.Role.UpdateAsync(role, null, cancellationToken);
+            // Canary 2. tur: tek context + tek transaction.
+            // Eski join satırlarını sil + yeni join satırlarını ekle + role skaler güncelle
+            // → hepsi tek SaveChanges + Commit içinde. Hata olursa rollback.
+            //
+            // Önemli: Role nesnesi UI'dan PersonelRoles / RoleMenus dolu (içlerinde Personel/Menu nav prop'ları
+            // dolu) olarak gelebilir. EF graph traversal nedeniyle bu nesneleri doğrudan context'e takmıyoruz;
+            // sadece skaler alanları kullanarak yeni satırlar oluşturuyoruz.
+            var personelRoles = role.PersonelRoles?.ToList();
+            var roleMenus = role.RoleMenus?.ToList();
 
-            // Replace PersonelRole entries
-            var existingPRs = (await _unitOfWork.PersonelRole.GetAllByFilterAsync(pr => pr.RoleId == role.Id)).ToList();
-            if (existingPRs.Any())
-                _unitOfWork.PersonelRole.RemoveRange(existingPRs);
-
-            if (role.PersonelRoles != null && role.PersonelRoles.Any())
+            try
             {
-                foreach (var pr in role.PersonelRoles)
+                await using var scope = await DbContextScope.CreateAsync(_dbFactory, cancellationToken);
+                var db = scope.Context;
+
+                // 1) Role skaler güncelleme (mevcut entity'i çek, değerleri kopyala)
+                var trackedRole = await db.Set<Role>()
+                    .FirstOrDefaultAsync(r => r.Id == role.Id, cancellationToken);
+                if (trackedRole == null)
+                    throw new InvalidOperationException($"Güncellenecek Role bulunamadı (Id={role.Id}).");
+
+                db.Entry(trackedRole).CurrentValues.SetValues(role);
+                trackedRole.Degistiren = Environment.UserName;
+                trackedRole.DegistirmeTarihi = DateTime.Now;
+
+                // 2) Eski PersonelRole satırlarını sil
+                var existingPRs = await db.Set<PersonelRole>()
+                    .Where(pr => pr.RoleId == role.Id)
+                    .ToListAsync(cancellationToken);
+                if (existingPRs.Count > 0)
+                    db.Set<PersonelRole>().RemoveRange(existingPRs);
+
+                // 3) Eski RoleMenu satırlarını sil
+                var existingRMs = await db.Set<RoleMenu>()
+                    .Where(rm => rm.RoleId == role.Id)
+                    .ToListAsync(cancellationToken);
+                if (existingRMs.Count > 0)
+                    db.Set<RoleMenu>().RemoveRange(existingRMs);
+
+                // 4) Yeni PersonelRole satırlarını ekle (sadece FK, nav prop'lar null)
+                if (personelRoles != null && personelRoles.Count > 0)
                 {
-                    pr.Id = 0; // reset Id so EF treats this as new identity row
-                    pr.RoleId = role.Id;
-                    pr.Personel = null;
-                    pr.Role = null;
-                    pr.Olusturan ??= Environment.UserName;
-                    pr.OlusturmaTarihi ??= DateTime.Now;
-                    await _unitOfWork.PersonelRole.AddAsync(pr, cancellationToken);
+                    foreach (var pr in personelRoles)
+                    {
+                        var newPr = new PersonelRole
+                        {
+                            RoleId = role.Id,
+                            PersonelId = pr.PersonelId,
+                            Olusturan = pr.Olusturan ?? Environment.UserName,
+                            OlusturmaTarihi = pr.OlusturmaTarihi ?? DateTime.Now
+                        };
+                        await db.Set<PersonelRole>().AddAsync(newPr, cancellationToken);
+                    }
                 }
+
+                // 5) Yeni RoleMenu satırlarını ekle
+                if (roleMenus != null && roleMenus.Count > 0)
+                {
+                    foreach (var rm in roleMenus)
+                    {
+                        var newRm = new RoleMenu
+                        {
+                            RoleId = role.Id,
+                            MenuId = rm.MenuId,
+                            Olusturan = rm.Olusturan ?? Environment.UserName,
+                            OlusturmaTarihi = rm.OlusturmaTarihi ?? DateTime.Now
+                        };
+                        await db.Set<RoleMenu>().AddAsync(newRm, cancellationToken);
+                    }
+                }
+
+                await scope.CommitAsync(cancellationToken);
+                return true;
             }
-
-            // Replace RoleMenu entries
-            var existingRMs = (await _unitOfWork.RoleMenu.GetAllByFilterAsync(rm => rm.RoleId == role.Id)).ToList();
-            if (existingRMs.Any())
-                _unitOfWork.RoleMenu.RemoveRange(existingRMs);
-
-            if (role.RoleMenus != null && role.RoleMenus.Any())
+            catch (Exception ex)
             {
-                foreach (var rm in role.RoleMenus)
-                {
-                    rm.Id = 0; // reset Id so EF treats this as new identity row
-                    rm.RoleId = role.Id;
-                    rm.Menu = null;
-                    rm.Role = null;
-                    rm.Olusturan ??= Environment.UserName;
-                    rm.OlusturmaTarihi ??= DateTime.Now;
-                    await _unitOfWork.RoleMenu.AddAsync(rm, cancellationToken);
-                }
+                _logService?.LogError("RoleService.UpdateWithRelationsAsync error", ex);
+                throw;
             }
-
-            return true;
         }
     }
 }
