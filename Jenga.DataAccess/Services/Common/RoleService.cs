@@ -106,53 +106,76 @@ namespace Jenga.DataAccess.Services.Common
             role.Olusturan ??= Environment.UserName;
             role.OlusturmaTarihi ??= DateTime.Now;
 
-            // Minimal patch: ilişki koleksiyonlarını role nesnesinden detach et.
-            // Aksi halde EF, AddAsync sırasında graph traversal yaparak Personel ve Menu
-            // kayıtlarını da "Added" olarak işaretliyor → IDENTITY_INSERT OFF hatası.
-            // Join satırlarını aşağıda zaten tek tek ekliyoruz.
+            // Canary 3. tur: tek context + tek transaction.
+            // Role + tüm join satırları tek bir Commit içinde persist edilir.
+            // İlişki nesnelerini doğrudan context'e takmıyoruz; sadece FK alanlarını okuyup
+            // YENİ PersonelRole / RoleMenu nesneleri oluşturuyoruz (graph traversal sorununa karşı).
             var personelRoles = role.PersonelRoles?.ToList();
             var roleMenus = role.RoleMenus?.ToList();
+            // Role'un kendisini context'e eklerken nav koleksiyonları görmesini istemiyoruz.
             role.PersonelRoles = null;
             role.RoleMenus = null;
 
-            // Persist role first (will set role.Id)
-            await _unitOfWork.Role.AddAsync(role, cancellationToken);
-
-            // Persist PersonelRole join rows (only FKs, navigation props nulled)
-            if (personelRoles != null && personelRoles.Count > 0)
+            try
             {
-                foreach (var pr in personelRoles)
-                {
-                    pr.Id = 0; // ensure EF will generate identity (avoid explicit identity insert)
-                    pr.RoleId = role.Id;
-                    pr.Personel = null;
-                    pr.Role = null;
-                    pr.Olusturan ??= Environment.UserName;
-                    pr.OlusturmaTarihi ??= DateTime.Now;
-                    await _unitOfWork.PersonelRole.AddAsync(pr, cancellationToken);
-                }
-            }
+                await using var scope = await DbContextScope.CreateAsync(_dbFactory, cancellationToken);
+                var db = scope.Context;
 
-            // Persist RoleMenu join rows
-            if (roleMenus != null && roleMenus.Count > 0)
+                // 1) Role'u ekle ve identity'i alabilmek için ilk SaveChanges'i yap.
+                //    Hâlâ aynı transaction içindeyiz; commit sadece scope.CommitAsync'te olur.
+                await db.Set<Role>().AddAsync(role, cancellationToken);
+                await db.SaveChangesAsync(cancellationToken);
+                // Bu noktada role.Id atanmıştır.
+
+                // 2) Yeni PersonelRole satırlarını ekle (FK'leri kullanarak yeni nesneler)
+                if (personelRoles != null && personelRoles.Count > 0)
+                {
+                    foreach (var pr in personelRoles)
+                    {
+                        var newPr = new PersonelRole
+                        {
+                            RoleId = role.Id,
+                            PersonelId = pr.PersonelId,
+                            Olusturan = pr.Olusturan ?? Environment.UserName,
+                            OlusturmaTarihi = pr.OlusturmaTarihi ?? DateTime.Now
+                        };
+                        await db.Set<PersonelRole>().AddAsync(newPr, cancellationToken);
+                    }
+                }
+
+                // 3) Yeni RoleMenu satırlarını ekle
+                if (roleMenus != null && roleMenus.Count > 0)
+                {
+                    foreach (var rm in roleMenus)
+                    {
+                        var newRm = new RoleMenu
+                        {
+                            RoleId = role.Id,
+                            MenuId = rm.MenuId,
+                            Olusturan = rm.Olusturan ?? Environment.UserName,
+                            OlusturmaTarihi = rm.OlusturmaTarihi ?? DateTime.Now
+                        };
+                        await db.Set<RoleMenu>().AddAsync(newRm, cancellationToken);
+                    }
+                }
+
+                // 4) Join satırları için ikinci SaveChanges + transaction Commit.
+                await scope.CommitAsync(cancellationToken);
+
+                // UI'da koleksiyonlar gözükmeye devam etsin diye geri yerleştir.
+                role.PersonelRoles = personelRoles;
+                role.RoleMenus = roleMenus;
+
+                return true;
+            }
+            catch (Exception ex)
             {
-                foreach (var rm in roleMenus)
-                {
-                    rm.Id = 0; // ensure EF will generate identity
-                    rm.RoleId = role.Id;
-                    rm.Menu = null;
-                    rm.Role = null;
-                    rm.Olusturan ??= Environment.UserName;
-                    rm.OlusturmaTarihi ??= DateTime.Now;
-                    await _unitOfWork.RoleMenu.AddAsync(rm, cancellationToken);
-                }
+                _logService?.LogError("RoleService.AddWithRelationsAsync error", ex);
+                // Çağırana koleksiyonları geri vermek için (UI bozulmasın diye)
+                role.PersonelRoles = personelRoles;
+                role.RoleMenus = roleMenus;
+                throw;
             }
-
-            // Çağıranın UI'da listeyi göstermeye devam edebilmesi için koleksiyonları geri yerleştir.
-            role.PersonelRoles = personelRoles;
-            role.RoleMenus = roleMenus;
-
-            return true;
         }
 
         public async Task<bool> UpdateWithRelationsAsync(Role role, CancellationToken cancellationToken = default)
