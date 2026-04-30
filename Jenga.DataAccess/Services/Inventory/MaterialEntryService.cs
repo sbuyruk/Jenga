@@ -1,5 +1,7 @@
-﻿using Jenga.DataAccess.Repositories.IRepository;
+﻿using Jenga.DataAccess.Data;
+using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.Models.Inventory;
+using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
 namespace Jenga.DataAccess.Services.Inventory
@@ -10,17 +12,20 @@ namespace Jenga.DataAccess.Services.Inventory
         private readonly IMaterialInventoryService _materialInventoryService;
         private readonly IMaterialMovementService _materialMovementService;
         private readonly IMaterialAssetService _materialAssetService;
+        private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
 
         public MaterialEntryService(
             IUnitOfWork unitOfWork,
             IMaterialInventoryService materialInventoryService,
             IMaterialMovementService materialMovementService,
-            IMaterialAssetService materialAssetService)
+            IMaterialAssetService materialAssetService,
+            IDbContextFactory<ApplicationDbContext> dbFactory)
         {
             _unitOfWork = unitOfWork;
             _materialInventoryService = materialInventoryService;
             _materialMovementService = materialMovementService;
             _materialAssetService = materialAssetService;
+            _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
         }
 
         public async Task<List<MaterialEntry>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -170,46 +175,91 @@ namespace Jenga.DataAccess.Services.Inventory
 
         public async Task<bool> DeleteMaterialEntryAndUpdateInventoryAsync(MaterialEntry entryToDelete, string? currentUserName, CancellationToken cancellationToken = default)
         {
-            currentUserName ??= Environment.UserName;
             if (entryToDelete == null) return false;
+            currentUserName ??= Environment.UserName;
 
             int? location = entryToDelete.LocationId != 0 ? entryToDelete.LocationId : null;
             int? personnel = (entryToDelete.PersonelId.HasValue && entryToDelete.PersonelId.Value != 0) ? entryToDelete.PersonelId : null;
             int? brand = (entryToDelete.BrandId.HasValue && entryToDelete.BrandId.Value != 0) ? entryToDelete.BrandId : null;
             int? model = (entryToDelete.ModelId.HasValue && entryToDelete.ModelId.Value != 0) ? entryToDelete.ModelId : null;
 
-            await _materialInventoryService.AddOrUpdateInventoryAsync(
-                entryToDelete.MaterialId,
-                location,
-                personnel,
-                -entryToDelete.Quantity,
-                "MaterialEntry silindi, stoktan çıkarıldı",
-                currentUserName,
-                brand,
-                model,
-                cancellationToken
-            );
-
-            var inventoryRecord = await _materialInventoryService.GetByMaterialLocationAsync(
-                entryToDelete.MaterialId,
-                location,
-                personnel,
-                brand,
-                model,
-                cancellationToken
-            );
-            if (inventoryRecord != null && inventoryRecord.Quantity <= 0)
+            // Canary (Adım 1): tek context + tek transaction içinde
+            //   1) Inventory: -Quantity uygula (yoksa negatif ekleme yasak; orijinal davranış)
+            //   2) Inventory satırı <= 0 düştüyse sil
+            //   3) MaterialEntry satırını sil
+            //   4) MaterialMovement "Silme" logu ekle
+            // Hata olursa using sonu rollback eder; "stok düştü ama entry kaldı" gibi tutarsızlıklar oluşmaz.
+            try
             {
-                await _materialInventoryService.DeleteAsync(inventoryRecord, cancellationToken);
+                await using var scope = await DbContextScope.CreateAsync(_dbFactory, cancellationToken);
+                var db = scope.Context;
+
+                // 1) Inventory satırını bul (5'li anahtar, NULL eşleşmeleri dahil).
+                var inventory = await db.MaterialInventory_Table
+                    .FirstOrDefaultAsync(mi =>
+                        mi.MaterialId == entryToDelete.MaterialId &&
+                        mi.LocationId == location &&
+                        mi.PersonelId == personnel &&
+                        mi.BrandId == brand &&
+                        mi.ModelId == model,
+                        cancellationToken);
+
+                int delta = -entryToDelete.Quantity;
+                if (inventory != null)
+                {
+                    var newQty = inventory.Quantity + delta;
+                    if (newQty < 0)
+                        throw new InvalidOperationException($"Yetersiz stok: mevcut {inventory.Quantity}, yapılmak istenen değişiklik {delta}. İşlem yapılmadı.");
+
+                    inventory.Quantity = newQty;
+                    inventory.Aciklama = "MaterialEntry silindi, stoktan çıkarıldı";
+                    inventory.Degistiren = currentUserName;
+                    inventory.DegistirmeTarihi = DateTime.Now;
+
+                    // 2) Sıfır veya altına düştüyse satırı kaldır.
+                    if (newQty <= 0)
+                        db.MaterialInventory_Table.Remove(inventory);
+                }
+                else
+                {
+                    // Mevcut servis davranışı: yeni satır eklerken negatif miktar yasak.
+                    if (delta < 0)
+                        throw new InvalidOperationException("Yeni bir stok kaydı eklendiğinde negatif miktar belirtilemez.");
+                }
+
+                // 3) MaterialEntry satırını sil. Detached olabileceği için Attach + Remove ile state'i kesinleştiriyoruz.
+                var entryEntity = await db.MaterialEntry_Table
+                    .FirstOrDefaultAsync(e => e.Id == entryToDelete.Id, cancellationToken);
+                if (entryEntity != null)
+                    db.MaterialEntry_Table.Remove(entryEntity);
+
+                // 4) MaterialMovement "Silme" logu (orijinal AddMovementForEntryAsync ile aynı alanlar).
+                var movement = new MaterialMovement
+                {
+                    MaterialId = entryToDelete.MaterialId,
+                    Quantity = entryToDelete.Quantity,
+                    MaterialUnitId = entryToDelete.MaterialUnitId,
+                    FromLocationId = null,
+                    ToLocationId = entryToDelete.LocationId,
+                    ToPersonId = entryToDelete.PersonelId,
+                    BrandId = entryToDelete.BrandId,
+                    ModelId = entryToDelete.ModelId,
+                    MovementType = "Silme",
+                    Operation = "Silme",
+                    MovementDate = entryToDelete.EntryDate == default ? DateTime.Now : entryToDelete.EntryDate,
+                    Aciklama = "MaterialEntry silindi",
+                    Olusturan = currentUserName,
+                    OlusturmaTarihi = DateTime.Now
+                };
+                await db.MaterialMovement_Table.AddAsync(movement, cancellationToken);
+
+                await scope.CommitAsync(cancellationToken);
+                return true;
             }
-
-            await DeleteAsync(entryToDelete, cancellationToken);
-
-            await _materialMovementService.AddMovementForEntryAsync(
-                entryToDelete, "Silme", "MaterialEntry silindi", currentUserName, cancellationToken
-            );
-
-            return true;
+            catch
+            {
+                throw;
+            }
         }
 
         public Task<bool> AnyAsync(Expression<Func<MaterialEntry, bool>> predicate)

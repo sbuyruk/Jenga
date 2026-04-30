@@ -240,17 +240,32 @@ else
             return;
         }
 
-        if (selectedEntry.Id == 0)
+        try
         {
-            var saved = await MaterialEntryService.AddAsync(selectedEntry, currentUserName, CancellationToken.None);
-            if (saved)
+            if (selectedEntry.Id == 0)
             {
-                MaterialEntries.Add(selectedEntry);
+                var saved = await MaterialEntryService.AddAsync(selectedEntry, currentUserName, CancellationToken.None);
+                if (saved)
+                {
+                    MaterialEntries.Add(selectedEntry);
+                }
+            }
+            else
+            {
+                await MaterialEntryService.UpdateMaterialEntryAndInventoryAsync(selectedEntry, currentUserName, CancellationToken.None);
             }
         }
-        else
+        catch (InvalidOperationException ex)
         {
-            await MaterialEntryService.UpdateMaterialEntryAndInventoryAsync(selectedEntry, currentUserName, CancellationToken.None);
+            // İş kuralı ihlali (örn. yetersiz stok). Kullanıcıya friendly mesaj göster, circuit'i öldürme.
+            ToastService.ShowError(ex.Message, 5000);
+            return;
+        }
+        catch (Exception)
+        {
+            // Beklenmeyen hata: kullanıcıya generic mesaj, circuit'i öldürme.
+            ToastService.ShowError("Kayıt sırasında beklenmeyen bir hata oluştu.", 5000);
+            return;
         }
 
         showEditModal = false;
@@ -276,19 +291,32 @@ else
                 }
 
                 var currentUserName = httpContextAccessor.HttpContext?.User?.Identity?.Name;
-                var deleted = await MaterialEntryService.DeleteMaterialEntryAndUpdateInventoryAsync(entry, currentUserName, CancellationToken.None);
+                try
+                {
+                    var deleted = await MaterialEntryService.DeleteMaterialEntryAndUpdateInventoryAsync(entry, currentUserName, CancellationToken.None);
 
-                if (deleted)
-                {
-                    ToastService.ShowToast($"{material?.MaterialName ?? entry.Id.ToString()} silindi", ToastType.Success, 3000);
-                    MaterialEntries.Remove(entry);
-                    await OnRefresh.InvokeAsync();
-                    BuildEntryRows();
-                    StateHasChanged();
+                    if (deleted)
+                    {
+                        ToastService.ShowToast($"{material?.MaterialName ?? entry.Id.ToString()} silindi", ToastType.Success, 3000);
+                        MaterialEntries.Remove(entry);
+                        await OnRefresh.InvokeAsync();
+                        BuildEntryRows();
+                        StateHasChanged();
+                    }
+                    else
+                    {
+                        ToastService.ShowToast("Silme işlemi başarısız oldu", ToastType.Error, 3000);
+                    }
                 }
-                else
+                catch (InvalidOperationException ex)
                 {
-                    ToastService.ShowToast("Silme işlemi başarısız oldu", ToastType.Error, 3000);
+                    // İş kuralı ihlali (örn. yetersiz stok). Friendly mesaj, circuit korunur.
+                    ToastService.ShowError(ex.Message, 5000);
+                }
+                catch (Exception)
+                {
+                    // Beklenmeyen hata.
+                    ToastService.ShowError("Silme sırasında beklenmeyen bir hata oluştu.", 5000);
                 }
             });
     }
