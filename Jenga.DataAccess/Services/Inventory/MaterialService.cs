@@ -1,31 +1,40 @@
-﻿using Jenga.DataAccess.Repositories.IRepository;
+﻿using Jenga.DataAccess.Data;
 using Jenga.Models.Inventory;
 using Jenga.Utility.Logging;
+using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
 namespace Jenga.DataAccess.Services.Inventory
 {
     public class MaterialService : IMaterialService
     {
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
         private readonly ILogService _logService;
-        // Material list cache
         private List<Material>? _materialsCache;
 
-        public MaterialService(IUnitOfWork unitOfWork, ILogService logService)
+        public MaterialService(IDbContextFactory<ApplicationDbContext> dbFactory, ILogService logService)
         {
-            _unitOfWork = unitOfWork;
+            _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
             _logService = logService;
         }
 
         public async Task<List<Material>> GetAllAsync(CancellationToken cancellationToken = default)
-            => await _unitOfWork.Material.GetAllAsync(cancellationToken);
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.Material_Table.AsNoTracking().ToListAsync(cancellationToken);
+        }
 
         public async Task<Material?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
-            => await _unitOfWork.Material.GetByIdAsync(id, cancellationToken);
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.Material_Table.AsNoTracking().FirstOrDefaultAsync(m => m.Id == id, cancellationToken);
+        }
 
         public async Task<Material?> GetByIdWithRelationsAsync(int id, CancellationToken cancellationToken = default)
-            => await _unitOfWork.Material.GetByIdWithRelationsAsync(id, cancellationToken);
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.Material_Table.AsNoTracking().FirstOrDefaultAsync(m => m.Id == id, cancellationToken);
+        }
 
         public async Task<bool> AddAsync(Material material, CancellationToken cancellationToken = default)
         {
@@ -47,10 +56,9 @@ namespace Jenga.DataAccess.Services.Inventory
             try
             {
                 material.MaterialName = name;
-                await _unitOfWork.Material.AddAsync(material, cancellationToken);
-                // repository AddAsync may already call SaveChanges; calling SaveChanges here keeps behavior consistent
-                await _unitOfWork.Material.SaveChangesAsync(cancellationToken);
-                // Invalidate cache if exists
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                await db.Material_Table.AddAsync(material, cancellationToken);
+                await db.SaveChangesAsync(cancellationToken);
                 _materialsCache = null;
                 return true;
             }
@@ -81,9 +89,9 @@ namespace Jenga.DataAccess.Services.Inventory
             try
             {
                 material.MaterialName = name;
-                // Use repository UpdateAsync signature (modifiedBy optional)
-                await _unitOfWork.Material.UpdateAsync(material, null, cancellationToken);
-                await _unitOfWork.Material.SaveChangesAsync(cancellationToken);
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                db.Material_Table.Update(material);
+                await db.SaveChangesAsync(cancellationToken);
                 _materialsCache = null;
                 return true;
             }
@@ -96,31 +104,20 @@ namespace Jenga.DataAccess.Services.Inventory
 
         public async Task<bool> DeleteAsync(int materialId, CancellationToken cancellationToken = default)
         {
-            var hasEntry = await _unitOfWork.MaterialEntry
-                .AnyAsync(m => m.MaterialId == materialId);
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
 
-            if (hasEntry)
+            if (await db.MaterialEntry_Table.AsNoTracking().AnyAsync(m => m.MaterialId == materialId, cancellationToken))
+                return false;
+            if (await db.MaterialExit_Table.AsNoTracking().AnyAsync(m => m.MaterialId == materialId, cancellationToken))
+                return false;
+            if (await db.MaterialInventory_Table.AsNoTracking().AnyAsync(m => m.MaterialId == materialId, cancellationToken))
                 return false;
 
-            var hasExit = await _unitOfWork.MaterialExit
-                .AnyAsync(m => m.MaterialId == materialId);
-
-            if (hasExit)
-                return false;
-
-            var hasInventory = await _unitOfWork.MaterialInventory
-                .AnyAsync(m => m.MaterialId == materialId);
-
-            if (hasInventory)
-                return false;
-
-            // Ensure the entity is tracked
-            var entity = await _unitOfWork.Material.GetByIdAsync(materialId, cancellationToken);
+            var entity = await db.Material_Table.FirstOrDefaultAsync(m => m.Id == materialId, cancellationToken);
             if (entity != null)
             {
-                // Repository.Remove already commits; keep consistent pattern and then optionally save again
-                _unitOfWork.Material.Remove(entity);
-                await _unitOfWork.Material.SaveChangesAsync(cancellationToken);
+                db.Material_Table.Remove(entity);
+                await db.SaveChangesAsync(cancellationToken);
                 _materialsCache = null;
                 return true;
             }
@@ -129,8 +126,8 @@ namespace Jenga.DataAccess.Services.Inventory
 
         public async Task<bool> AnyAsync(Expression<Func<Material, bool>> predicate, CancellationToken cancellationToken = default)
         {
-            // Use repository-side AnyAsync to execute in DB
-            return await _unitOfWork.Material.AnyAsync(predicate, cancellationToken);
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.Material_Table.AsNoTracking().AnyAsync(predicate, cancellationToken);
         }
 
         // Yardımcı Metotlar
@@ -149,15 +146,18 @@ namespace Jenga.DataAccess.Services.Inventory
             var material = _materialsCache.FirstOrDefault(x => x.Id == materialId);
             return material?.MaterialUnitId ?? 0;
         }
+
         public async Task<(bool CanDelete, string? Reason)> CanDeleteAsync(int id)
         {
-            if (await _unitOfWork.MaterialEntry.AnyAsync(m => m.MaterialId == id))
+            await using var db = await _dbFactory.CreateDbContextAsync();
+
+            if (await db.MaterialEntry_Table.AsNoTracking().AnyAsync(m => m.MaterialId == id))
                 return (false, "Bu malzeme envantere giriş (MaterialEntry) kayıtlarında bulunmaktadır, önce onu silmelisiniz.");
 
-            if (await _unitOfWork.MaterialExit.AnyAsync(m => m.MaterialId == id))
+            if (await db.MaterialExit_Table.AsNoTracking().AnyAsync(m => m.MaterialId == id))
                 return (false, "Bu malzeme envanterden çıkış (MaterialExit) kayıtlarında bulunmaktadır, önce onu silmelisiniz.");
 
-            if (await _unitOfWork.MaterialInventory.AnyAsync(m => m.MaterialId == id))
+            if (await db.MaterialInventory_Table.AsNoTracking().AnyAsync(m => m.MaterialId == id))
                 return (false, "Bu malzeme envanter (MaterialInventory) kayıtlarında bulunmaktadır, önce onu silmelisiniz.");
 
             return (true, null);
@@ -166,14 +166,14 @@ namespace Jenga.DataAccess.Services.Inventory
         public async Task<bool> ExistsByNameAsync(string name, int? excludeId = null, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(name)) return false;
-            var normalized = name.Trim().ToLowerInvariant();
+            var normalized = name.Trim().ToLower();
 
-            Expression<Func<Material, bool>> predicate = m =>
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.Material_Table.AsNoTracking().AnyAsync(m =>
                 m.MaterialName != null &&
                 m.MaterialName.Trim().ToLower() == normalized &&
-                (!excludeId.HasValue || m.Id != excludeId.Value);
-
-            return await _unitOfWork.Material.AnyAsync(predicate, cancellationToken);
+                (!excludeId.HasValue || m.Id != excludeId.Value),
+                cancellationToken);
         }
     }
 }

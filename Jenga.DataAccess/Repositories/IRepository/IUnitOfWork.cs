@@ -1,7 +1,6 @@
 ﻿using Jenga.DataAccess.Repositories.IRepository.Common;
 using Jenga.DataAccess.Repositories.IRepository.FTK;
 using Jenga.DataAccess.Repositories.IRepository.IKYS;
-using Jenga.DataAccess.Repositories.IRepository.Inventory;
 using Jenga.DataAccess.Repositories.IRepository.NBYS;
 using Jenga.DataAccess.Repositories.IRepository.TBYS;
 
@@ -9,16 +8,6 @@ namespace Jenga.DataAccess.Repositories.IRepository
 {
     public interface IUnitOfWork
     {
-        //Inventory
-        IMaterialRepository Material { get; }
-        IMaterialUnitRepository MaterialUnit { get; }
-        IMaterialEntryRepository MaterialEntry { get; }
-        IMaterialCategoryRepository MaterialCategory { get; }
-        IMaterialBrandRepository MaterialBrand { get; }
-        IMaterialModelRepository MaterialModel { get; }
-        ILocationRepository Location { get; }
-        IMaterialInventoryRepository MaterialInventory { get; }
-        IMaterialExitRepository MaterialExit { get; }
         // Common
         IMenuItemRepository MenuItem { get; }
         IRoleRepository Role { get; }

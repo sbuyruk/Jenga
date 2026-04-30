@@ -1,12 +1,13 @@
-﻿using Jenga.DataAccess.Repositories.IRepository;
+﻿using Jenga.DataAccess.Data;
 using Jenga.Models.Inventory;
+using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
 namespace Jenga.DataAccess.Services.Inventory
 {
     public class LocationService : ILocationService
     {
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
         private List<Location>? _locationsCache;
 
         private readonly IMaterialEntryService _materialEntryService;
@@ -14,35 +15,43 @@ namespace Jenga.DataAccess.Services.Inventory
         private readonly IMaterialInventoryService _materialInventoryService;
 
         public LocationService(
-            IUnitOfWork unitOfWork,
-             IMaterialEntryService materialEntryService,
+            IDbContextFactory<ApplicationDbContext> dbFactory,
+            IMaterialEntryService materialEntryService,
             IMaterialExitService materialExitService,
             IMaterialInventoryService materialInventoryService)
         {
-            _unitOfWork = unitOfWork;
+            _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
             _materialEntryService = materialEntryService;
             _materialExitService = materialExitService;
             _materialInventoryService = materialInventoryService;
         }
 
         public async Task<List<Location>> GetAllAsync(CancellationToken cancellationToken = default)
-            => await _unitOfWork.Location.GetAllAsync(cancellationToken);
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.Location_Table.AsNoTracking().ToListAsync(cancellationToken);
+        }
 
         public async Task<Location?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
-            => await _unitOfWork.Location.GetByIdAsync(id, cancellationToken);
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.Location_Table.AsNoTracking().FirstOrDefaultAsync(l => l.Id == id, cancellationToken);
+        }
 
         public async Task<bool> AddAsync(Location location, CancellationToken cancellationToken = default)
         {
-            await _unitOfWork.Location.AddAsync(location, cancellationToken);
-            await _unitOfWork.Location.SaveChangesAsync(cancellationToken);
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            await db.Location_Table.AddAsync(location, cancellationToken);
+            await db.SaveChangesAsync(cancellationToken);
             _locationsCache = null;
             return true;
         }
 
         public async Task<bool> UpdateAsync(Location location, CancellationToken cancellationToken = default)
         {
-            await _unitOfWork.Location.UpdateAsync(location);
-            await _unitOfWork.Location.SaveChangesAsync(cancellationToken);
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            db.Location_Table.Update(location);
+            await db.SaveChangesAsync(cancellationToken);
             _locationsCache = null;
             return true;
         }
@@ -57,10 +66,11 @@ namespace Jenga.DataAccess.Services.Inventory
             if (await _materialInventoryService.AnyAsync(m => m.LocationId == location.Id))
                 return false;
 
-            // If no dependencies, proceed with deletion
-
-            _unitOfWork.Location.Remove(location);
-            await _unitOfWork.Location.SaveChangesAsync(cancellationToken);
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            var entity = await db.Location_Table.FirstOrDefaultAsync(l => l.Id == location.Id, cancellationToken);
+            if (entity == null) return false;
+            db.Location_Table.Remove(entity);
+            await db.SaveChangesAsync(cancellationToken);
             _locationsCache = null;
             return true;
         }
@@ -77,6 +87,7 @@ namespace Jenga.DataAccess.Services.Inventory
                 return (false, "Bu konum bir malzeme envanterinde kullanılıyor, önce onu silmelisiniz.");
             return (true, null);
         }
+
         // Yardımcı Metot: Parent adını döndür
         public async Task<string> GetParentLocationNameAsync(int? parentId, CancellationToken cancellationToken = default)
         {
@@ -86,10 +97,11 @@ namespace Jenga.DataAccess.Services.Inventory
             var parent = _locationsCache.FirstOrDefault(x => x.Id == parentId);
             return parent?.LocationName ?? "";
         }
-        public Task<bool> AnyAsync(Expression<Func<Location, bool>> predicate)
-        {
-            return _unitOfWork.Location.AnyAsync(predicate);
-        }
 
+        public async Task<bool> AnyAsync(Expression<Func<Location, bool>> predicate)
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync();
+            return await db.Location_Table.AsNoTracking().AnyAsync(predicate);
+        }
     }
 }

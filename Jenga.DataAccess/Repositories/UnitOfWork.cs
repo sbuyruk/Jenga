@@ -1,11 +1,9 @@
 ﻿using Jenga.DataAccess.Data;
 using Jenga.DataAccess.Repositories.Common;
 using Jenga.DataAccess.Repositories.IKYS;
-using Jenga.DataAccess.Repositories.Inventory;
 using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.DataAccess.Repositories.IRepository.Common;
 using Jenga.DataAccess.Repositories.IRepository.IKYS;
-using Jenga.DataAccess.Repositories.IRepository.Inventory;
 using Jenga.DataAccess.Repositories.IRepository.FTK;
 using Jenga.DataAccess.Repositories.IRepository.NBYS;
 using Jenga.DataAccess.Repositories.IRepository.TBYS;
@@ -28,17 +26,6 @@ namespace Jenga.DataAccess.Repositories
             Role = new RoleRepository(_contextFactory);
             RoleMenu = new RoleMenuRepository(_contextFactory);
             PersonelRole = new PersonelRoleRepository(_contextFactory);
-
-            // Inventory
-            Material = new MaterialRepository(_contextFactory);
-            MaterialEntry = new MaterialEntryRepository(_contextFactory);
-            MaterialUnit = new MaterialUnitRepository(_contextFactory);
-            MaterialCategory = new MaterialCategoryRepository(_contextFactory);
-            MaterialBrand = new MaterialBrandRepository(_contextFactory);
-            MaterialModel = new MaterialModelRepository(_contextFactory);
-            Location = new LocationRepository(_contextFactory);
-            MaterialInventory = new MaterialInventoryRepository(_contextFactory);
-            MaterialExit = new MaterialExitRepository(_contextFactory);
 
             // Ortak
             Bolge = new BolgeRepository(_contextFactory);
@@ -101,17 +88,6 @@ namespace Jenga.DataAccess.Repositories
         public IBolgeRepository Bolge { get; private set; }
         public IIlRepository Il { get; private set; }
         public IIlceRepository Ilce { get; private set; }
-
-        // Inventory
-        public IMaterialRepository Material { get; private set; }
-        public IMaterialEntryRepository MaterialEntry { get; private set; }
-        public IMaterialUnitRepository MaterialUnit { get; private set; }
-        public IMaterialCategoryRepository MaterialCategory { get; private set; }
-        public IMaterialBrandRepository MaterialBrand { get; private set; }
-        public IMaterialModelRepository MaterialModel { get; private set; }
-        public ILocationRepository Location { get; private set; }
-        public IMaterialInventoryRepository MaterialInventory { get; private set; }
-        public IMaterialExitRepository MaterialExit { get; private set; }
 
         // IKYS
         public IPersonelRepository Personel { get; private set; }
