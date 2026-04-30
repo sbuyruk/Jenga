@@ -18,11 +18,7 @@ namespace Jenga.DataAccess.Repositories.IRepository
         IMaterialModelRepository MaterialModel { get; }
         ILocationRepository Location { get; }
         IMaterialInventoryRepository MaterialInventory { get; }
-        IMaterialMovementRepository MaterialMovement { get; }
         IMaterialExitRepository MaterialExit { get; }
-        IMaterialTransferRepository MaterialTransfer { get; }
-        IMaterialAssetRepository MaterialAsset { get; }
-        IMaterialAssetLogRepository MaterialAssetLog { get; }
         // Common
         IMenuItemRepository MenuItem { get; }
         IRoleRepository Role { get; }

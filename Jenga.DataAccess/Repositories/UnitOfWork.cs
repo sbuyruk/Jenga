@@ -38,11 +38,7 @@ namespace Jenga.DataAccess.Repositories
             MaterialModel = new MaterialModelRepository(_contextFactory);
             Location = new LocationRepository(_contextFactory);
             MaterialInventory = new MaterialInventoryRepository(_contextFactory);
-            MaterialMovement = new MaterialMovementRepository(_contextFactory);
             MaterialExit = new MaterialExitRepository(_contextFactory);
-            MaterialTransfer = new MaterialTransferRepository(_contextFactory);
-            MaterialAsset = new MaterialAssetRepository(_contextFactory);
-            MaterialAssetLog = new MaterialAssetLogRepository(_contextFactory);
 
             // Ortak
             Bolge = new BolgeRepository(_contextFactory);
@@ -115,11 +111,7 @@ namespace Jenga.DataAccess.Repositories
         public IMaterialModelRepository MaterialModel { get; private set; }
         public ILocationRepository Location { get; private set; }
         public IMaterialInventoryRepository MaterialInventory { get; private set; }
-        public IMaterialMovementRepository MaterialMovement { get; private set; }
         public IMaterialExitRepository MaterialExit { get; private set; }
-        public IMaterialTransferRepository MaterialTransfer { get; private set; }
-        public IMaterialAssetRepository MaterialAsset { get; private set; }
-        public IMaterialAssetLogRepository MaterialAssetLog { get; private set; }
 
         // IKYS
         public IPersonelRepository Personel { get; private set; }
