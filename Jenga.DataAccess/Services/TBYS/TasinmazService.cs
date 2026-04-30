@@ -1,40 +1,49 @@
-﻿using Jenga.DataAccess.Repositories.IRepository;
-using Jenga.DataAccess.Repositories.IRepository.TBYS;
+using Jenga.DataAccess.Data;
 using Jenga.Models.TBYS;
 using Jenga.Utility.Logging;
+using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
 namespace Jenga.DataAccess.Services.TBYS
 {
     public class TasinmazService : ITasinmazService
     {
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
         private readonly ILogService _logService;
         private List<Tasinmaz>? _tasinmazCache;
 
-        public TasinmazService(IUnitOfWork unitOfWork, ILogService logService)
+        public TasinmazService(IDbContextFactory<ApplicationDbContext> dbFactory, ILogService logService)
         {
-            _unitOfWork = unitOfWork;
+            _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
             _logService = logService;
         }
 
         public async Task<List<Tasinmaz>> GetAllAsync(CancellationToken cancellationToken = default)
-            => await _unitOfWork.Tasinmaz.GetAllAsync(cancellationToken);
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.Tasinmaz_Table.AsNoTracking().ToListAsync(cancellationToken);
+        }
 
         public async Task<List<Tasinmaz>> GetByEnvanterDurumuAsync(int envanterdeMi, CancellationToken cancellationToken = default)
         {
-            var list = await _unitOfWork.Tasinmaz.GetAllByFilterAsync(x => x.EnvanterdeMi == envanterdeMi);
-            return list.ToList();
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.Tasinmaz_Table.AsNoTracking().Where(x => x.EnvanterdeMi == envanterdeMi).ToListAsync(cancellationToken);
         }
 
         public Task<List<Tasinmaz>> GetEnvanterdekilerAsync(CancellationToken cancellationToken = default)
             => GetByEnvanterDurumuAsync(1, cancellationToken);
 
         public async Task<Tasinmaz?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
-            => await _unitOfWork.Tasinmaz.GetByIdAsync(id, cancellationToken);
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.Tasinmaz_Table.AsNoTracking().FirstOrDefaultAsync(m => m.Id == id, cancellationToken);
+        }
 
         public async Task<Tasinmaz?> GetByIdWithRelationsAsync(int id, CancellationToken cancellationToken = default)
-            => await _unitOfWork.Tasinmaz.GetByIdWithRelationsAsync(id, cancellationToken);
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.Tasinmaz_Table.AsNoTracking().FirstOrDefaultAsync(m => m.Id == id, cancellationToken);
+        }
 
         public async Task<bool> AddAsync(Tasinmaz tasinmaz, CancellationToken cancellationToken = default)
         {
@@ -49,8 +58,9 @@ namespace Jenga.DataAccess.Services.TBYS
 
             try
             {
-                await _unitOfWork.Tasinmaz.AddAsync(tasinmaz, cancellationToken);
-                await _unitOfWork.Tasinmaz.SaveChangesAsync(cancellationToken);
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                await db.Tasinmaz_Table.AddAsync(tasinmaz, cancellationToken);
+                await db.SaveChangesAsync(cancellationToken);
                 _tasinmazCache = null;
                 return true;
             }
@@ -74,8 +84,9 @@ namespace Jenga.DataAccess.Services.TBYS
 
             try
             {
-                await _unitOfWork.Tasinmaz.UpdateAsync(tasinmaz, null, cancellationToken);
-                await _unitOfWork.Tasinmaz.SaveChangesAsync(cancellationToken);
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                db.Tasinmaz_Table.Update(tasinmaz);
+                await db.SaveChangesAsync(cancellationToken);
                 _tasinmazCache = null;
                 return true;
             }
@@ -88,20 +99,21 @@ namespace Jenga.DataAccess.Services.TBYS
 
         public async Task<bool> DeleteAsync(int tasinmazId, CancellationToken cancellationToken = default)
         {
-            var entity = await _unitOfWork.Tasinmaz.GetByIdAsync(tasinmazId, cancellationToken);
-            if (entity != null)
-            {
-                _unitOfWork.Tasinmaz.Remove(entity);
-                await _unitOfWork.Tasinmaz.SaveChangesAsync(cancellationToken);
-                _tasinmazCache = null;
-                return true;
-            }
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            var entity = await db.Tasinmaz_Table.FirstOrDefaultAsync(x => x.Id == tasinmazId, cancellationToken);
+            if (entity == null) return false;
 
-            return false;
+            db.Tasinmaz_Table.Remove(entity);
+            await db.SaveChangesAsync(cancellationToken);
+            _tasinmazCache = null;
+            return true;
         }
 
         public async Task<bool> AnyAsync(Expression<Func<Tasinmaz, bool>> predicate, CancellationToken cancellationToken = default)
-            => await _unitOfWork.Tasinmaz.AnyAsync(predicate, cancellationToken);
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.Tasinmaz_Table.AnyAsync(predicate, cancellationToken);
+        }
 
         public async Task<string> GetEmlakSicilNoAsync(int id, CancellationToken cancellationToken = default)
         {
@@ -113,19 +125,21 @@ namespace Jenga.DataAccess.Services.TBYS
         }
 
         public async Task<(bool CanDelete, string? Reason)> CanDeleteAsync(int id)
-            => (true, null);
+        {
+            await Task.CompletedTask;
+            return (true, null);
+        }
 
         public async Task<bool> ExistsByEmlakSicilNoAsync(string emlakSicilNo, int? excludeId = null, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(emlakSicilNo)) return false;
             var normalized = emlakSicilNo.Trim().ToLowerInvariant();
 
-            Expression<Func<Tasinmaz, bool>> predicate = m =>
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.Tasinmaz_Table.AsNoTracking().AnyAsync(m =>
                 m.EmlakSicilNo != null &&
                 m.EmlakSicilNo.Trim().ToLower() == normalized &&
-                (!excludeId.HasValue || m.Id != excludeId.Value);
-
-            return await _unitOfWork.Tasinmaz.AnyAsync(predicate, cancellationToken);
+                (!excludeId.HasValue || m.Id != excludeId.Value), cancellationToken);
         }
     }
 }

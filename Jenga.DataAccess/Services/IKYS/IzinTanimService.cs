@@ -1,49 +1,59 @@
-using Jenga.DataAccess.Repositories.IRepository;
+using Jenga.DataAccess.Data;
 using Jenga.Models.IKYS;
+using Microsoft.EntityFrameworkCore;
 
 namespace Jenga.DataAccess.Services.IKYS;
 
 public class IzinTanimService : IIzinTanimService
 {
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
 
-    public IzinTanimService(IUnitOfWork unitOfWork)
+    public IzinTanimService(IDbContextFactory<ApplicationDbContext> dbFactory)
     {
-        _unitOfWork = unitOfWork;
+        _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
     }
 
     public async Task<List<IzinTanim>> GetAllAsync(CancellationToken cancellationToken = default)
-        => await _unitOfWork.IzinTanim.GetAllAsync(cancellationToken);
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        return await db.IzinTanim_Table.AsNoTracking().ToListAsync(cancellationToken);
+    }
 
     public async Task<IzinTanim?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
-        => await _unitOfWork.IzinTanim.GetByIdAsync(id, cancellationToken);
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        return await db.IzinTanim_Table.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+    }
 
     public async Task<bool> AddAsync(IzinTanim entity, string? modifiedBy = null, CancellationToken cancellationToken = default)
     {
         entity.Olusturan = modifiedBy;
         entity.OlusturmaTarihi = DateTime.Now;
-        await _unitOfWork.IzinTanim.AddAsync(entity, cancellationToken);
-        await _unitOfWork.IzinTanim.SaveChangesAsync(cancellationToken);
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        await db.IzinTanim_Table.AddAsync(entity, cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
         return true;
     }
 
     public async Task<bool> UpdateAsync(IzinTanim entity, CancellationToken cancellationToken = default)
     {
-        var existing = await GetByIdAsync(entity.Id, cancellationToken)
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        var existing = await db.IzinTanim_Table.FirstOrDefaultAsync(x => x.Id == entity.Id, cancellationToken)
             ?? throw new Exception("Kayıt bulunamadı!");
         existing.Adi = entity.Adi;
         existing.Aciklama = entity.Aciklama;
         existing.Degistiren = entity.Degistiren;
         existing.DegistirmeTarihi = DateTime.Now;
-        await _unitOfWork.IzinTanim.UpdateAsync(existing);
-        await _unitOfWork.IzinTanim.SaveChangesAsync(cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
         return true;
     }
 
     public async Task<bool> DeleteAsync(IzinTanim entity, CancellationToken cancellationToken = default)
     {
-        _unitOfWork.IzinTanim.Remove(entity);
-        await _unitOfWork.IzinTanim.SaveChangesAsync(cancellationToken);
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        db.IzinTanim_Table.Attach(entity);
+        db.IzinTanim_Table.Remove(entity);
+        await db.SaveChangesAsync(cancellationToken);
         return true;
     }
 }

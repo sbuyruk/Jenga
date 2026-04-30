@@ -6,9 +6,8 @@ namespace Jenga.DataAccess.Data;
 /// Tek bir <see cref="ApplicationDbContext"/> ve onun üstünde açılmış bir transaction'ı
 /// birlikte tutan, use-case (iş akışı) ömürlü bir sarmalayıcı.
 ///
-/// Mevcut Repository / IUnitOfWork altyapısının yerini ALMAZ; yalnızca birden fazla
-/// tabloya yazan iş akışlarının tek bir atomic SaveChanges + Commit içinde çalışmasını
-/// sağlamak için ek bir araçtır.
+/// Birden fazla tabloya yazan iş akışlarının tek bir atomic SaveChanges + Commit
+/// içinde çalışmasını sağlamak için kullanılır.
 ///
 /// Kullanım deseni:
 ///     await using var scope = await DbContextScope.CreateAsync(_dbFactory, ct);

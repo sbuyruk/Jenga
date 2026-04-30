@@ -1,41 +1,50 @@
-using Jenga.DataAccess.Repositories.IRepository;
+using Jenga.DataAccess.Data;
 using Jenga.Models.IKYS;
+using Microsoft.EntityFrameworkCore;
 
 namespace Jenga.DataAccess.Services.IKYS;
 
 public class YabanciDilService : IYabanciDilService
 {
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
 
-    public YabanciDilService(IUnitOfWork unitOfWork)
+    public YabanciDilService(IDbContextFactory<ApplicationDbContext> dbFactory)
     {
-        _unitOfWork = unitOfWork;
+        _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
     }
 
     public async Task<List<YabanciDil>> GetAllAsync(CancellationToken cancellationToken = default)
-        => await _unitOfWork.YabanciDil.GetAllAsync(cancellationToken);
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        return await db.YabanciDil_Table.AsNoTracking().ToListAsync(cancellationToken);
+    }
 
     public async Task<List<YabanciDil>> GetByPersonelIdAsync(int personelId, CancellationToken cancellationToken = default)
     {
-        var all = await _unitOfWork.YabanciDil.GetAllAsync(cancellationToken);
-        return all.Where(x => x.PersonelId == personelId).ToList();
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        return await db.YabanciDil_Table.AsNoTracking().Where(x => x.PersonelId == personelId).ToListAsync(cancellationToken);
     }
 
     public async Task<YabanciDil?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
-        => await _unitOfWork.YabanciDil.GetByIdAsync(id, cancellationToken);
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        return await db.YabanciDil_Table.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+    }
 
     public async Task<bool> AddAsync(YabanciDil entity, string? modifiedBy = null, CancellationToken cancellationToken = default)
     {
         entity.Olusturan = modifiedBy;
         entity.OlusturmaTarihi = DateTime.Now;
-        await _unitOfWork.YabanciDil.AddAsync(entity, cancellationToken);
-        await _unitOfWork.YabanciDil.SaveChangesAsync(cancellationToken);
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        await db.YabanciDil_Table.AddAsync(entity, cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
         return true;
     }
 
     public async Task<bool> UpdateAsync(YabanciDil entity, CancellationToken cancellationToken = default)
     {
-        var existing = await GetByIdAsync(entity.Id, cancellationToken)
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        var existing = await db.YabanciDil_Table.FirstOrDefaultAsync(x => x.Id == entity.Id, cancellationToken)
             ?? throw new Exception("Kayıt bulunamadı!");
         existing.PersonelId = entity.PersonelId;
         existing.Dil = entity.Dil;
@@ -45,15 +54,16 @@ public class YabanciDilService : IYabanciDilService
         existing.Aciklama = entity.Aciklama;
         existing.Degistiren = entity.Degistiren;
         existing.DegistirmeTarihi = DateTime.Now;
-        await _unitOfWork.YabanciDil.UpdateAsync(existing);
-        await _unitOfWork.YabanciDil.SaveChangesAsync(cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
         return true;
     }
 
     public async Task<bool> DeleteAsync(YabanciDil entity, CancellationToken cancellationToken = default)
     {
-        _unitOfWork.YabanciDil.Remove(entity);
-        await _unitOfWork.YabanciDil.SaveChangesAsync(cancellationToken);
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        db.YabanciDil_Table.Attach(entity);
+        db.YabanciDil_Table.Remove(entity);
+        await db.SaveChangesAsync(cancellationToken);
         return true;
     }
 }

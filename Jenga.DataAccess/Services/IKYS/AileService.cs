@@ -1,4 +1,4 @@
-using Jenga.DataAccess.Repositories.IRepository;
+using Jenga.DataAccess.Data;
 using Jenga.Models.IKYS;
 using Microsoft.EntityFrameworkCore;
 
@@ -6,37 +6,45 @@ namespace Jenga.DataAccess.Services.IKYS;
 
 public class AileService : IAileService
 {
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
 
-    public AileService(IUnitOfWork unitOfWork)
+    public AileService(IDbContextFactory<ApplicationDbContext> dbFactory)
     {
-        _unitOfWork = unitOfWork;
+        _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
     }
 
     public async Task<List<Aile>> GetAllAsync(CancellationToken cancellationToken = default)
-        => await _unitOfWork.Aile.GetAllAsync(cancellationToken);
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        return await db.Aile_Table.AsNoTracking().ToListAsync(cancellationToken);
+    }
 
     public async Task<List<Aile>> GetByPersonelIdAsync(int personelId, CancellationToken cancellationToken = default)
     {
-        var all = await _unitOfWork.Aile.GetAllAsync(cancellationToken);
-        return all.Where(x => x.PersonelId == personelId).ToList();
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        return await db.Aile_Table.AsNoTracking().Where(x => x.PersonelId == personelId).ToListAsync(cancellationToken);
     }
 
     public async Task<Aile?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
-        => await _unitOfWork.Aile.GetByIdAsync(id, cancellationToken);
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        return await db.Aile_Table.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+    }
 
     public async Task<bool> AddAsync(Aile entity, string? modifiedBy = null, CancellationToken cancellationToken = default)
     {
         entity.Olusturan = modifiedBy;
         entity.OlusturmaTarihi = DateTime.Now;
-        await _unitOfWork.Aile.AddAsync(entity, cancellationToken);
-        await _unitOfWork.Aile.SaveChangesAsync(cancellationToken);
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        await db.Aile_Table.AddAsync(entity, cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
         return true;
     }
 
     public async Task<bool> UpdateAsync(Aile entity, CancellationToken cancellationToken = default)
     {
-        var existing = await GetByIdAsync(entity.Id, cancellationToken)
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        var existing = await db.Aile_Table.FirstOrDefaultAsync(x => x.Id == entity.Id, cancellationToken)
             ?? throw new Exception("Kayıt bulunamadı!");
         existing.PersonelId = entity.PersonelId;
         existing.Adi = entity.Adi;
@@ -51,15 +59,16 @@ public class AileService : IAileService
         existing.Aciklama = entity.Aciklama;
         existing.Degistiren = entity.Degistiren;
         existing.DegistirmeTarihi = DateTime.Now;
-        await _unitOfWork.Aile.UpdateAsync(existing);
-        await _unitOfWork.Aile.SaveChangesAsync(cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
         return true;
     }
 
     public async Task<bool> DeleteAsync(Aile entity, CancellationToken cancellationToken = default)
     {
-        _unitOfWork.Aile.Remove(entity);
-        await _unitOfWork.Aile.SaveChangesAsync(cancellationToken);
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        db.Aile_Table.Attach(entity);
+        db.Aile_Table.Remove(entity);
+        await db.SaveChangesAsync(cancellationToken);
         return true;
     }
 }

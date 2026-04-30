@@ -1,28 +1,35 @@
-using Jenga.DataAccess.Repositories.IRepository;
+using Jenga.DataAccess.Data;
 using Jenga.Models.IKYS;
+using Microsoft.EntityFrameworkCore;
 
 namespace Jenga.DataAccess.Services.IKYS;
 
 public class IzinTalepService : IIzinTalepService
 {
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
 
-    public IzinTalepService(IUnitOfWork unitOfWork)
+    public IzinTalepService(IDbContextFactory<ApplicationDbContext> dbFactory)
     {
-        _unitOfWork = unitOfWork;
+        _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
     }
 
     public async Task<List<IzinTalep>> GetAllAsync(CancellationToken cancellationToken = default)
-        => await _unitOfWork.IzinTalep.GetAllAsync(cancellationToken);
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        return await db.IzinTalep_Table.AsNoTracking().ToListAsync(cancellationToken);
+    }
 
     public async Task<List<IzinTalep>> GetByPersonelIdAsync(int personelId, CancellationToken cancellationToken = default)
     {
-        var all = await _unitOfWork.IzinTalep.GetAllAsync(cancellationToken);
-        return all.Where(x => x.PersonelId == personelId).ToList();
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        return await db.IzinTalep_Table.AsNoTracking().Where(x => x.PersonelId == personelId).ToListAsync(cancellationToken);
     }
 
     public async Task<IzinTalep?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
-        => await _unitOfWork.IzinTalep.GetByIdAsync(id, cancellationToken);
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        return await db.IzinTalep_Table.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+    }
 
     public async Task<bool> AddAsync(IzinTalep entity, string? modifiedBy = null, CancellationToken cancellationToken = default)
     {
@@ -30,14 +37,16 @@ public class IzinTalepService : IIzinTalepService
         entity.OlusturmaTarihi = DateTime.Now;
         entity.Aktif ??= true;
         entity.OnayDurumu ??= 0;
-        await _unitOfWork.IzinTalep.AddAsync(entity, cancellationToken);
-        await _unitOfWork.IzinTalep.SaveChangesAsync(cancellationToken);
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        await db.IzinTalep_Table.AddAsync(entity, cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
         return true;
     }
 
     public async Task<bool> UpdateAsync(IzinTalep entity, CancellationToken cancellationToken = default)
     {
-        var existing = await GetByIdAsync(entity.Id, cancellationToken)
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        var existing = await db.IzinTalep_Table.FirstOrDefaultAsync(x => x.Id == entity.Id, cancellationToken)
             ?? throw new Exception("Kayıt bulunamadı!");
         existing.PersonelId = entity.PersonelId;
         existing.IzinTipi = entity.IzinTipi;
@@ -56,15 +65,16 @@ public class IzinTalepService : IIzinTalepService
         existing.Aciklama = entity.Aciklama;
         existing.Degistiren = entity.Degistiren;
         existing.DegistirmeTarihi = DateTime.Now;
-        await _unitOfWork.IzinTalep.UpdateAsync(existing);
-        await _unitOfWork.IzinTalep.SaveChangesAsync(cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
         return true;
     }
 
     public async Task<bool> DeleteAsync(IzinTalep entity, CancellationToken cancellationToken = default)
     {
-        _unitOfWork.IzinTalep.Remove(entity);
-        await _unitOfWork.IzinTalep.SaveChangesAsync(cancellationToken);
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        db.IzinTalep_Table.Attach(entity);
+        db.IzinTalep_Table.Remove(entity);
+        await db.SaveChangesAsync(cancellationToken);
         return true;
     }
 }

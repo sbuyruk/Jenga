@@ -1,41 +1,50 @@
-using Jenga.DataAccess.Repositories.IRepository;
+using Jenga.DataAccess.Data;
 using Jenga.Models.IKYS;
+using Microsoft.EntityFrameworkCore;
 
 namespace Jenga.DataAccess.Services.IKYS;
 
 public class DereceKademeDegisimService : IDereceKademeDegisimService
 {
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
 
-    public DereceKademeDegisimService(IUnitOfWork unitOfWork)
+    public DereceKademeDegisimService(IDbContextFactory<ApplicationDbContext> dbFactory)
     {
-        _unitOfWork = unitOfWork;
+        _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
     }
 
     public async Task<List<DereceKademeDegisim>> GetAllAsync(CancellationToken cancellationToken = default)
-        => await _unitOfWork.DereceKademeDegisim.GetAllAsync(cancellationToken);
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        return await db.DereceKademeDegisim_Table.AsNoTracking().ToListAsync(cancellationToken);
+    }
 
     public async Task<List<DereceKademeDegisim>> GetByPersonelIdAsync(int personelId, CancellationToken cancellationToken = default)
     {
-        var all = await _unitOfWork.DereceKademeDegisim.GetAllAsync(cancellationToken);
-        return all.Where(x => x.PersonelId == personelId).ToList();
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        return await db.DereceKademeDegisim_Table.AsNoTracking().Where(x => x.PersonelId == personelId).ToListAsync(cancellationToken);
     }
 
     public async Task<DereceKademeDegisim?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
-        => await _unitOfWork.DereceKademeDegisim.GetByIdAsync(id, cancellationToken);
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        return await db.DereceKademeDegisim_Table.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+    }
 
     public async Task<bool> AddAsync(DereceKademeDegisim entity, string? modifiedBy = null, CancellationToken cancellationToken = default)
     {
         entity.Olusturan = modifiedBy;
         entity.OlusturmaTarihi = DateTime.Now;
-        await _unitOfWork.DereceKademeDegisim.AddAsync(entity, cancellationToken);
-        await _unitOfWork.DereceKademeDegisim.SaveChangesAsync(cancellationToken);
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        await db.DereceKademeDegisim_Table.AddAsync(entity, cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
         return true;
     }
 
     public async Task<bool> UpdateAsync(DereceKademeDegisim entity, CancellationToken cancellationToken = default)
     {
-        var existing = await GetByIdAsync(entity.Id, cancellationToken)
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        var existing = await db.DereceKademeDegisim_Table.FirstOrDefaultAsync(x => x.Id == entity.Id, cancellationToken)
             ?? throw new Exception("Kayıt bulunamadı!");
         existing.PersonelId = entity.PersonelId;
         existing.Degisim = entity.Degisim;
@@ -45,18 +54,24 @@ public class DereceKademeDegisimService : IDereceKademeDegisimService
         existing.Aciklama = entity.Aciklama;
         existing.Degistiren = entity.Degistiren;
         existing.DegistirmeTarihi = DateTime.Now;
-        await _unitOfWork.DereceKademeDegisim.UpdateAsync(existing);
-        await _unitOfWork.DereceKademeDegisim.SaveChangesAsync(cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
         return true;
     }
 
     public async Task<bool> DeleteAsync(DereceKademeDegisim entity, CancellationToken cancellationToken = default)
     {
-        _unitOfWork.DereceKademeDegisim.Remove(entity);
-        await _unitOfWork.DereceKademeDegisim.SaveChangesAsync(cancellationToken);
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        db.DereceKademeDegisim_Table.Attach(entity);
+        db.DereceKademeDegisim_Table.Remove(entity);
+        await db.SaveChangesAsync(cancellationToken);
         return true;
     }
-    public async Task<List<DereceKademeDegisim>> GetDereceYukseltmeAsync(CancellationToken cancellationToken = default)
-    => await _unitOfWork.DereceKademeDegisim.GetDereceYukseltmeAsync(cancellationToken);
 
+    public async Task<List<DereceKademeDegisim>> GetDereceYukseltmeAsync(CancellationToken cancellationToken = default)
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        return await db.DereceKademeDegisim_Table.AsNoTracking()
+            .Where(x => x.Degisim == "Derece Yükseltme")
+            .ToListAsync(cancellationToken);
+    }
 }

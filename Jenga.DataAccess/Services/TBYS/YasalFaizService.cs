@@ -1,35 +1,42 @@
-﻿using Jenga.DataAccess.Repositories.IRepository;
+using Jenga.DataAccess.Data;
 using Jenga.Models.TBYS;
 using Jenga.Utility.Logging;
+using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
 namespace Jenga.DataAccess.Services.TBYS;
 
 public class YasalFaizService : IYasalFaizService
 {
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
     private readonly ILogService _logService;
 
-    public YasalFaizService(IUnitOfWork unitOfWork, ILogService logService)
+    public YasalFaizService(IDbContextFactory<ApplicationDbContext> dbFactory, ILogService logService)
     {
-        _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+        _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
         _logService = logService;
     }
 
     public async Task<List<YasalFaiz>> GetAllAsync(CancellationToken cancellationToken = default)
-        => await _unitOfWork.YasalFaiz.GetAllAsync(cancellationToken);
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        return await db.YasalFaiz_Table.AsNoTracking().ToListAsync(cancellationToken);
+    }
 
     public async Task<YasalFaiz?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
-        => await _unitOfWork.YasalFaiz.GetByIdAsync(id, cancellationToken);
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        return await db.YasalFaiz_Table.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+    }
 
     public async Task<bool> AddAsync(YasalFaiz yasalFaiz, CancellationToken cancellationToken = default)
     {
         if (yasalFaiz == null) throw new ArgumentNullException(nameof(yasalFaiz));
-
         try
         {
-            await _unitOfWork.YasalFaiz.AddAsync(yasalFaiz, cancellationToken);
-            await _unitOfWork.YasalFaiz.SaveChangesAsync(cancellationToken);
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            await db.YasalFaiz_Table.AddAsync(yasalFaiz, cancellationToken);
+            await db.SaveChangesAsync(cancellationToken);
             return true;
         }
         catch (Exception ex)
@@ -42,11 +49,11 @@ public class YasalFaizService : IYasalFaizService
     public async Task<bool> UpdateAsync(YasalFaiz yasalFaiz, CancellationToken cancellationToken = default)
     {
         if (yasalFaiz == null) throw new ArgumentNullException(nameof(yasalFaiz));
-
         try
         {
-            await _unitOfWork.YasalFaiz.UpdateAsync(yasalFaiz, null, cancellationToken);
-            await _unitOfWork.YasalFaiz.SaveChangesAsync(cancellationToken);
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            db.YasalFaiz_Table.Update(yasalFaiz);
+            await db.SaveChangesAsync(cancellationToken);
             return true;
         }
         catch (Exception ex)
@@ -58,14 +65,18 @@ public class YasalFaizService : IYasalFaizService
 
     public async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default)
     {
-        var entity = await _unitOfWork.YasalFaiz.GetByIdAsync(id, cancellationToken);
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        var entity = await db.YasalFaiz_Table.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
         if (entity == null) return false;
 
-        _unitOfWork.YasalFaiz.Remove(entity);
-        await _unitOfWork.YasalFaiz.SaveChangesAsync(cancellationToken);
+        db.YasalFaiz_Table.Remove(entity);
+        await db.SaveChangesAsync(cancellationToken);
         return true;
     }
 
     public async Task<bool> AnyAsync(Expression<Func<YasalFaiz, bool>> predicate, CancellationToken cancellationToken = default)
-        => await _unitOfWork.YasalFaiz.AnyAsync(predicate, cancellationToken);
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        return await db.YasalFaiz_Table.AnyAsync(predicate, cancellationToken);
+    }
 }

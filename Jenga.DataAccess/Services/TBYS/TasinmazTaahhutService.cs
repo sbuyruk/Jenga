@@ -1,38 +1,53 @@
-using Jenga.DataAccess.Repositories.IRepository;
+using Jenga.DataAccess.Data;
 using Jenga.Models.TBYS;
 using Jenga.Utility.Logging;
+using Microsoft.EntityFrameworkCore;
 
 namespace Jenga.DataAccess.Services.TBYS
 {
     public class TasinmazTaahhutService : ITasinmazTaahhutService
     {
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
         private readonly ILogService _logService;
 
-        public TasinmazTaahhutService(IUnitOfWork unitOfWork, ILogService logService)
+        public TasinmazTaahhutService(IDbContextFactory<ApplicationDbContext> dbFactory, ILogService logService)
         {
-            _unitOfWork = unitOfWork;
+            _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
             _logService = logService;
         }
 
         public async Task<List<TasinmazTaahhut>> GetAllAsync(CancellationToken cancellationToken = default)
-            => await _unitOfWork.TasinmazTaahhut.GetAllAsync(cancellationToken);
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.TasinmazTaahhut_Table.AsNoTracking().ToListAsync(cancellationToken);
+        }
 
         public async Task<TasinmazTaahhut?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
-            => await _unitOfWork.TasinmazTaahhut.GetByIdAsync(id, cancellationToken);
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.TasinmazTaahhut_Table.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        }
 
         public async Task<List<TasinmazTaahhut>> GetByTasinmazIdAsync(int tasinmazId, CancellationToken cancellationToken = default)
-            => await _unitOfWork.TasinmazTaahhut.GetByTasinmazIdAsync(tasinmazId, cancellationToken);
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.TasinmazTaahhut_Table.AsNoTracking().Where(x => x.TasinmazId == tasinmazId).ToListAsync(cancellationToken);
+        }
 
         public async Task<List<TasinmazTaahhut>> GetByBagisciIdAsync(int bagisciId, CancellationToken cancellationToken = default)
-            => await _unitOfWork.TasinmazTaahhut.GetByBagisciIdAsync(bagisciId, cancellationToken);
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.TasinmazTaahhut_Table.AsNoTracking().Where(x => x.BagisciId == bagisciId).ToListAsync(cancellationToken);
+        }
 
         public async Task<bool> AddAsync(TasinmazTaahhut entity, CancellationToken cancellationToken = default)
         {
             if (entity == null) throw new ArgumentNullException(nameof(entity));
             try
             {
-                await _unitOfWork.TasinmazTaahhut.AddAsync(entity, cancellationToken);
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                await db.TasinmazTaahhut_Table.AddAsync(entity, cancellationToken);
+                await db.SaveChangesAsync(cancellationToken);
                 return true;
             }
             catch (Exception ex)
@@ -47,7 +62,9 @@ namespace Jenga.DataAccess.Services.TBYS
             if (entity == null) throw new ArgumentNullException(nameof(entity));
             try
             {
-                await _unitOfWork.TasinmazTaahhut.UpdateAsync(entity, cancellationToken);
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                db.TasinmazTaahhut_Table.Update(entity);
+                await db.SaveChangesAsync(cancellationToken);
                 return true;
             }
             catch (Exception ex)
@@ -59,11 +76,14 @@ namespace Jenga.DataAccess.Services.TBYS
 
         public async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default)
         {
-            var entity = await _unitOfWork.TasinmazTaahhut.GetByIdAsync(id, cancellationToken);
-            if (entity == null) return false;
             try
             {
-                _unitOfWork.TasinmazTaahhut.Remove(entity);
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                var entity = await db.TasinmazTaahhut_Table.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+                if (entity == null) return false;
+
+                db.TasinmazTaahhut_Table.Remove(entity);
+                await db.SaveChangesAsync(cancellationToken);
                 return true;
             }
             catch (Exception ex)

@@ -1,41 +1,50 @@
-using Jenga.DataAccess.Repositories.IRepository;
+using Jenga.DataAccess.Data;
 using Jenga.Models.IKYS;
+using Microsoft.EntityFrameworkCore;
 
 namespace Jenga.DataAccess.Services.IKYS;
 
 public class IsBilgileriService : IIsBilgileriService
 {
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
 
-    public IsBilgileriService(IUnitOfWork unitOfWork)
+    public IsBilgileriService(IDbContextFactory<ApplicationDbContext> dbFactory)
     {
-        _unitOfWork = unitOfWork;
+        _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
     }
 
     public async Task<List<IsBilgileri>> GetAllAsync(CancellationToken cancellationToken = default)
-        => await _unitOfWork.IsBilgileri.GetAllAsync(cancellationToken);
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        return await db.IsBilgileri_Table.AsNoTracking().Include(ib => ib.UnvanTanim).ToListAsync(cancellationToken);
+    }
 
     public async Task<IsBilgileri?> GetByPersonelIdAsync(int personelId, CancellationToken cancellationToken = default)
     {
-        var all = await _unitOfWork.IsBilgileri.GetAllAsync(cancellationToken);
-        return all.FirstOrDefault(x => x.PersonelId == personelId);
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        return await db.IsBilgileri_Table.AsNoTracking().FirstOrDefaultAsync(x => x.PersonelId == personelId, cancellationToken);
     }
 
     public async Task<IsBilgileri?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
-        => await _unitOfWork.IsBilgileri.GetByIdAsync(id, cancellationToken);
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        return await db.IsBilgileri_Table.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+    }
 
     public async Task<bool> AddAsync(IsBilgileri entity, string? modifiedBy = null, CancellationToken cancellationToken = default)
     {
         entity.Olusturan = modifiedBy;
         entity.OlusturmaTarihi = DateTime.Now;
-        await _unitOfWork.IsBilgileri.AddAsync(entity, cancellationToken);
-        await _unitOfWork.IsBilgileri.SaveChangesAsync(cancellationToken);
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        await db.IsBilgileri_Table.AddAsync(entity, cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
         return true;
     }
 
     public async Task<bool> UpdateAsync(IsBilgileri entity, CancellationToken cancellationToken = default)
     {
-        var existing = await GetByIdAsync(entity.Id, cancellationToken)
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        var existing = await db.IsBilgileri_Table.FirstOrDefaultAsync(x => x.Id == entity.Id, cancellationToken)
             ?? throw new Exception("Kayıt bulunamadı!");
         existing.PersonelId = entity.PersonelId;
         existing.UnvanId = entity.UnvanId;
@@ -53,15 +62,16 @@ public class IsBilgileriService : IIsBilgileriService
         existing.Aciklama = entity.Aciklama;
         existing.Degistiren = entity.Degistiren;
         existing.DegistirmeTarihi = DateTime.Now;
-        await _unitOfWork.IsBilgileri.UpdateAsync(existing);
-        await _unitOfWork.IsBilgileri.SaveChangesAsync(cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
         return true;
     }
 
     public async Task<bool> DeleteAsync(IsBilgileri entity, CancellationToken cancellationToken = default)
     {
-        _unitOfWork.IsBilgileri.Remove(entity);
-        await _unitOfWork.IsBilgileri.SaveChangesAsync(cancellationToken);
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        db.IsBilgileri_Table.Attach(entity);
+        db.IsBilgileri_Table.Remove(entity);
+        await db.SaveChangesAsync(cancellationToken);
         return true;
     }
 }

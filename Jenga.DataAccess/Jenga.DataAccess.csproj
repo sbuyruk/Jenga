@@ -20,12 +20,5 @@
 		<ProjectReference Include="..\Jenga.Utility\Jenga.Utility.csproj" />
 	</ItemGroup>
 
-	<ItemGroup>
-	  <Folder Include="Repositories\FTK\" />
-	  <Folder Include="Repositories\IRepository\Common\" />
-	  <Folder Include="Repositories\IRepository\FTK\" />
-	  <Folder Include="Repositories\IRepository\NBYS\" />
-	  <Folder Include="Repositories\NBYS\" />
-	</ItemGroup>
 
-</Project>
+	</Project>

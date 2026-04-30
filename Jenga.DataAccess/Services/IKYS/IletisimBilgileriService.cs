@@ -1,41 +1,50 @@
-using Jenga.DataAccess.Repositories.IRepository;
+using Jenga.DataAccess.Data;
 using Jenga.Models.IKYS;
+using Microsoft.EntityFrameworkCore;
 
 namespace Jenga.DataAccess.Services.IKYS;
 
 public class IletisimBilgileriService : IIletisimBilgileriService
 {
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
 
-    public IletisimBilgileriService(IUnitOfWork unitOfWork)
+    public IletisimBilgileriService(IDbContextFactory<ApplicationDbContext> dbFactory)
     {
-        _unitOfWork = unitOfWork;
+        _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
     }
 
     public async Task<List<IletisimBilgileri>> GetAllAsync(CancellationToken cancellationToken = default)
-        => await _unitOfWork.IletisimBilgileri.GetAllAsync(cancellationToken);
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        return await db.IletisimBilgileri_Table.AsNoTracking().ToListAsync(cancellationToken);
+    }
 
     public async Task<IletisimBilgileri?> GetByPersonelIdAsync(int personelId, CancellationToken cancellationToken = default)
     {
-        var all = await _unitOfWork.IletisimBilgileri.GetAllAsync(cancellationToken);
-        return all.FirstOrDefault(x => x.PersonelId == personelId);
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        return await db.IletisimBilgileri_Table.AsNoTracking().FirstOrDefaultAsync(x => x.PersonelId == personelId, cancellationToken);
     }
 
     public async Task<IletisimBilgileri?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
-        => await _unitOfWork.IletisimBilgileri.GetByIdAsync(id, cancellationToken);
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        return await db.IletisimBilgileri_Table.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+    }
 
     public async Task<bool> AddAsync(IletisimBilgileri entity, string? modifiedBy = null, CancellationToken cancellationToken = default)
     {
         entity.Olusturan = modifiedBy;
         entity.OlusturmaTarihi = DateTime.Now;
-        await _unitOfWork.IletisimBilgileri.AddAsync(entity, cancellationToken);
-        await _unitOfWork.IletisimBilgileri.SaveChangesAsync(cancellationToken);
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        await db.IletisimBilgileri_Table.AddAsync(entity, cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
         return true;
     }
 
     public async Task<bool> UpdateAsync(IletisimBilgileri entity, CancellationToken cancellationToken = default)
     {
-        var existing = await GetByIdAsync(entity.Id, cancellationToken)
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        var existing = await db.IletisimBilgileri_Table.FirstOrDefaultAsync(x => x.Id == entity.Id, cancellationToken)
             ?? throw new Exception("Kayıt bulunamadı!");
         existing.PersonelId = entity.PersonelId;
         existing.Adres = entity.Adres;
@@ -53,15 +62,16 @@ public class IletisimBilgileriService : IIletisimBilgileriService
         existing.Aciklama = entity.Aciklama;
         existing.Degistiren = entity.Degistiren;
         existing.DegistirmeTarihi = DateTime.Now;
-        await _unitOfWork.IletisimBilgileri.UpdateAsync(existing);
-        await _unitOfWork.IletisimBilgileri.SaveChangesAsync(cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
         return true;
     }
 
     public async Task<bool> DeleteAsync(IletisimBilgileri entity, CancellationToken cancellationToken = default)
     {
-        _unitOfWork.IletisimBilgileri.Remove(entity);
-        await _unitOfWork.IletisimBilgileri.SaveChangesAsync(cancellationToken);
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        db.IletisimBilgileri_Table.Attach(entity);
+        db.IletisimBilgileri_Table.Remove(entity);
+        await db.SaveChangesAsync(cancellationToken);
         return true;
     }
 }

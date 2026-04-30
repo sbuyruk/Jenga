@@ -1,50 +1,60 @@
-﻿using Jenga.DataAccess.Repositories.IRepository;
+using Jenga.DataAccess.Data;
 using Jenga.Models.TBYS;
 using Jenga.Utility.Logging;
-using System;
-using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Jenga.DataAccess.Services.TBYS
 {
     public class BagisService : IBagisService
     {
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
         private readonly ILogService _logService;
-        private List<Bagis>? _cache;
 
-        public BagisService(IUnitOfWork unitOfWork, ILogService logService)
+        public BagisService(IDbContextFactory<ApplicationDbContext> dbFactory, ILogService logService)
         {
-            _unitOfWork = unitOfWork;
+            _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
             _logService = logService;
         }
 
         public async Task<List<Bagis>> GetAllAsync(CancellationToken cancellationToken = default)
-            => await _unitOfWork.Bagis.GetAllAsync(cancellationToken);
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.Bagis_Table.AsNoTracking().ToListAsync(cancellationToken);
+        }
 
         public async Task<Bagis?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
-            => await _unitOfWork.Bagis.GetByIdAsync(id, cancellationToken);
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.Bagis_Table.AsNoTracking().FirstOrDefaultAsync(b => b.Id == id, cancellationToken);
+        }
 
         public async Task<Bagis?> GetByIdWithRelationsAsync(int id, CancellationToken cancellationToken = default)
-            => await _unitOfWork.Bagis.GetByIdWithRelationsAsync(id, cancellationToken);
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.Bagis_Table.AsNoTracking().FirstOrDefaultAsync(b => b.Id == id, cancellationToken);
+        }
 
         public async Task<List<Bagis>> GetByBagisciIdAsync(int bagisciId, CancellationToken cancellationToken = default)
-            => await _unitOfWork.Bagis.GetByBagisciIdAsync(bagisciId, cancellationToken);
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.Bagis_Table.AsNoTracking().Where(b => b.BagisciId == bagisciId).ToListAsync(cancellationToken);
+        }
 
         public async Task<List<Bagis>> GetByTasinmazIdAsync(int tasinmazId, CancellationToken cancellationToken = default)
-            => await _unitOfWork.Bagis.GetByTasinmazIdAsync(tasinmazId, cancellationToken);
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.Bagis_Table.AsNoTracking().Where(b => b.TasinmazId == tasinmazId).ToListAsync(cancellationToken);
+        }
 
         public async Task<bool> AddAsync(Bagis bagis, CancellationToken cancellationToken = default)
         {
             if (bagis == null) throw new ArgumentNullException(nameof(bagis));
-
             try
             {
-                await _unitOfWork.Bagis.AddAsync(bagis, cancellationToken);
-                await _unitOfWork.Bagis.SaveChangesAsync(cancellationToken);
-                _cache = null;
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                await db.Bagis_Table.AddAsync(bagis, cancellationToken);
+                await db.SaveChangesAsync(cancellationToken);
                 return true;
             }
             catch (Exception ex)
@@ -57,12 +67,11 @@ namespace Jenga.DataAccess.Services.TBYS
         public async Task<bool> UpdateAsync(Bagis bagis, CancellationToken cancellationToken = default)
         {
             if (bagis == null) throw new ArgumentNullException(nameof(bagis));
-
             try
             {
-                await _unitOfWork.Bagis.UpdateAsync(bagis, null, cancellationToken);
-                await _unitOfWork.Bagis.SaveChangesAsync(cancellationToken);
-                _cache = null;
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                db.Bagis_Table.Update(bagis);
+                await db.SaveChangesAsync(cancellationToken);
                 return true;
             }
             catch (Exception ex)
@@ -74,26 +83,26 @@ namespace Jenga.DataAccess.Services.TBYS
 
         public async Task<bool> DeleteAsync(int bagisId, CancellationToken cancellationToken = default)
         {
-            var entity = await _unitOfWork.Bagis.GetByIdAsync(bagisId, cancellationToken);
-            if (entity != null)
-            {
-                _unitOfWork.Bagis.Remove(entity);
-                await _unitOfWork.Bagis.SaveChangesAsync(cancellationToken);
-                _cache = null;
-                return true;
-            }
-            return false;
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            var entity = await db.Bagis_Table.FirstOrDefaultAsync(b => b.Id == bagisId, cancellationToken);
+            if (entity == null) return false;
+
+            db.Bagis_Table.Remove(entity);
+            await db.SaveChangesAsync(cancellationToken);
+            return true;
         }
 
         public async Task<bool> AnyAsync(Expression<Func<Bagis, bool>> predicate, CancellationToken cancellationToken = default)
-            => await _unitOfWork.Bagis.AnyAsync(predicate, cancellationToken);
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.Bagis_Table.AnyAsync(predicate, cancellationToken);
+        }
 
         public async Task<(bool CanDelete, string? Reason)> CanDeleteAsync(int id)
         {
-            // If there are other domain constraints preventing deletion, add checks here.
-            // For now allow delete when the entity exists.
-            var entity = await _unitOfWork.Bagis.GetByIdAsync(id);
-            if (entity == null) return (false, "Kayıt bulunamadı.");
+            await using var db = await _dbFactory.CreateDbContextAsync();
+            var exists = await db.Bagis_Table.AsNoTracking().AnyAsync(b => b.Id == id);
+            if (!exists) return (false, "Kayıt bulunamadı.");
             return (true, null);
         }
     }

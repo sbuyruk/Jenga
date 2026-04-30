@@ -1,20 +1,21 @@
-using Jenga.DataAccess.Repositories.IRepository;
+using Jenga.DataAccess.Data;
 using Jenga.Models.IKYS;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.EntityFrameworkCore;
 
 namespace Jenga.BlazorUI.Services.Common
 {
     public class CurrentUserService
     {
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly AuthenticationStateProvider _authStateProvider;
         private readonly ImpersonationService _impersonationService;
         private Personel? _cachedPersonel;
 
-        public CurrentUserService(IUnitOfWork unitOfWork, IHttpContextAccessor httpContextAccessor, AuthenticationStateProvider authStateProvider, ImpersonationService impersonationService)
+        public CurrentUserService(IDbContextFactory<ApplicationDbContext> dbFactory, IHttpContextAccessor httpContextAccessor, AuthenticationStateProvider authStateProvider, ImpersonationService impersonationService)
         {
-            _unitOfWork = unitOfWork;
+            _dbFactory = dbFactory;
             _httpContextAccessor = httpContextAccessor;
             _authStateProvider = authStateProvider;
             _impersonationService = impersonationService;
@@ -49,10 +50,9 @@ namespace Jenga.BlazorUI.Services.Common
 
             var normalizedDefault = userName.Trim().ToLowerInvariant();
 
-            _cachedPersonel = await _unitOfWork.Personel.GetFirstOrDefaultAsync(
-                p => p.KullaniciAdi != null && p.KullaniciAdi.ToLower() == normalizedDefault,
-                includeProperties: null,
-                trackChanges: false);
+            await using var db = await _dbFactory.CreateDbContextAsync();
+            _cachedPersonel = await db.Personel_Table.AsNoTracking()
+                .FirstOrDefaultAsync(p => p.KullaniciAdi != null && p.KullaniciAdi.ToLower() == normalizedDefault);
 
             return _cachedPersonel;
         }
@@ -67,10 +67,9 @@ namespace Jenga.BlazorUI.Services.Common
 
             try
             {
-                _cachedPersonel = await _unitOfWork.Personel.GetFirstOrDefaultAsync(
-                    p => p.KullaniciAdi != null && p.KullaniciAdi.ToLower() == normalized,
-                    includeProperties: null,
-                    trackChanges: false);
+                await using var db = await _dbFactory.CreateDbContextAsync();
+                _cachedPersonel = await db.Personel_Table.AsNoTracking()
+                    .FirstOrDefaultAsync(p => p.KullaniciAdi != null && p.KullaniciAdi.ToLower() == normalized);
 
                 return _cachedPersonel != null;
             }

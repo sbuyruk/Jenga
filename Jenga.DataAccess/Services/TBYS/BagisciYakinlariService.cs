@@ -1,37 +1,51 @@
-using Jenga.DataAccess.Repositories.IRepository;
+using Jenga.DataAccess.Data;
 using Jenga.Models.TBYS;
 using Jenga.Utility.Logging;
+using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
 namespace Jenga.DataAccess.Services.TBYS
 {
     public class BagisciYakinlariService : IBagisciYakinlariService
     {
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
         private readonly ILogService _logService;
 
-        public BagisciYakinlariService(IUnitOfWork unitOfWork, ILogService logService)
+        public BagisciYakinlariService(IDbContextFactory<ApplicationDbContext> dbFactory, ILogService logService)
         {
-            _unitOfWork = unitOfWork;
+            _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
             _logService = logService;
         }
 
         public async Task<List<BagisciYakinlari>> GetAllAsync(CancellationToken cancellationToken = default)
-            => await _unitOfWork.BagisciYakinlari.GetAllAsync(cancellationToken);
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.BagisciYakinlari_Table.AsNoTracking().ToListAsync(cancellationToken);
+        }
 
         public async Task<BagisciYakinlari?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
-            => await _unitOfWork.BagisciYakinlari.GetByIdAsync(id, cancellationToken);
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.BagisciYakinlari_Table.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        }
 
         public async Task<List<BagisciYakinlari>> GetByBagisciIdAsync(long bagisciId, CancellationToken cancellationToken = default)
-            => await _unitOfWork.BagisciYakinlari.GetByBagisciIdAsync(bagisciId, cancellationToken);
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.BagisciYakinlari_Table.AsNoTracking()
+                .Where(x => x.BagisciId == bagisciId)
+                .OrderBy(x => x.Sira)
+                .ToListAsync(cancellationToken);
+        }
 
         public async Task<bool> AddAsync(BagisciYakinlari entity, CancellationToken cancellationToken = default)
         {
             if (entity == null) throw new ArgumentNullException(nameof(entity));
             try
             {
-                await _unitOfWork.BagisciYakinlari.AddAsync(entity, cancellationToken);
-                await _unitOfWork.BagisciYakinlari.SaveChangesAsync(cancellationToken);
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                await db.BagisciYakinlari_Table.AddAsync(entity, cancellationToken);
+                await db.SaveChangesAsync(cancellationToken);
                 return true;
             }
             catch (Exception ex)
@@ -46,8 +60,9 @@ namespace Jenga.DataAccess.Services.TBYS
             if (entity == null) throw new ArgumentNullException(nameof(entity));
             try
             {
-                await _unitOfWork.BagisciYakinlari.UpdateAsync(entity, null, cancellationToken);
-                await _unitOfWork.BagisciYakinlari.SaveChangesAsync(cancellationToken);
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                db.BagisciYakinlari_Table.Update(entity);
+                await db.SaveChangesAsync(cancellationToken);
                 return true;
             }
             catch (Exception ex)
@@ -59,11 +74,14 @@ namespace Jenga.DataAccess.Services.TBYS
 
         public async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default)
         {
-            var entity = await _unitOfWork.BagisciYakinlari.GetByIdAsync(id, cancellationToken);
-            if (entity == null) return false;
             try
             {
-                _unitOfWork.BagisciYakinlari.Remove(entity);
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                var entity = await db.BagisciYakinlari_Table.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+                if (entity == null) return false;
+
+                db.BagisciYakinlari_Table.Remove(entity);
+                await db.SaveChangesAsync(cancellationToken);
                 return true;
             }
             catch (Exception ex)
@@ -74,6 +92,9 @@ namespace Jenga.DataAccess.Services.TBYS
         }
 
         public async Task<bool> AnyAsync(Expression<Func<BagisciYakinlari, bool>> predicate, CancellationToken cancellationToken = default)
-            => await _unitOfWork.BagisciYakinlari.AnyAsync(predicate, cancellationToken);
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.BagisciYakinlari_Table.AnyAsync(predicate, cancellationToken);
+        }
     }
 }

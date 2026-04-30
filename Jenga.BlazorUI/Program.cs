@@ -1,8 +1,6 @@
 ﻿using Jenga.BlazorUI.Components;
 using Jenga.BlazorUI.Services.Common;
 using Jenga.DataAccess.Data;
-using Jenga.DataAccess.Repositories;
-using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.DataAccess.Services.Common;
 using Jenga.DataAccess.Services.IKYS;
 using Jenga.DataAccess.Services.Inventory;
@@ -38,9 +36,6 @@ builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
         LogLevel.Information
     );
 }, ServiceLifetime.Transient);
-
-/*SB UnitOfWork */
-builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 /*SB Menu Servisi*/
 builder.Services.AddScoped<IMenuItemService, MenuItemService>();

@@ -1,8 +1,8 @@
 ﻿@using System.ComponentModel.DataAnnotations
 @using Jenga.BlazorUI.Components.Common
 @using Jenga.BlazorUI.Services.Common
-@using Jenga.DataAccess.Repositories.IRepository
 @using Jenga.DataAccess.Services.Common
+@using Jenga.DataAccess.Services.IKYS
 @using Jenga.Models
 @using Jenga.Models.Common
 @using Jenga.Models.IKYS
@@ -11,7 +11,7 @@
 @using System.ComponentModel
 @inject IModalService ModalService
 @inject IRoleService RolService
-@inject IUnitOfWork UnitOfWork
+@inject IPersonelService PersonelService
 @inject IMenuItemService MenuItemService
 @inject IToastService ToastService
 
@@ -79,8 +79,7 @@ else
     private async Task OnEditClicked(Role rol)
     {
         selectedRol = await RolService.GetByIdWithRelationsAsync(rol.Id);
-        var aktifPersoneller = (await UnitOfWork.Personel.GetAllAsync("IsBilgileri"))
-            .Where(p => p.IsBilgileri != null && p.IsBilgileri.CalismaDurumu == "1")
+        var aktifPersoneller = (await PersonelService.GetCalisanPersonelAsync())
             .Where(p => selectedRol?.PersonelRoles == null || !selectedRol.PersonelRoles!.Any(pr => pr.PersonelId == p.Id))
             .ToList();
 
@@ -159,9 +158,7 @@ else
     private async Task OpenNewRolModal()
     {
         selectedRol = new Role();
-        var aktifPersoneller = (await UnitOfWork.Personel.GetAllAsync("IsBilgileri"))
-            .Where(p => p.IsBilgileri != null && p.IsBilgileri.CalismaDurumu == "1")
-            .ToList();
+        var aktifPersoneller = await PersonelService.GetCalisanPersonelAsync();
 
         var aktifMenuler = (await MenuItemService.GetAllAsync())
             .Where(p => p.IsVisible == true)

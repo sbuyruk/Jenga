@@ -1,32 +1,38 @@
-﻿using Jenga.DataAccess.Repositories.IRepository;
+using Jenga.DataAccess.Data;
 using Jenga.Models.TBYS;
 using Jenga.Utility.Logging;
+using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
 namespace Jenga.DataAccess.Services.TBYS
 {
     public class OdemePlaniService : IOdemePlaniService
     {
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
         private readonly ILogService _logService;
 
-        public OdemePlaniService(IUnitOfWork unitOfWork, ILogService logService)
+        public OdemePlaniService(IDbContextFactory<ApplicationDbContext> dbFactory, ILogService logService)
         {
-            _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+            _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
             _logService = logService;
         }
 
         public async Task<List<OdemePlani>> GetAllAsync(CancellationToken cancellationToken = default)
-            => await _unitOfWork.OdemePlani.GetAllAsync(cancellationToken);
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.OdemePlani_Table.AsNoTracking().ToListAsync(cancellationToken);
+        }
 
         public async Task<OdemePlani?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
-            => await _unitOfWork.OdemePlani.GetByIdAsync(id, cancellationToken);
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.OdemePlani_Table.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        }
 
         public async Task<bool> AddAsync(OdemePlani odemePlani, CancellationToken cancellationToken = default)
         {
             if (odemePlani == null) throw new ArgumentNullException(nameof(odemePlani));
 
-            // Basit doğrulama: bir sözleşme id'si olmalı
             if (!odemePlani.SozlesmeId.HasValue)
             {
                 _logService?.LogWarning("OdemePlaniService.AddAsync: SozlesmeId gerekli.");
@@ -35,8 +41,9 @@ namespace Jenga.DataAccess.Services.TBYS
 
             try
             {
-                await _unitOfWork.OdemePlani.AddAsync(odemePlani, cancellationToken);
-                await _unitOfWork.OdemePlani.SaveChangesAsync(cancellationToken);
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                await db.OdemePlani_Table.AddAsync(odemePlani, cancellationToken);
+                await db.SaveChangesAsync(cancellationToken);
                 return true;
             }
             catch (Exception ex)
@@ -58,8 +65,9 @@ namespace Jenga.DataAccess.Services.TBYS
 
             try
             {
-                await _unitOfWork.OdemePlani.UpdateAsync(odemePlani, null, cancellationToken);
-                await _unitOfWork.OdemePlani.SaveChangesAsync(cancellationToken);
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                db.OdemePlani_Table.Update(odemePlani);
+                await db.SaveChangesAsync(cancellationToken);
                 return true;
             }
             catch (Exception ex)
@@ -71,15 +79,19 @@ namespace Jenga.DataAccess.Services.TBYS
 
         public async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default)
         {
-            var entity = await _unitOfWork.OdemePlani.GetByIdAsync(id, cancellationToken);
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            var entity = await db.OdemePlani_Table.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
             if (entity == null) return false;
 
-            _unitOfWork.OdemePlani.Remove(entity);
-            await _unitOfWork.OdemePlani.SaveChangesAsync(cancellationToken);
+            db.OdemePlani_Table.Remove(entity);
+            await db.SaveChangesAsync(cancellationToken);
             return true;
         }
 
         public async Task<bool> AnyAsync(Expression<Func<OdemePlani, bool>> predicate, CancellationToken cancellationToken = default)
-            => await _unitOfWork.OdemePlani.AnyAsync(predicate, cancellationToken);
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.OdemePlani_Table.AnyAsync(predicate, cancellationToken);
+        }
     }
 }
