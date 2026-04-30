@@ -1,18 +1,19 @@
-﻿using Jenga.DataAccess.Repositories.IRepository;
+﻿using Jenga.DataAccess.Data;
 using Jenga.Models.Common;
 using Jenga.Utility.Helpers;
 using Jenga.Utility.Logging;
+using Microsoft.EntityFrameworkCore;
 
 namespace Jenga.DataAccess.Services.Common
 {
     public class MenuItemService : IMenuItemService
     {
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
         private readonly ILogService _logService;
 
-        public MenuItemService(IUnitOfWork unitOfWork, ILogService logService)
+        public MenuItemService(IDbContextFactory<ApplicationDbContext> dbFactory, ILogService logService)
         {
-            _unitOfWork = unitOfWork;
+            _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
             _logService = logService;
         }
 
@@ -20,8 +21,8 @@ namespace Jenga.DataAccess.Services.Common
         {
             try
             {
-                var menuItems = await _unitOfWork.MenuItem.GetAllAsync();
-                return menuItems.ToList();
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                return await db.MenuItem_Table.AsNoTracking().ToListAsync(cancellationToken);
             }
             catch (Exception ex)
             {
@@ -32,20 +33,23 @@ namespace Jenga.DataAccess.Services.Common
 
         public async Task<Models.Common.MenuItem?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
         {
-            return await _unitOfWork.MenuItem.GetByIdAsync(id, cancellationToken);
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.MenuItem_Table.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
         }
 
         public async Task<bool> AddAsync(Models.Common.MenuItem menuItem, CancellationToken cancellationToken = default)
         {
-            await _unitOfWork.MenuItem.AddAsync(menuItem, cancellationToken);
-            await _unitOfWork.MenuItem.SaveChangesAsync(cancellationToken);
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            await db.MenuItem_Table.AddAsync(menuItem, cancellationToken);
+            await db.SaveChangesAsync(cancellationToken);
             return true;
         }
 
         public async Task<bool> UpdateAsync(Models.Common.MenuItem menuItem, CancellationToken cancellationToken = default)
         {
-            _unitOfWork.MenuItem.Update(menuItem);
-            await _unitOfWork.MenuItem.SaveChangesAsync(cancellationToken);
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            db.MenuItem_Table.Update(menuItem);
+            await db.SaveChangesAsync(cancellationToken);
             return true;
         }
 
@@ -53,15 +57,19 @@ namespace Jenga.DataAccess.Services.Common
         {
             if (menuItem is null) return false;
 
-            _unitOfWork.MenuItem.Remove(menuItem);
-            await _unitOfWork.MenuItem.SaveChangesAsync(cancellationToken);
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            db.MenuItem_Table.Remove(menuItem);
+            await db.SaveChangesAsync(cancellationToken);
             return true;
         }
 
         public async Task<List<MenuItem>> GetRecursiveMenuAsync()
         {
-            var flat = await _unitOfWork.MenuItem.GetAllAsync();
-            var visible = flat.Where(m => m.IsVisible == true).ToList();
+            await using var db = await _dbFactory.CreateDbContextAsync();
+            var visible = await db.MenuItem_Table
+                .AsNoTracking()
+                .Where(m => m.IsVisible == true)
+                .ToListAsync();
 
             visible.ForEach(m =>
                 m.Url = string.IsNullOrWhiteSpace(m.Url) ? "#" : m.Url!
@@ -72,32 +80,40 @@ namespace Jenga.DataAccess.Services.Common
 
         public async Task<List<MenuItem>> GetAuthorizedMenuAsync(int personelId)
         {
-            // 1. Personelin rollerini al
-            var roles = await _unitOfWork.PersonelRole
-                .GetAllByFilterAsync(x => x.PersonelId == personelId);
-            var roleIds = roles.Select(r => r.RoleId).ToList();
+            await using var db = await _dbFactory.CreateDbContextAsync();
 
-            await Task.Delay(1); // context flush için mikro gecikme
+            var roleIds = await db.PersonelRol_Table
+                .AsNoTracking()
+                .Where(x => x.PersonelId == personelId)
+                .Select(x => x.RoleId)
+                .ToListAsync();
 
-            // 2. Rollerle ilişkilendirilmiş menü ID'lerini al
-            var roleMenus = await _unitOfWork.RoleMenu
-                .GetAllByFilterAsync(x => roleIds.Contains(x.RoleId));
-            var menuIds = roleMenus.Select(rm => rm.MenuId).ToList();
+            if (roleIds.Count == 0)
+            {
+                return new List<MenuItem>();
+            }
 
-            await Task.Delay(1); // context flush için mikro gecikme
+            var menuIds = await db.RolMenu_Table
+                .AsNoTracking()
+                .Where(x => roleIds.Contains(x.RoleId))
+                .Select(x => x.MenuId)
+                .ToListAsync();
 
-            // 3. İlgili ve görünür menü öğelerini al
-            var allMenus = await _unitOfWork.MenuItem
-                .GetAllByFilterAsync(x => menuIds.Contains(x.Id) && x.IsVisible == true);
-            var processedMenus = allMenus
-                .Select(m =>
-                {
-                    m.Url = string.IsNullOrWhiteSpace(m.Url) ? "#" : m.Url!;
-                    return m;
-                }).ToList();
+            if (menuIds.Count == 0)
+            {
+                return new List<MenuItem>();
+            }
 
-            // 4. Menü ağaç yapısını oluştur
-            return MenuHelper.BuildTree(processedMenus);
+            var allMenus = await db.MenuItem_Table
+                .AsNoTracking()
+                .Where(x => menuIds.Contains(x.Id) && x.IsVisible == true)
+                .ToListAsync();
+
+            allMenus.ForEach(m =>
+                m.Url = string.IsNullOrWhiteSpace(m.Url) ? "#" : m.Url!
+            );
+
+            return MenuHelper.BuildTree(allMenus);
         }
     }
 }

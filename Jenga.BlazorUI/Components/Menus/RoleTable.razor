@@ -12,6 +12,7 @@
 @inject IModalService ModalService
 @inject IRoleService RolService
 @inject IUnitOfWork UnitOfWork
+@inject IMenuItemService MenuItemService
 @inject IToastService ToastService
 
 <div class="d-flex justify-content-end mb-2">
@@ -83,7 +84,7 @@ else
             .Where(p => selectedRol?.PersonelRoles == null || !selectedRol.PersonelRoles!.Any(pr => pr.PersonelId == p.Id))
             .ToList();
 
-        var aktifMenuler = (await UnitOfWork.MenuItem.GetAllAsync())
+        var aktifMenuler = (await MenuItemService.GetAllAsync())
             .Where(p => p.IsVisible == true)
             .Where(p => selectedRol?.RoleMenus == null || !selectedRol.RoleMenus!.Any(rm => rm.MenuId == p.Id))
             .ToList();
@@ -162,7 +163,7 @@ else
             .Where(p => p.IsBilgileri != null && p.IsBilgileri.CalismaDurumu == "1")
             .ToList();
 
-        var aktifMenuler = (await UnitOfWork.MenuItem.GetAllAsync())
+        var aktifMenuler = (await MenuItemService.GetAllAsync())
             .Where(p => p.IsVisible == true)
             .ToList();
 

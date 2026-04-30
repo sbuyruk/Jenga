@@ -1,23 +1,20 @@
-﻿using Jenga.DataAccess.Repositories.IRepository;
+﻿using Jenga.DataAccess.Data;
 using Jenga.Models.Common;
 using Jenga.Utility.Logging;
-using System;
-using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Jenga.DataAccess.Services.Common
 {
     public class BolgeService : IBolgeService
     {
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
         private readonly ILogService _logService;
         private List<Bolge>? _cache;
 
-        public BolgeService(IUnitOfWork unitOfWork, ILogService logService)
+        public BolgeService(IDbContextFactory<ApplicationDbContext> dbFactory, ILogService logService)
         {
-            _unitOfWork = unitOfWork;
+            _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
             _logService = logService;
         }
 
@@ -25,20 +22,26 @@ namespace Jenga.DataAccess.Services.Common
         {
             if (_cache == null)
             {
-                _cache = await _unitOfWork.Bolge.GetAllAsync(cancellationToken);
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                _cache = await db.Bolge_Table.AsNoTracking().ToListAsync(cancellationToken);
             }
             return _cache;
         }
 
         public async Task<Bolge?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
-            => await _unitOfWork.Bolge.GetByIdAsync(id, cancellationToken);
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.Bolge_Table.AsNoTracking().FirstOrDefaultAsync(b => b.Id == id, cancellationToken);
+        }
 
         public async Task<Bolge?> GetByNameAsync(string name, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(name)) return null;
             try
             {
-                return await _unitOfWork.Bolge.GetByNameAsync(name.Trim(), cancellationToken);
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                var trimmed = name.Trim();
+                return await db.Bolge_Table.AsNoTracking().FirstOrDefaultAsync(b => b.Adi == trimmed, cancellationToken);
             }
             catch (Exception ex)
             {
@@ -52,8 +55,9 @@ namespace Jenga.DataAccess.Services.Common
             if (bolge == null) throw new ArgumentNullException(nameof(bolge));
             try
             {
-                await _unitOfWork.Bolge.AddAsync(bolge, cancellationToken);
-                await _unitOfWork.Bolge.SaveChangesAsync(cancellationToken);
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                await db.Bolge_Table.AddAsync(bolge, cancellationToken);
+                await db.SaveChangesAsync(cancellationToken);
                 _cache = null;
                 return true;
             }
@@ -69,8 +73,9 @@ namespace Jenga.DataAccess.Services.Common
             if (bolge == null) throw new ArgumentNullException(nameof(bolge));
             try
             {
-                await _unitOfWork.Bolge.UpdateAsync(bolge, null, cancellationToken);
-                await _unitOfWork.Bolge.SaveChangesAsync(cancellationToken);
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                db.Bolge_Table.Update(bolge);
+                await db.SaveChangesAsync(cancellationToken);
                 _cache = null;
                 return true;
             }
@@ -83,18 +88,20 @@ namespace Jenga.DataAccess.Services.Common
 
         public async Task<bool> DeleteAsync(int bolgeId, CancellationToken cancellationToken = default)
         {
-            var entity = await _unitOfWork.Bolge.GetByIdAsync(bolgeId, cancellationToken);
-            if (entity != null)
-            {
-                _unitOfWork.Bolge.Remove(entity);
-                await _unitOfWork.Bolge.SaveChangesAsync(cancellationToken);
-                _cache = null;
-                return true;
-            }
-            return false;
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            var entity = await db.Bolge_Table.FirstOrDefaultAsync(b => b.Id == bolgeId, cancellationToken);
+            if (entity == null) return false;
+
+            db.Bolge_Table.Remove(entity);
+            await db.SaveChangesAsync(cancellationToken);
+            _cache = null;
+            return true;
         }
 
         public async Task<bool> AnyAsync(Expression<Func<Bolge, bool>> predicate, CancellationToken cancellationToken = default)
-            => await _unitOfWork.Bolge.AnyAsync(predicate, cancellationToken);
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.Bolge_Table.AsNoTracking().AnyAsync(predicate, cancellationToken);
+        }
     }
 }

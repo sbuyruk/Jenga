@@ -1,41 +1,54 @@
-using Jenga.DataAccess.Repositories.IRepository;
+using Jenga.DataAccess.Data;
 using Jenga.Models.NBYS;
+using Microsoft.EntityFrameworkCore;
 
 namespace Jenga.DataAccess.Services.NBYS
 {
     public class ArmaganTanimService : IArmaganTanimService
     {
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
 
-        public ArmaganTanimService(IUnitOfWork unitOfWork)
+        public ArmaganTanimService(IDbContextFactory<ApplicationDbContext> dbFactory)
         {
-            _unitOfWork = unitOfWork;
+            _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
         }
 
-        public Task<List<ArmaganTanim>> GetAllAsync(CancellationToken cancellationToken = default)
-            => _unitOfWork.ArmaganTanim.GetAllAsync(cancellationToken);
+        public async Task<List<ArmaganTanim>> GetAllAsync(CancellationToken cancellationToken = default)
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.ArmaganTanim_Table.AsNoTracking().ToListAsync(cancellationToken);
+        }
 
-        public Task<ArmaganTanim?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
-            => _unitOfWork.ArmaganTanim.GetByIdAsync(id, cancellationToken);
+        public async Task<ArmaganTanim?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.ArmaganTanim_Table.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        }
 
         public async Task<bool> AddAsync(ArmaganTanim model, CancellationToken cancellationToken = default)
         {
-            await _unitOfWork.ArmaganTanim.AddAsync(model, cancellationToken);
-            await _unitOfWork.ArmaganTanim.SaveChangesAsync(cancellationToken);
+            if (model == null) throw new ArgumentNullException(nameof(model));
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            await db.ArmaganTanim_Table.AddAsync(model, cancellationToken);
+            await db.SaveChangesAsync(cancellationToken);
             return true;
         }
 
         public async Task<bool> UpdateAsync(ArmaganTanim model, CancellationToken cancellationToken = default)
         {
-            await _unitOfWork.ArmaganTanim.UpdateAsync(model, null, cancellationToken);
-            await _unitOfWork.ArmaganTanim.SaveChangesAsync(cancellationToken);
+            if (model == null) throw new ArgumentNullException(nameof(model));
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            db.ArmaganTanim_Table.Update(model);
+            await db.SaveChangesAsync(cancellationToken);
             return true;
         }
 
         public async Task<bool> DeleteAsync(ArmaganTanim model, CancellationToken cancellationToken = default)
         {
-            _unitOfWork.ArmaganTanim.Remove(model);
-            await _unitOfWork.ArmaganTanim.SaveChangesAsync(cancellationToken);
+            if (model == null) throw new ArgumentNullException(nameof(model));
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            db.ArmaganTanim_Table.Remove(model);
+            await db.SaveChangesAsync(cancellationToken);
             return true;
         }
     }

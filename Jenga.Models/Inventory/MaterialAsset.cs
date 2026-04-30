@@ -39,11 +39,21 @@ namespace Jenga.Models.Inventory
         [Column("PersonelId")]
         public int? PersonelId { get; set; }
 
+        /// <summary>
+        /// Bu varlık kaydının doğduğu MaterialEntry. NULL ise kaynak entry bilinmiyor
+        /// (eski kayıtlar veya manuel eklenmiş asset'ler).
+        /// MaterialEntry düzenlendiğinde sadece bu FK ile bağlı, hareket görmemiş asset'ler
+        /// senkronize edilir. (bkz. docs/tech-debt.md #1)
+        /// </summary>
+        [Column("SourceMaterialEntryId")]
+        public int? SourceMaterialEntryId { get; set; }
+
         public Material? Material { get; set; }
         public MaterialBrand? Brand { get; set; }
         public MaterialModel? Model { get; set; }
         public Location? Location { get; set; }
         public Personel? Personel { get; set; }
+        public MaterialEntry? SourceMaterialEntry { get; set; }
     }
 
     public enum AssetStatus

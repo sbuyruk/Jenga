@@ -1,22 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Jenga.DataAccess.Repositories.IRepository;
+﻿using Jenga.DataAccess.Data;
 using Jenga.Models.Common;
 using Jenga.Utility.Logging;
+using Microsoft.EntityFrameworkCore;
 
 namespace Jenga.DataAccess.Services.Menu
 {
     public class PersonelRoleService : IPersonelRoleService
     {
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
         private readonly ILogService _logService;
 
-        public PersonelRoleService(IUnitOfWork unitOfWork, ILogService logService)
+        public PersonelRoleService(IDbContextFactory<ApplicationDbContext> dbFactory, ILogService logService)
         {
-            _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+            _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
             _logService = logService ?? throw new ArgumentNullException(nameof(logService));
         }
 
@@ -24,8 +20,8 @@ namespace Jenga.DataAccess.Services.Menu
         {
             try
             {
-                var items = await _unitOfWork.PersonelRole.GetAllAsync(cancellationToken);
-                return items.ToList();
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                return await db.PersonelRol_Table.AsNoTracking().ToListAsync(cancellationToken);
             }
             catch (Exception ex)
             {
@@ -35,10 +31,19 @@ namespace Jenga.DataAccess.Services.Menu
         }
 
         public async Task<PersonelRole?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
-            => await _unitOfWork.PersonelRole.GetByIdAsync(id, cancellationToken);
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.PersonelRol_Table.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        }
 
         public async Task<IEnumerable<PersonelRole>> GetByPersonelIdAsync(int personelId, CancellationToken cancellationToken = default)
-            => await _unitOfWork.PersonelRole.GetByPersonelIdAsync(personelId, cancellationToken);
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.PersonelRol_Table
+                .AsNoTracking()
+                .Where(pr => pr.PersonelId == personelId)
+                .ToListAsync(cancellationToken);
+        }
 
         public async Task<bool> AddAsync(PersonelRole personelRole, CancellationToken cancellationToken = default)
         {
@@ -46,8 +51,9 @@ namespace Jenga.DataAccess.Services.Menu
 
             try
             {
-                await _unitOfWork.PersonelRole.AddAsync(personelRole, cancellationToken);
-                await _unitOfWork.PersonelRole.SaveChangesAsync(cancellationToken);
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                await db.PersonelRol_Table.AddAsync(personelRole, cancellationToken);
+                await db.SaveChangesAsync(cancellationToken);
                 return true;
             }
             catch (Exception ex)
@@ -63,8 +69,9 @@ namespace Jenga.DataAccess.Services.Menu
 
             try
             {
-                await _unitOfWork.PersonelRole.UpdateAsync(personelRole);
-                await _unitOfWork.PersonelRole.SaveChangesAsync(cancellationToken);
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                db.PersonelRol_Table.Update(personelRole);
+                await db.SaveChangesAsync(cancellationToken);
                 return true;
             }
             catch (Exception ex)
@@ -80,8 +87,9 @@ namespace Jenga.DataAccess.Services.Menu
 
             try
             {
-                _unitOfWork.PersonelRole.Remove(personelRole);
-                await _unitOfWork.PersonelRole.SaveChangesAsync(cancellationToken);
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                db.PersonelRol_Table.Remove(personelRole);
+                await db.SaveChangesAsync(cancellationToken);
                 return true;
             }
             catch (Exception ex)

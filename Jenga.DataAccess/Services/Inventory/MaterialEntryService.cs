@@ -122,6 +122,7 @@ namespace Jenga.DataAccess.Services.Inventory
                         PersonelId = actualPersonnelId,
                         PurchaseDate = entry.EntryDate,
                         Status = AssetStatus.Active,
+                        SourceMaterialEntryId = entry.Id,
                         Aciklama = $"MaterialEntry #{entry.Id} ile otomatik oluşturuldu",
                         Olusturan = modifiedBy,
                         OlusturmaTarihi = DateTime.Now
@@ -145,8 +146,9 @@ namespace Jenga.DataAccess.Services.Inventory
             //      - Sadece Quantity değişmişse: tek satıra delta uygula
             //      - Anahtar değişmişse: eski satırdan -oldQty, yeni satıra +newQty
             //   3) MaterialEntry satırını güncelle
-            //   4) MaterialMovement "Düzeltme" / "Düzenleme" logu ekle
-            // Mevcut davranış birebir korunur; MaterialAsset'e dokunulmaz (bkz. docs/tech-debt.md #1).
+            //   4) MaterialAsset senkronu (Tech-Debt #1 — Phase A):
+            //      bu entry'den doğmuş ve hâlâ "el değmemiş" asset'ler güncellenir/eklenir/silinir.
+            //   5) MaterialMovement "Düzeltme" / "Düzenleme" logu ekle
             await using var scope = await DbContextScope.CreateAsync(_dbFactory, cancellationToken);
             var db = scope.Context;
 
@@ -225,7 +227,31 @@ namespace Jenga.DataAccess.Services.Inventory
             // 3) MaterialEntry satırını güncelle. Detached olabileceği için Update kullanıyoruz.
             db.MaterialEntry_Table.Update(entry);
 
-            // 4) Movement logu (orijinal AddMovementForEntryAsync ile aynı alanlar).
+            // 4) MaterialAsset senkronu (Tech-Debt #1 — Phase A).
+            //    Sadece bu entry'den doğmuş (SourceMaterialEntryId == entry.Id) ve hareket görmemiş
+            //    asset'ler güncellenir / eklenir / silinir. Hareket görmüş asset'ler hiç dokunulmaz.
+            await SyncAssetsForEntryUpdateAsync(
+                db,
+                entry,
+                oldEntry,
+                newLocation,
+                newPersonnel,
+                newBrand,
+                newModel,
+                oldLocation,
+                oldPersonnel,
+                oldBrand,
+                oldModel,
+                quantityChanged,
+                materialChanged,
+                locationChanged,
+                personnelChanged,
+                brandChanged,
+                modelChanged,
+                currentUserName,
+                cancellationToken);
+
+            // 5) Movement logu (orijinal AddMovementForEntryAsync ile aynı alanlar).
             string movementType = (quantityChanged && !keyChanged) ? "Düzeltme" : "Düzenleme";
             var movement = new MaterialMovement
             {
@@ -305,6 +331,128 @@ namespace Jenga.DataAccess.Services.Inventory
             }
         }
 
+        /// <summary>
+        /// Tech-Debt #1 — Phase A: MaterialEntry düzenlendiğinde, sadece bu entry'den doğmuş
+        /// (<see cref="MaterialAsset.SourceMaterialEntryId"/> == entry.Id) ve "el değmemiş"
+        /// asset'leri senkronize eder. Hareket görmüş asset'lere asla dokunmaz.
+        ///
+        /// "El değmemiş" tanımı (defansif, iki katmanlı):
+        ///   1) MaterialAssetLog_Table'da o asset için kayıt yoksa
+        ///   2) Asset'in mevcut (LocationId, PersonelId, BrandId, ModelId) tuple'ı,
+        ///      orijinal entry'nin (oldEntry) tuple'ı ile aynıysa.
+        /// İkinci kural, log dışı bir akışın asset'i taşıması ihtimaline karşı ek güvencedir.
+        /// </summary>
+        private static async Task SyncAssetsForEntryUpdateAsync(
+            ApplicationDbContext db,
+            MaterialEntry entry,
+            MaterialEntry oldEntry,
+            int? newLocation,
+            int? newPersonnel,
+            int? newBrand,
+            int? newModel,
+            int? oldLocation,
+            int? oldPersonnel,
+            int? oldBrand,
+            int? oldModel,
+            bool quantityChanged,
+            bool materialChanged,
+            bool locationChanged,
+            bool personnelChanged,
+            bool brandChanged,
+            bool modelChanged,
+            string? modifiedBy,
+            CancellationToken cancellationToken)
+        {
+            // Yalnızca asset üreten malzemeler için anlamlı; değilse hiç çalışma.
+            var material = await db.Material_Table
+                .AsNoTracking()
+                .FirstOrDefaultAsync(m => m.Id == entry.MaterialId, cancellationToken);
+            if (material == null || !material.IsAsset)
+                return;
+
+            // Bu entry'den doğmuş ve henüz log görmemiş asset'leri çek.
+            // (Hareket gören her asset MaterialAssetLog_Table'a yazıldığı için log yokluğu yeterli ölçüttür;
+            //  yine de tuple eşleşmesini ek savunma katmanı olarak uygulayacağız.)
+            var loggedAssetIds = await db.MaterialAssetLog_Table
+                .AsNoTracking()
+                .Select(l => l.MaterialAssetId)
+                .Distinct()
+                .ToListAsync(cancellationToken);
+
+            var sourcedAssets = await db.MaterialAsset_Table
+                .Where(a => a.SourceMaterialEntryId == entry.Id)
+                .ToListAsync(cancellationToken);
+
+            // El değmemiş alt küme: log görmemiş + tuple hâlâ eski entry ile aynı.
+            var untouched = sourcedAssets
+                .Where(a => !loggedAssetIds.Contains(a.Id))
+                .Where(a =>
+                    a.LocationId == oldLocation &&
+                    a.PersonelId == oldPersonnel &&
+                    a.BrandId == oldBrand &&
+                    a.ModelId == oldModel &&
+                    a.MaterialId == oldEntry.MaterialId)
+                .ToList();
+
+            // 1) Anahtar alan değişiklikleri (Material/Location/Personel/Brand/Model) — el değmemiş asset'lere uygula.
+            if (materialChanged || locationChanged || personnelChanged || brandChanged || modelChanged)
+            {
+                foreach (var a in untouched)
+                {
+                    if (materialChanged) a.MaterialId = entry.MaterialId;
+                    if (locationChanged) a.LocationId = newLocation;
+                    if (personnelChanged) a.PersonelId = newPersonnel;
+                    if (brandChanged) a.BrandId = newBrand;
+                    if (modelChanged) a.ModelId = newModel;
+                    a.Aciklama = $"MaterialEntry #{entry.Id} güncellendi (Phase A senkron)";
+                    a.Degistiren = modifiedBy;
+                    a.DegistirmeTarihi = DateTime.Now;
+                }
+            }
+
+            // 2) Quantity değişikliği — sadece el değmemiş alt küme üzerinde insert/delete.
+            if (quantityChanged)
+            {
+                int delta = entry.Quantity - oldEntry.Quantity;
+                if (delta > 0)
+                {
+                    // Yeni asset'leri yeni anahtar değerleri ile üret.
+                    for (int i = 0; i < delta; i++)
+                    {
+                        var asset = new MaterialAsset
+                        {
+                            MaterialId = entry.MaterialId,
+                            BrandId = newBrand,
+                            ModelId = newModel,
+                            LocationId = newLocation,
+                            PersonelId = newPersonnel,
+                            PurchaseDate = entry.EntryDate,
+                            Status = AssetStatus.Active,
+                            SourceMaterialEntryId = entry.Id,
+                            Aciklama = $"MaterialEntry #{entry.Id} güncellendi, miktar artışı (Phase A senkron)",
+                            Olusturan = modifiedBy,
+                            OlusturmaTarihi = DateTime.Now
+                        };
+                        await db.MaterialAsset_Table.AddAsync(asset, cancellationToken);
+                    }
+                }
+                else if (delta < 0)
+                {
+                    int needed = -delta;
+                    // En yeni el değmemiş asset'lerden başlayarak sil; el değmemiş yetersizse yetersiz olduğu kadar sil.
+                    // Hareket görmüş asset'lere dokunmuyoruz; eksik kalırsa kullanıcı manuel temizlik yapar.
+                    var toRemove = untouched
+                        .OrderByDescending(a => a.OlusturmaTarihi ?? DateTime.MinValue)
+                        .ThenByDescending(a => a.Id)
+                        .Take(needed)
+                        .ToList();
+
+                    foreach (var a in toRemove)
+                        db.MaterialAsset_Table.Remove(a);
+                }
+            }
+        }
+
         public async Task<bool> DeleteMaterialEntryAndUpdateInventoryAsync(MaterialEntry entryToDelete, string? currentUserName, CancellationToken cancellationToken = default)
         {
             if (entryToDelete == null) return false;
@@ -364,6 +512,32 @@ namespace Jenga.DataAccess.Services.Inventory
                     .FirstOrDefaultAsync(e => e.Id == entryToDelete.Id, cancellationToken);
                 if (entryEntity != null)
                     db.MaterialEntry_Table.Remove(entryEntity);
+
+                // 3.b) MaterialAsset temizliği (Tech-Debt #1 — Phase A):
+                //      Bu entry'den doğmuş ve hareket görmemiş asset'leri sil.
+                //      Hareket görmüş asset'ler dokunulmaz; FK ON DELETE SET NULL ile bağları kopar.
+                var loggedAssetIds = await db.MaterialAssetLog_Table
+                    .AsNoTracking()
+                    .Select(l => l.MaterialAssetId)
+                    .Distinct()
+                    .ToListAsync(cancellationToken);
+
+                var sourcedAssets = await db.MaterialAsset_Table
+                    .Where(a => a.SourceMaterialEntryId == entryToDelete.Id)
+                    .ToListAsync(cancellationToken);
+
+                var untouched = sourcedAssets
+                    .Where(a => !loggedAssetIds.Contains(a.Id))
+                    .Where(a =>
+                        a.LocationId == location &&
+                        a.PersonelId == personnel &&
+                        a.BrandId == brand &&
+                        a.ModelId == model &&
+                        a.MaterialId == entryToDelete.MaterialId)
+                    .ToList();
+
+                foreach (var a in untouched)
+                    db.MaterialAsset_Table.Remove(a);
 
                 // 4) MaterialMovement "Silme" logu (orijinal AddMovementForEntryAsync ile aynı alanlar).
                 var movement = new MaterialMovement

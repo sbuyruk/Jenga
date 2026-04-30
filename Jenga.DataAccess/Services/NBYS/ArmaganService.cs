@@ -1,46 +1,54 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Jenga.DataAccess.Repositories.IRepository;
+using Jenga.DataAccess.Data;
 using Jenga.Models.NBYS;
+using Microsoft.EntityFrameworkCore;
 
 namespace Jenga.DataAccess.Services.NBYS
 {
     public class ArmaganService : IArmaganService
     {
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
 
-        public ArmaganService(IUnitOfWork unitOfWork)
+        public ArmaganService(IDbContextFactory<ApplicationDbContext> dbFactory)
         {
-            _unitOfWork = unitOfWork;
+            _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
         }
 
-        public Task<List<Armagan>> GetAllAsync(CancellationToken cancellationToken = default)
-            => _unitOfWork.Armagan.GetAllAsync(cancellationToken);
+        public async Task<List<Armagan>> GetAllAsync(CancellationToken cancellationToken = default)
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.Armagan_Table.AsNoTracking().ToListAsync(cancellationToken);
+        }
 
-        public Task<Armagan?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
-            => _unitOfWork.Armagan.GetByIdAsync(id, cancellationToken);
+        public async Task<Armagan?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.Armagan_Table.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        }
 
         public async Task<bool> AddAsync(Armagan model, CancellationToken cancellationToken = default)
         {
-            await _unitOfWork.Armagan.AddAsync(model, cancellationToken);
-            await _unitOfWork.Armagan.SaveChangesAsync(cancellationToken);
+            if (model == null) throw new ArgumentNullException(nameof(model));
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            await db.Armagan_Table.AddAsync(model, cancellationToken);
+            await db.SaveChangesAsync(cancellationToken);
             return true;
         }
 
         public async Task<bool> UpdateAsync(Armagan model, CancellationToken cancellationToken = default)
         {
-            await _unitOfWork.Armagan.UpdateAsync(model, null, cancellationToken);
-            await _unitOfWork.Armagan.SaveChangesAsync(cancellationToken);
+            if (model == null) throw new ArgumentNullException(nameof(model));
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            db.Armagan_Table.Update(model);
+            await db.SaveChangesAsync(cancellationToken);
             return true;
         }
 
         public async Task<bool> DeleteAsync(Armagan model, CancellationToken cancellationToken = default)
         {
-            _unitOfWork.Armagan.Remove(model);
-            await _unitOfWork.Armagan.SaveChangesAsync(cancellationToken);
+            if (model == null) throw new ArgumentNullException(nameof(model));
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            db.Armagan_Table.Remove(model);
+            await db.SaveChangesAsync(cancellationToken);
             return true;
         }
     }

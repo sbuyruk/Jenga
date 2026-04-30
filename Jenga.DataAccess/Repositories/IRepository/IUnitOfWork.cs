@@ -1,22 +1,10 @@
-﻿using Jenga.DataAccess.Repositories.IRepository.Common;
-using Jenga.DataAccess.Repositories.IRepository.FTK;
-using Jenga.DataAccess.Repositories.IRepository.IKYS;
-using Jenga.DataAccess.Repositories.IRepository.NBYS;
+﻿using Jenga.DataAccess.Repositories.IRepository.IKYS;
 using Jenga.DataAccess.Repositories.IRepository.TBYS;
 
 namespace Jenga.DataAccess.Repositories.IRepository
 {
     public interface IUnitOfWork
     {
-        // Common
-        IMenuItemRepository MenuItem { get; }
-        IRoleRepository Role { get; }
-        IRoleMenuRepository RoleMenu { get; }
-        IPersonelRoleRepository PersonelRole { get; }
-        IBolgeRepository Bolge { get; }
-        IIlRepository Il { get; }
-        IIlceRepository Ilce { get; }
-
         //IKYS
         IPersonelRepository Personel { get; }
         IPersonelLocationRepository PersonelLocation { get; }
@@ -50,16 +38,5 @@ namespace Jenga.DataAccess.Repositories.IRepository
         IBagisciYakinlariRepository BagisciYakinlari { get; }
         ITasinmazTaahhutRepository TasinmazTaahhut { get; }
         IVasiyetciRepository Vasiyetci { get; }
-        //NBYS
-        INakitBagisciRepository NakitBagisci { get; }
-        INakitBagisHareketRepository NakitBagisHareket { get; }
-        IArmaganRepository Armagan { get; }
-        IBankaTanimRepository BankaTanim { get; }
-        IArmaganTanimRepository ArmaganTanim { get; }
-        IDuzenliNakitBagisciRepository DuzenliNakitBagisci { get; }
-        //FTK
-        IFtkRepository Ftk { get; }
-        IFtkIslemRepository FtkIslem { get; }
-        IFtkKisiRepository FtkKisi { get; }
     }
 }

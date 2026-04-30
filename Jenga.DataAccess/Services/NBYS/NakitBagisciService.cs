@@ -1,46 +1,54 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Jenga.DataAccess.Repositories.IRepository;
+using Jenga.DataAccess.Data;
 using Jenga.Models.NBYS;
+using Microsoft.EntityFrameworkCore;
 
 namespace Jenga.DataAccess.Services.NBYS
 {
     public class NakitBagisciService : INakitBagisciService
     {
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
 
-        public NakitBagisciService(IUnitOfWork unitOfWork)
+        public NakitBagisciService(IDbContextFactory<ApplicationDbContext> dbFactory)
         {
-            _unitOfWork = unitOfWork;
+            _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
         }
 
-        public Task<List<NakitBagisci>> GetAllAsync(CancellationToken cancellationToken = default)
-            => _unitOfWork.NakitBagisci.GetAllAsync(cancellationToken);
+        public async Task<List<NakitBagisci>> GetAllAsync(CancellationToken cancellationToken = default)
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.NakitBagisci_Table.AsNoTracking().ToListAsync(cancellationToken);
+        }
 
-        public Task<NakitBagisci?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
-            => _unitOfWork.NakitBagisci.GetByIdAsync(id, cancellationToken);
+        public async Task<NakitBagisci?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.NakitBagisci_Table.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        }
 
         public async Task<bool> AddAsync(NakitBagisci model, CancellationToken cancellationToken = default)
         {
-            await _unitOfWork.NakitBagisci.AddAsync(model, cancellationToken);
-            await _unitOfWork.NakitBagisci.SaveChangesAsync(cancellationToken);
+            if (model == null) throw new ArgumentNullException(nameof(model));
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            await db.NakitBagisci_Table.AddAsync(model, cancellationToken);
+            await db.SaveChangesAsync(cancellationToken);
             return true;
         }
 
         public async Task<bool> UpdateAsync(NakitBagisci model, CancellationToken cancellationToken = default)
         {
-            await _unitOfWork.NakitBagisci.UpdateAsync(model, null, cancellationToken);
-            await _unitOfWork.NakitBagisci.SaveChangesAsync(cancellationToken);
+            if (model == null) throw new ArgumentNullException(nameof(model));
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            db.NakitBagisci_Table.Update(model);
+            await db.SaveChangesAsync(cancellationToken);
             return true;
         }
 
         public async Task<bool> DeleteAsync(NakitBagisci model, CancellationToken cancellationToken = default)
         {
-            _unitOfWork.NakitBagisci.Remove(model);
-            await _unitOfWork.NakitBagisci.SaveChangesAsync(cancellationToken);
+            if (model == null) throw new ArgumentNullException(nameof(model));
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            db.NakitBagisci_Table.Remove(model);
+            await db.SaveChangesAsync(cancellationToken);
             return true;
         }
     }

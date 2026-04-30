@@ -1,46 +1,54 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Jenga.DataAccess.Repositories.IRepository;
+using Jenga.DataAccess.Data;
 using Jenga.Models.NBYS;
+using Microsoft.EntityFrameworkCore;
 
 namespace Jenga.DataAccess.Services.NBYS
 {
     public class BankaTanimService : IBankaTanimService
     {
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
 
-        public BankaTanimService(IUnitOfWork unitOfWork)
+        public BankaTanimService(IDbContextFactory<ApplicationDbContext> dbFactory)
         {
-            _unitOfWork = unitOfWork;
+            _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
         }
 
-        public Task<List<BankaTanim>> GetAllAsync(CancellationToken cancellationToken = default)
-            => _unitOfWork.BankaTanim.GetAllAsync(cancellationToken);
+        public async Task<List<BankaTanim>> GetAllAsync(CancellationToken cancellationToken = default)
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.BankaTanim_Table.AsNoTracking().ToListAsync(cancellationToken);
+        }
 
-        public Task<BankaTanim?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
-            => _unitOfWork.BankaTanim.GetByIdAsync(id, cancellationToken);
+        public async Task<BankaTanim?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.BankaTanim_Table.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        }
 
         public async Task<bool> AddAsync(BankaTanim model, CancellationToken cancellationToken = default)
         {
-            await _unitOfWork.BankaTanim.AddAsync(model, cancellationToken);
-            await _unitOfWork.BankaTanim.SaveChangesAsync(cancellationToken);
+            if (model == null) throw new ArgumentNullException(nameof(model));
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            await db.BankaTanim_Table.AddAsync(model, cancellationToken);
+            await db.SaveChangesAsync(cancellationToken);
             return true;
         }
 
         public async Task<bool> UpdateAsync(BankaTanim model, CancellationToken cancellationToken = default)
         {
-            await _unitOfWork.BankaTanim.UpdateAsync(model, null, cancellationToken);
-            await _unitOfWork.BankaTanim.SaveChangesAsync(cancellationToken);
+            if (model == null) throw new ArgumentNullException(nameof(model));
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            db.BankaTanim_Table.Update(model);
+            await db.SaveChangesAsync(cancellationToken);
             return true;
         }
 
         public async Task<bool> DeleteAsync(BankaTanim model, CancellationToken cancellationToken = default)
         {
-            _unitOfWork.BankaTanim.Remove(model);
-            await _unitOfWork.BankaTanim.SaveChangesAsync(cancellationToken);
+            if (model == null) throw new ArgumentNullException(nameof(model));
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            db.BankaTanim_Table.Remove(model);
+            await db.SaveChangesAsync(cancellationToken);
             return true;
         }
     }

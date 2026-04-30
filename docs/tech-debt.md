@@ -43,10 +43,24 @@ imkânı veriyor. `MaterialEntryService.UpdateMaterialEntryAndInventoryAsync` bu
   durumda; düzeltilemez. İleriye dönük doğru çalışacak.
 
 **Durum**
-- Açık. Şu anki UoW canary refactor serisi tamamlanınca ele alınacak.
+- **Kısmen çözüldü (Phase A — 2025).**
+  `MaterialAsset.SourceMaterialEntryId` (nullable FK) eklendi.
+  `MaterialEntryService.AddAsync` her yeni asset'i bu FK ile damgalıyor.
+  `UpdateMaterialEntryAndInventoryAsync` artık bu entry'den doğmuş ve **hareket görmemiş**
+  ("el değmemiş": `MaterialAssetLog`'da kaydı yok ve mevcut tuple'ı eski entry tuple'ı ile
+  aynı) asset'leri Brand/Model/Location/Personel için günceller; Quantity artışında yeni
+  asset'ler üretir, azalışında en yeni el-değmemiş asset'leri siler. Hareket görmüş asset'lere
+  asla dokunmaz. `DeleteMaterialEntryAndUpdateInventoryAsync` da aynı kuralla el-değmemiş
+  asset'leri temizler. Eski (NULL `SourceMaterialEntryId`) asset'ler dokunulmaz.
+- **Açık kalan kısımlar (Phase B / C):**
+  1. `MaterialEntry`'i tam immutable yapma; "Düzenle"yi sadece `Aciklama` + küçük tarih
+     düzeltmesine indirme.
+  2. Lokasyon değişimi için ayrı **Transfer** UI/akışı.
+  3. Personel değişimi için ayrı **Zimmetle / Zimmet Al** UI/akışı.
+  4. UoW canary refactor serisi tamamlandıktan sonra ele alınacak.
+
 - Canary serisinde `UpdateMaterialEntryAndInventoryAsync` **mevcut davranış korunarak**
-  atomikleştirilecek; yani bu tech debt çözülmeden önce de işlem rollback garantisine
-  sahip olacak.
+  atomikleştirildi; Phase A senkronu da aynı transaction içinde çalışır.
 
 **İlgili dosyalar**
 - `Jenga.DataAccess/Services/Inventory/MaterialEntryService.cs`
