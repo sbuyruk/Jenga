@@ -168,28 +168,45 @@ else
 
     private async void HandleSave()
     {
-        if (selectedExit != null)
+        if (selectedExit == null)
         {
-            if (selectedExit.Quantity < 1)
-            {
-                ToastService.ShowError("Miktar 1'den küçük olamaz!", 3000);
-                return;
-            }
+            return;
+        }
 
+        if (selectedExit.Quantity < 1)
+        {
+            ToastService.ShowError("Miktar 1'den küçük olamaz!", 3000);
+            return;
+        }
+
+        try
+        {
             if (selectedExit.Id == 0)
             {
-                await MaterialExitService.AddAsync(selectedExit,null, CancellationToken.None);
+                await MaterialExitService.AddAsync(selectedExit, null, CancellationToken.None);
                 MaterialExits.Add(selectedExit);
             }
             else
             {
                 await MaterialExitService.UpdateAsync(selectedExit);
             }
-
-            showEditModal = false;
-            BuildRows();
-            StateHasChanged();
         }
+        catch (InvalidOperationException ex)
+        {
+            // İş kuralı ihlali (örn. yetersiz stok). Kullanıcıya friendly mesaj göster, circuit'i öldürme.
+            ToastService.ShowError(ex.Message, 5000);
+            return;
+        }
+        catch (Exception)
+        {
+            // Beklenmeyen hata: kullanıcıya generic mesaj, circuit'i öldürme.
+            ToastService.ShowError("Kayıt sırasında beklenmeyen bir hata oluştu.", 5000);
+            return;
+        }
+
+        showEditModal = false;
+        BuildRows();
+        StateHasChanged();
     }
 
     private async Task OnDeleteClicked(MaterialExit exit)
@@ -206,12 +223,25 @@ else
                     return;
                 }
 
-                await MaterialExitService.DeleteAsync(exit);
-                ToastService.ShowToast("Çıkış kaydı silindi", ToastType.Success, 3000);
+                try
+                {
+                    await MaterialExitService.DeleteAsync(exit);
+                    ToastService.ShowToast("Çıkış kaydı silindi", ToastType.Success, 3000);
 
-                MaterialExits.Remove(exit);
-                BuildRows();
-                StateHasChanged();
+                    MaterialExits.Remove(exit);
+                    BuildRows();
+                    StateHasChanged();
+                }
+                catch (InvalidOperationException ex)
+                {
+                    // İş kuralı ihlali. Friendly mesaj, circuit korunur.
+                    ToastService.ShowError(ex.Message, 5000);
+                }
+                catch (Exception)
+                {
+                    // Beklenmeyen hata.
+                    ToastService.ShowError("Silme sırasında beklenmeyen bir hata oluştu.", 5000);
+                }
             });
     }
 

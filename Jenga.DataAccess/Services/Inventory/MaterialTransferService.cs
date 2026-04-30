@@ -1,46 +1,25 @@
-﻿using Jenga.DataAccess.Repositories.IRepository;
+using Jenga.DataAccess.Data;
 using Jenga.Models.Inventory;
-using System.Linq.Expressions;
+using Microsoft.EntityFrameworkCore;
 
 namespace Jenga.DataAccess.Services.Inventory
 {
     public class MaterialTransferService : IMaterialTransferService
     {
-        private readonly IUnitOfWork _unitOfWork;
-        private readonly IMaterialInventoryService _materialInventoryService;
-        private readonly IMaterialMovementService _materialMovementService;
-        private readonly IMaterialAssetService _materialAssetService;
-        private readonly IMaterialAssetLogService _materialAssetLogService;
+        private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
 
-        public MaterialTransferService(
-            IUnitOfWork unitOfWork,
-            IMaterialInventoryService materialInventoryService,
-            IMaterialMovementService materialMovementService,
-            IMaterialAssetService materialAssetService,
-            IMaterialAssetLogService materialAssetLogService)
+        public MaterialTransferService(IDbContextFactory<ApplicationDbContext> dbFactory)
         {
-            _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
-            _materialInventoryService = materialInventoryService ?? throw new ArgumentNullException(nameof(materialInventoryService));
-            _materialMovementService = materialMovementService ?? throw new ArgumentNullException(nameof(materialMovementService));
-            _materialAssetService = materialAssetService ?? throw new ArgumentNullException(nameof(materialAssetService));
-            _materialAssetLogService = materialAssetLogService ?? throw new ArgumentNullException(nameof(materialAssetLogService));
+            _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
         }
 
-        public async Task<List<MaterialTransfer>> GetAllAsync(CancellationToken cancellationToken = default)
-            => await _unitOfWork.MaterialTransfer.GetAllAsync(cancellationToken);
-
-        public async Task<MaterialTransfer?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
-            => await _unitOfWork.MaterialTransfer.GetByIdAsync(id, cancellationToken);
-
-        public Task<bool> AnyAsync(Expression<Func<MaterialTransfer, bool>> predicate)
-            => _unitOfWork.MaterialTransfer.AnyAsync(predicate);
-
-        public async Task<bool> AddAsync(MaterialTransfer transfer, string? modifiedBy = null, List<int>? selectedAssetIds = null, CancellationToken cancellationToken = default)
+        public async Task<bool> AddAsync(
+            MaterialTransfer transfer,
+            string? modifiedBy = null,
+            List<int>? selectedAssetIds = null,
+            CancellationToken cancellationToken = default)
         {
             if (transfer == null) throw new ArgumentNullException(nameof(transfer));
-
-            await _unitOfWork.MaterialTransfer.AddAsync(transfer, cancellationToken);
-            await _unitOfWork.MaterialTransfer.SaveChangesAsync(cancellationToken);
 
             int? actualFromLocation = transfer.FromLocationId != 0 ? transfer.FromLocationId : null;
             int? actualToLocation = transfer.ToLocationId != 0 ? transfer.ToLocationId : null;
@@ -49,28 +28,38 @@ namespace Jenga.DataAccess.Services.Inventory
             int? actualBrand = (transfer.BrandId.HasValue && transfer.BrandId != 0) ? transfer.BrandId : null;
             int? actualModel = (transfer.ModelId.HasValue && transfer.ModelId != 0) ? transfer.ModelId : null;
 
-            await _materialInventoryService.AddOrUpdateInventoryAsync(
-                transfer.MaterialId,
-                actualFromLocation,
-                actualFromPerson,
+            // Aşama B: tek context + tek transaction içinde
+            //   1) MaterialTransfer insert
+            //   2) Inventory: kaynak koordinatlarına -Quantity (AddOrUpdate semantiği; 0'a düşse de satır silinmez)
+            //   3) Inventory: hedef koordinatlarına +Quantity
+            //   4) MaterialMovement "Transfer" logu
+            //   5) IsAsset ise seçili/uygun asset'leri yeni location/person'a taşı + log
+            // Hata olursa transaction rollback eder.
+            await using var scope = await DbContextScope.CreateAsync(_dbFactory, cancellationToken);
+            var db = scope.Context;
+
+            // 1) Transfer insert
+            await db.MaterialTransfer_Table.AddAsync(transfer, cancellationToken);
+
+            // 2) Kaynak stoktan düş
+            await ApplyInventoryDeltaAsync(
+                db,
+                transfer.MaterialId, actualFromLocation, actualFromPerson, actualBrand, actualModel,
                 -transfer.Quantity,
                 "MaterialTransfer: Kaynak stoktan düşüldü.",
                 modifiedBy,
-                actualBrand,
-                actualModel,
                 cancellationToken);
 
-            await _materialInventoryService.AddOrUpdateInventoryAsync(
-                transfer.MaterialId,
-                actualToLocation,
-                actualToPerson,
-                transfer.Quantity,
+            // 3) Hedef stoğa ekle
+            await ApplyInventoryDeltaAsync(
+                db,
+                transfer.MaterialId, actualToLocation, actualToPerson, actualBrand, actualModel,
+                +transfer.Quantity,
                 "MaterialTransfer: Hedef stoğa eklendi.",
                 modifiedBy,
-                actualBrand,
-                actualModel,
                 cancellationToken);
 
+            // 4) Movement
             var movement = new MaterialMovement
             {
                 MaterialId = transfer.MaterialId,
@@ -88,106 +77,118 @@ namespace Jenga.DataAccess.Services.Inventory
                 BrandId = actualBrand,
                 ModelId = actualModel
             };
-            await _materialMovementService.AddAsync(movement, cancellationToken);
+            await db.MaterialMovement_Table.AddAsync(movement, cancellationToken);
 
-            var material = await _unitOfWork.Material.GetByIdAsync(transfer.MaterialId, cancellationToken);
+            // 5) Asset transfer (yalnızca IsAsset)
+            var material = await db.Material_Table
+                .FirstOrDefaultAsync(m => m.Id == transfer.MaterialId, cancellationToken);
+
             if (material != null && material.IsAsset)
             {
-                await TransferAssetsAsync(
-                    transfer.MaterialId,
-                    transfer.Quantity,
-                    actualFromLocation,
-                    actualFromPerson,
-                    actualToLocation,
-                    actualToPerson,
-                    actualBrand,
-                    actualModel,
-                    modifiedBy,
-                    selectedAssetIds,
-                    cancellationToken);
+                List<MaterialAsset> assetsToTransfer;
+
+                if (selectedAssetIds != null && selectedAssetIds.Count > 0)
+                {
+                    assetsToTransfer = await db.MaterialAsset_Table
+                        .Where(a => a.MaterialId == transfer.MaterialId
+                                 && selectedAssetIds.Contains(a.Id)
+                                 && a.Status == AssetStatus.Active)
+                        .ToListAsync(cancellationToken);
+                }
+                else
+                {
+                    assetsToTransfer = await db.MaterialAsset_Table
+                        .Where(a => a.MaterialId == transfer.MaterialId
+                                 && a.Status == AssetStatus.Active
+                                 && a.LocationId == actualFromLocation
+                                 && a.PersonelId == actualFromPerson
+                                 && a.BrandId == actualBrand
+                                 && a.ModelId == actualModel)
+                        .Take(transfer.Quantity)
+                        .ToListAsync(cancellationToken);
+                }
+
+                foreach (var asset in assetsToTransfer)
+                {
+                    var log = new MaterialAssetLog
+                    {
+                        MaterialAssetId = asset.Id,
+                        FromPersonelId = asset.PersonelId,
+                        ToPersonelId = actualToPerson,
+                        FromLocationId = asset.LocationId,
+                        ToLocationId = actualToLocation,
+                        TransactionDate = DateTime.Now,
+                        TransactionType = "Transfer",
+                        Aciklama = $"Transfer #{asset.SerialNumber ?? asset.Id.ToString()}",
+                        Olusturan = modifiedBy,
+                        OlusturmaTarihi = DateTime.Now
+                    };
+                    await db.MaterialAssetLog_Table.AddAsync(log, cancellationToken);
+
+                    asset.LocationId = actualToLocation;
+                    asset.PersonelId = actualToPerson;
+                    asset.Degistiren = modifiedBy;
+                    asset.DegistirmeTarihi = DateTime.Now;
+                }
             }
 
+            await scope.CommitAsync(cancellationToken);
             return true;
         }
 
-        private async Task TransferAssetsAsync(
+        // AddOrUpdateInventoryAsync semantiğini birebir korur, parametre olarak gelen
+        // context'te çalışır; aynı transaction'a katılır. 0'a düşse bile satır SİLİNMEZ.
+        private static async Task ApplyInventoryDeltaAsync(
+            ApplicationDbContext db,
             int materialId,
-            int quantity,
-            int? fromLocationId,
-            int? fromPersonId,
-            int? toLocationId,
-            int? toPersonId,
+            int? locationId,
+            int? personelId,
             int? brandId,
             int? modelId,
+            int delta,
+            string aciklama,
             string? modifiedBy,
-            List<int>? selectedAssetIds,
             CancellationToken cancellationToken)
         {
-            List<MaterialAsset> assetsToTransfer;
+            var inventory = await db.MaterialInventory_Table
+                .FirstOrDefaultAsync(mi =>
+                    mi.MaterialId == materialId &&
+                    mi.LocationId == locationId &&
+                    mi.PersonelId == personelId &&
+                    mi.BrandId == brandId &&
+                    mi.ModelId == modelId,
+                    cancellationToken);
 
-            if (selectedAssetIds != null && selectedAssetIds.Count > 0)
+            if (inventory != null)
             {
-                var allAssets = await _materialAssetService.GetByMaterialIdAsync(materialId, cancellationToken);
-                assetsToTransfer = allAssets
-                    .Where(a => selectedAssetIds.Contains(a.Id) && a.Status == AssetStatus.Active)
-                    .ToList();
+                var newQty = inventory.Quantity + delta;
+                if (newQty < 0)
+                    throw new InvalidOperationException($"Yetersiz stok: mevcut {inventory.Quantity}, yapılmak istenen değişiklik {delta}. İşlem yapılmadı.");
+
+                inventory.Quantity = newQty;
+                inventory.Aciklama = aciklama;
+                inventory.Degistiren = modifiedBy;
+                inventory.DegistirmeTarihi = DateTime.Now;
             }
             else
             {
-                var sourceAssets = await _materialAssetService.GetByMaterialIdAsync(materialId, cancellationToken);
-                assetsToTransfer = sourceAssets
-                    .Where(a => a.Status == AssetStatus.Active
-                        && a.LocationId == fromLocationId
-                        && a.PersonelId == fromPersonId
-                        && a.BrandId == brandId
-                        && a.ModelId == modelId)
-                    .Take(quantity)
-                    .ToList();
-            }
+                if (delta < 0)
+                    throw new InvalidOperationException("Yeni bir stok kaydı eklendiğinde negatif miktar belirtilemez.");
 
-            foreach (var asset in assetsToTransfer)
-            {
-                var log = new MaterialAssetLog
+                var inv = new MaterialInventory
                 {
-                    MaterialAssetId = asset.Id,
-                    FromPersonelId = asset.PersonelId,
-                    ToPersonelId = toPersonId,
-                    FromLocationId = asset.LocationId,
-                    ToLocationId = toLocationId,
-                    TransactionDate = DateTime.Now,
-                    TransactionType = "Transfer",
-                    Aciklama = $"Transfer #{asset.SerialNumber ?? asset.Id.ToString()}",
+                    MaterialId = materialId,
+                    LocationId = locationId,
+                    PersonelId = personelId,
+                    BrandId = brandId,
+                    ModelId = modelId,
+                    Quantity = delta,
+                    Aciklama = aciklama,
                     Olusturan = modifiedBy,
                     OlusturmaTarihi = DateTime.Now
                 };
-                await _materialAssetLogService.AddAsync(log, cancellationToken);
-
-                asset.LocationId = toLocationId;
-                asset.PersonelId = toPersonId;
-                asset.Degistiren = modifiedBy;
-                asset.DegistirmeTarihi = DateTime.Now;
-                await _materialAssetService.UpdateAsync(asset, cancellationToken);
+                await db.MaterialInventory_Table.AddAsync(inv, cancellationToken);
             }
-        }
-
-        public async Task<bool> UpdateAsync(MaterialTransfer yeniTransfer, CancellationToken cancellationToken = default)
-        {
-            return await Task.FromResult(false);
-        }
-
-        public async Task<bool> DeleteAsync(MaterialTransfer transfer, CancellationToken cancellationToken = default)
-        {
-            return await Task.FromResult(false);
-        }
-
-        public async Task<bool> UpdateMaterialTransferAndInventoryAsync(MaterialTransfer transfer, string? currentUserName, CancellationToken cancellationToken = default)
-        {
-            return await UpdateAsync(transfer, cancellationToken);
-        }
-
-        public async Task<bool> DeleteMaterialTransferAndUpdateInventoryAsync(MaterialTransfer transfer, string? currentUserName, CancellationToken cancellationToken = default)
-        {
-            return await DeleteAsync(transfer, cancellationToken);
         }
     }
 }
