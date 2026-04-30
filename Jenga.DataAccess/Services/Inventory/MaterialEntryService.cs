@@ -1,5 +1,4 @@
 ﻿using Jenga.DataAccess.Data;
-using Jenga.DataAccess.Repositories.IRepository;
 using Jenga.Models.Inventory;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
@@ -8,59 +7,108 @@ namespace Jenga.DataAccess.Services.Inventory
 {
     public class MaterialEntryService : IMaterialEntryService
     {
-        private readonly IUnitOfWork _unitOfWork;
-        private readonly IMaterialInventoryService _materialInventoryService;
-        private readonly IMaterialMovementService _materialMovementService;
-        private readonly IMaterialAssetService _materialAssetService;
         private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
 
-        public MaterialEntryService(
-            IUnitOfWork unitOfWork,
-            IMaterialInventoryService materialInventoryService,
-            IMaterialMovementService materialMovementService,
-            IMaterialAssetService materialAssetService,
-            IDbContextFactory<ApplicationDbContext> dbFactory)
+        public MaterialEntryService(IDbContextFactory<ApplicationDbContext> dbFactory)
         {
-            _unitOfWork = unitOfWork;
-            _materialInventoryService = materialInventoryService;
-            _materialMovementService = materialMovementService;
-            _materialAssetService = materialAssetService;
             _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
         }
 
         public async Task<List<MaterialEntry>> GetAllAsync(CancellationToken cancellationToken = default)
-            => await _unitOfWork.MaterialEntry.GetAllAsync(cancellationToken);
-
-        public async Task<MaterialEntry?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
-            => await _unitOfWork.MaterialEntry.GetByIdAsync(id, cancellationToken);
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.MaterialEntry_Table.AsNoTracking().ToListAsync(cancellationToken);
+        }
 
         public async Task<bool> AddAsync(MaterialEntry entry, string? modifiedBy, CancellationToken cancellationToken = default)
         {
-            await _unitOfWork.MaterialEntry.AddAsync(entry, cancellationToken);
-            await _unitOfWork.MaterialEntry.SaveChangesAsync(cancellationToken);
+            if (entry == null) throw new ArgumentNullException(nameof(entry));
 
             int? actualLocationId = entry.LocationId != 0 ? entry.LocationId : null;
             int? actualPersonnelId = (entry.PersonelId.HasValue && entry.PersonelId.Value != 0) ? entry.PersonelId : null;
             int? actualBrandId = (entry.BrandId.HasValue && entry.BrandId.Value != 0) ? entry.BrandId : null;
             int? actualModelId = (entry.ModelId.HasValue && entry.ModelId.Value != 0) ? entry.ModelId : null;
 
-            await _materialInventoryService.AddOrUpdateInventoryAsync(
-                entry.MaterialId,
-                actualLocationId,
-                actualPersonnelId,
-                entry.Quantity,
-                "Malzeme girişi sonrası stok güncellemesi",
-                modifiedBy,
-                actualBrandId,
-                actualModelId,
-                cancellationToken
-            );
+            // Canary (Adım 2): tek context + tek transaction içinde
+            //   1) MaterialEntry ekle ve Id'yi al
+            //   2) Inventory: +Quantity uygula (yoksa yeni satır)
+            //   3) MaterialMovement "Giriş" logu ekle
+            //   4) Material.IsAsset ise N adet MaterialAsset üret
+            // Hata olursa using sonu rollback eder; "entry kaldı ama inventory/movement/asset eksik" tutarsızlığı oluşmaz.
+            await using var scope = await DbContextScope.CreateAsync(_dbFactory, cancellationToken);
+            var db = scope.Context;
 
-            await _materialMovementService.AddMovementForEntryAsync(
-                entry, "Giriş", "MaterialEntry eklendi", modifiedBy, cancellationToken
-            );
+            // 1) MaterialEntry ekle. Id'ye sonraki adımlarda ihtiyacımız olduğu için ara SaveChanges yapıyoruz;
+            //    aynı transaction içinde olduğundan rollback'i engellemez.
+            await db.MaterialEntry_Table.AddAsync(entry, cancellationToken);
+            await db.SaveChangesAsync(cancellationToken);
 
-            var material = await _unitOfWork.Material.GetByIdAsync(entry.MaterialId, cancellationToken);
+            // 2) Inventory upsert (5'li anahtar, NULL eşleşmeleri dahil) — orijinal AddOrUpdateInventoryAsync ile aynı semantik.
+            var inventory = await db.MaterialInventory_Table
+                .FirstOrDefaultAsync(mi =>
+                    mi.MaterialId == entry.MaterialId &&
+                    mi.LocationId == actualLocationId &&
+                    mi.PersonelId == actualPersonnelId &&
+                    mi.BrandId == actualBrandId &&
+                    mi.ModelId == actualModelId,
+                    cancellationToken);
+
+            int delta = entry.Quantity;
+            const string invAciklama = "Malzeme girişi sonrası stok güncellemesi";
+            if (inventory != null)
+            {
+                var newQty = inventory.Quantity + delta;
+                if (newQty < 0)
+                    throw new InvalidOperationException($"Yetersiz stok: mevcut {inventory.Quantity}, yapılmak istenen değişiklik {delta}. İşlem yapılmadı.");
+
+                inventory.Quantity = newQty;
+                inventory.Aciklama = invAciklama;
+                inventory.Degistiren = modifiedBy;
+                inventory.DegistirmeTarihi = DateTime.Now;
+            }
+            else
+            {
+                if (delta < 0)
+                    throw new InvalidOperationException("Yeni bir stok kaydı eklendiğinde negatif miktar belirtilemez.");
+
+                var newInventory = new MaterialInventory
+                {
+                    MaterialId = entry.MaterialId,
+                    LocationId = actualLocationId,
+                    PersonelId = actualPersonnelId,
+                    BrandId = actualBrandId,
+                    ModelId = actualModelId,
+                    Quantity = delta,
+                    Aciklama = invAciklama,
+                    Olusturan = modifiedBy,
+                    OlusturmaTarihi = DateTime.Now
+                };
+                await db.MaterialInventory_Table.AddAsync(newInventory, cancellationToken);
+            }
+
+            // 3) MaterialMovement "Giriş" logu (orijinal AddMovementForEntryAsync ile aynı alanlar).
+            var movement = new MaterialMovement
+            {
+                MaterialId = entry.MaterialId,
+                Quantity = entry.Quantity,
+                MaterialUnitId = entry.MaterialUnitId,
+                FromLocationId = null,
+                ToLocationId = entry.LocationId,
+                ToPersonId = entry.PersonelId,
+                BrandId = entry.BrandId,
+                ModelId = entry.ModelId,
+                MovementType = "Giriş",
+                Operation = "Giriş",
+                MovementDate = entry.EntryDate,
+                Aciklama = "MaterialEntry eklendi",
+                Olusturan = modifiedBy,
+                OlusturmaTarihi = DateTime.Now
+            };
+            await db.MaterialMovement_Table.AddAsync(movement, cancellationToken);
+
+            // 4) IsAsset ise her birim için MaterialAsset üret.
+            var material = await db.Material_Table
+                .FirstOrDefaultAsync(m => m.Id == entry.MaterialId, cancellationToken);
             if (material != null && material.IsAsset)
             {
                 for (int i = 0; i < entry.Quantity; i++)
@@ -78,27 +126,34 @@ namespace Jenga.DataAccess.Services.Inventory
                         Olusturan = modifiedBy,
                         OlusturmaTarihi = DateTime.Now
                     };
-                    await _materialAssetService.AddAsync(asset, cancellationToken);
+                    await db.MaterialAsset_Table.AddAsync(asset, cancellationToken);
                 }
             }
 
+            await scope.CommitAsync(cancellationToken);
             return true;
         }
 
         public async Task<bool> UpdateMaterialEntryAndInventoryAsync(MaterialEntry entry, string? currentUserName, CancellationToken cancellationToken = default)
         {
-            var oldEntry = await GetByIdAsync(entry.Id, cancellationToken);
-            if (oldEntry == null) throw new Exception("Eski kayıt bulunamadı.");
-
-            bool quantityChanged = entry.Quantity != oldEntry.Quantity;
-            bool materialChanged = entry.MaterialId != oldEntry.MaterialId;
-            bool locationChanged = entry.LocationId != oldEntry.LocationId;
-            bool unitChanged = entry.MaterialUnitId != oldEntry.MaterialUnitId;
-            bool personnelChanged = entry.PersonelId != oldEntry.PersonelId;
-            bool brandChanged = entry.BrandId != oldEntry.BrandId;
-            bool modelChanged = entry.ModelId != oldEntry.ModelId;
-
+            if (entry == null) throw new ArgumentNullException(nameof(entry));
             currentUserName ??= Environment.UserName;
+
+            // Canary (Adım 3): tek context + tek transaction içinde
+            //   1) Eski entry'yi oku (değişiklik tespiti için)
+            //   2) Inventory'i mevcut davranışa göre güncelle:
+            //      - Sadece Quantity değişmişse: tek satıra delta uygula
+            //      - Anahtar değişmişse: eski satırdan -oldQty, yeni satıra +newQty
+            //   3) MaterialEntry satırını güncelle
+            //   4) MaterialMovement "Düzeltme" / "Düzenleme" logu ekle
+            // Mevcut davranış birebir korunur; MaterialAsset'e dokunulmaz (bkz. docs/tech-debt.md #1).
+            await using var scope = await DbContextScope.CreateAsync(_dbFactory, cancellationToken);
+            var db = scope.Context;
+
+            var oldEntry = await db.MaterialEntry_Table
+                .AsNoTracking()
+                .FirstOrDefaultAsync(e => e.Id == entry.Id, cancellationToken);
+            if (oldEntry == null) throw new InvalidOperationException("Eski kayıt bulunamadı.");
 
             int? newLocation = entry.LocationId != 0 ? entry.LocationId : null;
             int? newPersonnel = (entry.PersonelId.HasValue && entry.PersonelId.Value != 0) ? entry.PersonelId : null;
@@ -110,67 +165,144 @@ namespace Jenga.DataAccess.Services.Inventory
             int? oldBrand = (oldEntry.BrandId.HasValue && oldEntry.BrandId.Value != 0) ? oldEntry.BrandId : null;
             int? oldModel = (oldEntry.ModelId.HasValue && oldEntry.ModelId.Value != 0) ? oldEntry.ModelId : null;
 
-            if (quantityChanged && !materialChanged && !locationChanged && !unitChanged && !personnelChanged && !brandChanged && !modelChanged)
+            // Değişiklik tespiti normalize edilmiş (0 → null) anahtar üzerinden yapılır;
+            // aksi halde "0 ↔ null" UI/DB tutarsızlığı yanlış-pozitif keyChanged üretir.
+            bool quantityChanged = entry.Quantity != oldEntry.Quantity;
+            bool materialChanged = entry.MaterialId != oldEntry.MaterialId;
+            bool unitChanged = entry.MaterialUnitId != oldEntry.MaterialUnitId;
+            bool locationChanged = newLocation != oldLocation;
+            bool personnelChanged = newPersonnel != oldPersonnel;
+            bool brandChanged = newBrand != oldBrand;
+            bool modelChanged = newModel != oldModel;
+
+            bool keyChanged = materialChanged || locationChanged || unitChanged || personnelChanged || brandChanged || modelChanged;
+
+            if (quantityChanged && !keyChanged)
             {
+                // Senaryo A: Sadece miktar değişti — tek satırda delta uygula.
                 int delta = entry.Quantity - oldEntry.Quantity;
-                await _materialInventoryService.AddOrUpdateInventoryAsync(
+                await ApplyInventoryDeltaAsync(
+                    db,
                     entry.MaterialId,
                     newLocation,
                     newPersonnel,
+                    newBrand,
+                    newModel,
                     delta,
                     "Kayıt güncellemesi (miktar değişikliği)",
                     currentUserName,
-                    newBrand,
-                    newModel,
                     cancellationToken);
             }
-            else if (materialChanged || locationChanged || unitChanged || personnelChanged || brandChanged || modelChanged)
+            else if (keyChanged)
             {
-                await _materialInventoryService.AddOrUpdateInventoryAsync(
+                // Senaryo B: Anahtar değişti — eski satırdan düş, yeni satıra ekle.
+                await ApplyInventoryDeltaAsync(
+                    db,
                     oldEntry.MaterialId,
                     oldLocation,
                     oldPersonnel,
+                    oldBrand,
+                    oldModel,
                     -oldEntry.Quantity,
                     "Kayıt güncellemesi (eski stoktan düş)",
                     currentUserName,
-                    oldBrand,
-                    oldModel,
                     cancellationToken);
 
-                await _materialInventoryService.AddOrUpdateInventoryAsync(
+                await ApplyInventoryDeltaAsync(
+                    db,
                     entry.MaterialId,
                     newLocation,
                     newPersonnel,
+                    newBrand,
+                    newModel,
                     entry.Quantity,
                     "Kayıt güncellemesi (yeni stoğa ekle)",
                     currentUserName,
-                    newBrand,
-                    newModel,
                     cancellationToken);
             }
+            // else: hiçbir alan değişmedi — sadece entry update + movement (orijinal davranış).
 
-            await UpdateAsync(entry, cancellationToken);
+            // 3) MaterialEntry satırını güncelle. Detached olabileceği için Update kullanıyoruz.
+            db.MaterialEntry_Table.Update(entry);
 
-            string movementType = (quantityChanged && !materialChanged && !locationChanged && !unitChanged && !personnelChanged && !brandChanged && !modelChanged) ? "Düzeltme" : "Düzenleme";
-            await _materialMovementService.AddMovementForEntryAsync(
-                entry, movementType, "MaterialEntry güncellendi", currentUserName, cancellationToken
-            );
+            // 4) Movement logu (orijinal AddMovementForEntryAsync ile aynı alanlar).
+            string movementType = (quantityChanged && !keyChanged) ? "Düzeltme" : "Düzenleme";
+            var movement = new MaterialMovement
+            {
+                MaterialId = entry.MaterialId,
+                Quantity = entry.Quantity,
+                MaterialUnitId = entry.MaterialUnitId,
+                FromLocationId = null,
+                ToLocationId = entry.LocationId,
+                ToPersonId = entry.PersonelId,
+                BrandId = entry.BrandId,
+                ModelId = entry.ModelId,
+                MovementType = movementType,
+                Operation = movementType,
+                MovementDate = entry.EntryDate,
+                Aciklama = "MaterialEntry güncellendi",
+                Olusturan = currentUserName,
+                OlusturmaTarihi = DateTime.Now
+            };
+            await db.MaterialMovement_Table.AddAsync(movement, cancellationToken);
 
+            await scope.CommitAsync(cancellationToken);
             return true;
         }
 
-        public async Task<bool> UpdateAsync(MaterialEntry entry, CancellationToken cancellationToken = default)
+        // Inventory upsert helper — orijinal AddOrUpdateInventoryAsync semantiği aynı context/transaction içinde.
+        // 5'li anahtar (MaterialId + LocationId + PersonelId + BrandId + ModelId), NULL eşleşmeleri dahil.
+        private static async Task ApplyInventoryDeltaAsync(
+            ApplicationDbContext db,
+            int materialId,
+            int? locationId,
+            int? personelId,
+            int? brandId,
+            int? modelId,
+            int delta,
+            string aciklama,
+            string? modifiedBy,
+            CancellationToken cancellationToken)
         {
-            await _unitOfWork.MaterialEntry.UpdateAsync(entry);
-            await _unitOfWork.MaterialEntry.SaveChangesAsync(cancellationToken);
-            return true;
-        }
+            var existing = await db.MaterialInventory_Table
+                .FirstOrDefaultAsync(mi =>
+                    mi.MaterialId == materialId &&
+                    mi.LocationId == locationId &&
+                    mi.PersonelId == personelId &&
+                    mi.BrandId == brandId &&
+                    mi.ModelId == modelId,
+                    cancellationToken);
 
-        public async Task<bool> DeleteAsync(MaterialEntry entry, CancellationToken cancellationToken = default)
-        {
-            _unitOfWork.MaterialEntry.Remove(entry);
-            await _unitOfWork.MaterialEntry.SaveChangesAsync(cancellationToken);
-            return true;
+            if (existing != null)
+            {
+                var newQty = existing.Quantity + delta;
+                if (newQty < 0)
+                    throw new InvalidOperationException($"Yetersiz stok: mevcut {existing.Quantity}, yapılmak istenen değişiklik {delta}. İşlem yapılmadı.");
+
+                existing.Quantity = newQty;
+                existing.Aciklama = aciklama;
+                existing.Degistiren = modifiedBy;
+                existing.DegistirmeTarihi = DateTime.Now;
+            }
+            else
+            {
+                if (delta < 0)
+                    throw new InvalidOperationException("Yeni bir stok kaydı eklendiğinde negatif miktar belirtilemez.");
+
+                var inventory = new MaterialInventory
+                {
+                    MaterialId = materialId,
+                    LocationId = locationId,
+                    PersonelId = personelId,
+                    BrandId = brandId,
+                    ModelId = modelId,
+                    Quantity = delta,
+                    Aciklama = aciklama,
+                    Olusturan = modifiedBy,
+                    OlusturmaTarihi = DateTime.Now
+                };
+                await db.MaterialInventory_Table.AddAsync(inventory, cancellationToken);
+            }
         }
 
         public async Task<bool> DeleteMaterialEntryAndUpdateInventoryAsync(MaterialEntry entryToDelete, string? currentUserName, CancellationToken cancellationToken = default)
@@ -262,9 +394,10 @@ namespace Jenga.DataAccess.Services.Inventory
             }
         }
 
-        public Task<bool> AnyAsync(Expression<Func<MaterialEntry, bool>> predicate)
+        public async Task<bool> AnyAsync(Expression<Func<MaterialEntry, bool>> predicate)
         {
-            return _unitOfWork.MaterialEntry.AnyAsync(predicate);
+            await using var db = await _dbFactory.CreateDbContextAsync();
+            return await db.MaterialEntry_Table.AsNoTracking().AnyAsync(predicate);
         }
     }
 }
