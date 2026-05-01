@@ -1,4 +1,5 @@
 ﻿@using Jenga.BlazorUI.Components.Common
+@using Jenga.BlazorUI.Components.Shared
 @using Jenga.BlazorUI.Components.Toast
 @using Jenga.BlazorUI.Services.Common
 @using Jenga.BlazorUI.Services.Presence
@@ -52,7 +53,9 @@
         </header>
 
         <article class="content px-4">
-            @Body
+            <JengaErrorBoundary @ref="_errorBoundary">
+                @Body
+            </JengaErrorBoundary>
         </article>
     </div>
 </div>
@@ -67,6 +70,7 @@
     private string _windowsUser = string.Empty;
     private Jenga.Models.IKYS.Personel? _personel;
     private bool _initialUrlLogged;
+    private JengaErrorBoundary? _errorBoundary;
 
     protected override async Task OnInitializedAsync()
     {
@@ -97,6 +101,9 @@
 
     private async void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
+        // Sayfa değişince error boundary'yi sıfırla (varsa hatayı temizle).
+        _errorBoundary?.Recover();
+
         try
         {
             var isMobile = await JS.InvokeAsync<bool>("isMobileViewport");

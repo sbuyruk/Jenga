@@ -16,7 +16,8 @@
     {
         if (firstRender && !_dataLoaded)
         {
-            materialUnits = await MaterialUnitService.GetAllAsync();
+            var unitsR = await MaterialUnitService.GetAllAsync();
+            materialUnits = unitsR.IsSuccess ? unitsR.Value : new();
             StateHasChanged();
         }
     }

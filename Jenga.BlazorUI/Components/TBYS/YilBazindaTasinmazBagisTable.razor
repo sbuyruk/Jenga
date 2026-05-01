@@ -194,13 +194,15 @@
         _ilById.Clear();
         _bolgeById.Clear();
 
-        var ils = await IlService.GetAllAsync();
+        var ilsResult = await IlService.GetAllAsync();
+        var ils = ilsResult.IsSuccess ? ilsResult.Value : new List<Il>();
         foreach (var il in ils.Where(x => x.Id != 0))
         {
             _ilById[il.Id] = il;
         }
 
-        var bolgeler = await BolgeService.GetAllAsync();
+        var bolgelerResult = await BolgeService.GetAllAsync();
+        var bolgeler = bolgelerResult.IsSuccess ? bolgelerResult.Value : new List<Bolge>();
         foreach (var bolge in bolgeler.Where(x => x.Id != 0))
         {
             _bolgeById[bolge.Id] = bolge;

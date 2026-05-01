@@ -1,4 +1,5 @@
 ﻿using Jenga.Models.Inventory;
+using Jenga.Utility.Results;
 using System.Linq.Expressions;
 
 namespace Jenga.DataAccess.Services.Inventory
@@ -8,11 +9,11 @@ namespace Jenga.DataAccess.Services.Inventory
         /// <summary>
         /// Tüm envanter kayıtlarını getirir.
         /// </summary>
-        Task<List<MaterialInventory>> GetAllAsync(CancellationToken cancellationToken = default);
+        Task<Result<List<MaterialInventory>>> GetAllAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Predicate ile herhangi bir envanter kaydı olup olmadığını kontrol eder (örn. silme guard'ları için).
         /// </summary>
-        Task<bool> AnyAsync(Expression<Func<MaterialInventory, bool>> predicate);
+        Task<Result<bool>> AnyAsync(Expression<Func<MaterialInventory, bool>> predicate);
     }
 }

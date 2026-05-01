@@ -58,6 +58,13 @@ else
 
 @code {
     [Parameter] public List<Role> Roles { get; set; } = new();
+
+    // Mutasyon olduğunda parent yeniden yüklesin/karar versin diye event tabanlı bildirim.
+    // RoleTable artık parent'ın Roles listesini doğrudan mutate ETMEZ.
+    [Parameter] public EventCallback<Role> OnRoleAdded { get; set; }
+    [Parameter] public EventCallback<Role> OnRoleUpdated { get; set; }
+    [Parameter] public EventCallback<Role> OnRoleDeleted { get; set; }
+
     private Role? selectedRol { get; set; }
     private List<Personel>? personelList { get; set; }
     private List<MenuItem>? menuList { get; set; }
@@ -78,12 +85,22 @@ else
 
     private async Task OnEditClicked(Role rol)
     {
-        selectedRol = await RolService.GetByIdWithRelationsAsync(rol.Id);
-        var aktifPersoneller = (await PersonelService.GetCalisanPersonelAsync())
+        var roleResult = await RolService.GetByIdWithRelationsAsync(rol.Id);
+        if (roleResult.IsFailure)
+        {
+            ToastService.ShowToast(roleResult.Error.Message, ToastType.Error, 4000);
+            return;
+        }
+        selectedRol = roleResult.Value;
+
+        var calisanResult = await PersonelService.GetCalisanPersonelAsync();
+        var calisanList = calisanResult.IsSuccess ? calisanResult.Value : new List<Personel>();
+        var aktifPersoneller = calisanList
             .Where(p => selectedRol?.PersonelRoles == null || !selectedRol.PersonelRoles!.Any(pr => pr.PersonelId == p.Id))
             .ToList();
 
-        var aktifMenuler = (await MenuItemService.GetAllAsync())
+        var menuResult1 = await MenuItemService.GetAllAsync();
+        var aktifMenuler = (menuResult1.IsSuccess ? menuResult1.Value : new List<MenuItem>())
             .Where(p => p.IsVisible == true)
             .Where(p => selectedRol?.RoleMenus == null || !selectedRol.RoleMenus!.Any(rm => rm.MenuId == p.Id))
             .ToList();
@@ -95,21 +112,36 @@ else
 
     private void OnDeleteClicked(Role role)
     {
+        // ShowConfirmation Action<bool> alıyor; içinde await kullanmak için
+        // gerçek bir async metoda fire-and-forget yapıyoruz. Exception'lar
+        // metot içinde yakalanıp toast'lanır; render güncellemesi InvokeAsync
+        // ile render thread'inde tetiklenir.
         ModalService.ShowConfirmation(
             "Silme Onayı",
             $"'{role.Name}' rolünü silmek istediğinizden emin misiniz?",
-            async result =>
+            result =>
             {
-                if (result)
-                {
-                    await RolService.DeleteAsync(role);
-                    Roles.Remove(role);
-                    var row = roleRows.FirstOrDefault(r => r.Original == role || r.Id == role.Id);
-                    if (row != null) roleRows.Remove(row);
-                    StateHasChanged();
-                    ToastService.ShowToast($"{role.Name} silindi", ToastType.Success, 3000);
-                }
+                if (!result) return;
+                _ = HandleDeleteAsync(role);
             });
+    }
+
+    private async Task HandleDeleteAsync(Role role)
+    {
+        var result = await RolService.DeleteAsync(role);
+        await InvokeAsync(() =>
+        {
+            if (result.IsSuccess)
+            {
+                ToastService.ShowToast($"{role.Name} silindi", ToastType.Success, 3000);
+                _ = OnRoleDeleted.InvokeAsync(role);
+            }
+            else
+            {
+                ToastService.ShowToast($"Silme başarısız: {result.Error.Message}", ToastType.Error, 4000);
+            }
+            StateHasChanged();
+        });
     }
 
     private async Task HandleSave()
@@ -118,30 +150,31 @@ else
 
         if (selectedRol.Id == 0)
         {
-            var ok = await RolService.AddWithRelationsAsync(selectedRol);
-            if (ok)
+            var result = await RolService.AddWithRelationsAsync(selectedRol);
+            if (result.IsSuccess)
             {
                 ToastService.ShowToast(selectedRol.Name + " eklendi", ToastType.Success, 3000);
-                Roles.Add(selectedRol);
-                roleRows.Add(new RoleRow(selectedRol));
+                await OnRoleAdded.InvokeAsync(selectedRol);
             }
             else
             {
-                ToastService.ShowToast("Ekleme başarısız oldu", ToastType.Error, 3000);
+                ToastService.ShowToast($"Ekleme başarısız: {result.Error.Message}", ToastType.Error, 4000);
             }
         }
         else
         {
-            var ok = await RolService.UpdateWithRelationsAsync(selectedRol);
-            if (ok)
+            var result = await RolService.UpdateWithRelationsAsync(selectedRol);
+            if (result.IsSuccess)
             {
                 ToastService.ShowToast(selectedRol.Name + " güncellendi", ToastType.Info, 3000);
+                // Yerel DTO'yu da güncelle ki parent yeniden yüklemese bile UI tutarlı kalsın.
                 var row = roleRows.FirstOrDefault(r => r.Id == selectedRol.Id);
-                if (row != null) row.UpdateFrom(selectedRol);
+                row?.UpdateFrom(selectedRol);
+                await OnRoleUpdated.InvokeAsync(selectedRol);
             }
             else
             {
-                ToastService.ShowToast("Güncelleme başarısız oldu", ToastType.Error, 3000);
+                ToastService.ShowToast($"Güncelleme başarısız: {result.Error.Message}", ToastType.Error, 4000);
             }
         }
 
@@ -158,9 +191,11 @@ else
     private async Task OpenNewRolModal()
     {
         selectedRol = new Role();
-        var aktifPersoneller = await PersonelService.GetCalisanPersonelAsync();
+        var calisanResult = await PersonelService.GetCalisanPersonelAsync();
+        var aktifPersoneller = calisanResult.IsSuccess ? calisanResult.Value : new List<Personel>();
 
-        var aktifMenuler = (await MenuItemService.GetAllAsync())
+        var menuResult2 = await MenuItemService.GetAllAsync();
+        var aktifMenuler = (menuResult2.IsSuccess ? menuResult2.Value : new List<MenuItem>())
             .Where(p => p.IsVisible == true)
             .ToList();
 

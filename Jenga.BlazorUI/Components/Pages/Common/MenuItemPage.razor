@@ -2,7 +2,6 @@
 @rendermode InteractiveServer
 
 @using Jenga.DataAccess.Services.Common
-@using Jenga.DataAccess.Services.Menu
 @using Jenga.Models.Common
 @using Jenga.BlazorUI.Components.Menus
 @using Jenga.Utility.Toast
@@ -37,7 +36,12 @@ else
     {
         try
         {
-            menuItems = await MenuItemService.GetAllAsync();
+            var result = await MenuItemService.GetAllAsync();
+            menuItems = result.IsSuccess ? result.Value : new List<MenuItem>();
+            if (result.IsFailure)
+            {
+                ToastService.ShowToast($"Menüler yüklenemedi: {result.Error.Message}", ToastType.Error, 5000);
+            }
         }
         catch (Exception ex)
         {

@@ -86,7 +86,8 @@
     private async Task RefreshData()
     {
         var expandedMap = TreeHelper.CollectExpandedStates(tree);
-        locations = await LocationService.GetAllAsync();
+        var locationsR = await LocationService.GetAllAsync();
+        locations = locationsR.IsSuccess ? locationsR.Value : new();
         _dataLoaded = true;
         tree = TreeHelper.BuildTree<Location>(
             locations,
@@ -113,7 +114,7 @@
             if (selectedLocation.Data.Id == 0)
             {
                 var saved = await LocationService.AddAsync(selectedLocation.Data);
-                if (saved)
+                if (saved.IsSuccess)
                 {
                     locations.Add(selectedLocation.Data);
                     ToastService.ShowToast($"{(selectedLocation.Data.LocationName )} eklendi", ToastType.Success, 3000);
@@ -147,7 +148,9 @@
 
     private async Task DeleteLocation(TreeItem<Location> item)
     {
-        var (canDelete, reason) = await LocationService.CanDeleteAsync(item.Data.Id);
+        var canDeleteResult = await LocationService.CanDeleteAsync(item.Data.Id);
+        var canDelete = canDeleteResult.IsSuccess && canDeleteResult.Value.CanDelete;
+        var reason = canDeleteResult.IsSuccess ? canDeleteResult.Value.Reason : canDeleteResult.Error?.Message;
         if (!canDelete)
         {
             ToastService.ShowToast(reason ?? "Bilinmeyen bir hata oluştu", ToastType.Error, 5000);
@@ -162,7 +165,7 @@
                 if (result)
                 {
                     var deleted = await LocationService.DeleteAsync(item.Data);
-                    if (deleted)
+                    if (deleted.IsSuccess)
                     {
                         ToastService.ShowToast($"{item.Data.LocationName ?? "Konum"} silindi", ToastType.Success, 3000);
                         locations.Remove(item.Data);

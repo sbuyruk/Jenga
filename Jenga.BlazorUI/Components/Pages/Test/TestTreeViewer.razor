@@ -54,10 +54,12 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        var locations = await LocationService.GetAllAsync();
+        var locationsResult = await LocationService.GetAllAsync();
+        var locations = locationsResult.IsSuccess ? locationsResult.Value : new();
         LocationTree = BuildLocationTree(locations);
 
-        var categories = await MaterialCategoryService.GetAllAsync();
+        var categoriesResult = await MaterialCategoryService.GetAllAsync();
+        var categories = categoriesResult.IsSuccess ? categoriesResult.Value : new();
         MaterialCategoryTree = BuildMaterialCategoryTree(categories);
     }
 
@@ -111,28 +113,28 @@ else
         // await LocationService.AddAsync(newLoc);
         // Yeniden yükle
         var locations = await LocationService.GetAllAsync();
-        LocationTree = BuildLocationTree(locations);
+        LocationTree = BuildLocationTree(locations.IsSuccess ? locations.Value : new());
     }
     private async Task HandleEditLocation(TreeItem<Location> item)
     {
         // Edit için modal açabilir veya doğrudan düzenleyebilirsiniz
         // await LocationService.UpdateAsync(item.Data);
         var locations = await LocationService.GetAllAsync();
-        LocationTree = BuildLocationTree(locations);
+        LocationTree = BuildLocationTree(locations.IsSuccess ? locations.Value : new());
     }
     private async Task HandleDeleteLocation(TreeItem<Location> item)
     {
-        var canDelete = await LocationService.CanDeleteAsync(item.Data.Id);
-        if (canDelete.CanDelete)
+        var canDeleteResult = await LocationService.CanDeleteAsync(item.Data.Id);
+        if (canDeleteResult.IsSuccess && canDeleteResult.Value.CanDelete)
         {
             await LocationService.DeleteAsync(item.Data);
         }
         else
         {
-            // Mesaj göster: canDelete.Reason
+            // Mesaj göster: canDeleteResult.Value.Reason
         }
         var locations = await LocationService.GetAllAsync();
-        LocationTree = BuildLocationTree(locations);
+        LocationTree = BuildLocationTree(locations.IsSuccess ? locations.Value : new());
     }
 
     private async Task HandleCreateMaterialCategory(TreeItem<MaterialCategory> item)
@@ -141,26 +143,26 @@ else
         // var newCat = new MaterialCategory { CategoryName = "Yeni", ParentCategoryId = item.Data.Id };
         // await MaterialCategoryService.AddAsync(newCat);
         var categories = await MaterialCategoryService.GetAllAsync();
-        MaterialCategoryTree = BuildMaterialCategoryTree(categories);
+        MaterialCategoryTree = BuildMaterialCategoryTree(categories.IsSuccess ? categories.Value : new());
     }
     private async Task HandleEditMaterialCategory(TreeItem<MaterialCategory> item)
     {
         // await MaterialCategoryService.UpdateAsync(item.Data);
         var categories = await MaterialCategoryService.GetAllAsync();
-        MaterialCategoryTree = BuildMaterialCategoryTree(categories);
+        MaterialCategoryTree = BuildMaterialCategoryTree(categories.IsSuccess ? categories.Value : new());
     }
     private async Task HandleDeleteMaterialCategory(TreeItem<MaterialCategory> item)
     {
-        var canDelete = await MaterialCategoryService.CanDeleteAsync(item.Data.Id);
-        if (canDelete.CanDelete)
+        var canDeleteResult = await MaterialCategoryService.CanDeleteAsync(item.Data.Id);
+        if (canDeleteResult.IsSuccess && canDeleteResult.Value.CanDelete)
         {
             await MaterialCategoryService.DeleteAsync(item.Data.Id);
         }
         else
         {
-            // Mesaj göster: canDelete.Reason
+            // Mesaj göster: canDeleteResult.Value.Reason
         }
         var categories = await MaterialCategoryService.GetAllAsync();
-        MaterialCategoryTree = BuildMaterialCategoryTree(categories);
+        MaterialCategoryTree = BuildMaterialCategoryTree(categories.IsSuccess ? categories.Value : new());
     }
 }

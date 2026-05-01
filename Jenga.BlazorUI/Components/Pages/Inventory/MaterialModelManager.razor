@@ -20,8 +20,10 @@
     {
         if (firstRender && !_dataLoaded)
         {
-            models = await MaterialModelService.GetAllAsync();
-            brands = await MaterialBrandService.GetAllAsync();
+            var modelsResult = await MaterialModelService.GetAllAsync();
+            if (modelsResult.IsSuccess) models = modelsResult.Value;
+            var brandsResult = await MaterialBrandService.GetAllAsync();
+            if (brandsResult.IsSuccess) brands = brandsResult.Value;
             _dataLoaded = true;
             StateHasChanged();
         }

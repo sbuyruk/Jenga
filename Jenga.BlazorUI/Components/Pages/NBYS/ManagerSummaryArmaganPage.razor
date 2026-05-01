@@ -572,7 +572,9 @@
     {
         isLoading = true;
         var minTarih = new DateTime(2005, 1, 1);
-        _armaganlar = (await ArmaganService.GetAllAsync())
+        var armaganRes = await ArmaganService.GetAllAsync();
+        var armaganListesi = armaganRes.IsSuccess ? armaganRes.Value : new List<Armagan>();
+        _armaganlar = armaganListesi
             .Where(a => a.Tarih.HasValue && a.Tarih.Value >= minTarih)
             .ToList();
         int currentYear = DateTime.Now.Year;
@@ -593,11 +595,13 @@
         _gecenYilTesekkurSayisi = _armaganlar.Count(a => a.ArmaganTanimId == 1 && a.Tarih.HasValue && a.Tarih.Value.Year == previousYear);
         _gecenYilDuzenliBagisciSayisi = _armaganlar.Count(a => a.ArmaganTanimId == 9 && a.Tarih.HasValue && a.Tarih.Value.Year == previousYear);
 
-        var bagisList = await BagisService.GetAllAsync();
+        var bagisRes = await BagisService.GetAllAsync();
+        var bagisList = bagisRes.IsSuccess ? bagisRes.Value : new List<Bagis>();
         _buYilTasinmazArmaganSayisi   = bagisList.Count(b => b.ArmaganTarihi.HasValue && b.ArmaganTarihi.Value.Year == currentYear  && b.BagisciId.HasValue);
         _gecenYilTasinmazArmaganSayisi = bagisList.Count(b => b.ArmaganTarihi.HasValue && b.ArmaganTarihi.Value.Year == previousYear && b.BagisciId.HasValue);
 
-        var armaganTanimlar = await ArmaganTanimService.GetAllAsync();
+        var armaganTanimRes = await ArmaganTanimService.GetAllAsync();
+        var armaganTanimlar = armaganTanimRes.IsSuccess ? armaganTanimRes.Value : new List<ArmaganTanim>();
         _armaganTanimTickerItems = armaganTanimlar
             .Where(t => t.Id is >= 1 and <= 3)
             .OrderByDescending(t => t.Id)
@@ -684,11 +688,14 @@
 
         // Son Armağanlar – gerçek veri
         var tanimAdi = armaganTanimlar.ToDictionary(t => t.Id, t => t.Armagan ?? $"Tür #{t.Id}");
-        var bagiscilar = await NakitBagisciService.GetAllAsync();
+        var bagisciRes = await NakitBagisciService.GetAllAsync();
+        var bagiscilar = bagisciRes.IsSuccess ? bagisciRes.Value : new List<NakitBagisci>();
         var bagisciDict = bagiscilar.ToDictionary(b => b.Id);
-        var iller = await IlService.GetAllAsync();
+        var illerResult = await IlService.GetAllAsync();
+        var iller = illerResult.IsSuccess ? illerResult.Value : new();
         var ilDict = iller.ToDictionary(i => i.Id);
-        var bolgeler = await BolgeService.GetAllAsync();
+        var bolgelerResult = await BolgeService.GetAllAsync();
+        var bolgeler = bolgelerResult.IsSuccess ? bolgelerResult.Value : new();
         var bolgeDict = bolgeler.ToDictionary(b => b.Id);
         _sonArmaganlar.AddRange(
             _armaganlar

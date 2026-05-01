@@ -28,9 +28,12 @@
     {
         if (firstRender && !_dataLoaded)
         {
-            materials = await MaterialService.GetAllAsync();
-            categories = await MaterialCategoryService.GetAllAsync();
-            units = await MaterialUnitService.GetAllAsync();
+            var matsR = await MaterialService.GetAllAsync();
+            materials = matsR.IsSuccess ? matsR.Value : new();
+            var catsR = await MaterialCategoryService.GetAllAsync();
+            categories = catsR.IsSuccess ? catsR.Value : new();
+            var unitsR = await MaterialUnitService.GetAllAsync();
+            units = unitsR.IsSuccess ? unitsR.Value : new();
             _dataLoaded = true;
             StateHasChanged();
         }

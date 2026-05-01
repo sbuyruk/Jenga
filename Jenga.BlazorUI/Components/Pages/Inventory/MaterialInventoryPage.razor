@@ -131,14 +131,15 @@ else
 
         await Task.WhenAll(t1, t2, t3, t4, t5, t6, t7, t8);
 
-        inventories = t1.Result;
-        materials = t2.Result;
-        units = t3.Result;
-        categories = t4.Result;
-        locations = t5.Result;
-        persons = t6.Result;
-        brands = t7.Result;
-        models = t8.Result;
+        inventories = t1.Result.IsSuccess ? t1.Result.Value : new();
+        materials = t2.Result.IsSuccess ? t2.Result.Value : new();
+        units = t3.Result.IsSuccess ? t3.Result.Value : new();
+        categories = t4.Result.IsSuccess ? t4.Result.Value : new();
+        locations = t5.Result.IsSuccess ? t5.Result.Value : new();
+        var personsResult = t6.Result;
+        persons = personsResult.IsSuccess ? personsResult.Value : new List<Personel>();
+        brands = t7.Result.IsSuccess ? t7.Result.Value : new();
+        models = t8.Result.IsSuccess ? t8.Result.Value : new();
 
         dataLoaded = true;
         StateHasChanged();
@@ -176,7 +177,7 @@ else
         {
             var currentUser = HttpContextAccessor.HttpContext?.User?.Identity?.Name;
             var saved = await MaterialEntryService.AddAsync(editingEntry, currentUser, CancellationToken.None);
-            if (saved)
+            if (saved.IsSuccess)
             {
                 ToastService.ShowToast("Giriş kaydedildi.", ToastType.Success, 2000);
                 // reload full data to ensure latest DB state

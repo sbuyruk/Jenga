@@ -107,10 +107,14 @@
     private async Task RefreshData()
     {
         var expandedMap = TreeHelper.CollectExpandedStates(categoryTree);
-        categories = await MaterialCategoryService.GetAllAsync();
-        brands = await MaterialBrandService.GetAllAsync();
-        materials = await MaterialService.GetAllAsync();
-        materialUnits = await MaterialUnitService.GetAllAsync();
+        var categoriesResult = await MaterialCategoryService.GetAllAsync();
+        if (categoriesResult.IsSuccess) categories = categoriesResult.Value;
+        var brandsResult = await MaterialBrandService.GetAllAsync();
+        if (brandsResult.IsSuccess) brands = brandsResult.Value;
+        var materialsResult = await MaterialService.GetAllAsync();
+        if (materialsResult.IsSuccess) materials = materialsResult.Value;
+        var unitsResult = await MaterialUnitService.GetAllAsync();
+        if (unitsResult.IsSuccess) materialUnits = unitsResult.Value;
 
         var categoryNodes = categories.Select(c => new MaterialCategoryNode { Category = c }).ToList();
 
@@ -189,7 +193,9 @@
             return;
         }
 
-        (bool canDelete, string? reason) = await MaterialCategoryService.CanDeleteAsync(item.Data.Category.Id);
+        var canDeleteResult = await MaterialCategoryService.CanDeleteAsync(item.Data.Category.Id);
+        bool canDelete = canDeleteResult.IsSuccess && canDeleteResult.Value.CanDelete;
+        string? reason = canDeleteResult.IsSuccess ? canDeleteResult.Value.Reason : canDeleteResult.Error?.Message;
         if (!canDelete)
         {
             ToastService.ShowToast(reason ?? "Bilinmeyen bir hata oluştu", ToastType.Error, 5000);
@@ -212,10 +218,11 @@
                 }
 
                 var deleted = await MaterialCategoryService.DeleteAsync(item.Data.Category.Id);
-                if (deleted)
+                if (deleted.IsSuccess)
                 {
                     ToastService.ShowToast($"{categoryName} silindi", ToastType.Success, 3000);
-                    categories = await MaterialCategoryService.GetAllAsync();
+                    var refreshed = await MaterialCategoryService.GetAllAsync();
+                    if (refreshed.IsSuccess) categories = refreshed.Value;
                     await RefreshData();
                     StateHasChanged();
                 }
@@ -322,7 +329,9 @@
             ToastService.ShowToast("Malzeme bilgisi bulunamadı", ToastType.Error, 5000);
             return;
         }
-        (bool canDelete, string? reason) = await MaterialService.CanDeleteAsync(item.Data.Material.Id);
+        var canDeleteResult = await MaterialService.CanDeleteAsync(item.Data.Material.Id);
+        bool canDelete = canDeleteResult.IsSuccess && canDeleteResult.Value.CanDelete;
+        string? reason = canDeleteResult.IsSuccess ? canDeleteResult.Value.Reason : canDeleteResult.Error?.Message;
         if (!canDelete)
         {
             ToastService.ShowToast(reason ?? "Bilinmeyen bir hata oluştu", ToastType.Error, 5000);
@@ -337,7 +346,7 @@
                 if (result)
                 {
                     var deleted = await MaterialService.DeleteAsync(item.Data.Material.Id);
-                    if (deleted)
+                    if (deleted.IsSuccess)
                     {
                         ToastService.ShowToast($"{materialName} silindi", ToastType.Success, 3000);
                         await RefreshData();

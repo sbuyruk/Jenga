@@ -1,5 +1,7 @@
 ﻿using Jenga.DataAccess.Data;
 using Jenga.Models.Inventory;
+using Jenga.Utility.Logging;
+using Jenga.Utility.Results;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
@@ -7,7 +9,10 @@ namespace Jenga.DataAccess.Services.Inventory
 {
     public class LocationService : ILocationService
     {
+        private const string Source = nameof(LocationService);
+
         private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
+        private readonly ILogService _logService;
         private List<Location>? _locationsCache;
 
         private readonly IMaterialEntryService _materialEntryService;
@@ -16,76 +21,155 @@ namespace Jenga.DataAccess.Services.Inventory
 
         public LocationService(
             IDbContextFactory<ApplicationDbContext> dbFactory,
+            ILogService logService,
             IMaterialEntryService materialEntryService,
             IMaterialExitService materialExitService,
             IMaterialInventoryService materialInventoryService)
         {
             _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
+            _logService = logService;
             _materialEntryService = materialEntryService;
             _materialExitService = materialExitService;
             _materialInventoryService = materialInventoryService;
         }
 
-        public async Task<List<Location>> GetAllAsync(CancellationToken cancellationToken = default)
+        public async Task<Result<List<Location>>> GetAllAsync(CancellationToken cancellationToken = default)
         {
-            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-            return await db.Location_Table.AsNoTracking().ToListAsync(cancellationToken);
+            try
+            {
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                var list = await db.Location_Table.AsNoTracking().ToListAsync(cancellationToken);
+                return Result.Success(list);
+            }
+            catch (Exception ex)
+            {
+                _logService?.LogException(ex, $"{Source}.GetAllAsync");
+                return Result.Failure<List<Location>>(Error.Unexpected("Konum listesi alınamadı.", ex, "Location.GetAll.Failed"));
+            }
         }
 
-        public async Task<Location?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+        public async Task<Result<Location>> GetByIdAsync(int id, CancellationToken cancellationToken = default)
         {
-            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-            return await db.Location_Table.AsNoTracking().FirstOrDefaultAsync(l => l.Id == id, cancellationToken);
+            try
+            {
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                var entity = await db.Location_Table.AsNoTracking().FirstOrDefaultAsync(l => l.Id == id, cancellationToken);
+                if (entity is null)
+                    return Result.Failure<Location>(Error.NotFound($"Konum bulunamadı (Id={id}).", "Location.NotFound"));
+                return Result.Success(entity);
+            }
+            catch (Exception ex)
+            {
+                _logService?.LogException(ex, $"{Source}.GetByIdAsync");
+                return Result.Failure<Location>(Error.Unexpected("Konum getirilemedi.", ex, "Location.GetById.Failed"));
+            }
         }
 
-        public async Task<bool> AddAsync(Location location, CancellationToken cancellationToken = default)
+        public async Task<Result> AddAsync(Location location, CancellationToken cancellationToken = default)
         {
-            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-            await db.Location_Table.AddAsync(location, cancellationToken);
-            await db.SaveChangesAsync(cancellationToken);
-            _locationsCache = null;
-            return true;
+            if (location == null)
+                return Result.Failure(Error.Validation("Konum boş olamaz.", "Location.Null"));
+            try
+            {
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                await db.Location_Table.AddAsync(location, cancellationToken);
+                await db.SaveChangesAsync(cancellationToken);
+                _locationsCache = null;
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                _logService?.LogException(ex, $"{Source}.AddAsync");
+                return Result.Failure(Error.Unexpected("Konum eklenemedi.", ex, "Location.Add.Failed"));
+            }
         }
 
-        public async Task<bool> UpdateAsync(Location location, CancellationToken cancellationToken = default)
+        public async Task<Result> UpdateAsync(Location location, CancellationToken cancellationToken = default)
         {
-            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-            db.Location_Table.Update(location);
-            await db.SaveChangesAsync(cancellationToken);
-            _locationsCache = null;
-            return true;
+            if (location == null)
+                return Result.Failure(Error.Validation("Konum boş olamaz.", "Location.Null"));
+            try
+            {
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                db.Location_Table.Update(location);
+                await db.SaveChangesAsync(cancellationToken);
+                _locationsCache = null;
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                _logService?.LogException(ex, $"{Source}.UpdateAsync");
+                return Result.Failure(Error.Unexpected("Konum güncellenemedi.", ex, "Location.Update.Failed"));
+            }
         }
 
-        public async Task<bool> DeleteAsync(Location location, CancellationToken cancellationToken = default)
+        public async Task<Result> DeleteAsync(Location location, CancellationToken cancellationToken = default)
         {
+            if (location == null)
+                return Result.Failure(Error.Validation("Konum boş olamaz.", "Location.Null"));
+
             // Check for dependencies before deleting
-            if (await _materialEntryService.AnyAsync(m => m.LocationId == location.Id))
-                return false;
-            if (await _materialExitService.AnyAsync(m => m.LocationId == location.Id))
-                return false;
-            if (await _materialInventoryService.AnyAsync(m => m.LocationId == location.Id))
-                return false;
+            var entryAny = await _materialEntryService.AnyAsync(m => m.LocationId == location.Id);
+            if (entryAny.IsFailure) return Result.Failure(entryAny.Error);
+            if (entryAny.Value) return Result.Failure(Error.Conflict("Bu konum bir malzeme girişinde kullanılıyor.", "Location.InUse.Entry"));
 
-            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-            var entity = await db.Location_Table.FirstOrDefaultAsync(l => l.Id == location.Id, cancellationToken);
-            if (entity == null) return false;
-            db.Location_Table.Remove(entity);
-            await db.SaveChangesAsync(cancellationToken);
-            _locationsCache = null;
-            return true;
+            var exitAny = await _materialExitService.AnyAsync(m => m.LocationId == location.Id);
+            if (exitAny.IsFailure) return Result.Failure(exitAny.Error);
+            if (exitAny.Value) return Result.Failure(Error.Conflict("Bu konum bir malzeme çıkışında kullanılıyor.", "Location.InUse.Exit"));
+
+            var invAny = await _materialInventoryService.AnyAsync(m => m.LocationId == location.Id);
+            if (invAny.IsFailure) return Result.Failure(invAny.Error);
+            if (invAny.Value) return Result.Failure(Error.Conflict("Bu konum bir envanter kaydında kullanılıyor.", "Location.InUse.Inventory"));
+
+            try
+            {
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                var entity = await db.Location_Table.FirstOrDefaultAsync(l => l.Id == location.Id, cancellationToken);
+                if (entity == null)
+                    return Result.Failure(Error.NotFound($"Konum bulunamadı (Id={location.Id}).", "Location.NotFound"));
+                db.Location_Table.Remove(entity);
+                await db.SaveChangesAsync(cancellationToken);
+                _locationsCache = null;
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                _logService?.LogException(ex, $"{Source}.DeleteAsync");
+                return Result.Failure(Error.Unexpected("Konum silinemedi.", ex, "Location.Delete.Failed"));
+            }
         }
 
-        public async Task<(bool CanDelete, string? Reason)> CanDeleteAsync(int locationId)
+        public async Task<Result<(bool CanDelete, string? Reason)>> CanDeleteAsync(int locationId)
         {
-            if (await AnyAsync(m => m.ParentId == locationId))
-                return (false, "Bu konumun altında kayıtlı konum bulunmaktadır, önce onu silmelisiniz.");
-            if (await _materialEntryService.AnyAsync(m => m.LocationId == locationId))
-                return (false, "Bu konum bir malzeme girişinde kullanılıyor, önce onu silmelisiniz.");
-            if (await _materialExitService.AnyAsync(m => m.LocationId == locationId))
-                return (false, "Bu konum bir malzeme çıkışında kullanılıyor, önce onu silmelisiniz.");
-            if (await _materialInventoryService.AnyAsync(m => m.LocationId == locationId))
-                return (false, "Bu konum bir malzeme envanterinde kullanılıyor, önce onu silmelisiniz.");
-            return (true, null);
+            try
+            {
+                var selfAny = await AnyAsync(m => m.ParentId == locationId);
+                if (selfAny.IsFailure) return Result.Failure<(bool CanDelete, string? Reason)>(selfAny.Error);
+                if (selfAny.Value)
+                    return Result.Success<(bool CanDelete, string? Reason)>((false, "Bu konumun altında kayıtlı konum bulunmaktadır, önce onu silmelisiniz."));
+
+                var entryAny = await _materialEntryService.AnyAsync(m => m.LocationId == locationId);
+                if (entryAny.IsFailure) return Result.Failure<(bool CanDelete, string? Reason)>(entryAny.Error);
+                if (entryAny.Value)
+                    return Result.Success<(bool CanDelete, string? Reason)>((false, "Bu konum bir malzeme girişinde kullanılıyor, önce onu silmelisiniz."));
+
+                var exitAny = await _materialExitService.AnyAsync(m => m.LocationId == locationId);
+                if (exitAny.IsFailure) return Result.Failure<(bool CanDelete, string? Reason)>(exitAny.Error);
+                if (exitAny.Value)
+                    return Result.Success<(bool CanDelete, string? Reason)>((false, "Bu konum bir malzeme çıkışında kullanılıyor, önce onu silmelisiniz."));
+
+                var invAny = await _materialInventoryService.AnyAsync(m => m.LocationId == locationId);
+                if (invAny.IsFailure) return Result.Failure<(bool CanDelete, string? Reason)>(invAny.Error);
+                if (invAny.Value)
+                    return Result.Success<(bool CanDelete, string? Reason)>((false, "Bu konum bir malzeme envanterinde kullanılıyor, önce onu silmelisiniz."));
+
+                return Result.Success<(bool CanDelete, string? Reason)>((true, null));
+            }
+            catch (Exception ex)
+            {
+                _logService?.LogException(ex, $"{Source}.CanDeleteAsync");
+                return Result.Failure<(bool CanDelete, string? Reason)>(Error.Unexpected("Konum silinebilirlik kontrolü yapılamadı.", ex, "Location.CanDelete.Failed"));
+            }
         }
 
         // Yardımcı Metot: Parent adını döndür
@@ -93,15 +177,28 @@ namespace Jenga.DataAccess.Services.Inventory
         {
             if (parentId == null) return "";
             if (_locationsCache == null)
-                _locationsCache = await GetAllAsync(cancellationToken);
+            {
+                var allResult = await GetAllAsync(cancellationToken);
+                if (allResult.IsFailure) return "";
+                _locationsCache = allResult.Value;
+            }
             var parent = _locationsCache.FirstOrDefault(x => x.Id == parentId);
             return parent?.LocationName ?? "";
         }
 
-        public async Task<bool> AnyAsync(Expression<Func<Location, bool>> predicate)
+        public async Task<Result<bool>> AnyAsync(Expression<Func<Location, bool>> predicate)
         {
-            await using var db = await _dbFactory.CreateDbContextAsync();
-            return await db.Location_Table.AsNoTracking().AnyAsync(predicate);
+            try
+            {
+                await using var db = await _dbFactory.CreateDbContextAsync();
+                var any = await db.Location_Table.AsNoTracking().AnyAsync(predicate);
+                return Result.Success(any);
+            }
+            catch (Exception ex)
+            {
+                _logService?.LogException(ex, $"{Source}.AnyAsync");
+                return Result.Failure<bool>(Error.Unexpected("Konum sorgusu yapılamadı.", ex, "Location.Any.Failed"));
+            }
         }
     }
 }

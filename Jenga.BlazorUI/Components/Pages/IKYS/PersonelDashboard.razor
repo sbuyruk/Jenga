@@ -680,6 +680,7 @@
             var t0 = PersonelService.GetCalisanPersonelAsync();
             var t1 = PersonelService.GetKadroluPersonelAsync();
             var t2 = IsBilgileriService.GetAllAsync();
+            // _personeller / _kadroluPersoneller Result olarak gelir; Result.Value listeyi taşır.
             var t3 = BirimTanimService.GetAllAsync();
             var t5 = DereceKademeDegisimService.GetDereceYukseltmeAsync();
             var t6 = GorevOnayService.GetAllAsync();
@@ -692,18 +693,20 @@
 
             await Task.WhenAll(t0, t1, t2, t3, t5, t6, t7, t8, t9, t10, t12, t13);
 
-            _personeller = t0.Result;
-            _kadroluPersoneller = t1.Result;
-            _isBilgileriList = t2.Result;
-            _birimler = t3.Result;
-            _dkDegisimler = t5.Result;
-            _gorevOnaylar = t6.Result;
-            _izinDonemleri = t7.Result;
-            _izinTalepler = t8.Result;
-            _izinHareketler = t9.Result;
-            _izinTanimlar = t10.Result;
-            _tahsilTanimlar = t12.Result;
-            _kimlikler = t13.Result;
+            var calisanResult = t0.Result;
+            var kadroluResult = t1.Result;
+            _personeller = calisanResult.IsSuccess ? calisanResult.Value : new List<Personel>();
+            _kadroluPersoneller = kadroluResult.IsSuccess ? kadroluResult.Value : new List<Personel>();
+            _isBilgileriList = t2.Result.IsSuccess ? t2.Result.Value : new List<IsBilgileri>();
+            _birimler = t3.Result.IsSuccess ? t3.Result.Value : new List<BirimTanim>();
+            _dkDegisimler = t5.Result.IsSuccess ? t5.Result.Value : new List<DereceKademeDegisim>();
+            _gorevOnaylar = t6.Result.IsSuccess ? t6.Result.Value : new List<GorevOnay>();
+            _izinDonemleri = t7.Result.IsSuccess ? t7.Result.Value : new List<IzinDonem>();
+            _izinTalepler = t8.Result.IsSuccess ? t8.Result.Value : new List<IzinTalep>();
+            _izinHareketler = t9.Result.IsSuccess ? t9.Result.Value : new List<IzinHareket>();
+            _izinTanimlar = t10.Result.IsSuccess ? t10.Result.Value : new List<IzinTanim>();
+            _tahsilTanimlar = t12.Result.IsSuccess ? t12.Result.Value : new List<TahsilTanim>();
+            _kimlikler = t13.Result.IsSuccess ? t13.Result.Value : new List<Kimlik>();
 
             BuildMetrics();
         }

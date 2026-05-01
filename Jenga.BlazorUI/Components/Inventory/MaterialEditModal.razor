@@ -173,7 +173,8 @@
             var name = (editing.MaterialName ?? string.Empty).Trim();
 
             // server-side duplicate check via MaterialService
-            var exists = await MaterialService.ExistsByNameAsync(name, editing.Id);
+            var existsR = await MaterialService.ExistsByNameAsync(name, editing.Id);
+            var exists = existsR.IsSuccess && existsR.Value;
             if (exists)
             {
                 Errors[nameof(Material.MaterialName)] = "Aynı isimde başka bir malzeme mevcut.";
@@ -221,7 +222,7 @@
         try
         {
             var ok = await MaterialUnitService.AddAsync(unitToEdit);
-            if (ok)
+            if (ok.IsSuccess)
             {
                 MaterialUnits.Add(unitToEdit);
                 editing.MaterialUnitId = unitToEdit.Id;

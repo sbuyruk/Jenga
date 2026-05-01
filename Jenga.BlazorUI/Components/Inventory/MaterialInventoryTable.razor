@@ -324,10 +324,11 @@ else
         {
             var currentUser = HttpContextAccessor.HttpContext?.User?.Identity?.Name;
             var saved = await MaterialEntryService.AddAsync(editingEntry, currentUser, CancellationToken.None);
-            if (saved)
+            if (saved.IsSuccess)
             {
                 ToastService.ShowToast("Giriş kaydedildi.", ToastType.Success, 2000);
-                MaterialInventories = await MaterialInventoryService.GetAllAsync();
+                var invR = await MaterialInventoryService.GetAllAsync();
+                MaterialInventories = invR.IsSuccess ? invR.Value : new();
                 // notify parent to refresh its data
                 if (OnInventoryChanged.HasDelegate)
                     await OnInventoryChanged.InvokeAsync();
@@ -424,7 +425,8 @@ else
         {
             await MaterialExitService.AddAsync(editingExit, assetIds, CancellationToken.None);
             ToastService.ShowToast("Çıkış kaydedildi.", ToastType.Success, 2000);
-            MaterialInventories = await MaterialInventoryService.GetAllAsync();
+            var invR = await MaterialInventoryService.GetAllAsync();
+            MaterialInventories = invR.IsSuccess ? invR.Value : new();
             if (OnInventoryChanged.HasDelegate)
                 await OnInventoryChanged.InvokeAsync();
         }
@@ -493,10 +495,11 @@ else
         {
             var currentUser = HttpContextAccessor.HttpContext?.User?.Identity?.Name;
             var ok = await MaterialTransferService.AddAsync(transfer, currentUser, assetIds, CancellationToken.None);
-            if (ok)
+            if (ok.IsSuccess)
             {
                 ToastService.ShowToast("Transfer kaydedildi.", ToastType.Success, 2000);
-                MaterialInventories = await MaterialInventoryService.GetAllAsync();
+                var invR = await MaterialInventoryService.GetAllAsync();
+                MaterialInventories = invR.IsSuccess ? invR.Value : new();
                 // notify parent to refresh its data
                 if (OnInventoryChanged.HasDelegate)
                     await OnInventoryChanged.InvokeAsync();

@@ -55,7 +55,8 @@ namespace Jenga.BlazorUI.Services.Common
             try
             {
                 if (MenuItems is { Count: > 0 }) return; // double-check after awaiting
-                MenuItems = await _menuService.GetAuthorizedMenuAsync(userId);
+                var result = await _menuService.GetAuthorizedMenuAsync(userId);
+                MenuItems = result.IsSuccess ? result.Value : new List<MenuItem>();
             }
             finally
             {

@@ -2,6 +2,8 @@
 using Jenga.Models.Enums;
 using Jenga.Models.Inventory;
 using Jenga.Utility.Helpers;
+using Jenga.Utility.Logging;
+using Jenga.Utility.Results;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
@@ -9,22 +11,38 @@ namespace Jenga.DataAccess.Services.Inventory
 {
     public class MaterialExitService : IMaterialExitService
     {
-        private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
+        private const string Source = nameof(MaterialExitService);
 
-        public MaterialExitService(IDbContextFactory<ApplicationDbContext> dbFactory)
+        private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
+        private readonly ILogService _logService;
+
+        public MaterialExitService(IDbContextFactory<ApplicationDbContext> dbFactory, ILogService logService)
         {
             _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
+            _logService = logService;
         }
 
-        public async Task<List<MaterialExit>> GetAllAsync(CancellationToken cancellationToken = default)
+        public async Task<Result<List<MaterialExit>>> GetAllAsync(CancellationToken cancellationToken = default)
         {
-            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-            return await db.MaterialExit_Table.AsNoTracking().ToListAsync(cancellationToken);
+            try
+            {
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                var list = await db.MaterialExit_Table.AsNoTracking().ToListAsync(cancellationToken);
+                return Result.Success(list);
+            }
+            catch (Exception ex)
+            {
+                _logService?.LogException(ex, $"{Source}.GetAllAsync");
+                return Result.Failure<List<MaterialExit>>(Error.Unexpected("Çıkış kayıtları alınamadı.", ex, "MaterialExit.GetAll.Failed"));
+            }
         }
 
-        public async Task AddAsync(MaterialExit exit, List<int>? selectedAssetIds = null, CancellationToken cancellationToken = default)
+        public async Task<Result> AddAsync(MaterialExit exit, List<int>? selectedAssetIds = null, CancellationToken cancellationToken = default)
         {
-            if (exit == null) throw new ArgumentNullException(nameof(exit));
+            if (exit == null)
+                return Result.Failure(Error.Validation("Çıkış kaydı boş olamaz.", "MaterialExit.Null"));
+            try
+            {
 
             int? actualLocation = exit.LocationId != 0 ? exit.LocationId : null;
             int? actualPerson = (exit.PersonelId.HasValue && exit.PersonelId.Value != 0) ? exit.PersonelId : null;
@@ -166,11 +184,26 @@ namespace Jenga.DataAccess.Services.Inventory
             }
 
             await scope.CommitAsync(cancellationToken);
+            return Result.Success();
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logService?.LogException(ex, $"{Source}.AddAsync");
+                return Result.Failure(Error.Validation(ex.Message, "MaterialExit.Add.Invalid"));
+            }
+            catch (Exception ex)
+            {
+                _logService?.LogException(ex, $"{Source}.AddAsync");
+                return Result.Failure(Error.Unexpected("Çıkış kaydı eklenemedi.", ex, "MaterialExit.Add.Failed"));
+            }
         }
 
-        public async Task UpdateAsync(MaterialExit newExit, CancellationToken cancellationToken = default)
+        public async Task<Result> UpdateAsync(MaterialExit newExit, CancellationToken cancellationToken = default)
         {
-            if (newExit == null) throw new ArgumentNullException(nameof(newExit));
+            if (newExit == null)
+                return Result.Failure(Error.Validation("Çıkış kaydı boş olamaz.", "MaterialExit.Null"));
+            try
+            {
 
             // Aşama B: tek context + tek transaction içinde
             //   1) Eski exit'i oku
@@ -250,6 +283,18 @@ namespace Jenga.DataAccess.Services.Inventory
             oldExit.DegistirmeTarihi = DateTime.Now;
 
             await scope.CommitAsync(cancellationToken);
+            return Result.Success();
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logService?.LogException(ex, $"{Source}.UpdateAsync");
+                return Result.Failure(Error.Validation(ex.Message, "MaterialExit.Update.Invalid"));
+            }
+            catch (Exception ex)
+            {
+                _logService?.LogException(ex, $"{Source}.UpdateAsync");
+                return Result.Failure(Error.Unexpected("Çıkış kaydı güncellenemedi.", ex, "MaterialExit.Update.Failed"));
+            }
         }
 
         // AddOrUpdateInventoryAsync semantiğini birebir korur, ama PARAMETRE OLARAK GELEN context'te çalışır;
@@ -307,9 +352,12 @@ namespace Jenga.DataAccess.Services.Inventory
             }
         }
 
-        public async Task DeleteAsync(MaterialExit exit, CancellationToken cancellationToken = default)
+        public async Task<Result> DeleteAsync(MaterialExit exit, CancellationToken cancellationToken = default)
         {
-            if (exit == null) throw new ArgumentNullException(nameof(exit));
+            if (exit == null)
+                return Result.Failure(Error.Validation("Çıkış kaydı boş olamaz.", "MaterialExit.Null"));
+            try
+            {
 
             int? location = exit.LocationId != 0 ? exit.LocationId : null;
             int? person = (exit.PersonelId.HasValue && exit.PersonelId.Value != 0) ? exit.PersonelId : null;
@@ -394,12 +442,33 @@ namespace Jenga.DataAccess.Services.Inventory
                 db.MaterialExit_Table.Remove(exitEntity);
 
             await scope.CommitAsync(cancellationToken);
+            return Result.Success();
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logService?.LogException(ex, $"{Source}.DeleteAsync");
+                return Result.Failure(Error.Validation(ex.Message, "MaterialExit.Delete.Invalid"));
+            }
+            catch (Exception ex)
+            {
+                _logService?.LogException(ex, $"{Source}.DeleteAsync");
+                return Result.Failure(Error.Unexpected("Çıkış kaydı silinemedi.", ex, "MaterialExit.Delete.Failed"));
+            }
         }
 
-        public async Task<bool> AnyAsync(Expression<Func<MaterialExit, bool>> predicate)
+        public async Task<Result<bool>> AnyAsync(Expression<Func<MaterialExit, bool>> predicate)
         {
-            await using var db = await _dbFactory.CreateDbContextAsync();
-            return await db.MaterialExit_Table.AsNoTracking().AnyAsync(predicate);
+            try
+            {
+                await using var db = await _dbFactory.CreateDbContextAsync();
+                var any = await db.MaterialExit_Table.AsNoTracking().AnyAsync(predicate);
+                return Result.Success(any);
+            }
+            catch (Exception ex)
+            {
+                _logService?.LogException(ex, $"{Source}.AnyAsync");
+                return Result.Failure<bool>(Error.Unexpected("Çıkış sorgusu yapılamadı.", ex, "MaterialExit.Any.Failed"));
+            }
         }
     }
 }

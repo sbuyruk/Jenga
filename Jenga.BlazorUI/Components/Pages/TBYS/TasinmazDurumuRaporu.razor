@@ -51,7 +51,7 @@ else
         => await RefreshAsync();
 
     private async Task RefreshAsync()
-        => Tasinmazlar = await TasinmazService.GetEnvanterdekilerAsync();
+        => Tasinmazlar = (await TasinmazService.GetEnvanterdekilerAsync()) is { IsSuccess: true } r ? r.Value : new();
 
     private async Task ExportExcelAsync()
     {

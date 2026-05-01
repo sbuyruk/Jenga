@@ -158,9 +158,9 @@
 
         await Task.WhenAll(t1, t2, t3);
 
-        materials = t1.Result;
-        brands = t2.Result;
-        models = t3.Result;
+        materials = t1.Result.IsSuccess ? t1.Result.Value : new();
+        brands = t2.Result.IsSuccess ? t2.Result.Value : new();
+        models = t3.Result.IsSuccess ? t3.Result.Value : new();
 
         await LoadAssets();
     }
@@ -168,9 +168,15 @@
     private async Task LoadAssets()
     {
         if (FilterMaterialId.HasValue)
-            assets = await MaterialAssetService.GetByMaterialIdAsync(FilterMaterialId.Value);
+        {
+            var r = await MaterialAssetService.GetByMaterialIdAsync(FilterMaterialId.Value);
+            assets = r.IsSuccess ? r.Value : new();
+        }
         else
-            assets = await MaterialAssetService.GetAllAsync();
+        {
+            var r = await MaterialAssetService.GetAllAsync();
+            assets = r.IsSuccess ? r.Value : new();
+        }
 
         StateHasChanged();
     }

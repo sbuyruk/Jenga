@@ -1,0 +1,48 @@
+@using Jenga.Utility.Logging
+@using Jenga.Utility.Toast
+@inherits ErrorBoundary
+@inject ILogService LogService
+@inject IToastService ToastService
+
+@if (CurrentException is null)
+{
+    @ChildContent
+}
+else
+{
+    @if (ErrorContent is not null)
+    {
+        @ErrorContent(CurrentException)
+    }
+    else
+    {
+        <div class="alert alert-danger m-3" role="alert">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>Beklenmeyen bir hata oluştu.</strong>
+                    <div class="small text-muted">Ekibe bildirim gönderildi. Sayfayı yenilemeyi deneyebilirsiniz.</div>
+                </div>
+                <button class="btn btn-sm btn-outline-light" @onclick="Recover" type="button">
+                    Tekrar Dene
+                </button>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    protected override Task OnErrorAsync(Exception exception)
+    {
+        try
+        {
+            LogService.LogException(exception, source: "JengaErrorBoundary");
+            ToastService.ShowError("Beklenmeyen bir hata oluştu. Sistem yöneticisine bildirildi.", 5000);
+        }
+        catch
+        {
+            // Boundary log/toast'ta da hata alırsa sessizce yut.
+        }
+
+        return Task.CompletedTask;
+    }
+}

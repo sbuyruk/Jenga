@@ -1,18 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Jenga.Models.NBYS;
+﻿using Jenga.Models.NBYS;
+using Jenga.Utility.Results;
 
 namespace Jenga.DataAccess.Services.NBYS
 {
     public interface INakitBagisciService
     {
-        Task<List<NakitBagisci>> GetAllAsync(CancellationToken cancellationToken = default);
-        Task<NakitBagisci?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
-        Task<bool> AddAsync(NakitBagisci model, CancellationToken cancellationToken = default);
-        Task<bool> UpdateAsync(NakitBagisci model, CancellationToken cancellationToken = default);
-        Task<bool> DeleteAsync(NakitBagisci model, CancellationToken cancellationToken = default);
+        Task<Result<List<NakitBagisci>>> GetAllAsync(CancellationToken cancellationToken = default);
+        Task<Result<NakitBagisci>> GetByIdAsync(int id, CancellationToken cancellationToken = default);
+        Task<Result> AddAsync(NakitBagisci model, CancellationToken cancellationToken = default);
+        Task<Result> UpdateAsync(NakitBagisci model, CancellationToken cancellationToken = default);
+        Task<Result> DeleteAsync(NakitBagisci model, CancellationToken cancellationToken = default);
     }
 }

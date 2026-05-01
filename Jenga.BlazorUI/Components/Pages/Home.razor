@@ -83,7 +83,8 @@
             }
 
             // Use service to get authorized menu tree for the current personel
-            var menuTree = await MenuItemService.GetAuthorizedMenuAsync(personel.Id);
+            var menuResult = await MenuItemService.GetAuthorizedMenuAsync(personel.Id);
+            var menuTree = menuResult.IsSuccess ? menuResult.Value : new List<MenuItem>();
 
             // Flatten tree and filter only actionable items (Url not empty/# and visible)
             var flat = Flatten(menuTree);

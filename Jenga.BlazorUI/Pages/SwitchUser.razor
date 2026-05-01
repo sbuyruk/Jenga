@@ -1,23 +1,34 @@
 ﻿@page "/common/switch-user"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
 @inject Jenga.BlazorUI.Services.Common.ImpersonationService ImpersonationService
 @inject NavigationManager NavigationManager
+@inject Microsoft.Extensions.Hosting.IHostEnvironment HostEnvironment
 
-<h4>Farklı kullanıcı ile bağlan</h4>
+@if (!HostEnvironment.IsDevelopment())
+{
+    <h4>Bu sayfa yalnızca geliştirme ortamında kullanılabilir.</h4>
+}
+else
+{
+    <h4>Farklı kullanıcı ile bağlan (yalnızca Development)</h4>
 
-<div class="mb-2">
-    <input @bind="userName" placeholder="Kullanıcı adı (örn: jsahin)" class="form-control" />
-</div>
+    <div class="mb-2">
+        <input @bind="userName" placeholder="Kullanıcı adı (örn: jsahin)" class="form-control" />
+    </div>
 
-<div>
-    <button class="btn btn-primary" @onclick="Switch">Bağlan</button>
-    <button class="btn btn-secondary ms-2" @onclick="Clear">Temizle</button>
-</div>
+    <div>
+        <button class="btn btn-primary" @onclick="Switch">Bağlan</button>
+        <button class="btn btn-secondary ms-2" @onclick="Clear">Temizle</button>
+    </div>
+}
 
 @code {
     private string userName = string.Empty;
 
     private async Task Switch()
     {
+        if (!HostEnvironment.IsDevelopment()) return;
         if (string.IsNullOrWhiteSpace(userName)) return;
         await ImpersonationService.SetOverrideAsync(userName.Trim());
         NavigationManager.NavigateTo("/", forceLoad: true);
@@ -25,6 +36,7 @@
 
     private async Task Clear()
     {
+        if (!HostEnvironment.IsDevelopment()) return;
         await ImpersonationService.ClearOverrideAsync();
         NavigationManager.NavigateTo("/", forceLoad: true);
     }

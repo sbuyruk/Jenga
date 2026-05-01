@@ -4,11 +4,16 @@
 @using Jenga.DataAccess.Services.Common
 @using Jenga.Models.Common
 @using Jenga.Utility.Error
+@using Jenga.Utility.Toast
 @inject IRoleService RolService
 @inject IErrorService ErrorService
+@inject IToastService ToastService
 
 <h3>Rol Yönetimi</h3>
-<RoleTable Roles="@roles" />
+<RoleTable Roles="@roles"
+           OnRoleAdded="ReloadAsync"
+           OnRoleUpdated="ReloadAsync"
+           OnRoleDeleted="ReloadAsync" />
 
 @code {
     private List<Role> roles = new();
@@ -20,9 +25,25 @@
     {
         if (firstRender && !_dataLoaded)
         {
-            roles = await RolService.GetAllAsync();
+            await ReloadAsync();
             _dataLoaded = true;
-            StateHasChanged();
         }
+    }
+
+    // Tek doğru kaynak burası: ekleme/güncelleme/silme sonrası listeyi DB'den tazeler.
+    // RoleTable artık parent koleksiyonunu doğrudan mutate etmez.
+    private async Task ReloadAsync(Role _ = null!)
+    {
+        var result = await RolService.GetAllAsync();
+        if (result.IsSuccess)
+        {
+            roles = result.Value;
+        }
+        else
+        {
+            roles = new List<Role>();
+            ToastService.ShowToast(result.Error.Message, ToastType.Error, 4000);
+        }
+        StateHasChanged();
     }
 }

@@ -80,7 +80,8 @@ else
         {
             try
             {
-                Brands = await MaterialBrandService.GetAllAsync();
+                var brandsR = await MaterialBrandService.GetAllAsync();
+                Brands = brandsR.IsSuccess ? brandsR.Value : new List<MaterialBrand>();
             }
             catch
             {
@@ -92,7 +93,8 @@ else
         {
             try
             {
-                Models = await MaterialModelService.GetAllAsync();
+                var modelsR = await MaterialModelService.GetAllAsync();
+                Models = modelsR.IsSuccess ? modelsR.Value : new List<MaterialModel>();
             }
             catch
             {

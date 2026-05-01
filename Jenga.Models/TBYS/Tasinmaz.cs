@@ -239,5 +239,6 @@ namespace Jenga.Models.TBYS
 
         [Column("YaklasikPiyasaDegeri", TypeName = "money")]
         public decimal? YaklasikPiyasaDegeri { get; set; }
-    }
-}
+
+            }
+        }

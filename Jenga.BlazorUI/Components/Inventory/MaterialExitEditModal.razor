@@ -362,7 +362,8 @@
         var opt = SourceOptions.FirstOrDefault(o => o.Id == SelectedSourceId);
         if (opt == null) return;
 
-        var allAssets = await MaterialAssetService.GetByMaterialIdAsync(MaterialExit.MaterialId);
+        var allAssetsR = await MaterialAssetService.GetByMaterialIdAsync(MaterialExit.MaterialId);
+        var allAssets = allAssetsR.IsSuccess ? allAssetsR.Value : new();
         availableAssets = allAssets
             .Where(a => a.Status == AssetStatus.Active
                 && a.LocationId == opt.LocationId

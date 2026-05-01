@@ -245,9 +245,14 @@ else
             if (selectedEntry.Id == 0)
             {
                 var saved = await MaterialEntryService.AddAsync(selectedEntry, currentUserName, CancellationToken.None);
-                if (saved)
+                if (saved.IsSuccess)
                 {
                     MaterialEntries.Add(selectedEntry);
+                }
+                else if (saved.IsFailure)
+                {
+                    ToastService.ShowError(saved.Error?.Message ?? "Kayıt sırasında hata oluştu.", 5000);
+                    return;
                 }
             }
             else
@@ -295,7 +300,7 @@ else
                 {
                     var deleted = await MaterialEntryService.DeleteMaterialEntryAndUpdateInventoryAsync(entry, currentUserName, CancellationToken.None);
 
-                    if (deleted)
+                    if (deleted.IsSuccess)
                     {
                         ToastService.ShowToast($"{material?.MaterialName ?? entry.Id.ToString()} silindi", ToastType.Success, 3000);
                         MaterialEntries.Remove(entry);
@@ -305,7 +310,7 @@ else
                     }
                     else
                     {
-                        ToastService.ShowToast("Silme işlemi başarısız oldu", ToastType.Error, 3000);
+                        ToastService.ShowToast(deleted.Error?.Message ?? "Silme işlemi başarısız oldu", ToastType.Error, 3000);
                     }
                 }
                 catch (InvalidOperationException ex)

@@ -41,14 +41,22 @@
     {
         if (firstRender && !_dataLoaded)
         {
-            materialEntries = await MaterialEntryService.GetAllAsync();
-            materials = await MaterialService.GetAllAsync();
-            locations = await LocationService.GetAllAsync();
-            personels = await PersonelService.GetCalisanPersonelAsync();
-            brands = await MaterialBrandService.GetAllAsync();
-            models = await MaterialModelService.GetAllAsync();
-            categories = await MaterialCategoryService.GetAllAsync();
-            materialUnits = await MaterialUnitService.GetAllAsync();
+            var entriesR = await MaterialEntryService.GetAllAsync();
+            materialEntries = entriesR.IsSuccess ? entriesR.Value : new();
+            var matsR = await MaterialService.GetAllAsync();
+            materials = matsR.IsSuccess ? matsR.Value : new();
+            var locsR = await LocationService.GetAllAsync();
+            locations = locsR.IsSuccess ? locsR.Value : new();
+            var personelResult = await PersonelService.GetCalisanPersonelAsync();
+            personels = personelResult.IsSuccess ? personelResult.Value : new List<Personel>();
+            var brandsR = await MaterialBrandService.GetAllAsync();
+            brands = brandsR.IsSuccess ? brandsR.Value : new();
+            var modelsR = await MaterialModelService.GetAllAsync();
+            models = modelsR.IsSuccess ? modelsR.Value : new();
+            var catsR = await MaterialCategoryService.GetAllAsync();
+            categories = catsR.IsSuccess ? catsR.Value : new();
+            var unitsR = await MaterialUnitService.GetAllAsync();
+            materialUnits = unitsR.IsSuccess ? unitsR.Value : new();
             _dataLoaded = true;
             StateHasChanged();
         }

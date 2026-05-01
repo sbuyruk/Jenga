@@ -99,7 +99,7 @@ else
             if (selectedCategory.Id == 0)
             {
                 var saved = await MaterialCategoryService.AddAsync(selectedCategory);
-                if (saved)
+                if (saved.IsSuccess)
                 {
                     Categories.Add(selectedCategory);
                 }
@@ -136,14 +136,16 @@ else
             return;
         }
 
-        var hasMaterial = await MaterialService.AnyAsync(m => m.CategoryId == category.Id);
+        var hasMaterialR = await MaterialService.AnyAsync(m => m.CategoryId == category.Id);
+        var hasMaterial = hasMaterialR.IsSuccess && hasMaterialR.Value;
         if (hasMaterial)
         {
             ToastService.ShowToast("Bu kategoriye bağlı malzemeler var, önce onları silmelisiniz.", ToastType.Error, 5000);
             return;
         }
 
-        var hasBrand = await MaterialBrandService.AnyAsync(m => m.CategoryId == category.Id);
+        var hasBrandR = await MaterialBrandService.AnyAsync(m => m.CategoryId == category.Id);
+        var hasBrand = hasBrandR.IsSuccess && hasBrandR.Value;
         if (hasBrand)
         {
             ToastService.ShowToast("Bu kategoriye bağlı markalar var, önce onları silmelisiniz.", ToastType.Error, 5000);
@@ -161,7 +163,7 @@ else
                 }
 
                 var deleted = await MaterialCategoryService.DeleteAsync(category.Id);
-                if (deleted)
+                if (deleted.IsSuccess)
                 {
                     ToastService.ShowToast($"{category.CategoryName} silindi", ToastType.Success, 3000);
                     Categories.Remove(category);

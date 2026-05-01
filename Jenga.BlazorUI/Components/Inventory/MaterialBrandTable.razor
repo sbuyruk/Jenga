@@ -132,7 +132,7 @@ else
             if (selectedBrand.Id == 0)
             {
                 var saved = await MaterialBrandService.AddAsync(selectedBrand);
-                if (saved)
+                if (saved.IsSuccess)
                 {
                     Brands.Add(selectedBrand);
                 }
@@ -149,7 +149,8 @@ else
 
     private async Task OnDeleteClicked(MaterialBrand brand)
     {
-        var hasMaterialEntry = await MaterialEntryService.AnyAsync(m => m.BrandId == brand.Id);
+        var hasMaterialEntryR = await MaterialEntryService.AnyAsync(m => m.BrandId == brand.Id);
+        var hasMaterialEntry = hasMaterialEntryR.IsSuccess && hasMaterialEntryR.Value;
         if (hasMaterialEntry)
         {
             ToastService.ShowToast("Bu marka bir malzeme girişinde kullanılıyor, önce onu silmelisiniz.", ToastType.Error, 5000);
@@ -167,7 +168,7 @@ else
                 }
 
                 var deleted = await MaterialBrandService.DeleteAsync(brand);
-                if (deleted)
+                if (deleted.IsSuccess)
                 {
                     ToastService.ShowToast($"{brand.BrandName} silindi", ToastType.Success, 3000);
                     Brands.Remove(brand);

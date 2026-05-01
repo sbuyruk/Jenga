@@ -1,14 +1,15 @@
 ﻿using Jenga.Models.Inventory;
+using Jenga.Utility.Results;
 
 namespace Jenga.DataAccess.Services.Inventory
 {
     public interface IMaterialMovementService
     {
-        Task AddAsync(MaterialMovement movement, CancellationToken cancellationToken = default);
+        Task<Result> AddAsync(MaterialMovement movement, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Belirli bir malzemenin hareket geçmişini getirir.
         /// </summary>
-        Task<List<MaterialMovement>> GetMovementsByMaterialIdAsync(int materialId, CancellationToken cancellationToken = default);
+        Task<Result<List<MaterialMovement>>> GetMovementsByMaterialIdAsync(int materialId, CancellationToken cancellationToken = default);
     }
 }

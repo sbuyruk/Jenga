@@ -234,14 +234,15 @@
 
         await Task.WhenAll(t1, t2, t3, t4, t5, t6, t7, t8);
 
-        categories = t1.Result;
-        materials = t2.Result;
-        brands = t3.Result;
-        models = t4.Result;
-        materialUnits = t5.Result;
-        locations = t6.Result;
-        persons = t7.Result;
-        materialInventories = t8.Result;
+        categories = t1.Result.IsSuccess ? t1.Result.Value : new();
+        materials = t2.Result.IsSuccess ? t2.Result.Value : new();
+        brands = t3.Result.IsSuccess ? t3.Result.Value : new();
+        models = t4.Result.IsSuccess ? t4.Result.Value : new();
+        materialUnits = t5.Result.IsSuccess ? t5.Result.Value : new();
+        locations = t6.Result.IsSuccess ? t6.Result.Value : new();
+        var personsResult = t7.Result;
+        persons = personsResult.IsSuccess ? personsResult.Value : new List<Personel>();
+        materialInventories = t8.Result.IsSuccess ? t8.Result.Value : new();
 
         BuildTree();
 
@@ -387,7 +388,8 @@
 
     private async Task LoadMaterialMovements(Material mat)
     {
-        var movements = await MaterialMovementService.GetMovementsByMaterialIdAsync(mat.Id);
+        var movementsR = await MaterialMovementService.GetMovementsByMaterialIdAsync(mat.Id);
+        var movements = movementsR.IsSuccess ? movementsR.Value : new();
         materialMovements = movements.OrderByDescending(m => m.MovementDate).Take(20)
             .Select(m =>
             {
@@ -535,7 +537,8 @@
             ToastService.ShowSuccess($"{actionName} başarıyla kaydedildi.");
             closeAction();
 
-            materialInventories = await MaterialInventoryService.GetAllAsync();
+            var invR = await MaterialInventoryService.GetAllAsync();
+            materialInventories = invR.IsSuccess ? invR.Value : new();
             if (SelectedMaterial != null)
             {
                 await LoadMaterialLocationCards(SelectedMaterial);
@@ -583,7 +586,9 @@
         if (item.Data.Category == null) return;
         var check = await MaterialCategoryService.CanDeleteAsync(item.Data.Category.Id);
 
-        if (!check.CanDelete) { ToastService.ShowError(check.Reason); return; }
+        var canDelete = check.IsSuccess && check.Value.CanDelete;
+        var reason = check.IsSuccess ? check.Value.Reason : check.Error?.Message;
+        if (!canDelete) { ToastService.ShowError(reason); return; }
 
         ModalService.ShowConfirmation("Silme Onayı", $"{item.Data.Category.CategoryName} silinsin mi?", async (res) =>
         {

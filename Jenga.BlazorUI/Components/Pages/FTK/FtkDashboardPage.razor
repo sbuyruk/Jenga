@@ -551,13 +551,13 @@
 
         await Task.WhenAll(ftkTask, islemTask, ilTask, ilceTask, bolgeTask);
 
-        _islemler = islemTask.Result;
-        _ftkler   = ftkTask.Result;
+        _islemler = islemTask.Result.IsSuccess ? islemTask.Result.Value : new();
+        _ftkler   = ftkTask.Result.IsSuccess ? ftkTask.Result.Value : new();
 
 
-        var iller     = ilTask.Result;
-        var ilceler   = ilceTask.Result;
-        var bolgeler  = bolgeTask.Result;
+        var iller     = ilTask.Result.IsSuccess ? ilTask.Result.Value : new();
+        var ilceler   = ilceTask.Result.IsSuccess ? ilceTask.Result.Value : new();
+        var bolgeler  = bolgeTask.Result.IsSuccess ? bolgeTask.Result.Value : new();
         var ilDict    = iller.ToDictionary(i => i.Id);
         var ilceDict  = ilceler.ToDictionary(i => i.Id);
         var bolgeDict = bolgeler.ToDictionary(b => b.Id);
@@ -567,7 +567,7 @@
         // ── KPI ──────────────────────────────────────
         // Gerçek FTK birimi sayısı = FTK_Table'da distinct (Ili, Ilcesi) ikilisi
         // (Ilcesi = -1 → İl FTK, diğerleri → İlçe FTK)
-        var _tumFtklar = ftkTask.Result
+        var _tumFtklar = _ftkler
             .Where(f => f.Ili.HasValue && f.Ilcesi.HasValue)
             .Select(f => (f.Ili!.Value, f.Ilcesi!.Value))
             .Distinct()
@@ -589,7 +589,7 @@
 
         // ── Bölge Dağılımı ────────────────────────────
         // FTK_Table'dan bölge bazlı distinct (Ili,Ilcesi) sayısı ve üye sayısı
-        var ftkPerBolge = ftkTask.Result
+        var ftkPerBolge = _ftkler
             .Where(f => f.BolgeId.HasValue && f.Ili.HasValue && f.Ilcesi.HasValue)
             .GroupBy(f => f.BolgeId!.Value)
             .ToDictionary(
@@ -632,7 +632,7 @@
         // FtkIslemId bazlı gruplama: her grup = bir FTK birimi, g.Count() = tüm üye sayısı
         // Ili/Ilcesi null olan satırlar dahil edilir (üye sayısına girer), lookup sadece first'ten yapılır
         _ftkListesi.AddRange(
-            ftkTask.Result
+            _ftkler
                 .Where(f => f.FtkIslemId.HasValue)
                 .GroupBy(f => f.FtkIslemId!.Value)
                 .Select(g =>
@@ -675,7 +675,7 @@
         _ilIdToAdi = iller.ToDictionary(i => i.Id, i => i.IlAdi ?? "-");
 
         // ── Harita modal: il bazında üye lookup ───────
-        _uyelerByIl = ftkTask.Result
+        _uyelerByIl = _ftkler
             .Where(f => f.Ili.HasValue)
             .GroupBy(f => f.Ili!.Value)
             .ToDictionary(

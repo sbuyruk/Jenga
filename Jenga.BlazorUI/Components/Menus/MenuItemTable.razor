@@ -1,7 +1,6 @@
 ﻿@using Jenga.BlazorUI.Components.Common
 @using Jenga.BlazorUI.Services.Common
 @using Jenga.DataAccess.Services.Common
-@using Jenga.DataAccess.Services.Menu
 @using Jenga.Models.Common
 @using Jenga.Utility.Toast
 @using System.ComponentModel.DataAnnotations
@@ -110,7 +109,7 @@ else
                 if (result)
                 {
                     var deleted = await MenuItemService.DeleteAsync(item);
-                    if (deleted)
+                    if (deleted.IsSuccess)
                     {
                         ToastService.ShowToast($"{item.Title} silindi", ToastType.Success, 3000);
                         Menus.Remove(item);
@@ -121,7 +120,7 @@ else
                     }
                     else
                     {
-                        ToastService.ShowToast($"Silme işlemi başarısız oldu", ToastType.Error, 3000);
+                        ToastService.ShowToast($"Silme işlemi başarısız: {deleted.Error.Message}", ToastType.Error, 4000);
                     }
                 }
             });
@@ -137,7 +136,7 @@ else
             {
                 // Add
                 var saved = await MenuItemService.AddAsync(menu);
-                if (saved)
+                if (saved.IsSuccess)
                 {
                     Menus.Add(menu);
                     ToastService.ShowToast("Yeni menü eklendi", ToastType.Success, 3000);
@@ -145,13 +144,13 @@ else
                 }
                 else
                 {
-                    ToastService.ShowToast("Ekleme başarısız oldu", ToastType.Error, 3000);
+                    ToastService.ShowToast($"Ekleme başarısız: {saved.Error.Message}", ToastType.Error, 4000);
                 }
             }
             else
             {
                 var updated = await MenuItemService.UpdateAsync(menu);
-                if (updated)
+                if (updated.IsSuccess)
                 {
                     ToastService.ShowToast($"{menu.Title} güncellendi", ToastType.Success, 3000);
                     // update row
@@ -160,7 +159,7 @@ else
                 }
                 else
                 {
-                    ToastService.ShowToast("Güncelleme başarısız oldu", ToastType.Error, 3000);
+                    ToastService.ShowToast($"Güncelleme başarısız: {updated.Error.Message}", ToastType.Error, 4000);
                 }
             }
 

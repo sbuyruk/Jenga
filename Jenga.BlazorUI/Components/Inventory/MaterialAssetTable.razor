@@ -379,7 +379,8 @@ else
 
         showingLogAssetId = asset.Id;
         editingAssetId = null;
-        assetLogs = await MaterialAssetLogService.GetByAssetIdAsync(asset.Id);
+        var assetLogsR = await MaterialAssetLogService.GetByAssetIdAsync(asset.Id);
+        assetLogs = assetLogsR.IsSuccess ? assetLogsR.Value : new();
         StateHasChanged();
     }
 

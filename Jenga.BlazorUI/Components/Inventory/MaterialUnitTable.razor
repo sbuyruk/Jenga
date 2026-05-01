@@ -81,7 +81,7 @@ else
             if (selectedUnit.Id == 0)
             {
                 var saved = await MaterialUnitService.AddAsync(selectedUnit);
-                if (saved)
+                if (saved.IsSuccess)
                 {
                     MaterialUnits.Add(selectedUnit);
                 }
@@ -102,14 +102,16 @@ else
 
     private async Task OnDeleteClicked(MaterialUnit unit)
     {
-        var hasMaterial = await MaterialService.AnyAsync(m => m.MaterialUnitId == unit.Id);
+        var hasMaterialResult = await MaterialService.AnyAsync(m => m.MaterialUnitId == unit.Id);
+        var hasMaterial = hasMaterialResult.IsSuccess && hasMaterialResult.Value;
         if (hasMaterial)
         {
             ToastService.ShowToast("Bu birimi kullanan malzemeler var, önce onları silmelisiniz.", ToastType.Error, 5000);
             return;
         }
 
-        var hasEntry = await MaterialEntryService.AnyAsync(m => m.MaterialUnitId == unit.Id);
+        var hasEntryResult = await MaterialEntryService.AnyAsync(m => m.MaterialUnitId == unit.Id);
+        var hasEntry = hasEntryResult.IsSuccess && hasEntryResult.Value;
         if (hasEntry)
         {
             ToastService.ShowToast("Bu birime bağlı malzeme girişleri var, önce onları silmelisiniz.", ToastType.Error, 5000);
@@ -127,7 +129,7 @@ else
                 }
 
                 var deleted = await MaterialUnitService.DeleteAsync(unit);
-                if (deleted)
+                if (deleted.IsSuccess)
                 {
                     MaterialUnits.Remove(unit);
 

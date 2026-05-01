@@ -439,7 +439,8 @@
         var opt = AvailableFromInventoryOptions.FirstOrDefault(o => o.InventoryId == SelectedFromInventoryId);
         if (opt == null) return;
 
-        var allAssets = await MaterialAssetService.GetByMaterialIdAsync(WorkingTransfer.MaterialId);
+        var allAssetsR = await MaterialAssetService.GetByMaterialIdAsync(WorkingTransfer.MaterialId);
+        var allAssets = allAssetsR.IsSuccess ? allAssetsR.Value : new();
         availableAssets = allAssets
             .Where(a => a.Status == AssetStatus.Active
                 && a.LocationId == opt.LocationId

@@ -1,25 +1,34 @@
 using Jenga.DataAccess.Data;
 using Jenga.Models.Inventory;
+using Jenga.Utility.Logging;
+using Jenga.Utility.Results;
 using Microsoft.EntityFrameworkCore;
 
 namespace Jenga.DataAccess.Services.Inventory
 {
     public class MaterialTransferService : IMaterialTransferService
     {
-        private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
+        private const string Source = nameof(MaterialTransferService);
 
-        public MaterialTransferService(IDbContextFactory<ApplicationDbContext> dbFactory)
+        private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
+        private readonly ILogService _logService;
+
+        public MaterialTransferService(IDbContextFactory<ApplicationDbContext> dbFactory, ILogService logService)
         {
             _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
+            _logService = logService;
         }
 
-        public async Task<bool> AddAsync(
+        public async Task<Result> AddAsync(
             MaterialTransfer transfer,
             string? modifiedBy = null,
             List<int>? selectedAssetIds = null,
             CancellationToken cancellationToken = default)
         {
-            if (transfer == null) throw new ArgumentNullException(nameof(transfer));
+            if (transfer == null)
+                return Result.Failure(Error.Validation("Transfer kaydı boş olamaz.", "MaterialTransfer.Null"));
+            try
+            {
 
             int? actualFromLocation = transfer.FromLocationId != 0 ? transfer.FromLocationId : null;
             int? actualToLocation = transfer.ToLocationId != 0 ? transfer.ToLocationId : null;
@@ -133,7 +142,18 @@ namespace Jenga.DataAccess.Services.Inventory
             }
 
             await scope.CommitAsync(cancellationToken);
-            return true;
+            return Result.Success();
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logService?.LogException(ex, $"{Source}.AddAsync");
+                return Result.Failure(Error.Validation(ex.Message, "MaterialTransfer.Add.Invalid"));
+            }
+            catch (Exception ex)
+            {
+                _logService?.LogException(ex, $"{Source}.AddAsync");
+                return Result.Failure(Error.Unexpected("Transfer kaydı eklenemedi.", ex, "MaterialTransfer.Add.Failed"));
+            }
         }
 
         // AddOrUpdateInventoryAsync semantiğini birebir korur, parametre olarak gelen

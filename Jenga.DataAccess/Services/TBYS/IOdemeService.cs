@@ -1,27 +1,24 @@
 ﻿using Jenga.Models.TBYS;
-using System;
-using System.Collections.Generic;
+using Jenga.Utility.Results;
 using System.Linq.Expressions;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Jenga.DataAccess.Services.TBYS
 {
     public interface IOdemeService
     {
-        Task<List<Odeme>> GetAllAsync(CancellationToken cancellationToken = default);
-        Task<List<Odeme>> GetAllAsyncKiralar(CancellationToken cancellationToken = default);
-        Task<Odeme?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
-        Task<Odeme?> GetByIdWithRelationsAsync(int id, CancellationToken cancellationToken = default);
-        Task<List<Odeme>> GetBySozlesmeIdAsync(int sozlesmeId, CancellationToken cancellationToken = default);
-        Task<List<Odeme>> GetByKiraciIdAsync(int kiraciId, CancellationToken cancellationToken = default);
-        Task<List<Odeme>> GetByOdemePlaniIdAsync(int odemePlaniId, CancellationToken cancellationToken = default);
+        Task<Result<List<Odeme>>> GetAllAsync(CancellationToken cancellationToken = default);
+        Task<Result<List<Odeme>>> GetAllAsyncKiralar(CancellationToken cancellationToken = default);
+        Task<Result<Odeme>> GetByIdAsync(int id, CancellationToken cancellationToken = default);
+        Task<Result<Odeme>> GetByIdWithRelationsAsync(int id, CancellationToken cancellationToken = default);
+        Task<Result<List<Odeme>>> GetBySozlesmeIdAsync(int sozlesmeId, CancellationToken cancellationToken = default);
+        Task<Result<List<Odeme>>> GetByKiraciIdAsync(int kiraciId, CancellationToken cancellationToken = default);
+        Task<Result<List<Odeme>>> GetByOdemePlaniIdAsync(int odemePlaniId, CancellationToken cancellationToken = default);
 
-        Task<bool> AddAsync(Odeme odeme, CancellationToken cancellationToken = default);
-        Task<bool> UpdateAsync(Odeme odeme, CancellationToken cancellationToken = default);
-        Task<bool> DeleteAsync(int odemeId, CancellationToken cancellationToken = default);
+        Task<Result> AddAsync(Odeme odeme, CancellationToken cancellationToken = default);
+        Task<Result> UpdateAsync(Odeme odeme, CancellationToken cancellationToken = default);
+        Task<Result> DeleteAsync(int odemeId, CancellationToken cancellationToken = default);
 
-        Task<bool> AnyAsync(Expression<Func<Odeme, bool>> predicate, CancellationToken cancellationToken = default);
-        Task<(bool CanDelete, string? Reason)> CanDeleteAsync(int id);
+        Task<Result<bool>> AnyAsync(Expression<Func<Odeme, bool>> predicate, CancellationToken cancellationToken = default);
+        Task<Result<(bool CanDelete, string? Reason)>> CanDeleteAsync(int id);
     }
 }

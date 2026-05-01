@@ -707,10 +707,10 @@
 
             await Task.WhenAll(t1, t2, t3, t4);
 
-            _tasinmazlar = t1.Result;
-            _iller = t2.Result;
-            _bolgeler = t3.Result;
-            _bagiscilar = t4.Result;
+            _tasinmazlar = t1.Result.IsSuccess ? t1.Result.Value : new();
+            _iller = t2.Result.IsSuccess ? t2.Result.Value : new();
+            _bolgeler = t3.Result.IsSuccess ? t3.Result.Value : new();
+            _bagiscilar = t4.Result.IsSuccess ? t4.Result.Value : new();
 
             BuildLookups();
             Compute();

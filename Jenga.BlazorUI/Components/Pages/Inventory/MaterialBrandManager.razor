@@ -21,8 +21,10 @@
     {
         if (firstRender && !_dataLoaded)
         {
-            brands = await MaterialBrandService.GetAllAsync();
-            categories = await MaterialCategoryService.GetAllAsync();
+            var brandsR = await MaterialBrandService.GetAllAsync();
+            brands = brandsR.IsSuccess ? brandsR.Value : new();
+            var catsR = await MaterialCategoryService.GetAllAsync();
+            categories = catsR.IsSuccess ? catsR.Value : new();
             _dataLoaded = true;
             StateHasChanged();
         }

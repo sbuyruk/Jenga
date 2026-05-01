@@ -20,6 +20,6 @@ namespace Jenga.Models.Sistem
         [ValidateNever]
         public string? Degistiren { get; set; }
         [ValidateNever]
-        public DateTime? DegistirmeTarihi { get; set; } = DateTime.Now;
+        public DateTime? DegistirmeTarihi { get; set; }
     }
 }

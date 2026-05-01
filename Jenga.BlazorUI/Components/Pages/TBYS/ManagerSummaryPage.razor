@@ -155,15 +155,15 @@
         try
         {
             // Load shared datasets
-            tasinmazlar = await TasinmazService.GetAllAsync(cancellationToken);
-            kiraSozlesmeler = await KiraSozlesmeService.GetAllAsync(cancellationToken);
-            bagiscilar = await TasinmazBagisciService.GetAllAsync(cancellationToken);
-            iller = await IlService.GetAllAsync(cancellationToken);
-            bolgeler = await BolgeService.GetAllAsync(cancellationToken);
-            bagislar = await BagisService.GetAllAsync(cancellationToken);
+            tasinmazlar = (await TasinmazService.GetAllAsync(cancellationToken)) is { IsSuccess: true } tRes ? tRes.Value : new();
+            kiraSozlesmeler = (await KiraSozlesmeService.GetAllAsync(cancellationToken)) is { IsSuccess: true } ksRes ? ksRes.Value : new();
+            bagiscilar = (await TasinmazBagisciService.GetAllAsync(cancellationToken)) is { IsSuccess: true } bRes2 ? bRes2.Value : new();
+            iller = (await IlService.GetAllAsync(cancellationToken)) is { IsSuccess: true } ilRes ? ilRes.Value : new();
+            bolgeler = (await BolgeService.GetAllAsync(cancellationToken)) is { IsSuccess: true } bRes ? bRes.Value : new();
+            bagislar = (await BagisService.GetAllAsync(cancellationToken)) is { IsSuccess: true } bgRes ? bgRes.Value : new();
 
             // Load payment plans and prepare charts
-            odemeler = await OdemeService.GetAllAsync(cancellationToken);
+            odemeler = (await OdemeService.GetAllAsync(cancellationToken)) is { IsSuccess: true } odRes ? odRes.Value : new();
             PrepareKiraGeliriChart();
             PrepareKiraAylikSon3YilChart();
 

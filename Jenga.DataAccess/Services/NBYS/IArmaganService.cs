@@ -1,18 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Jenga.Models.NBYS;
+﻿using Jenga.Models.NBYS;
+using Jenga.Utility.Results;
 
 namespace Jenga.DataAccess.Services.NBYS
 {
     public interface IArmaganService
     {
-        Task<List<Armagan>> GetAllAsync(CancellationToken cancellationToken = default);
-        Task<Armagan?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
-        Task<bool> AddAsync(Armagan model, CancellationToken cancellationToken = default);
-        Task<bool> UpdateAsync(Armagan model, CancellationToken cancellationToken = default);
-        Task<bool> DeleteAsync(Armagan model, CancellationToken cancellationToken = default);
+        Task<Result<List<Armagan>>> GetAllAsync(CancellationToken cancellationToken = default);
+        Task<Result<Armagan>> GetByIdAsync(int id, CancellationToken cancellationToken = default);
+        Task<Result> AddAsync(Armagan model, CancellationToken cancellationToken = default);
+        Task<Result> UpdateAsync(Armagan model, CancellationToken cancellationToken = default);
+        Task<Result> DeleteAsync(Armagan model, CancellationToken cancellationToken = default);
     }
 }

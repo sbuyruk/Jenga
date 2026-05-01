@@ -111,7 +111,8 @@
     {
         try
         {
-            persons = await PersonelService.GetCalisanPersonelAsync();
+            var personResult = await PersonelService.GetCalisanPersonelAsync();
+            persons = personResult.IsSuccess ? personResult.Value : new List<Personel>();
             filteredPersons = persons;
         }
         catch
@@ -153,17 +154,21 @@
         // Try assign
         try
         {
-            var added = await PersonelLocationService.AssignLocationToPersonAsync(Editing, Editing.Olusturan);
-            if (!added)
+            var addedResult = await PersonelLocationService.AssignLocationToPersonAsync(Editing, Editing.Olusturan);
+            if (!addedResult.IsSuccess)
             {
-                ToastService.ShowToast("Bu atama zaten mevcut veya eklenemedi.", ToastType.Warning, 4000);
+                ToastService.ShowToast(addedResult.Error.Message ?? "Bu atama zaten mevcut veya eklenemedi.", ToastType.Warning, 4000);
                 return;
             }
 
             // If IsPrimary flag set, ensure primary rule enforced
             if (Editing.IsPrimary)
             {
-                await PersonelLocationService.SetPrimaryAssignmentAsync(Editing.PersonelId, Editing.LocationId, Editing.Olusturan);
+                var primaryResult = await PersonelLocationService.SetPrimaryAssignmentAsync(Editing.PersonelId, Editing.LocationId, Editing.Olusturan);
+                if (!primaryResult.IsSuccess)
+                {
+                    ToastService.ShowToast(primaryResult.Error.Message ?? "Birincil atama ayarlanamadı.", ToastType.Warning, 4000);
+                }
             }
 
             ToastService.ShowToast("Personel başarıyla atandı.", ToastType.Success, 3000);

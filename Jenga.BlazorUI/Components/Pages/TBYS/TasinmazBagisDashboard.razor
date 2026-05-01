@@ -1127,15 +1127,15 @@
 
             await Task.WhenAll(t1, t2, t3, t4, t5, t6, t7, t8, t9);
 
-            _bagiscilar   = t1.Result;
-            _bagislar     = t2.Result;
-            _vasiyetciler = t3.Result;
-            _taahhutler   = t4.Result;
-            _talepler     = t5.Result;
-            _yakinlar     = t6.Result;
-            _tasinmazlar  = t7.Result;
-            _iller        = t8.Result;
-            _bolgeler     = t9.Result;
+            _bagiscilar   = t1.Result.IsSuccess ? t1.Result.Value : new();
+            _bagislar     = t2.Result.IsSuccess ? t2.Result.Value : new();
+            _vasiyetciler = t3.Result.IsSuccess ? t3.Result.Value : new();
+            _taahhutler   = t4.Result.IsSuccess ? t4.Result.Value : new();
+            _talepler     = t5.Result.IsSuccess ? t5.Result.Value : new();
+            _yakinlar     = t6.Result.IsSuccess ? t6.Result.Value : new();
+            _tasinmazlar  = t7.Result.IsSuccess ? t7.Result.Value : new();
+            _iller        = t8.Result.IsSuccess ? t8.Result.Value : new();
+            _bolgeler     = t9.Result.IsSuccess ? t9.Result.Value : new();
 
             ComputeCounters();
             PrepareCharts();

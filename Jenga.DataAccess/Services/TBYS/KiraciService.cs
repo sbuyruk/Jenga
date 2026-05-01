@@ -1,6 +1,7 @@
 using Jenga.DataAccess.Data;
 using Jenga.Models.TBYS;
 using Jenga.Utility.Logging;
+using Jenga.Utility.Results;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
@@ -8,6 +9,8 @@ namespace Jenga.DataAccess.Services.TBYS
 {
     public class KiraciService : IKiraciService
     {
+        private const string Source = nameof(KiraciService);
+
         private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
         private readonly ILogService _logService;
 
@@ -17,85 +20,119 @@ namespace Jenga.DataAccess.Services.TBYS
             _logService = logService;
         }
 
-        public async Task<List<Kiraci>> GetAllAsync(CancellationToken cancellationToken = default)
+        public async Task<Result<List<Kiraci>>> GetAllAsync(CancellationToken cancellationToken = default)
         {
-            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-            return await db.Kiraci_Table.AsNoTracking().ToListAsync(cancellationToken);
+            try
+            {
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                var list = await db.Kiraci_Table.AsNoTracking().ToListAsync(cancellationToken);
+                return Result<List<Kiraci>>.Success(list);
+            }
+            catch (Exception ex)
+            {
+                _logService?.LogError($"{Source}.GetAllAsync hata.", ex);
+                return Result<List<Kiraci>>.Failure(Error.Unexpected("Kiracı listesi alınamadı.", ex));
+            }
         }
 
-        public async Task<Kiraci?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+        public async Task<Result<Kiraci>> GetByIdAsync(int id, CancellationToken cancellationToken = default)
         {
-            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-            return await db.Kiraci_Table.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+            try
+            {
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                var entity = await db.Kiraci_Table.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+                return entity is null
+                    ? Result<Kiraci>.Failure(Error.NotFound("Kiracı bulunamadı."))
+                    : Result<Kiraci>.Success(entity);
+            }
+            catch (Exception ex)
+            {
+                _logService?.LogError($"{Source}.GetByIdAsync hata.", ex);
+                return Result<Kiraci>.Failure(Error.Unexpected("Kiracı alınamadı.", ex));
+            }
         }
 
-        public async Task<bool> AddAsync(Kiraci kiraci, CancellationToken cancellationToken = default)
+        public async Task<Result> AddAsync(Kiraci kiraci, CancellationToken cancellationToken = default)
         {
-            if (kiraci == null) throw new ArgumentNullException(nameof(kiraci));
+            if (kiraci is null)
+                return Result.Failure(Error.Validation("Kiracı kaydı boş olamaz."));
 
             var name = (kiraci.Adi ?? string.Empty).Trim();
             var surname = (kiraci.Soyadi ?? string.Empty).Trim();
             if (string.IsNullOrWhiteSpace(name) && string.IsNullOrWhiteSpace(surname))
-            {
-                _logService?.LogWarning("KiraciService.AddAsync: Adi veya Soyadi boş olamaz.");
-                return false;
-            }
+                return Result.Failure(Error.Validation("Adi veya Soyadi boş olamaz."));
 
             try
             {
                 await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
                 await db.Kiraci_Table.AddAsync(kiraci, cancellationToken);
                 await db.SaveChangesAsync(cancellationToken);
-                return true;
+                return Result.Success();
             }
             catch (Exception ex)
             {
-                _logService?.LogError("Kiracı eklerken hata.", ex);
-                throw;
+                _logService?.LogError($"{Source}.AddAsync hata.", ex);
+                return Result.Failure(Error.Unexpected("Kiracı eklenemedi.", ex));
             }
         }
 
-        public async Task<bool> UpdateAsync(Kiraci kiraci, CancellationToken cancellationToken = default)
+        public async Task<Result> UpdateAsync(Kiraci kiraci, CancellationToken cancellationToken = default)
         {
-            if (kiraci == null) throw new ArgumentNullException(nameof(kiraci));
+            if (kiraci is null)
+                return Result.Failure(Error.Validation("Kiracı kaydı boş olamaz."));
 
             var name = (kiraci.Adi ?? string.Empty).Trim();
             var surname = (kiraci.Soyadi ?? string.Empty).Trim();
             if (string.IsNullOrWhiteSpace(name) && string.IsNullOrWhiteSpace(surname))
-            {
-                _logService?.LogWarning("KiraciService.UpdateAsync: Adi veya Soyadi boş olamaz.");
-                return false;
-            }
+                return Result.Failure(Error.Validation("Adi veya Soyadi boş olamaz."));
 
             try
             {
                 await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
                 db.Kiraci_Table.Update(kiraci);
                 await db.SaveChangesAsync(cancellationToken);
-                return true;
+                return Result.Success();
             }
             catch (Exception ex)
             {
-                _logService?.LogError("Kiracı güncellerken hata.", ex);
-                throw;
+                _logService?.LogError($"{Source}.UpdateAsync hata.", ex);
+                return Result.Failure(Error.Unexpected("Kiracı güncellenemedi.", ex));
             }
         }
 
-        public async Task<bool> DeleteAsync(int kiraciId, CancellationToken cancellationToken = default)
+        public async Task<Result> DeleteAsync(int kiraciId, CancellationToken cancellationToken = default)
         {
-            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-            var entity = await db.Kiraci_Table.FirstOrDefaultAsync(x => x.Id == kiraciId, cancellationToken);
-            if (entity == null) return false;
+            try
+            {
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                var entity = await db.Kiraci_Table.FirstOrDefaultAsync(x => x.Id == kiraciId, cancellationToken);
+                if (entity is null)
+                    return Result.Failure(Error.NotFound("Silinecek kiracı bulunamadı."));
 
-            db.Kiraci_Table.Remove(entity);
-            await db.SaveChangesAsync(cancellationToken);
-            return true;
+                db.Kiraci_Table.Remove(entity);
+                await db.SaveChangesAsync(cancellationToken);
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                _logService?.LogError($"{Source}.DeleteAsync hata.", ex);
+                return Result.Failure(Error.Unexpected("Kiracı silinemedi.", ex));
+            }
         }
 
-        public async Task<bool> AnyAsync(Expression<Func<Kiraci, bool>> predicate, CancellationToken cancellationToken = default)
+        public async Task<Result<bool>> AnyAsync(Expression<Func<Kiraci, bool>> predicate, CancellationToken cancellationToken = default)
         {
-            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-            return await db.Kiraci_Table.AnyAsync(predicate, cancellationToken);
+            try
+            {
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                var any = await db.Kiraci_Table.AnyAsync(predicate, cancellationToken);
+                return Result<bool>.Success(any);
+            }
+            catch (Exception ex)
+            {
+                _logService?.LogError($"{Source}.AnyAsync hata.", ex);
+                return Result<bool>.Failure(Error.Unexpected("Kiracı sorgulanamadı.", ex));
+            }
         }
     }
 }

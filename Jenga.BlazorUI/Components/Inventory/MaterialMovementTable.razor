@@ -68,7 +68,8 @@ else
 
         if (MaterialId > 0)
         {
-            var list = await MaterialMovementService.GetMovementsByMaterialIdAsync(MaterialId);
+            var listR = await MaterialMovementService.GetMovementsByMaterialIdAsync(MaterialId);
+            var list = listR.IsSuccess ? listR.Value : new();
             movements = (MaxItems > 0)
                 ? list.OrderByDescending(m => m.MovementDate).Take(MaxItems).ToList()
                 : list.OrderByDescending(m => m.MovementDate).ToList();

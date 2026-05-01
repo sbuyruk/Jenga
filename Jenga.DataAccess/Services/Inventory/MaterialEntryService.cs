@@ -1,5 +1,7 @@
 ﻿using Jenga.DataAccess.Data;
 using Jenga.Models.Inventory;
+using Jenga.Utility.Logging;
+using Jenga.Utility.Results;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
@@ -7,22 +9,43 @@ namespace Jenga.DataAccess.Services.Inventory
 {
     public class MaterialEntryService : IMaterialEntryService
     {
-        private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
+        private const string Source = nameof(MaterialEntryService);
 
-        public MaterialEntryService(IDbContextFactory<ApplicationDbContext> dbFactory)
+        private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
+        private readonly IDbContextScopeFactory _scopeFactory;
+        private readonly ILogService _logService;
+
+        public MaterialEntryService(
+            IDbContextFactory<ApplicationDbContext> dbFactory,
+            IDbContextScopeFactory scopeFactory,
+            ILogService logService)
         {
             _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
+            _scopeFactory = scopeFactory ?? throw new ArgumentNullException(nameof(scopeFactory));
+            _logService = logService;
         }
 
-        public async Task<List<MaterialEntry>> GetAllAsync(CancellationToken cancellationToken = default)
+        public async Task<Result<List<MaterialEntry>>> GetAllAsync(CancellationToken cancellationToken = default)
         {
-            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-            return await db.MaterialEntry_Table.AsNoTracking().ToListAsync(cancellationToken);
+            try
+            {
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                var list = await db.MaterialEntry_Table.AsNoTracking().ToListAsync(cancellationToken);
+                return Result.Success(list);
+            }
+            catch (Exception ex)
+            {
+                _logService?.LogException(ex, $"{Source}.GetAllAsync");
+                return Result.Failure<List<MaterialEntry>>(Error.Unexpected("Giriş kayıtları alınamadı.", ex, "MaterialEntry.GetAll.Failed"));
+            }
         }
 
-        public async Task<bool> AddAsync(MaterialEntry entry, string? modifiedBy, CancellationToken cancellationToken = default)
+        public async Task<Result> AddAsync(MaterialEntry entry, string? modifiedBy = null, CancellationToken cancellationToken = default)
         {
-            if (entry == null) throw new ArgumentNullException(nameof(entry));
+            if (entry == null)
+                return Result.Failure(Error.Validation("Giriş kaydı boş olamaz.", "MaterialEntry.Null"));
+            try
+            {
 
             int? actualLocationId = entry.LocationId != 0 ? entry.LocationId : null;
             int? actualPersonnelId = (entry.PersonelId.HasValue && entry.PersonelId.Value != 0) ? entry.PersonelId : null;
@@ -35,7 +58,7 @@ namespace Jenga.DataAccess.Services.Inventory
             //   3) MaterialMovement "Giriş" logu ekle
             //   4) Material.IsAsset ise N adet MaterialAsset üret
             // Hata olursa using sonu rollback eder; "entry kaldı ama inventory/movement/asset eksik" tutarsızlığı oluşmaz.
-            await using var scope = await DbContextScope.CreateAsync(_dbFactory, cancellationToken);
+            await using var scope = await _scopeFactory.CreateAsync(cancellationToken);
             var db = scope.Context;
 
             // 1) MaterialEntry ekle. Id'ye sonraki adımlarda ihtiyacımız olduğu için ara SaveChanges yapıyoruz;
@@ -132,12 +155,26 @@ namespace Jenga.DataAccess.Services.Inventory
             }
 
             await scope.CommitAsync(cancellationToken);
-            return true;
+            return Result.Success();
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logService?.LogException(ex, $"{Source}.AddAsync");
+                return Result.Failure(Error.Validation(ex.Message, "MaterialEntry.Add.Invalid"));
+            }
+            catch (Exception ex)
+            {
+                _logService?.LogException(ex, $"{Source}.AddAsync");
+                return Result.Failure(Error.Unexpected("Giriş kaydı eklenemedi.", ex, "MaterialEntry.Add.Failed"));
+            }
         }
 
-        public async Task<bool> UpdateMaterialEntryAndInventoryAsync(MaterialEntry entry, string? currentUserName, CancellationToken cancellationToken = default)
+        public async Task<Result> UpdateMaterialEntryAndInventoryAsync(MaterialEntry entry, string? currentUserName, CancellationToken cancellationToken = default)
         {
-            if (entry == null) throw new ArgumentNullException(nameof(entry));
+            if (entry == null)
+                return Result.Failure(Error.Validation("Giriş kaydı boş olamaz.", "MaterialEntry.Null"));
+            try
+            {
             currentUserName ??= Environment.UserName;
 
             // Canary (Adım 3): tek context + tek transaction içinde
@@ -149,7 +186,7 @@ namespace Jenga.DataAccess.Services.Inventory
             //   4) MaterialAsset senkronu (Tech-Debt #1 — Phase A):
             //      bu entry'den doğmuş ve hâlâ "el değmemiş" asset'ler güncellenir/eklenir/silinir.
             //   5) MaterialMovement "Düzeltme" / "Düzenleme" logu ekle
-            await using var scope = await DbContextScope.CreateAsync(_dbFactory, cancellationToken);
+            await using var scope = await _scopeFactory.CreateAsync(cancellationToken);
             var db = scope.Context;
 
             var oldEntry = await db.MaterialEntry_Table
@@ -273,7 +310,18 @@ namespace Jenga.DataAccess.Services.Inventory
             await db.MaterialMovement_Table.AddAsync(movement, cancellationToken);
 
             await scope.CommitAsync(cancellationToken);
-            return true;
+            return Result.Success();
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logService?.LogException(ex, $"{Source}.UpdateMaterialEntryAndInventoryAsync");
+                return Result.Failure(Error.Validation(ex.Message, "MaterialEntry.Update.Invalid"));
+            }
+            catch (Exception ex)
+            {
+                _logService?.LogException(ex, $"{Source}.UpdateMaterialEntryAndInventoryAsync");
+                return Result.Failure(Error.Unexpected("Giriş kaydı güncellenemedi.", ex, "MaterialEntry.Update.Failed"));
+            }
         }
 
         // Inventory upsert helper — orijinal AddOrUpdateInventoryAsync semantiği aynı context/transaction içinde.
@@ -453,9 +501,10 @@ namespace Jenga.DataAccess.Services.Inventory
             }
         }
 
-        public async Task<bool> DeleteMaterialEntryAndUpdateInventoryAsync(MaterialEntry entryToDelete, string? currentUserName, CancellationToken cancellationToken = default)
+        public async Task<Result> DeleteMaterialEntryAndUpdateInventoryAsync(MaterialEntry entryToDelete, string? currentUserName, CancellationToken cancellationToken = default)
         {
-            if (entryToDelete == null) return false;
+            if (entryToDelete == null)
+                return Result.Failure(Error.Validation("Giriş kaydı boş olamaz.", "MaterialEntry.Null"));
             currentUserName ??= Environment.UserName;
 
             int? location = entryToDelete.LocationId != 0 ? entryToDelete.LocationId : null;
@@ -471,7 +520,7 @@ namespace Jenga.DataAccess.Services.Inventory
             // Hata olursa using sonu rollback eder; "stok düştü ama entry kaldı" gibi tutarsızlıklar oluşmaz.
             try
             {
-                await using var scope = await DbContextScope.CreateAsync(_dbFactory, cancellationToken);
+                await using var scope = await _scopeFactory.CreateAsync(cancellationToken);
                 var db = scope.Context;
 
                 // 1) Inventory satırını bul (5'li anahtar, NULL eşleşmeleri dahil).
@@ -560,18 +609,33 @@ namespace Jenga.DataAccess.Services.Inventory
                 await db.MaterialMovement_Table.AddAsync(movement, cancellationToken);
 
                 await scope.CommitAsync(cancellationToken);
-                return true;
+                return Result.Success();
             }
-            catch
+            catch (InvalidOperationException ex)
             {
-                throw;
+                _logService?.LogException(ex, $"{Source}.DeleteMaterialEntryAndUpdateInventoryAsync");
+                return Result.Failure(Error.Validation(ex.Message, "MaterialEntry.Delete.Invalid"));
+            }
+            catch (Exception ex)
+            {
+                _logService?.LogException(ex, $"{Source}.DeleteMaterialEntryAndUpdateInventoryAsync");
+                return Result.Failure(Error.Unexpected("Giriş kaydı silinemedi.", ex, "MaterialEntry.Delete.Failed"));
             }
         }
 
-        public async Task<bool> AnyAsync(Expression<Func<MaterialEntry, bool>> predicate)
+        public async Task<Result<bool>> AnyAsync(Expression<Func<MaterialEntry, bool>> predicate)
         {
-            await using var db = await _dbFactory.CreateDbContextAsync();
-            return await db.MaterialEntry_Table.AsNoTracking().AnyAsync(predicate);
+            try
+            {
+                await using var db = await _dbFactory.CreateDbContextAsync();
+                var any = await db.MaterialEntry_Table.AsNoTracking().AnyAsync(predicate);
+                return Result.Success(any);
+            }
+            catch (Exception ex)
+            {
+                _logService?.LogException(ex, $"{Source}.AnyAsync");
+                return Result.Failure<bool>(Error.Unexpected("Giriş kaydı sorgusu yapılamadı.", ex, "MaterialEntry.Any.Failed"));
+            }
         }
     }
 }

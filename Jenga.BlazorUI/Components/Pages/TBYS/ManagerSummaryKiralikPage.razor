@@ -121,13 +121,13 @@
 
         try
         {
-            tasinmazlar = await TasinmazService.GetAllAsync(cancellationToken);
-            kiraSozlesmeler = await KiraSozlesmeService.GetAllAsync(cancellationToken);
-            iller = await IlService.GetAllAsync(cancellationToken);
-            bolgeler = await BolgeService.GetAllAsync(cancellationToken);
+            tasinmazlar = (await TasinmazService.GetAllAsync(cancellationToken)) is { IsSuccess: true } tRes ? tRes.Value : new();
+            kiraSozlesmeler = (await KiraSozlesmeService.GetAllAsync(cancellationToken)) is { IsSuccess: true } ksRes ? ksRes.Value : new();
+            iller = (await IlService.GetAllAsync(cancellationToken)) is { IsSuccess: true } ilRes ? ilRes.Value : new();
+            bolgeler = (await BolgeService.GetAllAsync(cancellationToken)) is { IsSuccess: true } bRes ? bRes.Value : new();
 
-            odemeler = await OdemeService.GetAllAsyncKiralar(cancellationToken);
-            yasalFaizler = await YasalFaizService.GetAllAsync(cancellationToken);
+            odemeler = (await OdemeService.GetAllAsyncKiralar(cancellationToken)) is { IsSuccess: true } odRes ? odRes.Value : new();
+            yasalFaizler = (await YasalFaizService.GetAllAsync(cancellationToken)) is { IsSuccess: true } yfRes ? yfRes.Value : new();
 
             PrepareKiraGeliriChart();
             PrepareKiraAylikSon3YilChart();

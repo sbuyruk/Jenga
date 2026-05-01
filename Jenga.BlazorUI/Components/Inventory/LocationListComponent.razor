@@ -80,7 +80,7 @@ else
             if (selectedLocation.Id == 0)
             {
                 var saved = await LocationService.AddAsync(selectedLocation);
-                if (saved)
+                if (saved.IsSuccess)
                 {
                     Locations.Add(selectedLocation);
                 }

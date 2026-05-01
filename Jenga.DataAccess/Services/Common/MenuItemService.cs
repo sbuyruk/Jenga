@@ -2,12 +2,14 @@
 using Jenga.Models.Common;
 using Jenga.Utility.Helpers;
 using Jenga.Utility.Logging;
+using Jenga.Utility.Results;
 using Microsoft.EntityFrameworkCore;
 
 namespace Jenga.DataAccess.Services.Common
 {
     public class MenuItemService : IMenuItemService
     {
+        private const string Source = nameof(MenuItemService);
         private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
         private readonly ILogService _logService;
 
@@ -17,103 +19,159 @@ namespace Jenga.DataAccess.Services.Common
             _logService = logService;
         }
 
-        public async Task<List<Models.Common.MenuItem>> GetAllAsync(CancellationToken cancellationToken = default)
+        public async Task<Result<List<MenuItem>>> GetAllAsync(CancellationToken cancellationToken = default)
         {
             try
             {
                 await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-                return await db.MenuItem_Table.AsNoTracking().ToListAsync(cancellationToken);
+                var list = await db.MenuItem_Table.AsNoTracking().ToListAsync(cancellationToken);
+                return Result.Success(list);
             }
             catch (Exception ex)
             {
-                _logService.LogError("MenuItemService.GetAllAsync", ex);
-                return new();
+                _logService?.LogException(ex, $"{Source}.GetAllAsync");
+                return Result.Failure<List<MenuItem>>(Error.Unexpected("Menü kayıtları getirilemedi.", ex, "Menu.GetAll.Failed"));
             }
         }
 
-        public async Task<Models.Common.MenuItem?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+        public async Task<Result<MenuItem>> GetByIdAsync(int id, CancellationToken cancellationToken = default)
         {
-            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-            return await db.MenuItem_Table.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
-        }
-
-        public async Task<bool> AddAsync(Models.Common.MenuItem menuItem, CancellationToken cancellationToken = default)
-        {
-            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-            await db.MenuItem_Table.AddAsync(menuItem, cancellationToken);
-            await db.SaveChangesAsync(cancellationToken);
-            return true;
-        }
-
-        public async Task<bool> UpdateAsync(Models.Common.MenuItem menuItem, CancellationToken cancellationToken = default)
-        {
-            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-            db.MenuItem_Table.Update(menuItem);
-            await db.SaveChangesAsync(cancellationToken);
-            return true;
-        }
-
-        public async Task<bool> DeleteAsync(Models.Common.MenuItem menuItem, CancellationToken cancellationToken = default)
-        {
-            if (menuItem is null) return false;
-
-            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-            db.MenuItem_Table.Remove(menuItem);
-            await db.SaveChangesAsync(cancellationToken);
-            return true;
-        }
-
-        public async Task<List<MenuItem>> GetRecursiveMenuAsync()
-        {
-            await using var db = await _dbFactory.CreateDbContextAsync();
-            var visible = await db.MenuItem_Table
-                .AsNoTracking()
-                .Where(m => m.IsVisible == true)
-                .ToListAsync();
-
-            visible.ForEach(m =>
-                m.Url = string.IsNullOrWhiteSpace(m.Url) ? "#" : m.Url!
-            );
-
-            return MenuHelper.BuildTree(visible);
-        }
-
-        public async Task<List<MenuItem>> GetAuthorizedMenuAsync(int personelId)
-        {
-            await using var db = await _dbFactory.CreateDbContextAsync();
-
-            var roleIds = await db.PersonelRol_Table
-                .AsNoTracking()
-                .Where(x => x.PersonelId == personelId)
-                .Select(x => x.RoleId)
-                .ToListAsync();
-
-            if (roleIds.Count == 0)
+            try
             {
-                return new List<MenuItem>();
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                var entity = await db.MenuItem_Table.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+                if (entity is null)
+                    return Result.Failure<MenuItem>(Error.NotFound($"Menü bulunamadı (Id={id}).", "Menu.NotFound"));
+                return Result.Success(entity);
             }
-
-            var menuIds = await db.RolMenu_Table
-                .AsNoTracking()
-                .Where(x => roleIds.Contains(x.RoleId))
-                .Select(x => x.MenuId)
-                .ToListAsync();
-
-            if (menuIds.Count == 0)
+            catch (Exception ex)
             {
-                return new List<MenuItem>();
+                _logService?.LogException(ex, $"{Source}.GetByIdAsync");
+                return Result.Failure<MenuItem>(Error.Unexpected("Menü getirilemedi.", ex, "Menu.GetById.Failed"));
             }
+        }
 
-            var allMenus = await db.MenuItem_Table
-                .AsNoTracking()
-                .Where(x => menuIds.Contains(x.Id) && x.IsVisible == true)
-                .ToListAsync();
+        public async Task<Result> AddAsync(MenuItem menuItem, CancellationToken cancellationToken = default)
+        {
+            if (menuItem is null)
+                return Result.Failure(Error.Validation("Menü boş olamaz.", "Menu.Null"));
+            try
+            {
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                await db.MenuItem_Table.AddAsync(menuItem, cancellationToken);
+                await db.SaveChangesAsync(cancellationToken);
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                _logService?.LogException(ex, $"{Source}.AddAsync");
+                return Result.Failure(Error.Unexpected("Menü eklenemedi.", ex, "Menu.Add.Failed"));
+            }
+        }
 
-            allMenus.ForEach(m =>
-                m.Url = string.IsNullOrWhiteSpace(m.Url) ? "#" : m.Url!
-            );
+        public async Task<Result> UpdateAsync(MenuItem menuItem, CancellationToken cancellationToken = default)
+        {
+            if (menuItem is null)
+                return Result.Failure(Error.Validation("Menü boş olamaz.", "Menu.Null"));
+            try
+            {
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                db.MenuItem_Table.Update(menuItem);
+                await db.SaveChangesAsync(cancellationToken);
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                _logService?.LogException(ex, $"{Source}.UpdateAsync");
+                return Result.Failure(Error.Unexpected("Menü güncellenemedi.", ex, "Menu.Update.Failed"));
+            }
+        }
 
-            return MenuHelper.BuildTree(allMenus);
+        public async Task<Result> DeleteAsync(MenuItem menuItem, CancellationToken cancellationToken = default)
+        {
+            if (menuItem is null)
+                return Result.Failure(Error.Validation("Menü boş olamaz.", "Menu.Null"));
+            try
+            {
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                db.MenuItem_Table.Remove(menuItem);
+                await db.SaveChangesAsync(cancellationToken);
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                _logService?.LogException(ex, $"{Source}.DeleteAsync");
+                return Result.Failure(Error.Unexpected("Menü silinemedi.", ex, "Menu.Delete.Failed"));
+            }
+        }
+
+        public async Task<Result<List<MenuItem>>> GetRecursiveMenuAsync()
+        {
+            try
+            {
+                await using var db = await _dbFactory.CreateDbContextAsync();
+                var visible = await db.MenuItem_Table
+                    .AsNoTracking()
+                    .Where(m => m.IsVisible == true)
+                    .ToListAsync();
+
+                visible.ForEach(m =>
+                    m.Url = string.IsNullOrWhiteSpace(m.Url) ? "#" : m.Url!
+                );
+
+                return Result.Success(MenuHelper.BuildTree(visible));
+            }
+            catch (Exception ex)
+            {
+                _logService?.LogException(ex, $"{Source}.GetRecursiveMenuAsync");
+                return Result.Failure<List<MenuItem>>(Error.Unexpected("Menü ağacı oluşturulamadı.", ex, "Menu.Recursive.Failed"));
+            }
+        }
+
+        public async Task<Result<List<MenuItem>>> GetAuthorizedMenuAsync(int personelId)
+        {
+            try
+            {
+                await using var db = await _dbFactory.CreateDbContextAsync();
+
+                var roleIds = await db.PersonelRol_Table
+                    .AsNoTracking()
+                    .Where(x => x.PersonelId == personelId)
+                    .Select(x => x.RoleId)
+                    .ToListAsync();
+
+                if (roleIds.Count == 0)
+                {
+                    return Result.Success(new List<MenuItem>());
+                }
+
+                var menuIds = await db.RolMenu_Table
+                    .AsNoTracking()
+                    .Where(x => roleIds.Contains(x.RoleId))
+                    .Select(x => x.MenuId)
+                    .ToListAsync();
+
+                if (menuIds.Count == 0)
+                {
+                    return Result.Success(new List<MenuItem>());
+                }
+
+                var allMenus = await db.MenuItem_Table
+                    .AsNoTracking()
+                    .Where(x => menuIds.Contains(x.Id) && x.IsVisible == true)
+                    .ToListAsync();
+
+                allMenus.ForEach(m =>
+                    m.Url = string.IsNullOrWhiteSpace(m.Url) ? "#" : m.Url!
+                );
+
+                return Result.Success(MenuHelper.BuildTree(allMenus));
+            }
+            catch (Exception ex)
+            {
+                _logService?.LogException(ex, $"{Source}.GetAuthorizedMenuAsync");
+                return Result.Failure<List<MenuItem>>(Error.Unexpected("Yetkili menü oluşturulamadı.", ex, "Menu.Authorized.Failed"));
+            }
         }
     }
 }

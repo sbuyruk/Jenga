@@ -18,7 +18,8 @@
     {
         if (firstRender && !_dataLoaded)
         {
-            categories = await MaterialCategoryService.GetAllAsync();
+            var catsR = await MaterialCategoryService.GetAllAsync();
+            categories = catsR.IsSuccess ? catsR.Value : new();
             _dataLoaded = true;
             StateHasChanged();
         }

@@ -1,6 +1,7 @@
-﻿using Jenga.DataAccess.Data;
+using Jenga.DataAccess.Data;
 using Jenga.Models.Common;
 using Jenga.Utility.Logging;
+using Jenga.Utility.Results;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,75 +12,122 @@ namespace Jenga.DataAccess.Services.Common
 {
     public class RoleService : IRoleService
     {
+        private const string Source = nameof(RoleService);
+
         private readonly ILogService _logService;
         private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
+        private readonly IDbContextScopeFactory _scopeFactory;
 
         public RoleService(
             ILogService logService,
-            IDbContextFactory<ApplicationDbContext> dbFactory)
+            IDbContextFactory<ApplicationDbContext> dbFactory,
+            IDbContextScopeFactory scopeFactory)
         {
             _logService = logService ?? throw new ArgumentNullException(nameof(logService));
             _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
+            _scopeFactory = scopeFactory ?? throw new ArgumentNullException(nameof(scopeFactory));
         }
 
-        public async Task<List<Role>> GetAllAsync(CancellationToken cancellationToken = default)
+        public async Task<Result<List<Role>>> GetAllAsync(CancellationToken cancellationToken = default)
         {
-            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-            return await db.Set<Role>().AsNoTracking().ToListAsync(cancellationToken);
-        }
-
-        public async Task<bool> AddAsync(Role role, CancellationToken cancellationToken = default)
-        {
-            if (role == null) throw new ArgumentNullException(nameof(role));
-
-            role.Olusturan ??= Environment.UserName;
-            role.OlusturmaTarihi ??= DateTime.Now;
-
-            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-            await db.Set<Role>().AddAsync(role, cancellationToken);
-            await db.SaveChangesAsync(cancellationToken);
-            return true;
-        }
-
-        public async Task<bool> UpdateAsync(Role role, CancellationToken cancellationToken = default)
-        {
-            if (role == null) throw new ArgumentNullException(nameof(role));
-
-            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-            var trackedRole = await db.Set<Role>()
-                .FirstOrDefaultAsync(r => r.Id == role.Id, cancellationToken);
-            if (trackedRole == null)
-                throw new InvalidOperationException($"Güncellenecek Role bulunamadı (Id={role.Id}).");
-
-            db.Entry(trackedRole).CurrentValues.SetValues(role);
-            trackedRole.Degistiren = Environment.UserName;
-            trackedRole.DegistirmeTarihi = DateTime.Now;
-
-            await db.SaveChangesAsync(cancellationToken);
-            return true;
-        }
-
-        public async Task<Role?> GetByIdWithRelationsAsync(int id, CancellationToken cancellationToken = default)
-        {
-            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-            return await db.Set<Role>()
-                .Include(r => r.PersonelRoles!)
-                    .ThenInclude(pr => pr.Personel)
-                .Include(r => r.RoleMenus!)
-                    .ThenInclude(rm => rm.Menu)
-                .AsNoTracking()
-                .FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
-        }
-
-        public async Task<bool> DeleteAsync(Role role, CancellationToken cancellationToken = default)
-        {
-            if (role == null) throw new ArgumentNullException(nameof(role));
-
-            // Canary: tek context + tek transaction içinde join + role silme.
-            // Hata olursa using sonu rollback eder; "join'ler silindi ama role kaldı" durumu oluşmaz.
             try
             {
-                await using var scope = await DbContextScope.CreateAsync(_dbFactory, cancellationToken);
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                var list = await db.Set<Role>().AsNoTracking().ToListAsync(cancellationToken);
+                return Result.Success(list);
+            }
+            catch (Exception ex)
+            {
+                _logService.LogException(ex, $"{Source}.GetAllAsync");
+                return Result.Failure<List<Role>>(Error.Unexpected("Roller getirilemedi.", ex, "Role.GetAll.Failed"));
+            }
+        }
+
+        public async Task<Result> AddAsync(Role role, CancellationToken cancellationToken = default)
+        {
+            if (role is null)
+                return Result.Failure(Error.Validation("Role boş olamaz.", "Role.Null"));
+
+            try
+            {
+                role.Olusturan ??= Environment.UserName;
+                role.OlusturmaTarihi ??= DateTime.Now;
+
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                await db.Set<Role>().AddAsync(role, cancellationToken);
+                await db.SaveChangesAsync(cancellationToken);
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                _logService.LogException(ex, $"{Source}.AddAsync");
+                return Result.Failure(Error.Unexpected("Rol eklenemedi.", ex, "Role.Add.Failed"));
+            }
+        }
+
+        public async Task<Result> UpdateAsync(Role role, CancellationToken cancellationToken = default)
+        {
+            if (role is null)
+                return Result.Failure(Error.Validation("Role boş olamaz.", "Role.Null"));
+
+            try
+            {
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                var trackedRole = await db.Set<Role>()
+                    .FirstOrDefaultAsync(r => r.Id == role.Id, cancellationToken);
+
+                if (trackedRole is null)
+                    return Result.Failure(Error.NotFound($"G�ncellenecek rol bulunamadı (Id={role.Id}).", "Role.NotFound"));
+
+                db.Entry(trackedRole).CurrentValues.SetValues(role);
+                trackedRole.Degistiren = Environment.UserName;
+                trackedRole.DegistirmeTarihi = DateTime.Now;
+
+                await db.SaveChangesAsync(cancellationToken);
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                _logService.LogException(ex, $"{Source}.UpdateAsync");
+                return Result.Failure(Error.Unexpected("Rol g�ncellenemedi.", ex, "Role.Update.Failed"));
+            }
+        }
+
+        public async Task<Result<Role>> GetByIdWithRelationsAsync(int id, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                var role = await db.Set<Role>()
+                    .Include(r => r.PersonelRoles!)
+                        .ThenInclude(pr => pr.Personel)
+                    .Include(r => r.RoleMenus!)
+                        .ThenInclude(rm => rm.Menu)
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
+
+                if (role is null)
+                    return Result.Failure<Role>(Error.NotFound($"Rol bulunamadı (Id={id}).", "Role.NotFound"));
+
+                return Result.Success(role);
+            }
+            catch (Exception ex)
+            {
+                _logService.LogException(ex, $"{Source}.GetByIdWithRelationsAsync");
+                return Result.Failure<Role>(Error.Unexpected("Rol getirilemedi.", ex, "Role.Get.Failed"));
+            }
+        }
+
+        public async Task<Result> DeleteAsync(Role role, CancellationToken cancellationToken = default)
+        {
+            if (role is null)
+                return Result.Failure(Error.Validation("Role boş olamaz.", "Role.Null"));
+
+            // Tek context + tek transaction i�inde join + role silme.
+            // Hata olursa using sonu rollback eder; "join'ler silindi ama role kaldi" durumu olusmaz.
+            try
+            {
+                await using var scope = await _scopeFactory.CreateAsync(cancellationToken);
                 var db = scope.Context;
 
                 var existingPRs = await db.Set<PersonelRole>()
@@ -100,176 +148,181 @@ namespace Jenga.DataAccess.Services.Common
                     db.Set<Role>().Remove(roleEntity);
 
                 await scope.CommitAsync(cancellationToken);
-                return true;
+                return Result.Success();
             }
             catch (Exception ex)
             {
-                _logService?.LogError("RoleService.DeleteAsync error", ex);
-                throw;
+                _logService.LogException(ex, $"{Source}.DeleteAsync");
+                return Result.Failure(Error.Unexpected("Rol silinemedi.", ex, "Role.Delete.Failed"));
             }
         }
 
-        public async Task<bool> AddWithRelationsAsync(Role role, CancellationToken cancellationToken = default)
+        public async Task<Result> AddWithRelationsAsync(Role role, CancellationToken cancellationToken = default)
         {
-            if (role == null) throw new ArgumentNullException(nameof(role));
+            if (role is null)
+                return Result.Failure(Error.Validation("Role boş olamaz.", "Role.Null"));
 
             role.Olusturan ??= Environment.UserName;
             role.OlusturmaTarihi ??= DateTime.Now;
 
             // Canary 3. tur: tek context + tek transaction.
-            // Role + tüm join satırları tek bir Commit içinde persist edilir.
-            // İlişki nesnelerini doğrudan context'e takmıyoruz; sadece FK alanlarını okuyup
-            // YENİ PersonelRole / RoleMenu nesneleri oluşturuyoruz (graph traversal sorununa karşı).
+            // Role + t�m join satirlari tek bir Commit i�inde persist edilir.
+            // Iliski nesnelerini dogrudan context'e takmiyoruz; sadece FK alanlarini okuyup
+            // YENI PersonelRole / RoleMenu nesneleri olusturuyoruz (graph traversal sorununa karsi).
             var personelRoles = role.PersonelRoles?.ToList();
             var roleMenus = role.RoleMenus?.ToList();
-            // Role'un kendisini context'e eklerken nav koleksiyonları görmesini istemiyoruz.
+            // Role'un kendisini context'e eklerken nav koleksiyonlari g�rmesini istemiyoruz.
             role.PersonelRoles = null;
             role.RoleMenus = null;
 
             try
             {
-                await using var scope = await DbContextScope.CreateAsync(_dbFactory, cancellationToken);
+                await using var scope = await _scopeFactory.CreateAsync(cancellationToken);
                 var db = scope.Context;
 
-                // 1) Role'u ekle ve identity'i alabilmek için ilk SaveChanges'i yap.
-                //    Hâlâ aynı transaction içindeyiz; commit sadece scope.CommitAsync'te olur.
+                // 1) Role'u ekle ve identity'i alabilmek i�in ilk SaveChanges'i yap.
                 await db.Set<Role>().AddAsync(role, cancellationToken);
                 await db.SaveChangesAsync(cancellationToken);
-                // Bu noktada role.Id atanmıştır.
 
-                // 2) Yeni PersonelRole satırlarını ekle (FK'leri kullanarak yeni nesneler)
-                if (personelRoles != null && personelRoles.Count > 0)
+                // 2) Yeni PersonelRole satirlari
+                if (personelRoles is { Count: > 0 })
                 {
                     foreach (var pr in personelRoles)
                     {
-                        var newPr = new PersonelRole
+                        await db.Set<PersonelRole>().AddAsync(new PersonelRole
                         {
                             RoleId = role.Id,
                             PersonelId = pr.PersonelId,
                             Olusturan = pr.Olusturan ?? Environment.UserName,
                             OlusturmaTarihi = pr.OlusturmaTarihi ?? DateTime.Now
-                        };
-                        await db.Set<PersonelRole>().AddAsync(newPr, cancellationToken);
+                        }, cancellationToken);
                     }
                 }
 
-                // 3) Yeni RoleMenu satırlarını ekle
-                if (roleMenus != null && roleMenus.Count > 0)
+                // 3) Yeni RoleMenu satirlari
+                if (roleMenus is { Count: > 0 })
                 {
                     foreach (var rm in roleMenus)
                     {
-                        var newRm = new RoleMenu
+                        await db.Set<RoleMenu>().AddAsync(new RoleMenu
                         {
                             RoleId = role.Id,
                             MenuId = rm.MenuId,
                             Olusturan = rm.Olusturan ?? Environment.UserName,
                             OlusturmaTarihi = rm.OlusturmaTarihi ?? DateTime.Now
-                        };
-                        await db.Set<RoleMenu>().AddAsync(newRm, cancellationToken);
+                        }, cancellationToken);
                     }
                 }
 
-                // 4) Join satırları için ikinci SaveChanges + transaction Commit.
                 await scope.CommitAsync(cancellationToken);
 
-                // UI'da koleksiyonlar gözükmeye devam etsin diye geri yerleştir.
+                // UI'da koleksiyonlar g�z�kmeye devam etsin diye geri yerlestir.
                 role.PersonelRoles = personelRoles;
                 role.RoleMenus = roleMenus;
 
-                return true;
+                return Result.Success();
             }
             catch (Exception ex)
             {
-                _logService?.LogError("RoleService.AddWithRelationsAsync error", ex);
-                // Çağırana koleksiyonları geri vermek için (UI bozulmasın diye)
+                _logService.LogException(ex, $"{Source}.AddWithRelationsAsync");
+                // UI bozulmasin diye koleksiyonlari geri ver.
                 role.PersonelRoles = personelRoles;
                 role.RoleMenus = roleMenus;
-                throw;
+                return Result.Failure(Error.Unexpected("Rol ve ilişkileri eklenemedi.", ex, "Role.AddWithRelations.Failed"));
             }
         }
 
-        public async Task<bool> UpdateWithRelationsAsync(Role role, CancellationToken cancellationToken = default)
+        public async Task<Result> UpdateWithRelationsAsync(Role role, CancellationToken cancellationToken = default)
         {
-            if (role == null) throw new ArgumentNullException(nameof(role));
+            if (role is null)
+                return Result.Failure(Error.Validation("Role boş olamaz.", "Role.Null"));
 
-            // Canary 2. tur: tek context + tek transaction.
-            // Eski join satırlarını sil + yeni join satırlarını ekle + role skaler güncelle
-            // → hepsi tek SaveChanges + Commit içinde. Hata olursa rollback.
-            //
-            // Önemli: Role nesnesi UI'dan PersonelRoles / RoleMenus dolu (içlerinde Personel/Menu nav prop'ları
-            // dolu) olarak gelebilir. EF graph traversal nedeniyle bu nesneleri doğrudan context'e takmıyoruz;
-            // sadece skaler alanları kullanarak yeni satırlar oluşturuyoruz.
-            var personelRoles = role.PersonelRoles?.ToList();
-            var roleMenus = role.RoleMenus?.ToList();
+            // UI'dan gelen istenen "hedef" durum
+            var desiredPersonelIds = role.PersonelRoles?
+                .Select(pr => pr.PersonelId)
+                .Distinct()
+                .ToHashSet() ?? new HashSet<int>();
+
+            var desiredMenuIds = role.RoleMenus?
+                .Select(rm => rm.MenuId)
+                .Distinct()
+                .ToHashSet() ?? new HashSet<int>();
 
             try
             {
-                await using var scope = await DbContextScope.CreateAsync(_dbFactory, cancellationToken);
+                await using var scope = await _scopeFactory.CreateAsync(cancellationToken);
                 var db = scope.Context;
 
-                // 1) Role skaler güncelleme (mevcut entity'i çek, değerleri kopyala)
+                // 1) Role skaler g�ncelleme
                 var trackedRole = await db.Set<Role>()
                     .FirstOrDefaultAsync(r => r.Id == role.Id, cancellationToken);
-                if (trackedRole == null)
-                    throw new InvalidOperationException($"Güncellenecek Role bulunamadı (Id={role.Id}).");
+
+                if (trackedRole is null)
+                    return Result.Failure(Error.NotFound($"G�ncellenecek rol bulunamadı (Id={role.Id}).", "Role.NotFound"));
 
                 db.Entry(trackedRole).CurrentValues.SetValues(role);
                 trackedRole.Degistiren = Environment.UserName;
                 trackedRole.DegistirmeTarihi = DateTime.Now;
 
-                // 2) Eski PersonelRole satırlarını sil
-                var existingPRs = await db.Set<PersonelRole>()
+                // 2) PersonelRole diff
+                var currentPRs = await db.Set<PersonelRole>()
                     .Where(pr => pr.RoleId == role.Id)
                     .ToListAsync(cancellationToken);
-                if (existingPRs.Count > 0)
-                    db.Set<PersonelRole>().RemoveRange(existingPRs);
 
-                // 3) Eski RoleMenu satırlarını sil
-                var existingRMs = await db.Set<RoleMenu>()
-                    .Where(rm => rm.RoleId == role.Id)
-                    .ToListAsync(cancellationToken);
-                if (existingRMs.Count > 0)
-                    db.Set<RoleMenu>().RemoveRange(existingRMs);
+                var currentPersonelIds = currentPRs.Select(pr => pr.PersonelId).ToHashSet();
 
-                // 4) Yeni PersonelRole satırlarını ekle (sadece FK, nav prop'lar null)
-                if (personelRoles != null && personelRoles.Count > 0)
+                var prsToRemove = currentPRs
+                    .Where(pr => !desiredPersonelIds.Contains(pr.PersonelId))
+                    .ToList();
+                if (prsToRemove.Count > 0)
+                    db.Set<PersonelRole>().RemoveRange(prsToRemove);
+
+                foreach (var personelId in desiredPersonelIds)
                 {
-                    foreach (var pr in personelRoles)
+                    if (currentPersonelIds.Contains(personelId)) continue;
+
+                    await db.Set<PersonelRole>().AddAsync(new PersonelRole
                     {
-                        var newPr = new PersonelRole
-                        {
-                            RoleId = role.Id,
-                            PersonelId = pr.PersonelId,
-                            Olusturan = pr.Olusturan ?? Environment.UserName,
-                            OlusturmaTarihi = pr.OlusturmaTarihi ?? DateTime.Now
-                        };
-                        await db.Set<PersonelRole>().AddAsync(newPr, cancellationToken);
-                    }
+                        RoleId = role.Id,
+                        PersonelId = personelId,
+                        Olusturan = Environment.UserName,
+                        OlusturmaTarihi = DateTime.Now
+                    }, cancellationToken);
                 }
 
-                // 5) Yeni RoleMenu satırlarını ekle
-                if (roleMenus != null && roleMenus.Count > 0)
+                // 3) RoleMenu diff
+                var currentRMs = await db.Set<RoleMenu>()
+                    .Where(rm => rm.RoleId == role.Id)
+                    .ToListAsync(cancellationToken);
+
+                var currentMenuIds = currentRMs.Select(rm => rm.MenuId).ToHashSet();
+
+                var rmsToRemove = currentRMs
+                    .Where(rm => !desiredMenuIds.Contains(rm.MenuId))
+                    .ToList();
+                if (rmsToRemove.Count > 0)
+                    db.Set<RoleMenu>().RemoveRange(rmsToRemove);
+
+                foreach (var menuId in desiredMenuIds)
                 {
-                    foreach (var rm in roleMenus)
+                    if (currentMenuIds.Contains(menuId)) continue;
+
+                    await db.Set<RoleMenu>().AddAsync(new RoleMenu
                     {
-                        var newRm = new RoleMenu
-                        {
-                            RoleId = role.Id,
-                            MenuId = rm.MenuId,
-                            Olusturan = rm.Olusturan ?? Environment.UserName,
-                            OlusturmaTarihi = rm.OlusturmaTarihi ?? DateTime.Now
-                        };
-                        await db.Set<RoleMenu>().AddAsync(newRm, cancellationToken);
-                    }
+                        RoleId = role.Id,
+                        MenuId = menuId,
+                        Olusturan = Environment.UserName,
+                        OlusturmaTarihi = DateTime.Now
+                    }, cancellationToken);
                 }
 
                 await scope.CommitAsync(cancellationToken);
-                return true;
+                return Result.Success();
             }
             catch (Exception ex)
             {
-                _logService?.LogError("RoleService.UpdateWithRelationsAsync error", ex);
-                throw;
+                _logService.LogException(ex, $"{Source}.UpdateWithRelationsAsync");
+                return Result.Failure(Error.Unexpected("Rol ve ilişkileri g�ncellenemedi.", ex, "Role.UpdateWithRelations.Failed"));
             }
         }
     }

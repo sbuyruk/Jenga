@@ -21,7 +21,8 @@
     {
         if (firstRender && !_dataLoaded)
         {
-            roller = await RolService.GetAllAsync();
+            var result = await RolService.GetAllAsync();
+            roller = result.IsSuccess ? result.Value : new List<Role>();
             _dataLoaded = true;
             StateHasChanged();
             await JS.InvokeVoidAsync("initRolTableWithExport");

@@ -172,12 +172,12 @@
 
         try
         {
-            tasinmazlar = await TasinmazService.GetEnvanterdekilerAsync(cancellationToken);
-            tumTasinmazlar = await TasinmazService.GetAllAsync(cancellationToken);
-            bagiscilar = await TasinmazBagisciService.GetAllAsync(cancellationToken);
-            iller = await IlService.GetAllAsync(cancellationToken);
-            bolgeler = await BolgeService.GetAllAsync(cancellationToken);
-            bagislar = await BagisService.GetAllAsync(cancellationToken);
+            tasinmazlar = (await TasinmazService.GetEnvanterdekilerAsync(cancellationToken)) is { IsSuccess: true } tEnvRes ? tEnvRes.Value : new();
+            tumTasinmazlar = (await TasinmazService.GetAllAsync(cancellationToken)) is { IsSuccess: true } tAllRes ? tAllRes.Value : new();
+            bagiscilar = (await TasinmazBagisciService.GetAllAsync(cancellationToken)) is { IsSuccess: true } bRes2 ? bRes2.Value : new();
+            iller = (await IlService.GetAllAsync(cancellationToken)) is { IsSuccess: true } ilRes ? ilRes.Value : new();
+            bolgeler = (await BolgeService.GetAllAsync(cancellationToken)) is { IsSuccess: true } bRes ? bRes.Value : new();
+            bagislar = (await BagisService.GetAllAsync(cancellationToken)) is { IsSuccess: true } bgRes ? bgRes.Value : new();
 
             PrepareTasinmazCinsleriChart();
             PrepareBagisYilChart();

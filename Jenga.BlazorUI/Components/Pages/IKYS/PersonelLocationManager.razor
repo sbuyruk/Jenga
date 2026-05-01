@@ -203,7 +203,9 @@
         if (item?.Data?.Location == null) return;
 
         var loc = item.Data.Location;
-        var (canDelete, reason) = await LocationService.CanDeleteAsync(loc.Id);
+        var canDeleteResult = await LocationService.CanDeleteAsync(loc.Id);
+        var canDelete = canDeleteResult.IsSuccess && canDeleteResult.Value.CanDelete;
+        var reason = canDeleteResult.IsSuccess ? canDeleteResult.Value.Reason : canDeleteResult.Error?.Message;
         if (!canDelete)
         {
             ToastService.ShowToast(reason ?? "Bilinmeyen bir hata oluştu", ToastType.Error, 5000);
@@ -218,7 +220,7 @@
                 if (!result) return;
 
                 var deleted = await LocationService.DeleteAsync(loc);
-                if (deleted)
+                if (deleted.IsSuccess)
                 {
                     ToastService.ShowToast($"{loc.LocationName ?? "Konum"} silindi", ToastType.Success, 3000);
                     locations.Remove(loc);
@@ -241,7 +243,7 @@
             if (loc.Id == 0)
             {
                 var saved = await LocationService.AddAsync(loc);
-                if (saved)
+                if (saved.IsSuccess)
                 {
                     locations.Add(loc);
                     ToastService.ShowToast($"{loc.LocationName} eklendi", ToastType.Success, 3000);
@@ -254,7 +256,7 @@
             else
             {
                 var updated = await LocationService.UpdateAsync(loc);
-                if (updated)
+                if (updated.IsSuccess)
                 {
                     ToastService.ShowToast($"{loc.LocationName} güncellendi", ToastType.Info, 3000);
                 }
@@ -280,7 +282,8 @@
 
     private async Task RefreshData()
     {
-        locations = await LocationService.GetAllAsync();
+        var locationsResult = await LocationService.GetAllAsync();
+        if (locationsResult.IsSuccess) locations = locationsResult.Value;
         BuildLocationTree();
         // clear selected
         selectedLocation = null;
@@ -320,7 +323,8 @@
     private async Task LoadAssignments()
     {
         if (selectedLocation == null) return;
-        assignments = await PersonelLocationService.GetPersonelsForLocationAsync(selectedLocation.Id);
+        var result = await PersonelLocationService.GetPersonelsForLocationAsync(selectedLocation.Id);
+        assignments = result.IsSuccess ? result.Value : new List<PersonelLocation>();
         StateHasChanged();
     }
 
@@ -337,7 +341,8 @@
             // try to reload the location's assignments if we can.
             if (assignLocationId != 0)
             {
-                assignments = await PersonelLocationService.GetPersonelsForLocationAsync(assignLocationId);
+                var result = await PersonelLocationService.GetPersonelsForLocationAsync(assignLocationId);
+                assignments = result.IsSuccess ? result.Value : new List<PersonelLocation>();
             }
         }
         isAssignModalOpen = false;
@@ -361,7 +366,7 @@
                 if (!result) return;
 
                 var removed = await PersonelLocationService.UnassignLocationFromPersonAsync(personelId, locationId);
-                if (removed)
+                if (removed.IsSuccess)
                 {
                     ToastService.ShowToast("Atama kaldırıldı.", ToastType.Success, 2500);
                     // reload assignments
@@ -370,7 +375,7 @@
                 }
                 else
                 {
-                    ToastService.ShowToast("Atama kaldırılırken hata oluştu.", ToastType.Error, 4000);
+                    ToastService.ShowToast(removed.Error.Message ?? "Atama kaldırılırken hata oluştu.", ToastType.Error, 4000);
                 }
             });
     }

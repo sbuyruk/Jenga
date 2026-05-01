@@ -1,18 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Jenga.Models.NBYS;
+﻿using Jenga.Models.NBYS;
+using Jenga.Utility.Results;
 
 namespace Jenga.DataAccess.Services.NBYS
 {
     public interface IBankaTanimService
     {
-        Task<List<BankaTanim>> GetAllAsync(CancellationToken cancellationToken = default);
-        Task<BankaTanim?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
-        Task<bool> AddAsync(BankaTanim model, CancellationToken cancellationToken = default);
-        Task<bool> UpdateAsync(BankaTanim model, CancellationToken cancellationToken = default);
-        Task<bool> DeleteAsync(BankaTanim model, CancellationToken cancellationToken = default);
+        Task<Result<List<BankaTanim>>> GetAllAsync(CancellationToken cancellationToken = default);
+        Task<Result<BankaTanim>> GetByIdAsync(int id, CancellationToken cancellationToken = default);
+        Task<Result> AddAsync(BankaTanim model, CancellationToken cancellationToken = default);
+        Task<Result> UpdateAsync(BankaTanim model, CancellationToken cancellationToken = default);
+        Task<Result> DeleteAsync(BankaTanim model, CancellationToken cancellationToken = default);
     }
 }

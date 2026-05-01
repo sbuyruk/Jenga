@@ -530,7 +530,8 @@
             loadingMessage = "Bağışçılar yükleniyor...";
             await InvokeAsync(StateHasChanged);
 
-            var bagiscilar = await NakitBagisciService.GetAllAsync(cancellationToken);
+            var bagisciRes = await NakitBagisciService.GetAllAsync(cancellationToken);
+            var bagiscilar = bagisciRes.IsSuccess ? bagisciRes.Value : new List<NakitBagisci>();
             _donorProvinceIdByDonorId = bagiscilar
                 .Where(x => x != null)
                 .GroupBy(x => x.Id)
@@ -539,12 +540,14 @@
             loadingMessage = "Bağış hareketleri yükleniyor...";
             await InvokeAsync(StateHasChanged);
 
-            nakitBagislarSince = await NakitBagisHareketService.GetLastYearsAsync(years, cancellationToken);
+            var hareketRes = await NakitBagisHareketService.GetLastYearsAsync(years, cancellationToken);
+            nakitBagislarSince = hareketRes.IsSuccess ? hareketRes.Value : new List<NakitBagisHareket>();
 
             loadingMessage = "Türkiye haritası ve İller yükleniyor...";
             await InvokeAsync(StateHasChanged);
 
-            var iller = await IlService.GetAllAsync(cancellationToken);
+            var illerResult = await IlService.GetAllAsync(cancellationToken);
+            var iller = illerResult.IsSuccess ? illerResult.Value : new();
             _ilNameById = iller
                 .Where(x => x != null)
                 .GroupBy(x => x.Id)

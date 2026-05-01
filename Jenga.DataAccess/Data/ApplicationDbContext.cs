@@ -96,6 +96,19 @@ namespace Jenga.DataAccess.Data
 
             modelBuilder.Entity<UserPresenceSession>()
                 .HasIndex(x => new { x.PersonelId, x.DisconnectedAt });
+
+            // Material adı için filtered unique index.
+            // SQL Server varsayılan collation (CI_AS) sayesinde "Çay" ve "ÇAY" aynı kabul edilir;
+            // ek olarak NULL/boş adlar dışlanır. Race-condition'ı veritabanı seviyesinde kapatır.
+            // NOT: Bu projede EF Core migration kullanılmıyor; index'i veritabanına manuel
+            // uygulamak için altta verilen SQL snippet'ini çalıştırın.
+            modelBuilder.Entity<Material>()
+                .HasIndex(m => m.MaterialName)
+                .IsUnique()
+                .HasDatabaseName("UX_Material_MaterialName")
+                .HasFilter("[MaterialName] IS NOT NULL");
+
+
         }
     }
 }

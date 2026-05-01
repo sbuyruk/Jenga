@@ -32,11 +32,16 @@
     {
         if (firstRender && !_dataLoaded)
         {
-            materialExits = await MaterialExitService.GetAllAsync();
-            materials = await MaterialService.GetAllAsync();
-            units = await MaterialUnitService.GetAllAsync();
-            locations = await LocationService.GetAllAsync();
-            materialInventories = await MaterialInventoryService.GetAllAsync();
+            var exitsR = await MaterialExitService.GetAllAsync();
+            materialExits = exitsR.IsSuccess ? exitsR.Value : new();
+            var matsR = await MaterialService.GetAllAsync();
+            materials = matsR.IsSuccess ? matsR.Value : new();
+            var unitsR = await MaterialUnitService.GetAllAsync();
+            units = unitsR.IsSuccess ? unitsR.Value : new();
+            var locsR = await LocationService.GetAllAsync();
+            locations = locsR.IsSuccess ? locsR.Value : new();
+            var invR = await MaterialInventoryService.GetAllAsync();
+            materialInventories = invR.IsSuccess ? invR.Value : new();
             _dataLoaded = true;
             StateHasChanged();
         }
