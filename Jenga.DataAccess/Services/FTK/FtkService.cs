@@ -16,7 +16,7 @@ namespace Jenga.DataAccess.Services.FTK
         public FtkService(IDbContextFactory<ApplicationDbContext> dbFactory, ILogService logService)
         {
             _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
-            _logService = logService;
+            _logService = logService ?? throw new ArgumentNullException(nameof(logService));
         }
 
         public async Task<Result<List<Ftk>>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -29,7 +29,7 @@ namespace Jenga.DataAccess.Services.FTK
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.GetAllAsync");
+                _logService.LogException(ex, $"{Source}.GetAllAsync");
                 return Result.Failure<List<Ftk>>(Error.Unexpected("FTK listesi alınamadı.", ex, "Ftk.GetAll.Failed"));
             }
         }
@@ -54,7 +54,7 @@ namespace Jenga.DataAccess.Services.FTK
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.GetLatestPerIslemAsync");
+                _logService.LogException(ex, $"{Source}.GetLatestPerIslemAsync");
                 return Result.Failure<List<Ftk>>(Error.Unexpected("FTK son kayıtları alınamadı.", ex, "Ftk.GetLatestPerIslem.Failed"));
             }
         }
@@ -71,7 +71,7 @@ namespace Jenga.DataAccess.Services.FTK
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.GetByIdAsync");
+                _logService.LogException(ex, $"{Source}.GetByIdAsync");
                 return Result.Failure<Ftk>(Error.Unexpected("FTK getirilemedi.", ex, "Ftk.GetById.Failed"));
             }
         }
@@ -89,7 +89,7 @@ namespace Jenga.DataAccess.Services.FTK
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.AddAsync");
+                _logService.LogException(ex, $"{Source}.AddAsync");
                 return Result.Failure(Error.Unexpected("FTK eklenemedi.", ex, "Ftk.Add.Failed"));
             }
         }
@@ -107,7 +107,7 @@ namespace Jenga.DataAccess.Services.FTK
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.UpdateAsync");
+                _logService.LogException(ex, $"{Source}.UpdateAsync");
                 return Result.Failure(Error.Unexpected("FTK güncellenemedi.", ex, "Ftk.Update.Failed"));
             }
         }
@@ -125,7 +125,7 @@ namespace Jenga.DataAccess.Services.FTK
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.DeleteAsync");
+                _logService.LogException(ex, $"{Source}.DeleteAsync");
                 return Result.Failure(Error.Unexpected("FTK silinemedi.", ex, "Ftk.Delete.Failed"));
             }
         }

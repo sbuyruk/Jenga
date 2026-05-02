@@ -1,14 +1,14 @@
-﻿using Jenga.Models.Common;
+using Jenga.Models.Common;
 
-namespace Jenga.Models.Helper
+namespace Jenga.Models.Helpers
 {
     public static class TreeHelper
     {
         public static List<TreeItem<T>> BuildTree<T>(
-        IEnumerable<T> items,
-        Func<T, string> idSelector,
-        Func<T, string?> parentIdSelector,
-        Func<T, List<TreeItem<T>>>? extraChildrenSelector = null)
+            IEnumerable<T> items,
+            Func<T, string> idSelector,
+            Func<T, string?> parentIdSelector,
+            Func<T, List<TreeItem<T>>>? extraChildrenSelector = null)
         {
             var lookup = items.ToDictionary(idSelector, item =>
                 new TreeItem<T>
@@ -25,7 +25,6 @@ namespace Jenga.Models.Helper
                     lookup[parentId].Children.Add(lookup[idSelector(item)]);
             }
 
-            // Add extra children if needed (e.g., materials under categories)
             if (extraChildrenSelector != null)
             {
                 foreach (var item in items)
@@ -36,10 +35,8 @@ namespace Jenga.Models.Helper
                 }
             }
 
-            // Return root nodes (no parent)
             return lookup.Values.Where(n => parentIdSelector(n.Data) == null).ToList();
         }
-
 
         /// <summary>
         /// Generic tree için filtreleme, klonlama ile yeni ağaç döndürür.
@@ -75,21 +72,18 @@ namespace Jenga.Models.Helper
             if (matchingChildren.Count > 0)
                 matches = true;
 
-            if (matches)
+            if (!matches) return null;
+
+            return new TreeItem<T>
             {
-                // Klonla ve çocukları ekle
-                return new TreeItem<T>
-                {
-                    Data = node.Data,
-                    Children = matchingChildren,
-                    ShowCreate = node.ShowCreate,
-                    ShowEdit = node.ShowEdit,
-                    ShowDelete = node.ShowDelete
-                };
-            }
-            return null;
+                Data = node.Data,
+                Children = matchingChildren,
+                ShowCreate = node.ShowCreate,
+                ShowEdit = node.ShowEdit,
+                ShowDelete = node.ShowDelete
+            };
         }
-        //Expand Collapse
+
         public static Dictionary<string, bool> CollectExpandedStates<T>(List<TreeItem<T>> nodes)
         {
             var dict = new Dictionary<string, bool>();
@@ -116,6 +110,4 @@ namespace Jenga.Models.Helper
             }
         }
     }
-
-
 }

@@ -17,7 +17,7 @@ namespace Jenga.DataAccess.Services.TBYS
         public VasiyetciService(IDbContextFactory<ApplicationDbContext> dbFactory, ILogService logService)
         {
             _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
-            _logService = logService;
+            _logService = logService ?? throw new ArgumentNullException(nameof(logService));
         }
 
         public async Task<Result<List<Vasiyetci>>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -30,7 +30,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.GetAllAsync hata.", ex);
+                _logService.LogError($"{Source}.GetAllAsync hata.", ex);
                 return Result<List<Vasiyetci>>.Failure(Error.Unexpected("Vasiyetçi listesi alınamadı.", ex));
             }
         }
@@ -47,7 +47,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.GetByIdAsync hata.", ex);
+                _logService.LogError($"{Source}.GetByIdAsync hata.", ex);
                 return Result<Vasiyetci>.Failure(Error.Unexpected("Vasiyetçi alınamadı.", ex));
             }
         }
@@ -62,7 +62,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.GetByTCKimlikAsync hata.", ex);
+                _logService.LogError($"{Source}.GetByTCKimlikAsync hata.", ex);
                 return Result<List<Vasiyetci>>.Failure(Error.Unexpected("TC kimliğe göre vasiyetçi alınamadı.", ex));
             }
         }
@@ -81,7 +81,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.AddAsync hata.", ex);
+                _logService.LogError($"{Source}.AddAsync hata.", ex);
                 return Result.Failure(Error.Unexpected("Vasiyetçi eklenemedi.", ex));
             }
         }
@@ -100,7 +100,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.UpdateAsync hata.", ex);
+                _logService.LogError($"{Source}.UpdateAsync hata.", ex);
                 return Result.Failure(Error.Unexpected("Vasiyetçi güncellenemedi.", ex));
             }
         }
@@ -120,7 +120,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.DeleteAsync hata.", ex);
+                _logService.LogError($"{Source}.DeleteAsync hata.", ex);
                 return Result.Failure(Error.Unexpected("Vasiyetçi silinemedi.", ex));
             }
         }
@@ -135,7 +135,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.AnyAsync hata.", ex);
+                _logService.LogError($"{Source}.AnyAsync hata.", ex);
                 return Result<bool>.Failure(Error.Unexpected("Sorgu çalıştırılamadı.", ex));
             }
         }

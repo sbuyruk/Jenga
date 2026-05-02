@@ -1,4 +1,4 @@
-﻿using Jenga.DataAccess.Data;
+using Jenga.DataAccess.Data;
 using Jenga.Models.Inventory;
 using Jenga.Utility.Logging;
 using Jenga.Utility.Results;
@@ -17,7 +17,7 @@ namespace Jenga.DataAccess.Services.Inventory
         public MaterialCategoryService(IDbContextFactory<ApplicationDbContext> dbFactory, ILogService logService)
         {
             _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
-            _logService = logService;
+            _logService = logService ?? throw new ArgumentNullException(nameof(logService));
         }
 
         public async Task<Result<List<MaterialCategory>>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -30,8 +30,8 @@ namespace Jenga.DataAccess.Services.Inventory
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.GetAllAsync");
-                return Result.Failure<List<MaterialCategory>>(Error.Unexpected("Kategori listesi alınamadı.", ex, "MaterialCategory.GetAll.Failed"));
+                _logService.LogException(ex, $"{Source}.GetAllAsync");
+                return Result.Failure<List<MaterialCategory>>(Error.Unexpected("Kategori listesi alinamadi.", ex, "MaterialCategory.GetAll.Failed"));
             }
         }
 
@@ -42,12 +42,12 @@ namespace Jenga.DataAccess.Services.Inventory
                 await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
                 var entity = await db.MaterialCategory_Table.AsNoTracking().FirstOrDefaultAsync(m => m.Id == id, cancellationToken);
                 if (entity is null)
-                    return Result.Failure<MaterialCategory>(Error.NotFound($"Kategori bulunamadı (Id={id}).", "MaterialCategory.NotFound"));
+                    return Result.Failure<MaterialCategory>(Error.NotFound($"Kategori bulunamadi (Id={id}).", "MaterialCategory.NotFound"));
                 return Result.Success(entity);
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.GetByIdAsync");
+                _logService.LogException(ex, $"{Source}.GetByIdAsync");
                 return Result.Failure<MaterialCategory>(Error.Unexpected("Kategori getirilemedi.", ex, "MaterialCategory.GetById.Failed"));
             }
         }
@@ -55,7 +55,7 @@ namespace Jenga.DataAccess.Services.Inventory
         public async Task<Result> AddAsync(MaterialCategory category, CancellationToken cancellationToken = default)
         {
             if (category == null)
-                return Result.Failure(Error.Validation("Kategori boş olamaz.", "MaterialCategory.Null"));
+                return Result.Failure(Error.Validation("Kategori bos olamaz.", "MaterialCategory.Null"));
             try
             {
                 await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
@@ -65,7 +65,7 @@ namespace Jenga.DataAccess.Services.Inventory
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.AddAsync");
+                _logService.LogException(ex, $"{Source}.AddAsync");
                 return Result.Failure(Error.Unexpected("Kategori eklenemedi.", ex, "MaterialCategory.Add.Failed"));
             }
         }
@@ -73,7 +73,7 @@ namespace Jenga.DataAccess.Services.Inventory
         public async Task<Result> UpdateAsync(MaterialCategory category, CancellationToken cancellationToken = default)
         {
             if (category == null)
-                return Result.Failure(Error.Validation("Kategori boş olamaz.", "MaterialCategory.Null"));
+                return Result.Failure(Error.Validation("Kategori bos olamaz.", "MaterialCategory.Null"));
             try
             {
                 await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
@@ -83,8 +83,8 @@ namespace Jenga.DataAccess.Services.Inventory
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.UpdateAsync");
-                return Result.Failure(Error.Unexpected("Kategori güncellenemedi.", ex, "MaterialCategory.Update.Failed"));
+                _logService.LogException(ex, $"{Source}.UpdateAsync");
+                return Result.Failure(Error.Unexpected("Kategori g�ncellenemedi.", ex, "MaterialCategory.Update.Failed"));
             }
         }
 
@@ -95,11 +95,11 @@ namespace Jenga.DataAccess.Services.Inventory
                 await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
 
                 if (await db.MaterialCategory_Table.AsNoTracking().AnyAsync(m => m.ParentCategoryId == categoryId, cancellationToken))
-                    return Result.Failure(Error.Conflict("Bu kategori bir alt kategori tarafından kullanılıyor.", "MaterialCategory.HasChildren"));
+                    return Result.Failure(Error.Conflict("Bu kategori bir alt kategori tarafindan kullaniliyor.", "MaterialCategory.HasChildren"));
 
                 var entity = await db.MaterialCategory_Table.FirstOrDefaultAsync(m => m.Id == categoryId, cancellationToken);
                 if (entity == null)
-                    return Result.Failure(Error.NotFound($"Kategori bulunamadı (Id={categoryId}).", "MaterialCategory.NotFound"));
+                    return Result.Failure(Error.NotFound($"Kategori bulunamadi (Id={categoryId}).", "MaterialCategory.NotFound"));
 
                 db.MaterialCategory_Table.Remove(entity);
                 await db.SaveChangesAsync(cancellationToken);
@@ -107,7 +107,7 @@ namespace Jenga.DataAccess.Services.Inventory
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.DeleteAsync");
+                _logService.LogException(ex, $"{Source}.DeleteAsync");
                 return Result.Failure(Error.Unexpected("Kategori silinemedi.", ex, "MaterialCategory.Delete.Failed"));
             }
         }
@@ -122,8 +122,8 @@ namespace Jenga.DataAccess.Services.Inventory
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.AnyAsync");
-                return Result.Failure<bool>(Error.Unexpected("Kategori sorgusu yapılamadı.", ex, "MaterialCategory.Any.Failed"));
+                _logService.LogException(ex, $"{Source}.AnyAsync");
+                return Result.Failure<bool>(Error.Unexpected("Kategori sorgusu yapilamadi.", ex, "MaterialCategory.Any.Failed"));
             }
         }
 
@@ -134,16 +134,16 @@ namespace Jenga.DataAccess.Services.Inventory
                 await using var db = await _dbFactory.CreateDbContextAsync();
 
                 if (await db.MaterialCategory_Table.AsNoTracking().AnyAsync(m => m.ParentCategoryId == id))
-                    return Result.Success<(bool CanDelete, string? Reason)>((false, "Bu kategori bir malzemenin üst kategorisi olarak kullanılıyor, önce onu silmelisiniz."));
+                    return Result.Success<(bool CanDelete, string? Reason)>((false, "Bu kategori bir malzemenin �st kategorisi olarak kullaniliyor, �nce onu silmelisiniz."));
                 if (await db.Material_Table.AsNoTracking().AnyAsync(m => m.CategoryId == id))
-                    return Result.Success<(bool CanDelete, string? Reason)>((false, "Bu kategori bir malzemenin kategorisi olarak kullanılıyor, önce onu silmelisiniz."));
+                    return Result.Success<(bool CanDelete, string? Reason)>((false, "Bu kategori bir malzemenin kategorisi olarak kullaniliyor, �nce onu silmelisiniz."));
 
                 return Result.Success<(bool CanDelete, string? Reason)>((true, null));
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.CanDeleteAsync");
-                return Result.Failure<(bool CanDelete, string? Reason)>(Error.Unexpected("Kategori silinebilirlik kontrolü yapılamadı.", ex, "MaterialCategory.CanDelete.Failed"));
+                _logService.LogException(ex, $"{Source}.CanDeleteAsync");
+                return Result.Failure<(bool CanDelete, string? Reason)>(Error.Unexpected("Kategori silinebilirlik kontrol� yapilamadi.", ex, "MaterialCategory.CanDelete.Failed"));
             }
         }
     }

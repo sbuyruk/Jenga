@@ -17,7 +17,7 @@ namespace Jenga.DataAccess.Services.Inventory
         public MaterialInventoryService(IDbContextFactory<ApplicationDbContext> dbFactory, ILogService logService)
         {
             _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
-            _logService = logService;
+            _logService = logService ?? throw new ArgumentNullException(nameof(logService));
         }
 
         public async Task<Result<List<MaterialInventory>>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -30,7 +30,7 @@ namespace Jenga.DataAccess.Services.Inventory
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.GetAllAsync");
+                _logService.LogException(ex, $"{Source}.GetAllAsync");
                 return Result.Failure<List<MaterialInventory>>(Error.Unexpected("Envanter listesi alınamadı.", ex, "MaterialInventory.GetAll.Failed"));
             }
         }
@@ -45,7 +45,7 @@ namespace Jenga.DataAccess.Services.Inventory
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.AnyAsync");
+                _logService.LogException(ex, $"{Source}.AnyAsync");
                 return Result.Failure<bool>(Error.Unexpected("Envanter sorgusu yapılamadı.", ex, "MaterialInventory.Any.Failed"));
             }
         }

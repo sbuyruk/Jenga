@@ -1,4 +1,4 @@
-﻿namespace Jenga.Utility.Toast;
+namespace Jenga.BlazorUI.Services.Common.Toast;
 
 public class ToastModel
 {

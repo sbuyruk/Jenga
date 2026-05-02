@@ -1,6 +1,5 @@
-﻿@using Jenga.DataAccess.Services.IKYS
+@using Jenga.DataAccess.Services.IKYS
 @using Jenga.Models.IKYS
-@using Jenga.Utility.Toast
 @using Microsoft.AspNetCore.Components.Forms
 @inject IPersonelService PersonelService
 @inject IPersonelLocationService PersonelLocationService
@@ -23,10 +22,10 @@
 
                     <div class="mb-2">
                         <label class="form-label">Personel</label>
-                        <input class="form-control form-control-sm" placeholder="İsim veya sicil ara..." @oninput="OnPersonSearch" />
+                        <input class="form-control form-control-sm" placeholder="Isim veya sicil ara..." @oninput="OnPersonSearch" />
                         <div class="mt-2">
                             <select class="form-select form-select-sm" @bind="SelectedPersonId">
-                                <option value="0">Personel seçiniz</option>
+                                <option value="0">Personel se�iniz</option>
                                 @foreach (var p in filteredPersons)
                                 {
                                     <option value="@p.Id">@($"{p.Adi} {p.Soyadi} (Sicil:{p.SicilNo})")</option>
@@ -47,17 +46,17 @@
 
                     <div class="row g-2 mb-2">
                         <div class="col">
-                            <label class="form-label">Başlangıç</label>
+                            <label class="form-label">Baslangi�</label>
                             <InputDate class="form-control form-control-sm" @bind-Value="Editing.StartDate" />
                         </div>
                         <div class="col">
-                            <label class="form-label">Bitiş</label>
+                            <label class="form-label">Bitis</label>
                             <InputDate class="form-control form-control-sm" @bind-Value="Editing.EndDate" />
                         </div>
                     </div>
 
                     <div class="mb-2">
-                        <label class="form-label">Açıklama</label>
+                        <label class="form-label">A�iklama</label>
                         <textarea class="form-control form-control-sm" rows="3" @bind="Editing.Aciklama"></textarea>
                     </div>
 
@@ -141,7 +140,7 @@
     {
         if (SelectedPersonId == 0)
         {
-            ToastService.ShowToast("Lütfen bir personel seçin", ToastType.Warning, 3000);
+            ToastService.ShowToast("L�tfen bir personel se�in", ToastType.Warning, 3000);
             return;
         }
 
@@ -167,11 +166,11 @@
                 var primaryResult = await PersonelLocationService.SetPrimaryAssignmentAsync(Editing.PersonelId, Editing.LocationId, Editing.Olusturan);
                 if (!primaryResult.IsSuccess)
                 {
-                    ToastService.ShowToast(primaryResult.Error.Message ?? "Birincil atama ayarlanamadı.", ToastType.Warning, 4000);
+                    ToastService.ShowToast(primaryResult.Error.Message ?? "Birincil atama ayarlanamadi.", ToastType.Warning, 4000);
                 }
             }
 
-            ToastService.ShowToast("Personel başarıyla atandı.", ToastType.Success, 3000);
+            ToastService.ShowToast("Personel basariyla atandi.", ToastType.Success, 3000);
 
             // notify parent
             if (OnSaved.HasDelegate) await OnSaved.InvokeAsync();
@@ -180,7 +179,7 @@
         }
         catch (Exception ex)
         {
-            ToastService.ShowToast($"Atama sırasında hata: {ex.Message}", ToastType.Error, 5000);
+            ToastService.ShowToast($"Atama sirasinda hata: {ex.Message}", ToastType.Error, 5000);
         }
     }
 

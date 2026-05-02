@@ -1,4 +1,4 @@
-﻿@page "/inventory/location-manager"
+@page "/inventory/location-manager"
 @rendermode InteractiveServer
 
 @using Jenga.BlazorUI.Components.Inventory
@@ -8,16 +8,14 @@
 @using Jenga.Models.Common
 @using Jenga.Models.Enums
 @using Jenga.Models.Inventory
-@using Jenga.Models.Helper
 
-@using Jenga.Utility.Toast
 
 @inject ILocationService LocationService
 @inject IModalService ModalService
 @inject IToastService ToastService
 
 <div class="navbar navbar-expand-lg bg-body-tertiary gap-5 mb-3 shadow-sm rounded py-2 px-3" style="min-height:56px;">
-    <h3 class="mb-0 flex-grow-1">Lokasyon Yönetimi</h3>
+    <h3 class="mb-0 flex-grow-1">Lokasyon Y�netimi</h3>
     <input class="form-control" style="max-width: 250px;"
            placeholder="Lokasyon Ara..."
            @bind="searchTerm"
@@ -123,7 +121,7 @@
             else
             {
                 await LocationService.UpdateAsync(selectedLocation.Data);
-                ToastService.ShowToast($"{(selectedLocation.Data.LocationName)} güncellendi", ToastType.Info, 3000);
+                ToastService.ShowToast($"{(selectedLocation.Data.LocationName)} g�ncellendi", ToastType.Info, 3000);
             }
         }
         await RefreshData();
@@ -153,13 +151,13 @@
         var reason = canDeleteResult.IsSuccess ? canDeleteResult.Value.Reason : canDeleteResult.Error?.Message;
         if (!canDelete)
         {
-            ToastService.ShowToast(reason ?? "Bilinmeyen bir hata oluştu", ToastType.Error, 5000);
+            ToastService.ShowToast(reason ?? "Bilinmeyen bir hata olustu", ToastType.Error, 5000);
             return;
         }
 
         ModalService.ShowConfirmation(
-            "Silme Onayı",
-            $"'{item.Data.LocationName ?? "Konum"}' kaydını silmek istediğinizden emin misiniz?",
+            "Silme Onayi",
+            $"'{item.Data.LocationName ?? "Konum"}' kaydini silmek istediginizden emin misiniz?",
             async result =>
             {
                 if (result)
@@ -173,7 +171,7 @@
                     }
                     else
                     {
-                        ToastService.ShowToast($"Silme işlemi başarısız oldu", ToastType.Error, 3000);
+                        ToastService.ShowToast($"Silme islemi basarisiz oldu", ToastType.Error, 3000);
                     }
                 }
             });

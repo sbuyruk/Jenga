@@ -1,4 +1,4 @@
-﻿using Jenga.DataAccess.Data;
+using Jenga.DataAccess.Data;
 using Jenga.Models.Inventory;
 using Jenga.Utility.Logging;
 using Jenga.Utility.Results;
@@ -17,7 +17,7 @@ namespace Jenga.DataAccess.Services.Inventory
         public MaterialService(IDbContextFactory<ApplicationDbContext> dbFactory, ILogService logService)
         {
             _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
-            _logService = logService;
+            _logService = logService ?? throw new ArgumentNullException(nameof(logService));
         }
 
         public async Task<Result<List<Material>>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -30,8 +30,8 @@ namespace Jenga.DataAccess.Services.Inventory
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.GetAllAsync");
-                return Result.Failure<List<Material>>(Error.Unexpected("Malzeme listesi alınamadı.", ex, "Material.GetAll.Failed"));
+                _logService.LogException(ex, $"{Source}.GetAllAsync");
+                return Result.Failure<List<Material>>(Error.Unexpected("Malzeme listesi alinamadi.", ex, "Material.GetAll.Failed"));
             }
         }
 
@@ -42,12 +42,12 @@ namespace Jenga.DataAccess.Services.Inventory
                 await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
                 var entity = await db.Material_Table.AsNoTracking().FirstOrDefaultAsync(m => m.Id == id, cancellationToken);
                 if (entity is null)
-                    return Result.Failure<Material>(Error.NotFound($"Malzeme bulunamadı (Id={id}).", "Material.NotFound"));
+                    return Result.Failure<Material>(Error.NotFound($"Malzeme bulunamadi (Id={id}).", "Material.NotFound"));
                 return Result.Success(entity);
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.GetByIdAsync");
+                _logService.LogException(ex, $"{Source}.GetByIdAsync");
                 return Result.Failure<Material>(Error.Unexpected("Malzeme getirilemedi.", ex, "Material.GetById.Failed"));
             }
         }
@@ -59,12 +59,12 @@ namespace Jenga.DataAccess.Services.Inventory
                 await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
                 var entity = await db.Material_Table.AsNoTracking().FirstOrDefaultAsync(m => m.Id == id, cancellationToken);
                 if (entity is null)
-                    return Result.Failure<Material>(Error.NotFound($"Malzeme bulunamadı (Id={id}).", "Material.NotFound"));
+                    return Result.Failure<Material>(Error.NotFound($"Malzeme bulunamadi (Id={id}).", "Material.NotFound"));
                 return Result.Success(entity);
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.GetByIdWithRelationsAsync");
+                _logService.LogException(ex, $"{Source}.GetByIdWithRelationsAsync");
                 return Result.Failure<Material>(Error.Unexpected("Malzeme getirilemedi.", ex, "Material.GetByIdWithRelations.Failed"));
             }
         }
@@ -72,16 +72,16 @@ namespace Jenga.DataAccess.Services.Inventory
         public async Task<Result> AddAsync(Material material, CancellationToken cancellationToken = default)
         {
             if (material == null)
-                return Result.Failure(Error.Validation("Malzeme boş olamaz.", "Material.Null"));
+                return Result.Failure(Error.Validation("Malzeme bos olamaz.", "Material.Null"));
 
             var name = (material.MaterialName ?? string.Empty).Trim();
             if (string.IsNullOrWhiteSpace(name))
-                return Result.Failure(Error.Validation("Malzeme adı boş olmamalı.", "Material.Name.Empty"));
+                return Result.Failure(Error.Validation("Malzeme adi bos olmamali.", "Material.Name.Empty"));
 
             var existsResult = await ExistsByNameAsync(name, null, cancellationToken);
             if (existsResult.IsFailure) return Result.Failure(existsResult.Error);
             if (existsResult.Value)
-                return Result.Failure(Error.Conflict($"Aynı isimde zaten bir malzeme tanımlı: '{name}'.", "Material.Name.Duplicate"));
+                return Result.Failure(Error.Conflict($"Ayni isimde zaten bir malzeme tanimli: '{name}'.", "Material.Name.Duplicate"));
 
             try
             {
@@ -93,12 +93,12 @@ namespace Jenga.DataAccess.Services.Inventory
             }
             catch (DbUpdateException ex) when (IsUniqueViolation(ex))
             {
-                _logService?.LogWarning($"{Source}.AddAsync race-condition: '{name}' için unique index ihlali.");
-                return Result.Failure(Error.Conflict($"Aynı isimde zaten bir malzeme tanımlı: '{name}'.", "Material.Name.Duplicate"));
+                _logService.LogWarning($"{Source}.AddAsync race-condition: '{name}' i�in unique index ihlali.");
+                return Result.Failure(Error.Conflict($"Ayni isimde zaten bir malzeme tanimli: '{name}'.", "Material.Name.Duplicate"));
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.AddAsync");
+                _logService.LogException(ex, $"{Source}.AddAsync");
                 return Result.Failure(Error.Unexpected("Malzeme eklenemedi.", ex, "Material.Add.Failed"));
             }
         }
@@ -106,16 +106,16 @@ namespace Jenga.DataAccess.Services.Inventory
         public async Task<Result> UpdateAsync(Material material, CancellationToken cancellationToken = default)
         {
             if (material == null)
-                return Result.Failure(Error.Validation("Malzeme boş olamaz.", "Material.Null"));
+                return Result.Failure(Error.Validation("Malzeme bos olamaz.", "Material.Null"));
 
             var name = (material.MaterialName ?? string.Empty).Trim();
             if (string.IsNullOrWhiteSpace(name))
-                return Result.Failure(Error.Validation("Malzeme adı boş olmamalı.", "Material.Name.Empty"));
+                return Result.Failure(Error.Validation("Malzeme adi bos olmamali.", "Material.Name.Empty"));
 
             var existsResult = await ExistsByNameAsync(name, material.Id, cancellationToken);
             if (existsResult.IsFailure) return Result.Failure(existsResult.Error);
             if (existsResult.Value)
-                return Result.Failure(Error.Conflict($"Aynı isimde zaten bir malzeme tanımlı: '{name}'.", "Material.Name.Duplicate"));
+                return Result.Failure(Error.Conflict($"Ayni isimde zaten bir malzeme tanimli: '{name}'.", "Material.Name.Duplicate"));
 
             try
             {
@@ -127,13 +127,13 @@ namespace Jenga.DataAccess.Services.Inventory
             }
             catch (DbUpdateException ex) when (IsUniqueViolation(ex))
             {
-                _logService?.LogWarning($"{Source}.UpdateAsync race-condition: '{name}' (id:{material.Id}) için unique index ihlali.");
-                return Result.Failure(Error.Conflict($"Aynı isimde zaten bir malzeme tanımlı: '{name}'.", "Material.Name.Duplicate"));
+                _logService.LogWarning($"{Source}.UpdateAsync race-condition: '{name}' (id:{material.Id}) i�in unique index ihlali.");
+                return Result.Failure(Error.Conflict($"Ayni isimde zaten bir malzeme tanimli: '{name}'.", "Material.Name.Duplicate"));
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.UpdateAsync");
-                return Result.Failure(Error.Unexpected("Malzeme güncellenemedi.", ex, "Material.Update.Failed"));
+                _logService.LogException(ex, $"{Source}.UpdateAsync");
+                return Result.Failure(Error.Unexpected("Malzeme g�ncellenemedi.", ex, "Material.Update.Failed"));
             }
         }
 
@@ -157,15 +157,15 @@ namespace Jenga.DataAccess.Services.Inventory
                 await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
 
                 if (await db.MaterialEntry_Table.AsNoTracking().AnyAsync(m => m.MaterialId == materialId, cancellationToken))
-                    return Result.Failure(Error.Conflict("Bu malzeme giriş kayıtlarında kullanılıyor.", "Material.InUse.Entry"));
+                    return Result.Failure(Error.Conflict("Bu malzeme giris kayitlarinda kullaniliyor.", "Material.InUse.Entry"));
                 if (await db.MaterialExit_Table.AsNoTracking().AnyAsync(m => m.MaterialId == materialId, cancellationToken))
-                    return Result.Failure(Error.Conflict("Bu malzeme çıkış kayıtlarında kullanılıyor.", "Material.InUse.Exit"));
+                    return Result.Failure(Error.Conflict("Bu malzeme �ikis kayitlarinda kullaniliyor.", "Material.InUse.Exit"));
                 if (await db.MaterialInventory_Table.AsNoTracking().AnyAsync(m => m.MaterialId == materialId, cancellationToken))
-                    return Result.Failure(Error.Conflict("Bu malzeme envanter kayıtlarında kullanılıyor.", "Material.InUse.Inventory"));
+                    return Result.Failure(Error.Conflict("Bu malzeme envanter kayitlarinda kullaniliyor.", "Material.InUse.Inventory"));
 
                 var entity = await db.Material_Table.FirstOrDefaultAsync(m => m.Id == materialId, cancellationToken);
                 if (entity == null)
-                    return Result.Failure(Error.NotFound($"Malzeme bulunamadı (Id={materialId}).", "Material.NotFound"));
+                    return Result.Failure(Error.NotFound($"Malzeme bulunamadi (Id={materialId}).", "Material.NotFound"));
 
                 db.Material_Table.Remove(entity);
                 await db.SaveChangesAsync(cancellationToken);
@@ -173,7 +173,7 @@ namespace Jenga.DataAccess.Services.Inventory
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.DeleteAsync");
+                _logService.LogException(ex, $"{Source}.DeleteAsync");
                 return Result.Failure(Error.Unexpected("Malzeme silinemedi.", ex, "Material.Delete.Failed"));
             }
         }
@@ -188,8 +188,8 @@ namespace Jenga.DataAccess.Services.Inventory
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.AnyAsync");
-                return Result.Failure<bool>(Error.Unexpected("Malzeme sorgusu yapılamadı.", ex, "Material.Any.Failed"));
+                _logService.LogException(ex, $"{Source}.AnyAsync");
+                return Result.Failure<bool>(Error.Unexpected("Malzeme sorgusu yapilamadi.", ex, "Material.Any.Failed"));
             }
         }
 
@@ -200,20 +200,20 @@ namespace Jenga.DataAccess.Services.Inventory
                 await using var db = await _dbFactory.CreateDbContextAsync();
 
                 if (await db.MaterialEntry_Table.AsNoTracking().AnyAsync(m => m.MaterialId == id))
-                    return Result.Success<(bool CanDelete, string? Reason)>((false, "Bu malzeme envantere giriş (MaterialEntry) kayıtlarında bulunmaktadır, önce onu silmelisiniz."));
+                    return Result.Success<(bool CanDelete, string? Reason)>((false, "Bu malzeme envantere giris (MaterialEntry) kayitlarinda bulunmaktadir, �nce onu silmelisiniz."));
 
                 if (await db.MaterialExit_Table.AsNoTracking().AnyAsync(m => m.MaterialId == id))
-                    return Result.Success<(bool CanDelete, string? Reason)>((false, "Bu malzeme envanterden çıkış (MaterialExit) kayıtlarında bulunmaktadır, önce onu silmelisiniz."));
+                    return Result.Success<(bool CanDelete, string? Reason)>((false, "Bu malzeme envanterden �ikis (MaterialExit) kayitlarinda bulunmaktadir, �nce onu silmelisiniz."));
 
                 if (await db.MaterialInventory_Table.AsNoTracking().AnyAsync(m => m.MaterialId == id))
-                    return Result.Success<(bool CanDelete, string? Reason)>((false, "Bu malzeme envanter (MaterialInventory) kayıtlarında bulunmaktadır, önce onu silmelisiniz."));
+                    return Result.Success<(bool CanDelete, string? Reason)>((false, "Bu malzeme envanter (MaterialInventory) kayitlarinda bulunmaktadir, �nce onu silmelisiniz."));
 
                 return Result.Success<(bool CanDelete, string? Reason)>((true, null));
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.CanDeleteAsync");
-                return Result.Failure<(bool CanDelete, string? Reason)>(Error.Unexpected("Malzeme silinebilirlik kontrolü yapılamadı.", ex, "Material.CanDelete.Failed"));
+                _logService.LogException(ex, $"{Source}.CanDeleteAsync");
+                return Result.Failure<(bool CanDelete, string? Reason)>(Error.Unexpected("Malzeme silinebilirlik kontrol� yapilamadi.", ex, "Material.CanDelete.Failed"));
             }
         }
 
@@ -234,8 +234,8 @@ namespace Jenga.DataAccess.Services.Inventory
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.ExistsByNameAsync");
-                return Result.Failure<bool>(Error.Unexpected("Malzeme adı kontrolü yapılamadı.", ex, "Material.ExistsByName.Failed"));
+                _logService.LogException(ex, $"{Source}.ExistsByNameAsync");
+                return Result.Failure<bool>(Error.Unexpected("Malzeme adi kontrol� yapilamadi.", ex, "Material.ExistsByName.Failed"));
             }
         }
     }

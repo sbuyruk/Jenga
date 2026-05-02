@@ -1,8 +1,8 @@
 using Jenga.BlazorUI.Services.Common;
+using Jenga.BlazorUI.Services.Common.Error;
+using Jenga.BlazorUI.Services.Common.Toast;
 using Jenga.BlazorUI.Services.Presence;
-using Jenga.Utility.Error;
 using Jenga.Utility.Logging;
-using Jenga.Utility.Toast;
 using Microsoft.AspNetCore.Components.Server.Circuits;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,8 +14,11 @@ namespace Jenga.BlazorUI.Extensions
         public static IServiceCollection AddApplicationServices(this IServiceCollection services)
         {
             services.AddScoped<IToastService, ToastService>();
-            services.AddScoped<ILogService, LogService>();
-            services.AddScoped<ILogWriter, FileLogWriter>();
+            // ILogWriter ve ILogService Singleton: FileLogWriter thread-safe (static Lock),
+            // LogService yalnızca ILogWriter[] tutar — mutable state yok.
+            // Her circuit için yeni instance oluşturmanın maliyeti ve gereksizliği ortadan kalkar.
+            services.AddSingleton<ILogWriter, FileLogWriter>();
+            services.AddSingleton<ILogService, LogService>();
             services.AddScoped<IErrorService, ErrorService>();
 
             // Global exception handling (HTTP pipeline). ExceptionHandlerMiddleware

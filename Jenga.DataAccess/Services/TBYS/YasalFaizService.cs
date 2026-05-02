@@ -17,7 +17,7 @@ public class YasalFaizService : IYasalFaizService
     public YasalFaizService(IDbContextFactory<ApplicationDbContext> dbFactory, ILogService logService)
     {
         _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
-        _logService = logService;
+        _logService = logService ?? throw new ArgumentNullException(nameof(logService));
     }
 
     public async Task<Result<List<YasalFaiz>>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -30,7 +30,7 @@ public class YasalFaizService : IYasalFaizService
         }
         catch (Exception ex)
         {
-            _logService?.LogError($"{Source}.GetAllAsync hata.", ex);
+            _logService.LogError($"{Source}.GetAllAsync hata.", ex);
             return Result<List<YasalFaiz>>.Failure(Error.Unexpected("Yasal faiz listesi alınamadı.", ex));
         }
     }
@@ -47,7 +47,7 @@ public class YasalFaizService : IYasalFaizService
         }
         catch (Exception ex)
         {
-            _logService?.LogError($"{Source}.GetByIdAsync hata.", ex);
+            _logService.LogError($"{Source}.GetByIdAsync hata.", ex);
             return Result<YasalFaiz>.Failure(Error.Unexpected("Yasal faiz alınamadı.", ex));
         }
     }
@@ -66,7 +66,7 @@ public class YasalFaizService : IYasalFaizService
         }
         catch (Exception ex)
         {
-            _logService?.LogError($"{Source}.AddAsync hata.", ex);
+            _logService.LogError($"{Source}.AddAsync hata.", ex);
             return Result.Failure(Error.Unexpected("Yasal faiz eklenemedi.", ex));
         }
     }
@@ -85,7 +85,7 @@ public class YasalFaizService : IYasalFaizService
         }
         catch (Exception ex)
         {
-            _logService?.LogError($"{Source}.UpdateAsync hata.", ex);
+            _logService.LogError($"{Source}.UpdateAsync hata.", ex);
             return Result.Failure(Error.Unexpected("Yasal faiz güncellenemedi.", ex));
         }
     }
@@ -105,7 +105,7 @@ public class YasalFaizService : IYasalFaizService
         }
         catch (Exception ex)
         {
-            _logService?.LogError($"{Source}.DeleteAsync hata.", ex);
+            _logService.LogError($"{Source}.DeleteAsync hata.", ex);
             return Result.Failure(Error.Unexpected("Yasal faiz silinemedi.", ex));
         }
     }
@@ -120,7 +120,7 @@ public class YasalFaizService : IYasalFaizService
         }
         catch (Exception ex)
         {
-            _logService?.LogError($"{Source}.AnyAsync hata.", ex);
+            _logService.LogError($"{Source}.AnyAsync hata.", ex);
             return Result<bool>.Failure(Error.Unexpected("Yasal faiz sorgulanamadı.", ex));
         }
     }

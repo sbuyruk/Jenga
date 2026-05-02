@@ -73,9 +73,8 @@ public class IletisimBilgileriService : IIletisimBilgileriService
             return Result.Failure(Error.Validation("İletişim bilgisi boş olamaz.", "IletisimBilgileri.Null"));
         try
         {
-            entity.Olusturan = modifiedBy;
-            entity.OlusturmaTarihi = DateTime.Now;
             await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            db.SetCurrentUser(modifiedBy);
             await db.IletisimBilgileri_Table.AddAsync(entity, cancellationToken);
             await db.SaveChangesAsync(cancellationToken);
             return Result.Success();
@@ -111,8 +110,6 @@ public class IletisimBilgileriService : IIletisimBilgileriService
             existing.InternetEPosta = entity.InternetEPosta;
             existing.OzelEPosta = entity.OzelEPosta;
             existing.Aciklama = entity.Aciklama;
-            existing.Degistiren = entity.Degistiren;
-            existing.DegistirmeTarihi = DateTime.Now;
             await db.SaveChangesAsync(cancellationToken);
             return Result.Success();
         }

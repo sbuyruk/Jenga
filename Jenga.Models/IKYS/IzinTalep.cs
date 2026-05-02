@@ -1,5 +1,4 @@
 using Jenga.Models.Sistem;
-using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -7,10 +6,8 @@ namespace Jenga.Models.IKYS;
 
 public class IzinTalep : BaseModel
 {
-    [ValidateNever]
     public int? PersonelId { get; set; }
     [ForeignKey("PersonelId")]
-    [ValidateNever]
     public Personel? Personel { get; set; }
     [DisplayName("İzin Tipi")]
     public int? IzinTipi { get; set; }
@@ -35,7 +32,6 @@ public class IzinTalep : BaseModel
     [DisplayName("İzin Dönem Id")]
     public int? IzinDonemId { get; set; }
     [ForeignKey("IzinDonemId")]
-    [ValidateNever]
     public IzinDonem? IzinDonem { get; set; }
     [DisplayName("Onay Durumu")]
     public int? OnayDurumu { get; set; }

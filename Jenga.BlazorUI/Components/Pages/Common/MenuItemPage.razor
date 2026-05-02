@@ -1,22 +1,21 @@
-ï»¿@page "/common/menu-item-page"
+@page "/common/menu-item-page"
 @rendermode InteractiveServer
 
 @using Jenga.DataAccess.Services.Common
 @using Jenga.Models.Common
 @using Jenga.BlazorUI.Components.Menus
-@using Jenga.Utility.Toast
 
 @inject IMenuItemService MenuItemService
 @inject IToastService ToastService
 
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h5 class="mb-0">MenÃ¼ YÃ¶netimi</h5>
+    <h5 class="mb-0">Menü Yönetimi</h5>
 
 </div>
 
 @if (!dataLoaded)
 {
-    <div class="text-muted">YÃ¼kleniyor...</div>
+    <div class="text-muted">Yükleniyor...</div>
 }
 else
 {
@@ -40,20 +39,20 @@ else
             menuItems = result.IsSuccess ? result.Value : new List<MenuItem>();
             if (result.IsFailure)
             {
-                ToastService.ShowToast($"MenÃ¼ler yÃ¼klenemedi: {result.Error.Message}", ToastType.Error, 5000);
+                ToastService.ShowToast($"Menüler yüklenemedi: {result.Error.Message}", ToastType.Error, 5000);
             }
         }
         catch (Exception ex)
         {
-            ToastService.ShowToast($"MenÃ¼ler yÃ¼klenemedi: {ex.Message}", ToastType.Error, 5000);
+            ToastService.ShowToast($"Menüler yüklenemedi: {ex.Message}", ToastType.Error, 5000);
             menuItems = new List<MenuItem>();
         }
         dataLoaded = true;
         StateHasChanged();
     }
 
-    // Provide a simple entry point for "Yeni MenÃ¼" button: open a client-side modal by
-    // delegating to MenuItemTable's behavior â€” MenuItemTable opens its own edit modal
+    // Provide a simple entry point for "Yeni Menü" button: open a client-side modal by
+    // delegating to MenuItemTable's behavior — MenuItemTable opens its own edit modal
     // when a MenuItem with Id == 0 is passed. To keep parent simple we add the new item
     // into the list and let the table show it immediately.
     private void OpenNewMenuModal()

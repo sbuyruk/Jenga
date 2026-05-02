@@ -74,7 +74,9 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _personel = await CurrentUserService.GetCurrentPersonelAsync();
+        // JS interop is not available during prerender, so skip the impersonation
+        // override (sessionStorage) here. It will be applied in OnAfterRenderAsync.
+        _personel = await CurrentUserService.GetCurrentPersonelWithoutImpersonationAsync();
         var personelId = _personel?.Id ?? 127;
         await MenuState.EnsureLoadedAsync(personelId);
 
@@ -88,7 +90,23 @@
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
+        {
+            // JS interop is now available. Re-resolve with impersonation override support
+            // (development-only). If the result differs, refresh the UI.
+            CurrentUserService.Invalidate();
+            var resolved = await CurrentUserService.GetCurrentPersonelAsync();
+            if (resolved?.Id != _personel?.Id)
+            {
+                _personel = resolved;
+                var personelId = _personel?.Id ?? 127;
+                await MenuState.EnsureLoadedAsync(personelId);
+                if (_personel != null)
+                    _windowsUser = $"{_personel.Adi} {_personel.Soyadi}";
+                StateHasChanged();
+            }
+
             await LogCurrentUrlAsync(source: "firstRender");
+        }
 
         await base.OnAfterRenderAsync(firstRender);
     }

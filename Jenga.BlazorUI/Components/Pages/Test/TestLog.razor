@@ -1,17 +1,16 @@
-﻿@page "/test/log"
+@page "/test/log"
 @rendermode InteractiveServer
 @using System
 @using System.IO
 @using Jenga.Utility.Logging
-@using Jenga.Utility.Toast
 @inject IToastService ToastService
 
 <h3>Log Test</h3>
 
 <div class="d-flex flex-column gap-2 mt-3"> 
     <button class="btn btn-info" @onclick="@(() => WriteLog(LogLevel.Information, "Bilgilendirme logu"))">Info</button> 
-    <button class="btn btn-success" @onclick="@(() => WriteLog(LogLevel.Information, "İşlem başarılı logu"))">Success</button> 
-    <button class="btn btn-warning" @onclick="@(() => WriteLog(LogLevel.Warning, "Uyarı logu"))">Warning</button> 
+    <button class="btn btn-success" @onclick="@(() => WriteLog(LogLevel.Information, "Islem basarili logu"))">Success</button> 
+    <button class="btn btn-warning" @onclick="@(() => WriteLog(LogLevel.Warning, "Uyari logu"))">Warning</button> 
     <button class="btn btn-danger" @onclick="@(() => WriteLog(LogLevel.Error, "Hata logu"))">Error</button> </div>
 
 <p class="mt-3">@statusMessage</p>

@@ -1,4 +1,4 @@
-﻿using Jenga.DataAccess.Data;
+using Jenga.DataAccess.Data;
 using Jenga.Models.Inventory;
 using Jenga.Utility.Logging;
 using Jenga.Utility.Results;
@@ -16,7 +16,7 @@ namespace Jenga.DataAccess.Services.Inventory
         public MaterialAssetService(IDbContextFactory<ApplicationDbContext> dbFactory, ILogService logService)
         {
             _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
-            _logService = logService;
+            _logService = logService ?? throw new ArgumentNullException(nameof(logService));
         }
 
         public async Task<Result<List<MaterialAsset>>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -29,8 +29,8 @@ namespace Jenga.DataAccess.Services.Inventory
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.GetAllAsync");
-                return Result.Failure<List<MaterialAsset>>(Error.Unexpected("Asset listesi alınamadı.", ex, "MaterialAsset.GetAll.Failed"));
+                _logService.LogException(ex, $"{Source}.GetAllAsync");
+                return Result.Failure<List<MaterialAsset>>(Error.Unexpected("Asset listesi alinamadi.", ex, "MaterialAsset.GetAll.Failed"));
             }
         }
 
@@ -44,15 +44,15 @@ namespace Jenga.DataAccess.Services.Inventory
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.GetByMaterialIdAsync");
-                return Result.Failure<List<MaterialAsset>>(Error.Unexpected("Asset listesi alınamadı.", ex, "MaterialAsset.GetByMaterial.Failed"));
+                _logService.LogException(ex, $"{Source}.GetByMaterialIdAsync");
+                return Result.Failure<List<MaterialAsset>>(Error.Unexpected("Asset listesi alinamadi.", ex, "MaterialAsset.GetByMaterial.Failed"));
             }
         }
 
         public async Task<Result> UpdateAsync(MaterialAsset asset, CancellationToken cancellationToken = default)
         {
             if (asset == null)
-                return Result.Failure(Error.Validation("Asset boş olamaz.", "MaterialAsset.Null"));
+                return Result.Failure(Error.Validation("Asset bos olamaz.", "MaterialAsset.Null"));
             try
             {
                 await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
@@ -62,15 +62,15 @@ namespace Jenga.DataAccess.Services.Inventory
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.UpdateAsync");
-                return Result.Failure(Error.Unexpected("Asset güncellenemedi.", ex, "MaterialAsset.Update.Failed"));
+                _logService.LogException(ex, $"{Source}.UpdateAsync");
+                return Result.Failure(Error.Unexpected("Asset g�ncellenemedi.", ex, "MaterialAsset.Update.Failed"));
             }
         }
 
         public async Task<Result> DeleteAsync(MaterialAsset asset, CancellationToken cancellationToken = default)
         {
             if (asset == null)
-                return Result.Failure(Error.Validation("Asset boş olamaz.", "MaterialAsset.Null"));
+                return Result.Failure(Error.Validation("Asset bos olamaz.", "MaterialAsset.Null"));
             try
             {
                 await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
@@ -80,7 +80,7 @@ namespace Jenga.DataAccess.Services.Inventory
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.DeleteAsync");
+                _logService.LogException(ex, $"{Source}.DeleteAsync");
                 return Result.Failure(Error.Unexpected("Asset silinemedi.", ex, "MaterialAsset.Delete.Failed"));
             }
         }

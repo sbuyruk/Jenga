@@ -73,9 +73,8 @@ public class IsBilgileriService : IIsBilgileriService
             return Result.Failure(Error.Validation("İş bilgisi boş olamaz.", "IsBilgileri.Null"));
         try
         {
-            entity.Olusturan = modifiedBy;
-            entity.OlusturmaTarihi = DateTime.Now;
             await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            db.SetCurrentUser(modifiedBy);
             await db.IsBilgileri_Table.AddAsync(entity, cancellationToken);
             await db.SaveChangesAsync(cancellationToken);
             return Result.Success();
@@ -111,8 +110,6 @@ public class IsBilgileriService : IIsBilgileriService
             existing.EmeklilikTarihi = entity.EmeklilikTarihi;
             existing.IzinDonemiBasTar = entity.IzinDonemiBasTar;
             existing.Aciklama = entity.Aciklama;
-            existing.Degistiren = entity.Degistiren;
-            existing.DegistirmeTarihi = DateTime.Now;
             await db.SaveChangesAsync(cancellationToken);
             return Result.Success();
         }

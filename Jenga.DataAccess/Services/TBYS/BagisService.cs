@@ -17,7 +17,7 @@ namespace Jenga.DataAccess.Services.TBYS
         public BagisService(IDbContextFactory<ApplicationDbContext> dbFactory, ILogService logService)
         {
             _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
-            _logService = logService;
+            _logService = logService ?? throw new ArgumentNullException(nameof(logService));
         }
 
         public async Task<Result<List<Bagis>>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -30,7 +30,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.GetAllAsync hata.", ex);
+                _logService.LogError($"{Source}.GetAllAsync hata.", ex);
                 return Result<List<Bagis>>.Failure(Error.Unexpected("Bağış listesi alınamadı.", ex));
             }
         }
@@ -47,7 +47,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.GetByIdAsync hata.", ex);
+                _logService.LogError($"{Source}.GetByIdAsync hata.", ex);
                 return Result<Bagis>.Failure(Error.Unexpected("Bağış alınamadı.", ex));
             }
         }
@@ -65,7 +65,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.GetByBagisciIdAsync hata.", ex);
+                _logService.LogError($"{Source}.GetByBagisciIdAsync hata.", ex);
                 return Result<List<Bagis>>.Failure(Error.Unexpected("Bağışçıya ait bağışlar alınamadı.", ex));
             }
         }
@@ -80,7 +80,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.GetByTasinmazIdAsync hata.", ex);
+                _logService.LogError($"{Source}.GetByTasinmazIdAsync hata.", ex);
                 return Result<List<Bagis>>.Failure(Error.Unexpected("Taşınmaza ait bağışlar alınamadı.", ex));
             }
         }
@@ -99,7 +99,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.AddAsync hata.", ex);
+                _logService.LogError($"{Source}.AddAsync hata.", ex);
                 return Result.Failure(Error.Unexpected("Bağış eklenemedi.", ex));
             }
         }
@@ -118,7 +118,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.UpdateAsync hata.", ex);
+                _logService.LogError($"{Source}.UpdateAsync hata.", ex);
                 return Result.Failure(Error.Unexpected("Bağış güncellenemedi.", ex));
             }
         }
@@ -138,7 +138,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.DeleteAsync hata.", ex);
+                _logService.LogError($"{Source}.DeleteAsync hata.", ex);
                 return Result.Failure(Error.Unexpected("Bağış silinemedi.", ex));
             }
         }
@@ -153,7 +153,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.AnyAsync hata.", ex);
+                _logService.LogError($"{Source}.AnyAsync hata.", ex);
                 return Result<bool>.Failure(Error.Unexpected("Sorgu çalıştırılamadı.", ex));
             }
         }
@@ -170,7 +170,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.CanDeleteAsync hata.", ex);
+                _logService.LogError($"{Source}.CanDeleteAsync hata.", ex);
                 return Result<(bool CanDelete, string? Reason)>.Failure(Error.Unexpected("Silinebilirlik sorgusu başarısız.", ex));
             }
         }

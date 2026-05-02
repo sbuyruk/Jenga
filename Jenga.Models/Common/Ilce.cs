@@ -1,5 +1,4 @@
-﻿using Jenga.Models.Sistem;
-using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+using Jenga.Models.Sistem;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -10,20 +9,19 @@ namespace Jenga.Models.Common
     {
         [Required]
         public int IlId { get; set; }
-        [DisplayName("İl")]
+        [DisplayName("Il")]
         [ForeignKey("IlId")]
-        [ValidateNever]
         public Il IlTanim { get; set; }
 
         [Required]
-        [DisplayName("İl Adı")]
+        [DisplayName("Il Adi")]
         public string? IlAdi { get; set; }
 
         [Required]
         public int IlceId { get; set; }
 
         [Required]
-        [DisplayName("İlçe Adı")]
+        [DisplayName("Il�e Adi")]
         public string? IlceAdi { get; set; }
         [Required]
         [DisplayName("Aktif")]

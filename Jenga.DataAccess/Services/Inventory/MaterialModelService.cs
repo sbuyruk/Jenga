@@ -1,4 +1,4 @@
-﻿using Jenga.DataAccess.Data;
+using Jenga.DataAccess.Data;
 using Jenga.Models.Inventory;
 using Jenga.Utility.Logging;
 using Jenga.Utility.Results;
@@ -16,7 +16,7 @@ namespace Jenga.DataAccess.Services.Inventory
         public MaterialModelService(IDbContextFactory<ApplicationDbContext> dbFactory, ILogService logService)
         {
             _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
-            _logService = logService;
+            _logService = logService ?? throw new ArgumentNullException(nameof(logService));
         }
 
         public async Task<Result<List<MaterialModel>>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -29,8 +29,8 @@ namespace Jenga.DataAccess.Services.Inventory
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.GetAllAsync");
-                return Result.Failure<List<MaterialModel>>(Error.Unexpected("Model listesi alınamadı.", ex, "MaterialModel.GetAll.Failed"));
+                _logService.LogException(ex, $"{Source}.GetAllAsync");
+                return Result.Failure<List<MaterialModel>>(Error.Unexpected("Model listesi alinamadi.", ex, "MaterialModel.GetAll.Failed"));
             }
         }
 
@@ -41,12 +41,12 @@ namespace Jenga.DataAccess.Services.Inventory
                 await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
                 var entity = await db.MaterialModel_Table.AsNoTracking().FirstOrDefaultAsync(m => m.Id == id, cancellationToken);
                 if (entity is null)
-                    return Result.Failure<MaterialModel>(Error.NotFound($"Model bulunamadı (Id={id}).", "MaterialModel.NotFound"));
+                    return Result.Failure<MaterialModel>(Error.NotFound($"Model bulunamadi (Id={id}).", "MaterialModel.NotFound"));
                 return Result.Success(entity);
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.GetByIdAsync");
+                _logService.LogException(ex, $"{Source}.GetByIdAsync");
                 return Result.Failure<MaterialModel>(Error.Unexpected("Model getirilemedi.", ex, "MaterialModel.GetById.Failed"));
             }
         }
@@ -54,7 +54,7 @@ namespace Jenga.DataAccess.Services.Inventory
         public async Task<Result> AddAsync(MaterialModel model, CancellationToken cancellationToken = default)
         {
             if (model == null)
-                return Result.Failure(Error.Validation("Model boş olamaz.", "MaterialModel.Null"));
+                return Result.Failure(Error.Validation("Model bos olamaz.", "MaterialModel.Null"));
             try
             {
                 await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
@@ -64,7 +64,7 @@ namespace Jenga.DataAccess.Services.Inventory
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.AddAsync");
+                _logService.LogException(ex, $"{Source}.AddAsync");
                 return Result.Failure(Error.Unexpected("Model eklenemedi.", ex, "MaterialModel.Add.Failed"));
             }
         }
@@ -72,7 +72,7 @@ namespace Jenga.DataAccess.Services.Inventory
         public async Task<Result> UpdateAsync(MaterialModel model, CancellationToken cancellationToken = default)
         {
             if (model == null)
-                return Result.Failure(Error.Validation("Model boş olamaz.", "MaterialModel.Null"));
+                return Result.Failure(Error.Validation("Model bos olamaz.", "MaterialModel.Null"));
             try
             {
                 await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
@@ -82,28 +82,28 @@ namespace Jenga.DataAccess.Services.Inventory
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.UpdateAsync");
-                return Result.Failure(Error.Unexpected("Model güncellenemedi.", ex, "MaterialModel.Update.Failed"));
+                _logService.LogException(ex, $"{Source}.UpdateAsync");
+                return Result.Failure(Error.Unexpected("Model g�ncellenemedi.", ex, "MaterialModel.Update.Failed"));
             }
         }
 
         public async Task<Result> DeleteAsync(MaterialModel model, CancellationToken cancellationToken = default)
         {
             if (model == null)
-                return Result.Failure(Error.Validation("Model boş olamaz.", "MaterialModel.Null"));
+                return Result.Failure(Error.Validation("Model bos olamaz.", "MaterialModel.Null"));
             try
             {
                 await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
                 var entity = await db.MaterialModel_Table.FirstOrDefaultAsync(m => m.Id == model.Id, cancellationToken);
                 if (entity == null)
-                    return Result.Failure(Error.NotFound($"Model bulunamadı (Id={model.Id}).", "MaterialModel.NotFound"));
+                    return Result.Failure(Error.NotFound($"Model bulunamadi (Id={model.Id}).", "MaterialModel.NotFound"));
                 db.MaterialModel_Table.Remove(entity);
                 await db.SaveChangesAsync(cancellationToken);
                 return Result.Success();
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.DeleteAsync");
+                _logService.LogException(ex, $"{Source}.DeleteAsync");
                 return Result.Failure(Error.Unexpected("Model silinemedi.", ex, "MaterialModel.Delete.Failed"));
             }
         }

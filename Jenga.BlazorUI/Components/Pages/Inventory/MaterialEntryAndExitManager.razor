@@ -1,4 +1,4 @@
-﻿@page "/inventory/materialentry-and-exit-manager"
+@page "/inventory/materialentry-and-exit-manager"
 @rendermode InteractiveServer
 
 @using Jenga.BlazorUI.Components.Common
@@ -8,11 +8,9 @@
 @using Jenga.DataAccess.Services.IKYS
 @using Jenga.DataAccess.Services.Inventory
 @using Jenga.Models.Common
-@using Jenga.Models.Helper
 @using Jenga.Models.IKYS
 @using Jenga.Models.Inventory
 
-@using Jenga.Utility.Toast
 
 @inject IToastService ToastService
 @inject IModalService ModalService
@@ -68,7 +66,7 @@
     <!-- RIGHT: Cards & Grid -->
     <div class="col-md-7">
         <div class="d-flex justify-content-between align-items-start mb-2">
-            <h5 class="mb-0">Envanter İşlemleri</h5>
+            <h5 class="mb-0">Envanter Islemleri</h5>
         </div>
 
         <div class="card p-3 mb-3">
@@ -107,7 +105,7 @@
                 <div class="col">
                     @if (materialMovements.Any())
                     {
-                        <div class="text-muted small mt-3 border-top pt-2">Son işlemler (Giriş/Çıkış/Transfer)</div>
+                        <div class="text-muted small mt-3 border-top pt-2">Son islemler (Giris/�ikis/Transfer)</div>
 
                         <MaterialMovementList Movements="materialMovements" MaxItems="6" />
                     }
@@ -203,7 +201,7 @@
     private string searchTerm = "";
     private bool sortAscending = true;
     private int? selectedLocationId = null;
-    private string CreateContextMenuLabel = "Alt Kategori Tanımla";
+    private string CreateContextMenuLabel = "Alt Kategori Tanimla";
 
     // Modal Controls
     private bool isEntryOpen, isExitOpen, isCategoryEditOpen, isMaterialEditOpen, isTransferOpen;
@@ -397,7 +395,7 @@
                 bool isExit = m.FromLocationId.HasValue && !m.ToLocationId.HasValue;
                 bool isTransfer = m.FromLocationId.HasValue && m.ToLocationId.HasValue;
 
-                string type = isTransfer ? "Transfer" : (isEntry ? "Giriş" : "Çıkış");
+                string type = isTransfer ? "Transfer" : (isEntry ? "Giris" : "�ikis");
                 string locName = isEntry
                     ? InventoryUIHelper.GetLocationFullName(m.ToLocationId, locations)
                     : InventoryUIHelper.GetLocationFullName(m.FromLocationId, locations);
@@ -453,11 +451,11 @@
             Quantity = 1
         };
 
-        // DÜZELTME: Lokasyon ve Personel bilgisini karttan alıp modele işle
+        // D�ZELTME: Lokasyon ve Personel bilgisini karttan alip modele isle
         if (loc != null)
         {
             editingExit.LocationId = loc.LocationId != 0 ? loc.LocationId : null;
-            editingExit.PersonelId = loc.PersonelId; // KARTTAKİ PERSONEL ID BURADA AKTARILIYOR
+            editingExit.PersonelId = loc.PersonelId; // KARTTAKI PERSONEL ID BURADA AKTARILIYOR
         }
 
         SelectedMaterial = mat;
@@ -493,7 +491,7 @@
         if (editingEntry == null) return;
         await ExecuteTransaction(async () =>
             await MaterialEntryService.AddAsync(editingEntry, httpContextAccessor.HttpContext?.User?.Identity?.Name, CancellationToken.None),
-            "Giriş", () => isEntryOpen = false);
+            "Giris", () => isEntryOpen = false);
     }
 
     private void OnTransferAssetIdsReceived(List<int> assetIds)
@@ -514,7 +512,7 @@
 
         await ExecuteTransaction(async () =>
             await MaterialExitService.AddAsync(editingExit, assetIds, CancellationToken.None),
-            "Çıkış", () => isExitOpen = false);
+            "�ikis", () => isExitOpen = false);
     }
 
     private async Task OnTransferModalSave(MaterialTransfer? transfer)
@@ -534,7 +532,7 @@
         try
         {
             await action();
-            ToastService.ShowSuccess($"{actionName} başarıyla kaydedildi.");
+            ToastService.ShowSuccess($"{actionName} basariyla kaydedildi.");
             closeAction();
 
             var invR = await MaterialInventoryService.GetAllAsync();
@@ -590,7 +588,7 @@
         var reason = check.IsSuccess ? check.Value.Reason : check.Error?.Message;
         if (!canDelete) { ToastService.ShowError(reason); return; }
 
-        ModalService.ShowConfirmation("Silme Onayı", $"{item.Data.Category.CategoryName} silinsin mi?", async (res) =>
+        ModalService.ShowConfirmation("Silme Onayi", $"{item.Data.Category.CategoryName} silinsin mi?", async (res) =>
         {
             if (res)
             {

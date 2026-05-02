@@ -28,35 +28,6 @@ public class Result
 
     public static Result<T> Success<T>(T value) => Result<T>.Success(value);
     public static Result<T> Failure<T>(Error error) => Result<T>.Failure(error);
-
-    /// <summary>
-    /// İşlemi try/catch içinde çalıştırır; istisnayı Result.Failure'a dönüştürür.
-    /// </summary>
-    public static async Task<Result> TryAsync(Func<Task> action, string errorCode = "General.Unexpected", string? errorMessage = null)
-    {
-        try
-        {
-            await action();
-            return Success();
-        }
-        catch (Exception ex)
-        {
-            return Failure(new Error(errorCode, errorMessage ?? ex.Message, ex));
-        }
-    }
-
-    public static async Task<Result<T>> TryAsync<T>(Func<Task<T>> action, string errorCode = "General.Unexpected", string? errorMessage = null)
-    {
-        try
-        {
-            var value = await action();
-            return Success(value);
-        }
-        catch (Exception ex)
-        {
-            return Failure<T>(new Error(errorCode, errorMessage ?? ex.Message, ex));
-        }
-    }
 }
 
 /// <summary>

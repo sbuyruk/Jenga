@@ -1,4 +1,4 @@
-﻿using Jenga.DataAccess.Data;
+using Jenga.DataAccess.Data;
 using Jenga.Models.Inventory;
 using Jenga.Utility.Logging;
 using Jenga.Utility.Results;
@@ -16,13 +16,13 @@ namespace Jenga.DataAccess.Services.Inventory
         public MaterialMovementService(IDbContextFactory<ApplicationDbContext> dbFactory, ILogService logService)
         {
             _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
-            _logService = logService;
+            _logService = logService ?? throw new ArgumentNullException(nameof(logService));
         }
 
         public async Task<Result> AddAsync(MaterialMovement movement, CancellationToken cancellationToken = default)
         {
             if (movement == null)
-                return Result.Failure(Error.Validation("Hareket boş olamaz.", "MaterialMovement.Null"));
+                return Result.Failure(Error.Validation("Hareket bos olamaz.", "MaterialMovement.Null"));
 
             // Ensure MovementDate and a sensible Operation value if caller didn't set them.
             if (movement.MovementDate == default) movement.MovementDate = DateTime.Now;
@@ -30,8 +30,8 @@ namespace Jenga.DataAccess.Services.Inventory
             movement.Operation ??= !string.IsNullOrWhiteSpace(movement.MovementType)
                 ? movement.MovementType
                 : (movement.FromLocationId.HasValue && movement.ToLocationId.HasValue ? "Transfer"
-                    : (!movement.FromLocationId.HasValue && movement.ToLocationId.HasValue ? "Giriş"
-                        : (movement.FromLocationId.HasValue && !movement.ToLocationId.HasValue ? "Çıkış" : "Diğer")));
+                    : (!movement.FromLocationId.HasValue && movement.ToLocationId.HasValue ? "Giris"
+                        : (movement.FromLocationId.HasValue && !movement.ToLocationId.HasValue ? "�ikis" : "Diger")));
 
             try
             {
@@ -42,7 +42,7 @@ namespace Jenga.DataAccess.Services.Inventory
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.AddAsync");
+                _logService.LogException(ex, $"{Source}.AddAsync");
                 return Result.Failure(Error.Unexpected("Hareket eklenemedi.", ex, "MaterialMovement.Add.Failed"));
             }
         }
@@ -60,8 +60,8 @@ namespace Jenga.DataAccess.Services.Inventory
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.GetMovementsByMaterialIdAsync");
-                return Result.Failure<List<MaterialMovement>>(Error.Unexpected("Hareket listesi alınamadı.", ex, "MaterialMovement.GetByMaterial.Failed"));
+                _logService.LogException(ex, $"{Source}.GetMovementsByMaterialIdAsync");
+                return Result.Failure<List<MaterialMovement>>(Error.Unexpected("Hareket listesi alinamadi.", ex, "MaterialMovement.GetByMaterial.Failed"));
             }
         }
     }

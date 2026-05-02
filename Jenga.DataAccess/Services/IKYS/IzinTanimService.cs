@@ -56,9 +56,8 @@ public class IzinTanimService : IIzinTanimService
             return Result.Failure(Error.Validation("İzin tanımı boş olamaz.", "IzinTanim.Null"));
         try
         {
-            entity.Olusturan = modifiedBy;
-            entity.OlusturmaTarihi = DateTime.Now;
             await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            db.SetCurrentUser(modifiedBy);
             await db.IzinTanim_Table.AddAsync(entity, cancellationToken);
             await db.SaveChangesAsync(cancellationToken);
             return Result.Success();
@@ -82,8 +81,6 @@ public class IzinTanimService : IIzinTanimService
                 return Result.Failure(Error.NotFound("Kayıt bulunamadı!", "IzinTanim.NotFound"));
             existing.Adi = entity.Adi;
             existing.Aciklama = entity.Aciklama;
-            existing.Degistiren = entity.Degistiren;
-            existing.DegistirmeTarihi = DateTime.Now;
             await db.SaveChangesAsync(cancellationToken);
             return Result.Success();
         }

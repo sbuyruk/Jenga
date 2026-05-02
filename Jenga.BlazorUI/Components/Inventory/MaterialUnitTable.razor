@@ -1,8 +1,7 @@
-﻿@using Jenga.BlazorUI.Components.Common
+@using Jenga.BlazorUI.Components.Common
 @using Jenga.BlazorUI.Services.Common
 @using Jenga.DataAccess.Services.Inventory
 @using Jenga.Models.Inventory
-@using Jenga.Utility.Toast
 @inject IMaterialService MaterialService
 @inject IMaterialEntryService MaterialEntryService
 @inject IMaterialUnitService MaterialUnitService
@@ -19,7 +18,7 @@
 
 @if (MaterialUnits?.Any() != true)
 {
-    <p>Tanımlı birim yok.</p>
+    <p>Tanimli birim yok.</p>
 }
 else
 {
@@ -35,10 +34,10 @@ else
                   TableClass="table-hover table-sm table-bordered">
 
         <HeaderTemplate>
-            <th>Birim Adı</th>
+            <th>Birim Adi</th>
             <th>Sembol</th>
-            <th>Açıklama</th>
-            <th class="text-center">İşlemler</th>
+            <th>A�iklama</th>
+            <th class="text-center">Islemler</th>
         </HeaderTemplate>
 
         <RowTemplate Context="unit">
@@ -46,7 +45,7 @@ else
             <td class="align-middle">@unit.Symbol</td>
             <td class="align-middle">@unit.Aciklama</td>
             <td class="text-center align-middle" style="white-space:nowrap;">
-                <button class="btn btn-sm btn-primary me-2" @onclick="() => OnEditClicked(unit)">Düzenle</button>
+                <button class="btn btn-sm btn-primary me-2" @onclick="() => OnEditClicked(unit)">D�zenle</button>
                 <button class="btn btn-sm btn-danger" @onclick="() => OnDeleteClicked(unit)">Sil</button>
             </td>
         </RowTemplate>
@@ -106,7 +105,7 @@ else
         var hasMaterial = hasMaterialResult.IsSuccess && hasMaterialResult.Value;
         if (hasMaterial)
         {
-            ToastService.ShowToast("Bu birimi kullanan malzemeler var, önce onları silmelisiniz.", ToastType.Error, 5000);
+            ToastService.ShowToast("Bu birimi kullanan malzemeler var, �nce onlari silmelisiniz.", ToastType.Error, 5000);
             return;
         }
 
@@ -114,13 +113,13 @@ else
         var hasEntry = hasEntryResult.IsSuccess && hasEntryResult.Value;
         if (hasEntry)
         {
-            ToastService.ShowToast("Bu birime bağlı malzeme girişleri var, önce onları silmelisiniz.", ToastType.Error, 5000);
+            ToastService.ShowToast("Bu birime bagli malzeme girisleri var, �nce onlari silmelisiniz.", ToastType.Error, 5000);
             return;
         }
 
         ModalService.ShowConfirmation(
-            "Silme Onayı",
-            $"'{unit.Name}' birimini silmek istediğinizden emin misiniz?",
+            "Silme Onayi",
+            $"'{unit.Name}' birimini silmek istediginizden emin misiniz?",
             async result =>
             {
                 if (!result)
@@ -140,7 +139,7 @@ else
                 }
                 else
                 {
-                    ToastService.ShowToast("Silme işlemi başarısız oldu", ToastType.Error, 3000);
+                    ToastService.ShowToast("Silme islemi basarisiz oldu", ToastType.Error, 3000);
                 }
             });
     }

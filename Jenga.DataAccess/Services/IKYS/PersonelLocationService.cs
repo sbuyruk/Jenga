@@ -85,9 +85,7 @@ public class PersonelLocationService : IPersonelLocationService
             if (exists)
                 return Result.Failure(Error.Conflict("Bu personel bu lokasyona zaten atanmış.", "PersonelLocation.AlreadyAssigned"));
 
-            assignment.Olusturan = string.IsNullOrWhiteSpace(createdBy) ? Environment.UserName : createdBy;
-            assignment.OlusturmaTarihi = DateTime.Now;
-
+            db.SetCurrentUser(createdBy);
             await db.PersonelLocation_Table.AddAsync(assignment, cancellationToken);
             await db.SaveChangesAsync(cancellationToken);
             return Result.Success();
@@ -127,6 +125,7 @@ public class PersonelLocationService : IPersonelLocationService
             await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
             await using var tx = await db.Database.BeginTransactionAsync(cancellationToken);
 
+            db.SetCurrentUser(modifiedBy);
             var existingPrimary = await db.PersonelLocation_Table
                 .Where(pl => pl.PersonelId == personelId && pl.IsPrimary)
                 .ToListAsync(cancellationToken);
@@ -134,8 +133,6 @@ public class PersonelLocationService : IPersonelLocationService
             foreach (var e in existingPrimary)
             {
                 e.IsPrimary = false;
-                e.Degistiren = string.IsNullOrWhiteSpace(modifiedBy) ? Environment.UserName : modifiedBy;
-                e.DegistirmeTarihi = DateTime.Now;
             }
 
             var target = await db.PersonelLocation_Table
@@ -144,8 +141,6 @@ public class PersonelLocationService : IPersonelLocationService
             if (target != null)
             {
                 target.IsPrimary = true;
-                target.Degistiren = string.IsNullOrWhiteSpace(modifiedBy) ? Environment.UserName : modifiedBy;
-                target.DegistirmeTarihi = DateTime.Now;
             }
             else
             {
@@ -154,9 +149,7 @@ public class PersonelLocationService : IPersonelLocationService
                     PersonelId = personelId,
                     LocationId = locationId,
                     IsPrimary = true,
-                    IsActive = true,
-                    Olusturan = string.IsNullOrWhiteSpace(modifiedBy) ? Environment.UserName : modifiedBy,
-                    OlusturmaTarihi = DateTime.Now
+                    IsActive = true
                 };
                 await db.PersonelLocation_Table.AddAsync(target, cancellationToken);
             }

@@ -1,50 +1,35 @@
-﻿using Jenga.Models.Sistem;
-using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+using Jenga.Models.Sistem;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Jenga.Models.IKYS;
 public class Kimlik : BaseModel
 {
-    [ValidateNever]
     public int PersonelId { get; set; }
     [ForeignKey("PersonelId")]
-    [ValidateNever]
     public Personel? Personel { get; set; }
-    [ValidateNever]
     [DisplayName("TC Kimlik No")]
     public long? TCKimlikNo { get; set; }
-    [ValidateNever]
-    [DisplayName("Baba Adı")]
+    [DisplayName("Baba Adi")]
     public string BabaAdi { get; set; }
-    [ValidateNever]
-    [DisplayName("Anne Adı")]
+    [DisplayName("Anne Adi")]
     public string AnneAdi { get; set; }
-    [ValidateNever]
-    [DisplayName("Doğum Yeri")]
+    [DisplayName("Dogum Yeri")]
     public string? DogumYeri { get; set; }
-    [ValidateNever]
-    [DisplayName("Doğum Tarihi")]
+    [DisplayName("Dogum Tarihi")]
     public DateTime? DogumTar { get; set; }
-    [ValidateNever]
     [DisplayName("Medeni hali")]
     public string? MedeniHali { get; set; }
-    [ValidateNever]
     [DisplayName("Evlilik Tarihi")]
     public DateTime? EvlilikTar { get; set; }
-    [ValidateNever]
     [DisplayName("Cinsiyet")]
     public string Cinsiyet { get; set; }
-    [ValidateNever]
     [DisplayName("EskiSoyadi")]
     public string EskiSoyadi { get; set; }
-    [ValidateNever]
     [DisplayName("KanGrubu")]
     public string KanGrubu { get; set; }
-    [ValidateNever]
-    [DisplayName("Doğumgünü Kutlama")]
+    [DisplayName("Dogumg�n� Kutlama")]
     public bool? DogumGunuKutlama { get; set; }
-    [ValidateNever]
     [DisplayName("Evlilik Kutlama")]
     public bool? EvlilikKutlama { get; set; }
 

@@ -1,4 +1,4 @@
-﻿@using System.ComponentModel.DataAnnotations
+@using System.ComponentModel.DataAnnotations
 @using Jenga.BlazorUI.Components.Common
 @using Jenga.BlazorUI.Services.Common
 @using Jenga.DataAccess.Services.Common
@@ -7,7 +7,6 @@
 @using Jenga.Models.Common
 @using Jenga.Models.IKYS
 
-@using Jenga.Utility.Toast
 @using System.ComponentModel
 @inject IModalService ModalService
 @inject IRoleService RolService
@@ -23,7 +22,7 @@
 
 @if (Roles?.Any() != true)
 {
-    <p>Rol bulunamadı.</p>
+    <p>Rol bulunamadi.</p>
 }
 else
 {
@@ -39,7 +38,7 @@ else
             <td>@row.Name</td>
             <td>@row.Aciklama</td>
             <td>
-                <button class="btn btn-sm btn-primary me-2" @onclick="() => OnEditClicked(row.Original)">Düzenle</button>
+                <button class="btn btn-sm btn-primary me-2" @onclick="() => OnEditClicked(row.Original)">D�zenle</button>
                 <button class="btn btn-sm btn-danger" @onclick="() => OnDeleteClicked(row.Original)">Sil</button>
             </td>
         </RowTemplate>
@@ -59,8 +58,8 @@ else
 @code {
     [Parameter] public List<Role> Roles { get; set; } = new();
 
-    // Mutasyon olduğunda parent yeniden yüklesin/karar versin diye event tabanlı bildirim.
-    // RoleTable artık parent'ın Roles listesini doğrudan mutate ETMEZ.
+    // Mutasyon oldugunda parent yeniden y�klesin/karar versin diye event tabanli bildirim.
+    // RoleTable artik parent'in Roles listesini dogrudan mutate ETMEZ.
     [Parameter] public EventCallback<Role> OnRoleAdded { get; set; }
     [Parameter] public EventCallback<Role> OnRoleUpdated { get; set; }
     [Parameter] public EventCallback<Role> OnRoleDeleted { get; set; }
@@ -112,13 +111,13 @@ else
 
     private void OnDeleteClicked(Role role)
     {
-        // ShowConfirmation Action<bool> alıyor; içinde await kullanmak için
-        // gerçek bir async metoda fire-and-forget yapıyoruz. Exception'lar
-        // metot içinde yakalanıp toast'lanır; render güncellemesi InvokeAsync
+        // ShowConfirmation Action<bool> aliyor; i�inde await kullanmak i�in
+        // ger�ek bir async metoda fire-and-forget yapiyoruz. Exception'lar
+        // metot i�inde yakalanip toast'lanir; render g�ncellemesi InvokeAsync
         // ile render thread'inde tetiklenir.
         ModalService.ShowConfirmation(
-            "Silme Onayı",
-            $"'{role.Name}' rolünü silmek istediğinizden emin misiniz?",
+            "Silme Onayi",
+            $"'{role.Name}' rol�n� silmek istediginizden emin misiniz?",
             result =>
             {
                 if (!result) return;
@@ -138,7 +137,7 @@ else
             }
             else
             {
-                ToastService.ShowToast($"Silme başarısız: {result.Error.Message}", ToastType.Error, 4000);
+                ToastService.ShowToast($"Silme basarisiz: {result.Error.Message}", ToastType.Error, 4000);
             }
             StateHasChanged();
         });
@@ -158,7 +157,7 @@ else
             }
             else
             {
-                ToastService.ShowToast($"Ekleme başarısız: {result.Error.Message}", ToastType.Error, 4000);
+                ToastService.ShowToast($"Ekleme basarisiz: {result.Error.Message}", ToastType.Error, 4000);
             }
         }
         else
@@ -166,15 +165,15 @@ else
             var result = await RolService.UpdateWithRelationsAsync(selectedRol);
             if (result.IsSuccess)
             {
-                ToastService.ShowToast(selectedRol.Name + " güncellendi", ToastType.Info, 3000);
-                // Yerel DTO'yu da güncelle ki parent yeniden yüklemese bile UI tutarlı kalsın.
+                ToastService.ShowToast(selectedRol.Name + " g�ncellendi", ToastType.Info, 3000);
+                // Yerel DTO'yu da g�ncelle ki parent yeniden y�klemese bile UI tutarli kalsin.
                 var row = roleRows.FirstOrDefault(r => r.Id == selectedRol.Id);
                 row?.UpdateFrom(selectedRol);
                 await OnRoleUpdated.InvokeAsync(selectedRol);
             }
             else
             {
-                ToastService.ShowToast($"Güncelleme başarısız: {result.Error.Message}", ToastType.Error, 4000);
+                ToastService.ShowToast($"G�ncelleme basarisiz: {result.Error.Message}", ToastType.Error, 4000);
             }
         }
 
@@ -213,10 +212,10 @@ else
         [Display(Name = "Ad")]
         public string Name { get; private set; } = string.Empty;
 
-        [Display(Name = "Açıklama")]
+        [Display(Name = "A�iklama")]
         public string Aciklama { get; private set; } = string.Empty;
         
-        [Display(Name = "İşlemler")]
+        [Display(Name = "Islemler")]
         public Role Original { get; private set; }
 
         public RoleRow(Role r)

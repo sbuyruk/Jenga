@@ -28,11 +28,13 @@ public sealed class DbContextScope : IDbContextScope
 
     public static async Task<DbContextScope> CreateAsync(
         IDbContextFactory<ApplicationDbContext> dbFactory,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        string? currentUser = null)
     {
         ArgumentNullException.ThrowIfNull(dbFactory);
 
         var ctx = await dbFactory.CreateDbContextAsync(cancellationToken);
+        ctx.SetCurrentUser(currentUser);
         try
         {
             var tx = await ctx.Database.BeginTransactionAsync(cancellationToken);

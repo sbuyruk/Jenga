@@ -1,6 +1,5 @@
 using Jenga.Utility.Logging;
 using Microsoft.AspNetCore.Diagnostics;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Jenga.BlazorUI.Infrastructure;
 
@@ -12,16 +11,16 @@ namespace Jenga.BlazorUI.Infrastructure;
 /// <remarks>
 /// IExceptionHandler ExceptionHandlerMiddleware tarafından <b>root provider</b>
 /// üzerinden resolve edildiği için bu sınıf Singleton olmak zorundadır.
-/// Scoped servislere (ILogService gibi) erişmek için IServiceScopeFactory kullanılır.
+/// ILogService de Singleton kayıtlı olduğundan doğrudan inject edilebilir.
 /// </remarks>
 public sealed class GlobalExceptionHandler : IExceptionHandler
 {
-    private readonly IServiceScopeFactory _scopeFactory;
+    private readonly ILogService _logService;
     private readonly ILogger<GlobalExceptionHandler> _logger;
 
-    public GlobalExceptionHandler(IServiceScopeFactory scopeFactory, ILogger<GlobalExceptionHandler> logger)
+    public GlobalExceptionHandler(ILogService logService, ILogger<GlobalExceptionHandler> logger)
     {
-        _scopeFactory = scopeFactory;
+        _logService = logService;
         _logger = logger;
     }
 
@@ -36,15 +35,11 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
 
         var message = $"Unhandled exception | TraceId={traceId} | Path={path} | User={user}";
 
-        // ILogger her zaman güvenli (singleton).
         _logger.LogError(exception, "{Message}", message);
 
-        // ILogService scoped; ayrı bir scope üzerinden çöz.
         try
         {
-            using var scope = _scopeFactory.CreateScope();
-            var logService = scope.ServiceProvider.GetService<ILogService>();
-            logService?.LogException(exception, source: "GlobalExceptionHandler", message: message);
+            _logService.LogException(exception, source: "GlobalExceptionHandler", message: message);
         }
         catch
         {

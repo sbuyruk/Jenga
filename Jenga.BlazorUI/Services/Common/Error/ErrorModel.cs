@@ -1,4 +1,4 @@
-﻿namespace Jenga.Utility.Error;
+namespace Jenga.BlazorUI.Services.Common.Error;
 
 public class ErrorModel
 {

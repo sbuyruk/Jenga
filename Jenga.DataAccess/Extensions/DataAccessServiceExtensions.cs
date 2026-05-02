@@ -5,9 +5,11 @@ using Jenga.DataAccess.Services.IKYS;
 using Jenga.DataAccess.Services.Inventory;
 using Jenga.DataAccess.Services.NBYS;
 using Jenga.DataAccess.Services.TBYS;
+using Jenga.Utility.Logging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -33,6 +35,9 @@ namespace Jenga.DataAccess.Extensions
             });
 
             services.AddSingleton<IDbContextScopeFactory, DbContextScopeFactory>();
+
+            // ILogService kayıtlı değilse (ör. test ortamı, standalone kullanım) NullLogService devreye girer.
+            services.TryAddSingleton<ILogService, NullLogService>();
 
             return services;
         }

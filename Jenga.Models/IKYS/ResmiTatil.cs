@@ -1,33 +1,24 @@
-﻿using Jenga.Models.Sistem;
-using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+using Jenga.Models.Sistem;
 using System.ComponentModel;
 
 namespace Jenga.Models.IKYS;
 public class ResmiTatil : BaseModel
 {
-    [ValidateNever]
-    [DisplayName("Gün")]
+    [DisplayName("G�n")]
     public int Gun { get; set; }
-    [ValidateNever]
     [DisplayName("Ay")]
     public int Ay { get; set; }
-    [ValidateNever]
     [DisplayName("Yil")]
     public int Yil { get; set; }
-    [ValidateNever]
     [DisplayName("Tatil")]
     public string Tatil { get; set; }
-    [ValidateNever]
-    [DisplayName("Başlama Tarihi")]
+    [DisplayName("Baslama Tarihi")]
     public DateTime BaslamaTarihi { get; set; }
-    [ValidateNever]
-    [DisplayName("Bitiş Tarihi")]
+    [DisplayName("Bitis Tarihi")]
     public DateTime BitisTarihi { get; set; }
-    [ValidateNever]
-    [DisplayName("İlan Tarihi")]
+    [DisplayName("Ilan Tarihi")]
     public DateTime? IlanTarihi { get; set; }
-    [ValidateNever]
-    [DisplayName("İptal Tarihi")]
+    [DisplayName("Iptal Tarihi")]
     public DateTime? IptalTarihi { get; set; }
 
 }

@@ -17,7 +17,7 @@ namespace Jenga.DataAccess.Services.TBYS
         public OdemeService(IDbContextFactory<ApplicationDbContext> dbFactory, ILogService logService)
         {
             _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
-            _logService = logService;
+            _logService = logService ?? throw new ArgumentNullException(nameof(logService));
         }
 
         public async Task<Result<List<Odeme>>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -30,7 +30,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.GetAllAsync hata.", ex);
+                _logService.LogError($"{Source}.GetAllAsync hata.", ex);
                 return Result<List<Odeme>>.Failure(Error.Unexpected("Ödeme listesi alınamadı.", ex));
             }
         }
@@ -52,7 +52,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.GetAllAsyncKiralar hata.", ex);
+                _logService.LogError($"{Source}.GetAllAsyncKiralar hata.", ex);
                 return Result<List<Odeme>>.Failure(Error.Unexpected("Kira ödemeleri alınamadı.", ex));
             }
         }
@@ -69,7 +69,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.GetByIdAsync hata.", ex);
+                _logService.LogError($"{Source}.GetByIdAsync hata.", ex);
                 return Result<Odeme>.Failure(Error.Unexpected("Ödeme alınamadı.", ex));
             }
         }
@@ -86,7 +86,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.GetByIdWithRelationsAsync hata.", ex);
+                _logService.LogError($"{Source}.GetByIdWithRelationsAsync hata.", ex);
                 return Result<Odeme>.Failure(Error.Unexpected("Ödeme alınamadı.", ex));
             }
         }
@@ -101,7 +101,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.GetBySozlesmeIdAsync hata.", ex);
+                _logService.LogError($"{Source}.GetBySozlesmeIdAsync hata.", ex);
                 return Result<List<Odeme>>.Failure(Error.Unexpected("Sözleşmeye ait ödemeler alınamadı.", ex));
             }
         }
@@ -116,7 +116,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.GetByKiraciIdAsync hata.", ex);
+                _logService.LogError($"{Source}.GetByKiraciIdAsync hata.", ex);
                 return Result<List<Odeme>>.Failure(Error.Unexpected("Kiracıya ait ödemeler alınamadı.", ex));
             }
         }
@@ -131,7 +131,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.GetByOdemePlaniIdAsync hata.", ex);
+                _logService.LogError($"{Source}.GetByOdemePlaniIdAsync hata.", ex);
                 return Result<List<Odeme>>.Failure(Error.Unexpected("Ödeme planına ait ödemeler alınamadı.", ex));
             }
         }
@@ -150,7 +150,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.AddAsync hata.", ex);
+                _logService.LogError($"{Source}.AddAsync hata.", ex);
                 return Result.Failure(Error.Unexpected("Ödeme eklenemedi.", ex));
             }
         }
@@ -169,7 +169,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.UpdateAsync hata.", ex);
+                _logService.LogError($"{Source}.UpdateAsync hata.", ex);
                 return Result.Failure(Error.Unexpected("Ödeme güncellenemedi.", ex));
             }
         }
@@ -189,7 +189,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.DeleteAsync hata.", ex);
+                _logService.LogError($"{Source}.DeleteAsync hata.", ex);
                 return Result.Failure(Error.Unexpected("Ödeme silinemedi.", ex));
             }
         }
@@ -204,7 +204,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.AnyAsync hata.", ex);
+                _logService.LogError($"{Source}.AnyAsync hata.", ex);
                 return Result<bool>.Failure(Error.Unexpected("Ödeme sorgulanamadı.", ex));
             }
         }
@@ -221,7 +221,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.CanDeleteAsync hata.", ex);
+                _logService.LogError($"{Source}.CanDeleteAsync hata.", ex);
                 return Result<(bool CanDelete, string? Reason)>.Failure(Error.Unexpected("Silme kontrolü yapılamadı.", ex));
             }
         }

@@ -50,13 +50,7 @@
         public const string KIRASOZLESME_DURUMU_ILERITARİHLİ = "İleri Tarihli";
         public const string KIRASOZLESME_DURUMU_TAKIPSONUCLANDI = "Takip Sonuçlandı";
 
-        //IKYS
-        public static int PER_CALISIYOR_INT = 1;
-        public static string PER_CALISIYOR = "Çalışıyor";
-        public static int PER_AYRILDI_INT = 0;
-        public static string PER_AYRILDI = "Ayrıldı";
-        public const int PER_TIPI_KADROLU = 1;
-        public const int PER_TIPI_KADRO_HARICI = 2;
+        //IKYS - Artık Jenga.Models.Enums.PersonelTipi ve CalismaDurumu enum'ları kullanılmalıdır.
         //MTS
         public const string MTS_ANIOBJESISTOKLU = "Stoklu";
         public const string MTS_ANIOBJESISTOKSUZ = "Stoksuz";

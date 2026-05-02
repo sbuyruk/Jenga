@@ -71,9 +71,8 @@ public class GorevTanimService : IGorevTanimService
             return Result.Failure(Error.Validation("Görev tanımı boş olamaz.", "GorevTanim.Null"));
         try
         {
-            entity.Olusturan = modifiedBy;
-            entity.OlusturmaTarihi = DateTime.Now;
             await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            db.SetCurrentUser(modifiedBy);
             await db.GorevTanim_Table.AddAsync(entity, cancellationToken);
             await db.SaveChangesAsync(cancellationToken);
             return Result.Success();
@@ -102,8 +101,6 @@ public class GorevTanimService : IGorevTanimService
             existing.Vekil = entity.Vekil;
             existing.Aktif = entity.Aktif;
             existing.Aciklama = entity.Aciklama;
-            existing.Degistiren = entity.Degistiren;
-            existing.DegistirmeTarihi = DateTime.Now;
             await db.SaveChangesAsync(cancellationToken);
             return Result.Success();
         }

@@ -4,8 +4,6 @@
 @using Jenga.Models.Enums
 @using Jenga.Models.IKYS
 @using Jenga.Models.Inventory
-@using Jenga.Utility.Helpers
-@using Jenga.Utility.Toast
 @using Jenga.BlazorUI.Helpers
 @inject IToastService ToastService
 @inject IModalService ModalService
@@ -14,13 +12,13 @@
 
 <div class="d-flex justify-content-end mb-2">
     <button class="btn btn-success" @onclick="OpenNewExitModal" type="button">
-        <i class="bi bi-plus-lg"></i> Yeni Çıkış
+        <i class="bi bi-plus-lg"></i> Yeni �ikis
     </button>
 </div>
 
 @if (MaterialExits?.Any() != true)
 {
-    <p>Malzeme çıkış kaydı bulunamadı.</p>
+    <p>Malzeme �ikis kaydi bulunamadi.</p>
 }
 else
 {
@@ -41,9 +39,9 @@ else
             <th class="text-end">Miktar</th>
             <th>Birim</th>
             <th>Lokasyon</th>
-            <th>Çıkış Tipi</th>
-            <th>Açıklama</th>
-            <th class="text-center">İşlemler</th>
+            <th>�ikis Tipi</th>
+            <th>A�iklama</th>
+            <th class="text-center">Islemler</th>
         </HeaderTemplate>
 
         <RowTemplate Context="r">
@@ -55,7 +53,7 @@ else
             <td class="align-middle">@r.ExitTypeText</td>
             <td class="align-middle">@r.Description</td>
             <td class="text-center align-middle" style="white-space:nowrap;">
-                <button class="btn btn-sm btn-primary me-2" @onclick="() => OnEditClicked(r.OriginalExit)">Düzenle</button>
+                <button class="btn btn-sm btn-primary me-2" @onclick="() => OnEditClicked(r.OriginalExit)">D�zenle</button>
                 <button class="btn btn-sm btn-danger" @onclick="() => OnDeleteClicked(r.OriginalExit)">Sil</button>
             </td>
         </RowTemplate>
@@ -175,7 +173,7 @@ else
 
         if (selectedExit.Quantity < 1)
         {
-            ToastService.ShowError("Miktar 1'den küçük olamaz!", 3000);
+            ToastService.ShowError("Miktar 1'den k���k olamaz!", 3000);
             return;
         }
 
@@ -193,14 +191,14 @@ else
         }
         catch (InvalidOperationException ex)
         {
-            // İş kuralı ihlali (örn. yetersiz stok). Kullanıcıya friendly mesaj göster, circuit'i öldürme.
+            // Is kurali ihlali (�rn. yetersiz stok). Kullaniciya friendly mesaj g�ster, circuit'i �ld�rme.
             ToastService.ShowError(ex.Message, 5000);
             return;
         }
         catch (Exception)
         {
-            // Beklenmeyen hata: kullanıcıya generic mesaj, circuit'i öldürme.
-            ToastService.ShowError("Kayıt sırasında beklenmeyen bir hata oluştu.", 5000);
+            // Beklenmeyen hata: kullaniciya generic mesaj, circuit'i �ld�rme.
+            ToastService.ShowError("Kayit sirasinda beklenmeyen bir hata olustu.", 5000);
             return;
         }
 
@@ -214,8 +212,8 @@ else
         var materialName = _materialNameById.TryGetValue(exit.MaterialId, out var mn) ? mn : "Malzeme";
 
         ModalService.ShowConfirmation(
-            "Silme Onayı",
-            $"'{materialName}' çıkış kaydını silmek istediğinizden emin misiniz?",
+            "Silme Onayi",
+            $"'{materialName}' �ikis kaydini silmek istediginizden emin misiniz?",
             async result =>
             {
                 if (!result)
@@ -226,7 +224,7 @@ else
                 try
                 {
                     await MaterialExitService.DeleteAsync(exit);
-                    ToastService.ShowToast("Çıkış kaydı silindi", ToastType.Success, 3000);
+                    ToastService.ShowToast("�ikis kaydi silindi", ToastType.Success, 3000);
 
                     MaterialExits.Remove(exit);
                     BuildRows();
@@ -234,13 +232,13 @@ else
                 }
                 catch (InvalidOperationException ex)
                 {
-                    // İş kuralı ihlali. Friendly mesaj, circuit korunur.
+                    // Is kurali ihlali. Friendly mesaj, circuit korunur.
                     ToastService.ShowError(ex.Message, 5000);
                 }
                 catch (Exception)
                 {
                     // Beklenmeyen hata.
-                    ToastService.ShowError("Silme sırasında beklenmeyen bir hata oluştu.", 5000);
+                    ToastService.ShowError("Silme sirasinda beklenmeyen bir hata olustu.", 5000);
                 }
             });
     }

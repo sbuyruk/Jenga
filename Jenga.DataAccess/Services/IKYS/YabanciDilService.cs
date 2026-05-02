@@ -71,9 +71,8 @@ public class YabanciDilService : IYabanciDilService
             return Result.Failure(Error.Validation("Yabancı dil boş olamaz.", "YabanciDil.Null"));
         try
         {
-            entity.Olusturan = modifiedBy;
-            entity.OlusturmaTarihi = DateTime.Now;
             await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            db.SetCurrentUser(modifiedBy);
             await db.YabanciDil_Table.AddAsync(entity, cancellationToken);
             await db.SaveChangesAsync(cancellationToken);
             return Result.Success();
@@ -101,8 +100,6 @@ public class YabanciDilService : IYabanciDilService
             existing.SinavNotu = entity.SinavNotu;
             existing.SinavTarihi = entity.SinavTarihi;
             existing.Aciklama = entity.Aciklama;
-            existing.Degistiren = entity.Degistiren;
-            existing.DegistirmeTarihi = DateTime.Now;
             await db.SaveChangesAsync(cancellationToken);
             return Result.Success();
         }

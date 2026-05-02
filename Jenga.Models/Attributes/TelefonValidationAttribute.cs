@@ -1,28 +1,25 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace Jenga.Models.Attributes
 {
     /**
-     * SB Telefon numarası doğrulama için özel bir doğrulama sınıfı 
+     * SB Telefon numarasi dogrulama i�in �zel bir dogrulama sinifi 
      * 
-     * örnek kullanımı
+     * �rnek kullanimi
      public class TasinmazBagisci : BaseModel
         {
-            [ValidateNever]
             [DisplayName("Telefon 1")]
             [TelefonValidation]
             public string? Telefon1 { get; set; }
-
-            [ValidateNever]
             [DisplayName("Telefon 2")]
             [TelefonValidation]
             public string? Telefon2 { get; set; }
         }
      *
-     *Regex Açıklaması:
-        ^ ve $: İfadenin başlangıcını ve sonunu temsil eder.
-        \+90: Telefon numarasının +90 ile başlamasını sağlar.
-        \d{10}: 10 basamaklı rakamlardan oluşmasını bekler.
+     *Regex A�iklamasi:
+        ^ ve $: Ifadenin baslangicini ve sonunu temsil eder.
+        \+90: Telefon numarasinin +90 ile baslamasini saglar.
+        \d{10}: 10 basamakli rakamlardan olusmasini bekler.
      **/
 
     public class TelefonValidationAttribute : ValidationAttribute
@@ -35,9 +32,9 @@ namespace Jenga.Models.Attributes
                 {
                     return ValidationResult.Success;
                 }
-                return new ValidationResult("Telefon numarası '+90XXXXXXXXXX' formatında olmalıdır.");
+                return new ValidationResult("Telefon numarasi '+90XXXXXXXXXX' formatinda olmalidir.");
             }
-            return ValidationResult.Success; // Boşsa geçerli kabul edilir.
+            return ValidationResult.Success; // Bossa ge�erli kabul edilir.
         }
     }
 }

@@ -17,7 +17,7 @@ namespace Jenga.DataAccess.Services.TBYS
         public KiraSozlesmeService(IDbContextFactory<ApplicationDbContext> dbFactory, ILogService logService)
         {
             _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
-            _logService = logService;
+            _logService = logService ?? throw new ArgumentNullException(nameof(logService));
         }
 
         public async Task<Result<List<KiraSozlesme>>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -30,7 +30,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.GetAllAsync hata.", ex);
+                _logService.LogError($"{Source}.GetAllAsync hata.", ex);
                 return Result<List<KiraSozlesme>>.Failure(Error.Unexpected("Kira sözleşme listesi alınamadı.", ex));
             }
         }
@@ -47,7 +47,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.GetByIdAsync hata.", ex);
+                _logService.LogError($"{Source}.GetByIdAsync hata.", ex);
                 return Result<KiraSozlesme>.Failure(Error.Unexpected("Kira sözleşmesi alınamadı.", ex));
             }
         }
@@ -70,7 +70,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.AddAsync hata.", ex);
+                _logService.LogError($"{Source}.AddAsync hata.", ex);
                 return Result.Failure(Error.Unexpected("Kira sözleşmesi eklenemedi.", ex));
             }
         }
@@ -93,7 +93,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.UpdateAsync hata.", ex);
+                _logService.LogError($"{Source}.UpdateAsync hata.", ex);
                 return Result.Failure(Error.Unexpected("Kira sözleşmesi güncellenemedi.", ex));
             }
         }
@@ -113,7 +113,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.DeleteAsync hata.", ex);
+                _logService.LogError($"{Source}.DeleteAsync hata.", ex);
                 return Result.Failure(Error.Unexpected("Kira sözleşmesi silinemedi.", ex));
             }
         }
@@ -128,7 +128,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.AnyAsync hata.", ex);
+                _logService.LogError($"{Source}.AnyAsync hata.", ex);
                 return Result<bool>.Failure(Error.Unexpected("Kira sözleşmesi sorgulanamadı.", ex));
             }
         }

@@ -1,8 +1,7 @@
-﻿@using Jenga.BlazorUI.Components.Common
+@using Jenga.BlazorUI.Components.Common
 @using Jenga.BlazorUI.Services.Common
 @using Jenga.DataAccess.Services.Inventory
 @using Jenga.Models.Inventory
-@using Jenga.Utility.Toast
 @inject IToastService ToastService
 @inject IModalService ModalService
 @inject IMaterialBrandService MaterialBrandService
@@ -16,7 +15,7 @@
 
 @if (Brands?.Any() != true)
 {
-    <p>Marka bulunamadı.</p>
+    <p>Marka bulunamadi.</p>
 }
 else
 {
@@ -47,11 +46,11 @@ else
             </th>
             <th role="button" @onclick="() => OnSort(nameof(MaterialBrand.Aciklama))">
                 <span class="d-inline-flex align-items-center">
-                    <span>Açıklama</span>
+                    <span>A�iklama</span>
                     <i class="@GetSortIcon(nameof(MaterialBrand.Aciklama))"></i>
                 </span>
             </th>
-            <th class="text-center">İşlemler</th>
+            <th class="text-center">Islemler</th>
         </HeaderTemplate>
 
         <RowTemplate Context="brand">
@@ -59,7 +58,7 @@ else
             <td class="align-middle">@GetCategoryName(brand.CategoryId)</td>
             <td class="align-middle">@brand.Aciklama</td>
             <td class="text-center align-middle" style="white-space:nowrap;">
-                <button class="btn btn-sm btn-primary me-2" @onclick="() => OnEditClicked(brand)">Düzenle</button>
+                <button class="btn btn-sm btn-primary me-2" @onclick="() => OnEditClicked(brand)">D�zenle</button>
                 <button class="btn btn-sm btn-danger" @onclick="() => OnDeleteClicked(brand)">Sil</button>
             </td>
         </RowTemplate>
@@ -153,13 +152,13 @@ else
         var hasMaterialEntry = hasMaterialEntryR.IsSuccess && hasMaterialEntryR.Value;
         if (hasMaterialEntry)
         {
-            ToastService.ShowToast("Bu marka bir malzeme girişinde kullanılıyor, önce onu silmelisiniz.", ToastType.Error, 5000);
+            ToastService.ShowToast("Bu marka bir malzeme girisinde kullaniliyor, �nce onu silmelisiniz.", ToastType.Error, 5000);
             return;
         }
 
         ModalService.ShowConfirmation(
-            "Silme Onayı",
-            $"'{brand.BrandName}' markasını silmek istediğinizden emin misiniz?",
+            "Silme Onayi",
+            $"'{brand.BrandName}' markasini silmek istediginizden emin misiniz?",
             async result =>
             {
                 if (!result)
@@ -176,7 +175,7 @@ else
                 }
                 else
                 {
-                    ToastService.ShowToast("Silme işlemi başarısız oldu", ToastType.Error, 3000);
+                    ToastService.ShowToast("Silme islemi basarisiz oldu", ToastType.Error, 3000);
                 }
             });
     }

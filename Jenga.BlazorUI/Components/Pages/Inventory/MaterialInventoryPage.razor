@@ -1,4 +1,4 @@
-﻿@page "/inventory/material-inventory-page"
+@page "/inventory/material-inventory-page"
 @rendermode InteractiveServer
 
 @using Jenga.DataAccess.Services.IKYS
@@ -6,7 +6,6 @@
 @using Jenga.Models.IKYS
 @using Jenga.Models.Inventory
 @using Jenga.BlazorUI.Components.Inventory
-@using Jenga.Utility.Toast
 
 @inject IMaterialInventoryService MaterialInventoryService
 @inject IMaterialService MaterialService
@@ -31,7 +30,7 @@
 
 @if (!dataLoaded)
 {
-    <div class="text-muted">Yükleniyor...</div>
+    <div class="text-muted">Y�kleniyor...</div>
 }
 else
 {
@@ -179,13 +178,13 @@ else
             var saved = await MaterialEntryService.AddAsync(editingEntry, currentUser, CancellationToken.None);
             if (saved.IsSuccess)
             {
-                ToastService.ShowToast("Giriş kaydedildi.", ToastType.Success, 2000);
+                ToastService.ShowToast("Giris kaydedildi.", ToastType.Success, 2000);
                 // reload full data to ensure latest DB state
                 await LoadDataAsync();
             }
             else
             {
-                ToastService.ShowToast("Giriş kaydedilemedi.", ToastType.Error, 3000);
+                ToastService.ShowToast("Giris kaydedilemedi.", ToastType.Error, 3000);
             }
         }
         catch (Exception ex)

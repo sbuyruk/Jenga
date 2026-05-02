@@ -71,10 +71,9 @@ public class IzinHareketService : IIzinHareketService
             return Result.Failure(Error.Validation("İzin hareketi boş olamaz.", "IzinHareket.Null"));
         try
         {
-            entity.Olusturan = modifiedBy;
-            entity.OlusturmaTarihi = DateTime.Now;
             entity.Mahsup ??= false;
             await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            db.SetCurrentUser(modifiedBy);
             await db.IzinHareket_Table.AddAsync(entity, cancellationToken);
             await db.SaveChangesAsync(cancellationToken);
             return Result.Success();
@@ -113,8 +112,6 @@ public class IzinHareketService : IIzinHareketService
             existing.KullanilanIzinStr = entity.KullanilanIzinStr;
             existing.KalanIzinStr = entity.KalanIzinStr;
             existing.Aciklama = entity.Aciklama;
-            existing.Degistiren = entity.Degistiren;
-            existing.DegistirmeTarihi = DateTime.Now;
             await db.SaveChangesAsync(cancellationToken);
             return Result.Success();
         }

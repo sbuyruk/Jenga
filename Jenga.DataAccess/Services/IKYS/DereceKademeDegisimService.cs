@@ -71,9 +71,8 @@ public class DereceKademeDegisimService : IDereceKademeDegisimService
             return Result.Failure(Error.Validation("Derece/kademe kaydı boş olamaz.", "DereceKademeDegisim.Null"));
         try
         {
-            entity.Olusturan = modifiedBy;
-            entity.OlusturmaTarihi = DateTime.Now;
             await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            db.SetCurrentUser(modifiedBy);
             await db.DereceKademeDegisim_Table.AddAsync(entity, cancellationToken);
             await db.SaveChangesAsync(cancellationToken);
             return Result.Success();
@@ -85,13 +84,14 @@ public class DereceKademeDegisimService : IDereceKademeDegisimService
         }
     }
 
-    public async Task<Result> UpdateAsync(DereceKademeDegisim entity, CancellationToken cancellationToken = default)
+    public async Task<Result> UpdateAsync(DereceKademeDegisim entity, string? modifiedBy = null, CancellationToken cancellationToken = default)
     {
         if (entity is null)
             return Result.Failure(Error.Validation("Derece/kademe kaydı boş olamaz.", "DereceKademeDegisim.Null"));
         try
         {
             await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            db.SetCurrentUser(modifiedBy);
             var existing = await db.DereceKademeDegisim_Table.FirstOrDefaultAsync(x => x.Id == entity.Id, cancellationToken);
             if (existing is null)
                 return Result.Failure(Error.NotFound("Kayıt bulunamadı!", "DereceKademeDegisim.NotFound"));
@@ -101,8 +101,6 @@ public class DereceKademeDegisimService : IDereceKademeDegisimService
             existing.Derece = entity.Derece;
             existing.Kademe = entity.Kademe;
             existing.Aciklama = entity.Aciklama;
-            existing.Degistiren = entity.Degistiren;
-            existing.DegistirmeTarihi = DateTime.Now;
             await db.SaveChangesAsync(cancellationToken);
             return Result.Success();
         }

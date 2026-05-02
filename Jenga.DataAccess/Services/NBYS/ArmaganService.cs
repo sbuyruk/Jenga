@@ -16,7 +16,7 @@ namespace Jenga.DataAccess.Services.NBYS
         public ArmaganService(IDbContextFactory<ApplicationDbContext> dbFactory, ILogService logService)
         {
             _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
-            _logService = logService;
+            _logService = logService ?? throw new ArgumentNullException(nameof(logService));
         }
 
         public async Task<Result<List<Armagan>>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -29,7 +29,7 @@ namespace Jenga.DataAccess.Services.NBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.GetAllAsync hata.", ex);
+                _logService.LogError($"{Source}.GetAllAsync hata.", ex);
                 return Result<List<Armagan>>.Failure(Error.Unexpected("Armağan listesi alınamadı.", ex));
             }
         }
@@ -46,7 +46,7 @@ namespace Jenga.DataAccess.Services.NBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.GetByIdAsync hata.", ex);
+                _logService.LogError($"{Source}.GetByIdAsync hata.", ex);
                 return Result<Armagan>.Failure(Error.Unexpected("Armağan alınamadı.", ex));
             }
         }
@@ -64,7 +64,7 @@ namespace Jenga.DataAccess.Services.NBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.AddAsync hata.", ex);
+                _logService.LogError($"{Source}.AddAsync hata.", ex);
                 return Result.Failure(Error.Unexpected("Armağan eklenemedi.", ex));
             }
         }
@@ -82,7 +82,7 @@ namespace Jenga.DataAccess.Services.NBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.UpdateAsync hata.", ex);
+                _logService.LogError($"{Source}.UpdateAsync hata.", ex);
                 return Result.Failure(Error.Unexpected("Armağan güncellenemedi.", ex));
             }
         }
@@ -100,7 +100,7 @@ namespace Jenga.DataAccess.Services.NBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.DeleteAsync hata.", ex);
+                _logService.LogError($"{Source}.DeleteAsync hata.", ex);
                 return Result.Failure(Error.Unexpected("Armağan silinemedi.", ex));
             }
         }

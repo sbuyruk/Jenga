@@ -1,6 +1,5 @@
-ï»¿@using Jenga.Models.IKYS
+@using Jenga.Models.IKYS
 @using Jenga.Models.Inventory
-@using Jenga.Utility.Toast
 @using Jenga.BlazorUI.Helpers
 @using Jenga.DataAccess.Services.Inventory
 
@@ -19,7 +18,7 @@
 
                 <div class="modal-body">
                     <div class="row g-3">
-                        <!-- SOL ÃœST: Malzeme SeÃ§imi -->
+                        <!-- SOL ÜST: Malzeme Seçimi -->
                         <div class="col-md-6">
                             <label class="form-label">Malzeme</label>
                             @if (IsMaterialFixed && WorkingTransfer != null && WorkingTransfer.MaterialId > 0)
@@ -33,7 +32,7 @@
                             else
                             {
                                 <select class="form-select" @bind="MaterialId">
-                                    <option value="0">Malzeme seÃ§iniz</option>
+                                    <option value="0">Malzeme seçiniz</option>
                                     @foreach (var mat in DropdownMaterials) { <option value="@mat.Id">@mat.MaterialName</option> }
                                 </select>
                             }
@@ -47,7 +46,7 @@
                                 @if (ShowQuantityError)
                                 {
                                     <div class="text-danger small mt-1">
-                                        @(WorkingTransfer.Quantity < 1 ? "En az 1 olmalÄ±." : $"Maks: {SelectedFromInventoryQuantity}")
+                                        @(WorkingTransfer.Quantity < 1 ? "En az 1 olmali." : $"Maks: {SelectedFromInventoryQuantity}")
                                     </div>
                                 }
                             </div>
@@ -60,7 +59,7 @@
                         else
                         {
                             <div class="col-md-3">
-                                <label class="form-label">SeÃ§ilen</label>
+                                <label class="form-label">Seçilen</label>
                                 <input class="form-control form-control-sm" value="@($"{selectedAssetIds.Count} adet")" disabled />
                             </div>
                             <div class="col-md-3">
@@ -77,7 +76,7 @@
                                 <div class="col-12">
                                     <label class="small text-muted">Kaynak Lokasyon</label>
                                     <select class="form-select form-select-sm" @bind="SelectedFromInventoryId">
-                                        <option value="0">-- Lokasyon / Marka / Model SeÃ§iniz --</option>
+                                        <option value="0">-- Lokasyon / Marka / Model Seçiniz --</option>
                                         @foreach (var l in FromSourceLocations)
                                         {
                                             <option value="@l.Id">@l.LocationName</option>
@@ -87,7 +86,7 @@
                                 <div class="col-12">
                                     <label class="small text-muted">Kaynak Personel</label>
                                     <select class="form-select form-select-sm" @bind="SelectedFromInventoryId">
-                                        <option value="0">-- Personel Yok / SeÃ§iniz --</option>
+                                        <option value="0">-- Personel Yok / Seçiniz --</option>
                                         @foreach (var p in FromSourcePersons)
                                         {
                                             <option value="@p.Id">@p.FullName</option>
@@ -97,24 +96,24 @@
                             </div>
 
                             <div class="small text-muted mt-2">
-                                SeÃ§ili Stok: <strong>@SelectedFromInventoryQuantity</strong> @SelectedUnitName
+                                Seçili Stok: <strong>@SelectedFromInventoryQuantity</strong> @SelectedUnitName
                             </div>
 
                             @if (ShowFromSelectionError)
                             {
-                                <div class="text-danger small mt-1">GeÃ§erli bir kaynak stok kaydÄ± seÃ§melisiniz.</div>
+                                <div class="text-danger small mt-1">Geçerli bir kaynak stok kaydi seçmelisiniz.</div>
                             }
 
-                            <!-- ASSET SEÃ‡Ä°M PANELÄ° -->
+                            <!-- ASSET SEÇIM PANELI -->
                             @if (IsSelectedMaterialAsset && SelectedFromInventoryId != 0)
                             {
                                 <div class="mt-3 border-top pt-2">
                                     <label class="form-label fw-semibold">
-                                        <i class="bi bi-cpu me-1"></i> Transfer Edilecek DemirbaÅŸlarÄ± SeÃ§in
+                                        <i class="bi bi-cpu me-1"></i> Transfer Edilecek Demirbaslari Seçin
                                     </label>
                                     @if (!availableAssets.Any())
                                     {
-                                        <div class="text-muted small">Bu kaynakta aktif demirbaÅŸ bulunamadÄ±.</div>
+                                        <div class="text-muted small">Bu kaynakta aktif demirbas bulunamadi.</div>
                                     }
                                     else
                                     {
@@ -137,7 +136,7 @@
                                         </div>
                                         @if (selectedAssetIds.Count == 0)
                                         {
-                                            <div class="text-danger small mt-1">En az bir demirbaÅŸ seÃ§melisiniz.</div>
+                                            <div class="text-danger small mt-1">En az bir demirbas seçmelisiniz.</div>
                                         }
                                     }
                                 </div>
@@ -154,7 +153,7 @@
                             </div>
                         </div>
 
-                        <!-- ORTA SAÄž: HEDEF (TO) -->
+                        <!-- ORTA SAG: HEDEF (TO) -->
                         <div class="col-md-6 bg-success-subtle p-3 rounded-end">
                             <label class="form-label fw-bold text-success-emphasis">Nereye (Hedef)</label>
 
@@ -163,7 +162,7 @@
                                 <div class="input-group input-group-sm">
                                     <input class="form-control" placeholder="Ara..." @bind="toLocationSearch" @bind:event="oninput" />
                                     <select class="form-select" @bind="SelectedToLocationId" style="max-width: 70%;">
-                                        <option value="0">SeÃ§iniz...</option>
+                                        <option value="0">Seçiniz...</option>
                                         @foreach (var loc in AvailableToLocationsFiltered)
                                         {
                                             <option value="@loc.Id">@GetLocationOptionLabel(loc)</option>
@@ -177,7 +176,7 @@
                                 <div class="input-group input-group-sm">
                                     <input class="form-control" placeholder="Ara..." @bind="toPersonSearch" @bind:event="oninput" />
                                     <select class="form-select" @bind="SelectedToPersonId" style="max-width: 70%;">
-                                        <option value="">SeÃ§iniz</option>
+                                        <option value="">Seçiniz</option>
                                         @foreach (var p in AvailableToPersonsFiltered)
                                         {
                                             <option value="@p.PersonId">@GetPersonOptionLabel(p)</option>
@@ -188,11 +187,11 @@
 
                             @if (ShowToSelectionError)
                             {
-                                <div class="text-danger small mt-1">Hedef lokasyon veya kiÅŸi seÃ§melisiniz.</div>
+                                <div class="text-danger small mt-1">Hedef lokasyon veya kisi seçmelisiniz.</div>
                             }
                         </div>
 
-                        <!-- ALT: Tarih ve AÃ§Ä±klama -->
+                        <!-- ALT: Tarih ve Açiklama -->
                         <div class="col-md-6">
                             <label class="form-label">Tarih</label>
                             <input class="form-control" @bind="WorkingTransfer.TransferDate" type="date" />
@@ -202,7 +201,7 @@
                             <input class="form-control" @bind="Reference" />
                         </div>
                         <div class="col-12">
-                            <label class="form-label">AÃ§Ä±klama</label>
+                            <label class="form-label">Açiklama</label>
                             <textarea class="form-control" rows="2" @bind="WorkingTransfer.Aciklama"></textarea>
                         </div>
                     </div>
@@ -212,7 +211,7 @@
                     <button class="btn btn-info" @onclick="HandleSave" disabled="@IsSaveDisabled">
                         <i class="bi bi-arrow-left-right me-1"></i> Transfer Et
                     </button>
-                    <button class="btn btn-secondary" @onclick="OnClose">Ä°ptal</button>
+                    <button class="btn btn-secondary" @onclick="OnClose">Iptal</button>
                 </div>
             </div>
         </div>
@@ -466,9 +465,9 @@
     private string GetAssetStatusLabel(AssetStatus status) => status switch
     {
         AssetStatus.Active => "Aktif",
-        AssetStatus.InRepair => "OnarÄ±mda",
+        AssetStatus.InRepair => "Onarimda",
         AssetStatus.Retired => "Hurda",
-        AssetStatus.Lost => "KayÄ±p",
+        AssetStatus.Lost => "Kayip",
         _ => status.ToString()
     };
 
@@ -630,7 +629,7 @@
     {
         if (IsSaveDisabled)
         {
-            ToastService.ShowWarning("LÃ¼tfen tÃ¼m zorunlu alanlarÄ± doldurunuz.");
+            ToastService.ShowWarning("Lütfen tüm zorunlu alanlari doldurunuz.");
             return;
         }
 

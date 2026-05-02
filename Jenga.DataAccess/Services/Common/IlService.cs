@@ -1,4 +1,4 @@
-﻿using Jenga.DataAccess.Data;
+using Jenga.DataAccess.Data;
 using Jenga.Models.Common;
 using Jenga.Utility.Logging;
 using Jenga.Utility.Results;
@@ -10,7 +10,7 @@ namespace Jenga.DataAccess.Services.Common
     public class IlService : IIlService
     {
         private const string Source = nameof(IlService);
-        private static readonly string[] _excludedIlAdlari = { " ", "Boş", "Yok", "---", "Yurtdışı", "Almanya", "Diğer" };
+        private static readonly string[] _excludedIlAdlari = { " ", "Bos", "Yok", "---", "Yurtdisi", "Almanya", "Diger" };
 
         private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
         private readonly ILogService _logService;
@@ -19,7 +19,7 @@ namespace Jenga.DataAccess.Services.Common
         public IlService(IDbContextFactory<ApplicationDbContext> dbFactory, ILogService logService)
         {
             _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
-            _logService = logService;
+            _logService = logService ?? throw new ArgumentNullException(nameof(logService));
         }
 
         public async Task<Result<List<Il>>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -35,8 +35,8 @@ namespace Jenga.DataAccess.Services.Common
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.GetAllAsync");
-                return Result.Failure<List<Il>>(Error.Unexpected("İller getirilemedi.", ex, "Il.GetAll.Failed"));
+                _logService.LogException(ex, $"{Source}.GetAllAsync");
+                return Result.Failure<List<Il>>(Error.Unexpected("Iller getirilemedi.", ex, "Il.GetAll.Failed"));
             }
         }
 
@@ -47,20 +47,20 @@ namespace Jenga.DataAccess.Services.Common
                 await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
                 var entity = await db.Il_Table.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
                 if (entity is null)
-                    return Result.Failure<Il>(Error.NotFound($"İl bulunamadı (Id={id}).", "Il.NotFound"));
+                    return Result.Failure<Il>(Error.NotFound($"Il bulunamadi (Id={id}).", "Il.NotFound"));
                 return Result.Success(entity);
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.GetByIdAsync");
-                return Result.Failure<Il>(Error.Unexpected("İl getirilemedi.", ex, "Il.GetById.Failed"));
+                _logService.LogException(ex, $"{Source}.GetByIdAsync");
+                return Result.Failure<Il>(Error.Unexpected("Il getirilemedi.", ex, "Il.GetById.Failed"));
             }
         }
 
         public async Task<Result> AddAsync(Il il, CancellationToken cancellationToken = default)
         {
             if (il == null)
-                return Result.Failure(Error.Validation("İl boş olamaz.", "Il.Null"));
+                return Result.Failure(Error.Validation("Il bos olamaz.", "Il.Null"));
             try
             {
                 await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
@@ -71,15 +71,15 @@ namespace Jenga.DataAccess.Services.Common
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.AddAsync");
-                return Result.Failure(Error.Unexpected("İl eklenemedi.", ex, "Il.Add.Failed"));
+                _logService.LogException(ex, $"{Source}.AddAsync");
+                return Result.Failure(Error.Unexpected("Il eklenemedi.", ex, "Il.Add.Failed"));
             }
         }
 
         public async Task<Result> UpdateAsync(Il il, CancellationToken cancellationToken = default)
         {
             if (il == null)
-                return Result.Failure(Error.Validation("İl boş olamaz.", "Il.Null"));
+                return Result.Failure(Error.Validation("Il bos olamaz.", "Il.Null"));
             try
             {
                 await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
@@ -90,8 +90,8 @@ namespace Jenga.DataAccess.Services.Common
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.UpdateAsync");
-                return Result.Failure(Error.Unexpected("İl güncellenemedi.", ex, "Il.Update.Failed"));
+                _logService.LogException(ex, $"{Source}.UpdateAsync");
+                return Result.Failure(Error.Unexpected("Il g�ncellenemedi.", ex, "Il.Update.Failed"));
             }
         }
 
@@ -102,7 +102,7 @@ namespace Jenga.DataAccess.Services.Common
                 await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
                 var entity = await db.Il_Table.FirstOrDefaultAsync(x => x.Id == ilId, cancellationToken);
                 if (entity == null)
-                    return Result.Failure(Error.NotFound($"İl bulunamadı (Id={ilId}).", "Il.NotFound"));
+                    return Result.Failure(Error.NotFound($"Il bulunamadi (Id={ilId}).", "Il.NotFound"));
 
                 db.Il_Table.Remove(entity);
                 await db.SaveChangesAsync(cancellationToken);
@@ -111,8 +111,8 @@ namespace Jenga.DataAccess.Services.Common
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.DeleteAsync");
-                return Result.Failure(Error.Unexpected("İl silinemedi.", ex, "Il.Delete.Failed"));
+                _logService.LogException(ex, $"{Source}.DeleteAsync");
+                return Result.Failure(Error.Unexpected("Il silinemedi.", ex, "Il.Delete.Failed"));
             }
         }
 
@@ -126,8 +126,8 @@ namespace Jenga.DataAccess.Services.Common
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.AnyAsync");
-                return Result.Failure<bool>(Error.Unexpected("İl sorgusu başarısız.", ex, "Il.Any.Failed"));
+                _logService.LogException(ex, $"{Source}.AnyAsync");
+                return Result.Failure<bool>(Error.Unexpected("Il sorgusu basarisiz.", ex, "Il.Any.Failed"));
             }
         }
 
@@ -146,7 +146,7 @@ namespace Jenga.DataAccess.Services.Common
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.GetAktifIllerAsync");
+                _logService.LogException(ex, $"{Source}.GetAktifIllerAsync");
                 return Result.Failure<List<Il>>(Error.Unexpected("Aktif iller getirilemedi.", ex, "Il.GetAktif.Failed"));
             }
         }

@@ -1,10 +1,9 @@
-﻿@using System.ComponentModel
+@using System.ComponentModel
 @using Jenga.BlazorUI.Components.Common
 @using Jenga.BlazorUI.Services.Common
 @using Jenga.DataAccess.Services.Inventory
 @using Jenga.Models.IKYS
 @using Jenga.Models.Inventory
-@using Jenga.Utility.Toast
 @inject IMaterialEntryService MaterialEntryService
 @inject IModalService ModalService
 @inject IToastService ToastService
@@ -12,13 +11,13 @@
 
 <div class="d-flex justify-content-end mb-2">
     <button class="btn btn-success" @onclick="OpenNewEntryModal" type="button">
-        <i class="bi bi-plus-lg"></i> Yeni Giriş
+        <i class="bi bi-plus-lg"></i> Yeni Giris
     </button>
 </div>
 
 @if (MaterialEntries?.Any() != true)
 {
-    <p>Henüz giriş kaydı yok.</p>
+    <p>Hen�z giris kaydi yok.</p>
 }
 else
 {
@@ -31,7 +30,7 @@ else
                   PageSizeOptions="new[] { 5, 10, 20, 50 }"
                   KeySelector="(r => r.Id)">
         <HeaderTemplate>
-            <th @onclick="() => tableRef.SortBy(nameof(EntryRow.EntryDate))" role="button" aria-label="Sırala: Tarih">
+            <th @onclick="() => tableRef.SortBy(nameof(EntryRow.EntryDate))" role="button" aria-label="Sirala: Tarih">
                 <span class="d-inline-flex align-items-center">
                     <span>Tarih</span>
                     @if (tableRef?.CurrentSortField == nameof(EntryRow.EntryDate))
@@ -41,7 +40,7 @@ else
                 </span>
             </th>
 
-            <th @onclick="() => tableRef.SortBy(nameof(EntryRow.MaterialName))" role="button" aria-label="Sırala: Malzeme">
+            <th @onclick="() => tableRef.SortBy(nameof(EntryRow.MaterialName))" role="button" aria-label="Sirala: Malzeme">
                 <span class="d-inline-flex align-items-center">
                     <span>Malzeme</span>
                     @if (tableRef?.CurrentSortField == nameof(EntryRow.MaterialName))
@@ -51,7 +50,7 @@ else
                 </span>
             </th>
 
-            <th @onclick="() => tableRef.SortBy(nameof(EntryRow.BrandName))" role="button" aria-label="Sırala: Marka">
+            <th @onclick="() => tableRef.SortBy(nameof(EntryRow.BrandName))" role="button" aria-label="Sirala: Marka">
                 <span class="d-inline-flex align-items-center">
                     <span>Marka</span>
                     @if (tableRef?.CurrentSortField == nameof(EntryRow.BrandName))
@@ -61,7 +60,7 @@ else
                 </span>
             </th>
 
-            <th @onclick="() => tableRef.SortBy(nameof(EntryRow.ModelName))" role="button" aria-label="Sırala: Model">
+            <th @onclick="() => tableRef.SortBy(nameof(EntryRow.ModelName))" role="button" aria-label="Sirala: Model">
                 <span class="d-inline-flex align-items-center">
                     <span>Model</span>
                     @if (tableRef?.CurrentSortField == nameof(EntryRow.ModelName))
@@ -71,7 +70,7 @@ else
                 </span>
             </th>
 
-            <th class="text-end" @onclick="() => tableRef.SortBy(nameof(EntryRow.Quantity))" role="button" aria-label="Sırala: Miktar">
+            <th class="text-end" @onclick="() => tableRef.SortBy(nameof(EntryRow.Quantity))" role="button" aria-label="Sirala: Miktar">
                 <span class="d-inline-flex align-items-center justify-content-end w-100">
                     <span>Miktar</span>
                     @if (tableRef?.CurrentSortField == nameof(EntryRow.Quantity))
@@ -81,7 +80,7 @@ else
                 </span>
             </th>
 
-            <th @onclick="() => tableRef.SortBy(nameof(EntryRow.LocationPath))" role="button" aria-label="Sırala: Lokasyon">
+            <th @onclick="() => tableRef.SortBy(nameof(EntryRow.LocationPath))" role="button" aria-label="Sirala: Lokasyon">
                 <span class="d-inline-flex align-items-center">
                     <span>Lokasyon</span>
                     @if (tableRef?.CurrentSortField == nameof(EntryRow.LocationPath))
@@ -91,7 +90,7 @@ else
                 </span>
             </th>
 
-            <th @onclick="() => tableRef.SortBy(nameof(EntryRow.PersonName))" role="button" aria-label="Sırala: Personel">
+            <th @onclick="() => tableRef.SortBy(nameof(EntryRow.PersonName))" role="button" aria-label="Sirala: Personel">
                 <span class="d-inline-flex align-items-center">
                     <span>Personel</span>
                     @if (tableRef?.CurrentSortField == nameof(EntryRow.PersonName))
@@ -101,7 +100,7 @@ else
                 </span>
             </th>
 
-            <th>İşlemler</th>
+            <th>Islemler</th>
         </HeaderTemplate>
 
         <RowTemplate Context="r">
@@ -113,7 +112,7 @@ else
             <td class="align-middle">@r.LocationPath</td>
             <td class="align-middle">@r.PersonName</td>
             <td class="align-middle">
-                <button class="btn btn-sm btn-primary me-2" @onclick="() => OnEditClicked(r.OriginalEntry)">Düzenle</button>
+                <button class="btn btn-sm btn-primary me-2" @onclick="() => OnEditClicked(r.OriginalEntry)">D�zenle</button>
                 <button class="btn btn-sm btn-danger" @onclick="() => OnDeleteClicked(r.OriginalEntry)">Sil</button>
             </td>
         </RowTemplate>
@@ -215,7 +214,7 @@ else
             });
         }
 
-        // data değişince initial sort tekrar uygulanabilsin
+        // data degisince initial sort tekrar uygulanabilsin
         _initialSortApplied = false;
     }
 
@@ -236,7 +235,7 @@ else
 
         if (selectedEntry.Quantity < 1)
         {
-            ToastService.ShowError("Miktar 1'den küçük olamaz!", 3000);
+            ToastService.ShowError("Miktar 1'den k���k olamaz!", 3000);
             return;
         }
 
@@ -251,7 +250,7 @@ else
                 }
                 else if (saved.IsFailure)
                 {
-                    ToastService.ShowError(saved.Error?.Message ?? "Kayıt sırasında hata oluştu.", 5000);
+                    ToastService.ShowError(saved.Error?.Message ?? "Kayit sirasinda hata olustu.", 5000);
                     return;
                 }
             }
@@ -262,14 +261,14 @@ else
         }
         catch (InvalidOperationException ex)
         {
-            // İş kuralı ihlali (örn. yetersiz stok). Kullanıcıya friendly mesaj göster, circuit'i öldürme.
+            // Is kurali ihlali (�rn. yetersiz stok). Kullaniciya friendly mesaj g�ster, circuit'i �ld�rme.
             ToastService.ShowError(ex.Message, 5000);
             return;
         }
         catch (Exception)
         {
-            // Beklenmeyen hata: kullanıcıya generic mesaj, circuit'i öldürme.
-            ToastService.ShowError("Kayıt sırasında beklenmeyen bir hata oluştu.", 5000);
+            // Beklenmeyen hata: kullaniciya generic mesaj, circuit'i �ld�rme.
+            ToastService.ShowError("Kayit sirasinda beklenmeyen bir hata olustu.", 5000);
             return;
         }
 
@@ -286,8 +285,8 @@ else
         var material = Materials.FirstOrDefault(x => x.Id == entry.MaterialId);
 
         ModalService.ShowConfirmation(
-            "Silme Onayı",
-            $"'{material?.MaterialName ?? "Malzeme"}' kaydını silmek istediğinizden emin misiniz?",
+            "Silme Onayi",
+            $"'{material?.MaterialName ?? "Malzeme"}' kaydini silmek istediginizden emin misiniz?",
             async result =>
             {
                 if (!result)
@@ -310,18 +309,18 @@ else
                     }
                     else
                     {
-                        ToastService.ShowToast(deleted.Error?.Message ?? "Silme işlemi başarısız oldu", ToastType.Error, 3000);
+                        ToastService.ShowToast(deleted.Error?.Message ?? "Silme islemi basarisiz oldu", ToastType.Error, 3000);
                     }
                 }
                 catch (InvalidOperationException ex)
                 {
-                    // İş kuralı ihlali (örn. yetersiz stok). Friendly mesaj, circuit korunur.
+                    // Is kurali ihlali (�rn. yetersiz stok). Friendly mesaj, circuit korunur.
                     ToastService.ShowError(ex.Message, 5000);
                 }
                 catch (Exception)
                 {
                     // Beklenmeyen hata.
-                    ToastService.ShowError("Silme sırasında beklenmeyen bir hata oluştu.", 5000);
+                    ToastService.ShowError("Silme sirasinda beklenmeyen bir hata olustu.", 5000);
                 }
             });
     }

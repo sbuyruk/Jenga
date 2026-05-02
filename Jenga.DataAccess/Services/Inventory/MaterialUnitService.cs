@@ -1,4 +1,4 @@
-﻿using Jenga.DataAccess.Data;
+using Jenga.DataAccess.Data;
 using Jenga.Models.Inventory;
 using Jenga.Utility.Logging;
 using Jenga.Utility.Results;
@@ -17,7 +17,7 @@ namespace Jenga.DataAccess.Services.Inventory
         public MaterialUnitService(IDbContextFactory<ApplicationDbContext> dbFactory, ILogService logService)
         {
             _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
-            _logService = logService;
+            _logService = logService ?? throw new ArgumentNullException(nameof(logService));
         }
 
         public async Task<Result<List<MaterialUnit>>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -30,8 +30,8 @@ namespace Jenga.DataAccess.Services.Inventory
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.GetAllAsync");
-                return Result.Failure<List<MaterialUnit>>(Error.Unexpected("Birim listesi alınamadı.", ex, "MaterialUnit.GetAll.Failed"));
+                _logService.LogException(ex, $"{Source}.GetAllAsync");
+                return Result.Failure<List<MaterialUnit>>(Error.Unexpected("Birim listesi alinamadi.", ex, "MaterialUnit.GetAll.Failed"));
             }
         }
 
@@ -42,12 +42,12 @@ namespace Jenga.DataAccess.Services.Inventory
                 await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
                 var entity = await db.MaterialUnit_Table.AsNoTracking().FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
                 if (entity is null)
-                    return Result.Failure<MaterialUnit>(Error.NotFound($"Birim bulunamadı (Id={id}).", "MaterialUnit.NotFound"));
+                    return Result.Failure<MaterialUnit>(Error.NotFound($"Birim bulunamadi (Id={id}).", "MaterialUnit.NotFound"));
                 return Result.Success(entity);
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.GetByIdAsync");
+                _logService.LogException(ex, $"{Source}.GetByIdAsync");
                 return Result.Failure<MaterialUnit>(Error.Unexpected("Birim getirilemedi.", ex, "MaterialUnit.GetById.Failed"));
             }
         }
@@ -55,7 +55,7 @@ namespace Jenga.DataAccess.Services.Inventory
         public async Task<Result> AddAsync(MaterialUnit unit, CancellationToken cancellationToken = default)
         {
             if (unit == null)
-                return Result.Failure(Error.Validation("Birim boş olamaz.", "MaterialUnit.Null"));
+                return Result.Failure(Error.Validation("Birim bos olamaz.", "MaterialUnit.Null"));
             try
             {
                 await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
@@ -66,7 +66,7 @@ namespace Jenga.DataAccess.Services.Inventory
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.AddAsync");
+                _logService.LogException(ex, $"{Source}.AddAsync");
                 return Result.Failure(Error.Unexpected("Birim eklenemedi.", ex, "MaterialUnit.Add.Failed"));
             }
         }
@@ -74,7 +74,7 @@ namespace Jenga.DataAccess.Services.Inventory
         public async Task<Result> UpdateAsync(MaterialUnit unit, CancellationToken cancellationToken = default)
         {
             if (unit == null)
-                return Result.Failure(Error.Validation("Birim boş olamaz.", "MaterialUnit.Null"));
+                return Result.Failure(Error.Validation("Birim bos olamaz.", "MaterialUnit.Null"));
             try
             {
                 await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
@@ -85,21 +85,21 @@ namespace Jenga.DataAccess.Services.Inventory
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.UpdateAsync");
-                return Result.Failure(Error.Unexpected("Birim güncellenemedi.", ex, "MaterialUnit.Update.Failed"));
+                _logService.LogException(ex, $"{Source}.UpdateAsync");
+                return Result.Failure(Error.Unexpected("Birim g�ncellenemedi.", ex, "MaterialUnit.Update.Failed"));
             }
         }
 
         public async Task<Result> DeleteAsync(MaterialUnit unit, CancellationToken cancellationToken = default)
         {
             if (unit == null)
-                return Result.Failure(Error.Validation("Birim boş olamaz.", "MaterialUnit.Null"));
+                return Result.Failure(Error.Validation("Birim bos olamaz.", "MaterialUnit.Null"));
             try
             {
                 await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
                 var entity = await db.MaterialUnit_Table.FirstOrDefaultAsync(u => u.Id == unit.Id, cancellationToken);
                 if (entity == null)
-                    return Result.Failure(Error.NotFound($"Birim bulunamadı (Id={unit.Id}).", "MaterialUnit.NotFound"));
+                    return Result.Failure(Error.NotFound($"Birim bulunamadi (Id={unit.Id}).", "MaterialUnit.NotFound"));
                 db.MaterialUnit_Table.Remove(entity);
                 await db.SaveChangesAsync(cancellationToken);
                 _unitsCache = null;
@@ -107,12 +107,12 @@ namespace Jenga.DataAccess.Services.Inventory
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.DeleteAsync");
+                _logService.LogException(ex, $"{Source}.DeleteAsync");
                 return Result.Failure(Error.Unexpected("Birim silinemedi.", ex, "MaterialUnit.Delete.Failed"));
             }
         }
 
-        // Yardımcı Metot
+        // Yardimci Metot
         public async Task<string> GetUnitSymbolAsync(int unitId, CancellationToken cancellationToken = default)
         {
             if (_unitsCache == null)

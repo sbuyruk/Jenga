@@ -1,18 +1,50 @@
 ﻿using Jenga.Models.Common;
+using Jenga.Models.Enums;
 using Jenga.Models.FTK;
 using Jenga.Models.IKYS;
 using Jenga.Models.Inventory;
 using Jenga.Models.NBYS;
+using Jenga.Models.Sistem;
 using Jenga.Models.TBYS;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Jenga.DataAccess.Data
 {
     public class ApplicationDbContext : DbContext
     {
+        private string? _currentUser;
+
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
+        }
 
+        /// <summary>
+        /// Audit alanlarına yazılacak kullanıcı adını ayarlar.
+        /// Servis katmanı AddAsync/UpdateAsync çağrısından önce bu metodu çağırmalıdır.
+        /// </summary>
+        public void SetCurrentUser(string? userName) => _currentUser = userName;
+
+        public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            var now = DateTime.Now;
+
+            foreach (var entry in ChangeTracker.Entries<IAuditableEntity>())
+            {
+                if (entry.State == EntityState.Added)
+                {
+                    entry.Entity.OlusturmaTarihi ??= now;
+                    entry.Entity.Olusturan ??= _currentUser;
+                }
+
+                if (entry.State is EntityState.Added or EntityState.Modified)
+                {
+                    entry.Entity.DegistirmeTarihi = now;
+                    entry.Entity.Degistiren = _currentUser ?? entry.Entity.Degistiren;
+                }
+            }
+
+            return base.SaveChangesAsync(cancellationToken);
         }
         //Common
         public DbSet<Bolge> Bolge_Table { get; set; }
@@ -108,7 +140,23 @@ namespace Jenga.DataAccess.Data
                 .HasDatabaseName("UX_Material_MaterialName")
                 .HasFilter("[MaterialName] IS NOT NULL");
 
+            // Asker_sivil sütunu veritabanında "0"/"1" string olarak tutulduğundan
+            // EF Core'a özel string <-> AskerSivil enum dönüşümü yapmasını söylüyoruz.
+            var askerSivilConverter = new ValueConverter<AskerSivil?, string?>(
+                v => v.HasValue ? ((int)v.Value).ToString() : null,
+                s => s == null ? null : (AskerSivil?)int.Parse(s));
+            modelBuilder.Entity<Personel>()
+                .Property(p => p.AskerSivil)
+                .HasConversion(askerSivilConverter);
 
+            // CalismaDurumu sütunu veritabanında "0"/"1" string olarak tutulduğundan
+            // EF Core'a özel string <-> CalismaDurumu enum dönüşümü yapmasını söylüyoruz.
+            var calismaDurumuConverter = new ValueConverter<CalismaDurumu?, string?>(
+                v => v.HasValue ? ((int)v.Value).ToString() : null,
+                s => s == null ? null : (CalismaDurumu?)int.Parse(s));
+            modelBuilder.Entity<IsBilgileri>()
+                .Property(i => i.CalismaDurumu)
+                .HasConversion(calismaDurumuConverter);
         }
     }
 }

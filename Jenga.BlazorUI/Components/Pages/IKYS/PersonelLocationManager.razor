@@ -1,4 +1,4 @@
-﻿@page "/ikys/personel-location-manager"
+@page "/ikys/personel-location-manager"
 @rendermode InteractiveServer
 
 @using Jenga.BlazorUI.Components.Common
@@ -7,12 +7,10 @@
 @using Jenga.DataAccess.Services.IKYS
 @using Jenga.DataAccess.Services.Inventory
 @using Jenga.Models.Common
-@using Jenga.Models.Helper
 @using Jenga.Models.IKYS
 @using Jenga.Models.Inventory
 @using Jenga.Models.Sistem
 
-@using Jenga.Utility.Toast
 @inject ILocationService LocationService
 @inject IPersonelLocationService PersonelLocationService
 @inject IToastService ToastService
@@ -50,11 +48,11 @@
     </div>
 
     <div class="col-md-7">
-        <h5 class="mb-0">Seçili Lokasyon Bilgisi</h5>
+        <h5 class="mb-0">Se�ili Lokasyon Bilgisi</h5>
         <div class="card shadow-sm mt-2 p-3" style="height:90%; overflow:auto;">
             @if (selectedLocation == null)
             {
-                <div class="text-muted">Listeden bir lokasyon seçin veya context menu'den Personel Ata seçin.</div>
+                <div class="text-muted">Listeden bir lokasyon se�in veya context menu'den Personel Ata se�in.</div>
             }
             else
             {
@@ -76,7 +74,7 @@
                         <tr>
                             <th>Personel</th>
                             <th>Rol</th>
-                            <th>Baş - Bitiş</th>
+                            <th>Bas - Bitis</th>
                             <th>Durum</th>
                             <th class="text-end">Aksiyon</th>
                         </tr>
@@ -84,7 +82,7 @@
                     <tbody>
                         @if (assignments == null || !assignments.Any())
                         {
-                            <tr><td colspan="5" class="small-muted">Bu lokasyona atanmış personel yok.</td></tr>
+                            <tr><td colspan="5" class="small-muted">Bu lokasyona atanmis personel yok.</td></tr>
                         }
                         else
                         {
@@ -99,17 +97,17 @@
                                         }
                                         else
                                         {
-                                            <div class="small-muted">Personel kaydı yok (id:@a.PersonelId)</div>
+                                            <div class="small-muted">Personel kaydi yok (id:@a.PersonelId)</div>
                                         }
                                     </td>
                                     <td>@(string.IsNullOrWhiteSpace(a.Role) ? "-" : a.Role)</td>
                                     <td>@(a.StartDate?.ToString("yyyy-MM-dd") ?? "-") @(!string.IsNullOrEmpty(a.EndDate?.ToString()) ? " - " + (a.EndDate?.ToString("yyyy-MM-dd") ?? "") : "")</td>
                                     <td>
                                         @if (a.IsActive) { <span class="badge bg-success">Aktif</span> } else { <span class="badge bg-secondary">Pasif</span> }
-                                        @if (a.IsPrimary) { <span class="ms-2 text-warning">★ Birincil</span> }
+                                        @if (a.IsPrimary) { <span class="ms-2 text-warning">? Birincil</span> }
                                     </td>
                                     <td class="text-end">
-                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => RemoveAssignment(a.PersonelId, a.LocationId)">Çıkar</button>
+                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => RemoveAssignment(a.PersonelId, a.LocationId)">�ikar</button>
                                     </td>
                                 </tr>
                             }
@@ -208,13 +206,13 @@
         var reason = canDeleteResult.IsSuccess ? canDeleteResult.Value.Reason : canDeleteResult.Error?.Message;
         if (!canDelete)
         {
-            ToastService.ShowToast(reason ?? "Bilinmeyen bir hata oluştu", ToastType.Error, 5000);
+            ToastService.ShowToast(reason ?? "Bilinmeyen bir hata olustu", ToastType.Error, 5000);
             return;
         }
 
         ModalService.ShowConfirmation(
-            "Silme Onayı",
-            $"'{loc.LocationName ?? "Konum"}' kaydını silmek istediğinizden emin misiniz?",
+            "Silme Onayi",
+            $"'{loc.LocationName ?? "Konum"}' kaydini silmek istediginizden emin misiniz?",
             async result =>
             {
                 if (!result) return;
@@ -228,7 +226,7 @@
                 }
                 else
                 {
-                    ToastService.ShowToast("Silme işlemi başarısız oldu", ToastType.Error, 3000);
+                    ToastService.ShowToast("Silme islemi basarisiz oldu", ToastType.Error, 3000);
                 }
             });
     }
@@ -250,7 +248,7 @@
                 }
                 else
                 {
-                    ToastService.ShowToast("Ekleme sırasında hata oluştu", ToastType.Error, 3000);
+                    ToastService.ShowToast("Ekleme sirasinda hata olustu", ToastType.Error, 3000);
                 }
             }
             else
@@ -258,11 +256,11 @@
                 var updated = await LocationService.UpdateAsync(loc);
                 if (updated.IsSuccess)
                 {
-                    ToastService.ShowToast($"{loc.LocationName} güncellendi", ToastType.Info, 3000);
+                    ToastService.ShowToast($"{loc.LocationName} g�ncellendi", ToastType.Info, 3000);
                 }
                 else
                 {
-                    ToastService.ShowToast("Güncelleme sırasında hata oluştu", ToastType.Error, 3000);
+                    ToastService.ShowToast("G�ncelleme sirasinda hata olustu", ToastType.Error, 3000);
                 }
             }
         }
@@ -359,8 +357,8 @@
     private void RemoveAssignment(int personelId, int locationId)
     {
         ModalService.ShowConfirmation(
-            "Silme Onayı",
-            $"Personeli bu lokasyondan çıkarmak istediğinize emin misiniz?",
+            "Silme Onayi",
+            $"Personeli bu lokasyondan �ikarmak istediginize emin misiniz?",
             async result =>
             {
                 if (!result) return;
@@ -368,14 +366,14 @@
                 var removed = await PersonelLocationService.UnassignLocationFromPersonAsync(personelId, locationId);
                 if (removed.IsSuccess)
                 {
-                    ToastService.ShowToast("Atama kaldırıldı.", ToastType.Success, 2500);
+                    ToastService.ShowToast("Atama kaldirildi.", ToastType.Success, 2500);
                     // reload assignments
                     if (selectedLocation != null && selectedLocation.Id == locationId)
                         await LoadAssignments();
                 }
                 else
                 {
-                    ToastService.ShowToast(removed.Error.Message ?? "Atama kaldırılırken hata oluştu.", ToastType.Error, 4000);
+                    ToastService.ShowToast(removed.Error.Message ?? "Atama kaldirilirken hata olustu.", ToastType.Error, 4000);
                 }
             });
     }

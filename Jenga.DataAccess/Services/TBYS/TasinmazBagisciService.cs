@@ -17,7 +17,7 @@ namespace Jenga.DataAccess.Services.TBYS
         public TasinmazBagisciService(IDbContextFactory<ApplicationDbContext> dbFactory, ILogService logService)
         {
             _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
-            _logService = logService;
+            _logService = logService ?? throw new ArgumentNullException(nameof(logService));
         }
 
         public async Task<Result<List<TasinmazBagisci>>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -30,7 +30,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.GetAllAsync");
+                _logService.LogException(ex, $"{Source}.GetAllAsync");
                 return Result.Failure<List<TasinmazBagisci>>(Error.Unexpected("Bağışçılar getirilemedi.", ex, "TasinmazBagisci.GetAll.Failed"));
             }
         }
@@ -47,7 +47,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.GetByIdAsync");
+                _logService.LogException(ex, $"{Source}.GetByIdAsync");
                 return Result.Failure<TasinmazBagisci>(Error.Unexpected("Bağışçı getirilemedi.", ex, "TasinmazBagisci.GetById.Failed"));
             }
         }
@@ -77,7 +77,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.AddAsync");
+                _logService.LogException(ex, $"{Source}.AddAsync");
                 return Result.Failure(Error.Unexpected("Bağışçı eklenemedi.", ex, "TasinmazBagisci.Add.Failed"));
             }
         }
@@ -104,7 +104,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.UpdateAsync");
+                _logService.LogException(ex, $"{Source}.UpdateAsync");
                 return Result.Failure(Error.Unexpected("Bağışçı güncellenemedi.", ex, "TasinmazBagisci.Update.Failed"));
             }
         }
@@ -128,7 +128,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.DeleteAsync");
+                _logService.LogException(ex, $"{Source}.DeleteAsync");
                 return Result.Failure(Error.Unexpected("Bağışçı silinemedi.", ex, "TasinmazBagisci.Delete.Failed"));
             }
         }
@@ -143,7 +143,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.AnyAsync");
+                _logService.LogException(ex, $"{Source}.AnyAsync");
                 return Result.Failure<bool>(Error.Unexpected("Sorgu çalıştırılamadı.", ex, "TasinmazBagisci.Any.Failed"));
             }
         }
@@ -160,7 +160,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.CanDeleteAsync");
+                _logService.LogException(ex, $"{Source}.CanDeleteAsync");
                 return Result.Failure<(bool CanDelete, string? Reason)>(Error.Unexpected("Silme kontrolü yapılamadı.", ex, "TasinmazBagisci.CanDelete.Failed"));
             }
         }
@@ -181,7 +181,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.ExistsByTCKimlikAsync");
+                _logService.LogException(ex, $"{Source}.ExistsByTCKimlikAsync");
                 return Result.Failure<bool>(Error.Unexpected("Bağışçı varlık kontrolü yapılamadı.", ex, "TasinmazBagisci.Exists.Failed"));
             }
         }

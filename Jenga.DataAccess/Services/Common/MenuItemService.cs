@@ -1,6 +1,6 @@
-﻿using Jenga.DataAccess.Data;
+using Jenga.DataAccess.Data;
 using Jenga.Models.Common;
-using Jenga.Utility.Helpers;
+using Jenga.Models.Helpers;
 using Jenga.Utility.Logging;
 using Jenga.Utility.Results;
 using Microsoft.EntityFrameworkCore;
@@ -16,7 +16,7 @@ namespace Jenga.DataAccess.Services.Common
         public MenuItemService(IDbContextFactory<ApplicationDbContext> dbFactory, ILogService logService)
         {
             _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
-            _logService = logService;
+            _logService = logService ?? throw new ArgumentNullException(nameof(logService));
         }
 
         public async Task<Result<List<MenuItem>>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -29,8 +29,8 @@ namespace Jenga.DataAccess.Services.Common
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.GetAllAsync");
-                return Result.Failure<List<MenuItem>>(Error.Unexpected("Menü kayıtları getirilemedi.", ex, "Menu.GetAll.Failed"));
+                _logService.LogException(ex, $"{Source}.GetAllAsync");
+                return Result.Failure<List<MenuItem>>(Error.Unexpected("Men� kayitlari getirilemedi.", ex, "Menu.GetAll.Failed"));
             }
         }
 
@@ -41,20 +41,20 @@ namespace Jenga.DataAccess.Services.Common
                 await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
                 var entity = await db.MenuItem_Table.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
                 if (entity is null)
-                    return Result.Failure<MenuItem>(Error.NotFound($"Menü bulunamadı (Id={id}).", "Menu.NotFound"));
+                    return Result.Failure<MenuItem>(Error.NotFound($"Men� bulunamadi (Id={id}).", "Menu.NotFound"));
                 return Result.Success(entity);
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.GetByIdAsync");
-                return Result.Failure<MenuItem>(Error.Unexpected("Menü getirilemedi.", ex, "Menu.GetById.Failed"));
+                _logService.LogException(ex, $"{Source}.GetByIdAsync");
+                return Result.Failure<MenuItem>(Error.Unexpected("Men� getirilemedi.", ex, "Menu.GetById.Failed"));
             }
         }
 
         public async Task<Result> AddAsync(MenuItem menuItem, CancellationToken cancellationToken = default)
         {
             if (menuItem is null)
-                return Result.Failure(Error.Validation("Menü boş olamaz.", "Menu.Null"));
+                return Result.Failure(Error.Validation("Men� bos olamaz.", "Menu.Null"));
             try
             {
                 await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
@@ -64,15 +64,15 @@ namespace Jenga.DataAccess.Services.Common
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.AddAsync");
-                return Result.Failure(Error.Unexpected("Menü eklenemedi.", ex, "Menu.Add.Failed"));
+                _logService.LogException(ex, $"{Source}.AddAsync");
+                return Result.Failure(Error.Unexpected("Men� eklenemedi.", ex, "Menu.Add.Failed"));
             }
         }
 
         public async Task<Result> UpdateAsync(MenuItem menuItem, CancellationToken cancellationToken = default)
         {
             if (menuItem is null)
-                return Result.Failure(Error.Validation("Menü boş olamaz.", "Menu.Null"));
+                return Result.Failure(Error.Validation("Men� bos olamaz.", "Menu.Null"));
             try
             {
                 await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
@@ -82,15 +82,15 @@ namespace Jenga.DataAccess.Services.Common
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.UpdateAsync");
-                return Result.Failure(Error.Unexpected("Menü güncellenemedi.", ex, "Menu.Update.Failed"));
+                _logService.LogException(ex, $"{Source}.UpdateAsync");
+                return Result.Failure(Error.Unexpected("Men� g�ncellenemedi.", ex, "Menu.Update.Failed"));
             }
         }
 
         public async Task<Result> DeleteAsync(MenuItem menuItem, CancellationToken cancellationToken = default)
         {
             if (menuItem is null)
-                return Result.Failure(Error.Validation("Menü boş olamaz.", "Menu.Null"));
+                return Result.Failure(Error.Validation("Men� bos olamaz.", "Menu.Null"));
             try
             {
                 await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
@@ -100,8 +100,8 @@ namespace Jenga.DataAccess.Services.Common
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.DeleteAsync");
-                return Result.Failure(Error.Unexpected("Menü silinemedi.", ex, "Menu.Delete.Failed"));
+                _logService.LogException(ex, $"{Source}.DeleteAsync");
+                return Result.Failure(Error.Unexpected("Men� silinemedi.", ex, "Menu.Delete.Failed"));
             }
         }
 
@@ -123,8 +123,8 @@ namespace Jenga.DataAccess.Services.Common
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.GetRecursiveMenuAsync");
-                return Result.Failure<List<MenuItem>>(Error.Unexpected("Menü ağacı oluşturulamadı.", ex, "Menu.Recursive.Failed"));
+                _logService.LogException(ex, $"{Source}.GetRecursiveMenuAsync");
+                return Result.Failure<List<MenuItem>>(Error.Unexpected("Men� agaci olusturulamadi.", ex, "Menu.Recursive.Failed"));
             }
         }
 
@@ -169,8 +169,8 @@ namespace Jenga.DataAccess.Services.Common
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.GetAuthorizedMenuAsync");
-                return Result.Failure<List<MenuItem>>(Error.Unexpected("Yetkili menü oluşturulamadı.", ex, "Menu.Authorized.Failed"));
+                _logService.LogException(ex, $"{Source}.GetAuthorizedMenuAsync");
+                return Result.Failure<List<MenuItem>>(Error.Unexpected("Yetkili men� olusturulamadi.", ex, "Menu.Authorized.Failed"));
             }
         }
     }

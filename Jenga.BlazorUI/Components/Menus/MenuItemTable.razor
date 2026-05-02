@@ -1,8 +1,7 @@
-﻿@using Jenga.BlazorUI.Components.Common
+@using Jenga.BlazorUI.Components.Common
 @using Jenga.BlazorUI.Services.Common
 @using Jenga.DataAccess.Services.Common
 @using Jenga.Models.Common
-@using Jenga.Utility.Toast
 @using System.ComponentModel.DataAnnotations
 @inject IToastService ToastService
 @inject IModalService ModalService
@@ -10,13 +9,13 @@
 
 <div class="d-flex justify-content-end mb-2">
     <button class="btn btn-success" @onclick="OpenNewMenuModal" type="button">
-        <i class="bi bi-plus-lg"></i> Yeni Menü
+        <i class="bi bi-plus-lg"></i> Yeni Men�
     </button>
 </div>
 
 @if (Menus?.Any() != true)
 {
-    <p>Menü bulunamadı.</p>
+    <p>Men� bulunamadi.</p>
 }
 else
 {
@@ -33,9 +32,9 @@ else
             <td>@row.Title</td>
             <td>@row.Url</td>
             <td>@row.ParentTitle</td>
-            <td>@(row.IsVisible ? "Evet" : "Hayır")</td>
+            <td>@(row.IsVisible ? "Evet" : "Hayir")</td>
             <td>
-                <button class="btn btn-sm btn-primary me-2" @onclick="() => OnEditClicked(row.Original)">Düzenle</button>
+                <button class="btn btn-sm btn-primary me-2" @onclick="() => OnEditClicked(row.Original)">D�zenle</button>
                 <button class="btn btn-sm btn-danger" @onclick="() => OnDeleteClicked(row.Original)">Sil</button>
             </td>
         </RowTemplate>
@@ -91,10 +90,10 @@ else
                 .ToList();
 
             var childList = string.Join(", ", childTitles);
-            var message = "Önce alt menüler silinmelidir.";
+            var message = "�nce alt men�ler silinmelidir.";
             if (childTitles.Count > 0)
             {
-                message += $" Alt menüler: {childList}";
+                message += $" Alt men�ler: {childList}";
             }
 
             ToastService.ShowToast(message, ToastType.Error, 5000);
@@ -102,8 +101,8 @@ else
         }
 
         ModalService.ShowConfirmation(
-            "Silme Onayı",
-            $"'{item.Title}' menüsünü silmek istediğinizden emin misiniz?",
+            "Silme Onayi",
+            $"'{item.Title}' men�s�n� silmek istediginizden emin misiniz?",
             async result =>
             {
                 if (result)
@@ -120,7 +119,7 @@ else
                     }
                     else
                     {
-                        ToastService.ShowToast($"Silme işlemi başarısız: {deleted.Error.Message}", ToastType.Error, 4000);
+                        ToastService.ShowToast($"Silme islemi basarisiz: {deleted.Error.Message}", ToastType.Error, 4000);
                     }
                 }
             });
@@ -139,12 +138,12 @@ else
                 if (saved.IsSuccess)
                 {
                     Menus.Add(menu);
-                    ToastService.ShowToast("Yeni menü eklendi", ToastType.Success, 3000);
+                    ToastService.ShowToast("Yeni men� eklendi", ToastType.Success, 3000);
                     menuRows.Add(new MenuRow(menu, Menus));
                 }
                 else
                 {
-                    ToastService.ShowToast($"Ekleme başarısız: {saved.Error.Message}", ToastType.Error, 4000);
+                    ToastService.ShowToast($"Ekleme basarisiz: {saved.Error.Message}", ToastType.Error, 4000);
                 }
             }
             else
@@ -152,14 +151,14 @@ else
                 var updated = await MenuItemService.UpdateAsync(menu);
                 if (updated.IsSuccess)
                 {
-                    ToastService.ShowToast($"{menu.Title} güncellendi", ToastType.Success, 3000);
+                    ToastService.ShowToast($"{menu.Title} g�ncellendi", ToastType.Success, 3000);
                     // update row
                     var row = menuRows.FirstOrDefault(r => r.Id == menu.Id);
                     if (row != null) row.UpdateFrom(menu, Menus);
                 }
                 else
                 {
-                    ToastService.ShowToast($"Güncelleme başarısız: {updated.Error.Message}", ToastType.Error, 4000);
+                    ToastService.ShowToast($"G�ncelleme basarisiz: {updated.Error.Message}", ToastType.Error, 4000);
                 }
             }
 
@@ -185,21 +184,21 @@ else
     {
         public int Id { get; private set; }
 
-        [Display(Name = "Başlık")]
+        [Display(Name = "Baslik")]
         public string Title { get; private set; } = string.Empty;
 
         [Display(Name = "Url")]
         public string Url { get; private set; } = string.Empty;
 
-        [Display(Name = "Üst Menüsü")]
+        [Display(Name = "�st Men�s�")]
         public string ParentTitle { get; private set; } = string.Empty;
 
-        [Display(Name = "Görünür")]
+        [Display(Name = "G�r�n�r")]
         public bool IsVisible { get; private set; }
 
         // Keep original so action buttons can pass the real model to modals/services
 
-        [Display(Name ="İşlemler")]
+        [Display(Name ="Islemler")]
         public MenuItem Original { get; private set; }
 
         public MenuRow(MenuItem item, IEnumerable<MenuItem> all)

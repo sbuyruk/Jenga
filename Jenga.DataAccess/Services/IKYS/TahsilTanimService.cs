@@ -56,9 +56,8 @@ public class TahsilTanimService : ITahsilTanimService
             return Result.Failure(Error.Validation("Tahsil tanımı boş olamaz.", "TahsilTanim.Null"));
         try
         {
-            entity.Olusturan = modifiedBy;
-            entity.OlusturmaTarihi = DateTime.Now;
             await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            db.SetCurrentUser(modifiedBy);
             await db.TahsilTanim_Table.AddAsync(entity, cancellationToken);
             await db.SaveChangesAsync(cancellationToken);
             return Result.Success();
@@ -81,8 +80,6 @@ public class TahsilTanimService : ITahsilTanimService
             if (existing is null)
                 return Result.Failure(Error.NotFound("Kayıt bulunamadı!", "TahsilTanim.NotFound"));
             existing.TahsilDurumu = entity.TahsilDurumu;
-            existing.Degistiren = entity.Degistiren;
-            existing.DegistirmeTarihi = DateTime.Now;
             await db.SaveChangesAsync(cancellationToken);
             return Result.Success();
         }

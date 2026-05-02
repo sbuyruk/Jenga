@@ -1,4 +1,4 @@
-﻿@page "/inventory/material-and-category-manager"
+@page "/inventory/material-and-category-manager"
 @rendermode InteractiveServer
 
 @using Jenga.BlazorUI.Components.Common
@@ -6,10 +6,8 @@
 @using Jenga.BlazorUI.Services.Common
 @using Jenga.DataAccess.Services.Inventory
 @using Jenga.Models.Common
-@using Jenga.Models.Helper
 @using Jenga.Models.Inventory
 
-@using Jenga.Utility.Toast
 
 @inject IToastService ToastService
 @inject IModalService ModalService
@@ -22,13 +20,13 @@
 @inject IMaterialModelService MaterialModelService
 
 <div class="navbar navbar-expand-lg bg-body-tertiary gap-5 mb-3 shadow-sm rounded py-2 px-3" style="min-height:56px;">
-    <h3 class="mb-0 flex-grow-1">Malzeme ve Kategori Tanımları</h3>
+    <h3 class="mb-0 flex-grow-1">Malzeme ve Kategori Tanimlari</h3>
     <input class="form-control" style="max-width: 250px;"
            placeholder="Malzeme Ara..."
            @bind="searchTerm"
            @bind:event="oninput" />
     <button class="btn btn-success" @onclick="OpenCreateModal" type="button">
-        <i class="bi bi-plus-lg"></i> Yeni Kategori Tanımla
+        <i class="bi bi-plus-lg"></i> Yeni Kategori Tanimla
     </button>
 </div>
 
@@ -189,7 +187,7 @@
     {
         if (item?.Data.Category == null)
         {
-            ToastService.ShowToast("Kategori bilgisi bulunamadı", ToastType.Error, 5000);
+            ToastService.ShowToast("Kategori bilgisi bulunamadi", ToastType.Error, 5000);
             return;
         }
 
@@ -198,7 +196,7 @@
         string? reason = canDeleteResult.IsSuccess ? canDeleteResult.Value.Reason : canDeleteResult.Error?.Message;
         if (!canDelete)
         {
-            ToastService.ShowToast(reason ?? "Bilinmeyen bir hata oluştu", ToastType.Error, 5000);
+            ToastService.ShowToast(reason ?? "Bilinmeyen bir hata olustu", ToastType.Error, 5000);
             return;
         }
 
@@ -206,8 +204,8 @@
 
         await ModalService.Show(new ModalRequest
         {
-            Title = "Silme Onayı",
-            Message = $"'{categoryName}' kaydını silmek istediğinizden emin misiniz?",
+            Title = "Silme Onayi",
+            Message = $"'{categoryName}' kaydini silmek istediginizden emin misiniz?",
             ShowConfirmationButtons = true,
             DialogClass = "modal-sm",
             OnResult = async result =>
@@ -228,7 +226,7 @@
                 }
                 else
                 {
-                    ToastService.ShowToast("Silme işlemi başarısız oldu", ToastType.Error, 3000);
+                    ToastService.ShowToast("Silme islemi basarisiz oldu", ToastType.Error, 3000);
                 }
             }
         });
@@ -257,7 +255,7 @@
             else
             {
                 await MaterialCategoryService.UpdateAsync(selectedCategory);
-                ToastService.ShowToast($"{(selectedCategory.CategoryName)} güncellendi", ToastType.Info, 3000);
+                ToastService.ShowToast($"{(selectedCategory.CategoryName)} g�ncellendi", ToastType.Info, 3000);
             }
         }
         await RefreshData();
@@ -277,7 +275,7 @@
             else
             {
                 await MaterialService.UpdateAsync(selectedMaterial);
-                ToastService.ShowToast($"{(selectedMaterial.MaterialName)} güncellendi", ToastType.Info, 3000);
+                ToastService.ShowToast($"{(selectedMaterial.MaterialName)} g�ncellendi", ToastType.Info, 3000);
             }
         }
         isMaterialEditOpen = false;
@@ -326,7 +324,7 @@
     {
         if (item?.Data.Material == null)
         {
-            ToastService.ShowToast("Malzeme bilgisi bulunamadı", ToastType.Error, 5000);
+            ToastService.ShowToast("Malzeme bilgisi bulunamadi", ToastType.Error, 5000);
             return;
         }
         var canDeleteResult = await MaterialService.CanDeleteAsync(item.Data.Material.Id);
@@ -334,13 +332,13 @@
         string? reason = canDeleteResult.IsSuccess ? canDeleteResult.Value.Reason : canDeleteResult.Error?.Message;
         if (!canDelete)
         {
-            ToastService.ShowToast(reason ?? "Bilinmeyen bir hata oluştu", ToastType.Error, 5000);
+            ToastService.ShowToast(reason ?? "Bilinmeyen bir hata olustu", ToastType.Error, 5000);
             return;
         }
         string materialName = item.Data.Material.MaterialName ?? "Malzeme";
         ModalService.ShowConfirmation(
-            "Silme Onayı",
-            $"'{materialName}' kaydını silmek istediğinizden emin misiniz?",
+            "Silme Onayi",
+            $"'{materialName}' kaydini silmek istediginizden emin misiniz?",
             async result =>
             {
                 if (result)
@@ -354,7 +352,7 @@
                     }
                     else
                     {
-                        ToastService.ShowToast($"Silme işlemi başarısız oldu", ToastType.Error, 3000);
+                        ToastService.ShowToast($"Silme islemi basarisiz oldu", ToastType.Error, 3000);
                     }
                 }
             }

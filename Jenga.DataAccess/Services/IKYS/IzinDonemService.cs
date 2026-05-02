@@ -71,9 +71,8 @@ public class IzinDonemService : IIzinDonemService
             return Result.Failure(Error.Validation("İzin dönemi boş olamaz.", "IzinDonem.Null"));
         try
         {
-            entity.Olusturan = modifiedBy;
-            entity.OlusturmaTarihi = DateTime.Now;
             await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            db.SetCurrentUser(modifiedBy);
             await db.IzinDonem_Table.AddAsync(entity, cancellationToken);
             await db.SaveChangesAsync(cancellationToken);
             return Result.Success();
@@ -105,8 +104,6 @@ public class IzinDonemService : IIzinDonemService
             existing.KalanIzin = entity.KalanIzin;
             existing.Birim = entity.Birim;
             existing.Aciklama = entity.Aciklama;
-            existing.Degistiren = entity.Degistiren;
-            existing.DegistirmeTarihi = DateTime.Now;
             await db.SaveChangesAsync(cancellationToken);
             return Result.Success();
         }

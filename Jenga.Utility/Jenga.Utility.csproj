@@ -13,7 +13,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Error\" />
+    <Folder Include="Helpers\" />
     <Folder Include="Modal\" />
+    <Folder Include="Toast\" />
     <Folder Include="Validation\" />
   </ItemGroup>
 

@@ -1,12 +1,11 @@
-﻿@page "/test/error"
-@using Jenga.Utility.Error
+@page "/test/error"
 @rendermode InteractiveServer
 @inject IErrorService ErrorService
 
-<h3>Error Test Sayfası</h3>
+<h3>Error Test Sayfasi</h3>
 
 <div class="d-flex flex-column gap-2 mt-3">
-    <button class="btn btn-danger" @onclick="@(() => ErrorService.RaiseError("Hata oluştu!", ErrorSeverity.Error))">Error</button>
-    <button class="btn btn-warning" @onclick="@(() => ErrorService.RaiseError("Uyarı!", ErrorSeverity.Warning))">Warning</button>
+    <button class="btn btn-danger" @onclick="@(() => ErrorService.RaiseError("Hata olustu!", ErrorSeverity.Error))">Error</button>
+    <button class="btn btn-warning" @onclick="@(() => ErrorService.RaiseError("Uyari!", ErrorSeverity.Warning))">Warning</button>
     <button class="btn btn-info" @onclick="@(() => ErrorService.RaiseError("Bilgilendirme", ErrorSeverity.Info))">Info</button>
 </div>

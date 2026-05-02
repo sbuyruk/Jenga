@@ -11,12 +11,14 @@ namespace Jenga.DataAccess.Services.Inventory
         private const string Source = nameof(MaterialTransferService);
 
         private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
+        private readonly IDbContextScopeFactory _scopeFactory;
         private readonly ILogService _logService;
 
-        public MaterialTransferService(IDbContextFactory<ApplicationDbContext> dbFactory, ILogService logService)
+        public MaterialTransferService(IDbContextFactory<ApplicationDbContext> dbFactory, IDbContextScopeFactory scopeFactory, ILogService logService)
         {
             _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
-            _logService = logService;
+            _scopeFactory = scopeFactory ?? throw new ArgumentNullException(nameof(scopeFactory));
+            _logService = logService ?? throw new ArgumentNullException(nameof(logService));
         }
 
         public async Task<Result> AddAsync(
@@ -44,10 +46,9 @@ namespace Jenga.DataAccess.Services.Inventory
             //   4) MaterialMovement "Transfer" logu
             //   5) IsAsset ise seçili/uygun asset'leri yeni location/person'a taşı + log
             // Hata olursa transaction rollback eder.
-            await using var scope = await DbContextScope.CreateAsync(_dbFactory, cancellationToken);
+            await using var scope = await _scopeFactory.CreateAsync(cancellationToken);
             var db = scope.Context;
-
-            // 1) Transfer insert
+            db.SetCurrentUser(modifiedBy);
             await db.MaterialTransfer_Table.AddAsync(transfer, cancellationToken);
 
             // 2) Kaynak stoktan düş
@@ -81,8 +82,6 @@ namespace Jenga.DataAccess.Services.Inventory
                 MovementDate = transfer.TransferDate,
                 MovementType = "Transfer",
                 Aciklama = transfer.Aciklama ?? "MaterialTransfer işlemi",
-                Olusturan = modifiedBy,
-                OlusturmaTarihi = DateTime.Now,
                 BrandId = actualBrand,
                 ModelId = actualModel
             };
@@ -128,16 +127,12 @@ namespace Jenga.DataAccess.Services.Inventory
                         ToLocationId = actualToLocation,
                         TransactionDate = DateTime.Now,
                         TransactionType = "Transfer",
-                        Aciklama = $"Transfer #{asset.SerialNumber ?? asset.Id.ToString()}",
-                        Olusturan = modifiedBy,
-                        OlusturmaTarihi = DateTime.Now
+                        Aciklama = $"Transfer #{asset.SerialNumber ?? asset.Id.ToString()}"
                     };
                     await db.MaterialAssetLog_Table.AddAsync(log, cancellationToken);
 
                     asset.LocationId = actualToLocation;
                     asset.PersonelId = actualToPerson;
-                    asset.Degistiren = modifiedBy;
-                    asset.DegistirmeTarihi = DateTime.Now;
                 }
             }
 
@@ -146,12 +141,12 @@ namespace Jenga.DataAccess.Services.Inventory
             }
             catch (InvalidOperationException ex)
             {
-                _logService?.LogException(ex, $"{Source}.AddAsync");
+                _logService.LogException(ex, $"{Source}.AddAsync");
                 return Result.Failure(Error.Validation(ex.Message, "MaterialTransfer.Add.Invalid"));
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.AddAsync");
+                _logService.LogException(ex, $"{Source}.AddAsync");
                 return Result.Failure(Error.Unexpected("Transfer kaydı eklenemedi.", ex, "MaterialTransfer.Add.Failed"));
             }
         }
@@ -187,8 +182,6 @@ namespace Jenga.DataAccess.Services.Inventory
 
                 inventory.Quantity = newQty;
                 inventory.Aciklama = aciklama;
-                inventory.Degistiren = modifiedBy;
-                inventory.DegistirmeTarihi = DateTime.Now;
             }
             else
             {
@@ -203,9 +196,7 @@ namespace Jenga.DataAccess.Services.Inventory
                     BrandId = brandId,
                     ModelId = modelId,
                     Quantity = delta,
-                    Aciklama = aciklama,
-                    Olusturan = modifiedBy,
-                    OlusturmaTarihi = DateTime.Now
+                    Aciklama = aciklama
                 };
                 await db.MaterialInventory_Table.AddAsync(inv, cancellationToken);
             }

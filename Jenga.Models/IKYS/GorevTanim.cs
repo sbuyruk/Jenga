@@ -1,5 +1,4 @@
-﻿using Jenga.Models.Sistem;
-using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+using Jenga.Models.Sistem;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
@@ -11,18 +10,14 @@ public class GorevTanim : BaseModel
     [DisplayName("Birim")]
     public long? BirimId { get; set; }
     [Required]
-    [DisplayName("Görev")]
+    [DisplayName("G�rev")]
     public string? Adi { get; set; }
-    [ValidateNever]
-    [DisplayName("Görev Kısaltması")]
+    [DisplayName("G�rev Kisaltmasi")]
     public string? KisaAdi { get; set; }
-    [ValidateNever]
     [DisplayName("Personel")]
     public int? PersonelId { get; set; }
-    [ValidateNever]
     [DisplayName("Vekil mi")]
     public bool? Vekil { get; set; }
-    [ValidateNever]
     [DisplayName("Aktif")]
     public bool? Aktif { get; set; }
 }

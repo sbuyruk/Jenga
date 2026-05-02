@@ -1,5 +1,5 @@
-﻿using Jenga.Models.Sistem;
-using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+using Jenga.Models.Enums;
+using Jenga.Models.Sistem;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -11,20 +11,17 @@ public class IsBilgileri : BaseModel
     public int PersonelId { get; set; }
     [DisplayName("Personel")]
     [ForeignKey("PersonelId")]
-    [ValidateNever]
     public Personel Personel { get; set; }
 
     //[Required]
     public int? UnvanId { get; set; }
-    [DisplayName("Ünvan")]
+    [DisplayName("�nvan")]
     [ForeignKey("UnvanId")]
-    [ValidateNever]
     public UnvanTanim? UnvanTanim { get; set; }
     //[Required]
     public int? GorevId { get; set; }
-    [DisplayName("Görev")]
+    [DisplayName("G�rev")]
     [ForeignKey("GorevId")]
-    [ValidateNever]
     public GorevTanim? GorevTanim { get; set; }
     //[Required]
     public int? BirimId { get; set; }
@@ -32,33 +29,27 @@ public class IsBilgileri : BaseModel
     [ForeignKey("BirimId")]
     public BirimTanim BirimTanim { get; set; }
     //[Required]
-    [DisplayName("Başlama Tarihi")]
+    [DisplayName("Baslama Tarihi")]
     public DateTime? BaslamaTar { get; set; }
     [Required]
-    [DisplayName("Çalışma Durumu")]
-    public string? CalismaDurumu { get; set; }
-    [ValidateNever]
-    [DisplayName("Ayrılma Tarihi")]
+    [DisplayName("�al??ma Durumu")]
+    public CalismaDurumu? CalismaDurumu { get; set; }
+    [DisplayName("Ayrilma Tarihi")]
     public DateTime? AyrilmaTar { get; set; }
-    [ValidateNever]
     [DisplayName("Ayrilma Sebebi")]
     public string? AyrilmaSebebi { get; set; }
     //[Required]
     [DisplayName("SGK Sicil No")]
     public string? SGKSicilNo { get; set; }
-    [ValidateNever]
-    [DisplayName("SGK Başlama Tarihi")]
+    [DisplayName("SGK Baslama Tarihi")]
     public DateTime? SGKBasTar { get; set; }
-    [ValidateNever]
-    [DisplayName("Vakıf Öncesi Prim GünSayısı")]
+    [DisplayName("Vakif �ncesi Prim G�nSayisi")]
     public int VakifOncesiPrimGunSayisi { get; set; }
-    [ValidateNever]
     [DisplayName("Emeklilik Tarihi")]
     public DateTime? EmeklilikTarihi { get; set; }
     //[Required]
-    [DisplayName("İzin Dönemi Başlama Tarihi")]
+    [DisplayName("Izin D�nemi Baslama Tarihi")]
     public DateTime? IzinDonemiBasTar { get; set; }
-    [ValidateNever]
-    [DisplayName("Protokol Sıra No")]
+    [DisplayName("Protokol Sira No")]
     public short? ProtokolSiraNo { get; set; }
 }

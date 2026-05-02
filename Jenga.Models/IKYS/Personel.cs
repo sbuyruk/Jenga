@@ -1,37 +1,31 @@
-﻿using Jenga.Models.Ortak;
+using Jenga.Models.Enums;
 using Jenga.Models.Sistem;
-using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Jenga.Models.IKYS;
 public class Personel : BaseModel
 {
     [Required]
-    [DisplayName("Adı")]
+    [DisplayName("Adi")]
     public string Adi { get; set; }
     [Required]
-    [DisplayName("Soyadı")]
+    [DisplayName("Soyadi")]
     public string Soyadi { get; set; }
     [Required]
     [DisplayName("Sicil No")]
     public int SicilNo { get; set; }
-    [ValidateNever]
     [DisplayName("Tahsili")]
     public int? Tahsili { get; set; }
-    [ValidateNever]
-    [DisplayName("Kullanıcı Adı")]
+    [DisplayName("Kullanici Adi")]
     public string? KullaniciAdi { get; set; }
-    [ValidateNever]
     [DisplayName("Asker/Sivil")]
-    public string? Asker_sivil { get; set; }
-    [ValidateNever]
+    [Column("Asker_sivil")]
+    public AskerSivil? AskerSivil { get; set; }
     [DisplayName("Tipi")]
-    public int? Tipi { get; set; }
-    [ValidateNever]
+    public PersonelTipi? Tipi { get; set; }
     public Kimlik Kimlik { get; set; }
-    [ValidateNever]
     public IletisimBilgileri IletisimBilgileri { get; set; }
-    [ValidateNever]
     public IsBilgileri IsBilgileri { get; set; }
     }

@@ -16,7 +16,7 @@ namespace Jenga.DataAccess.Services.NBYS
         public NakitBagisHareketService(IDbContextFactory<ApplicationDbContext> dbFactory, ILogService logService)
         {
             _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
-            _logService = logService;
+            _logService = logService ?? throw new ArgumentNullException(nameof(logService));
         }
 
         public async Task<Result<List<NakitBagisHareket>>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -29,7 +29,7 @@ namespace Jenga.DataAccess.Services.NBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.GetAllAsync hata.", ex);
+                _logService.LogError($"{Source}.GetAllAsync hata.", ex);
                 return Result<List<NakitBagisHareket>>.Failure(Error.Unexpected("Nakit bağış hareket listesi alınamadı.", ex));
             }
         }
@@ -48,7 +48,7 @@ namespace Jenga.DataAccess.Services.NBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.GetLastYearsAsync hata.", ex);
+                _logService.LogError($"{Source}.GetLastYearsAsync hata.", ex);
                 return Result<List<NakitBagisHareket>>.Failure(Error.Unexpected("Nakit bağış hareket listesi alınamadı.", ex));
             }
         }
@@ -65,7 +65,7 @@ namespace Jenga.DataAccess.Services.NBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.GetByIdAsync hata.", ex);
+                _logService.LogError($"{Source}.GetByIdAsync hata.", ex);
                 return Result<NakitBagisHareket>.Failure(Error.Unexpected("Nakit bağış hareket alınamadı.", ex));
             }
         }
@@ -83,7 +83,7 @@ namespace Jenga.DataAccess.Services.NBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.AddAsync hata.", ex);
+                _logService.LogError($"{Source}.AddAsync hata.", ex);
                 return Result.Failure(Error.Unexpected("Nakit bağış hareket eklenemedi.", ex));
             }
         }
@@ -101,7 +101,7 @@ namespace Jenga.DataAccess.Services.NBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.UpdateAsync hata.", ex);
+                _logService.LogError($"{Source}.UpdateAsync hata.", ex);
                 return Result.Failure(Error.Unexpected("Nakit bağış hareket güncellenemedi.", ex));
             }
         }
@@ -119,7 +119,7 @@ namespace Jenga.DataAccess.Services.NBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.DeleteAsync hata.", ex);
+                _logService.LogError($"{Source}.DeleteAsync hata.", ex);
                 return Result.Failure(Error.Unexpected("Nakit bağış hareket silinemedi.", ex));
             }
         }

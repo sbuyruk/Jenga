@@ -16,7 +16,7 @@ namespace Jenga.DataAccess.Services.Inventory
         public MaterialAssetLogService(IDbContextFactory<ApplicationDbContext> dbFactory, ILogService logService)
         {
             _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
-            _logService = logService;
+            _logService = logService ?? throw new ArgumentNullException(nameof(logService));
         }
 
         public async Task<Result<List<MaterialAssetLog>>> GetByAssetIdAsync(int materialAssetId, CancellationToken cancellationToken = default)
@@ -33,7 +33,7 @@ namespace Jenga.DataAccess.Services.Inventory
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.GetByAssetIdAsync");
+                _logService.LogException(ex, $"{Source}.GetByAssetIdAsync");
                 return Result.Failure<List<MaterialAssetLog>>(Error.Unexpected("Asset log listesi alınamadı.", ex, "MaterialAssetLog.GetByAsset.Failed"));
             }
         }

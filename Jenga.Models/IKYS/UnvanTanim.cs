@@ -1,5 +1,4 @@
-﻿using Jenga.Models.Sistem;
-using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+using Jenga.Models.Sistem;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -10,13 +9,12 @@ namespace Jenga.Models.IKYS;
 public class UnvanTanim : BaseModel
 {
     [Required]
-    [DisplayName("Görev Id")]
+    [DisplayName("G�rev Id")]
     public short? GorTipId { get; set; }
     [Required]
-    [DisplayName("Ünvan")]
+    [DisplayName("�nvan")]
     public string? Adi { get; set; }
-    [ValidateNever]
-    [DisplayName("Ünvan Kısaltması")]
+    [DisplayName("�nvan Kisaltmasi")]
     public string? KisaAdi { get; set; }
 
 }

@@ -1,9 +1,8 @@
-﻿@using System.ComponentModel.DataAnnotations
+@using System.ComponentModel.DataAnnotations
 @using Jenga.Models.Inventory
 @using Jenga.Models.IKYS
 @using Jenga.DataAccess.Services.Inventory
 @using Jenga.Utility.Logging
-@using Jenga.Utility.Toast
 @using Jenga.BlazorUI.Helpers
 @using Jenga.BlazorUI.Components.Common
 
@@ -38,8 +37,8 @@ else
             @HeaderCell("Kritik", nameof(InventoryRow.CriticalStock), "text-center")
             <th class="text-center">Yerler</th>
             <th class="text-center">Hareketler</th>
-            <th class="text-center">Giriş</th>
-            <th class="text-center">Çıkış</th>
+            <th class="text-center">Giris</th>
+            <th class="text-center">�ikis</th>
             <th class="text-center">Transfer</th>
         </HeaderTemplate>
 
@@ -65,23 +64,23 @@ else
                 }
                 else
                 {
-                    <span class="text-muted small">—</span>
+                    <span class="text-muted small">�</span>
                 }
             </td>
             <td class="text-center align-middle">
-                <button class="btn btn-sm btn-outline-primary" @onclick="() => OpenLocations(r.MaterialId)">Bulunduğu yerler</button>
+                <button class="btn btn-sm btn-outline-primary" @onclick="() => OpenLocations(r.MaterialId)">Bulundugu yerler</button>
             </td>
             <td class="text-center align-middle">
                 <button class="btn btn-sm btn-outline-secondary" @onclick="() => OpenMovements(r.MaterialId)">Hareketler</button>
             </td>
             <td class="text-center align-middle">
                 <button class="btn btn-sm btn-outline-success" @onclick="() => StartEntry(r.MaterialId)">
-                    <i class="bi bi-box-arrow-in-right me-1"></i>Giriş
+                    <i class="bi bi-box-arrow-in-right me-1"></i>Giris
                 </button>
             </td>
             <td class="text-center align-middle">
                 <button class="btn btn-sm btn-outline-danger" @onclick="() => StartExit(r.MaterialId)">
-                    <i class="bi bi-box-arrow-right me-1"></i>Çıkış
+                    <i class="bi bi-box-arrow-right me-1"></i>�ikis
                 </button>
             </td>
             <td class="text-center align-middle">
@@ -326,7 +325,7 @@ else
             var saved = await MaterialEntryService.AddAsync(editingEntry, currentUser, CancellationToken.None);
             if (saved.IsSuccess)
             {
-                ToastService.ShowToast("Giriş kaydedildi.", ToastType.Success, 2000);
+                ToastService.ShowToast("Giris kaydedildi.", ToastType.Success, 2000);
                 var invR = await MaterialInventoryService.GetAllAsync();
                 MaterialInventories = invR.IsSuccess ? invR.Value : new();
                 // notify parent to refresh its data
@@ -335,7 +334,7 @@ else
             }
             else
             {
-                ToastService.ShowToast("Giriş kaydedilemedi.", ToastType.Error, 3000);
+                ToastService.ShowToast("Giris kaydedilemedi.", ToastType.Error, 3000);
             }
         }
         catch (Exception ex)
@@ -424,7 +423,7 @@ else
         try
         {
             await MaterialExitService.AddAsync(editingExit, assetIds, CancellationToken.None);
-            ToastService.ShowToast("Çıkış kaydedildi.", ToastType.Success, 2000);
+            ToastService.ShowToast("�ikis kaydedildi.", ToastType.Success, 2000);
             var invR = await MaterialInventoryService.GetAllAsync();
             MaterialInventories = invR.IsSuccess ? invR.Value : new();
             if (OnInventoryChanged.HasDelegate)
@@ -511,7 +510,7 @@ else
         }
         catch (Exception ex)
         {
-            LogService.LogError("Malzeme transfer başarısız oldu", ex);
+            LogService.LogError("Malzeme transfer basarisiz oldu", ex);
             throw; //ToastService.ShowToast($"Hata: {ex.Message}", ToastType.Error, 5000);
         }
         finally

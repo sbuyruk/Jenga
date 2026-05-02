@@ -1,7 +1,7 @@
-﻿using Jenga.DataAccess.Data;
+using Jenga.DataAccess.Data;
 using Jenga.Models.Enums;
 using Jenga.Models.Inventory;
-using Jenga.Utility.Helpers;
+using Jenga.Models.Helpers;
 using Jenga.Utility.Logging;
 using Jenga.Utility.Results;
 using Microsoft.EntityFrameworkCore;
@@ -14,12 +14,14 @@ namespace Jenga.DataAccess.Services.Inventory
         private const string Source = nameof(MaterialExitService);
 
         private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
+        private readonly IDbContextScopeFactory _scopeFactory;
         private readonly ILogService _logService;
 
-        public MaterialExitService(IDbContextFactory<ApplicationDbContext> dbFactory, ILogService logService)
+        public MaterialExitService(IDbContextFactory<ApplicationDbContext> dbFactory, IDbContextScopeFactory scopeFactory, ILogService logService)
         {
             _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
-            _logService = logService;
+            _scopeFactory = scopeFactory ?? throw new ArgumentNullException(nameof(scopeFactory));
+            _logService = logService ?? throw new ArgumentNullException(nameof(logService));
         }
 
         public async Task<Result<List<MaterialExit>>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -32,15 +34,15 @@ namespace Jenga.DataAccess.Services.Inventory
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.GetAllAsync");
-                return Result.Failure<List<MaterialExit>>(Error.Unexpected("Çıkış kayıtları alınamadı.", ex, "MaterialExit.GetAll.Failed"));
+                _logService.LogException(ex, $"{Source}.GetAllAsync");
+                return Result.Failure<List<MaterialExit>>(Error.Unexpected("�ikis kayitlari alinamadi.", ex, "MaterialExit.GetAll.Failed"));
             }
         }
 
         public async Task<Result> AddAsync(MaterialExit exit, List<int>? selectedAssetIds = null, CancellationToken cancellationToken = default)
         {
             if (exit == null)
-                return Result.Failure(Error.Validation("Çıkış kaydı boş olamaz.", "MaterialExit.Null"));
+                return Result.Failure(Error.Validation("�ikis kaydi bos olamaz.", "MaterialExit.Null"));
             try
             {
 
@@ -49,25 +51,24 @@ namespace Jenga.DataAccess.Services.Inventory
             int? actualBrand = (exit.BrandId.HasValue && exit.BrandId.Value != 0) ? exit.BrandId : null;
             int? actualModel = (exit.ModelId.HasValue && exit.ModelId.Value != 0) ? exit.ModelId : null;
 
-            // Aşama B: tek context + tek transaction içinde
+            // Asama B: tek context + tek transaction i�inde
             //   1) MaterialExit insert
             //   2) Material lookup (validate + IsAsset / unit)
-            //   3) Inventory: -Quantity uygula (AddOrUpdate semantiği; negatife düşerse hata)
-            //   4) MaterialMovement "Çıkış" logu
-            //   5) IsAsset ise seçili/uygun asset'leri Retired'a çek + log
-            // Hata olursa transaction rollback eder; kısmi yazım oluşmaz.
-            await using var scope = await DbContextScope.CreateAsync(_dbFactory, cancellationToken);
+            //   3) Inventory: -Quantity uygula (AddOrUpdate semantigi; negatife d�serse hata)
+            //   4) MaterialMovement "�ikis" logu
+            //   5) IsAsset ise se�ili/uygun asset'leri Retired'a �ek + log
+            // Hata olursa transaction rollback eder; kismi yazim olusmaz.
+            await using var scope = await _scopeFactory.CreateAsync(cancellationToken);
             var db = scope.Context;
-
-            // 1) Exit insert
+            db.SetCurrentUser(exit.Olusturan);
             await db.MaterialExit_Table.AddAsync(exit, cancellationToken);
 
             // 2) Material lookup
             var material = await db.Material_Table
                 .FirstOrDefaultAsync(m => m.Id == exit.MaterialId, cancellationToken);
-            if (material == null) throw new InvalidOperationException("Malzeme bulunamadı!");
+            if (material == null) throw new InvalidOperationException("Malzeme bulunamadi!");
 
-            // 3) Inventory upsert (AddOrUpdateInventoryAsync semantiği birebir korundu).
+            // 3) Inventory upsert (AddOrUpdateInventoryAsync semantigi birebir korundu).
             var inventory = await db.MaterialInventory_Table
                 .FirstOrDefaultAsync(mi =>
                     mi.MaterialId == exit.MaterialId &&
@@ -78,22 +79,20 @@ namespace Jenga.DataAccess.Services.Inventory
                     cancellationToken);
 
             int delta = -exit.Quantity;
-            string invAciklama = $"MaterialExit: {exit.ExitType} işlemi ile stoktan çıkarıldı.";
+            string invAciklama = $"MaterialExit: {exit.ExitType} islemi ile stoktan �ikarildi.";
             if (inventory != null)
             {
                 var newQty = inventory.Quantity + delta;
                 if (newQty < 0)
-                    throw new InvalidOperationException($"Yetersiz stok: mevcut {inventory.Quantity}, yapılmak istenen değişiklik {delta}. İşlem yapılmadı.");
+                    throw new InvalidOperationException($"Yetersiz stok: mevcut {inventory.Quantity}, yapilmak istenen degisiklik {delta}. Islem yapilmadi.");
 
                 inventory.Quantity = newQty;
                 inventory.Aciklama = invAciklama;
-                inventory.Degistiren = exit.Olusturan;
-                inventory.DegistirmeTarihi = DateTime.Now;
             }
             else
             {
                 if (delta < 0)
-                    throw new InvalidOperationException("Yeni bir stok kaydı eklendiğinde negatif miktar belirtilemez.");
+                    throw new InvalidOperationException("Yeni bir stok kaydi eklendiginde negatif miktar belirtilemez.");
 
                 var inv = new MaterialInventory
                 {
@@ -103,9 +102,7 @@ namespace Jenga.DataAccess.Services.Inventory
                     BrandId = actualBrand,
                     ModelId = actualModel,
                     Quantity = delta,
-                    Aciklama = invAciklama,
-                    Olusturan = exit.Olusturan,
-                    OlusturmaTarihi = DateTime.Now
+                    Aciklama = invAciklama
                 };
                 await db.MaterialInventory_Table.AddAsync(inv, cancellationToken);
             }
@@ -122,17 +119,15 @@ namespace Jenga.DataAccess.Services.Inventory
                 FromPersonId = actualPerson,
                 ToPersonId = null,
                 MovementDate = exit.ExitDate,
-                MovementType = "Çıkış",
-                Operation = $"Çıkış nedeni: {operation}",
-                Aciklama = $"MaterialExit: {operation} işlemi.",
-                Olusturan = exit.Olusturan,
-                OlusturmaTarihi = DateTime.Now,
+                MovementType = "�ikis",
+                Operation = $"�ikis nedeni: {operation}",
+                Aciklama = $"MaterialExit: {operation} islemi.",
                 BrandId = actualBrand,
                 ModelId = actualModel
             };
             await db.MaterialMovement_Table.AddAsync(movement, cancellationToken);
 
-            // 5) Asset retire (yalnızca IsAsset)
+            // 5) Asset retire (yalnizca IsAsset)
             if (material.IsAsset)
             {
                 List<MaterialAsset> assetsToRetire;
@@ -168,18 +163,14 @@ namespace Jenga.DataAccess.Services.Inventory
                         FromLocationId = asset.LocationId,
                         ToLocationId = null,
                         TransactionDate = DateTime.Now,
-                        TransactionType = $"Çıkış ({operation})",
-                        Aciklama = $"Çıkış: {asset.SerialNumber ?? asset.Id.ToString()} — {operation}",
-                        Olusturan = exit.Olusturan,
-                        OlusturmaTarihi = DateTime.Now
+                        TransactionType = $"�ikis ({operation})",
+                        Aciklama = $"�ikis: {asset.SerialNumber ?? asset.Id.ToString()} � {operation}"
                     };
                     await db.MaterialAssetLog_Table.AddAsync(log, cancellationToken);
 
                     asset.Status = AssetStatus.Retired;
                     asset.PersonelId = null;
                     asset.LocationId = null;
-                    asset.Degistiren = exit.Olusturan;
-                    asset.DegistirmeTarihi = DateTime.Now;
                 }
             }
 
@@ -188,37 +179,38 @@ namespace Jenga.DataAccess.Services.Inventory
             }
             catch (InvalidOperationException ex)
             {
-                _logService?.LogException(ex, $"{Source}.AddAsync");
+                _logService.LogException(ex, $"{Source}.AddAsync");
                 return Result.Failure(Error.Validation(ex.Message, "MaterialExit.Add.Invalid"));
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.AddAsync");
-                return Result.Failure(Error.Unexpected("Çıkış kaydı eklenemedi.", ex, "MaterialExit.Add.Failed"));
+                _logService.LogException(ex, $"{Source}.AddAsync");
+                return Result.Failure(Error.Unexpected("�ikis kaydi eklenemedi.", ex, "MaterialExit.Add.Failed"));
             }
         }
 
         public async Task<Result> UpdateAsync(MaterialExit newExit, CancellationToken cancellationToken = default)
         {
             if (newExit == null)
-                return Result.Failure(Error.Validation("Çıkış kaydı boş olamaz.", "MaterialExit.Null"));
+                return Result.Failure(Error.Validation("�ikis kaydi bos olamaz.", "MaterialExit.Null"));
             try
             {
 
-            // Aşama B: tek context + tek transaction içinde
+            // Asama B: tek context + tek transaction i�inde
             //   1) Eski exit'i oku
             //   2) Eski koordinatlara +oldQty (restore)
             //   3) Yeni koordinatlara -newQty (apply)
-            //   4) "Düzeltme" movement logu
+            //   4) "D�zeltme" movement logu
             //   5) Exit row update
             // Hata olursa hepsi rollback olur.
-            await using var scope = await DbContextScope.CreateAsync(_dbFactory, cancellationToken);
+            await using var scope = await _scopeFactory.CreateAsync(cancellationToken);
             var db = scope.Context;
+            db.SetCurrentUser(newExit.Olusturan);
 
-            // 1) Eski exit (tracked olmalı ki sonra alanları güncelleyebilelim)
+            // 1) Eski exit (tracked olmali ki sonra alanlari g�ncelleyebilelim)
             var oldExit = await db.MaterialExit_Table
                 .FirstOrDefaultAsync(e => e.Id == newExit.Id, cancellationToken);
-            if (oldExit == null) throw new InvalidOperationException("Kayıt bulunamadı!");
+            if (oldExit == null) throw new InvalidOperationException("Kayit bulunamadi!");
 
             int? oldLocation = oldExit.LocationId != 0 ? oldExit.LocationId : null;
             int? oldPerson = (oldExit.PersonelId.HasValue && oldExit.PersonelId.Value != 0) ? oldExit.PersonelId : null;
@@ -235,7 +227,7 @@ namespace Jenga.DataAccess.Services.Inventory
                 db,
                 oldExit.MaterialId, oldLocation, oldPerson, oldBrand, oldModel,
                 +oldExit.Quantity,
-                "MaterialExit güncellendi (eski miktar stokta geri eklendi)",
+                "MaterialExit g�ncellendi (eski miktar stokta geri eklendi)",
                 newExit.Olusturan,
                 cancellationToken);
 
@@ -244,11 +236,11 @@ namespace Jenga.DataAccess.Services.Inventory
                 db,
                 newExit.MaterialId, newLocation, newPerson, newBrand, newModel,
                 -newExit.Quantity,
-                "MaterialExit güncellendi (yeni miktar stoktan çıkarıldı)",
+                "MaterialExit g�ncellendi (yeni miktar stoktan �ikarildi)",
                 newExit.Olusturan,
                 cancellationToken);
 
-            // 4) Düzeltme movement
+            // 4) D�zeltme movement
             string operation = EnumHelper.GetEnumDescription((MaterialExitType)newExit.ExitType.Value);
             var movement = new MaterialMovement
             {
@@ -258,17 +250,15 @@ namespace Jenga.DataAccess.Services.Inventory
                 FromLocationId = newExit.LocationId,
                 ToPersonId = newExit.PersonelId,
                 MovementDate = newExit.ExitDate,
-                MovementType = "Düzeltme",
-                Operation = $"Çıkış nedeni: {operation}",
-                Aciklama = "MaterialExit güncellendi.",
-                Olusturan = newExit.Olusturan,
-                OlusturmaTarihi = DateTime.Now,
+                MovementType = "D�zeltme",
+                Operation = $"�ikis nedeni: {operation}",
+                Aciklama = "MaterialExit g�ncellendi.",
                 BrandId = newBrand,
                 ModelId = newModel
             };
             await db.MaterialMovement_Table.AddAsync(movement, cancellationToken);
 
-            // 5) Exit row update — tracked entity üzerine alanları kopyala (PK değişmez)
+            // 5) Exit row update � tracked entity �zerine alanlari kopyala (PK degismez)
             oldExit.MaterialId = newExit.MaterialId;
             oldExit.MaterialUnitId = newExit.MaterialUnitId;
             oldExit.Quantity = newExit.Quantity;
@@ -279,26 +269,24 @@ namespace Jenga.DataAccess.Services.Inventory
             oldExit.ExitDate = newExit.ExitDate;
             oldExit.ExitType = newExit.ExitType;
             oldExit.Aciklama = newExit.Aciklama;
-            oldExit.Degistiren = newExit.Olusturan;
-            oldExit.DegistirmeTarihi = DateTime.Now;
 
             await scope.CommitAsync(cancellationToken);
             return Result.Success();
             }
             catch (InvalidOperationException ex)
             {
-                _logService?.LogException(ex, $"{Source}.UpdateAsync");
+                _logService.LogException(ex, $"{Source}.UpdateAsync");
                 return Result.Failure(Error.Validation(ex.Message, "MaterialExit.Update.Invalid"));
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.UpdateAsync");
-                return Result.Failure(Error.Unexpected("Çıkış kaydı güncellenemedi.", ex, "MaterialExit.Update.Failed"));
+                _logService.LogException(ex, $"{Source}.UpdateAsync");
+                return Result.Failure(Error.Unexpected("�ikis kaydi g�ncellenemedi.", ex, "MaterialExit.Update.Failed"));
             }
         }
 
-        // AddOrUpdateInventoryAsync semantiğini birebir korur, ama PARAMETRE OLARAK GELEN context'te çalışır;
-        // dolayısıyla aynı transaction'a katılır. 0'a düşse bile satır SİLİNMEZ.
+        // AddOrUpdateInventoryAsync semantigini birebir korur, ama PARAMETRE OLARAK GELEN context'te �alisir;
+        // dolayisiyla ayni transaction'a katilir. 0'a d�sse bile satir SILINMEZ.
         private static async Task ApplyInventoryDeltaAsync(
             ApplicationDbContext db,
             int materialId,
@@ -324,17 +312,15 @@ namespace Jenga.DataAccess.Services.Inventory
             {
                 var newQty = inventory.Quantity + delta;
                 if (newQty < 0)
-                    throw new InvalidOperationException($"Yetersiz stok: mevcut {inventory.Quantity}, yapılmak istenen değişiklik {delta}. İşlem yapılmadı.");
+                    throw new InvalidOperationException($"Yetersiz stok: mevcut {inventory.Quantity}, yapilmak istenen degisiklik {delta}. Islem yapilmadi.");
 
                 inventory.Quantity = newQty;
                 inventory.Aciklama = aciklama;
-                inventory.Degistiren = modifiedBy;
-                inventory.DegistirmeTarihi = DateTime.Now;
             }
             else
             {
                 if (delta < 0)
-                    throw new InvalidOperationException("Yeni bir stok kaydı eklendiğinde negatif miktar belirtilemez.");
+                    throw new InvalidOperationException("Yeni bir stok kaydi eklendiginde negatif miktar belirtilemez.");
 
                 var inv = new MaterialInventory
                 {
@@ -344,9 +330,7 @@ namespace Jenga.DataAccess.Services.Inventory
                     BrandId = brandId,
                     ModelId = modelId,
                     Quantity = delta,
-                    Aciklama = aciklama,
-                    Olusturan = modifiedBy,
-                    OlusturmaTarihi = DateTime.Now
+                    Aciklama = aciklama
                 };
                 await db.MaterialInventory_Table.AddAsync(inv, cancellationToken);
             }
@@ -355,7 +339,7 @@ namespace Jenga.DataAccess.Services.Inventory
         public async Task<Result> DeleteAsync(MaterialExit exit, CancellationToken cancellationToken = default)
         {
             if (exit == null)
-                return Result.Failure(Error.Validation("Çıkış kaydı boş olamaz.", "MaterialExit.Null"));
+                return Result.Failure(Error.Validation("�ikis kaydi bos olamaz.", "MaterialExit.Null"));
             try
             {
 
@@ -364,17 +348,18 @@ namespace Jenga.DataAccess.Services.Inventory
             int? brand = (exit.BrandId.HasValue && exit.BrandId.Value != 0) ? exit.BrandId : null;
             int? model = (exit.ModelId.HasValue && exit.ModelId.Value != 0) ? exit.ModelId : null;
 
-            // Aşama B: tek context + tek transaction içinde
-            //   1) Inventory: +Quantity uygula (silinen çıkış miktarını stoğa geri ekle).
-            //      Eski davranış: AddOrUpdateInventoryAsync semantiği — satır yoksa oluşturur,
-            //      varsa quantity'yi günceller; 0'a düşse de satır SİLİNMEZ (Entry'den farklı).
+            // Asama B: tek context + tek transaction i�inde
+            //   1) Inventory: +Quantity uygula (silinen �ikis miktarini stoga geri ekle).
+            //      Eski davranis: AddOrUpdateInventoryAsync semantigi � satir yoksa olusturur,
+            //      varsa quantity'yi g�nceller; 0'a d�sse de satir SILINMEZ (Entry'den farkli).
             //   2) MaterialMovement "Silme" logu ekle.
-            //   3) MaterialExit satırını sil.
-            // Hata olursa using sonu rollback eder; "stok geri eklendi ama exit kaldı" tutarsızlığı oluşmaz.
-            await using var scope = await DbContextScope.CreateAsync(_dbFactory, cancellationToken);
+            //   3) MaterialExit satirini sil.
+            // Hata olursa using sonu rollback eder; "stok geri eklendi ama exit kaldi" tutarsizligi olusmaz.
+            await using var scope = await _scopeFactory.CreateAsync(cancellationToken);
             var db = scope.Context;
+            db.SetCurrentUser(exit.Olusturan);
 
-            // 1) Inventory satırını bul (5'li anahtar, NULL eşleşmeleri dahil).
+            // 1) Inventory satirini bul (5'li anahtar, NULL eslesmeleri dahil).
             var inventory = await db.MaterialInventory_Table
                 .FirstOrDefaultAsync(mi =>
                     mi.MaterialId == exit.MaterialId &&
@@ -389,17 +374,15 @@ namespace Jenga.DataAccess.Services.Inventory
             {
                 var newQty = inventory.Quantity + delta;
                 if (newQty < 0)
-                    throw new InvalidOperationException($"Yetersiz stok: mevcut {inventory.Quantity}, yapılmak istenen değişiklik {delta}. İşlem yapılmadı.");
+                    throw new InvalidOperationException($"Yetersiz stok: mevcut {inventory.Quantity}, yapilmak istenen degisiklik {delta}. Islem yapilmadi.");
 
                 inventory.Quantity = newQty;
                 inventory.Aciklama = "MaterialExit silindi, stok geri eklendi.";
-                inventory.Degistiren = exit.Olusturan;
-                inventory.DegistirmeTarihi = DateTime.Now;
             }
             else
             {
                 if (delta < 0)
-                    throw new InvalidOperationException("Yeni bir stok kaydı eklendiğinde negatif miktar belirtilemez.");
+                    throw new InvalidOperationException("Yeni bir stok kaydi eklendiginde negatif miktar belirtilemez.");
 
                 var inv = new MaterialInventory
                 {
@@ -409,9 +392,7 @@ namespace Jenga.DataAccess.Services.Inventory
                     BrandId = brand,
                     ModelId = model,
                     Quantity = delta,
-                    Aciklama = "MaterialExit silindi, stok geri eklendi.",
-                    Olusturan = exit.Olusturan,
-                    OlusturmaTarihi = DateTime.Now
+                    Aciklama = "MaterialExit silindi, stok geri eklendi."
                 };
                 await db.MaterialInventory_Table.AddAsync(inv, cancellationToken);
             }
@@ -428,14 +409,12 @@ namespace Jenga.DataAccess.Services.Inventory
                 MovementType = "Silme",
                 Operation = "Silme",
                 Aciklama = "MaterialExit silindi.",
-                Olusturan = exit.Olusturan,
-                OlusturmaTarihi = DateTime.Now,
                 BrandId = brand,
                 ModelId = model
             };
             await db.MaterialMovement_Table.AddAsync(movement, cancellationToken);
 
-            // 3) MaterialExit satırını sil. Detached olabileceği için tracked entity üzerinden Remove.
+            // 3) MaterialExit satirini sil. Detached olabilecegi i�in tracked entity �zerinden Remove.
             var exitEntity = await db.MaterialExit_Table
                 .FirstOrDefaultAsync(e => e.Id == exit.Id, cancellationToken);
             if (exitEntity != null)
@@ -446,13 +425,13 @@ namespace Jenga.DataAccess.Services.Inventory
             }
             catch (InvalidOperationException ex)
             {
-                _logService?.LogException(ex, $"{Source}.DeleteAsync");
+                _logService.LogException(ex, $"{Source}.DeleteAsync");
                 return Result.Failure(Error.Validation(ex.Message, "MaterialExit.Delete.Invalid"));
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.DeleteAsync");
-                return Result.Failure(Error.Unexpected("Çıkış kaydı silinemedi.", ex, "MaterialExit.Delete.Failed"));
+                _logService.LogException(ex, $"{Source}.DeleteAsync");
+                return Result.Failure(Error.Unexpected("�ikis kaydi silinemedi.", ex, "MaterialExit.Delete.Failed"));
             }
         }
 
@@ -466,8 +445,8 @@ namespace Jenga.DataAccess.Services.Inventory
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.AnyAsync");
-                return Result.Failure<bool>(Error.Unexpected("Çıkış sorgusu yapılamadı.", ex, "MaterialExit.Any.Failed"));
+                _logService.LogException(ex, $"{Source}.AnyAsync");
+                return Result.Failure<bool>(Error.Unexpected("�ikis sorgusu yapilamadi.", ex, "MaterialExit.Any.Failed"));
             }
         }
     }

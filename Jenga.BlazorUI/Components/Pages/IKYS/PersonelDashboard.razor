@@ -4,6 +4,7 @@
 @using Jenga.BlazorUI.Components.Common
 @using Jenga.BlazorUI.Services.Common
 @using Jenga.DataAccess.Services.IKYS
+@using Jenga.Models.Enums
 @using Jenga.Models.IKYS
 @using Jenga.Utility
 @using System.Globalization
@@ -13,7 +14,6 @@
 @inject IIsBilgileriService IsBilgileriService
 @inject IBirimTanimService BirimTanimService
 @inject IDereceKademeDegisimService DereceKademeDegisimService
-@inject IGorevOnayService GorevOnayService
 @inject IIzinDonemService IzinDonemService
 @inject IIzinTalepService IzinTalepService
 @inject IIzinHareketService IzinHareketService
@@ -582,7 +582,6 @@
     private List<IsBilgileri> _isBilgileriList = [];
     private List<BirimTanim> _birimler = [];
     private List<DereceKademeDegisim> _dkDegisimler = [];
-    private List<GorevOnay> _gorevOnaylar = [];
     private List<IzinDonem> _izinDonemleri = [];
     private List<IzinTalep> _izinTalepler = [];
     private List<IzinHareket> _izinHareketler = [];
@@ -683,7 +682,6 @@
             // _personeller / _kadroluPersoneller Result olarak gelir; Result.Value listeyi taşır.
             var t3 = BirimTanimService.GetAllAsync();
             var t5 = DereceKademeDegisimService.GetDereceYukseltmeAsync();
-            var t6 = GorevOnayService.GetAllAsync();
             var t7 = IzinDonemService.GetAllAsync();
             var t8 = IzinTalepService.GetAllAsync();
             var t9 = IzinHareketService.GetAllAsync();
@@ -691,7 +689,7 @@
             var t12 = TahsilTanimService.GetAllAsync();
             var t13 = KimlikService.GetAllAsync();
 
-            await Task.WhenAll(t0, t1, t2, t3, t5, t6, t7, t8, t9, t10, t12, t13);
+            await Task.WhenAll(t0, t1, t2, t3, t5, t7, t8, t9, t10, t12, t13);
 
             var calisanResult = t0.Result;
             var kadroluResult = t1.Result;
@@ -700,7 +698,6 @@
             _isBilgileriList = t2.Result.IsSuccess ? t2.Result.Value : new List<IsBilgileri>();
             _birimler = t3.Result.IsSuccess ? t3.Result.Value : new List<BirimTanim>();
             _dkDegisimler = t5.Result.IsSuccess ? t5.Result.Value : new List<DereceKademeDegisim>();
-            _gorevOnaylar = t6.Result.IsSuccess ? t6.Result.Value : new List<GorevOnay>();
             _izinDonemleri = t7.Result.IsSuccess ? t7.Result.Value : new List<IzinDonem>();
             _izinTalepler = t8.Result.IsSuccess ? t8.Result.Value : new List<IzinTalep>();
             _izinHareketler = t9.Result.IsSuccess ? t9.Result.Value : new List<IzinHareket>();
@@ -744,21 +741,18 @@
 
         // ── KPI ─────────────────────────────────────────────────
         _toplamPersonel = _personeller.Count;
-        _toplamKadroluPersonel = _kadroluPersoneller.Count();
-        _kadroHariciPersonel = _personeller.Count(p => p.Tipi == ProjectConstants.PER_TIPI_KADRO_HARICI);
+        _toplamKadroluPersonel = _kadroluPersoneller.Count;
+        _kadroHariciPersonel = _personeller.Count(p => p.Tipi == PersonelTipi.KadroHarici);
         _buYilTerfi = _dkDegisimler.Count(d => d.DegisimTarihi.HasValue && d.DegisimTarihi.Value.Year == thisYear);
 
-        // Yeni KPI hesaplama
+        // Yeni KPI hesaplama — önce kimlik sözlüğü, sonra cinsiyete göre say
+        var kimlikByPersonelId = _kimlikler.ToDictionary(k => k.PersonelId);
         _erkekKadroluPersonel = _kadroluPersoneller.Count(p =>
-        {
-            var kimlik = _kimlikler.FirstOrDefault(k => k.PersonelId == p.Id);
-            return kimlik != null && kimlik.Cinsiyet != null && kimlik.Cinsiyet.Equals("Erkek", StringComparison.OrdinalIgnoreCase);
-        });
+            kimlikByPersonelId.TryGetValue(p.Id, out var k) &&
+            "Erkek".Equals(k.Cinsiyet, StringComparison.OrdinalIgnoreCase));
         _kadinKadroluPersonel = _kadroluPersoneller.Count(p =>
-        {
-            var kimlik = _kimlikler.FirstOrDefault(k => k.PersonelId == p.Id);
-            return kimlik != null && kimlik.Cinsiyet != null && kimlik.Cinsiyet.Equals("Kadın", StringComparison.OrdinalIgnoreCase);
-        });
+            kimlikByPersonelId.TryGetValue(p.Id, out var k) &&
+            "Kadın".Equals(k.Cinsiyet, StringComparison.OrdinalIgnoreCase));
 
         var today = DateTime.Today;
         var yaslar = _kimlikler
@@ -766,9 +760,7 @@
             .Select(k => today.Year - k.DogumTar!.Value.Year -
                          (today < k.DogumTar.Value.AddYears(today.Year - k.DogumTar.Value.Year) ? 1 : 0))
             .ToList();
-        _yasOrtalaması = yaslar.Count > 0 ? Math.Round(yaslar.Average(), 1) : 0;
-
-        // ── Birim dağılım tablosu & chart ───────────────────────
+        _yasOrtalaması = yaslar.Count > 0 ? Math.Round(yaslar.Average(), 1) : 0;        // ── Birim dağılım tablosu & chart ───────────────────────
         _birimSatirlar.Clear();
         _birimDagilimItems.Clear();
         var birimGrup = aktifIsBilgileri
@@ -820,10 +812,7 @@
         // ── Kalan İzin Toplam dağılımı (Kadrolu personel) ──────────────────────
         _kalanIzinGrupItems.Clear();
         _kalanIzinPersonelSatirlar.Clear();
-        var kadroluIds = _personeller
-            .Where(p => p.Tipi == ProjectConstants.PER_TIPI_KADROLU)
-            .Select(p => p.Id)
-            .ToHashSet();
+        var kadroluIds = _kadroluPersoneller.Select(p => p.Id).ToHashSet();
         var kalanIzinPerPersonel = _izinDonemleri
             .Where(d => d.PersonelId.HasValue && kadroluIds.Contains(d.PersonelId.Value))
             .GroupBy(d => d.PersonelId!.Value)
@@ -878,16 +867,13 @@
         // ── Yaş grubu dağılımı
         _yasDagilimItems.Clear();
         _yasSatirlar.Clear();
-        var kimlikDict = _kimlikler
-            .Where(k => k.DogumTar.HasValue)
-            .GroupBy(k => k.PersonelId)
-            .ToDictionary(g => g.Key, g => g.First().DogumTar!.Value);
         var yasGruplari = new[] { "18-25", "26-35", "36-45", "46-55", "56+" };
         var yasGrupSayilari = new int[yasGruplari.Length];
         var yasGrupToplam = new double[yasGruplari.Length];
         foreach (var p in _kadroluPersoneller.Where(p => aktifPersonelIds.Contains(p.Id)))
         {
-            if (!kimlikDict.TryGetValue(p.Id, out var dogum)) continue;
+            if (!kimlikByPersonelId.TryGetValue(p.Id, out var k) || !k.DogumTar.HasValue) continue;
+            var dogum = k.DogumTar.Value;
             int yas = today.Year - dogum.Year - (today < dogum.AddYears(today.Year - dogum.Year) ? 1 : 0);
             int idx = yas <= 25 ? 0 : yas <= 35 ? 1 : yas <= 45 ? 2 : yas <= 55 ? 3 : 4;
             yasGrupSayilari[idx]++;

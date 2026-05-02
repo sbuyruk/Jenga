@@ -50,8 +50,7 @@ namespace Jenga.DataAccess.Services.Common
 
             try
             {
-                role.Olusturan ??= Environment.UserName;
-                role.OlusturmaTarihi ??= DateTime.Now;
+                // 1) Role'u ekle ve identity'i alabilmek için ilk SaveChanges'i yap.
 
                 await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
                 await db.Set<Role>().AddAsync(role, cancellationToken);
@@ -80,8 +79,6 @@ namespace Jenga.DataAccess.Services.Common
                     return Result.Failure(Error.NotFound($"G�ncellenecek rol bulunamadı (Id={role.Id}).", "Role.NotFound"));
 
                 db.Entry(trackedRole).CurrentValues.SetValues(role);
-                trackedRole.Degistiren = Environment.UserName;
-                trackedRole.DegistirmeTarihi = DateTime.Now;
 
                 await db.SaveChangesAsync(cancellationToken);
                 return Result.Success();
@@ -162,9 +159,6 @@ namespace Jenga.DataAccess.Services.Common
             if (role is null)
                 return Result.Failure(Error.Validation("Role boş olamaz.", "Role.Null"));
 
-            role.Olusturan ??= Environment.UserName;
-            role.OlusturmaTarihi ??= DateTime.Now;
-
             // Canary 3. tur: tek context + tek transaction.
             // Role + t�m join satirlari tek bir Commit i�inde persist edilir.
             // Iliski nesnelerini dogrudan context'e takmiyoruz; sadece FK alanlarini okuyup
@@ -192,9 +186,7 @@ namespace Jenga.DataAccess.Services.Common
                         await db.Set<PersonelRole>().AddAsync(new PersonelRole
                         {
                             RoleId = role.Id,
-                            PersonelId = pr.PersonelId,
-                            Olusturan = pr.Olusturan ?? Environment.UserName,
-                            OlusturmaTarihi = pr.OlusturmaTarihi ?? DateTime.Now
+                            PersonelId = pr.PersonelId
                         }, cancellationToken);
                     }
                 }
@@ -207,9 +199,7 @@ namespace Jenga.DataAccess.Services.Common
                         await db.Set<RoleMenu>().AddAsync(new RoleMenu
                         {
                             RoleId = role.Id,
-                            MenuId = rm.MenuId,
-                            Olusturan = rm.Olusturan ?? Environment.UserName,
-                            OlusturmaTarihi = rm.OlusturmaTarihi ?? DateTime.Now
+                            MenuId = rm.MenuId
                         }, cancellationToken);
                     }
                 }
@@ -261,8 +251,6 @@ namespace Jenga.DataAccess.Services.Common
                     return Result.Failure(Error.NotFound($"G�ncellenecek rol bulunamadı (Id={role.Id}).", "Role.NotFound"));
 
                 db.Entry(trackedRole).CurrentValues.SetValues(role);
-                trackedRole.Degistiren = Environment.UserName;
-                trackedRole.DegistirmeTarihi = DateTime.Now;
 
                 // 2) PersonelRole diff
                 var currentPRs = await db.Set<PersonelRole>()
@@ -284,9 +272,7 @@ namespace Jenga.DataAccess.Services.Common
                     await db.Set<PersonelRole>().AddAsync(new PersonelRole
                     {
                         RoleId = role.Id,
-                        PersonelId = personelId,
-                        Olusturan = Environment.UserName,
-                        OlusturmaTarihi = DateTime.Now
+                        PersonelId = personelId
                     }, cancellationToken);
                 }
 
@@ -310,9 +296,7 @@ namespace Jenga.DataAccess.Services.Common
                     await db.Set<RoleMenu>().AddAsync(new RoleMenu
                     {
                         RoleId = role.Id,
-                        MenuId = menuId,
-                        Olusturan = Environment.UserName,
-                        OlusturmaTarihi = DateTime.Now
+                        MenuId = menuId
                     }, cancellationToken);
                 }
 

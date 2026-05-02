@@ -17,7 +17,7 @@ namespace Jenga.DataAccess.Services.TBYS
         public BagisciYakinlariService(IDbContextFactory<ApplicationDbContext> dbFactory, ILogService logService)
         {
             _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
-            _logService = logService;
+            _logService = logService ?? throw new ArgumentNullException(nameof(logService));
         }
 
         public async Task<Result<List<BagisciYakinlari>>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -30,7 +30,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.GetAllAsync hata.", ex);
+                _logService.LogError($"{Source}.GetAllAsync hata.", ex);
                 return Result<List<BagisciYakinlari>>.Failure(Error.Unexpected("Yakın listesi alınamadı.", ex));
             }
         }
@@ -47,7 +47,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.GetByIdAsync hata.", ex);
+                _logService.LogError($"{Source}.GetByIdAsync hata.", ex);
                 return Result<BagisciYakinlari>.Failure(Error.Unexpected("Yakın alınamadı.", ex));
             }
         }
@@ -65,7 +65,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.GetByBagisciIdAsync hata.", ex);
+                _logService.LogError($"{Source}.GetByBagisciIdAsync hata.", ex);
                 return Result<List<BagisciYakinlari>>.Failure(Error.Unexpected("Bağışçıya ait yakınlar alınamadı.", ex));
             }
         }
@@ -84,7 +84,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.AddAsync hata.", ex);
+                _logService.LogError($"{Source}.AddAsync hata.", ex);
                 return Result.Failure(Error.Unexpected("Yakın eklenemedi.", ex));
             }
         }
@@ -103,7 +103,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.UpdateAsync hata.", ex);
+                _logService.LogError($"{Source}.UpdateAsync hata.", ex);
                 return Result.Failure(Error.Unexpected("Yakın güncellenemedi.", ex));
             }
         }
@@ -123,7 +123,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.DeleteAsync hata.", ex);
+                _logService.LogError($"{Source}.DeleteAsync hata.", ex);
                 return Result.Failure(Error.Unexpected("Yakın silinemedi.", ex));
             }
         }
@@ -138,7 +138,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogError($"{Source}.AnyAsync hata.", ex);
+                _logService.LogError($"{Source}.AnyAsync hata.", ex);
                 return Result<bool>.Failure(Error.Unexpected("Sorgu çalıştırılamadı.", ex));
             }
         }

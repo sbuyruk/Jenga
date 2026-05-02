@@ -1,4 +1,5 @@
 using Jenga.DataAccess.Data;
+using Jenga.Models.Enums;
 using Jenga.Models.IKYS;
 using Jenga.Utility.Logging;
 using Jenga.Utility.Results;
@@ -62,6 +63,7 @@ public class PersonelService : IPersonelService
         try
         {
             await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            db.SetCurrentUser(modifiedBy);
             await db.Personel_Table.AddAsync(personel, cancellationToken);
             await db.SaveChangesAsync(cancellationToken);
             return Result.Success();
@@ -73,7 +75,7 @@ public class PersonelService : IPersonelService
         }
     }
 
-    public async Task<Result> UpdateAsync(Personel personel, CancellationToken cancellationToken = default)
+    public async Task<Result> UpdateAsync(Personel personel, string? modifiedBy = null, CancellationToken cancellationToken = default)
     {
         if (personel is null)
             return Result.Failure(Error.Validation("Personel boş olamaz.", "Personel.Null"));
@@ -81,6 +83,7 @@ public class PersonelService : IPersonelService
         try
         {
             await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            db.SetCurrentUser(modifiedBy);
             var existing = await db.Personel_Table.FirstOrDefaultAsync(x => x.Id == personel.Id, cancellationToken);
             if (existing is null)
                 return Result.Failure(Error.NotFound($"Güncellenecek personel bulunamadı (Id={personel.Id}).", "Personel.NotFound"));
@@ -88,7 +91,7 @@ public class PersonelService : IPersonelService
             existing.Adi = personel.Adi;
             existing.Soyadi = personel.Soyadi;
             existing.KullaniciAdi = personel.KullaniciAdi;
-            existing.Asker_sivil = personel.Asker_sivil;
+            existing.AskerSivil = personel.AskerSivil;
             existing.Aciklama = personel.Aciklama;
             existing.SicilNo = personel.SicilNo;
             existing.Tahsili = personel.Tahsili;
@@ -139,7 +142,7 @@ public class PersonelService : IPersonelService
     }
 
     public Task<Result> UpdatePersonelAndSaveAsync(Personel personel, string? currentUserName, CancellationToken cancellationToken = default)
-        => UpdateAsync(personel, cancellationToken);
+        => UpdateAsync(personel, currentUserName, cancellationToken);
 
     public Task<Result> DeletePersonelAndSaveAsync(Personel personel, string? currentUserName, CancellationToken cancellationToken = default)
         => DeleteAsync(personel, cancellationToken);
@@ -151,8 +154,9 @@ public class PersonelService : IPersonelService
             await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
             var list = await db.Personel_Table.AsNoTracking()
                 .Include(p => p.IsBilgileri)
-                .Where(p => p.IsBilgileri != null && p.IsBilgileri.CalismaDurumu != null
-                            && p.IsBilgileri.CalismaDurumu == "1" && p.Tipi == 1)
+                .Where(p => p.IsBilgileri != null
+                            && p.IsBilgileri.CalismaDurumu == CalismaDurumu.Calisiyor
+                            && p.Tipi == PersonelTipi.Kadrolu)
                 .ToListAsync(cancellationToken);
             return Result.Success(list);
         }
@@ -170,8 +174,8 @@ public class PersonelService : IPersonelService
             await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
             var list = await db.Personel_Table.AsNoTracking()
                 .Include(p => p.IsBilgileri)
-                .Where(p => p.IsBilgileri != null && p.IsBilgileri.CalismaDurumu != null
-                            && p.IsBilgileri.CalismaDurumu == "1")
+                .Where(p => p.IsBilgileri != null
+                            && p.IsBilgileri.CalismaDurumu == CalismaDurumu.Calisiyor)
                 .ToListAsync(cancellationToken);
             return Result.Success(list);
         }

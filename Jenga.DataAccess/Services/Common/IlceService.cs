@@ -16,7 +16,7 @@ namespace Jenga.DataAccess.Services.Common
         public IlceService(IDbContextFactory<ApplicationDbContext> dbFactory, ILogService? logService = null)
         {
             _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
-            _logService = logService;
+            _logService = logService ?? throw new ArgumentNullException(nameof(logService));
         }
 
         public async Task<Result<List<Ilce>>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -32,7 +32,7 @@ namespace Jenga.DataAccess.Services.Common
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.GetAllAsync");
+                _logService.LogException(ex, $"{Source}.GetAllAsync");
                 return Result.Failure<List<Ilce>>(Error.Unexpected("İlçeler getirilemedi.", ex, "Ilce.GetAll.Failed"));
             }
         }
@@ -49,7 +49,7 @@ namespace Jenga.DataAccess.Services.Common
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.GetByIdAsync");
+                _logService.LogException(ex, $"{Source}.GetByIdAsync");
                 return Result.Failure<Ilce>(Error.Unexpected("İlçe getirilemedi.", ex, "Ilce.GetById.Failed"));
             }
         }
@@ -67,7 +67,7 @@ namespace Jenga.DataAccess.Services.Common
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.GetByIlIdAsync");
+                _logService.LogException(ex, $"{Source}.GetByIlIdAsync");
                 return Result.Failure<List<Ilce>>(Error.Unexpected("İlçeler getirilemedi.", ex, "Ilce.GetByIlId.Failed"));
             }
         }
@@ -85,7 +85,7 @@ namespace Jenga.DataAccess.Services.Common
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.GetAktifIlcelerAsync");
+                _logService.LogException(ex, $"{Source}.GetAktifIlcelerAsync");
                 return Result.Failure<List<Ilce>>(Error.Unexpected("Aktif ilçeler getirilemedi.", ex, "Ilce.GetAktif.Failed"));
             }
         }

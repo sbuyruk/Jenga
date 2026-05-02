@@ -1,15 +1,13 @@
-﻿@page "/common/role-page"
+@page "/common/role-page"
 @rendermode InteractiveServer
 @using Jenga.BlazorUI.Components.Menus
 @using Jenga.DataAccess.Services.Common
 @using Jenga.Models.Common
-@using Jenga.Utility.Error
-@using Jenga.Utility.Toast
 @inject IRoleService RolService
 @inject IErrorService ErrorService
 @inject IToastService ToastService
 
-<h3>Rol Yönetimi</h3>
+<h3>Rol Y�netimi</h3>
 <RoleTable Roles="@roles"
            OnRoleAdded="ReloadAsync"
            OnRoleUpdated="ReloadAsync"
@@ -30,8 +28,8 @@
         }
     }
 
-    // Tek doğru kaynak burası: ekleme/güncelleme/silme sonrası listeyi DB'den tazeler.
-    // RoleTable artık parent koleksiyonunu doğrudan mutate etmez.
+    // Tek dogru kaynak burasi: ekleme/g�ncelleme/silme sonrasi listeyi DB'den tazeler.
+    // RoleTable artik parent koleksiyonunu dogrudan mutate etmez.
     private async Task ReloadAsync(Role _ = null!)
     {
         var result = await RolService.GetAllAsync();

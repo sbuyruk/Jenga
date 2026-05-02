@@ -1,5 +1,4 @@
-﻿@using Jenga.Models.Inventory
-@using Jenga.Utility.Toast
+@using Jenga.Models.Inventory
 @using Jenga.DataAccess.Services.Inventory
 
 @inject IToastService ToastService
@@ -13,7 +12,7 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">@((editing?.Id ?? 0) == 0 ? "Yeni Malzeme Tanımlama" : "Malzeme Düzenle")</h5>
+                    <h5 class="modal-title">@((editing?.Id ?? 0) == 0 ? "Yeni Malzeme Tanimlama" : "Malzeme D�zenle")</h5>
                     <button type="button" class="btn-close" @onclick="Close" aria-label="Kapat"></button>
                 </div>
                 <div class="modal-body">
@@ -29,7 +28,7 @@
                     <div class="mb-2">
                         <label class="form-label">Kategori</label>
                         <select class="form-select" @bind="editing.CategoryId">
-                            <option value="0">Seçiniz</option>
+                            <option value="0">Se�iniz</option>
                             @foreach (var cat in Categories)
                             {
                                 <option value="@cat.Id">@cat.CategoryName</option>
@@ -45,7 +44,7 @@
                         <label class="form-label">Birim</label>
                         <div class="input-group">
                             <select class="form-select" @bind="editing.MaterialUnitId">
-                                <option value="0">Birim seçiniz</option>
+                                <option value="0">Birim se�iniz</option>
                                 @foreach (var unit in MaterialUnits)
                                 {
                                     <option value="@unit.Id">@unit.Name (@unit.Symbol)</option>
@@ -63,17 +62,17 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">Kritik Stok Miktarı</label>
+                        <label class="form-label">Kritik Stok Miktari</label>
                         <input class="form-control" type="number" @bind="editing.CriticalStock" />
                     </div>
 
                     <div class="form-check mb-3">
                         <input class="form-check-input" type="checkbox" id="isAsset" @bind="editing.IsAsset" />
-                        <label class="form-check-label" for="isAsset">Varlık mı?</label>
+                        <label class="form-check-label" for="isAsset">Varlik mi?</label>
                     </div>
 
                     <div class="mb-2">
-                        <label class="form-label">Açıklama</label>
+                        <label class="form-label">A�iklama</label>
                         <textarea class="form-control" rows="3" @bind="editing.Aciklama"></textarea>
                     </div>
                 </div>
@@ -145,13 +144,13 @@
         Errors.Clear();
 
         if (string.IsNullOrWhiteSpace(editing.MaterialName))
-            Errors[nameof(Material.MaterialName)] = "Malzeme adı gerekli.";
+            Errors[nameof(Material.MaterialName)] = "Malzeme adi gerekli.";
 
         if (editing.CategoryId <= 0)
-            Errors[nameof(Material.CategoryId)] = "Kategori seçiniz.";
+            Errors[nameof(Material.CategoryId)] = "Kategori se�iniz.";
 
         if (editing.MaterialUnitId <= 0)
-            Errors[nameof(Material.MaterialUnitId)] = "Birim seçiniz.";
+            Errors[nameof(Material.MaterialUnitId)] = "Birim se�iniz.";
 
         return Errors.Count == 0;
     }
@@ -162,7 +161,7 @@
 
         if (!Validate())
         {
-            ToastService.ShowToast("Lütfen formu düzeltiniz.", ToastType.Warning, 2500);
+            ToastService.ShowToast("L�tfen formu d�zeltiniz.", ToastType.Warning, 2500);
             return;
         }
 
@@ -177,7 +176,7 @@
             var exists = existsR.IsSuccess && existsR.Value;
             if (exists)
             {
-                Errors[nameof(Material.MaterialName)] = "Aynı isimde başka bir malzeme mevcut.";
+                Errors[nameof(Material.MaterialName)] = "Ayni isimde baska bir malzeme mevcut.";
                 ToastService.ShowToast(Errors[nameof(Material.MaterialName)], ToastType.Warning, 3500);
                 return;
             }
@@ -198,7 +197,7 @@
         }
         catch (Exception ex)
         {
-            ToastService.ShowToast($"Kaydetme sırasında hata: {ex.Message}", ToastType.Error, 5000);
+            ToastService.ShowToast($"Kaydetme sirasinda hata: {ex.Message}", ToastType.Error, 5000);
         }
         finally
         {
@@ -235,7 +234,7 @@
         }
         catch (Exception ex)
         {
-            ToastService.ShowToast($"Birim kaydetme hatası: {ex.Message}", ToastType.Error, 4000);
+            ToastService.ShowToast($"Birim kaydetme hatasi: {ex.Message}", ToastType.Error, 4000);
         }
         finally
         {

@@ -56,9 +56,8 @@ public class EgitimSeviyesiService : IEgitimSeviyesiService
             return Result.Failure(Error.Validation("Eğitim seviyesi boş olamaz.", "EgitimSeviyesi.Null"));
         try
         {
-            entity.Olusturan = modifiedBy;
-            entity.OlusturmaTarihi = DateTime.Now;
             await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            db.SetCurrentUser(modifiedBy);
             await db.EgitimSeviyesi_Table.AddAsync(entity, cancellationToken);
             await db.SaveChangesAsync(cancellationToken);
             return Result.Success();
@@ -83,8 +82,6 @@ public class EgitimSeviyesiService : IEgitimSeviyesiService
             existing.Adi = entity.Adi;
             existing.KisaAdi = entity.KisaAdi;
             existing.Aciklama = entity.Aciklama;
-            existing.Degistiren = entity.Degistiren;
-            existing.DegistirmeTarihi = DateTime.Now;
             await db.SaveChangesAsync(cancellationToken);
             return Result.Success();
         }

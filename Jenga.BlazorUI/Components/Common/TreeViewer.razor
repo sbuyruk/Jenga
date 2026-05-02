@@ -1,15 +1,14 @@
-﻿@using System
+@using System
 @using System.Linq
 @using System.Collections.Generic
 @using System.Threading.Tasks
 @using Microsoft.AspNetCore.Components
 @using Jenga.Models.Common
-@using Jenga.Models.Helper
 @typeparam T
 
 <div class="d-flex align-items-start treeview-container">
     <div class="nav flex-column nav-pills gap-2 sticky-toolbar btn btn-light shadow " role="toolbar" aria-orientation="vertical">
-        <button class="toolbar-btn" title="Genişlet" aria-label="Genişlet" tabindex="0" @onclick="ExpandAllNodes">
+        <button class="toolbar-btn" title="Genislet" aria-label="Genislet" tabindex="0" @onclick="ExpandAllNodes">
             <i class="bi bi-arrows-angle-expand" aria-hidden="true"></i>
         </button>
         <button class="toolbar-btn" title="Daralt" aria-label="Daralt" tabindex="0" @onclick="CollapseAllNodes">
@@ -18,7 +17,7 @@
 
         @if (SortSelector != null)
         {
-            <button class="toolbar-btn" title="Sıralama yönünü değiştir" aria-label="Sıralama yönünü değiştir" tabindex="0" @onclick="ToggleSort">
+            <button class="toolbar-btn" title="Siralama y�n�n� degistir" aria-label="Siralama y�n�n� degistir" tabindex="0" @onclick="ToggleSort">
                 <i class="bi @(SortAscending ? "bi-sort-alpha-down" : "bi-sort-alpha-up")"></i>
             </button>
         }

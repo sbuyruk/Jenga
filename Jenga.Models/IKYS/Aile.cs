@@ -1,5 +1,4 @@
 using Jenga.Models.Sistem;
-using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -7,10 +6,8 @@ namespace Jenga.Models.IKYS;
 
 public class Aile : BaseModel
 {
-    [ValidateNever]
     public int? PersonelId { get; set; }
     [ForeignKey("PersonelId")]
-    [ValidateNever]
     public Personel? Personel { get; set; }
     [DisplayName("Adı")]
     public string? Adi { get; set; }

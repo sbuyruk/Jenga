@@ -1,5 +1,4 @@
-﻿using Jenga.Models.Sistem;
-using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+using Jenga.Models.Sistem;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -9,11 +8,11 @@ namespace Jenga.Models.NBYS
     public class NakitBagisci : BaseModel
     {
         [Column("Adi")]
-        [DisplayName("Adı")]
+        [DisplayName("Adi")]
         public string? Adi { get; set; }
 
         [Column("Soyadi")]
-        [DisplayName("Soyadı")]
+        [DisplayName("Soyadi")]
         public string? Soyadi { get; set; }
 
         [Column("TCKimlikNo")]
@@ -21,11 +20,11 @@ namespace Jenga.Models.NBYS
         public long? TCKimlikNo { get; set; }
 
         [Column("Ili")]
-        [DisplayName("İli")]
+        [DisplayName("Ili")]
         public int? Ili { get; set; }
 
         [Column("Ilcesi")]
-        [DisplayName("İlçesi")]
+        [DisplayName("Il�esi")]
         public int? Ilcesi { get; set; }
 
         [Column("Adres")]
@@ -41,13 +40,13 @@ namespace Jenga.Models.NBYS
         public string? Telefon2 { get; set; }
 
         [Column("TuzelKisi")]
-        [DisplayName("Tüzel Kişi")]
+        [DisplayName("T�zel Kisi")]
         public bool? TuzelKisi { get; set; }
 
         // BaseModel already contains: OlusturmaTarihi, Olusturan, DegistirmeTarihi, Degistiren, Aciklama
 
         [Column("Sag")]
-        [DisplayName("Sağ")]
+        [DisplayName("Sag")]
         public bool? Sag { get; set; }
 
         [Column("Eposta")]
@@ -59,11 +58,11 @@ namespace Jenga.Models.NBYS
         public string? PostaKodu { get; set; }
 
         [Column("Ulasilamiyor")]
-        [DisplayName("Ulaşılamıyor")]
+        [DisplayName("Ulasilamiyor")]
         public bool? Ulasilamiyor { get; set; }
 
         [Column("BelgeIstemiyor")]
-        [DisplayName("Belge İstemiyor")]
+        [DisplayName("Belge Istemiyor")]
         public bool? BelgeIstemiyor { get; set; } = false;
 
         [Column("VefatTarihi", TypeName = "date")]
@@ -71,10 +70,8 @@ namespace Jenga.Models.NBYS
         public DateTime? VefatTarihi { get; set; }
 
         [Column("DergiGonderilmesin")]
-        [DisplayName("Dergi Gönderilmesin")]
+        [DisplayName("Dergi G�nderilmesin")]
         public bool? DergiGonderilmesin { get; set; }
-
-        [ValidateNever]
         [NotMapped]
         public string AdSoyad => $"{Adi} {Soyadi}".Trim();
     }

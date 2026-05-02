@@ -1,4 +1,4 @@
-﻿@page "/inventory/asset-manager"
+@page "/inventory/asset-manager"
 @rendermode InteractiveServer
 
 @using Jenga.BlazorUI.Components.Inventory
@@ -7,7 +7,6 @@
 @using Jenga.DataAccess.Services.Inventory
 @using Jenga.Models.IKYS
 @using Jenga.Models.Inventory
-@using Jenga.Utility.Toast
 
 @inject IMaterialAssetService MaterialAssetService
 @inject IMaterialService MaterialService
@@ -16,7 +15,7 @@
 @inject ILocationService LocationService
 @inject IPersonelService PersonelService
 
-<h5 class="mb-3"><i class="bi bi-cpu me-2"></i>Demirbaş Yönetimi</h5>
+<h5 class="mb-3"><i class="bi bi-cpu me-2"></i>Demirbas Y�netimi</h5>
 
 <!-- FILTERS -->
 <div class="card shadow-sm mb-3">
@@ -25,7 +24,7 @@
             <div class="col-md-3">
                 <label class="form-label small mb-1">Malzeme</label>
                 <select class="form-select form-select-sm" @bind="filterMaterialId">
-                    <option value="">Tümü</option>
+                    <option value="">T�m�</option>
                     @foreach (var m in assetMaterials)
                     {
                         <option value="@m.Id">@m.MaterialName</option>
@@ -35,7 +34,7 @@
             <div class="col-md-2">
                 <label class="form-label small mb-1">Durum</label>
                 <select class="form-select form-select-sm" @bind="filterStatus">
-                    <option value="">Tümü</option>
+                    <option value="">T�m�</option>
                     @foreach (var s in Enum.GetValues<AssetStatus>())
                     {
                         <option value="@s">@GetStatusLabel(s)</option>
@@ -49,7 +48,7 @@
             <div class="col-md-2">
                 <label class="form-label small mb-1">Personel</label>
                 <select class="form-select form-select-sm" @bind="filterPersonelId">
-                    <option value="">Tümü</option>
+                    <option value="">T�m�</option>
                     @foreach (var p in persons)
                     {
                         <option value="@p.Id">@p.Adi @p.Soyadi</option>
@@ -71,7 +70,7 @@
 <!-- ASSET TABLE -->
 <div class="card shadow-sm">
     <div class="card-header bg-primary-subtle d-flex justify-content-between align-items-center">
-        <span><strong>@filteredAssets.Count</strong> demirbaş kayıtlı</span>
+        <span><strong>@filteredAssets.Count</strong> demirbas kayitli</span>
         <button class="btn btn-sm btn-outline-secondary" @onclick="LoadAllData">
             <i class="bi bi-arrow-clockwise"></i> Yenile
         </button>
@@ -167,9 +166,9 @@
     private string GetStatusLabel(AssetStatus status) => status switch
     {
         AssetStatus.Active => "Aktif",
-        AssetStatus.InRepair => "Onarımda",
+        AssetStatus.InRepair => "Onarimda",
         AssetStatus.Retired => "Hurda",
-        AssetStatus.Lost => "Kayıp",
+        AssetStatus.Lost => "Kayip",
         _ => status.ToString()
     };
 }

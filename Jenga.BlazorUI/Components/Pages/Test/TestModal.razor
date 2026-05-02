@@ -1,17 +1,16 @@
-﻿@page "/test/modal"
+@page "/test/modal"
 @rendermode InteractiveServer
 @using Jenga.BlazorUI.Services.Common
 
-@using Jenga.Utility.Toast
 @inject IModalService ModalService
 @inject IToastService ToastService
 
-<h3>Modal Test Sayfası</h3>
+<h3>Modal Test Sayfasi</h3>
 
 <div class="button-group">
-    <button @onclick="@(() => ShowModal(" Sil", "Bu öğeyi silmek istediğinize emin misiniz?" ))">Sil</button>
-    <button @onclick="@(() => ShowModal(" Kaydet", "Değişiklikleri kaydetmek istiyor musunuz?" ))">Kaydet</button>
-    <button @onclick="@(() => ShowModal(" Güncelle", "Bu öğeyi güncellemek istediğinize emin misiniz?" ))">Güncelle</button>
+    <button @onclick="@(() => ShowModal(" Sil", "Bu �geyi silmek istediginize emin misiniz?" ))">Sil</button>
+    <button @onclick="@(() => ShowModal(" Kaydet", "Degisiklikleri kaydetmek istiyor musunuz?" ))">Kaydet</button>
+    <button @onclick="@(() => ShowModal(" G�ncelle", "Bu �geyi g�ncellemek istediginize emin misiniz?" ))">G�ncelle</button>
 </div>
 
 @code {
@@ -20,9 +19,9 @@
         ModalService.ShowConfirmation(action, message, result =>
         {
             if (result)
-                ToastService.ShowSuccess($"{action} işlemi onaylandı.");
+                ToastService.ShowSuccess($"{action} islemi onaylandi.");
             else
-                ToastService.ShowWarning($"{action} işlemi iptal edildi.");
+                ToastService.ShowWarning($"{action} islemi iptal edildi.");
         });
     }
 }

@@ -33,9 +33,47 @@ namespace Jenga.BlazorUI.Services.Common
             _logger = logger;
         }
 
-        public async Task<Personel?> GetCurrentPersonelAsync()
+        /// <summary>
+        /// Prerender / <see cref="Microsoft.AspNetCore.Components.ComponentBase.OnInitializedAsync"/> gibi
+        /// JS interop'un henüz hazır olmadığı aşamalarda çağrılır.
+        /// Impersonation override'ı atlar; JS bağlantısı kurulduktan sonra
+        /// <see cref="GetCurrentPersonelAsync"/> ile tekrar çözümlenebilir.
+        /// </summary>
+        public Task<Personel?> GetCurrentPersonelWithoutImpersonationAsync()
+            => GetCurrentPersonelAsync(skipImpersonation: true);
+
+        public Task<Personel?> GetCurrentPersonelAsync()
+            => GetCurrentPersonelAsync(skipImpersonation: false);
+
+        private async Task<Personel?> GetCurrentPersonelAsync(bool skipImpersonation)
         {
             if (_cachedPersonel != null) return _cachedPersonel;
+
+            // Development ortamında impersonation override kontrolü.
+            // JS interop prerender sırasında çalışmayabileceğinden sessizce atlanır.
+            if (!skipImpersonation && _hostEnvironment.IsDevelopment())
+            {
+                try
+                {
+                    var overrideUser = await _impersonationService.GetOverrideAsync();
+                    if (!string.IsNullOrWhiteSpace(overrideUser))
+                    {
+                        await using var overrideDb = await _dbFactory.CreateDbContextAsync();
+                        var overridePersonel = await overrideDb.Personel_Table.AsNoTracking()
+                            .FirstOrDefaultAsync(p => p.KullaniciAdi != null &&
+                                                      EF.Functions.Like(p.KullaniciAdi, overrideUser.Trim()));
+                        if (overridePersonel != null)
+                        {
+                            _cachedPersonel = overridePersonel;
+                            return _cachedPersonel;
+                        }
+                    }
+                }
+                catch
+                {
+                    // Prerender sırasında JS interop çalışmaz; hata normal, görmezden gelinir.
+                }
+            }
 
             // NOTE: Do NOT call JS interop from here (prerender may be active).
             // Resolve from HttpContext or AuthenticationState instead.
@@ -85,6 +123,12 @@ namespace Jenga.BlazorUI.Services.Common
             return personel;
         }
 
+        /// <summary>
+        /// Önbelleği temizler; bir sonraki çağrıda kullanıcı DB'den yeniden çözümlenir.
+        /// Impersonation değişikliği veya oturum güncellemesi sonrasında çağrılmalıdır.
+        /// </summary>
+        public void Invalidate() => _cachedPersonel = null;
+
         // Impersonation override (Development-only; prod'da çağrı bile başarısız döner).
         // Üst katman da ayrıca [Authorize] / rol kontrolü yapmalıdır.
         public async Task<bool> SetImpersonationOverrideAsync(string? overrideUser)
@@ -96,18 +140,32 @@ namespace Jenga.BlazorUI.Services.Common
             }
 
             if (string.IsNullOrWhiteSpace(overrideUser))
+            {
+                Invalidate();
                 return false;
+            }
 
             var trimmed = overrideUser.Trim();
+
+            // Yeni kullanıcıya geçmeden önce mevcut cache'i temizle.
+            Invalidate();
 
             try
             {
                 await using var db = await _dbFactory.CreateDbContextAsync();
-                _cachedPersonel = await db.Personel_Table.AsNoTracking()
+                var found = await db.Personel_Table.AsNoTracking()
                     .FirstOrDefaultAsync(p => p.KullaniciAdi != null &&
                                               EF.Functions.Like(p.KullaniciAdi, trimmed));
 
-                return _cachedPersonel != null;
+                if (found != null)
+                {
+                    await _impersonationService.SetOverrideAsync(trimmed);
+                    _cachedPersonel = found;
+                    return true;
+                }
+
+                _logger.LogWarning("SetImpersonationOverrideAsync: '{User}' bulunamadı.", trimmed);
+                return false;
             }
             catch (Exception ex)
             {

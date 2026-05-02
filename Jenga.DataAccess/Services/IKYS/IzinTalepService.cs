@@ -71,11 +71,10 @@ public class IzinTalepService : IIzinTalepService
             return Result.Failure(Error.Validation("İzin talebi boş olamaz.", "IzinTalep.Null"));
         try
         {
-            entity.Olusturan = modifiedBy;
-            entity.OlusturmaTarihi = DateTime.Now;
             entity.Aktif ??= true;
             entity.OnayDurumu ??= 0;
             await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            db.SetCurrentUser(modifiedBy);
             await db.IzinTalep_Table.AddAsync(entity, cancellationToken);
             await db.SaveChangesAsync(cancellationToken);
             return Result.Success();
@@ -112,8 +111,6 @@ public class IzinTalepService : IIzinTalepService
             existing.OnayDurumu = entity.OnayDurumu;
             existing.EPostaGonder = entity.EPostaGonder;
             existing.Aciklama = entity.Aciklama;
-            existing.Degistiren = entity.Degistiren;
-            existing.DegistirmeTarihi = DateTime.Now;
             await db.SaveChangesAsync(cancellationToken);
             return Result.Success();
         }

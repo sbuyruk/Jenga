@@ -17,7 +17,7 @@ namespace Jenga.DataAccess.Services.TBYS
         public TasinmazService(IDbContextFactory<ApplicationDbContext> dbFactory, ILogService logService)
         {
             _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
-            _logService = logService;
+            _logService = logService ?? throw new ArgumentNullException(nameof(logService));
         }
 
         public async Task<Result<List<Tasinmaz>>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -30,7 +30,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.GetAllAsync");
+                _logService.LogException(ex, $"{Source}.GetAllAsync");
                 return Result.Failure<List<Tasinmaz>>(Error.Unexpected("Taşınmazlar getirilemedi.", ex, "Tasinmaz.GetAll.Failed"));
             }
         }
@@ -47,7 +47,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.GetByEnvanterDurumuAsync");
+                _logService.LogException(ex, $"{Source}.GetByEnvanterDurumuAsync");
                 return Result.Failure<List<Tasinmaz>>(Error.Unexpected("Envanter durumuna göre taşınmazlar getirilemedi.", ex, "Tasinmaz.GetByEnvanterDurumu.Failed"));
             }
         }
@@ -67,7 +67,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.GetByIdAsync");
+                _logService.LogException(ex, $"{Source}.GetByIdAsync");
                 return Result.Failure<Tasinmaz>(Error.Unexpected("Taşınmaz getirilemedi.", ex, "Tasinmaz.GetById.Failed"));
             }
         }
@@ -84,7 +84,7 @@ namespace Jenga.DataAccess.Services.TBYS
                 if (existsResult.IsFailure) return Result.Failure(existsResult.Error);
                 if (existsResult.Value)
                 {
-                    _logService?.LogWarning($"{Source}.AddAsync Aynı EmlakSicilNo zaten kayıtlı: '{sicil}'.");
+                    _logService.LogWarning($"{Source}.AddAsync Aynı EmlakSicilNo zaten kayıtlı: '{sicil}'.");
                     return Result.Failure(Error.Conflict($"Aynı EmlakSicilNo zaten kayıtlı: '{sicil}'.", "Tasinmaz.EmlakSicilNo.Duplicate"));
                 }
             }
@@ -98,7 +98,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.AddAsync");
+                _logService.LogException(ex, $"{Source}.AddAsync");
                 return Result.Failure(Error.Unexpected("Taşınmaz eklenemedi.", ex, "Tasinmaz.Add.Failed"));
             }
         }
@@ -115,7 +115,7 @@ namespace Jenga.DataAccess.Services.TBYS
                 if (existsResult.IsFailure) return Result.Failure(existsResult.Error);
                 if (existsResult.Value)
                 {
-                    _logService?.LogWarning($"{Source}.UpdateAsync Aynı EmlakSicilNo zaten kayıtlı: '{sicil}' (id:{tasinmaz.Id}).");
+                    _logService.LogWarning($"{Source}.UpdateAsync Aynı EmlakSicilNo zaten kayıtlı: '{sicil}' (id:{tasinmaz.Id}).");
                     return Result.Failure(Error.Conflict($"Aynı EmlakSicilNo zaten kayıtlı: '{sicil}'.", "Tasinmaz.EmlakSicilNo.Duplicate"));
                 }
             }
@@ -129,7 +129,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.UpdateAsync");
+                _logService.LogException(ex, $"{Source}.UpdateAsync");
                 return Result.Failure(Error.Unexpected("Taşınmaz güncellenemedi.", ex, "Tasinmaz.Update.Failed"));
             }
         }
@@ -149,7 +149,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.DeleteAsync");
+                _logService.LogException(ex, $"{Source}.DeleteAsync");
                 return Result.Failure(Error.Unexpected("Taşınmaz silinemedi.", ex, "Tasinmaz.Delete.Failed"));
             }
         }
@@ -164,7 +164,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.AnyAsync");
+                _logService.LogException(ex, $"{Source}.AnyAsync");
                 return Result.Failure<bool>(Error.Unexpected("Taşınmaz sorgusu yapılamadı.", ex, "Tasinmaz.Any.Failed"));
             }
         }
@@ -182,7 +182,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.GetEmlakSicilNoAsync");
+                _logService.LogException(ex, $"{Source}.GetEmlakSicilNoAsync");
                 return Result.Failure<string>(Error.Unexpected("EmlakSicilNo getirilemedi.", ex, "Tasinmaz.GetEmlakSicilNo.Failed"));
             }
         }
@@ -208,7 +208,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService?.LogException(ex, $"{Source}.ExistsByEmlakSicilNoAsync");
+                _logService.LogException(ex, $"{Source}.ExistsByEmlakSicilNoAsync");
                 return Result.Failure<bool>(Error.Unexpected("EmlakSicilNo kontrolü yapılamadı.", ex, "Tasinmaz.ExistsByEmlakSicilNo.Failed"));
             }
         }

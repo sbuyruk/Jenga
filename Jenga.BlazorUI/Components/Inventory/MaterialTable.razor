@@ -1,8 +1,7 @@
-﻿@using Jenga.BlazorUI.Components.Common
+@using Jenga.BlazorUI.Components.Common
 @using Jenga.BlazorUI.Services.Common
 @using Jenga.DataAccess.Services.Inventory
 @using Jenga.Models.Inventory
-@using Jenga.Utility.Toast
 @inject IToastService ToastService
 @inject IModalService ModalService
 @inject IMaterialService MaterialService
@@ -15,7 +14,7 @@
 
 @if (Materials?.Any() != true)
 {
-    <p>Malzeme bulunamadı.</p>
+    <p>Malzeme bulunamadi.</p>
 }
 else
 {
@@ -34,19 +33,19 @@ else
             <th>Ad</th>
             <th>Kategori</th>
             <th>Birim</th>
-            <th>Varlık mı</th>
-            <th>Açıklama</th>
-            <th class="text-center">İşlemler</th>
+            <th>Varlik mi</th>
+            <th>A�iklama</th>
+            <th class="text-center">Islemler</th>
         </HeaderTemplate>
 
         <RowTemplate Context="mat">
             <td class="align-middle">@mat.MaterialName</td>
             <td class="align-middle">@GetCategoryName(mat.CategoryId)</td>
             <td class="align-middle">@GetUnitName(mat.MaterialUnitId)</td>
-            <td class="align-middle">@(mat.IsAsset ? "Evet" : "Hayır")</td>
+            <td class="align-middle">@(mat.IsAsset ? "Evet" : "Hayir")</td>
             <td class="align-middle">@mat.Aciklama</td>
             <td class="text-center align-middle" style="white-space:nowrap;">
-                <button class="btn btn-sm btn-primary me-2" @onclick="() => OnEditClicked(mat)">Düzenle</button>
+                <button class="btn btn-sm btn-primary me-2" @onclick="() => OnEditClicked(mat)">D�zenle</button>
                 <button class="btn btn-sm btn-danger" @onclick="() => OnDeleteClicked(mat)">Sil</button>
             </td>
         </RowTemplate>
@@ -133,8 +132,8 @@ else
     private async Task OnDeleteClicked(Material material)
     {
         ModalService.ShowConfirmation(
-            "Silme Onayı",
-            $"'{material.MaterialName}' malzemesini silmek istediğinizden emin misiniz?",
+            "Silme Onayi",
+            $"'{material.MaterialName}' malzemesini silmek istediginizden emin misiniz?",
             async result =>
             {
                 if (!result)
@@ -151,7 +150,7 @@ else
                 }
                 else
                 {
-                    ToastService.ShowToast("Silme işlemi başarısız oldu", ToastType.Error, 3000);
+                    ToastService.ShowToast("Silme islemi basarisiz oldu", ToastType.Error, 3000);
                 }
             });
     }
