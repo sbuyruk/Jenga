@@ -1049,7 +1049,7 @@
             // ── Paralel veri yükleme ────────────────────────────
             var tTasinmazBagisci = TasinmazBagisciService.GetAllAsync(ct);
             var tTasinmaz = TasinmazService.GetEnvanterdekilerAsync(ct);
-            var tKiraSozlesme = KiraSozlesmeService.GetKiraSozlesmeAktifAsync(ct);
+            var tKiraSozlesme = KiraSozlesmeService.GetAllAsync(ct);
             var tOdeme = OdemeService.GetAllAsync(ct);
             var tNakitHareket = NakitBagisHareketService.GetAllAsync(ct);
             var tNakitBagisci = NakitBagisciService.GetAllAsync(ct);
@@ -1066,6 +1066,7 @@
             var tasinmazBagiscilar = tTasinmazBagisci.Result.IsSuccess ? tTasinmazBagisci.Result.Value : [];
             var tasinmazlar = tTasinmaz.Result.IsSuccess ? tTasinmaz.Result.Value : [];
             var kiraSozlesmeler = tKiraSozlesme.Result.IsSuccess ? tKiraSozlesme.Result.Value : [];
+
             var odemeler = tOdeme.Result.IsSuccess ? tOdeme.Result.Value : [];
             var nakitHareketler = tNakitHareket.Result.IsSuccess ? tNakitHareket.Result.Value : [];
             var nakitBagiscilar = tNakitBagisci.Result.IsSuccess ? tNakitBagisci.Result.Value : [];
@@ -1301,14 +1302,16 @@
                 .Select(p =>
                 {
                     var isB = isBilgileriList.FirstOrDefault(ib => ib.PersonelId == p.Id);
-                    return new PersonelSatir(
+                    return (ProtokolSiraNo: isB?.ProtokolSiraNo ?? int.MaxValue, Satir: new PersonelSatir(
                         $"{p.Adi} {p.Soyadi}",
                         p.SicilNo,
                         isB?.UnvanTanim?.Adi,
                         isB?.BirimTanim?.Adi,
                         isB?.CalismaDurumu?.ToString()
-                    );
+                    ));
                 })
+                .OrderBy(x => x.ProtokolSiraNo)
+                .Select(x => x.Satir)
                 .ToList();
         }
         catch (OperationCanceledException) { /* iptal edildi */ }

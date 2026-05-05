@@ -323,7 +323,7 @@
                         <div class="col-12">
                             <div class="card shadow-sm">
                                 <div class="card-header"><strong><i class="bi bi-bar-chart me-1"></i>En Çok Bağış Yapan Bağışçılar (İlk 15)</strong></div>
-                                <div class="card-body">
+                                <div class="card-body p-0" style="height:300px;">
                                     <GenericChart TItem="ChartItem"
                                                   Items="_topBagisciItems"
                                                   LabelSelector="@(x => x.Label)"
@@ -331,7 +331,8 @@
                                                   Title="Bağışçı Başına Bağış Adedi"
                                                   SeriesName="Bağış"
                                                   Type="GenericChart<ChartItem>.GenericChartType.Bar"
-                                                  Height="360px"
+                                                  Height="100%"
+                                                  Width="100%"
                                                   ShowLegend="false"
                                                   ShowDataLabels="true"
                                                   ColorPalette="@_greenPalette"
@@ -356,7 +357,7 @@
                         <div class="col-12">
                             <div class="card shadow-sm">
                                 <div class="card-header"><strong><i class="bi bi-calendar3 me-1"></i>Yıl Bazında Bağış Adedi (Son 15 Yıl)</strong></div>
-                                <div class="card-body">
+                                <div class="card-body p-0" style="height:300px;">
                                     <GenericChart TItem="ChartItem"
                                                   Items="_yilBazindaItems"
                                                   LabelSelector="@(x => x.Label)"
@@ -364,7 +365,8 @@
                                                   Title="Yıllık Bağış Adedi"
                                                   SeriesName="Bağış"
                                                   Type="GenericChart<ChartItem>.GenericChartType.Bar"
-                                                  Height="360px"
+                                                  Height="100%"
+                                                  Width="100%"
                                                   ShowLegend="false"
                                                   ShowDataLabels="true"
                                                   ColorPalette="@_bluePalette"
@@ -501,7 +503,7 @@
                                     <strong><i class="bi bi-bar-chart-fill me-1"></i>Bölgelere Göre Bağışçı Sayısı</strong>
                                     <small class="text-muted ms-2">(bağışçının kayıtlı ikamet adresine göre)</small>
                                 </div>
-                                <div class="card-body">
+                                <div class="card-body p-0" style="height:300px;">
                                     <GenericChart TItem="ChartItem"
                                                   Items="_bolgeDagilimItems"
                                                   LabelSelector="@(x => x.Label)"
@@ -509,7 +511,8 @@
                                                   Title="Bölge Bazında Bağışçı"
                                                   SeriesName="Bağışçı"
                                                   Type="GenericChart<ChartItem>.GenericChartType.Bar"
-                                                  Height="360px"
+                                                  Height="100%"
+                                                  Width="100%"
                                                   ShowLegend="false"
                                                   ShowDataLabels="true"
                                                   ColorPalette="@_greenPalette"
@@ -678,7 +681,7 @@
                         <div class="col-12 col-lg-6">
                             <div class="card shadow-sm h-100">
                                 <div class="card-header"><strong><i class="bi bi-pie-chart me-1"></i>Vasiyet Tipi</strong></div>
-                                <div class="card-body">
+                                <div class="card-body p-0" style="height:320px;">
                                     <GenericChart TItem="ChartItem"
                                                   Items="_vasiyetTipiItems"
                                                   LabelSelector="@(x => x.Label)"
@@ -686,7 +689,8 @@
                                                   Title="Vasiyet Tipi Dağılımı"
                                                   SeriesName="Vasiyetçi"
                                                   Type="GenericChart<ChartItem>.GenericChartType.Pie"
-                                                  Height="380px"
+                                                  Height="100%"
+                                                  Width="100%"
                                                   ShowLegend="true"
                                                   ShowDataLabels="true"
                                                   ColorPalette="@_vasiyetTipiPalette" />
@@ -698,7 +702,7 @@
                         <div class="col-12 col-lg-6">
                             <div class="card shadow-sm h-100">
                                 <div class="card-header"><strong><i class="bi bi-pie-chart me-1"></i>Vasiyet Durumu</strong></div>
-                                <div class="card-body">
+                                <div class="card-body p-0" style="height:320px;">
                                     <GenericChart TItem="ChartItem"
                                                   Items="_vasiyetDurumuItems"
                                                   LabelSelector="@(x => x.Label)"
@@ -706,7 +710,8 @@
                                                   Title="Vasiyet Durumu Dağılımı"
                                                   SeriesName="Vasiyetçi"
                                                   Type="GenericChart<ChartItem>.GenericChartType.Pie"
-                                                  Height="380px"
+                                                  Height="100%"
+                                                  Width="100%"
                                                   ShowLegend="true"
                                                   ShowDataLabels="true"
                                                   ColorPalette="@_vasiyetDurumuPalette" />
@@ -896,7 +901,7 @@
                         <div class="col-12 col-lg-5">
                             <div class="card shadow-sm h-100">
                                 <div class="card-header"><strong><i class="bi bi-pie-chart me-1"></i>Yakınlık Derecesi Dağılımı</strong></div>
-                                <div class="card-body">
+                                <div class="card-body p-0" style="height:300px;">
                                     <GenericChart TItem="ChartItem"
                                                   Items="_yakinlikItems"
                                                   LabelSelector="@(x => x.Label)"
@@ -904,7 +909,8 @@
                                                   Title="Yakınlık Derecesi"
                                                   SeriesName="Yakın"
                                                   Type="GenericChart<ChartItem>.GenericChartType.Donut"
-                                                  Height="320px"
+                                                  Height="100%"
+                                                  Width="100%"
                                                   ShowLegend="true"
                                                   ShowDataLabels="true"
                                                   ColorPalette="@_skyPalette" />

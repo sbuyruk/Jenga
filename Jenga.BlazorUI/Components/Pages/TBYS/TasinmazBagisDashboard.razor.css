@@ -182,16 +182,12 @@
 }
 
 /* ════════════════════════════════════════════════════════════════
-   CHART MIN-HEIGHT
+   CHART — parent container tarafından height belirlenir (inline style)
+   GenericChart Height="100%" Width="100%" ile çalışır
    ════════════════════════════════════════════════════════════════ */
-.bagis-dashboard .card .generic-chart {
-    min-height: 280px;
-}
-
-@media (min-width: 768px) {
-    .bagis-dashboard .card .generic-chart {
-        min-height: 360px;
-    }
+.bagis-dashboard .card-body .generic-chart {
+    height: 100%;
+    width: 100%;
 }
 
 /* ════════════════════════════════════════════════════════════════
@@ -300,8 +296,8 @@
 
     .db-scrollspy-content {
         order: 2;
-        height: auto;
-        overflow-y: visible;
+        height: calc(100vh - 200px);
+        overflow-y: auto;
         padding-right: 0;
     }
 }

@@ -398,8 +398,8 @@
                     <div class="section-label">Grafikler</div>
                     <div class="row g-3 mb-4">
                         <div class="col-12 col-md-4">
-                            <div class="card h-100 shadow-sm">
-                                <div class="card-body p-2">
+                            <div class="card shadow-sm">
+                                <div class="card-body p-2" style="height:300px;">
                                     <GenericChart TItem="PieItem"
                                                   Items="_cinsiChartItems"
                                                   LabelSelector="@(p => p.Label)"
@@ -407,7 +407,8 @@
                                                   Title="Cinsi Dağılımı"
                                                   SeriesName="Adet"
                                                   Type="GenericChart<PieItem>.GenericChartType.Donut"
-                                                  Height="420px"
+                                                  Height="100%"
+                                                  Width="100%"
                                                   ShowLegend="true"
                                                   ShowDataLabels="true"
                                                   ColorPalette="@_piePalette"
@@ -417,8 +418,8 @@
                         </div>
 
                         <div class="col-12 col-md-4">
-                            <div class="card h-100 shadow-sm">
-                                <div class="card-body p-2">
+                            <div class="card shadow-sm">
+                                <div class="card-body p-2" style="height:300px;">
                                     <GenericChart TItem="PieItem"
                                                   Items="_mulkiyetChartItems"
                                                   LabelSelector="@(p => p.Label)"
@@ -426,7 +427,8 @@
                                                   Title="Mülkiyet Şekli"
                                                   SeriesName="Adet"
                                                   Type="GenericChart<PieItem>.GenericChartType.Donut"
-                                                  Height="420px"
+                                                  Height="100%"
+                                                  Width="100%"
                                                   ShowLegend="true"
                                                   ShowDataLabels="true"
                                                   ColorPalette="@_mulkiyetPalette"
@@ -436,8 +438,8 @@
                         </div>
 
                         <div class="col-12 col-md-4">
-                            <div class="card h-100 shadow-sm">
-                                <div class="card-body p-2">
+                            <div class="card shadow-sm">
+                                <div class="card-body p-2" style="height:300px;">
                                     <GenericChart TItem="PieItem"
                                                   Items="_bolgeChartItems"
                                                   LabelSelector="@(p => p.Label)"
@@ -445,7 +447,8 @@
                                                   Title="Bölge Bazında Taşınmaz Adedi"
                                                   SeriesName="Adet"
                                                   Type="GenericChart<PieItem>.GenericChartType.Bar"
-                                                  Height="420px"
+                                                  Height="100%"
+                                                  Width="100%"
                                                   ShowLegend="false"
                                                   ShowDataLabels="true"
                                                   ColorPalette="@_barPalette"
@@ -465,7 +468,7 @@
                     <div class="row mb-4">
                         <div class="col-12">
                             <div class="card shadow-sm db-map-card">
-                                <div class="card-body p-2 p-md-3">
+                                <div class="card-body p-0">
                                     <TurkeyMap OnProvinceClick="OnProvinceClickAsync" />
                                 </div>
                             </div>
@@ -593,7 +596,7 @@
                     <div class="row mb-4">
                         <div class="col-12">
                             <div class="card shadow-sm">
-                                <div class="card-body p-2">
+                                <div class="card-body p-0" style="height:300px;">
                                     <GenericChart TItem="PieItem"
                                                   Items="_kiraUygunlukIlChartItems"
                                                   LabelSelector="@(p => p.Label)"
@@ -601,7 +604,8 @@
                                                   Title="Kiraya Uygun Taşınmazlar – İl Dağılımı"
                                                   SeriesName="Adet"
                                                   Type="GenericChart<PieItem>.GenericChartType.Bar"
-                                                  Height="420px"
+                                                  Height="100%"
+                                                  Width="100%"
                                                   ShowLegend="false"
                                                   ShowDataLabels="true"
                                                   ColorPalette="@_greenBarPalette"
@@ -697,6 +701,15 @@
     {
         _cts = new CancellationTokenSource();
         await LoadAsync(_cts.Token);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_scrollSpyInitialized && !_isLoading)
+        {
+            _scrollSpyInitialized = true;
+            await JS.InvokeVoidAsync("initScrollSpy", "db-scrollspy-content", "db-scrollspy-nav", 12);
+        }
     }
 
     private async Task RefreshAsync()
@@ -958,13 +971,6 @@
         3 => "db-rank-bronze",
         _ => "db-rank-default"
     };
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (_scrollSpyInitialized || _isLoading) return;
-        _scrollSpyInitialized = true;
-        await JS.InvokeVoidAsync("initScrollSpy", "db-scrollspy-content", "db-scrollspy-nav");
-    }
 
     private ValueTask ScrollToAsync(string sectionId)
         => JS.InvokeVoidAsync("scrollSpyScrollTo", "db-scrollspy-content", sectionId);
