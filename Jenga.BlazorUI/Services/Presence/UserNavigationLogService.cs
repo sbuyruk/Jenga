@@ -8,12 +8,12 @@ namespace Jenga.BlazorUI.Services.Presence
     public sealed class UserNavigationLogService
     {
         private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
-        private readonly CurrentUserService _currentUserService;
+        private readonly ICurrentUserService _currentUserService;
         private readonly PresenceHeartbeatState _presenceState;
 
         public UserNavigationLogService(
             IDbContextFactory<ApplicationDbContext> dbFactory,
-            CurrentUserService currentUserService,
+            ICurrentUserService currentUserService,
             PresenceHeartbeatState presenceState)
         {
             _dbFactory = dbFactory;

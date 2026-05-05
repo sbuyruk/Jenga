@@ -119,7 +119,7 @@ namespace Jenga.DataAccess.Services.Common
                     m.Url = string.IsNullOrWhiteSpace(m.Url) ? "#" : m.Url!
                 );
 
-                return Result.Success(MenuHelper.BuildTree(visible));
+                return Result.Success(MenuHelper.BuildTree(visible, msg => _logService.LogWarning(msg)));
             }
             catch (Exception ex)
             {
@@ -165,7 +165,7 @@ namespace Jenga.DataAccess.Services.Common
                     m.Url = string.IsNullOrWhiteSpace(m.Url) ? "#" : m.Url!
                 );
 
-                return Result.Success(MenuHelper.BuildTree(allMenus));
+                return Result.Success(MenuHelper.BuildTree(allMenus, msg => _logService.LogWarning(msg)));
             }
             catch (Exception ex)
             {

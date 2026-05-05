@@ -1,4 +1,4 @@
-﻿@using Jenga.BlazorUI.Components.Common
+@using Jenga.BlazorUI.Components.Common
 @using Jenga.BlazorUI.Components.Shared
 @using Jenga.BlazorUI.Components.Toast
 @using Jenga.BlazorUI.Services.Common
@@ -10,8 +10,7 @@
 @inherits LayoutComponentBase
 
 @inject MenuStateService MenuState
-@inject IHttpContextAccessor HttpContextAccessor
-@inject CurrentUserService CurrentUserService
+@inject ICurrentUserService CurrentUserService
 @inject NavigationManager Nav
 @inject PresenceHeartbeatService PresenceHeartbeatService
 @inject UserNavigationLogService UserNavigationLogService
@@ -19,7 +18,7 @@
 
 <div class="page @(MenuState.IsOpen ? "sidebar-open" : "sidebar-closed")">
 
-    <aside class="sidebar" role="navigation" aria-label="Ana menü">
+    <aside class="sidebar" role="navigation" aria-label="Ana men�">
         <NavMenu Items="MenuState.MenuItems" IsCollapsed="@(!MenuState.IsOpen)" />
     </aside>
 
@@ -33,7 +32,7 @@
             <div class="d-flex align-items-center">
                 <button type="button"
                         class="sidebar-toggle"
-                        aria-label="Menüyü aç/kapat"
+                        aria-label="Men�y� a�/kapat"
                         @onclick="ToggleSidebar">
                     <span class="hamburger" aria-hidden="true">
                         <span></span>
@@ -63,7 +62,7 @@
 <div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.
     <a href="." class="reload">Reload</a>
-    <span class="dismiss">🗙</span>
+    <span class="dismiss">??</span>
 </div>
 
 @code {
@@ -119,7 +118,7 @@
 
     private async void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
-        // Sayfa değişince error boundary'yi sıfırla (varsa hatayı temizle).
+        // Sayfa degisince error boundary'yi sifirla (varsa hatayi temizle).
         _errorBoundary?.Recover();
 
         try

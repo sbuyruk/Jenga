@@ -278,7 +278,7 @@
             MapSelectedFromInventoryToTransfer();
             SyncFromDropdowns();
             selectedAssetIds.Clear();
-            _ = LoadAvailableAssets();
+            InvokeAsync(LoadAvailableAssets);
             StateHasChanged();
         }
     }
@@ -424,7 +424,7 @@
                     _selectedFromInventoryId = matchingOption.InventoryId;
                     MapSelectedFromInventoryToTransfer();
                     SyncFromDropdowns();
-                    _ = LoadAvailableAssets();
+                    InvokeAsync(LoadAvailableAssets);
                 }
             }
         }

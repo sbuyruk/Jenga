@@ -4,6 +4,7 @@
 @using Jenga.DataAccess.Services.Inventory
 @using Jenga.Utility.Logging
 @using Jenga.BlazorUI.Helpers
+@using Jenga.BlazorUI.Services.Common
 @using Jenga.BlazorUI.Components.Common
 
 @inject IMaterialEntryService MaterialEntryService
@@ -11,7 +12,7 @@
 @inject IMaterialTransferService MaterialTransferService
 @inject IMaterialInventoryService MaterialInventoryService
 @inject IToastService ToastService
-@inject IHttpContextAccessor HttpContextAccessor
+@inject ICurrentUserService CurrentUserService
 @inject ILogService LogService
 
 @if (inventoryRows == null || !inventoryRows.Any())
@@ -321,7 +322,7 @@ else
 
         try
         {
-            var currentUser = HttpContextAccessor.HttpContext?.User?.Identity?.Name;
+            var currentUser = await CurrentUserService.GetUserNameAsync();
             var saved = await MaterialEntryService.AddAsync(editingEntry, currentUser, CancellationToken.None);
             if (saved.IsSuccess)
             {
@@ -492,7 +493,7 @@ else
 
         try
         {
-            var currentUser = HttpContextAccessor.HttpContext?.User?.Identity?.Name;
+            var currentUser = await CurrentUserService.GetUserNameAsync();
             var ok = await MaterialTransferService.AddAsync(transfer, currentUser, assetIds, CancellationToken.None);
             if (ok.IsSuccess)
             {

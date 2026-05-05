@@ -258,7 +258,7 @@
         {
             if (_selectedYear == value) return;
             _selectedYear = value;
-            _ = SelectedYearChanged.InvokeAsync(value);
+            InvokeAsync(() => SelectedYearChanged.InvokeAsync(value));
             ComputeSummary();
         }
     }

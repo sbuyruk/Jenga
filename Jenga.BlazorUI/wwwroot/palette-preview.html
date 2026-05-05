@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Jenga – Renk Paleti Önizleme</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f0f0; padding: 24px; }
+  h1 { text-align: center; margin-bottom: 8px; font-size: 1.4rem; color: #333; }
+  p.subtitle { text-align: center; color: #666; margin-bottom: 32px; font-size: 0.9rem; }
+
+  .palette-grid { display: flex; flex-direction: column; gap: 40px; }
+
+  /* ── Palette card ── */
+  .palette-card { border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+  .palette-label {
+    padding: 10px 18px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    background: #fff;
+    color: #333;
+    border-bottom: 1px solid #e0e0e0;
+  }
+
+  /* ── Mock UI inside each palette ── */
+  .mock {
+    display: flex;
+    height: 340px;
+  }
+  .mock-sidebar {
+    width: 200px;
+    min-width: 200px;
+    padding: 16px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .mock-sidebar .brand {
+    font-weight: 800;
+    font-size: 1.1rem;
+    margin-bottom: 12px;
+    letter-spacing: .02em;
+  }
+  .mock-sidebar .nav-item {
+    padding: 7px 10px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    cursor: pointer;
+  }
+  .mock-sidebar .nav-item.active { font-weight: 700; }
+  .mock-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  .mock-topbar {
+    height: 48px;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    gap: 10px;
+  }
+  .mock-topbar .badge {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 999px;
+  }
+  .mock-content {
+    flex: 1;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .mock-page-title { font-size: 1rem; font-weight: 700; }
+  .mock-page-sub { font-size: 0.72rem; }
+  .mock-cards { display: flex; gap: 8px; flex-wrap: wrap; }
+  .mock-card {
+    border-radius: 8px;
+    padding: 10px 14px;
+    min-width: 110px;
+    font-size: 0.72rem;
+  }
+  .mock-card .num { font-size: 1.3rem; font-weight: 800; margin-top: 4px; }
+  .mock-table { font-size: 0.7rem; border-radius: 6px; overflow: hidden; border: 1px solid; }
+  .mock-table-row { display: flex; }
+  .mock-table-row > div { flex: 1; padding: 5px 8px; }
+  .mock-table-row.header { font-weight: 700; font-size: 0.68rem; }
+
+  /* ── Swatch row ── */
+  .swatches { display: flex; height: 36px; }
+  .swatch { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; font-weight: 600; }
+
+  /* ════════════════════════════════
+     PALETTE 1 — Kurumsal Lacivert & Gül
+     ════════════════════════════════ */
+  .p1 { --pp1:#1A2744; --pp2:#C0392B; --pp3:#E8EEF7; --pp4:#F7F9FC; --ptext:#1E2A3A; --pmuted:#6b7a99; --pacc:#2563EB; }
+
+  .p1 .mock-sidebar  { background: var(--pp1); color: #e8eef7; }
+  .p1 .mock-sidebar .nav-item { color: #b0bcd4; }
+  .p1 .mock-sidebar .nav-item.active { background: rgba(255,255,255,0.12); color: #fff; }
+  .p1 .mock-topbar   { background: var(--pp2); color: #fff; }
+  .p1 .mock-topbar .badge { background: rgba(255,255,255,0.18); color: #fff; }
+  .p1 .mock-content  { background: var(--pp4); color: var(--ptext); }
+  .p1 .mock-page-title { color: var(--ptext); }
+  .p1 .mock-page-sub { color: var(--pmuted); }
+  .p1 .mock-card     { background: #fff; border: 1px solid #dde4f0; color: var(--ptext); }
+  .p1 .mock-card .num { color: var(--pacc); }
+  .p1 .mock-table    { background: #fff; border-color: #dde4f0; }
+  .p1 .mock-table-row.header { background: var(--pp3); color: var(--ptext); }
+  .p1 .mock-table-row:not(.header):nth-child(even) { background: #f0f4fb; }
+
+  /* ════════════════════════════════
+     PALETTE 2 — Slate & Amber (Fintech)
+     ════════════════════════════════ */
+  .p2 { --pp1:#0F1923; --pp2:#F59E0B; --pp3:#F1F5F9; --pp4:#F8FAFC; --ptext:#0F172A; --pmuted:#64748B; --pacc:#0EA5E9; }
+
+  .p2 .mock-sidebar  { background: var(--pp1); color: #CBD5E1; }
+  .p2 .mock-sidebar .nav-item { color: #94A3B8; }
+  .p2 .mock-sidebar .nav-item.active { background: rgba(245,158,11,0.18); color: var(--pp2); }
+  .p2 .mock-topbar   { background: var(--pp2); color: #1a1000; }
+  .p2 .mock-topbar .badge { background: rgba(0,0,0,0.15); color: #1a1000; }
+  .p2 .mock-content  { background: var(--pp4); color: var(--ptext); }
+  .p2 .mock-page-title { color: var(--ptext); }
+  .p2 .mock-page-sub { color: var(--pmuted); }
+  .p2 .mock-card     { background: #fff; border: 1px solid #e2e8f0; color: var(--ptext); }
+  .p2 .mock-card .num { color: var(--pacc); }
+  .p2 .mock-table    { background: #fff; border-color: #e2e8f0; }
+  .p2 .mock-table-row.header { background: var(--pp3); color: var(--ptext); }
+  .p2 .mock-table-row:not(.header):nth-child(even) { background: #f8fafc; }
+
+  /* ════════════════════════════════
+     PALETTE 3 — Bordo & Krem (Mevcut paleti rafine et)
+     ════════════════════════════════ */
+  .p3 { --pp1:#6B1826; --pp2:#9E2A3A; --pp3:#FDF5F6; --pp4:#FFF8F8; --ptext:#2A1215; --pmuted:#8a5a62; --pacc:#C0392B; }
+
+  .p3 .mock-sidebar  { background: var(--pp1); color: #f5dde1; }
+  .p3 .mock-sidebar .nav-item { color: #e0b0b8; }
+  .p3 .mock-sidebar .nav-item.active { background: rgba(255,255,255,0.14); color: #fff; }
+  .p3 .mock-topbar   { background: var(--pp2); color: #fff; }
+  .p3 .mock-topbar .badge { background: rgba(255,255,255,0.2); color: #fff; }
+  .p3 .mock-content  { background: var(--pp4); color: var(--ptext); }
+  .p3 .mock-page-title { color: var(--ptext); }
+  .p3 .mock-page-sub { color: var(--pmuted); }
+  .p3 .mock-card     { background: #fff; border: 1px solid #f0dde0; color: var(--ptext); }
+  .p3 .mock-card .num { color: var(--pacc); }
+  .p3 .mock-table    { background: #fff; border-color: #f0dde0; }
+  .p3 .mock-table-row.header { background: var(--pp3); color: var(--ptext); }
+  .p3 .mock-table-row:not(.header):nth-child(even) { background: #fff5f6; }
+
+  /* ════════════════════════════════
+     PALETTE 4 — Gece Mavisi & Yeşil (Dashboard/Analitik)
+     ════════════════════════════════ */
+  .p4 { --pp1:#0D1B2A; --pp2:#1B4332; --pp3:#EEF2FF; --pp4:#F5F7FF; --ptext:#0D1B2A; --pmuted:#4A5568; --pacc:#10B981; }
+
+  .p4 .mock-sidebar  { background: var(--pp1); color: #A8C0D6; }
+  .p4 .mock-sidebar .nav-item { color: #7A9AB8; }
+  .p4 .mock-sidebar .nav-item.active { background: rgba(16,185,129,0.15); color: var(--pacc); }
+  .p4 .mock-topbar   { background: var(--pp2); color: #D1FAE5; }
+  .p4 .mock-topbar .badge { background: rgba(255,255,255,0.15); color: #D1FAE5; }
+  .p4 .mock-content  { background: var(--pp4); color: var(--ptext); }
+  .p4 .mock-page-title { color: var(--ptext); }
+  .p4 .mock-page-sub { color: var(--pmuted); }
+  .p4 .mock-card     { background: #fff; border: 1px solid #dde4f5; color: var(--ptext); }
+  .p4 .mock-card .num { color: var(--pacc); }
+  .p4 .mock-table    { background: #fff; border-color: #dde4f5; }
+  .p4 .mock-table-row.header { background: var(--pp3); color: var(--ptext); }
+  .p4 .mock-table-row:not(.header):nth-child(even) { background: #f0f3ff; }
+
+  /* ════════════════════════════════
+     PALETTE 5 — Mor & Altın (Premium/Vakıf)
+     ════════════════════════════════ */
+  .p5 { --pp1:#2D1B69; --pp2:#7C3AED; --pp3:#F5F3FF; --pp4:#FAF9FF; --ptext:#1E1040; --pmuted:#6D6B80; --pacc:#D97706; }
+
+  .p5 .mock-sidebar  { background: var(--pp1); color: #C4B5FD; }
+  .p5 .mock-sidebar .nav-item { color: #A78BFA; }
+  .p5 .mock-sidebar .nav-item.active { background: rgba(255,255,255,0.12); color: #fff; }
+  .p5 .mock-topbar   { background: var(--pp2); color: #fff; }
+  .p5 .mock-topbar .badge { background: rgba(255,255,255,0.2); color: #fff; }
+  .p5 .mock-content  { background: var(--pp4); color: var(--ptext); }
+  .p5 .mock-page-title { color: var(--ptext); }
+  .p5 .mock-page-sub { color: var(--pmuted); }
+  .p5 .mock-card     { background: #fff; border: 1px solid #ede9fe; color: var(--ptext); }
+  .p5 .mock-card .num { color: var(--pacc); }
+  .p5 .mock-table    { background: #fff; border-color: #ede9fe; }
+  .p5 .mock-table-row.header { background: var(--pp3); color: var(--ptext); }
+  .p5 .mock-table-row:not(.header):nth-child(even) { background: #f8f7ff; }
+</style>
+</head>
+<body>
+
+<h1>🎨 Jenga – Renk Paleti Önerileri</h1>
+<p class="subtitle">Mevcut koda dokunulmadan hazırlanmış 5 seçenek. Beğendiğinizi söyleyin, uygulayalım.</p>
+
+<div class="palette-grid">
+
+  <!-- ══ PALETTE 1 ══ -->
+  <div class="palette-card p1">
+    <div class="palette-label">① Kurumsal Lacivert &amp; Gül — Güven, resmiyet, güçlü kontrast</div>
+    <div class="mock">
+      <div class="mock-sidebar">
+        <div class="brand">⬛ Jenga</div>
+        <div class="nav-item active">Yönetici Özeti</div>
+        <div class="nav-item">Taşınmaz Envanteri</div>
+        <div class="nav-item">Bölgeler</div>
+        <div class="nav-item">Raporlar</div>
+        <div class="nav-item">Parametreler</div>
+      </div>
+      <div class="mock-main">
+        <div class="mock-topbar">
+          <span>Taşınmaz Envanteri</span>
+          <span class="badge">5 Bölge</span>
+        </div>
+        <div class="mock-content">
+          <div class="mock-page-title">Bölge Özeti</div>
+          <div class="mock-page-sub">Envanterdeki tüm taşınmazların anlık özeti</div>
+          <div class="mock-cards">
+            <div class="mock-card"><div>Toplam Taşınmaz</div><div class="num">1.013</div></div>
+            <div class="mock-card"><div>Tam Mülkiyet</div><div class="num">803</div></div>
+            <div class="mock-card"><div>Kiraya Uygun</div><div class="num">467</div></div>
+          </div>
+          <div class="mock-table">
+            <div class="mock-table-row header"><div>Bölge</div><div>Toplam</div><div>TM</div><div>ÇM</div></div>
+            <div class="mock-table-row"><div>Ankara</div><div>324</div><div>266</div><div>58</div></div>
+            <div class="mock-table-row"><div>İstanbul</div><div>334</div><div>284</div><div>50</div></div>
+            <div class="mock-table-row"><div>İzmir</div><div>181</div><div>133</div><div>48</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="swatches">
+      <div class="swatch" style="background:#1A2744;color:#fff;">#1A2744</div>
+      <div class="swatch" style="background:#C0392B;color:#fff;">#C0392B</div>
+      <div class="swatch" style="background:#2563EB;color:#fff;">#2563EB</div>
+      <div class="swatch" style="background:#E8EEF7;color:#1A2744;">#E8EEF7</div>
+      <div class="swatch" style="background:#F7F9FC;color:#1A2744;">#F7F9FC</div>
+    </div>
+  </div>
+
+  <!-- ══ PALETTE 2 ══ -->
+  <div class="palette-card p2">
+    <div class="palette-label">② Slate &amp; Amber — Modern, fintech tarzı, yüksek okunurluk</div>
+    <div class="mock">
+      <div class="mock-sidebar">
+        <div class="brand">⬛ Jenga</div>
+        <div class="nav-item active">Yönetici Özeti</div>
+        <div class="nav-item">Taşınmaz Envanteri</div>
+        <div class="nav-item">Bölgeler</div>
+        <div class="nav-item">Raporlar</div>
+        <div class="nav-item">Parametreler</div>
+      </div>
+      <div class="mock-main">
+        <div class="mock-topbar">
+          <span>Taşınmaz Envanteri</span>
+          <span class="badge">5 Bölge</span>
+        </div>
+        <div class="mock-content">
+          <div class="mock-page-title">Bölge Özeti</div>
+          <div class="mock-page-sub">Envanterdeki tüm taşınmazların anlık özeti</div>
+          <div class="mock-cards">
+            <div class="mock-card"><div>Toplam Taşınmaz</div><div class="num">1.013</div></div>
+            <div class="mock-card"><div>Tam Mülkiyet</div><div class="num">803</div></div>
+            <div class="mock-card"><div>Kiraya Uygun</div><div class="num">467</div></div>
+          </div>
+          <div class="mock-table">
+            <div class="mock-table-row header"><div>Bölge</div><div>Toplam</div><div>TM</div><div>ÇM</div></div>
+            <div class="mock-table-row"><div>Ankara</div><div>324</div><div>266</div><div>58</div></div>
+            <div class="mock-table-row"><div>İstanbul</div><div>334</div><div>284</div><div>50</div></div>
+            <div class="mock-table-row"><div>İzmir</div><div>181</div><div>133</div><div>48</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="swatches">
+      <div class="swatch" style="background:#0F1923;color:#CBD5E1;">#0F1923</div>
+      <div class="swatch" style="background:#F59E0B;color:#1a1000;">#F59E0B</div>
+      <div class="swatch" style="background:#0EA5E9;color:#fff;">#0EA5E9</div>
+      <div class="swatch" style="background:#F1F5F9;color:#0F172A;">#F1F5F9</div>
+      <div class="swatch" style="background:#F8FAFC;color:#0F172A;">#F8FAFC</div>
+    </div>
+  </div>
+
+  <!-- ══ PALETTE 3 ══ -->
+  <div class="palette-card p3">
+    <div class="palette-label">③ Bordo &amp; Krem — Mevcut kimliği rafine eder, vakıf estetiği</div>
+    <div class="mock">
+      <div class="mock-sidebar">
+        <div class="brand">⬛ Jenga</div>
+        <div class="nav-item active">Yönetici Özeti</div>
+        <div class="nav-item">Taşınmaz Envanteri</div>
+        <div class="nav-item">Bölgeler</div>
+        <div class="nav-item">Raporlar</div>
+        <div class="nav-item">Parametreler</div>
+      </div>
+      <div class="mock-main">
+        <div class="mock-topbar">
+          <span>Taşınmaz Envanteri</span>
+          <span class="badge">5 Bölge</span>
+        </div>
+        <div class="mock-content">
+          <div class="mock-page-title">Bölge Özeti</div>
+          <div class="mock-page-sub">Envanterdeki tüm taşınmazların anlık özeti</div>
+          <div class="mock-cards">
+            <div class="mock-card"><div>Toplam Taşınmaz</div><div class="num">1.013</div></div>
+            <div class="mock-card"><div>Tam Mülkiyet</div><div class="num">803</div></div>
+            <div class="mock-card"><div>Kiraya Uygun</div><div class="num">467</div></div>
+          </div>
+          <div class="mock-table">
+            <div class="mock-table-row header"><div>Bölge</div><div>Toplam</div><div>TM</div><div>ÇM</div></div>
+            <div class="mock-table-row"><div>Ankara</div><div>324</div><div>266</div><div>58</div></div>
+            <div class="mock-table-row"><div>İstanbul</div><div>334</div><div>284</div><div>50</div></div>
+            <div class="mock-table-row"><div>İzmir</div><div>181</div><div>133</div><div>48</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="swatches">
+      <div class="swatch" style="background:#6B1826;color:#fff;">#6B1826</div>
+      <div class="swatch" style="background:#9E2A3A;color:#fff;">#9E2A3A</div>
+      <div class="swatch" style="background:#C0392B;color:#fff;">#C0392B</div>
+      <div class="swatch" style="background:#FDF5F6;color:#2A1215;">#FDF5F6</div>
+      <div class="swatch" style="background:#FFF8F8;color:#2A1215;">#FFF8F8</div>
+    </div>
+  </div>
+
+  <!-- ══ PALETTE 4 ══ -->
+  <div class="palette-card p4">
+    <div class="palette-label">④ Gece Mavisi &amp; Zümrüt — Analitik dashboard, teknoloji hissi</div>
+    <div class="mock">
+      <div class="mock-sidebar">
+        <div class="brand">⬛ Jenga</div>
+        <div class="nav-item active">Yönetici Özeti</div>
+        <div class="nav-item">Taşınmaz Envanteri</div>
+        <div class="nav-item">Bölgeler</div>
+        <div class="nav-item">Raporlar</div>
+        <div class="nav-item">Parametreler</div>
+      </div>
+      <div class="mock-main">
+        <div class="mock-topbar">
+          <span>Taşınmaz Envanteri</span>
+          <span class="badge">5 Bölge</span>
+        </div>
+        <div class="mock-content">
+          <div class="mock-page-title">Bölge Özeti</div>
+          <div class="mock-page-sub">Envanterdeki tüm taşınmazların anlık özeti</div>
+          <div class="mock-cards">
+            <div class="mock-card"><div>Toplam Taşınmaz</div><div class="num">1.013</div></div>
+            <div class="mock-card"><div>Tam Mülkiyet</div><div class="num">803</div></div>
+            <div class="mock-card"><div>Kiraya Uygun</div><div class="num">467</div></div>
+          </div>
+          <div class="mock-table">
+            <div class="mock-table-row header"><div>Bölge</div><div>Toplam</div><div>TM</div><div>ÇM</div></div>
+            <div class="mock-table-row"><div>Ankara</div><div>324</div><div>266</div><div>58</div></div>
+            <div class="mock-table-row"><div>İstanbul</div><div>334</div><div>284</div><div>50</div></div>
+            <div class="mock-table-row"><div>İzmir</div><div>181</div><div>133</div><div>48</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="swatches">
+      <div class="swatch" style="background:#0D1B2A;color:#A8C0D6;">#0D1B2A</div>
+      <div class="swatch" style="background:#1B4332;color:#D1FAE5;">#1B4332</div>
+      <div class="swatch" style="background:#10B981;color:#fff;">#10B981</div>
+      <div class="swatch" style="background:#EEF2FF;color:#0D1B2A;">#EEF2FF</div>
+      <div class="swatch" style="background:#F5F7FF;color:#0D1B2A;">#F5F7FF</div>
+    </div>
+  </div>
+
+  <!-- ══ PALETTE 5 ══ -->
+  <div class="palette-card p5">
+    <div class="palette-label">⑤ Mor &amp; Altın — Premium, vakıf/kurumsal prestij hissi</div>
+    <div class="mock">
+      <div class="mock-sidebar">
+        <div class="brand">⬛ Jenga</div>
+        <div class="nav-item active">Yönetici Özeti</div>
+        <div class="nav-item">Taşınmaz Envanteri</div>
+        <div class="nav-item">Bölgeler</div>
+        <div class="nav-item">Raporlar</div>
+        <div class="nav-item">Parametreler</div>
+      </div>
+      <div class="mock-main">
+        <div class="mock-topbar">
+          <span>Taşınmaz Envanteri</span>
+          <span class="badge">5 Bölge</span>
+        </div>
+        <div class="mock-content">
+          <div class="mock-page-title">Bölge Özeti</div>
+          <div class="mock-page-sub">Envanterdeki tüm taşınmazların anlık özeti</div>
+          <div class="mock-cards">
+            <div class="mock-card"><div>Toplam Taşınmaz</div><div class="num">1.013</div></div>
+            <div class="mock-card"><div>Tam Mülkiyet</div><div class="num">803</div></div>
+            <div class="mock-card"><div>Kiraya Uygun</div><div class="num">467</div></div>
+          </div>
+          <div class="mock-table">
+            <div class="mock-table-row header"><div>Bölge</div><div>Toplam</div><div>TM</div><div>ÇM</div></div>
+            <div class="mock-table-row"><div>Ankara</div><div>324</div><div>266</div><div>58</div></div>
+            <div class="mock-table-row"><div>İstanbul</div><div>334</div><div>284</div><div>50</div></div>
+            <div class="mock-table-row"><div>İzmir</div><div>181</div><div>133</div><div>48</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="swatches">
+      <div class="swatch" style="background:#2D1B69;color:#C4B5FD;">#2D1B69</div>
+      <div class="swatch" style="background:#7C3AED;color:#fff;">#7C3AED</div>
+      <div class="swatch" style="background:#D97706;color:#fff;">#D97706</div>
+      <div class="swatch" style="background:#F5F3FF;color:#1E1040;">#F5F3FF</div>
+      <div class="swatch" style="background:#FAF9FF;color:#1E1040;">#FAF9FF</div>
+    </div>
+  </div>
+
+</div>
+
+<p style="text-align:center;margin-top:32px;color:#888;font-size:0.8rem;">
+  Bu dosya sadece önizleme amaçlıdır. Beğendiğiniz paleti söyleyin, app.css'e uygulayalım.
+</p>
+</body>
+</html>

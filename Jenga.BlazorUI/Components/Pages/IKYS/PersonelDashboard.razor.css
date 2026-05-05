@@ -1,6 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════
    PersonelDashboard.razor.css
    İnsan Kaynakları Dashboard – Mobile-first, fully responsive
+   iPhone 15 (393px) ve üzeri tüm ekranlar desteklenir.
    ═══════════════════════════════════════════════════════════════ */
 
 /* ── Kök ──────────────────────────────────────────────────────── */
@@ -12,13 +13,15 @@
 
 /* ── Bölüm Başlığı ────────────────────────────────────────────── */
 .personel-dashboard .section-label {
-    font-size: 0.7rem;
+    font-size: 0.72rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.07em;
+    letter-spacing: 0.08em;
     color: #6b7280;
-    margin-bottom: 0.4rem;
+    margin-bottom: 0.75rem;
     padding-left: 0.1rem;
+    border-left: 3px solid #2563EB;
+    padding-left: 0.5rem;
 }
 
 /* ── Spinner animasyonu ───────────────────────────────────────── */
@@ -33,42 +36,50 @@
 
 /* ══════════════════════════════════════════════════════════════
    SCROLLSPY LAYOUT
+   Desktop: sidebar sağda, içerik solda (1fr | 200px)
+   Tablet/Mobil: sidebar üstte yatay scroll çubuğu olur
    ══════════════════════════════════════════════════════════════ */
 .pd-scrollspy-layout {
     display: grid;
-    grid-template-columns: 1fr 210px;
-    gap: 18px;
+    grid-template-columns: 1fr 200px;
+    gap: 1rem;
     align-items: start;
 }
 
+/* ── Sidebar nav ─────────────────────────────────────────────── */
 .pd-scrollspy-nav {
     position: sticky;
     top: 12px;
     order: 2;
-    background: var(--card-bg, #fff);
+    background: #fff;
     border: 1px solid rgba(0,0,0,.08);
     border-radius: 10px;
-    padding: 12px 10px;
+    padding: 10px 8px;
     box-shadow: 0 2px 8px rgba(0,0,0,.06);
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
 }
 
 .pd-nav-title {
-    font-size: 0.78rem;
+    font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: #2563EB;
-    padding: 4px 10px 8px;
+    padding: 4px 8px 8px;
     border-bottom: 1px solid rgba(0,0,0,.07);
-    margin-bottom: 6px;
+    margin-bottom: 4px;
 }
 
 .pd-scrollspy-nav .nav-link {
     border-radius: 6px;
-    padding: 7px 10px;
-    font-size: 0.82rem;
+    padding: 6px 8px;
+    font-size: 0.8rem;
     color: #6b6b6b;
     transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .pd-scrollspy-nav .nav-link:hover {
@@ -82,25 +93,26 @@
     font-weight: 700;
 }
 
+/* ── Scrollable content ──────────────────────────────────────── */
 .pd-scrollspy-content {
     order: 1;
     position: relative;
-    height: calc(100vh - 120px);
+    height: calc(100vh - 110px);
     overflow-y: auto;
-    padding-right: 8px;
+    padding-right: 4px;
     scrollbar-width: thin;
-    scrollbar-color: rgba(100,116,139,.4) transparent;
+    scrollbar-color: rgba(100,116,139,.35) transparent;
 }
 
 .pd-section {
     scroll-margin-top: 12px;
-    padding-bottom: 8px;
+    padding-bottom: 4px;
 }
 
 .pd-separator {
     border: none;
     border-top: 1px solid rgba(0,0,0,.07);
-    margin: 20px 0;
+    margin: 1.25rem 0;
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -123,28 +135,30 @@
 }
 
 .personel-dashboard .pd-stat-body {
-    padding: 0.6rem 0.4rem !important;
+    padding: 0.65rem 0.5rem !important;
 }
 
 .personel-dashboard .pd-stat-icon {
-    font-size: 1.1rem;
+    font-size: 1.15rem;
     color: var(--pd-accent, #6b7280);
     opacity: 0.85;
-    margin-bottom: 0.1rem;
+    margin-bottom: 0.15rem;
 }
 
 .personel-dashboard .pd-stat-label {
-    font-size: 0.68rem;
+    font-size: 0.67rem;
     color: #6b7280;
-    line-height: 1.2;
+    line-height: 1.25;
     margin-bottom: 0.15rem;
-    white-space: nowrap;
+    /* Wrap izin ver, overflow kesme */
     overflow: hidden;
-    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
 }
 
 .personel-dashboard .pd-stat-value {
-    font-size: 1.4rem;
+    font-size: 1.45rem;
     font-weight: 700;
     line-height: 1.1;
     color: var(--pd-accent, #374151);
@@ -152,7 +166,7 @@
 }
 
 .personel-dashboard .pd-stat-sub {
-    font-size: 0.68rem;
+    font-size: 0.67rem;
     color: #9ca3af;
     margin-top: 0.1rem;
 }
@@ -170,27 +184,32 @@
 .personel-dashboard .pd-accent-lime   { --pd-accent: #65a30d; --pd-accent-bg: #f7fee7; }
 .personel-dashboard .pd-accent-cyan   { --pd-accent: #0891b2; --pd-accent-bg: #ecfeff; }
 .personel-dashboard .pd-accent-slate  { --pd-accent: #475569; --pd-accent-bg: #f8fafc; }
+.personel-dashboard .pd-accent-pink   { --pd-accent: #db2777; --pd-accent-bg: #fdf2f8; }
 
 /* ══════════════════════════════════════════════════════════════
    CHART & TABLE CONTAINER
    ══════════════════════════════════════════════════════════════ */
 .personel-dashboard .pd-chart-container {
+    flex: 1 1 300px;
+    min-width: 0;
     width: 100%;
-    max-width: 580px;
-    height: 360px;
+    max-width: 560px;
+    height: 340px;
     box-sizing: border-box;
-    align-content: center;
     border-radius: 10px;
-    background-color: var(--surface, #F8FAFF);
-    background-image: radial-gradient(rgba(180,190,210,.4) 1px, transparent 1px),
-                      radial-gradient(rgba(180,190,210,.4) 1px, transparent 1px);
+    background-color: #F8FAFF;
+    background-image: radial-gradient(rgba(180,190,210,.35) 1px, transparent 1px),
+                      radial-gradient(rgba(180,190,210,.35) 1px, transparent 1px);
     background-size: 22px 22px;
     background-position: 0 0, 11px 11px;
+    overflow: hidden;
 }
 
 .personel-dashboard .pd-birim-table {
-    flex: 1 1 300px;
-    max-width: 500px;
+    flex: 1 1 260px;
+    min-width: 0;
+    width: 100%;
+    max-width: 480px;
 }
 
 /* ── Collapsible card header ─────────────────────────────────── */
@@ -207,40 +226,138 @@
     background: rgba(0,0,0,.03);
 }
 
-/* ── Responsive breakpoints ──────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════════
+   RESPONSIVE – Tablet (≤ 992px)
+   ══════════════════════════════════════════════════════════════ */
+@media (max-width: 992px) {
+    .pd-scrollspy-layout {
+        grid-template-columns: 1fr 180px;
+        gap: 0.75rem;
+    }
+
+    .pd-chart-container {
+        height: 300px;
+    }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RESPONSIVE – Mobil (≤ 768px)
+   Nav yatay scroll çubuğuna dönüşür, içerik tam genişlik alır.
+   ══════════════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
     .pd-scrollspy-layout {
         grid-template-columns: 1fr;
+        gap: 0.5rem;
     }
 
+    /* Nav üstte yatay scroll */
     .pd-scrollspy-nav {
         position: static;
         order: 1;
-        display: flex;
+        max-height: none;
         overflow-x: auto;
-        padding: 8px;
+        overflow-y: hidden;
+        padding: 8px 6px;
+        border-radius: 8px;
+        /* scrollbar gizle ama işlevsel kalsın */
+        scrollbar-width: none;
+    }
+
+    .pd-scrollspy-nav::-webkit-scrollbar {
+        display: none;
     }
 
     .pd-scrollspy-nav .nav {
         flex-direction: row !important;
         flex-wrap: nowrap;
         gap: 4px !important;
-        white-space: nowrap;
     }
 
     .pd-scrollspy-nav .nav-link {
-        padding: 5px 8px;
+        padding: 5px 10px;
         font-size: 0.75rem;
+        white-space: nowrap;
+        flex-shrink: 0;
     }
 
     .pd-nav-title {
         display: none;
     }
 
+    /* İçerik tam ekran, doğal scroll */
     .pd-scrollspy-content {
         order: 2;
         height: auto;
         overflow-y: visible;
         padding-right: 0;
+    }
+
+    /* Chart mobilde tam genişlik, daha az yükseklik */
+    .personel-dashboard .pd-chart-container {
+        max-width: 100%;
+        height: 260px;
+        flex-basis: 100%;
+    }
+
+    .personel-dashboard .pd-birim-table {
+        flex-basis: 100%;
+        max-width: 100%;
+    }
+
+    /* KPI kart font iyileştirmeleri */
+    .personel-dashboard .pd-stat-value {
+        font-size: 1.25rem;
+    }
+
+    .personel-dashboard .pd-stat-label {
+        font-size: 0.63rem;
+    }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RESPONSIVE – Küçük Mobil / iPhone 15 (≤ 430px)
+   ══════════════════════════════════════════════════════════════ */
+@media (max-width: 430px) {
+    .personel-dashboard {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+
+    .personel-dashboard .pd-stat-body {
+        padding: 0.5rem 0.3rem !important;
+    }
+
+    .personel-dashboard .pd-stat-icon {
+        font-size: 1rem;
+    }
+
+    .personel-dashboard .pd-stat-value {
+        font-size: 1.15rem;
+    }
+
+    .personel-dashboard .pd-stat-label {
+        font-size: 0.6rem;
+        -webkit-line-clamp: 3;
+    }
+
+    .personel-dashboard .pd-stat-sub {
+        font-size: 0.6rem;
+    }
+
+    .personel-dashboard .pd-chart-container {
+        height: 230px;
+        border-radius: 8px;
+        background-image: none; /* küçük ekranda noktalı arka plan kaldır */
+        background-color: #F8FAFF;
+        border: 1px solid rgba(0,0,0,.06);
+    }
+
+    .pd-scrollspy-nav {
+        padding: 6px 4px;
+    }
+
+    .pd-scrollspy-nav .nav-link {
+        padding: 4px 8px;
+        font-size: 0.7rem;
     }
 }

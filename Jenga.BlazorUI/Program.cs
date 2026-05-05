@@ -29,7 +29,14 @@ builder.Services.AddPresenceServices();
 builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddAuthentication(NegotiateDefaults.AuthenticationScheme).AddNegotiate();
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    // Tüm endpoint'lerde Windows Auth (Negotiate) challenge'ı zorla.
+    // Bu olmadan Kestrel anonim istekleri geçirir; HttpContext.User.Identity.IsAuthenticated = false kalır.
+    options.FallbackPolicy = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
+});
 
 builder.Services.AddServerSideBlazor()
     .AddCircuitOptions(options => { options.DetailedErrors = true; });

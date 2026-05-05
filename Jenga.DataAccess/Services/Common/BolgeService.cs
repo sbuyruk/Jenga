@@ -134,6 +134,21 @@ namespace Jenga.DataAccess.Services.Common
             }
         }
 
+        public async Task<Result<List<Bolge>>> GetAktifBolgelerAsync(CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                var list = await db.Bolge_Table.AsNoTracking().Where(b => b.Aktif).ToListAsync(cancellationToken);
+                return Result.Success(list);
+            }
+            catch (Exception ex)
+            {
+                _logService.LogException(ex, $"{Source}.GetAktifBolgelerAsync");
+                return Result.Failure<List<Bolge>>(Error.Unexpected("Aktif bölgeler getirilemedi.", ex, "Bolge.GetAktif.Failed"));
+            }
+        }
+
         public async Task<Result<bool>> AnyAsync(Expression<Func<Bolge, bool>> predicate, CancellationToken cancellationToken = default)
         {
             try

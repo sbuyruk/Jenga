@@ -12,5 +12,6 @@ namespace Jenga.DataAccess.Services.TBYS
         Task<Result> UpdateAsync(KiraSozlesme sozlesme, CancellationToken cancellationToken = default);
         Task<Result> DeleteAsync(int sozlesmeId, CancellationToken cancellationToken = default);
         Task<Result<bool>> AnyAsync(Expression<Func<KiraSozlesme, bool>> predicate, CancellationToken cancellationToken = default);
+        Task<Result<List<KiraSozlesme>>> GetKiraSozlesmeAktifAsync(CancellationToken cancellationToken = default);
     }
 }

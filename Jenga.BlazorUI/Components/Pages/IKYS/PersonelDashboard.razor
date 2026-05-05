@@ -24,7 +24,7 @@
 @inject ILogger<PersonelDashboard> Logger
 @implements IDisposable
 
-<div class="personel-dashboard container-fluid px-0 px-sm-2">
+<div class="personel-dashboard container-fluid px-0 px-sm-2 px-md-3">
     @if (_isLoading)
     {
         <div class="d-flex justify-content-center align-items-center py-5">
@@ -70,6 +70,9 @@
                     </a>
                     <a class="nav-link" href="#unvan-dagilimi" @onclick:preventDefault="true" @onclick='() => ScrollToAsync("unvan-dagilimi")'>
                         <i class="bi bi-bar-chart-fill me-1"></i>Ünvan Dağılımı
+                    </a>
+                    <a class="nav-link" href="#calisma-sureleri" @onclick:preventDefault="true" @onclick='() => ScrollToAsync("calisma-sureleri")'>
+                        <i class="bi bi-clock-history me-1"></i>Çalışma Süreleri
                     </a>
                     <a class="nav-link" href="#izin-ozeti" @onclick:preventDefault="true" @onclick='() => ScrollToAsync("izin-ozeti")'>
                         <i class="bi bi-calendar-check-fill me-1"></i>İzin Özeti
@@ -250,11 +253,11 @@
                     <div class="section-label">Yaş Dağılımı</div>
                     <div class="d-flex flex-wrap gap-3 justify-content-center align-items-start mb-3">
                         <div class="pd-chart-container">
-                            <div class="card shadow-sm h-100">
+                            <div class="card shadow-sm" style="height:100%">
                                 <div class="card-header fw-semibold">
                                     <i class="bi bi-bar-chart-fill me-1 text-primary"></i>Yaş Grubu Dağılımı
                                 </div>
-                                <div class="card-body p-0" style="height:280px;">
+                                <div class="card-body p-0 flex-grow-1" style="min-height:200px; height:280px;">
                                     <GenericChart TItem="PieItem"
                                                   Items="_yasDagilimItems"
                                                   LabelSelector="@(p => p.Label)"
@@ -272,8 +275,8 @@
                         </div>
 
                         <!-- Yaş grubu tablo -->
-                        <div class="col-12 col-lg-6">
-                            <div class="card shadow-sm h-100">
+                        <div class="pd-birim-table align-self-center">
+                            <div class="card shadow-sm">
                                 <div class="card-header fw-semibold">
                                     <i class="bi bi-table me-1 text-primary"></i>Yaş Grubu Detayı
                                 </div>
@@ -372,7 +375,98 @@
                     <hr class="pd-separator" />
                 </section>
                 <!-- ════════════════════════════════════════════════
-                     BÖLÜM 5 – İZİN ÖZETİ
+                     BÖLÜM 5 – ÇALIŞMA SÜRELERİ
+                ════════════════════════════════════════════════ -->
+                <section id="calisma-sureleri" class="pd-section">
+                    <div class="section-label">Çalışma Süreleri (Kadrolu)</div>
+
+                    <!-- KPI kartları -->
+                    <div class="row g-2 mb-3">
+                        <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+                            <div class="card pd-stat-card pd-accent-indigo h-100">
+                                <div class="card-body pd-stat-body text-center">
+                                    <div class="pd-stat-icon"><i class="bi bi-calendar2-range"></i></div>
+                                    <div class="pd-stat-label">Ort. Çalışma Süresi</div>
+                                    <div class="pd-stat-value">@_ortCalismaYil</div>
+                                    <div class="pd-stat-sub">Yıl</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+                            <div class="card pd-stat-card pd-accent-green h-100">
+                                <div class="card-body pd-stat-body text-center">
+                                    <div class="pd-stat-icon"><i class="bi bi-person-check-fill"></i></div>
+                                    <div class="pd-stat-label">10+ Yıl Çalışan</div>
+                                    <div class="pd-stat-value">@_onYilUzeri</div>
+                                    <div class="pd-stat-sub">Kişi</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+                            <div class="card pd-stat-card pd-accent-blue h-100">
+                                <div class="card-body pd-stat-body text-center">
+                                    <div class="pd-stat-icon"><i class="bi bi-person-plus-fill"></i></div>
+                                    <div class="pd-stat-label">Bu Yıl İşe Başlayan</div>
+                                    <div class="pd-stat-value">@_buYilBaslayan</div>
+                                    <div class="pd-stat-sub">Kişi</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-3 justify-content-center align-items-start mb-3">
+                        <div class="pd-chart-container">
+                            <GenericChart TItem="PieItem"
+                                          Items="_calismaSuresiGrupItems"
+                                          LabelSelector="@(p => p.Label)"
+                                          ValueSelector="@(p => p.Value)"
+                                          Title="Çalışma Süresi Dağılımı"
+                                          SeriesName="Personel"
+                                          Type="GenericChart<PieItem>.GenericChartType.Donut"
+                                          Height="100%"
+                                          Width="100%"
+                                          ShowLegend="true"
+                                          ShowDataLabels="true"
+                                          ColorPalette="@_mainPalette" />
+                        </div>
+                        <div class="pd-birim-table align-self-center">
+                            <div class="table-responsive">
+                                <table class="table table-hover table-sm mb-0 small">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Çalışma Süresi</th>
+                                            <th class="text-end">Personel</th>
+                                            <th class="text-end">Pay %</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var s in _calismaSuresiSatirlar)
+                                        {
+                                            <tr>
+                                                <td class="fw-medium">@s.Grup</td>
+                                                <td class="text-end">@s.PersonelSayisi</td>
+                                                <td class="text-end text-muted">
+                                                    @(_toplamKadroluPersonel > 0 ? $"%{(s.PersonelSayisi * 100m / _toplamKadroluPersonel):N1}" : "–")
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                    <tfoot class="table-secondary fw-bold">
+                                        <tr>
+                                            <td>Toplam</td>
+                                            <td class="text-end">@_toplamKadroluPersonel</td>
+                                            <td class="text-end">%100</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <hr class="pd-separator" />
+                </section>
+
+                <!-- ════════════════════════════════════════════════
+                     BÖLÜM 6 – İZİN ÖZETİ
                 ════════════════════════════════════════════════ -->
                 <section id="izin-ozeti" class="pd-section">
                     <div class="section-label">İzin Özeti</div>
@@ -384,7 +478,7 @@
                                 <div class="card-header fw-semibold">
                                     <i class="bi bi-pie-chart-fill me-1 text-success"></i>Kalan İzin Toplam Dağılımı (Kadrolu)
                                 </div>
-                                <div class="card-body p-0" style="height:300px;">
+                                <div class="card-body p-0" style="min-height:220px; height:300px;">
                                     <GenericChart TItem="PieItem"
                                                   Items="_kalanIzinGrupItems"
                                                   LabelSelector="@(p => p.Label)"
@@ -406,7 +500,7 @@
                                     <i class="bi bi-table me-1 text-success"></i>Personel Bazlı Kalan İzin Toplamı (Kadrolu)
                                 </div>
                                 <div class="card-body p-0">
-                                    <div class="table-responsive" style="max-height:300px; overflow-y:auto;">
+                                    <div class="table-responsive" style="max-height:280px; overflow-y:auto;">
                                         <table class="table table-sm table-hover mb-0 small">
                                             <thead class="table-light sticky-top">
                                                 <tr>
@@ -493,7 +587,7 @@
                                     <i class="bi bi-arrow-up-circle-fill me-1 text-success"></i>Bu Yıl Derece Değişimleri
                                 </div>
                                 <div class="card-body p-0">
-                                    <div class="table-responsive" style="max-height:260px; overflow-y:auto;">
+                                    <div class="table-responsive" style="max-height:240px; overflow-y:auto;">
                                         <table class="table table-sm table-hover mb-0 small">
                                             <thead class="table-light sticky-top">
                                                 <tr>
@@ -636,7 +730,16 @@
     private List<PersonelSatir> _personelFiltered = [];
     private GenericTable<PersonelSatir>? _personelTable;
 
-    // ── Collapse state ───────────────────────────────────────────
+    // Çalışma süresi KPI'ları
+    private double _ortCalismaYil;
+    private int _onYilUzeri;
+    private int _buYilBaslayan;
+
+    // Çalışma süresi chart & tablo
+    private readonly List<PieItem> _calismaSuresiGrupItems = [];
+    private readonly List<CalismaSuresiSatir> _calismaSuresiSatirlar = [];
+
+
     private bool _isTalepOpen = true;
 
     // ── Renk paleti ──────────────────────────────────────────────
@@ -755,8 +858,9 @@
             "Kadın".Equals(k.Cinsiyet, StringComparison.OrdinalIgnoreCase));
 
         var today = DateTime.Today;
+        var kadroluPersonelIds = _kadroluPersoneller.Select(p => p.Id).ToHashSet();
         var yaslar = _kimlikler
-            .Where(k => aktifPersonelIds.Contains(k.PersonelId) && k.DogumTar.HasValue)
+            .Where(k => kadroluPersonelIds.Contains(k.PersonelId) && k.DogumTar.HasValue)
             .Select(k => today.Year - k.DogumTar!.Value.Year -
                          (today < k.DogumTar.Value.AddYears(today.Year - k.DogumTar.Value.Year) ? 1 : 0))
             .ToList();
@@ -890,6 +994,35 @@
         // ── Personel listesi ─────────────────────────────────────
         _personelSatirlar.Clear();
         var isDict = _isBilgileriList.GroupBy(ib => ib.PersonelId).ToDictionary(g => g.Key, g => g.First());
+
+        // ── Çalışma süresi dağılımı ──────────────────────────────
+        _calismaSuresiGrupItems.Clear();
+        _calismaSuresiSatirlar.Clear();
+        var csGrupLabels = new[] { "0-1 Yıl", "2-5 Yıl", "6-10 Yıl", "11-20 Yıl", "20+ Yıl" };
+        var csGrupCounts = new int[5];
+        var calismaSurelerToplamYil = 0.0;
+        var calismaSuresiOlanSayisi = 0;
+        foreach (var p in _kadroluPersoneller)
+        {
+            if (!isDict.TryGetValue(p.Id, out var ibp) || !ibp?.BaslamaTar.HasValue == true) continue;
+            var sure = (today - ibp!.BaslamaTar!.Value).TotalDays / 365.25;
+            calismaSurelerToplamYil += sure;
+            calismaSuresiOlanSayisi++;
+            int ci = sure < 2 ? 0 : sure < 6 ? 1 : sure < 11 ? 2 : sure < 21 ? 3 : 4;
+            csGrupCounts[ci]++;
+        }
+        _ortCalismaYil = calismaSuresiOlanSayisi > 0 ? Math.Round(calismaSurelerToplamYil / calismaSuresiOlanSayisi, 1) : 0;
+        _onYilUzeri = csGrupCounts[3] + csGrupCounts[4];
+        _buYilBaslayan = _kadroluPersoneller.Count(p =>
+            isDict.TryGetValue(p.Id, out var ibp2) &&
+            ibp2?.BaslamaTar.HasValue == true &&
+            ibp2.BaslamaTar!.Value.Year == thisYear);
+        for (int i = 0; i < csGrupLabels.Length; i++)
+        {
+            if (csGrupCounts[i] == 0) continue;
+            _calismaSuresiGrupItems.Add(new PieItem(csGrupLabels[i], csGrupCounts[i]));
+            _calismaSuresiSatirlar.Add(new CalismaSuresiSatir(csGrupLabels[i], csGrupCounts[i]));
+        }
         foreach (var p in _personeller
             .Where(px => isDict.TryGetValue(px.Id, out _))
             .OrderBy(px => isDict.TryGetValue(px.Id, out var ibx) ? (ibx?.ProtokolSiraNo ?? int.MaxValue) : int.MaxValue))
@@ -942,5 +1075,6 @@
     private record TalepSatir(string PersonelAdSoyad, string IzinTipiAdi, DateTime? Baslangic, DateTime? Bitis, string Sure);
     private record DkDegisimSatir(string PersonelAdSoyad, string Degisim, DateTime? DegisimTarihi, int? Derece, int? Kademe);
     private record PersonelSatir(string AdSoyad, string BirimAdi, string Unvan, DateTime? BaslamaTarihi);
+    private record CalismaSuresiSatir(string Grup, int PersonelSayisi);
     private record KalanIzinPersonelSatir(string AdSoyad, decimal KalanIzinToplami, string GrupAdi, string GrupRengi);
 }

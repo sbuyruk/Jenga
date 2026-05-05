@@ -231,7 +231,7 @@
             _selectedSourceId = value;
             SyncSelectedSourceToMaterialExit();
             selectedAssetIds.Clear();
-            _ = LoadAvailableAssets();
+            InvokeAsync(LoadAvailableAssets);
         }
     }
 
@@ -337,13 +337,13 @@
             {
                 _selectedSourceId = existing.Id;
                 SyncSelectedSourceToMaterialExit();
-                _ = LoadAvailableAssets();
+                InvokeAsync(LoadAvailableAssets);
             }
             else if (SourceOptions.Count == 1)
             {
                 _selectedSourceId = SourceOptions.First().Id;
                 SyncSelectedSourceToMaterialExit();
-                _ = LoadAvailableAssets();
+                InvokeAsync(LoadAvailableAssets);
             }
             else
             {

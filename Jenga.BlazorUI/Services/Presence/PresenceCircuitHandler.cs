@@ -9,13 +9,13 @@ namespace Jenga.BlazorUI.Services.Presence
     public sealed class PresenceCircuitHandler : CircuitHandler
     {
         private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
-        private readonly CurrentUserService _currentUserService;
+        private readonly ICurrentUserService _currentUserService;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly PresenceHeartbeatState _heartbeatState;
 
         public PresenceCircuitHandler(
             IDbContextFactory<ApplicationDbContext> dbFactory,
-            CurrentUserService currentUserService,
+            ICurrentUserService currentUserService,
             IHttpContextAccessor httpContextAccessor,
             PresenceHeartbeatState heartbeatState)
         {

@@ -9,7 +9,7 @@ namespace Jenga.Models.Sistem
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
-        [DisplayName("A�iklama")]
+        [DisplayName("Açıklama")]
         public string? Aciklama { get; set; }
         public string? Olusturan { get; set; }
         public DateTime? OlusturmaTarihi { get; set; }

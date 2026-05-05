@@ -1,4 +1,4 @@
-﻿namespace Jenga.Models.Inventory
+namespace Jenga.BlazorUI.Models.Inventory
 {
     public class MaterialLocationCard
     {
@@ -11,8 +11,8 @@
         public int? PersonelId { get; set; }
         public string? PersonelName { get; set; }
 
-        // YENİ: Bu kartı temsil eden (gruptaki) bir MaterialInventory satırının Id'si
-        // StartTransfer'da modal'a initial selection gönderirken kullanacağız.
+        // Bu kartı temsil eden (gruptaki) bir MaterialInventory satırının Id'si
+        // StartTransfer'da modal'a initial selection gönderirken kullanılır.
         public int InventoryId { get; set; } = 0;
     }
 
@@ -29,7 +29,7 @@
         // Raw movement/exit type from the movement record (e.g. Exit.ExitType)
         public string MovementTypeRaw { get; set; } = string.Empty;
 
-        // New: brand/model display fields (optional)
+        // brand/model display fields (optional)
         public string? BrandName { get; set; }
         public string? ModelName { get; set; }
     }

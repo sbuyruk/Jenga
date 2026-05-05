@@ -61,26 +61,11 @@ namespace Jenga.Models.TBYS
         [Column("TeminatAciklama", TypeName = "nvarchar(max)")]
         public string? TeminatAciklama { get; set; }
 
-        [Column("Aciklama", TypeName = "nvarchar(max)")]
-        public string? Aciklama { get; set; }
-
         [Column("TaksitSayisi")]
         public int? TaksitSayisi { get; set; }
 
         [Column("Aktif")]
         public bool? Aktif { get; set; }
-
-        [Column("OlusturmaTarihi", TypeName = "datetime")]
-        public DateTime? OlusturmaTarihi { get; set; }
-
-        [Column("Olusturan")]
-        public string? Olusturan { get; set; }
-
-        [Column("DegistirmeTarihi", TypeName = "datetime")]
-        public DateTime? DegistirmeTarihi { get; set; }
-
-        [Column("Degistiren")]
-        public string? Degistiren { get; set; }
 
         [Column("DosyaNo")]
         public int? DosyaNo { get; set; }

@@ -8,7 +8,6 @@
 @inject IToastService ToastService
 @inject IModalService ModalService
 @inject IMaterialExitService MaterialExitService
-@inject IHttpContextAccessor httpContextAccessor
 
 <div class="d-flex justify-content-end mb-2">
     <button class="btn btn-success" @onclick="OpenNewExitModal" type="button">
@@ -164,7 +163,7 @@ else
         showEditModal = true;
     }
 
-    private async void HandleSave()
+    private async Task HandleSave()
     {
         if (selectedExit == null)
         {

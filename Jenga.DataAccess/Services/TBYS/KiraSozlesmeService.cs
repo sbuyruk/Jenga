@@ -118,6 +118,24 @@ namespace Jenga.DataAccess.Services.TBYS
             }
         }
 
+        public async Task<Result<List<KiraSozlesme>>> GetKiraSozlesmeAktifAsync(CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                var list = await db.KiraSozlesme_Table
+                    .AsNoTracking()
+                    .Where(x => x.Aktif == true)
+                    .ToListAsync(cancellationToken);
+                return Result<List<KiraSozlesme>>.Success(list);
+            }
+            catch (Exception ex)
+            {
+                _logService.LogError($"{Source}.GetKiraSozlesmeAktifAsync hata.", ex);
+                return Result<List<KiraSozlesme>>.Failure(Error.Unexpected("Aktif kira sözleşme listesi alınamadı.", ex));
+            }
+        }
+
         public async Task<Result<bool>> AnyAsync(Expression<Func<KiraSozlesme, bool>> predicate, CancellationToken cancellationToken = default)
         {
             try

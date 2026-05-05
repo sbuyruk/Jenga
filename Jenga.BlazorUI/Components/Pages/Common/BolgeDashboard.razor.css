@@ -1,0 +1,288 @@
+/* ═══════════════════════════════════════════════════════════════
+   BolgeDashboard.razor.css
+   Mobile-first, fully responsive – Bölge Dashboard
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Kök ──────────────────────────────────────────────────────── */
+.bolge-dashboard {
+    max-width: 100%;
+    overflow-x: hidden;
+    box-sizing: border-box;
+}
+
+/* ── Spinner animasyonu ───────────────────────────────────────── */
+.bolge-dashboard .bd-spin {
+    animation: bd-spin 0.9s linear infinite;
+    display: inline-block;
+}
+
+@keyframes bd-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   BÖLGE SEÇİCİ
+   ════════════════════════════════════════════════════════════════ */
+.bd-bolge-selector {
+    background: #fff;
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 10px;
+    padding: 12px 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.bd-selector-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #374151;
+    white-space: nowrap;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   BOŞ DURUM
+   ════════════════════════════════════════════════════════════════ */
+.bd-empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #9ca3af;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   SCROLLSPY LAYOUT
+   ════════════════════════════════════════════════════════════════ */
+.bd-scrollspy-layout {
+    display: grid;
+    grid-template-columns: 1fr 210px;
+    gap: 18px;
+    align-items: start;
+}
+
+.bd-scrollspy-nav {
+    position: sticky;
+    top: 12px;
+    order: 2;
+    background: var(--card-bg, #fff);
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 10px;
+    padding: 12px 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.bd-nav-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--p3, #2563EB);
+    padding: 4px 10px 8px;
+    border-bottom: 1px solid rgba(0,0,0,0.07);
+    margin-bottom: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.bd-scrollspy-nav .nav-link {
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 0.81rem;
+    color: var(--muted, #6b6b6b);
+    transition: background 0.15s, color 0.15s;
+}
+
+.bd-scrollspy-nav .nav-link:hover {
+    background: rgba(37,99,235,0.07);
+    color: var(--text, #1E1E1E);
+}
+
+.bd-scrollspy-nav .nav-link.active {
+    background: rgba(37,99,235,0.12);
+    color: #1D40AE;
+    font-weight: 700;
+}
+
+.bd-scrollspy-content {
+    order: 1;
+    height: calc(100vh - 120px);
+    overflow-y: auto;
+    padding-right: 6px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(100,116,139,0.4) transparent;
+}
+
+.bd-section {
+    scroll-margin-top: 12px;
+    padding-bottom: 4px;
+}
+
+/* ── Bölüm Başlığı ────────────────────────────────────────────── */
+.bolge-dashboard .section-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: #6b7280;
+    margin-bottom: 0.4rem;
+    padding-left: 0.1rem;
+}
+
+/* ── Ayırıcı ─────────────────────────────────────────────────── */
+.bd-separator {
+    width: 65%;
+    margin-block: 2rem;
+    margin-inline: auto;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(0,0,0,0.2), transparent);
+    border: 0;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   STAT CARDS
+   ════════════════════════════════════════════════════════════════ */
+.bd-stat-card {
+    border: none;
+    border-left: 3px solid var(--bd-accent, #6b7280);
+    border-radius: 0.65rem;
+    background: var(--bd-accent-bg, #fafafa);
+    box-shadow: 0 1px 4px rgba(0,0,0,.07);
+    transition: transform 160ms ease, box-shadow 160ms ease, border-left-width 160ms ease;
+    overflow: hidden;
+}
+
+.bd-stat-card:hover {
+    transform: translateY(-2px);
+    border-left-width: 5px;
+    box-shadow: 0 6px 18px rgba(0,0,0,.10);
+}
+
+.bd-stat-body {
+    padding: 0.6rem 0.4rem !important;
+}
+
+.bd-stat-icon {
+    font-size: 1.1rem;
+    color: var(--bd-accent, #6b7280);
+    opacity: 0.85;
+    margin-bottom: 0.1rem;
+}
+
+.bd-stat-label {
+    font-size: 0.68rem;
+    color: #6b7280;
+    line-height: 1.2;
+    margin-bottom: 0.15rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.bd-stat-value {
+    font-size: 1.4rem;
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--bd-accent, #374151);
+    font-variant-numeric: tabular-nums;
+}
+
+.bd-stat-sub {
+    font-size: 0.68rem;
+    color: #9ca3af;
+    margin-top: 0.1rem;
+}
+
+/* Accent tokens */
+.bd-accent-indigo { --bd-accent: #4f46e5; --bd-accent-bg: #eef2ff; }
+.bd-accent-blue   { --bd-accent: #2563eb; --bd-accent-bg: #eff6ff; }
+.bd-accent-teal   { --bd-accent: #0d9488; --bd-accent-bg: #f0fdfa; }
+.bd-accent-green  { --bd-accent: #16a34a; --bd-accent-bg: #f0fdf4; }
+.bd-accent-rose   { --bd-accent: #e11d48; --bd-accent-bg: #fff1f2; }
+.bd-accent-amber  { --bd-accent: #d97706; --bd-accent-bg: #fffbeb; }
+.bd-accent-purple { --bd-accent: #7c3aed; --bd-accent-bg: #f5f3ff; }
+.bd-accent-sky    { --bd-accent: #0284c7; --bd-accent-bg: #f0f9ff; }
+.bd-accent-orange { --bd-accent: #ea580c; --bd-accent-bg: #fff7ed; }
+.bd-accent-pink   { --bd-accent: #db2777; --bd-accent-bg: #fdf2f8; }
+.bd-accent-slate  { --bd-accent: #475569; --bd-accent-bg: #f8fafc; }
+
+/* ════════════════════════════════════════════════════════════════
+   TABLO
+   ════════════════════════════════════════════════════════════════ */
+.bd-table {
+    font-size: 0.82rem;
+    margin-bottom: 0;
+}
+
+.bd-table th,
+.bd-table td {
+    white-space: nowrap;
+    padding: 0.3rem 0.5rem;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   KATLANABİLİR BAŞLIK
+   ════════════════════════════════════════════════════════════════ */
+.bd-collapsible-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+    padding: 0.6rem 0.9rem;
+    transition: background 120ms;
+}
+
+.bd-collapsible-header:hover {
+    background: rgba(0,0,0,.03);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   RESPONSIVE – Mobil uyum
+   ════════════════════════════════════════════════════════════════ */
+@media (max-width: 991px) {
+    .bd-scrollspy-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .bd-scrollspy-nav {
+        order: 1;
+        position: static;
+        max-height: none;
+        overflow-x: auto;
+        overflow-y: hidden;
+        border-radius: 8px;
+        padding: 8px 10px;
+    }
+
+    .bd-scrollspy-nav .nav {
+        flex-direction: row !important;
+        flex-wrap: nowrap;
+        gap: 4px !important;
+        overflow-x: auto;
+        padding-bottom: 4px;
+        scrollbar-width: thin;
+    }
+
+    .bd-nav-title {
+        display: none;
+    }
+
+    .bd-scrollspy-nav .nav-link {
+        white-space: nowrap;
+        font-size: 0.75rem;
+        padding: 5px 10px;
+    }
+
+    .bd-scrollspy-content {
+        order: 2;
+        height: calc(100vh - 200px);
+    }
+}
+
+@media (max-width: 575px) {
+    .bd-stat-value  { font-size: 1.15rem; }
+    .bd-stat-body   { padding: 0.5rem 0.3rem !important; }
+    .bd-bolge-selector { padding: 10px 12px; }
+}
+
+@media (min-width: 576px) and (max-width: 767px) {
+    .bd-stat-value { font-size: 1.25rem; }
+}

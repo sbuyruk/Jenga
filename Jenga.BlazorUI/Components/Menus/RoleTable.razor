@@ -128,12 +128,12 @@ else
     private async Task HandleDeleteAsync(Role role)
     {
         var result = await RolService.DeleteAsync(role);
-        await InvokeAsync(() =>
+        await InvokeAsync(async () =>
         {
             if (result.IsSuccess)
             {
                 ToastService.ShowToast($"{role.Name} silindi", ToastType.Success, 3000);
-                _ = OnRoleDeleted.InvokeAsync(role);
+                await OnRoleDeleted.InvokeAsync(role);
             }
             else
             {

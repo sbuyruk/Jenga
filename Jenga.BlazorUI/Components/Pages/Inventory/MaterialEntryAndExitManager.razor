@@ -23,7 +23,7 @@
 @inject ILocationService LocationService
 @inject IMaterialEntryService MaterialEntryService
 @inject IMaterialExitService MaterialExitService
-@inject IHttpContextAccessor httpContextAccessor
+@inject ICurrentUserService CurrentUserService
 @inject IMaterialMovementService MaterialMovementService
 @inject IMaterialTransferService MaterialTransferService
 @inject IPersonelService PersonelService
@@ -332,14 +332,14 @@
         if (node != null) HandleNodeSelect(node);
     }
 
-    private void SelectMaterialFromCard(Material mat)
+    private async Task SelectMaterialFromCard(Material mat)
     {
         if (mat == null) return;
         SelectedMaterial = mat;
         displayedCategory = null;
         materialCards = new List<Material> { mat };
-        _ = LoadMaterialLocationCards(mat);
-        _ = LoadMaterialMovements(mat);
+        await LoadMaterialLocationCards(mat);
+        await LoadMaterialMovements(mat);
         StateHasChanged();
     }
 
@@ -490,7 +490,7 @@
     {
         if (editingEntry == null) return;
         await ExecuteTransaction(async () =>
-            await MaterialEntryService.AddAsync(editingEntry, httpContextAccessor.HttpContext?.User?.Identity?.Name, CancellationToken.None),
+            await MaterialEntryService.AddAsync(editingEntry, await CurrentUserService.GetUserNameAsync(), CancellationToken.None),
             "Giris", () => isEntryOpen = false);
     }
 
@@ -522,7 +522,7 @@
         pendingTransferAssetIds = null;
 
         await ExecuteTransaction(async () =>
-            await MaterialTransferService.AddAsync(transfer, httpContextAccessor.HttpContext?.User?.Identity?.Name, assetIds, CancellationToken.None),
+            await MaterialTransferService.AddAsync(transfer, await CurrentUserService.GetUserNameAsync(), assetIds, CancellationToken.None),
             "Transfer", () => isTransferOpen = false);
     }
 
@@ -603,7 +603,7 @@
     private void CloseTransferModal() => isTransferOpen = false;
     private void CloseCategoryModal() => isCategoryEditOpen = false;
     private void CloseMaterialModal() => isMaterialEditOpen = false;
-    private void ClearSearch() { searchTerm = ""; RefreshData(); }
+    private async Task ClearSearch() { searchTerm = ""; await RefreshData(); }
     private string GetSelectedMaterialUnitSymbol() => materialUnits.FirstOrDefault(u => u.Id == SelectedMaterial?.MaterialUnitId)?.Symbol ?? "";
 
     #endregion

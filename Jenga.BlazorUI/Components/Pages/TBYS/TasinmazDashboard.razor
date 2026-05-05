@@ -318,6 +318,19 @@
                                 </div>
                             </div>
                         </div>
+
+                        <div class="col-12 col-sm-6 col-xl-3">
+                            <div class="card db-money-card h-100">
+                                <div class="card-body db-money-body">
+                                    <div class="db-money-icon" style="color:#0891b2"><i class="bi bi-pencil-square"></i></div>
+                                    <div>
+                                        <div class="db-money-label">Emlak Beyan Değeri Güncellenen</div>
+                                        <div class="db-money-value">@FormatCount(EmlakBeyanGuncelenenAdet)</div>
+                                        <div class="db-stat-sub">Adet Taşınmaz</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <hr class="db-separator" />
                 </section>
@@ -642,8 +655,9 @@
     private int ToplamIlAdet;
     private int ToplamBolgeAdet;
     private int DegerlemesiYapilanAdet;
+    private int EmlakBeyanGuncelenenAdet;
 
-    // ── KPI Değer ──────────────────────────────────────────────────
+    // ── KPI Değer
     private decimal ToplamEmlakBeyan;
     private decimal ToplamTahminiRayic;
     private decimal ToplamMuhasebeyeKayitli;
@@ -750,8 +764,9 @@
         KirayaUygunDegilAdet = ToplamAdet - KirayaUygunAdet;
         ToplamIlAdet = list.Select(GetIlName).Where(n => n != "-").Distinct().Count();
         DegerlemesiYapilanAdet = list.Count(x => x.YaklasikPiyasaDegeri != null && x.YaklasikPiyasaDegeri > 0 && x.EnvanterdeMi == 1);
+        EmlakBeyanGuncelenenAdet = list.Count(x => x.EmlakBeyanDegeri != null && x.EmlakBeyanDegeri > 0);
 
-        // ── Değer KPI ─────────────────────────────────────────────
+        // ── Değer KPI
         ToplamEmlakBeyan = list.Sum(x => x.EmlakBeyanDegeri ?? 0m);
         ToplamTahminiRayic = list.Sum(x => x.TahminiRayicDegeri ?? 0m);
         ToplamMuhasebeyeKayitli = list.Sum(x => x.MuhasebeyeKayitliDeger ?? 0m);

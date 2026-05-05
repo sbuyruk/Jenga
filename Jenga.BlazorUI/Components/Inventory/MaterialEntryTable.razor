@@ -7,7 +7,7 @@
 @inject IMaterialEntryService MaterialEntryService
 @inject IModalService ModalService
 @inject IToastService ToastService
-@inject IHttpContextAccessor httpContextAccessor
+@inject ICurrentUserService CurrentUserService
 
 <div class="d-flex justify-content-end mb-2">
     <button class="btn btn-success" @onclick="OpenNewEntryModal" type="button">
@@ -224,9 +224,9 @@ else
         showEditModal = true;
     }
 
-    private async void HandleSave()
+    private async Task HandleSave()
     {
-        var currentUserName = httpContextAccessor.HttpContext?.User?.Identity?.Name;
+        var currentUserName = await CurrentUserService.GetUserNameAsync();
 
         if (selectedEntry == null)
         {
@@ -294,7 +294,7 @@ else
                     return;
                 }
 
-                var currentUserName = httpContextAccessor.HttpContext?.User?.Identity?.Name;
+                var currentUserName = await CurrentUserService.GetUserNameAsync();
                 try
                 {
                     var deleted = await MaterialEntryService.DeleteMaterialEntryAndUpdateInventoryAsync(entry, currentUserName, CancellationToken.None);

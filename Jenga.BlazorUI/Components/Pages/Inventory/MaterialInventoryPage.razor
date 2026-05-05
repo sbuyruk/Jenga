@@ -3,6 +3,7 @@
 
 @using Jenga.DataAccess.Services.IKYS
 @using Jenga.DataAccess.Services.Inventory
+@using Jenga.BlazorUI.Services.Common
 @using Jenga.Models.IKYS
 @using Jenga.Models.Inventory
 @using Jenga.BlazorUI.Components.Inventory
@@ -17,7 +18,7 @@
 @inject IMaterialBrandService MaterialBrandService
 @inject IMaterialModelService MaterialModelService
 @inject IToastService ToastService
-@inject IHttpContextAccessor HttpContextAccessor
+@inject ICurrentUserService CurrentUserService
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h5 class="mb-0">Malzeme Envanteri</h5>
@@ -174,7 +175,7 @@ else
 
         try
         {
-            var currentUser = HttpContextAccessor.HttpContext?.User?.Identity?.Name;
+            var currentUser = await CurrentUserService.GetUserNameAsync();
             var saved = await MaterialEntryService.AddAsync(editingEntry, currentUser, CancellationToken.None);
             if (saved.IsSuccess)
             {

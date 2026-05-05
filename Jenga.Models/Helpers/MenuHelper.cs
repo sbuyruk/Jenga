@@ -4,7 +4,7 @@ namespace Jenga.Models.Helpers
 {
     public static class MenuHelper
     {
-        public static List<MenuItem> BuildTree(List<MenuItem> flatList)
+        public static List<MenuItem> BuildTree(List<MenuItem> flatList, Action<string>? onWarning = null)
         {
             if (flatList == null || flatList.Count == 0)
                 return new List<MenuItem>();
@@ -15,7 +15,7 @@ namespace Jenga.Models.Helpers
                 .Select(g =>
                 {
                     if (g.Count() > 1)
-                        Console.Error.WriteLine($"MenuHelper.BuildTree: duplicate MenuItem.Id {g.Key} found ({g.Count()} entries). Using first occurrence.");
+                        onWarning?.Invoke($"MenuHelper.BuildTree: duplicate MenuItem.Id {g.Key} found ({g.Count()} entries). Using first occurrence.");
                     return g.First();
                 })
                 .ToList();

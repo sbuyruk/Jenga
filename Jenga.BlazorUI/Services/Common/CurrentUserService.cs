@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Jenga.BlazorUI.Services.Common
 {
-    public class CurrentUserService
+    public sealed class CurrentUserService : ICurrentUserService, IDisposable
     {
         private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
         private readonly IHttpContextAccessor _httpContextAccessor;
@@ -16,6 +16,7 @@ namespace Jenga.BlazorUI.Services.Common
         private readonly IHostEnvironment _hostEnvironment;
         private readonly ILogger<CurrentUserService> _logger;
         private Personel? _cachedPersonel;
+        private readonly SemaphoreSlim _cacheLock = new(1, 1);
 
         public CurrentUserService(
             IDbContextFactory<ApplicationDbContext> dbFactory,
@@ -47,6 +48,11 @@ namespace Jenga.BlazorUI.Services.Common
 
         private async Task<Personel?> GetCurrentPersonelAsync(bool skipImpersonation)
         {
+            if (Volatile.Read(ref _cachedPersonel) != null) return _cachedPersonel;
+
+            await _cacheLock.WaitAsync();
+            try
+            {
             if (_cachedPersonel != null) return _cachedPersonel;
 
             // Development ortamında impersonation override kontrolü.
@@ -121,13 +127,50 @@ namespace Jenga.BlazorUI.Services.Common
             // null olursa cache'leme; auth sonradan geldiğinde tekrar denesin.
             if (personel != null) _cachedPersonel = personel;
             return personel;
+            }
+            finally
+            {
+                _cacheLock.Release();
+            }
+        }
+
+        /// <summary>
+        /// Mevcut kullanıcının adını döner (DB sorgusu yapmaz).
+        /// Audit alanlarına (<c>modifiedBy</c>) yazılmak üzere servis katmanına iletilir.
+        /// </summary>
+        public async Task<string?> GetUserNameAsync()
+        {
+            var principal = _httpContextAccessor.HttpContext?.User;
+
+            if (principal == null || principal.Identity == null || !principal.Identity.IsAuthenticated)
+            {
+                try
+                {
+                    var authState = await _authStateProvider.GetAuthenticationStateAsync();
+                    principal = authState?.User;
+                }
+                catch
+                {
+                    return null;
+                }
+            }
+
+            return principal?.Identity?.Name;
         }
 
         /// <summary>
         /// Önbelleği temizler; bir sonraki çağrıda kullanıcı DB'den yeniden çözümlenir.
         /// Impersonation değişikliği veya oturum güncellemesi sonrasında çağrılmalıdır.
         /// </summary>
-        public void Invalidate() => _cachedPersonel = null;
+        public void Invalidate()
+        {
+            // Interlocked-style: volatile write görünürlüğü için Volatile.Write kullanılır.
+            // SemaphoreSlim.Wait() Blazor render thread'inde deadlock'a yol açabileceğinden
+            // kaçınılır; _cachedPersonel ataması referans boyutunda atomik (64-bit CLR).
+            Volatile.Write(ref _cachedPersonel, null);
+        }
+
+        public void Dispose() => _cacheLock.Dispose();
 
         // Impersonation override (Development-only; prod'da çağrı bile başarısız döner).
         // Üst katman da ayrıca [Authorize] / rol kontrolü yapmalıdır.

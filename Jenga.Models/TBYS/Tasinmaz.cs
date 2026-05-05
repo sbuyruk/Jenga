@@ -1,5 +1,6 @@
 ﻿using System;
 using Jenga.Models.Sistem;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Jenga.Models.TBYS
@@ -170,6 +171,25 @@ namespace Jenga.Models.TBYS
 
         [Column("KirayaUygunluk")]
         public string? KirayaUygunluk { get; set; }
+
+        public const string KirayaUygunDeger = "Kiraya Uygun";
+        public const string TamMulkiyetDeger = "TM";
+        public const string CiplakMulkiyetDeger = "ÇM";
+
+        [NotMapped]
+        public bool KirayaUygunMu =>
+            !string.IsNullOrEmpty(KirayaUygunluk) &&
+            KirayaUygunluk.Equals(KirayaUygunDeger, StringComparison.OrdinalIgnoreCase);
+
+        [NotMapped]
+        public bool TamMulkiyetMi =>
+            !string.IsNullOrEmpty(MulkiyetSekli) &&
+            MulkiyetSekli.Equals(TamMulkiyetDeger, StringComparison.OrdinalIgnoreCase);
+
+        [NotMapped]
+        public bool CiplakMulkiyetMi =>
+            !string.IsNullOrEmpty(MulkiyetSekli) &&
+            MulkiyetSekli.Equals(CiplakMulkiyetDeger, StringComparison.OrdinalIgnoreCase);
 
         [Column("TasinmazFoto3")]
         public string? TasinmazFoto3 { get; set; }

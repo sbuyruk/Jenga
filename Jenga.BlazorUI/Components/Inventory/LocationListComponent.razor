@@ -73,7 +73,7 @@ else
         showEditModal = true;
         return Task.CompletedTask;
     }
-    private async void HandleSave()
+    private async Task HandleSave()
     {
         if (selectedLocation != null)
         {

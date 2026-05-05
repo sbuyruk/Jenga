@@ -23,7 +23,10 @@ public class IsBilgileriService : IIsBilgileriService
         try
         {
             await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-            var list = await db.IsBilgileri_Table.AsNoTracking().Include(ib => ib.UnvanTanim).ToListAsync(cancellationToken);
+            var list = await db.IsBilgileri_Table.AsNoTracking()
+                .Include(ib => ib.UnvanTanim)
+                .Include(ib => ib.BirimTanim)
+                .ToListAsync(cancellationToken);
             return Result.Success(list);
         }
         catch (Exception ex)
