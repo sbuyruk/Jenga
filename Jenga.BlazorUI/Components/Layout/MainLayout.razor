@@ -15,6 +15,7 @@
 @inject PresenceHeartbeatService PresenceHeartbeatService
 @inject UserNavigationLogService UserNavigationLogService
 @inject IJSRuntime JS
+@inject ThemeService ThemeService
 
 <div class="page @(MenuState.IsOpen ? "sidebar-open" : "sidebar-closed")">
 
@@ -45,6 +46,7 @@
             </div>
 
             <div class="d-flex align-items-center gap-3">
+                <ThemeToggle />
                 <NavLink href="/" class="navbar-brand">
                     @(_windowsUser.Length > 0 ? _windowsUser : "Jenga.BlazorUI")
                 </NavLink>
@@ -90,7 +92,9 @@
     {
         if (firstRender)
         {
-            // JS interop is now available. Re-resolve with impersonation override support
+            await ThemeService.InitializeAsync();
+
+            // JS interop is now available.
             // (development-only). If the result differs, refresh the UI.
             CurrentUserService.Invalidate();
             var resolved = await CurrentUserService.GetCurrentPersonelAsync();

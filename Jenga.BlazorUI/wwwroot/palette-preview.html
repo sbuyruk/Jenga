@@ -6,56 +6,71 @@
 <title>Jenga – Renk Paleti Önizleme</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f0f0; padding: 24px; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #e8e8e8; padding: 24px; }
   h1 { text-align: center; margin-bottom: 8px; font-size: 1.4rem; color: #333; }
   p.subtitle { text-align: center; color: #666; margin-bottom: 32px; font-size: 0.9rem; }
 
-  .palette-grid { display: flex; flex-direction: column; gap: 40px; }
+  .palette-grid { display: flex; flex-direction: column; gap: 48px; }
 
   /* ── Palette card ── */
-  .palette-card { border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+  .palette-card { border-radius: 14px; overflow: hidden; box-shadow: 0 6px 24px rgba(0,0,0,0.13); }
   .palette-label {
-    padding: 10px 18px;
+    padding: 11px 18px;
     font-weight: 700;
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     letter-spacing: .05em;
     text-transform: uppercase;
     background: #fff;
-    color: #333;
+    color: #222;
     border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .palette-label .tag {
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+    letter-spacing: 0;
+    text-transform: none;
   }
 
-  /* ── Mock UI inside each palette ── */
-  .mock {
-    display: flex;
-    height: 340px;
-  }
+  /* ── Mock UI ── */
+  .mock { display: flex; height: 360px; }
+
   .mock-sidebar {
-    width: 200px;
-    min-width: 200px;
+    width: 190px;
+    min-width: 190px;
     padding: 16px 12px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
   }
   .mock-sidebar .brand {
     font-weight: 800;
-    font-size: 1.1rem;
-    margin-bottom: 12px;
+    font-size: 1rem;
+    margin-bottom: 14px;
     letter-spacing: .02em;
   }
+  .mock-sidebar .nav-section {
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    opacity: 0.5;
+    margin: 8px 4px 2px;
+  }
   .mock-sidebar .nav-item {
-    padding: 7px 10px;
+    padding: 6px 10px;
     border-radius: 6px;
-    font-size: 0.78rem;
+    font-size: 0.76rem;
     cursor: pointer;
   }
   .mock-sidebar .nav-item.active { font-weight: 700; }
-  .mock-main {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-  }
+
+  .mock-main { flex: 1; display: flex; flex-direction: column; }
+
   .mock-topbar {
     height: 48px;
     display: flex;
@@ -63,164 +78,319 @@
     padding: 0 16px;
     font-size: 0.82rem;
     font-weight: 600;
-    gap: 10px;
+    gap: 8px;
   }
-  .mock-topbar .badge {
-    font-size: 0.7rem;
-    padding: 2px 8px;
+  .mock-topbar .spacer { flex: 1; }
+  .mock-topbar .tbadge {
+    font-size: 0.68rem;
+    padding: 3px 10px;
     border-radius: 999px;
+    font-weight: 600;
   }
+  .mock-topbar .tuser {
+    font-size: 0.7rem;
+    opacity: 0.75;
+  }
+
   .mock-content {
     flex: 1;
     padding: 14px;
     display: flex;
     flex-direction: column;
     gap: 10px;
+    overflow: hidden;
   }
   .mock-page-title { font-size: 1rem; font-weight: 700; }
-  .mock-page-sub { font-size: 0.72rem; }
-  .mock-cards { display: flex; gap: 8px; flex-wrap: wrap; }
+  .mock-page-sub { font-size: 0.7rem; margin-top: -6px; }
+
+  .mock-cards { display: flex; gap: 8px; }
   .mock-card {
     border-radius: 8px;
-    padding: 10px 14px;
-    min-width: 110px;
-    font-size: 0.72rem;
+    padding: 9px 12px;
+    flex: 1;
+    font-size: 0.7rem;
+    border: 1px solid transparent;
   }
-  .mock-card .num { font-size: 1.3rem; font-weight: 800; margin-top: 4px; }
-  .mock-table { font-size: 0.7rem; border-radius: 6px; overflow: hidden; border: 1px solid; }
+  .mock-card .num { font-size: 1.25rem; font-weight: 800; margin-top: 3px; }
+  .mock-card .btn-row { margin-top: 8px; display: flex; gap: 4px; }
+  .mock-card .mbtn {
+    font-size: 0.62rem;
+    padding: 3px 7px;
+    border-radius: 4px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .mock-table { font-size: 0.68rem; border-radius: 6px; overflow: hidden; border: 1px solid; flex-shrink: 0; }
   .mock-table-row { display: flex; }
-  .mock-table-row > div { flex: 1; padding: 5px 8px; }
-  .mock-table-row.header { font-weight: 700; font-size: 0.68rem; }
+  .mock-table-row > div { flex: 1; padding: 4px 8px; }
+  .mock-table-row.header { font-weight: 700; font-size: 0.65rem; }
 
   /* ── Swatch row ── */
-  .swatches { display: flex; height: 36px; }
-  .swatch { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; font-weight: 600; }
+  .swatches { display: flex; height: 40px; }
+  .swatch {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.55rem;
+    font-weight: 700;
+    gap: 1px;
+    line-height: 1.2;
+  }
+  .swatch span { font-size: 0.5rem; opacity: 0.75; font-weight: 400; }
 
-  /* ════════════════════════════════
-     PALETTE 1 — Kurumsal Lacivert & Gül
-     ════════════════════════════════ */
-  .p1 { --pp1:#1A2744; --pp2:#C0392B; --pp3:#E8EEF7; --pp4:#F7F9FC; --ptext:#1E2A3A; --pmuted:#6b7a99; --pacc:#2563EB; }
+  /* ════════════════════════════════════════════════════════
+     PALETTE 1 — Kurumsal Lacivert & Gül  ★ FAVORI
+     Sidebar: #1A2744 | Topbar: #C0392B | Accent/Btn: #2563EB
+     Surface: #F7F9FC | Card: #fff | Border: #dde4f0
+  ════════════════════════════════════════════════════════ */
+  .p1 {
+    --sb: #1A2744; --tb: #C0392B; --acc: #2563EB;
+    --surf: #F7F9FC; --surf2: #E8EEF7;
+    --tx: #1E2A3A; --mu: #6b7a99;
+    --bdr: #dde4f0; --row: #f0f4fb;
+    --btn-primary: #2563EB; --btn-primary-tx: #fff;
+    --btn-secondary: #E8EEF7; --btn-secondary-tx: #1A2744;
+    --btn-danger: #C0392B; --btn-danger-tx: #fff;
+    --badge-bg: rgba(255,255,255,0.18); --badge-tx: #fff;
+  }
 
-  .p1 .mock-sidebar  { background: var(--pp1); color: #e8eef7; }
+  .p1 .mock-sidebar { background: var(--sb); color: #e8eef7; }
+  .p1 .mock-sidebar .nav-section { color: #7a90b8; }
   .p1 .mock-sidebar .nav-item { color: #b0bcd4; }
   .p1 .mock-sidebar .nav-item.active { background: rgba(255,255,255,0.12); color: #fff; }
-  .p1 .mock-topbar   { background: var(--pp2); color: #fff; }
-  .p1 .mock-topbar .badge { background: rgba(255,255,255,0.18); color: #fff; }
-  .p1 .mock-content  { background: var(--pp4); color: var(--ptext); }
-  .p1 .mock-page-title { color: var(--ptext); }
-  .p1 .mock-page-sub { color: var(--pmuted); }
-  .p1 .mock-card     { background: #fff; border: 1px solid #dde4f0; color: var(--ptext); }
-  .p1 .mock-card .num { color: var(--pacc); }
-  .p1 .mock-table    { background: #fff; border-color: #dde4f0; }
-  .p1 .mock-table-row.header { background: var(--pp3); color: var(--ptext); }
-  .p1 .mock-table-row:not(.header):nth-child(even) { background: #f0f4fb; }
+  .p1 .mock-topbar { background: var(--tb); color: #fff; }
+  .p1 .mock-topbar .tbadge { background: var(--badge-bg); color: var(--badge-tx); }
+  .p1 .mock-content { background: var(--surf); color: var(--tx); }
+  .p1 .mock-page-sub { color: var(--mu); }
+  .p1 .mock-card { background: #fff; border-color: var(--bdr); color: var(--tx); }
+  .p1 .mock-card .num { color: var(--acc); }
+  .p1 .mock-card .mbtn.primary { background: var(--btn-primary); color: var(--btn-primary-tx); }
+  .p1 .mock-card .mbtn.secondary { background: var(--btn-secondary); color: var(--btn-secondary-tx); }
+  .p1 .mock-card .mbtn.danger { background: var(--btn-danger); color: var(--btn-danger-tx); }
+  .p1 .mock-table { background: #fff; border-color: var(--bdr); }
+  .p1 .mock-table-row.header { background: var(--surf2); color: var(--tx); }
+  .p1 .mock-table-row:not(.header):nth-child(even) { background: var(--row); }
 
-  /* ════════════════════════════════
-     PALETTE 2 — Slate & Amber (Fintech)
-     ════════════════════════════════ */
-  .p2 { --pp1:#0F1923; --pp2:#F59E0B; --pp3:#F1F5F9; --pp4:#F8FAFC; --ptext:#0F172A; --pmuted:#64748B; --pacc:#0EA5E9; }
+  /* ════════════════════════════════════════════════════════
+     PALETTE 2 — Bordo & Krem +  Mavi Buton  ★ GENİŞLETİLDİ
+     Sidebar: #5C1220 | Topbar: #9E2A3A | Btn Primary: #1D6FB8
+     Accent sayı: #1D6FB8 | Surface: #FFF8F8 | Border: #f0d8db
+     + success yeşil, warning sarı, link mavisi
+  ════════════════════════════════════════════════════════ */
+  .p2 {
+    --sb: #5C1220; --tb: #9E2A3A; --acc: #1D6FB8;
+    --surf: #FFF8F8; --surf2: #FDF0F1;
+    --tx: #2A1215; --mu: #7a5058;
+    --bdr: #f0d8db; --row: #fff3f4;
+    --btn-primary: #1D6FB8; --btn-primary-tx: #fff;
+    --btn-secondary: #f5e0e2; --btn-secondary-tx: #5C1220;
+    --btn-success: #1a7a4a; --btn-success-tx: #fff;
+    --btn-warning: #b8860b; --btn-warning-tx: #fff;
+    --btn-danger: #9E2A3A; --btn-danger-tx: #fff;
+    --badge-bg: rgba(255,255,255,0.2); --badge-tx: #fff;
+    --link: #1D6FB8;
+  }
 
-  .p2 .mock-sidebar  { background: var(--pp1); color: #CBD5E1; }
-  .p2 .mock-sidebar .nav-item { color: #94A3B8; }
-  .p2 .mock-sidebar .nav-item.active { background: rgba(245,158,11,0.18); color: var(--pp2); }
-  .p2 .mock-topbar   { background: var(--pp2); color: #1a1000; }
-  .p2 .mock-topbar .badge { background: rgba(0,0,0,0.15); color: #1a1000; }
-  .p2 .mock-content  { background: var(--pp4); color: var(--ptext); }
-  .p2 .mock-page-title { color: var(--ptext); }
-  .p2 .mock-page-sub { color: var(--pmuted); }
-  .p2 .mock-card     { background: #fff; border: 1px solid #e2e8f0; color: var(--ptext); }
-  .p2 .mock-card .num { color: var(--pacc); }
-  .p2 .mock-table    { background: #fff; border-color: #e2e8f0; }
-  .p2 .mock-table-row.header { background: var(--pp3); color: var(--ptext); }
-  .p2 .mock-table-row:not(.header):nth-child(even) { background: #f8fafc; }
+  .p2 .mock-sidebar { background: var(--sb); color: #f5dde1; }
+  .p2 .mock-sidebar .nav-section { color: #c08090; }
+  .p2 .mock-sidebar .nav-item { color: #e0b0b8; }
+  .p2 .mock-sidebar .nav-item.active { background: rgba(255,255,255,0.14); color: #fff; }
+  .p2 .mock-topbar { background: var(--tb); color: #fff; }
+  .p2 .mock-topbar .tbadge { background: var(--badge-bg); color: var(--badge-tx); }
+  .p2 .mock-content { background: var(--surf); color: var(--tx); }
+  .p2 .mock-page-sub { color: var(--mu); }
+  .p2 .mock-card { background: #fff; border-color: var(--bdr); color: var(--tx); }
+  .p2 .mock-card .num { color: var(--acc); }
+  .p2 .mock-card .mbtn.primary { background: var(--btn-primary); color: var(--btn-primary-tx); }
+  .p2 .mock-card .mbtn.secondary { background: var(--btn-secondary); color: var(--btn-secondary-tx); }
+  .p2 .mock-card .mbtn.danger { background: var(--btn-danger); color: var(--btn-danger-tx); }
+  .p2 .mock-table { background: #fff; border-color: var(--bdr); }
+  .p2 .mock-table-row.header { background: var(--surf2); color: var(--tx); }
+  .p2 .mock-table-row:not(.header):nth-child(even) { background: var(--row); }
 
-  /* ════════════════════════════════
-     PALETTE 3 — Bordo & Krem (Mevcut paleti rafine et)
-     ════════════════════════════════ */
-  .p3 { --pp1:#6B1826; --pp2:#9E2A3A; --pp3:#FDF5F6; --pp4:#FFF8F8; --ptext:#2A1215; --pmuted:#8a5a62; --pacc:#C0392B; }
+  /* ════════════════════════════════════════════════════════
+     PALETTE 3 — Antrasit & Safran  ★ YENİ
+     Sidebar: #212529 | Topbar: #E07B00 | Btn: #2563EB
+     Temiz, modern, nötr-sıcak kontrastı
+  ════════════════════════════════════════════════════════ */
+  .p3 {
+    --sb: #212529; --tb: #C96A00; --acc: #2563EB;
+    --surf: #F8F9FA; --surf2: #EDEFF2;
+    --tx: #1C1C1E; --mu: #6C757D;
+    --bdr: #dee2e6; --row: #f2f4f7;
+    --btn-primary: #2563EB; --btn-primary-tx: #fff;
+    --btn-secondary: #EDEFF2; --btn-secondary-tx: #212529;
+    --btn-danger: #DC3545; --btn-danger-tx: #fff;
+    --badge-bg: rgba(255,255,255,0.18); --badge-tx: #fff;
+  }
 
-  .p3 .mock-sidebar  { background: var(--pp1); color: #f5dde1; }
-  .p3 .mock-sidebar .nav-item { color: #e0b0b8; }
-  .p3 .mock-sidebar .nav-item.active { background: rgba(255,255,255,0.14); color: #fff; }
-  .p3 .mock-topbar   { background: var(--pp2); color: #fff; }
-  .p3 .mock-topbar .badge { background: rgba(255,255,255,0.2); color: #fff; }
-  .p3 .mock-content  { background: var(--pp4); color: var(--ptext); }
-  .p3 .mock-page-title { color: var(--ptext); }
-  .p3 .mock-page-sub { color: var(--pmuted); }
-  .p3 .mock-card     { background: #fff; border: 1px solid #f0dde0; color: var(--ptext); }
-  .p3 .mock-card .num { color: var(--pacc); }
-  .p3 .mock-table    { background: #fff; border-color: #f0dde0; }
-  .p3 .mock-table-row.header { background: var(--pp3); color: var(--ptext); }
-  .p3 .mock-table-row:not(.header):nth-child(even) { background: #fff5f6; }
+  .p3 .mock-sidebar { background: var(--sb); color: #ced4da; }
+  .p3 .mock-sidebar .nav-section { color: #6c757d; }
+  .p3 .mock-sidebar .nav-item { color: #adb5bd; }
+  .p3 .mock-sidebar .nav-item.active { background: rgba(255,255,255,0.1); color: #fff; }
+  .p3 .mock-topbar { background: var(--tb); color: #fff; }
+  .p3 .mock-topbar .tbadge { background: var(--badge-bg); color: var(--badge-tx); }
+  .p3 .mock-content { background: var(--surf); color: var(--tx); }
+  .p3 .mock-page-sub { color: var(--mu); }
+  .p3 .mock-card { background: #fff; border-color: var(--bdr); color: var(--tx); }
+  .p3 .mock-card .num { color: var(--acc); }
+  .p3 .mock-card .mbtn.primary { background: var(--btn-primary); color: var(--btn-primary-tx); }
+  .p3 .mock-card .mbtn.secondary { background: var(--btn-secondary); color: var(--btn-secondary-tx); }
+  .p3 .mock-card .mbtn.danger { background: var(--btn-danger); color: var(--btn-danger-tx); }
+  .p3 .mock-table { background: #fff; border-color: var(--bdr); }
+  .p3 .mock-table-row.header { background: var(--surf2); color: var(--tx); }
+  .p3 .mock-table-row:not(.header):nth-child(even) { background: var(--row); }
 
-  /* ════════════════════════════════
-     PALETTE 4 — Gece Mavisi & Yeşil (Dashboard/Analitik)
-     ════════════════════════════════ */
-  .p4 { --pp1:#0D1B2A; --pp2:#1B4332; --pp3:#EEF2FF; --pp4:#F5F7FF; --ptext:#0D1B2A; --pmuted:#4A5568; --pacc:#10B981; }
+  /* ════════════════════════════════════════════════════════
+     PALETTE 4 — Lacivert & Altın  ★ YENİ
+     Sidebar: #0D2137 | Topbar: #0D2137 + altın çizgi | Btn: #C8960C
+     Prestijli, bankacılık/kurumsal duygusu
+  ════════════════════════════════════════════════════════ */
+  .p4 {
+    --sb: #0D2137; --tb: #0D2137; --acc: #C8960C;
+    --surf: #F5F7FA; --surf2: #EAF0F8;
+    --tx: #0D2137; --mu: #5A6A7E;
+    --bdr: #d0dae8; --row: #edf2f8;
+    --btn-primary: #C8960C; --btn-primary-tx: #fff;
+    --btn-secondary: #EAF0F8; --btn-secondary-tx: #0D2137;
+    --btn-danger: #C0392B; --btn-danger-tx: #fff;
+    --badge-bg: #C8960C; --badge-tx: #fff;
+    --topbar-border: #C8960C;
+  }
 
-  .p4 .mock-sidebar  { background: var(--pp1); color: #A8C0D6; }
-  .p4 .mock-sidebar .nav-item { color: #7A9AB8; }
-  .p4 .mock-sidebar .nav-item.active { background: rgba(16,185,129,0.15); color: var(--pacc); }
-  .p4 .mock-topbar   { background: var(--pp2); color: #D1FAE5; }
-  .p4 .mock-topbar .badge { background: rgba(255,255,255,0.15); color: #D1FAE5; }
-  .p4 .mock-content  { background: var(--pp4); color: var(--ptext); }
-  .p4 .mock-page-title { color: var(--ptext); }
-  .p4 .mock-page-sub { color: var(--pmuted); }
-  .p4 .mock-card     { background: #fff; border: 1px solid #dde4f5; color: var(--ptext); }
-  .p4 .mock-card .num { color: var(--pacc); }
-  .p4 .mock-table    { background: #fff; border-color: #dde4f5; }
-  .p4 .mock-table-row.header { background: var(--pp3); color: var(--ptext); }
-  .p4 .mock-table-row:not(.header):nth-child(even) { background: #f0f3ff; }
+  .p4 .mock-sidebar { background: var(--sb); color: #a8c0d8; border-right: 3px solid var(--topbar-border); }
+  .p4 .mock-sidebar .nav-section { color: #4a6880; }
+  .p4 .mock-sidebar .nav-item { color: #7a9ab8; }
+  .p4 .mock-sidebar .nav-item.active { background: rgba(200,150,12,0.18); color: #e8c060; border-left: 3px solid #C8960C; }
+  .p4 .mock-topbar { background: var(--tb); color: #fff; border-bottom: 3px solid var(--topbar-border); }
+  .p4 .mock-topbar .tbadge { background: var(--badge-bg); color: var(--badge-tx); }
+  .p4 .mock-content { background: var(--surf); color: var(--tx); }
+  .p4 .mock-page-sub { color: var(--mu); }
+  .p4 .mock-card { background: #fff; border-color: var(--bdr); color: var(--tx); }
+  .p4 .mock-card .num { color: var(--acc); }
+  .p4 .mock-card .mbtn.primary { background: var(--btn-primary); color: var(--btn-primary-tx); }
+  .p4 .mock-card .mbtn.secondary { background: var(--btn-secondary); color: var(--btn-secondary-tx); }
+  .p4 .mock-card .mbtn.danger { background: var(--btn-danger); color: var(--btn-danger-tx); }
+  .p4 .mock-table { background: #fff; border-color: var(--bdr); }
+  .p4 .mock-table-row.header { background: var(--surf2); color: var(--tx); }
+  .p4 .mock-table-row:not(.header):nth-child(even) { background: var(--row); }
 
-  /* ════════════════════════════════
-     PALETTE 5 — Mor & Altın (Premium/Vakıf)
-     ════════════════════════════════ */
-  .p5 { --pp1:#2D1B69; --pp2:#7C3AED; --pp3:#F5F3FF; --pp4:#FAF9FF; --ptext:#1E1040; --pmuted:#6D6B80; --pacc:#D97706; }
+  /* ════════════════════════════════════════════════════════
+     PALETTE 5 — Koyu Yeşil & Krem  ★ YENİ
+     Sidebar: #1B3A2D | Topbar: #1B3A2D | Btn Primary: #1D6FB8
+     Doğa/sürdürülebilirlik, vakıf/sosyal sorumluluk duygusu
+  ════════════════════════════════════════════════════════ */
+  .p5 {
+    --sb: #1B3A2D; --tb: #1B3A2D; --acc: #1D6FB8;
+    --surf: #F7FAF8; --surf2: #E8F2EC;
+    --tx: #112218; --mu: #5A7060;
+    --bdr: #c8ddd0; --row: #edf5ef;
+    --btn-primary: #1D6FB8; --btn-primary-tx: #fff;
+    --btn-secondary: #E8F2EC; --btn-secondary-tx: #1B3A2D;
+    --btn-danger: #B33030; --btn-danger-tx: #fff;
+    --badge-bg: rgba(255,255,255,0.18); --badge-tx: #fff;
+  }
 
-  .p5 .mock-sidebar  { background: var(--pp1); color: #C4B5FD; }
-  .p5 .mock-sidebar .nav-item { color: #A78BFA; }
-  .p5 .mock-sidebar .nav-item.active { background: rgba(255,255,255,0.12); color: #fff; }
-  .p5 .mock-topbar   { background: var(--pp2); color: #fff; }
-  .p5 .mock-topbar .badge { background: rgba(255,255,255,0.2); color: #fff; }
-  .p5 .mock-content  { background: var(--pp4); color: var(--ptext); }
-  .p5 .mock-page-title { color: var(--ptext); }
-  .p5 .mock-page-sub { color: var(--pmuted); }
-  .p5 .mock-card     { background: #fff; border: 1px solid #ede9fe; color: var(--ptext); }
-  .p5 .mock-card .num { color: var(--pacc); }
-  .p5 .mock-table    { background: #fff; border-color: #ede9fe; }
-  .p5 .mock-table-row.header { background: var(--pp3); color: var(--ptext); }
-  .p5 .mock-table-row:not(.header):nth-child(even) { background: #f8f7ff; }
+  .p5 .mock-sidebar { background: var(--sb); color: #a8c8b4; }
+  .p5 .mock-sidebar .nav-section { color: #4a7058; }
+  .p5 .mock-sidebar .nav-item { color: #80b090; }
+  .p5 .mock-sidebar .nav-item.active { background: rgba(255,255,255,0.12); color: #d4edd8; }
+  .p5 .mock-topbar { background: var(--sb); color: #d4edd8; border-bottom: 2px solid rgba(255,255,255,0.08); }
+  .p5 .mock-topbar .tbadge { background: var(--badge-bg); color: var(--badge-tx); }
+  .p5 .mock-content { background: var(--surf); color: var(--tx); }
+  .p5 .mock-page-sub { color: var(--mu); }
+  .p5 .mock-card { background: #fff; border-color: var(--bdr); color: var(--tx); }
+  .p5 .mock-card .num { color: var(--acc); }
+  .p5 .mock-card .mbtn.primary { background: var(--btn-primary); color: var(--btn-primary-tx); }
+  .p5 .mock-card .mbtn.secondary { background: var(--btn-secondary); color: var(--btn-secondary-tx); }
+  .p5 .mock-card .mbtn.danger { background: var(--btn-danger); color: var(--btn-danger-tx); }
+  .p5 .mock-table { background: #fff; border-color: var(--bdr); }
+  .p5 .mock-table-row.header { background: var(--surf2); color: var(--tx); }
+  .p5 .mock-table-row:not(.header):nth-child(even) { background: var(--row); }
+
+  /* ════════════════════════════════════════════════════════
+     PALETTE 6 — Petrol Mavisi & Bakır  ★ YENİ
+     Sidebar: #1A3C4A | Topbar: #1A3C4A | Btn: #1D6FB8
+     Zarif, serin, modern kurumsal
+  ════════════════════════════════════════════════════════ */
+  .p6 {
+    --sb: #1A3C4A; --tb: #1A3C4A; --acc: #B85C1A;
+    --surf: #F5F9FB; --surf2: #E4EEF3;
+    --tx: #0E2530; --mu: #52717E;
+    --bdr: #c4d8e2; --row: #eaf2f6;
+    --btn-primary: #1D6FB8; --btn-primary-tx: #fff;
+    --btn-secondary: #E4EEF3; --btn-secondary-tx: #1A3C4A;
+    --btn-danger: #B22222; --btn-danger-tx: #fff;
+    --badge-bg: #B85C1A; --badge-tx: #fff;
+  }
+
+  .p6 .mock-sidebar { background: var(--sb); color: #a0c4d4; }
+  .p6 .mock-sidebar .nav-section { color: #3a6878; }
+  .p6 .mock-sidebar .nav-item { color: #78a8b8; }
+  .p6 .mock-sidebar .nav-item.active { background: rgba(255,255,255,0.11); color: #e0f0f8; }
+  .p6 .mock-topbar { background: var(--sb); color: #d8eef8; border-bottom: 3px solid #B85C1A; }
+  .p6 .mock-topbar .tbadge { background: var(--badge-bg); color: var(--badge-tx); }
+  .p6 .mock-content { background: var(--surf); color: var(--tx); }
+  .p6 .mock-page-sub { color: var(--mu); }
+  .p6 .mock-card { background: #fff; border-color: var(--bdr); color: var(--tx); }
+  .p6 .mock-card .num { color: var(--acc); }
+  .p6 .mock-card .mbtn.primary { background: var(--btn-primary); color: var(--btn-primary-tx); }
+  .p6 .mock-card .mbtn.secondary { background: var(--btn-secondary); color: var(--btn-secondary-tx); }
+  .p6 .mock-card .mbtn.danger { background: var(--btn-danger); color: var(--btn-danger-tx); }
+  .p6 .mock-table { background: #fff; border-color: var(--bdr); }
+  .p6 .mock-table-row.header { background: var(--surf2); color: var(--tx); }
+  .p6 .mock-table-row:not(.header):nth-child(even) { background: var(--row); }
 </style>
 </head>
 <body>
 
-<h1>🎨 Jenga – Renk Paleti Önerileri</h1>
-<p class="subtitle">Mevcut koda dokunulmadan hazırlanmış 5 seçenek. Beğendiğinizi söyleyin, uygulayalım.</p>
+<h1>🎨 Jenga – Renk Paleti Önerileri v2</h1>
+<p class="subtitle">Her palette: sidebar, topbar, kartlar, tablo ve buton çeşitleri gösterilmiştir. Beğendiğiniz numarayı söyleyin, uygulayalım.</p>
 
 <div class="palette-grid">
 
-  <!-- ══ PALETTE 1 ══ -->
+  <!-- ══ PALETTE 1 — Kurumsal Lacivert & Gül ══ -->
   <div class="palette-card p1">
-    <div class="palette-label">① Kurumsal Lacivert &amp; Gül — Güven, resmiyet, güçlü kontrast</div>
+    <div class="palette-label">
+      ① Kurumsal Lacivert &amp; Gül
+      <span class="tag" style="background:#1A2744;color:#e8eef7;">Sidebar #1A2744</span>
+      <span class="tag" style="background:#C0392B;color:#fff;">Topbar #C0392B</span>
+      <span class="tag" style="background:#2563EB;color:#fff;">Btn #2563EB</span>
+    </div>
     <div class="mock">
       <div class="mock-sidebar">
         <div class="brand">⬛ Jenga</div>
+        <div class="nav-section">Genel</div>
         <div class="nav-item active">Yönetici Özeti</div>
         <div class="nav-item">Taşınmaz Envanteri</div>
+        <div class="nav-section">Tanımlar</div>
         <div class="nav-item">Bölgeler</div>
-        <div class="nav-item">Raporlar</div>
         <div class="nav-item">Parametreler</div>
+        <div class="nav-item">Raporlar</div>
       </div>
       <div class="mock-main">
         <div class="mock-topbar">
           <span>Taşınmaz Envanteri</span>
-          <span class="badge">5 Bölge</span>
+          <span class="tbadge">5 Bölge</span>
+          <span class="spacer"></span>
+          <span class="tuser">Ali Sinan BUYRUK</span>
         </div>
         <div class="mock-content">
           <div class="mock-page-title">Bölge Özeti</div>
           <div class="mock-page-sub">Envanterdeki tüm taşınmazların anlık özeti</div>
           <div class="mock-cards">
-            <div class="mock-card"><div>Toplam Taşınmaz</div><div class="num">1.013</div></div>
+            <div class="mock-card">
+              <div>Toplam Taşınmaz</div><div class="num">1.013</div>
+              <div class="btn-row">
+                <button class="mbtn primary">Kaydet</button>
+                <button class="mbtn secondary">İptal</button>
+                <button class="mbtn danger">Sil</button>
+              </div>
+            </div>
             <div class="mock-card"><div>Tam Mülkiyet</div><div class="num">803</div></div>
             <div class="mock-card"><div>Kiraya Uygun</div><div class="num">467</div></div>
           </div>
@@ -234,36 +404,53 @@
       </div>
     </div>
     <div class="swatches">
-      <div class="swatch" style="background:#1A2744;color:#fff;">#1A2744</div>
-      <div class="swatch" style="background:#C0392B;color:#fff;">#C0392B</div>
-      <div class="swatch" style="background:#2563EB;color:#fff;">#2563EB</div>
-      <div class="swatch" style="background:#E8EEF7;color:#1A2744;">#E8EEF7</div>
-      <div class="swatch" style="background:#F7F9FC;color:#1A2744;">#F7F9FC</div>
+      <div class="swatch" style="background:#1A2744;color:#fff;">Sidebar<span>#1A2744</span></div>
+      <div class="swatch" style="background:#C0392B;color:#fff;">Topbar<span>#C0392B</span></div>
+      <div class="swatch" style="background:#2563EB;color:#fff;">Btn Primary<span>#2563EB</span></div>
+      <div class="swatch" style="background:#E8EEF7;color:#1A2744;">Surface<span>#E8EEF7</span></div>
+      <div class="swatch" style="background:#F7F9FC;color:#1A2744;">Bg<span>#F7F9FC</span></div>
+      <div class="swatch" style="background:#6b7a99;color:#fff;">Muted<span>#6b7a99</span></div>
     </div>
   </div>
 
-  <!-- ══ PALETTE 2 ══ -->
+  <!-- ══ PALETTE 2 — Bordo & Krem + Mavi Buton ══ -->
   <div class="palette-card p2">
-    <div class="palette-label">② Slate &amp; Amber — Modern, fintech tarzı, yüksek okunurluk</div>
+    <div class="palette-label">
+      ② Bordo &amp; Krem — Mevcut kimlik, genişletilmiş palet
+      <span class="tag" style="background:#5C1220;color:#f5dde1;">Sidebar #5C1220</span>
+      <span class="tag" style="background:#9E2A3A;color:#fff;">Topbar #9E2A3A</span>
+      <span class="tag" style="background:#1D6FB8;color:#fff;">Btn #1D6FB8</span>
+    </div>
     <div class="mock">
       <div class="mock-sidebar">
         <div class="brand">⬛ Jenga</div>
+        <div class="nav-section">Genel</div>
         <div class="nav-item active">Yönetici Özeti</div>
         <div class="nav-item">Taşınmaz Envanteri</div>
+        <div class="nav-section">Tanımlar</div>
         <div class="nav-item">Bölgeler</div>
-        <div class="nav-item">Raporlar</div>
         <div class="nav-item">Parametreler</div>
+        <div class="nav-item">Raporlar</div>
       </div>
       <div class="mock-main">
         <div class="mock-topbar">
           <span>Taşınmaz Envanteri</span>
-          <span class="badge">5 Bölge</span>
+          <span class="tbadge">5 Bölge</span>
+          <span class="spacer"></span>
+          <span class="tuser">Ali Sinan BUYRUK</span>
         </div>
         <div class="mock-content">
           <div class="mock-page-title">Bölge Özeti</div>
           <div class="mock-page-sub">Envanterdeki tüm taşınmazların anlık özeti</div>
           <div class="mock-cards">
-            <div class="mock-card"><div>Toplam Taşınmaz</div><div class="num">1.013</div></div>
+            <div class="mock-card">
+              <div>Toplam Taşınmaz</div><div class="num">1.013</div>
+              <div class="btn-row">
+                <button class="mbtn primary">Kaydet</button>
+                <button class="mbtn secondary">İptal</button>
+                <button class="mbtn danger">Sil</button>
+              </div>
+            </div>
             <div class="mock-card"><div>Tam Mülkiyet</div><div class="num">803</div></div>
             <div class="mock-card"><div>Kiraya Uygun</div><div class="num">467</div></div>
           </div>
@@ -277,36 +464,54 @@
       </div>
     </div>
     <div class="swatches">
-      <div class="swatch" style="background:#0F1923;color:#CBD5E1;">#0F1923</div>
-      <div class="swatch" style="background:#F59E0B;color:#1a1000;">#F59E0B</div>
-      <div class="swatch" style="background:#0EA5E9;color:#fff;">#0EA5E9</div>
-      <div class="swatch" style="background:#F1F5F9;color:#0F172A;">#F1F5F9</div>
-      <div class="swatch" style="background:#F8FAFC;color:#0F172A;">#F8FAFC</div>
+      <div class="swatch" style="background:#5C1220;color:#fff;">Sidebar<span>#5C1220</span></div>
+      <div class="swatch" style="background:#9E2A3A;color:#fff;">Topbar<span>#9E2A3A</span></div>
+      <div class="swatch" style="background:#1D6FB8;color:#fff;">Btn Primary<span>#1D6FB8</span></div>
+      <div class="swatch" style="background:#1a7a4a;color:#fff;">Success<span>#1a7a4a</span></div>
+      <div class="swatch" style="background:#b8860b;color:#fff;">Warning<span>#b8860b</span></div>
+      <div class="swatch" style="background:#FFF8F8;color:#5C1220;">Bg<span>#FFF8F8</span></div>
+      <div class="swatch" style="background:#f5e0e2;color:#5C1220;">Btn 2nd<span>#f5e0e2</span></div>
     </div>
   </div>
 
-  <!-- ══ PALETTE 3 ══ -->
+  <!-- ══ PALETTE 3 — Antrasit & Safran ══ -->
   <div class="palette-card p3">
-    <div class="palette-label">③ Bordo &amp; Krem — Mevcut kimliği rafine eder, vakıf estetiği</div>
+    <div class="palette-label">
+      ③ Antrasit &amp; Safran — Modern, nötr-sıcak kontrastı
+      <span class="tag" style="background:#212529;color:#ced4da;">Sidebar #212529</span>
+      <span class="tag" style="background:#C96A00;color:#fff;">Topbar #C96A00</span>
+      <span class="tag" style="background:#2563EB;color:#fff;">Btn #2563EB</span>
+    </div>
     <div class="mock">
       <div class="mock-sidebar">
         <div class="brand">⬛ Jenga</div>
+        <div class="nav-section">Genel</div>
         <div class="nav-item active">Yönetici Özeti</div>
         <div class="nav-item">Taşınmaz Envanteri</div>
+        <div class="nav-section">Tanımlar</div>
         <div class="nav-item">Bölgeler</div>
-        <div class="nav-item">Raporlar</div>
         <div class="nav-item">Parametreler</div>
+        <div class="nav-item">Raporlar</div>
       </div>
       <div class="mock-main">
         <div class="mock-topbar">
           <span>Taşınmaz Envanteri</span>
-          <span class="badge">5 Bölge</span>
+          <span class="tbadge">5 Bölge</span>
+          <span class="spacer"></span>
+          <span class="tuser">Ali Sinan BUYRUK</span>
         </div>
         <div class="mock-content">
           <div class="mock-page-title">Bölge Özeti</div>
           <div class="mock-page-sub">Envanterdeki tüm taşınmazların anlık özeti</div>
           <div class="mock-cards">
-            <div class="mock-card"><div>Toplam Taşınmaz</div><div class="num">1.013</div></div>
+            <div class="mock-card">
+              <div>Toplam Taşınmaz</div><div class="num">1.013</div>
+              <div class="btn-row">
+                <button class="mbtn primary">Kaydet</button>
+                <button class="mbtn secondary">İptal</button>
+                <button class="mbtn danger">Sil</button>
+              </div>
+            </div>
             <div class="mock-card"><div>Tam Mülkiyet</div><div class="num">803</div></div>
             <div class="mock-card"><div>Kiraya Uygun</div><div class="num">467</div></div>
           </div>
@@ -320,36 +525,53 @@
       </div>
     </div>
     <div class="swatches">
-      <div class="swatch" style="background:#6B1826;color:#fff;">#6B1826</div>
-      <div class="swatch" style="background:#9E2A3A;color:#fff;">#9E2A3A</div>
-      <div class="swatch" style="background:#C0392B;color:#fff;">#C0392B</div>
-      <div class="swatch" style="background:#FDF5F6;color:#2A1215;">#FDF5F6</div>
-      <div class="swatch" style="background:#FFF8F8;color:#2A1215;">#FFF8F8</div>
+      <div class="swatch" style="background:#212529;color:#ced4da;">Sidebar<span>#212529</span></div>
+      <div class="swatch" style="background:#C96A00;color:#fff;">Topbar<span>#C96A00</span></div>
+      <div class="swatch" style="background:#2563EB;color:#fff;">Btn Primary<span>#2563EB</span></div>
+      <div class="swatch" style="background:#DC3545;color:#fff;">Danger<span>#DC3545</span></div>
+      <div class="swatch" style="background:#EDEFF2;color:#212529;">Surface<span>#EDEFF2</span></div>
+      <div class="swatch" style="background:#F8F9FA;color:#212529;">Bg<span>#F8F9FA</span></div>
     </div>
   </div>
 
-  <!-- ══ PALETTE 4 ══ -->
+  <!-- ══ PALETTE 4 — Lacivert & Altın ══ -->
   <div class="palette-card p4">
-    <div class="palette-label">④ Gece Mavisi &amp; Zümrüt — Analitik dashboard, teknoloji hissi</div>
+    <div class="palette-label">
+      ④ Lacivert &amp; Altın — Prestijli, bankacılık/kurumsal
+      <span class="tag" style="background:#0D2137;color:#a8c0d8;">Sidebar #0D2137</span>
+      <span class="tag" style="background:#C8960C;color:#fff;">Accent #C8960C</span>
+      <span class="tag" style="background:#C8960C;color:#fff;">Btn #C8960C</span>
+    </div>
     <div class="mock">
       <div class="mock-sidebar">
         <div class="brand">⬛ Jenga</div>
+        <div class="nav-section">Genel</div>
         <div class="nav-item active">Yönetici Özeti</div>
         <div class="nav-item">Taşınmaz Envanteri</div>
+        <div class="nav-section">Tanımlar</div>
         <div class="nav-item">Bölgeler</div>
-        <div class="nav-item">Raporlar</div>
         <div class="nav-item">Parametreler</div>
+        <div class="nav-item">Raporlar</div>
       </div>
       <div class="mock-main">
         <div class="mock-topbar">
           <span>Taşınmaz Envanteri</span>
-          <span class="badge">5 Bölge</span>
+          <span class="tbadge">5 Bölge</span>
+          <span class="spacer"></span>
+          <span class="tuser">Ali Sinan BUYRUK</span>
         </div>
         <div class="mock-content">
           <div class="mock-page-title">Bölge Özeti</div>
           <div class="mock-page-sub">Envanterdeki tüm taşınmazların anlık özeti</div>
           <div class="mock-cards">
-            <div class="mock-card"><div>Toplam Taşınmaz</div><div class="num">1.013</div></div>
+            <div class="mock-card">
+              <div>Toplam Taşınmaz</div><div class="num">1.013</div>
+              <div class="btn-row">
+                <button class="mbtn primary">Kaydet</button>
+                <button class="mbtn secondary">İptal</button>
+                <button class="mbtn danger">Sil</button>
+              </div>
+            </div>
             <div class="mock-card"><div>Tam Mülkiyet</div><div class="num">803</div></div>
             <div class="mock-card"><div>Kiraya Uygun</div><div class="num">467</div></div>
           </div>
@@ -363,36 +585,52 @@
       </div>
     </div>
     <div class="swatches">
-      <div class="swatch" style="background:#0D1B2A;color:#A8C0D6;">#0D1B2A</div>
-      <div class="swatch" style="background:#1B4332;color:#D1FAE5;">#1B4332</div>
-      <div class="swatch" style="background:#10B981;color:#fff;">#10B981</div>
-      <div class="swatch" style="background:#EEF2FF;color:#0D1B2A;">#EEF2FF</div>
-      <div class="swatch" style="background:#F5F7FF;color:#0D1B2A;">#F5F7FF</div>
+      <div class="swatch" style="background:#0D2137;color:#a8c0d8;">Sidebar<span>#0D2137</span></div>
+      <div class="swatch" style="background:#C8960C;color:#fff;">Altın Accent<span>#C8960C</span></div>
+      <div class="swatch" style="background:#C0392B;color:#fff;">Danger<span>#C0392B</span></div>
+      <div class="swatch" style="background:#EAF0F8;color:#0D2137;">Surface<span>#EAF0F8</span></div>
+      <div class="swatch" style="background:#F5F7FA;color:#0D2137;">Bg<span>#F5F7FA</span></div>
+      <div class="swatch" style="background:#5A6A7E;color:#fff;">Muted<span>#5A6A7E</span></div>
     </div>
   </div>
 
-  <!-- ══ PALETTE 5 ══ -->
+  <!-- ══ PALETTE 5 — Koyu Yeşil & Krem ══ -->
   <div class="palette-card p5">
-    <div class="palette-label">⑤ Mor &amp; Altın — Premium, vakıf/kurumsal prestij hissi</div>
+    <div class="palette-label">
+      ⑤ Koyu Yeşil &amp; Krem — Vakıf/sosyal sorumluluk duygusu
+      <span class="tag" style="background:#1B3A2D;color:#a8c8b4;">Sidebar #1B3A2D</span>
+      <span class="tag" style="background:#1D6FB8;color:#fff;">Btn #1D6FB8</span>
+    </div>
     <div class="mock">
       <div class="mock-sidebar">
         <div class="brand">⬛ Jenga</div>
+        <div class="nav-section">Genel</div>
         <div class="nav-item active">Yönetici Özeti</div>
         <div class="nav-item">Taşınmaz Envanteri</div>
+        <div class="nav-section">Tanımlar</div>
         <div class="nav-item">Bölgeler</div>
-        <div class="nav-item">Raporlar</div>
         <div class="nav-item">Parametreler</div>
+        <div class="nav-item">Raporlar</div>
       </div>
       <div class="mock-main">
         <div class="mock-topbar">
           <span>Taşınmaz Envanteri</span>
-          <span class="badge">5 Bölge</span>
+          <span class="tbadge">5 Bölge</span>
+          <span class="spacer"></span>
+          <span class="tuser">Ali Sinan BUYRUK</span>
         </div>
         <div class="mock-content">
           <div class="mock-page-title">Bölge Özeti</div>
           <div class="mock-page-sub">Envanterdeki tüm taşınmazların anlık özeti</div>
           <div class="mock-cards">
-            <div class="mock-card"><div>Toplam Taşınmaz</div><div class="num">1.013</div></div>
+            <div class="mock-card">
+              <div>Toplam Taşınmaz</div><div class="num">1.013</div>
+              <div class="btn-row">
+                <button class="mbtn primary">Kaydet</button>
+                <button class="mbtn secondary">İptal</button>
+                <button class="mbtn danger">Sil</button>
+              </div>
+            </div>
             <div class="mock-card"><div>Tam Mülkiyet</div><div class="num">803</div></div>
             <div class="mock-card"><div>Kiraya Uygun</div><div class="num">467</div></div>
           </div>
@@ -406,18 +644,79 @@
       </div>
     </div>
     <div class="swatches">
-      <div class="swatch" style="background:#2D1B69;color:#C4B5FD;">#2D1B69</div>
-      <div class="swatch" style="background:#7C3AED;color:#fff;">#7C3AED</div>
-      <div class="swatch" style="background:#D97706;color:#fff;">#D97706</div>
-      <div class="swatch" style="background:#F5F3FF;color:#1E1040;">#F5F3FF</div>
-      <div class="swatch" style="background:#FAF9FF;color:#1E1040;">#FAF9FF</div>
+      <div class="swatch" style="background:#1B3A2D;color:#a8c8b4;">Sidebar<span>#1B3A2D</span></div>
+      <div class="swatch" style="background:#1D6FB8;color:#fff;">Btn Primary<span>#1D6FB8</span></div>
+      <div class="swatch" style="background:#B33030;color:#fff;">Danger<span>#B33030</span></div>
+      <div class="swatch" style="background:#E8F2EC;color:#1B3A2D;">Surface<span>#E8F2EC</span></div>
+      <div class="swatch" style="background:#F7FAF8;color:#1B3A2D;">Bg<span>#F7FAF8</span></div>
+      <div class="swatch" style="background:#5A7060;color:#fff;">Muted<span>#5A7060</span></div>
+    </div>
+  </div>
+
+  <!-- ══ PALETTE 6 — Petrol Mavisi & Bakır ══ -->
+  <div class="palette-card p6">
+    <div class="palette-label">
+      ⑥ Petrol Mavisi &amp; Bakır — Zarif, serin, modern kurumsal
+      <span class="tag" style="background:#1A3C4A;color:#a0c4d4;">Sidebar #1A3C4A</span>
+      <span class="tag" style="background:#B85C1A;color:#fff;">Accent #B85C1A</span>
+      <span class="tag" style="background:#1D6FB8;color:#fff;">Btn #1D6FB8</span>
+    </div>
+    <div class="mock">
+      <div class="mock-sidebar">
+        <div class="brand">⬛ Jenga</div>
+        <div class="nav-section">Genel</div>
+        <div class="nav-item active">Yönetici Özeti</div>
+        <div class="nav-item">Taşınmaz Envanteri</div>
+        <div class="nav-section">Tanımlar</div>
+        <div class="nav-item">Bölgeler</div>
+        <div class="nav-item">Parametreler</div>
+        <div class="nav-item">Raporlar</div>
+      </div>
+      <div class="mock-main">
+        <div class="mock-topbar">
+          <span>Taşınmaz Envanteri</span>
+          <span class="tbadge">5 Bölge</span>
+          <span class="spacer"></span>
+          <span class="tuser">Ali Sinan BUYRUK</span>
+        </div>
+        <div class="mock-content">
+          <div class="mock-page-title">Bölge Özeti</div>
+          <div class="mock-page-sub">Envanterdeki tüm taşınmazların anlık özeti</div>
+          <div class="mock-cards">
+            <div class="mock-card">
+              <div>Toplam Taşınmaz</div><div class="num">1.013</div>
+              <div class="btn-row">
+                <button class="mbtn primary">Kaydet</button>
+                <button class="mbtn secondary">İptal</button>
+                <button class="mbtn danger">Sil</button>
+              </div>
+            </div>
+            <div class="mock-card"><div>Tam Mülkiyet</div><div class="num">803</div></div>
+            <div class="mock-card"><div>Kiraya Uygun</div><div class="num">467</div></div>
+          </div>
+          <div class="mock-table">
+            <div class="mock-table-row header"><div>Bölge</div><div>Toplam</div><div>TM</div><div>ÇM</div></div>
+            <div class="mock-table-row"><div>Ankara</div><div>324</div><div>266</div><div>58</div></div>
+            <div class="mock-table-row"><div>İstanbul</div><div>334</div><div>284</div><div>50</div></div>
+            <div class="mock-table-row"><div>İzmir</div><div>181</div><div>133</div><div>48</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="swatches">
+      <div class="swatch" style="background:#1A3C4A;color:#a0c4d4;">Sidebar<span>#1A3C4A</span></div>
+      <div class="swatch" style="background:#B85C1A;color:#fff;">Bakır Accent<span>#B85C1A</span></div>
+      <div class="swatch" style="background:#1D6FB8;color:#fff;">Btn Primary<span>#1D6FB8</span></div>
+      <div class="swatch" style="background:#B22222;color:#fff;">Danger<span>#B22222</span></div>
+      <div class="swatch" style="background:#E4EEF3;color:#1A3C4A;">Surface<span>#E4EEF3</span></div>
+      <div class="swatch" style="background:#F5F9FB;color:#1A3C4A;">Bg<span>#F5F9FB</span></div>
     </div>
   </div>
 
 </div>
 
-<p style="text-align:center;margin-top:32px;color:#888;font-size:0.8rem;">
-  Bu dosya sadece önizleme amaçlıdır. Beğendiğiniz paleti söyleyin, app.css'e uygulayalım.
+<p style="text-align:center;margin-top:40px;color:#888;font-size:0.8rem;">
+  Sadece önizleme — Beğendiğiniz paleti söyleyin, app.css &amp; MainLayout.razor.css'e uygulayalım.
 </p>
 </body>
 </html>

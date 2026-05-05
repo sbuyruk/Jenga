@@ -1,4 +1,25 @@
-﻿window.initScrollSpy = (scrollElementId, navElementId, offset) => {
+﻿// ── Tema sistemi ────────────────────────────────────────────────
+window.themeStorage = {
+    apply: (themeKey) => {
+        document.documentElement.setAttribute('data-theme', themeKey);
+    },
+    get: (key) => {
+        try { return localStorage.getItem(key); } catch { return null; }
+    },
+    set: (key, value) => {
+        try { localStorage.setItem(key, value); } catch { }
+    }
+};
+
+// Sayfa ilk yüklendiğinde kaydedilmiş temayı uygula (flash olmadan)
+(function () {
+    try {
+        const saved = localStorage.getItem('jenga-theme');
+        if (saved) document.documentElement.setAttribute('data-theme', saved);
+    } catch { }
+})();
+
+window.initScrollSpy = (scrollElementId, navElementId, offset) => {
     const scrollEl = document.getElementById(scrollElementId);
     const navEl = document.getElementById(navElementId);
 

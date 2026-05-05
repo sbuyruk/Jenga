@@ -1,21 +1,4 @@
-﻿:root {
-    /* sensible fallbacks if CSS variables are not defined elsewhere */
-    --menu-gradient-start: #ffffff;
-    --menu-gradient-end: #f7f7f7;
-    --menu-gradient-hover-start: #eef3ff;
-    --menu-gradient-hover-end: #e6efff;
-    --menu-text: #333;
-    --menu-text-hover: #0b5ed7;
-    --menu-icon: #6c757d;
-    --menu-icon-hover: #0b5ed7;
-    --submenu-bg: transparent;
-    --submenu-text: #444;
-    --active-bg: #eef6ff;
-    --open-bg: #f8fbff;
-    --border-active: #0b5ed7;
-}
-
-/* Base list */
+﻿/* Base list */
 .recursive-menu {
     list-style: none;
     padding-left: 0;
@@ -31,8 +14,8 @@
 
 /* Keep layout stable — animate the header instead of shifting the entire li */
 .menu-header {
-    background: linear-gradient(90deg, var(--menu-gradient-start), var(--menu-gradient-end));
-    color: var(--menu-text);
+    background: transparent;
+    color: #b0bcd4;
     font-weight: 500;
     display: flex;
     align-items: center;
@@ -47,18 +30,23 @@
 /* Subtle hover lift on the header only — avoids reflow of other items */
 .menu-header:hover,
 .menu-header:focus {
-    background: linear-gradient(90deg, var(--menu-gradient-hover-start), var(--menu-gradient-hover-end));
-    color: var(--menu-text-hover);
+    background: rgba(255, 255, 255, 0.08);
+    color: #e8eef7;
     transform: translateX(2px);
-    box-shadow: 0 8px 18px rgba(16, 24, 40, 0.06);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     padding-left: 4px;
 }
 
 /* Anchor variant */
 .menu-header.nav-link {
     display: block;
-    color: inherit;
+    color: #b0bcd4;
     text-decoration: none;
+}
+
+.menu-header.nav-link:hover,
+.menu-header.nav-link:focus {
+    color: #e8eef7;
 }
 
 /* Icon & toggle */
@@ -73,13 +61,13 @@
 }
 
 .menu-icon {
-    fill: var(--menu-icon);
+    fill: #7a90b8;
     transition: fill 0.28s ease, transform 0.18s ease;
 }
 
 .menu-header:hover .menu-icon,
 .menu-header:focus .menu-icon {
-    fill: var(--menu-icon-hover);
+    fill: #e8eef7;
     transform: translateX(2px);
 }
 
@@ -93,13 +81,13 @@
     transform-origin: top;
     transform: scaleY(0.98);
     transition: max-height 0.32s ease, opacity 0.28s ease, transform 0.28s ease;
-    background-color: var(--submenu-bg);
+    background-color: transparent;
     padding-left: 16px;
     margin-top: 6px;
 }
 
 .submenu.show {
-    max-height: 1000px; /* large enough for nested menus */
+    max-height: 1000px;
     opacity: 1;
     transform: scaleY(1) translateY(0);
     transition: all 0.42s cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -109,34 +97,44 @@
 .submenu li {
     padding: 4px 2px;
     font-size: 0.95em;
-    color: var(--submenu-text);
+    color: #8fa5c8;
     border-radius: 6px;
     transition: background-color 0.18s ease, transform 0.14s ease;
 }
 
+/* Alt menü linkleri Bootstrap'ın mavi link rengini ezmeli */
+.submenu li a,
+.submenu li .menu-header,
+.submenu li .menu-header.nav-link {
+    color: #8fa5c8;
+    text-decoration: none;
+}
+
 .submenu li:hover,
+.submenu li:hover a,
+.submenu li:hover .menu-header,
 .submenu li:focus {
-    background-color: rgba(11, 94, 215, 0.04);
+    background-color: rgba(255, 255, 255, 0.06);
     transform: translateX(1px);
     cursor: pointer;
+    color: #e8eef7;
 }
 
 /* Active / open states */
 .menu-item.active {
-    border-left: 4px solid var(--border-active);
-    background-color: var(--active-bg);
+    border-left: 4px solid var(--theme-sb-active-border, #2563EB);
+    background-color: rgba(255, 255, 255, 0.14);
 }
 
 .menu-item.open {
-    background-color: var(--open-bg);
+    background-color: rgba(255, 255, 255, 0.06);
 }
 
 /* Sidebar container */
 .treeview-sidebar {
     width: 220px;
-    background: linear-gradient(180deg, #f0f0f0, #eaeaea);
+    background: transparent;
     padding: 12px;
-    border-right: 1px solid #d7d7d7;
     overflow-y: auto;
     font-family: 'Segoe UI', sans-serif;
 }
@@ -158,7 +156,7 @@
 .menu-header:focus,
 .menu-header.nav-link:focus,
 .submenu li:focus {
-    outline: 3px solid rgba(11, 94, 215, 0.12);
+    outline: 3px solid rgba(255, 255, 255, 0.2);
     outline-offset: 2px;
     border-radius: 6px;
 }
@@ -173,13 +171,11 @@
 /* Active (selected) item */
 .recursive-menu .menu-item.active > .menu-header,
 .recursive-menu .menu-item.active > a.menu-header {
-    /*background-color: var(--p3, #0d6efd);*/
-    /*color: #fff;*/
-    font-weight: 600;
+    font-weight: 700;
+    color: #ffffff;
     border-radius: 6px;
-    box-shadow: 0 1px 0 rgba(0,0,0,0.06);
-    border: 1px solid var(--p1);
-    border-left: 5px solid var(--p1);
+    background-color: rgba(255, 255, 255, 0.14);
+    border-left: 4px solid var(--theme-sb-active-border, #2563EB);
 }
 
 /* Improve contrast for nested items */
@@ -189,8 +185,11 @@
 
 /* Ensure link text is white when active */
 .recursive-menu .menu-item.active a,
-.recursive-menu .menu-item.active .menu-title {
-    color: inherit;
+.recursive-menu .menu-item.active .menu-title,
+.recursive-menu .menu-item.active .menu-header,
+.recursive-menu .menu-item.active .menu-header.nav-link {
+    color: #ffffff;
+    text-decoration: none;
 }
 
 /* Respect user preference for reduced motion */

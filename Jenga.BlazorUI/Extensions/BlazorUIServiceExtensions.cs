@@ -31,6 +31,7 @@ namespace Jenga.BlazorUI.Extensions
             services.AddScoped<MenuStateService>();
             services.AddScoped<ICurrentUserService, CurrentUserService>();
             services.AddScoped<ImpersonationService>();
+            services.AddScoped<ThemeService>();
 
             return services;
         }

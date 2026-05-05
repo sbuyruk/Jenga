@@ -1,0 +1,44 @@
+@using Jenga.BlazorUI.Services.Common
+
+@inject ThemeService ThemeService
+
+<div class="theme-toggle-wrap">
+    <button class="theme-toggle-btn"
+            @onclick="ToggleDropdown"
+            title="Tema seç">
+        <i class="bi bi-palette-fill"></i>
+    </button>
+
+    @if (_open)
+    {
+        <div class="theme-dropdown" @onmouseleave="() => _open = false">
+            <div class="theme-dropdown-title">
+                <i class="bi bi-palette2 me-1"></i> Tema
+            </div>
+            @foreach (var theme in ThemeService.Themes)
+            {
+                <button class="theme-option @(ThemeService.Current == theme.Key ? "active" : "")"
+                        @onclick="() => SelectAsync(theme.Key)">
+                    <span class="theme-dot theme-dot-@theme.Key"></span>
+                    @theme.DisplayName
+                    @if (ThemeService.Current == theme.Key)
+                    {
+                        <i class="bi bi-check2 ms-auto"></i>
+                    }
+                </button>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private bool _open;
+
+    private void ToggleDropdown() => _open = !_open;
+
+    private async Task SelectAsync(string key)
+    {
+        _open = false;
+        await ThemeService.SetThemeAsync(key);
+    }
+}
