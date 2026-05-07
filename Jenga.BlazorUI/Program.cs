@@ -95,9 +95,7 @@ builder.Services
 
 builder.Services.AddAuthorization(options =>
 {
-    options.FallbackPolicy = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder(
-            AuthEndpoints.CookieScheme,
-            NegotiateDefaults.AuthenticationScheme)
+    options.FallbackPolicy = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder(PolicyScheme)
         .RequireAuthenticatedUser()
         .Build();
 });
