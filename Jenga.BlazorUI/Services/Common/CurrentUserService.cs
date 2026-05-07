@@ -104,7 +104,18 @@ namespace Jenga.BlazorUI.Services.Common
             // Personel olarak çözmeye çalışıyor ve DB'de denk düşen bir KullaniciAdi varsa
             // anonim ziyaretçinin o kişi gibi davranmasına yol açıyordu (auth-bypass).
             // Auth çözülemediyse null dönmek doğru davranış; üst katman [Authorize] uygular.
-            var userName = principal?.Identity?.Name;
+            string? userName;
+            try
+            {
+                userName = principal?.Identity?.Name;
+            }
+            catch (Exception ex)
+            {
+                // WindowsIdentity token dispose edilmişse (örn. cookie kullanıcısında)
+                // ClaimsPrincipal üzerinden Name claim'ini doğrudan oku.
+                _logger.LogWarning(ex, "Identity.Name okunamadı, Claims üzerinden deneniyor.");
+                userName = principal?.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
+            }
             if (string.IsNullOrWhiteSpace(userName))
             {
                 _logger.LogDebug("GetCurrentPersonelAsync: kimlik çözümlenemedi.");
