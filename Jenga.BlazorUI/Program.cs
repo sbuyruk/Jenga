@@ -77,6 +77,19 @@ static bool IsIntranetRequest(Microsoft.AspNetCore.Http.HttpContext ctx)
     return false;
 }
 
+// Mobil/tablet User-Agent tespiti — VPN üzerinden gelen mobil cihazlar
+// intranet IP alsa da Negotiate yerine Cookie (login formu) kullanmalıdır.
+static bool IsMobileBrowser(Microsoft.AspNetCore.Http.HttpContext ctx)
+{
+    var ua = ctx.Request.Headers.UserAgent.ToString();
+    if (string.IsNullOrEmpty(ua)) return false;
+    return ua.Contains("Mobile",  StringComparison.OrdinalIgnoreCase)
+        || ua.Contains("Android", StringComparison.OrdinalIgnoreCase)
+        || ua.Contains("iPhone",  StringComparison.OrdinalIgnoreCase)
+        || ua.Contains("iPad",    StringComparison.OrdinalIgnoreCase)
+        || ua.Contains("Tablet",  StringComparison.OrdinalIgnoreCase);
+}
+
 builder.Services
     .AddAuthentication(PolicyScheme)
     .AddPolicyScheme(PolicyScheme, "Jenga Hibrit (Cookie + Negotiate)", o =>
@@ -94,9 +107,10 @@ builder.Services
                  auth.StartsWith("NTLM", StringComparison.OrdinalIgnoreCase)))
                 return NegotiateDefaults.AuthenticationScheme;
 
-            // 3. İntranet IP'den geliyorsa Negotiate challenge gönder.
+            // 3. İntranet IP'den geliyorsa ve mobil cihaz değilse Negotiate challenge gönder.
             //    Windows tarayıcısı (Edge/Chrome) challenge'a otomatik Kerberos/NTLM ile cevap verir.
-            if (IsIntranetRequest(ctx))
+            //    Mobil cihazlar VPN üzerinden intranet IP alsa da Negotiate desteklemez → Cookie.
+            if (IsIntranetRequest(ctx) && !IsMobileBrowser(ctx))
                 return NegotiateDefaults.AuthenticationScheme;
 
             // 4. Diğer durumlarda cookie (login formuna yönlendirir).
