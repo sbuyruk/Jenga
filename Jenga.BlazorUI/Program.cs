@@ -52,10 +52,30 @@ if (OperatingSystem.IsWindows())
 //
 // Strateji: PolicyScheme forwarder. Her istekte:
 //   * Geçerli cookie varsa  -> Cookie scheme.
-//   * Yoksa ve Negotiate Authorization header'ı varsa -> Negotiate scheme.
-//   * Hiçbiri yoksa, challenge sırasında Cookie scheme (login formuna yönlendirir).
-//     Böylece iPhone'da NTLM prompt'u oluşmaz.
+//   * Negotiate/NTLM header varsa -> Negotiate scheme.
+//   * İntranet IP aralığındaysa -> Negotiate scheme (tarayıcı challenge'a otomatik cevap verir).
+//   * Diğer durumlarda -> Cookie scheme (login formuna yönlendirir).
 const string PolicyScheme = "JengaAuth";
+
+// İntranet IP aralıkları — Negotiate challenge gönderilecek ağlar.
+static bool IsIntranetRequest(Microsoft.AspNetCore.Http.HttpContext ctx)
+{
+    var ip = ctx.Connection.RemoteIpAddress;
+    if (ip == null) return false;
+    // IPv4-mapped IPv6 → IPv4'e çevir (::ffff:10.x.x.x gibi).
+    if (ip.IsIPv4MappedToIPv6) ip = ip.MapToIPv4();
+    if (ip.ToString() == "127.0.0.1" || ip.ToString() == "::1") return true;
+
+    var bytes = ip.GetAddressBytes();
+    if (bytes.Length != 4) return false;
+    // 10.0.0.0/8
+    if (bytes[0] == 10) return true;
+    // 172.16.0.0/12
+    if (bytes[0] == 172 && bytes[1] >= 16 && bytes[1] <= 31) return true;
+    // 192.168.0.0/16
+    if (bytes[0] == 192 && bytes[1] == 168) return true;
+    return false;
+}
 
 builder.Services
     .AddAuthentication(PolicyScheme)
@@ -74,7 +94,12 @@ builder.Services
                  auth.StartsWith("NTLM", StringComparison.OrdinalIgnoreCase)))
                 return NegotiateDefaults.AuthenticationScheme;
 
-            // 3. Diğer durumlarda cookie (login formuna yönlendirir).
+            // 3. İntranet IP'den geliyorsa Negotiate challenge gönder.
+            //    Windows tarayıcısı (Edge/Chrome) challenge'a otomatik Kerberos/NTLM ile cevap verir.
+            if (IsIntranetRequest(ctx))
+                return NegotiateDefaults.AuthenticationScheme;
+
+            // 4. Diğer durumlarda cookie (login formuna yönlendirir).
             return AuthEndpoints.CookieScheme;
         };
     })

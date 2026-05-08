@@ -9,6 +9,7 @@
 @using Jenga.Models.Inventory
 
 @inject IMaterialAssetService MaterialAssetService
+@inject IMaterialCategoryService MaterialCategoryService
 @inject IMaterialService MaterialService
 @inject IMaterialBrandService MaterialBrandService
 @inject IMaterialModelService MaterialModelService
@@ -21,9 +22,59 @@
 <div class="card shadow-sm mb-3">
     <div class="card-body py-2">
         <div class="row g-2 align-items-end">
+            <div class="col-md-2">
+                <label class="form-label small mb-1">Kategori</label>
+                <div class="dropdown" id="category-dropdown">
+                    <button class="btn btn-sm btn-outline-secondary w-100 d-flex justify-content-between align-items-center @(categoryDropdownOpen ? "show" : "")"
+                            type="button"
+                            @onclick="ToggleCategoryDropdown">
+                        <span class="text-truncate">
+                            @if (filterCategoryId.HasValue)
+                            {
+                                var selected = categories.FirstOrDefault(c => c.Id == filterCategoryId.Value);
+                                <i class="bi bi-folder2-open me-1 text-warning"></i>@(selected?.CategoryName ?? "Tümü")
+                            }
+                            else
+                            {
+                                <i class="bi bi-grid me-1"></i><span class="text-muted">Tümü</span>
+                            }
+                        </span>
+                        <i class="bi bi-chevron-down ms-1 small"></i>
+                    </button>
+                    @if (categoryDropdownOpen)
+                    {
+                        <div class="dropdown-menu show w-100 p-1 shadow" style="max-height:260px; overflow-y:auto; min-width:200px;">
+                            <button class="dropdown-item rounded d-flex align-items-center gap-1 py-1 @(filterCategoryId == null ? "active" : "")"
+                                    type="button"
+                                    @onclick="() => SelectCategory(null)">
+                                <i class="bi bi-grid small"></i>
+                                <span>Tümü</span>
+                            </button>
+                            <div class="dropdown-divider my-1"></div>
+                            @foreach (var (category, depth) in GetFlatCategoryTree())
+                            {
+                                var hasChildren = categories.Any(c => c.ParentCategoryId == category.Id);
+                                var isSelected = filterCategoryId == category.Id;
+                                var paddingLeft = 8 + depth * 16;
+                                <button class="dropdown-item rounded d-flex align-items-center gap-1 py-1 @(isSelected ? "active" : "")"
+                                        type="button"
+                                        style="padding-left: @(paddingLeft)px;"
+                                        @onclick="() => SelectCategory(category.Id)">
+                                    @if (depth > 0)
+                                    {
+                                        <i class="bi bi-arrow-return-right small text-muted"></i>
+                                    }
+                                    <i class="bi @(hasChildren ? "bi-folder2" : "bi-folder2-open") small @(isSelected ? "" : "text-warning")"></i>
+                                    <span>@category.CategoryName</span>
+                                </button>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
             <div class="col-md-3">
                 <label class="form-label small mb-1">Malzeme</label>
-                <select class="form-select form-select-sm" @bind="filterMaterialId">
+                <select class="form-select form-select-sm" @bind="filterMaterialId" @bind:after="ApplyFilters">
                     <option value="">Tümü</option>
                     @foreach (var m in assetMaterials)
                     {
@@ -33,7 +84,7 @@
             </div>
             <div class="col-md-2">
                 <label class="form-label small mb-1">Durum</label>
-                <select class="form-select form-select-sm" @bind="filterStatus">
+                <select class="form-select form-select-sm" @bind="filterStatus" @bind:after="ApplyFilters">
                     <option value="">Tümü</option>
                     @foreach (var s in Enum.GetValues<AssetStatus>())
                     {
@@ -43,11 +94,11 @@
             </div>
             <div class="col-md-3">
                 <label class="form-label small mb-1">Seri No / Barkod</label>
-                <input class="form-control form-control-sm" placeholder="Ara..." @bind="searchTerm" @bind:event="oninput" />
+                <input class="form-control form-control-sm" placeholder="Ara..." @bind="searchTerm" @bind:event="oninput" @bind:after="ApplyFilters" />
             </div>
             <div class="col-md-2">
                 <label class="form-label small mb-1">Personel</label>
-                <select class="form-select form-select-sm" @bind="filterPersonelId">
+                <select class="form-select form-select-sm" @bind="filterPersonelId" @bind:after="ApplyFilters">
                     <option value="">Tümü</option>
                     @foreach (var p in persons)
                     {
@@ -55,12 +106,9 @@
                     }
                 </select>
             </div>
-            <div class="col-md-2 d-flex gap-1">
-                <button class="btn btn-sm btn-outline-primary flex-fill" @onclick="ApplyFilters">
-                    <i class="bi bi-funnel"></i> Filtrele
-                </button>
-                <button class="btn btn-sm btn-outline-secondary" @onclick="ClearFilters">
-                    <i class="bi bi-x-lg"></i>
+            <div class="col-md-2 d-flex align-items-end">
+                <button class="btn btn-sm btn-outline-secondary w-100" @onclick="ClearFilters">
+                    <i class="bi bi-x-lg"></i> Temizle
                 </button>
             </div>
         </div>
@@ -95,11 +143,14 @@
     private List<MaterialModel> models = new();
     private List<Location> locations = new();
     private List<Personel> persons = new();
+    private List<MaterialCategory> categories = new();
 
+    private int? filterCategoryId;
     private int? filterMaterialId;
     private AssetStatus? filterStatus;
     private int? filterPersonelId;
     private string searchTerm = "";
+    private bool categoryDropdownOpen = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -114,8 +165,9 @@
         var t4 = MaterialModelService.GetAllAsync();
         var t5 = LocationService.GetAllAsync();
         var t6 = PersonelService.GetCalisanPersonelAsync();
+        var t7 = MaterialCategoryService.GetAllAsync();
 
-        await Task.WhenAll(t1, t2, t3, t4, t5, t6);
+        await Task.WhenAll(t1, t2, t3, t4, t5, t6, t7);
 
         allAssets = t1.Result.IsSuccess ? t1.Result.Value : new();
         materials = t2.Result.IsSuccess ? t2.Result.Value : new();
@@ -124,6 +176,7 @@
         locations = t5.Result.IsSuccess ? t5.Result.Value : new();
         var personsResult = t6.Result;
         persons = personsResult.IsSuccess ? personsResult.Value : new List<Personel>();
+        categories = t7.Result.IsSuccess ? t7.Result.Value : new();
 
         assetMaterials = materials.Where(m => m.IsAsset).ToList();
 
@@ -133,6 +186,16 @@
     private void ApplyFilters()
     {
         var query = allAssets.AsEnumerable();
+
+        if (filterCategoryId.HasValue)
+        {
+            var descendantIds = GetDescendantCategoryIds(filterCategoryId.Value);
+            var categoryMaterialIds = materials
+                .Where(m => descendantIds.Contains(m.CategoryId))
+                .Select(m => m.Id)
+                .ToHashSet();
+            query = query.Where(a => categoryMaterialIds.Contains(a.MaterialId));
+        }
 
         if (filterMaterialId.HasValue)
             query = query.Where(a => a.MaterialId == filterMaterialId.Value);
@@ -154,13 +217,56 @@
         filteredAssets = query.ToList();
     }
 
+    private void ToggleCategoryDropdown() => categoryDropdownOpen = !categoryDropdownOpen;
+
+    private void SelectCategory(int? id)
+    {
+        filterCategoryId = id;
+        categoryDropdownOpen = false;
+        ApplyFilters();
+    }
+
     private void ClearFilters()
     {
+        filterCategoryId = null;
         filterMaterialId = null;
         filterStatus = null;
         filterPersonelId = null;
         searchTerm = "";
+        categoryDropdownOpen = false;
         ApplyFilters();
+    }
+
+    private HashSet<int> GetDescendantCategoryIds(int rootId)
+    {
+        var result = new HashSet<int> { rootId };
+        var queue = new Queue<int>();
+        queue.Enqueue(rootId);
+        while (queue.Count > 0)
+        {
+            var current = queue.Dequeue();
+            foreach (var child in categories.Where(c => c.ParentCategoryId == current))
+            {
+                if (result.Add(child.Id))
+                    queue.Enqueue(child.Id);
+            }
+        }
+        return result;
+    }
+
+    private IEnumerable<(MaterialCategory Category, int Depth)> GetFlatCategoryTree()
+    {
+        return FlattenCategory(null, 0);
+
+        IEnumerable<(MaterialCategory, int)> FlattenCategory(int? parentId, int depth)
+        {
+            foreach (var cat in categories.Where(c => c.ParentCategoryId == parentId).OrderBy(c => c.CategoryName))
+            {
+                yield return (cat, depth);
+                foreach (var child in FlattenCategory(cat.Id, depth + 1))
+                    yield return child;
+            }
+        }
     }
 
     private string GetStatusLabel(AssetStatus status) => status switch
