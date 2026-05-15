@@ -7,6 +7,8 @@ namespace Jenga.Models.TBYS
     [Table("SozlesmeTasinmaz_Table")]
     public class SozlesmeTasinmaz : BaseModel
     {
+        [NotMapped]
+        public new string? Aciklama { get; set; }
         [Column("SozlesmeId")]
         public int? SozlesmeId { get; set; }
 

@@ -19,9 +19,8 @@
     letter-spacing: 0.08em;
     color: #6b7280;
     margin-bottom: 0.75rem;
-    padding-left: 0.1rem;
-    border-left: 3px solid #2563EB;
     padding-left: 0.5rem;
+    border-left: 3px solid #2563EB;
 }
 
 /* ── Spinner animasyonu ───────────────────────────────────────── */
@@ -58,6 +57,7 @@
     box-shadow: 0 2px 8px rgba(0,0,0,.06);
     max-height: calc(100vh - 100px);
     overflow-y: auto;
+    touch-action: pan-y;
 }
 
 .pd-nav-title {
@@ -210,6 +210,36 @@
     min-width: 0;
     width: 100%;
     max-width: 480px;
+    overflow-x: auto;
+}
+
+/* ── Tablo hücre taşma önlemi ────────────────────────────────── */
+.personel-dashboard .table td,
+.personel-dashboard .table th {
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+
+/* ── İzin & Yaş chart card-body yükseklikleri ─────────────────── */
+.personel-dashboard .pd-izin-chart-body {
+    min-height: 220px;
+    height: 300px;
+}
+
+.personel-dashboard .pd-yas-chart-body {
+    min-height: 200px;
+    height: 280px;
+}
+
+/* ── Kaydırılabilir tablo alanları ────────────────────────────── */
+.personel-dashboard .pd-kalanizin-scroll {
+    max-height: 280px;
+    overflow-y: auto;
+}
+
+.personel-dashboard .pd-derece-scroll {
+    max-height: 240px;
+    overflow-y: auto;
 }
 
 /* ── Collapsible card header ─────────────────────────────────── */
@@ -238,6 +268,14 @@
     .pd-chart-container {
         height: 300px;
     }
+
+    .personel-dashboard .pd-izin-chart-body {
+        height: 260px;
+    }
+
+    .personel-dashboard .pd-yas-chart-body {
+        height: 240px;
+    }
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -261,6 +299,8 @@
         border-radius: 8px;
         /* scrollbar gizle ama işlevsel kalsın */
         scrollbar-width: none;
+        touch-action: pan-x;
+        -webkit-overflow-scrolling: touch;
     }
 
     .pd-scrollspy-nav::-webkit-scrollbar {
@@ -302,6 +342,31 @@
     .personel-dashboard .pd-birim-table {
         flex-basis: 100%;
         max-width: 100%;
+    }
+
+    /* İzin & Yaş chart yükseklik */
+    .personel-dashboard .pd-izin-chart-body {
+        height: 240px;
+        min-height: 180px;
+    }
+
+    .personel-dashboard .pd-yas-chart-body {
+        height: 220px;
+        min-height: 160px;
+    }
+
+    /* Kaydırılabilir tablo alanları mobilde daha kısa */
+    .personel-dashboard .pd-kalanizin-scroll {
+        max-height: 220px;
+    }
+
+    .personel-dashboard .pd-derece-scroll {
+        max-height: 200px;
+    }
+
+    /* Tablo taşmayı önle */
+    .personel-dashboard .table {
+        font-size: 0.75rem;
     }
 
     /* KPI kart font iyileştirmeleri */
@@ -359,5 +424,24 @@
     .pd-scrollspy-nav .nav-link {
         padding: 4px 8px;
         font-size: 0.7rem;
+    }
+
+    .personel-dashboard .pd-izin-chart-body {
+        height: 210px;
+        min-height: 160px;
+    }
+
+    .personel-dashboard .pd-yas-chart-body {
+        height: 200px;
+        min-height: 150px;
+    }
+
+    .personel-dashboard .table {
+        font-size: 0.7rem;
+    }
+
+    /* iPhone notch / home bar güvenli alan */
+    .pd-scrollspy-content > section:last-child {
+        padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px));
     }
 }

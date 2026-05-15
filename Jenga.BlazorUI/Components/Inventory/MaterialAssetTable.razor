@@ -6,8 +6,13 @@
 
 @inject IMaterialAssetService MaterialAssetService
 @inject IMaterialAssetLogService MaterialAssetLogService
+@inject IMaterialEntryService MaterialEntryService
+@inject IMaterialExitService MaterialExitService
+@inject IMaterialTransferService MaterialTransferService
+@inject IMaterialInventoryService MaterialInventoryService
 @inject IToastService ToastService
 @inject IModalService ModalService
+@inject ICurrentUserService CurrentUserService
 
 @if (Assets?.Any() != true)
 {
@@ -38,43 +43,25 @@ else
                     <i class="@GetSortIcon(nameof(MaterialAsset.MaterialId))"></i>
                 </span>
             </th>
-            <th role="button" @onclick="() => OnSort(nameof(MaterialAsset.BrandId))">
+            <th role="button" @onclick="() => OnSort(nameof(MaterialAsset.BrandId))" style="width:100px;">
                 <span class="d-inline-flex align-items-center">
                     <span>Marka</span>
                     <i class="@GetSortIcon(nameof(MaterialAsset.BrandId))"></i>
                 </span>
             </th>
-            <th role="button" @onclick="() => OnSort(nameof(MaterialAsset.ModelId))">
+            <th role="button" @onclick="() => OnSort(nameof(MaterialAsset.ModelId))" style="width:100px;">
                 <span class="d-inline-flex align-items-center">
                     <span>Model</span>
                     <i class="@GetSortIcon(nameof(MaterialAsset.ModelId))"></i>
                 </span>
             </th>
-            <th role="button" @onclick="() => OnSort(nameof(MaterialAsset.SerialNumber))">
+            <th role="button" @onclick="() => OnSort(nameof(MaterialAsset.SerialNumber))" style="width:110px;">
                 <span class="d-inline-flex align-items-center">
                     <span>Seri No</span>
                     <i class="@GetSortIcon(nameof(MaterialAsset.SerialNumber))"></i>
                 </span>
             </th>
-            <th role="button" @onclick="() => OnSort(nameof(MaterialAsset.Barcode))">
-                <span class="d-inline-flex align-items-center">
-                    <span>Barkod</span>
-                    <i class="@GetSortIcon(nameof(MaterialAsset.Barcode))"></i>
-                </span>
-            </th>
-            <th role="button" @onclick="() => OnSort(nameof(MaterialAsset.PurchaseDate))">
-                <span class="d-inline-flex align-items-center">
-                    <span>Satin Alma</span>
-                    <i class="@GetSortIcon(nameof(MaterialAsset.PurchaseDate))"></i>
-                </span>
-            </th>
-            <th role="button" @onclick="() => OnSort(nameof(MaterialAsset.WarrantyExpiry))">
-                <span class="d-inline-flex align-items-center">
-                    <span>Garanti Bitis</span>
-                    <i class="@GetSortIcon(nameof(MaterialAsset.WarrantyExpiry))"></i>
-                </span>
-            </th>
-            <th role="button" @onclick="() => OnSort(nameof(MaterialAsset.Status))">
+            <th role="button" @onclick="() => OnSort(nameof(MaterialAsset.Status))" style="width:90px;">
                 <span class="d-inline-flex align-items-center">
                     <span>Durum</span>
                     <i class="@GetSortIcon(nameof(MaterialAsset.Status))"></i>
@@ -92,7 +79,7 @@ else
                     <i class="@GetSortIcon(nameof(MaterialAsset.PersonelId))"></i>
                 </span>
             </th>
-            <th class="text-center" style="width:120px;">Islemler</th>
+            <th class="text-center" style="width:340px;">Islemler</th>
         </HeaderTemplate>
 
         <RowTemplate Context="asset">
@@ -109,49 +96,6 @@ else
                 {
                     <span class="@(string.IsNullOrEmpty(asset.SerialNumber) ? "text-muted fst-italic" : "fw-semibold")">
                         @(string.IsNullOrEmpty(asset.SerialNumber) ? "—" : asset.SerialNumber)
-                    </span>
-                }
-            </td>
-
-            <td>
-                @if (editingAssetId == asset.Id)
-                {
-                    <input class="form-control form-control-sm" @bind="editForm.Barcode" placeholder="Barkod" />
-                }
-                else
-                {
-                    <span class="@(string.IsNullOrEmpty(asset.Barcode) ? "text-muted fst-italic" : "")">
-                        @(string.IsNullOrEmpty(asset.Barcode) ? "—" : asset.Barcode)
-                    </span>
-                }
-            </td>
-
-            <td>
-                @if (editingAssetId == asset.Id)
-                {
-                    <input class="form-control form-control-sm" type="date" @bind="editForm.PurchaseDate" />
-                }
-                else
-                {
-                    @(asset.PurchaseDate?.ToString("dd.MM.yyyy") ?? "—")
-                }
-            </td>
-
-            <td>
-                @if (editingAssetId == asset.Id)
-                {
-                    <input class="form-control form-control-sm" type="date" @bind="editForm.WarrantyExpiry" />
-                }
-                else
-                {
-                    var warranty = asset.WarrantyExpiry;
-                    var isExpired = warranty.HasValue && warranty.Value < DateTime.Today;
-                    <span class="@(isExpired ? "text-danger fw-semibold" : "")">
-                        @(warranty?.ToString("dd.MM.yyyy") ?? "—")
-                        @if (isExpired)
-                        {
-                            <i class="bi bi-exclamation-triangle-fill ms-1" title="Garanti süresi dolmus"></i>
-                        }
                     </span>
                 }
             </td>
@@ -188,13 +132,19 @@ else
                 else
                 {
                     <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => StartEdit(asset)" title="Düzenle">
-                        <i class="bi bi-pencil"></i>
+                        <i class="bi bi-pencil"></i> Düzenle
                     </button>
                     <button class="btn btn-sm btn-outline-info me-1" @onclick="() => ShowLog(asset)" title="Geçmis">
-                        <i class="bi bi-clock-history"></i>
+                        <i class="bi bi-clock-history"></i> Geçmis
                     </button>
-                    <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDelete(asset)" title="Sil">
-                        <i class="bi bi-trash"></i>
+                    <button class="btn btn-sm btn-outline-success me-1" @onclick="() => StartEntry(asset)" title="Giris">
+                        <i class="bi bi-box-arrow-in-right"></i> Giris
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger me-1" @onclick="() => StartExit(asset)" title="Çikis">
+                        <i class="bi bi-box-arrow-right"></i> Çikis
+                    </button>
+                    <button class="btn btn-sm btn-outline-warning" @onclick="() => StartTransfer(asset)" title="Transfer">
+                        <i class="bi bi-arrow-left-right"></i> Transfer
                     </button>
                 }
             </td>
@@ -204,7 +154,7 @@ else
             @if (showingLogAssetId == asset.Id && assetLogs.Any())
             {
                 <tr>
-                    <td colspan="11" class="bg-light p-2">
+                    <td colspan="8" class="bg-light p-2">
                         <div class="small">
                             <strong>Zimmet / Transfer Geçmisi</strong>
                             <table class="table table-sm table-borderless mb-0 mt-1">
@@ -242,6 +192,48 @@ else
     </GenericTable>
 }
 
+<MaterialEntryEditModal MaterialEntry="editingEntry"
+                        Materials="Materials"
+                        MaterialUnits="MaterialUnits"
+                        Locations="Locations"
+                        Persons="Persons"
+                        Brands="Brands"
+                        Models="Models"
+                        Categories="Categories"
+                        IsOpen="isEntryOpen"
+                        IsMaterialFixed="true"
+                        OnSave="OnEntryModalSave"
+                        OnClose="CloseEntryModal" />
+
+<MaterialExitEditModal MaterialExit="editingExit"
+                       Materials="Materials"
+                       MaterialUnits="MaterialUnits"
+                       Locations="Locations"
+                       Persons="Persons"
+                       Brands="Brands"
+                       Models="Models"
+                       MaterialInventories="MaterialInventories"
+                       IsOpen="isExitOpen"
+                       IsMaterialFixed="true"
+                       OnSave="OnExitModalSave"
+                       OnSaveWithAssets="OnExitAssetIdsReceived"
+                       OnClose="CloseExitModal" />
+
+<MaterialTransferEditModalV2 MaterialTransfer="editingTransfer"
+                             Materials="Materials"
+                             MaterialUnits="MaterialUnits"
+                             Locations="Locations"
+                             Persons="Persons"
+                             Brands="Brands"
+                             Models="Models"
+                             MaterialInventories="MaterialInventories"
+                             IsOpen="isTransferOpen"
+                             IsMaterialFixed="true"
+                             InitialSelectedFromInventoryId="modalInitialFromInventoryId"
+                             OnSave="OnTransferModalSave"
+                             OnSaveWithAssets="OnTransferAssetIdsReceived"
+                             OnClose="CloseTransferModal" />
+
 @code
 {
     [Parameter] public List<MaterialAsset> Assets { get; set; } = new();
@@ -250,6 +242,9 @@ else
     [Parameter] public List<MaterialModel> Models { get; set; } = new();
     [Parameter] public List<Location> Locations { get; set; } = new();
     [Parameter] public List<Personel> Persons { get; set; } = new();
+    [Parameter] public List<MaterialInventory> MaterialInventories { get; set; } = new();
+    [Parameter] public List<MaterialUnit> MaterialUnits { get; set; } = new();
+    [Parameter] public List<MaterialCategory> Categories { get; set; } = new();
     [Parameter] public EventCallback OnDataChanged { get; set; }
 
     private GenericTable<MaterialAsset>? assetTable;
@@ -259,10 +254,24 @@ else
     private int? showingLogAssetId;
     private AssetEditForm editForm = new();
 
+    // Entry/Exit/Transfer modal state
+    private MaterialEntry? editingEntry;
+    private bool isEntryOpen;
+
+    private MaterialExit? editingExit;
+    private bool isExitOpen;
+
+    private MaterialTransfer? editingTransfer;
+    private bool isTransferOpen;
+    private int? modalInitialFromInventoryId;
+
+    private List<int>? pendingExitAssetIds;
+    private List<int>? pendingTransferAssetIds;
+
     private static readonly IReadOnlyList<string> exportHeaders = new[]
     {
-        "Malzeme", "Marka", "Model", "Seri No", "Barkod",
-        "Satin Alma", "Garanti Bitis", "Durum", "Lokasyon", "Personel"
+        "Malzeme", "Marka", "Model", "Seri No",
+        "Durum", "Lokasyon", "Personel"
     };
 
     private readonly Dictionary<int, string> _materialNameById = new();
@@ -405,6 +414,184 @@ else
 
     #endregion
 
+    #region Entry
+
+    private void StartEntry(MaterialAsset asset)
+    {
+        var mat = Materials.FirstOrDefault(m => m.Id == asset.MaterialId);
+        if (mat == null) return;
+
+        editingEntry = new MaterialEntry
+        {
+            MaterialId = mat.Id,
+            MaterialUnitId = mat.MaterialUnitId,
+            EntryDate = DateTime.Now,
+            Quantity = 1
+        };
+        isEntryOpen = true;
+    }
+
+    private async Task OnEntryModalSave()
+    {
+        if (editingEntry == null) return;
+        try
+        {
+            var currentUser = await CurrentUserService.GetUserNameAsync();
+            var saved = await MaterialEntryService.AddAsync(editingEntry, currentUser, CancellationToken.None);
+            if (saved.IsSuccess)
+            {
+                ToastService.ShowSuccess("Giris kaydedildi.");
+                var invR = await MaterialInventoryService.GetAllAsync();
+                MaterialInventories = invR.IsSuccess ? invR.Value : new();
+                await OnDataChanged.InvokeAsync();
+            }
+            else
+            {
+                ToastService.ShowError("Giris kaydedilemedi.");
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Hata: {ex.Message}");
+        }
+        finally
+        {
+            isEntryOpen = false;
+            editingEntry = null;
+            StateHasChanged();
+        }
+    }
+
+    private void CloseEntryModal()
+    {
+        isEntryOpen = false;
+        editingEntry = null;
+    }
+
+    #endregion
+
+    #region Exit
+
+    private void StartExit(MaterialAsset asset)
+    {
+        var mat = Materials.FirstOrDefault(m => m.Id == asset.MaterialId);
+        if (mat == null) return;
+
+        editingExit = new MaterialExit
+        {
+            MaterialId = mat.Id,
+            MaterialUnitId = mat.MaterialUnitId,
+            ExitDate = DateTime.Now,
+            Quantity = 1,
+            LocationId = asset.LocationId,
+            PersonelId = asset.PersonelId
+        };
+        isExitOpen = true;
+    }
+
+    private void OnExitAssetIdsReceived(List<int> assetIds) => pendingExitAssetIds = assetIds;
+
+    private async Task OnExitModalSave()
+    {
+        if (editingExit == null) return;
+        var assetIds = pendingExitAssetIds;
+        pendingExitAssetIds = null;
+        try
+        {
+            await MaterialExitService.AddAsync(editingExit, assetIds, CancellationToken.None);
+            ToastService.ShowSuccess("Çikis kaydedildi.");
+            var invR = await MaterialInventoryService.GetAllAsync();
+            MaterialInventories = invR.IsSuccess ? invR.Value : new();
+            await OnDataChanged.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Hata: {ex.Message}");
+        }
+        finally
+        {
+            isExitOpen = false;
+            editingExit = null;
+            StateHasChanged();
+        }
+    }
+
+    private void CloseExitModal()
+    {
+        isExitOpen = false;
+        editingExit = null;
+    }
+
+    #endregion
+
+    #region Transfer
+
+    private void StartTransfer(MaterialAsset asset)
+    {
+        var mat = Materials.FirstOrDefault(m => m.Id == asset.MaterialId);
+        if (mat == null) return;
+
+        editingTransfer = new MaterialTransfer
+        {
+            MaterialId = mat.Id,
+            MaterialUnitId = mat.MaterialUnitId,
+            TransferDate = DateTime.Now,
+            Quantity = 1
+        };
+
+        var initialInvId = MaterialInventories
+            .Where(mi => mi.MaterialId == mat.Id && mi.LocationId == asset.LocationId && mi.PersonelId == asset.PersonelId)
+            .Select(mi => mi.Id)
+            .FirstOrDefault();
+
+        modalInitialFromInventoryId = initialInvId == 0 ? null : initialInvId;
+        isTransferOpen = true;
+    }
+
+    private void OnTransferAssetIdsReceived(List<int> assetIds) => pendingTransferAssetIds = assetIds;
+
+    private async Task OnTransferModalSave(MaterialTransfer? transfer)
+    {
+        if (transfer == null) return;
+        var assetIds = pendingTransferAssetIds;
+        pendingTransferAssetIds = null;
+        try
+        {
+            var currentUser = await CurrentUserService.GetUserNameAsync();
+            var ok = await MaterialTransferService.AddAsync(transfer, currentUser, assetIds, CancellationToken.None);
+            if (ok.IsSuccess)
+            {
+                ToastService.ShowSuccess("Transfer kaydedildi.");
+                var invR = await MaterialInventoryService.GetAllAsync();
+                MaterialInventories = invR.IsSuccess ? invR.Value : new();
+                await OnDataChanged.InvokeAsync();
+            }
+            else
+            {
+                ToastService.ShowError("Transfer kaydedilemedi.");
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Hata: {ex.Message}");
+        }
+        finally
+        {
+            isTransferOpen = false;
+            editingTransfer = null;
+            StateHasChanged();
+        }
+    }
+
+    private void CloseTransferModal()
+    {
+        isTransferOpen = false;
+        editingTransfer = null;
+        modalInitialFromInventoryId = null;
+    }
+
+    #endregion
+
     #region Helpers
 
     private string GetAssetSearchText(MaterialAsset a) =>
@@ -450,9 +637,6 @@ else
         GetBrandName(a.BrandId),
         GetModelName(a.ModelId),
         a.SerialNumber ?? "—",
-        a.Barcode ?? "—",
-        a.PurchaseDate?.ToString("dd.MM.yyyy") ?? "—",
-        a.WarrantyExpiry?.ToString("dd.MM.yyyy") ?? "—",
         GetStatusLabel(a.Status),
         GetLocationName(a.LocationId),
         GetPersonelName(a.PersonelId)

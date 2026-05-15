@@ -1,0 +1,148 @@
+@using Jenga.Models.TBYS
+@using Jenga.Models.TBYS.Search
+
+<div class="sozlesme-kart">
+    <!-- Sözleşme Başlık Satırı -->
+    <div class="sozlesme-kart-header" @onclick="ToggleAcik">
+        <div class="sozlesme-kart-header-sol">
+            <div class="sozlesme-dosya">
+                <i class="bi bi-file-earmark-text me-1"></i>
+                Dosya No: <strong>@(Sozlesme.Sozlesme.DosyaNo?.ToString() ?? "—")</strong>
+            </div>
+            <div class="sozlesme-tarih-aralik">
+                @FormatTarih(Sozlesme.Sozlesme.SozBasTar)
+                <span class="mx-1">→</span>
+                @FormatTarih(Sozlesme.Sozlesme.SozBitTar)
+            </div>
+        </div>
+        <div class="sozlesme-kart-header-sag">
+            <span class="sozlesme-bedel">@FormatPara(Sozlesme.Sozlesme.KiraBedeli)</span>
+            <span class="sozlesme-odeme-sekli text-muted">@Sozlesme.Sozlesme.OdemeSekli</span>
+            <i class="bi @(_acik ? "bi-chevron-up" : "bi-chevron-down") ms-2 text-muted"></i>
+        </div>
+    </div>
+
+    <!-- Genişletilmiş İçerik -->
+    @if (_acik)
+    {
+        <div class="sozlesme-kart-body">
+
+            <!-- Sözleşme Detayları -->
+            <div class="detay-grid sozlesme-detay-grid">
+                <DetailField Label="İlk Sözleşme Tarihi" Value="@FormatTarih(Sozlesme.Sozlesme.IlkSozlesmeTar)" />
+                <DetailField Label="Başlangıç Tarihi" Value="@FormatTarih(Sozlesme.Sozlesme.SozBasTar)" />
+                <DetailField Label="Bitiş Tarihi" Value="@FormatTarih(Sozlesme.Sozlesme.SozBitTar)" />
+                <DetailField Label="Kira Bedeli" Value="@FormatPara(Sozlesme.Sozlesme.KiraBedeli)" />
+                <DetailField Label="Ödeme Şekli" Value="@Sozlesme.Sozlesme.OdemeSekli" />
+                <DetailField Label="Artış Ayı" Value="@Sozlesme.Sozlesme.ArtisAyi" />
+                <DetailField Label="Taşınmaz Adedi" Value="@Sozlesme.Sozlesme.TasinmazAdedi?.ToString()" />
+                <DetailField Label="Taksit Sayısı" Value="@Sozlesme.Sozlesme.TaksitSayisi?.ToString()" />
+            </div>
+
+            <!-- Teminat -->
+            @if (!string.IsNullOrEmpty(Sozlesme.Sozlesme.TeminatCinsi) || Sozlesme.Sozlesme.TeminatTutari > 0)
+            {
+                <div class="sozlesme-alt-baslik">
+                    <i class="bi bi-shield-check me-1"></i>Teminat
+                </div>
+                <div class="detay-grid sozlesme-detay-grid">
+                    <DetailField Label="Teminat Cinsi" Value="@Sozlesme.Sozlesme.TeminatCinsi" />
+                    <DetailField Label="Teminat Tutarı" Value="@FormatPara(Sozlesme.Sozlesme.TeminatTutari)" />
+                    <DetailField Label="Ödeme Tarihi" Value="@FormatTarih(Sozlesme.Sozlesme.TeminatOdemeTarihi)" />
+                    <DetailField Label="İade Tarihi" Value="@FormatTarih(Sozlesme.Sozlesme.TeminatIadeTarihi)" />
+                    @if (!string.IsNullOrEmpty(Sozlesme.Sozlesme.TeminatAciklama))
+                    {
+                        <DetailField Label="Teminat Açıklama" Value="@Sozlesme.Sozlesme.TeminatAciklama" FullWidth="true" />
+                    }
+                </div>
+            }
+
+            <!-- Kefil -->
+            @if (!string.IsNullOrEmpty(Sozlesme.Sozlesme.KefilAdiSoyadi))
+            {
+                <div class="sozlesme-alt-baslik">
+                    <i class="bi bi-person-badge me-1"></i>Kefil Bilgileri
+                </div>
+                <div class="detay-grid sozlesme-detay-grid">
+                    <DetailField Label="Kefil Adı Soyadı" Value="@Sozlesme.Sozlesme.KefilAdiSoyadi" />
+                    <DetailField Label="TC Kimlik No" Value="@Sozlesme.Sozlesme.KefilTCKimlikNo" />
+                    <DetailField Label="Telefon" Value="@Sozlesme.Sozlesme.KefilTel" />
+                    <DetailField Label="Adres" Value="@Sozlesme.Sozlesme.KefilAdresi" FullWidth="true" />
+                </div>
+            }
+
+            <!-- Sözleşmeye Konu Taşınmazlar -->
+            @if (Sozlesme.Tasinmazlar.Count > 0)
+            {
+                <div class="sozlesme-alt-baslik">
+                    <i class="bi bi-house-fill me-1"></i>Sözleşmeye Konu Taşınmazlar
+                    <span class="badge bg-primary ms-2">@Sozlesme.Tasinmazlar.Count</span>
+                </div>
+                <div class="sozlesme-tasinmaz-liste">
+                    @foreach (var t in Sozlesme.Tasinmazlar)
+                    {
+                        <div class="sozlesme-tasinmaz-satir">
+                            <i class="bi bi-geo-alt-fill text-primary me-1"></i>
+                            <strong>@(t.Cinsi ?? "—")</strong>
+                            <span class="text-muted ms-2">@t.Ili / @t.Ilcesi</span>
+                            @if (!string.IsNullOrEmpty(t.EmlakSicilNo))
+                            {
+                                <span class="badge bg-light text-dark ms-2">Sicil: @t.EmlakSicilNo</span>
+                            }
+                            @if (!string.IsNullOrEmpty(t.Adres))
+                            {
+                                <span class="text-muted ms-2 small">@t.Adres</span>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+
+            <!-- Ödeme Planı Özeti -->
+            @if (Sozlesme.OdemePlanlari.Count > 0)
+            {
+                var odenenmis = Sozlesme.OdemePlanlari.Where(op => (op.OdenenTutar ?? 0) > 0).Count();
+                var toplam = Sozlesme.OdemePlanlari.Count;
+                var toplamTutar = Sozlesme.OdemePlanlari.Sum(op => op.KiraBedeli ?? 0);
+                var odenenTutar = Sozlesme.OdemePlanlari.Sum(op => op.OdenenTutar ?? 0);
+                var kalan = toplamTutar - odenenTutar;
+
+                <div class="sozlesme-alt-baslik">
+                    <i class="bi bi-calendar-check me-1"></i>Ödeme Planı Özeti
+                </div>
+                <div class="sozlesme-odeme-ozet">
+                    <div class="odeme-ozet-kart">
+                        <div class="odeme-ozet-deger">@toplam</div>
+                        <div class="odeme-ozet-etiket">Toplam Taksit</div>
+                    </div>
+                    <div class="odeme-ozet-kart odeme-ozet-odendi">
+                        <div class="odeme-ozet-deger">@odenenmis</div>
+                        <div class="odeme-ozet-etiket">Ödendi</div>
+                    </div>
+                    <div class="odeme-ozet-kart odeme-ozet-toplam">
+                        <div class="odeme-ozet-deger">@FormatPara(toplamTutar)</div>
+                        <div class="odeme-ozet-etiket">Toplam Kira</div>
+                    </div>
+                    <div class="odeme-ozet-kart odeme-ozet-kalan">
+                        <div class="odeme-ozet-deger">@FormatPara(kalan)</div>
+                        <div class="odeme-ozet-etiket">Kalan Borç</div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public KiraSozlesmeDetayVM Sozlesme { get; set; } = null!;
+
+    private bool _acik = true;
+
+    private void ToggleAcik() => _acik = !_acik;
+
+    private static string FormatTarih(DateTime? dt) =>
+        dt.HasValue ? dt.Value.ToString("dd.MM.yyyy") : "—";
+
+    private static string FormatPara(decimal? amount) =>
+        amount.HasValue ? amount.Value.ToString("N2") + " ₺" : "—";
+}

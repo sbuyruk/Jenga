@@ -184,7 +184,7 @@ namespace Jenga.BlazorUI.Endpoints
                     <label class='form-label'>Kullanıcı Adı</label>
                     <input type='text' name='username' class='form-control'
                            autocomplete='username' required autofocus />
-                    <div class='form-text text-muted'>Örn: aysegul.demir</div>
+                    <div class='form-text text-muted'>Örn: ademir</div>
                 </div>
                 <div class='mb-3'>
                     <label class='form-label'>Parola</label>

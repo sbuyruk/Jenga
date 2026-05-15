@@ -1,0 +1,345 @@
+/* ArmaganDashboard.razor.css
+   Diğer dashboard'larla (NakitDashboardPage, KiraDashboard vb.) aynı
+   scrollspy + KPI-card pattern'i kullanır.                            */
+
+/* ── Genel kapsayıcı ──────────────────────────────────────── */
+.armagan-dashboard {
+    max-width: 100%;
+    overflow-x: hidden;
+    box-sizing: border-box;
+}
+
+/* ── Son Armağanlar tablo scroll ──────────────────────────── */
+.armagan-dashboard .agd-table-scroll {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 0.5rem;
+}
+
+@media (max-width: 767px) {
+    .armagan-dashboard .agd-table-scroll {
+        /* Gölge ile kaydırılabilir olduğunu ima et */
+        box-shadow: inset -6px 0 8px -6px rgba(0, 0, 0, 0.12);
+    }
+}
+
+/* ── Section Label ────────────────────────────────────────── */
+.armagan-dashboard .agd-section-label {
+    font-size: 0.70rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: #6b7280;
+    margin-bottom: 0.5rem;
+    padding-left: 0.1rem;
+}
+
+/* ── Section ──────────────────────────────────────────────── */
+.armagan-dashboard .agd-section {
+    scroll-margin-top: 12px;
+    padding-bottom: 4px;
+}
+
+/* ── Separator ────────────────────────────────────────────── */
+.armagan-dashboard .agd-separator {
+    width: 65%;
+    margin-block: 1.8rem;
+    margin-inline: auto;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(0,0,0,.20), transparent);
+    opacity: 1;
+    border: 0;
+}
+
+/* ── KPI Card ─────────────────────────────────────────────── */
+.armagan-dashboard .agd-kpi-card {
+    border: none;
+    border-left: 3px solid var(--agd-accent, #6b7280);
+    border-radius: 0.65rem;
+    background: var(--agd-accent-bg, #fafafa);
+    box-shadow: 0 1px 4px rgba(0,0,0,.07);
+    transition: transform 160ms ease, box-shadow 160ms ease, border-left-width 160ms ease;
+    overflow: hidden;
+    height: 100%;
+}
+
+.armagan-dashboard .agd-kpi-card:hover {
+    transform: translateY(-2px);
+    border-left-width: 5px;
+    box-shadow: 0 6px 18px rgba(0,0,0,.10);
+}
+
+.armagan-dashboard .agd-kpi-body {
+    padding: 0.6rem 0.75rem !important;
+}
+
+.armagan-dashboard .agd-kpi-icon {
+    font-size: 1.05rem;
+    color: var(--agd-accent, #6b7280);
+    opacity: 0.85;
+    display: block;
+    margin-bottom: 0.15rem;
+}
+
+.armagan-dashboard .agd-kpi-label {
+    font-size: 0.67rem;
+    color: #6b7280;
+    line-height: 1.2;
+    margin-bottom: 0.15rem;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.armagan-dashboard .agd-kpi-value {
+    font-size: 1.35rem;
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--agd-accent, #374151);
+    font-variant-numeric: tabular-nums;
+    word-break: break-word;
+}
+
+.armagan-dashboard .agd-kpi-sub {
+    font-size: 0.67rem;
+    color: #9ca3af;
+    margin-top: 0.1rem;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+/* ── Accent Tokens ────────────────────────────────────────── */
+.armagan-dashboard .nd-accent-blue   { --agd-accent: #2563eb; --agd-accent-bg: #eff6ff; }
+.armagan-dashboard .nd-accent-amber  { --agd-accent: #d97706; --agd-accent-bg: #fffbeb; }
+.armagan-dashboard .nd-accent-slate  { --agd-accent: #64748b; --agd-accent-bg: #f8fafc; }
+.armagan-dashboard .nd-accent-bronze { --agd-accent: #b45309; --agd-accent-bg: #fff7ed; }
+.armagan-dashboard .nd-accent-rose   { --agd-accent: #e11d48; --agd-accent-bg: #fff1f2; }
+.armagan-dashboard .nd-accent-purple { --agd-accent: #7c3aed; --agd-accent-bg: #f5f3ff; }
+.armagan-dashboard .nd-accent-teal   { --agd-accent: #0d9488; --agd-accent-bg: #f0fdfa; }
+
+/* ── Chart Card ───────────────────────────────────────────── */
+.armagan-dashboard .agd-chart-card {
+    border-radius: 0.65rem;
+    background-color: var(--surface, #fff);
+    background-image:
+        radial-gradient(rgba(180,190,210,.4) 1px, transparent 1px),
+        radial-gradient(rgba(180,190,210,.4) 1px, transparent 1px);
+    background-size: 22px 22px;
+    background-position: 0 0, 11px 11px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.07);
+    overflow: hidden;
+    height: 320px;
+    transition: box-shadow 160ms ease;
+}
+
+.armagan-dashboard .agd-chart-card:hover {
+    box-shadow: 0 4px 14px rgba(0,0,0,.10);
+}
+
+.armagan-dashboard .agd-chart-card--wide {
+    height: 340px;
+}
+
+/* ── Ticker ───────────────────────────────────────────────── */
+.armagan-dashboard .agd-ticker-wrapper {
+    width: 100%;
+    padding: 12px 0;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 14px rgba(0,0,0,.16);
+    background: linear-gradient(135deg, #9E2A3A 0%, #2563EB 100%);
+    color: #fff;
+}
+
+.armagan-dashboard .agd-ticker-wrapper.pauseable:hover .agd-ticker-track {
+    animation-play-state: paused;
+}
+
+.armagan-dashboard .agd-ticker {
+    display: flex;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.armagan-dashboard .agd-ticker-track {
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+    flex-shrink: 0;
+    animation: agd-scroll 48s linear infinite;
+}
+
+.armagan-dashboard .agd-ticker-item {
+    padding: 0 40px;
+    font-size: 15px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.armagan-dashboard .agd-ticker-item i { font-size: 17px; }
+
+@keyframes agd-scroll {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-100%); }
+}
+
+/* ── Filtre Butonları ─────────────────────────────────────── */
+.armagan-dashboard .agd-filter-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    height: 28px;
+    border-radius: 999px;
+    border: 1px solid rgba(15,23,42,.10);
+    background: #fff;
+    color: #1f2937;
+    font-size: .80rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s, color .15s, box-shadow .15s;
+}
+
+.armagan-dashboard .agd-filter-btn:hover {
+    background: rgba(15,23,42,.04);
+}
+
+.armagan-dashboard .agd-filter-btn--active {
+    background: linear-gradient(135deg, #6D28D9, #5B21B6);
+    border-color: transparent;
+    color: #fff;
+    box-shadow: 0 3px 10px rgba(99,102,241,.22);
+}
+
+.armagan-dashboard .agd-filter-btn--danger {
+    background: linear-gradient(135deg, #DC2626, #B91C1C);
+    border-color: transparent;
+    color: #fff;
+    box-shadow: 0 3px 10px rgba(220,38,38,.22);
+}
+
+/* ── Scrollspy Layout ─────────────────────────────────────── */
+.agd-scrollspy-layout {
+    display: grid;
+    grid-template-columns: 1fr 200px;
+    gap: 18px;
+    align-items: start;
+}
+
+.agd-scrollspy-nav {
+    position: sticky;
+    top: 12px;
+    order: 2;
+    background: var(--card-bg, #fff);
+    border: 1px solid rgba(0,0,0,.08);
+    border-radius: 10px;
+    padding: 12px 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.06);
+}
+
+.agd-nav-title {
+    font-size: 0.76rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--p3, #9E2A3A);
+    padding: 4px 10px 8px;
+    border-bottom: 1px solid rgba(0,0,0,.07);
+    margin-bottom: 6px;
+}
+
+.agd-scrollspy-nav .nav-link {
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-size: 0.81rem;
+    color: var(--muted, #6b6b6b);
+    transition: background 0.15s, color 0.15s;
+}
+
+.agd-scrollspy-nav .nav-link:hover {
+    background: rgba(37,99,235,.07);
+    color: var(--text, #1E1E1E);
+}
+
+.agd-scrollspy-nav .nav-link.active {
+    background: rgba(37,99,235,.12);
+    color: #1D40AE;
+    font-weight: 700;
+}
+
+.agd-scrollspy-content {
+    order: 1;
+    height: calc(100vh - 120px);
+    overflow-y: auto;
+    padding-right: 6px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(100,116,139,.4) transparent;
+}
+
+/* ── Responsive – tablet (≤991px) ────────────────────────── */
+@media (max-width: 991px) {
+    .agd-scrollspy-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .agd-scrollspy-nav {
+        order: 1;
+        position: static;
+        overflow-x: auto;
+        overflow-y: hidden;
+        border-radius: 8px;
+        padding: 8px 10px;
+    }
+
+    .agd-scrollspy-nav .nav {
+        flex-direction: row !important;
+        flex-wrap: nowrap;
+        gap: 4px !important;
+        overflow-x: auto;
+        padding-bottom: 4px;
+        scrollbar-width: thin;
+    }
+
+    .agd-nav-title { display: none; }
+
+    .agd-scrollspy-nav .nav-link {
+        white-space: nowrap;
+        font-size: 0.75rem;
+        padding: 5px 10px;
+    }
+
+    .agd-scrollspy-content {
+        order: 2;
+        height: calc(100vh - 200px);
+        overflow-y: auto;
+        padding-right: 0;
+    }
+
+    .armagan-dashboard .agd-section { scroll-margin-top: 48px; }
+
+    .armagan-dashboard .agd-chart-card       { height: 280px; }
+    .armagan-dashboard .agd-chart-card--wide { height: 300px; }
+}
+
+/* ── Responsive – mobil (≤575px) ─────────────────────────── */
+@media (max-width: 575px) {
+    .armagan-dashboard .agd-kpi-value      { font-size: 1.05rem; }
+    .armagan-dashboard .agd-kpi-body       { padding: 0.45rem 0.55rem !important; }
+    .armagan-dashboard .agd-kpi-icon       { font-size: 0.9rem; }
+    .armagan-dashboard .agd-chart-card     { height: 240px; }
+    .armagan-dashboard .agd-chart-card--wide { height: 260px; }
+
+    .armagan-dashboard .agd-ticker-item {
+        font-size: 12px;
+        padding: 0 18px;
+    }
+
+    .armagan-dashboard .agd-separator {
+        width: 85%;
+        margin-block: 1.25rem;
+    }
+}

@@ -1,0 +1,693 @@
+﻿@page "/tbys/kira-dashboard"
+@rendermode InteractiveServer
+@using Jenga.BlazorUI.Components.TBYS
+@using Jenga.BlazorUI.Components.Common
+@using Jenga.DataAccess.Services.Common
+@using Jenga.Models.Common
+@using Jenga.Models.TBYS
+@using Jenga.DataAccess.Services.TBYS
+@using Jenga.Utility
+@using System.Globalization
+@inject ITasinmazService TasinmazService
+@inject IKiraSozlesmeService KiraSozlesmeService
+@inject IKiraciService KiraciService
+@inject ISozlesmeTasinmazService SozlesmeTasinmazService
+@inject IOdemePlaniService OdemePlaniService
+@inject IIlService IlService
+@inject IBolgeService BolgeService
+@inject IOdemeService OdemeService
+@inject IYasalFaizService YasalFaizService
+@implements IDisposable
+
+<div class="kira-dashboard p-2 p-md-3">
+
+    @if (isLoading)
+    {
+        <div class="d-flex justify-content-center align-items-center py-5 text-muted">
+            <i class="bi bi-hourglass-split me-2"></i> Yükleniyor...
+        </div>
+    }
+    else if (loadFailed)
+    {
+        <div class="alert alert-danger">Veri yüklenirken hata oluştu.</div>
+    }
+    else
+    {
+        <!-- KPI Tile Satırı -->
+        <div class="kpi-grid mb-3">
+            <div class="kpi-tile kpi-blue">
+                <div class="kpi-icon"><i class="bi bi-house-door-fill"></i></div>
+                <div class="kpi-value">@AktifSozlesmeCount</div>
+                <div class="kpi-label">Aktif Sözleşme</div>
+            </div>
+
+            <div class="kpi-tile kpi-green">
+                <div class="kpi-icon"><i class="bi bi-cash-coin"></i></div>
+                <div class="kpi-value">@FormatPara(BuYilToplamGelir)</div>
+                <div class="kpi-label">@(DateTime.Now.Year) Kira Geliri (@(DateTime.Today.Month) Aylık)</div>
+            </div>
+            <div class="kpi-tile kpi-purple">
+                <div class="kpi-icon"><i class="bi bi-calendar2-month-fill"></i></div>
+                <div class="kpi-value">@FormatPara(BuAyToplamGelir)</div>
+                <div class="kpi-label">Bu Ay Kira Geliri (@(DateTime.Today.Day) Günlük)</div>
+            </div>
+            <div class="kpi-tile kpi-orange">
+                <div class="kpi-icon"><i class="bi bi-graph-up-arrow"></i></div>
+                <div class="kpi-value">@FormatPara(GelecekAyTahminiGelir)</div>
+                <div class="kpi-label">Gelecek Ay Tahmini Gelir</div>
+            </div>
+            <div class="kpi-tile kpi-red">
+                <div class="kpi-icon"><i class="bi bi-calendar2-minus-fill"></i></div>
+                <div class="kpi-value">@FormatPara(GecenAyToplamGelir)</div>
+                <div class="kpi-label">Geçen Ay Kira Geliri</div>
+            </div>
+            <div class="kpi-tile kpi-teal">
+                <div class="kpi-icon"><i class="bi bi-receipt"></i></div>
+                <div class="kpi-value">@FormatPara(OrtalamaKiraBedeli)</div>
+                <div class="kpi-label">Ortalama Kira</div>
+            </div>
+        </div>
+
+        <!-- Birinci Satır: Taşınmaz Kartı + Yıllık Gelir Grafiği + Sözleşme Kartı -->
+        <div class="dashboard-row dashboard-row--centered mb-3">
+            <div class="dashboard-cell dashboard-cell--card">
+                <KiralikCard Tasinmazlar="tasinmazlar"
+                             Iller="@iller"
+                             Bolgeler="@bolgeler"
+                             Height="100%" />
+            </div>
+
+            <div class="dashboard-cell dashboard-cell--chart chart-bg">
+                <GenericChart TItem="YearAmount"
+                              Items="kiraChartItems"
+                              LabelSelector="@(y => y.Label)"
+                              ValueSelector="@(r => r.Amount)"
+                              Title="Son 10 Yıllık Kira Gelirleri (₺)"
+                              SeriesName="Gelir"
+                              Type="GenericChart<YearAmount>.GenericChartType.Bar"
+                              ShowDataLabels="false"
+                              ShowLegend="false"
+                              Height="100%"
+                              Width="100%" />
+            </div>
+
+            <div class="dashboard-cell dashboard-cell--card">
+                <KiraYenilemeCard Sozlesmeler="kiraSozlesmeler"
+                                  YasalFaizler="yasalFaizler"
+                                  Height="100%"
+                                  Title="@KiraSozlesmeleriTitle" />
+            </div>
+        </div>
+
+        <hr class="my-2" />
+
+        <!-- İkinci Satır: Ödeme Durumu (Pie) + Bölge Bazında Sözleşme (Bar) -->
+        <div class="dashboard-row mb-3">
+            <div class="dashboard-cell dashboard-cell--chart-sm chart-bg">
+                <GenericChart TItem="PieItem"
+                              Items="odemeDurumuItems"
+                              LabelSelector="@(p => p.Label)"
+                              ValueSelector="@(p => p.Value)"
+                              Title="Kira Ödeme Durumu"
+                              SeriesName="Durum"
+                              Type="GenericChart<PieItem>.GenericChartType.Pie"
+                              ShowDataLabels="true"
+                              ShowLegend="true"
+                              ColorPalette="@_odemePalette"
+                              Height="100%"
+                              Width="100%" />
+            </div>
+
+            <div class="dashboard-cell dashboard-cell--chart-lg chart-bg">
+                <GenericChart TItem="BolgeItem"
+                              Items="bolgeSozlesmeItems"
+                              LabelSelector="@(b => b.Label)"
+                              ValueSelector="@(b => b.Value)"
+                              Title="Bölge Bazında Aktif Sözleşmeler"
+                              SeriesName="Sözleşme"
+                              Type="GenericChart<BolgeItem>.GenericChartType.Bar"
+                              ShowDataLabels="true"
+                              ShowLegend="false"
+                              ColorPalette="@_bolgePalette"
+                              XAxisLabelRotateDegrees="-35"
+                              XAxisLabelsAlwaysRotate="true"
+                              GridPaddingBottom="40"
+                              Height="100%"
+                              Width="100%" />
+            </div>
+
+            <div class="dashboard-cell dashboard-cell--chart-sm chart-bg">
+                <GenericChart TItem="PieItem"
+                              Items="odemeSekliItems"
+                              LabelSelector="@(p => p.Label)"
+                              ValueSelector="@(p => p.Value)"
+                              Title="Ödeme Şekli Dağılımı"
+                              SeriesName="Şekil"
+                              Type="GenericChart<PieItem>.GenericChartType.Pie"
+                              ShowDataLabels="true"
+                              ShowLegend="true"
+                              ColorPalette="@_sekilPalette"
+                              Height="100%"
+                              Width="100%" />
+            </div>
+        </div>
+
+        <hr class="my-2" />
+
+        <!-- Üçüncü Satır: Son 5 Yıl Aylık Kira Gelirleri -->
+        <div class="dashboard-wide-row mb-3">
+            <div class="chart-bg" style="height:380px; border-radius:0.5rem; padding:0.5rem;">
+                <GenericChart TItem="MonthAmount"
+                              Series="kiraAylikSon5YilSeries"
+                              LabelSelector="@(x => x.Label)"
+                              ValueSelector="@(x => x.Amount)"
+                              Title="Son 5 Yılın Aylık Kira Gelirleri (₺)"
+                              Type="GenericChart<MonthAmount>.GenericChartType.Bar"
+                              ShowDataLabels="false"
+                              ShowLegend="true"
+                              ColorPalette="@_yilPalette"
+                              GridPaddingBottom="40"
+                              Height="100%"
+                              Width="100%" />
+            </div>
+        </div>
+
+        <hr class="my-2" />
+
+        <!-- Dördüncü Satır: Yakında Bitecek Sözleşmeler -->
+        @if (yakindaBitecekSozlesmeler.Count > 0)
+        {
+            <div class="dashboard-wide-row mb-3">
+                <div class="alert-table-block">
+                    <div class="alert-table-header">
+                        <span class="alert-icon"><i class="bi bi-clock-history"></i></span>
+                        <strong>Önümüzdeki 60 Günde Sona Erecek Sözleşmeler</strong>
+                        <span class="badge bg-warning text-dark ms-2">@yakindaBitecekSozlesmeler.Count</span>
+                    </div>
+                    <GenericTable TItem="KiraSozlesme"
+                                  Items="yakindaBitecekSozlesmeler"
+                                  TableHeight="auto"
+                                  TableClass="table-sm table-striped table-hover"
+                                  ShowSearch="true"
+                                  PlaceholderSearch="Kiracı, adres, il, ilçe, bölge ara..."
+                                  SearchTextSelector="@(s => BuildYakindaSearchText(s))"
+                                  ShowCopy="false"
+                                  ShowExport="false"
+                                  PageSize="60"
+                                  PageSizeOptions="@(new[] { 60 })">
+                        <HeaderTemplate>
+                            <th>Kiracı Süresi</th>
+                            <th>Kiracı Adı</th>
+                            <th class="d-none d-md-table-cell">Adres</th>
+                            <th class="d-none d-lg-table-cell">İl</th>
+                            <th class="d-none d-lg-table-cell">İlçe</th>
+                            <th>Bitiş Tarihi</th>
+                            <th>Kalan Gün</th>
+                            <th class="d-none d-md-table-cell">Kira Bedeli</th>
+                            <th class="d-none d-md-table-cell">Bölge</th>
+                        </HeaderTemplate>
+                        <RowTemplate Context="s">
+                            @{
+                                var kalanGun = (s.SozBitTar!.Value.Date - DateTime.Today).Days;
+                                var kiraci   = kiraciler?.FirstOrDefault(k => k.Id == s.KiraciId);
+                                var basTar   = s.IlkSozlesmeTar ?? s.SozBasTar;
+                            }
+                            <td>
+                                @if (basTar.HasValue)
+                                {
+                                    var sure   = DateTime.Today - basTar.Value.Date;
+                                    var yil    = (int)(sure.TotalDays / 365);
+                                    var ay     = (int)((sure.TotalDays % 365) / 30);
+                                    var etiket = $"{(yil > 0 ? $"{yil} yıl " : "")}{(ay > 0 ? $"{ay} ay" : yil == 0 ? $"{sure.Days} gün" : "")}".Trim();
+                                    var sonrakiYilDonumu = basTar.Value.Date.AddYears(yil + 1);
+                                    var milestoneYakinda = (yil + 1) % 5 == 0
+                                        && sonrakiYilDonumu >= DateTime.Today
+                                        && sonrakiYilDonumu <= DateTime.Today.AddDays(60);
+                                    if (milestoneYakinda)
+                                    {
+                                        <span class="badge bg-danger">@etiket @* → @(yil + 1). yıl! *@</span>
+                                    }
+                                    else
+                                    {
+                                        <small>@etiket</small>
+                                    }
+                                }
+                                else
+                                {
+                                    <small class="text-muted">—</small>
+                                }
+                            </td>
+                            <td>@($"{kiraci?.Adi} {kiraci?.Soyadi}".Trim())</td>
+                            <td class="d-none d-md-table-cell"><small class="text-muted">@kiraci?.Adres</small></td>
+                            <td class="d-none d-lg-table-cell"><small>@kiraci?.Ili</small></td>
+                            <td class="d-none d-lg-table-cell"><small>@kiraci?.Ilcesi</small></td>
+                            <td>@s.SozBitTar?.ToString("dd.MM.yyyy")</td>
+                            <td><span class="badge @(kalanGun <= 14 ? "bg-danger" : kalanGun <= 30 ? "bg-warning text-dark" : "bg-info text-dark")">@kalanGun gün</span></td>
+                            <td class="d-none d-md-table-cell">@FormatPara(s.KiraBedeli)</td>
+                            <td class="d-none d-md-table-cell">@(bolgeler?.FirstOrDefault(b => b.Id == s.BolgeId)?.KisaAdi)</td>
+                        </RowTemplate>
+                    </GenericTable>
+                </div>
+            </div>
+            <hr class="my-2" />
+        }
+    }
+
+    <div class="d-flex justify-content-center mt-3 mb-4">
+        <img src="/images/zekayi.gif"
+             alt="Zekayi"
+             loading="lazy"
+             data-bs-toggle="tooltip"
+             data-bs-placement="top"
+             title="Burada yayınlanan tüm Kiralık verileri Emlak Direktörlüğü tarafından girilmektedir. İrtibat için Zekayi ÇALIŞ, dahili tel: 229" />
+    </div>
+</div>
+
+@code {
+    private List<Tasinmaz>? tasinmazlar;
+    private List<KiraSozlesme>? kiraSozlesmeler;
+    private List<Kiraci>? kiraciler;
+    private List<OdemePlani>? odemePlanlari;
+    private List<Il>? iller;
+    private List<Bolge>? bolgeler;
+    private List<Odeme>? odemeler;
+    private List<YasalFaiz>? yasalFaizler;
+    private bool isLoading;
+    private bool loadFailed;
+    private CancellationTokenSource? _cts;
+
+    // Chart data
+    private readonly List<YearAmount> kiraChartItems = new();
+    private readonly List<GenericChart<MonthAmount>.GenericSeries> kiraAylikSon5YilSeries = new();
+    private readonly List<PieItem> odemeDurumuItems = new();
+    private readonly List<PieItem> odemeSekliItems = new();
+    private readonly List<BolgeItem> bolgeSozlesmeItems = new();
+    private readonly List<KiraSozlesme> gecikmisSozlesmeler = new();
+    private readonly List<KiraSozlesme> yakindaBitecekSozlesmeler = new();
+
+    // KPI computed values
+    private int AktifSozlesmeCount => kiraSozlesmeler?.Count(s => s.Aktif == true) ?? 0;
+
+    private decimal GelecekAyTahminiGelir
+    {
+        get
+        {
+            var gelecekAyIlk = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(1);
+            var gelecekAySon  = gelecekAyIlk.AddMonths(1);
+            return kiraSozlesmeler?
+                .Where(s => s.Aktif == true
+                    && s.KiraBedeli.HasValue
+                    && s.SozBasTar.HasValue && s.SozBasTar.Value < gelecekAySon
+                    && s.SozBitTar.HasValue && s.SozBitTar.Value >= gelecekAyIlk)
+                .Sum(s => s.KiraBedeli!.Value) ?? 0m;
+        }
+    }
+
+    private decimal BuYilToplamGelir
+    {
+        get
+        {
+            var y = DateTime.Now.Year;
+            return odemeler?
+                .Where(o => o.OdemeTarihi?.Year == y)
+                .Sum(o => o.OdenenTutar ?? 0m) ?? 0m;
+        }
+    }
+
+    private decimal BuAyToplamGelir
+    {
+        get
+        {
+            var today = DateTime.Today;
+            return odemeler?
+                .Where(o => o.OdemeTarihi?.Year == today.Year && o.OdemeTarihi?.Month == today.Month)
+                .Sum(o => o.OdenenTutar ?? 0m) ?? 0m;
+        }
+    }
+
+    private decimal GecenAyToplamGelir
+    {
+        get
+        {
+            var gecenAyIlk = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(-1);
+            return odemeler?
+                .Where(o => o.OdemeTarihi?.Year == gecenAyIlk.Year && o.OdemeTarihi?.Month == gecenAyIlk.Month)
+                .Sum(o => o.OdenenTutar ?? 0m) ?? 0m;
+        }
+    }
+
+    private int GecikmisSozlesmeCount => gecikmisSozlesmeler.Count;
+
+    private decimal OrtalamaKiraBedeli
+    {
+        get
+        {
+            var aktif = kiraSozlesmeler?.Where(s => s.Aktif == true && s.KiraBedeli.HasValue).ToList();
+            if (aktif == null || aktif.Count == 0) return 0m;
+            return aktif.Average(s => s.KiraBedeli!.Value);
+        }
+    }
+
+    private string KiraSozlesmeleriTitle => $"{DateTime.Today:MMMM yyyy} Kira Sözleşmeleri";
+
+    protected override async Task OnInitializedAsync()
+    {
+        _cts = new CancellationTokenSource();
+        await LoadDataAsync(_cts.Token);
+    }
+
+    private async Task LoadDataAsync(CancellationToken cancellationToken)
+    {
+        isLoading = true;
+        loadFailed = false;
+
+        try
+        {
+            tasinmazlar = (await TasinmazService.GetAllAsync(cancellationToken)) is { IsSuccess: true } tRes ? tRes.Value : new();
+            kiraSozlesmeler = (await KiraSozlesmeService.GetAllAsync(cancellationToken)) is { IsSuccess: true } ksRes ? ksRes.Value : new();
+            kiraciler = (await KiraciService.GetAllAsync(cancellationToken)) is { IsSuccess: true } kcRes ? kcRes.Value : new();
+
+            var tumSozlesmeIds = kiraSozlesmeler.Where(s => s.Id > 0).Select(s => s.Id).ToList();
+            odemePlanlari = tumSozlesmeIds.Count > 0
+                ? (await OdemePlaniService.GetAllBySozlesmeIdsAsync(tumSozlesmeIds, cancellationToken)) is { IsSuccess: true } opRes ? opRes.Value : new()
+                : new();
+            iller = (await IlService.GetAllAsync(cancellationToken)) is { IsSuccess: true } ilRes ? ilRes.Value : new();
+            bolgeler = (await BolgeService.GetAllAsync(cancellationToken)) is { IsSuccess: true } bRes ? bRes.Value : new();
+            odemeler = (await OdemeService.GetAllAsyncKiralar(cancellationToken)) is { IsSuccess: true } odRes ? odRes.Value : new();
+            yasalFaizler = (await YasalFaizService.GetAllAsync(cancellationToken)) is { IsSuccess: true } yfRes ? yfRes.Value : new();
+
+            PrepareKiraGeliriChart();
+            PrepareKiraAylikSon5YilChart();
+            PrepareOdemeDurumuChart();
+            PrepareOdemeSekliChart();
+            PrepareBolgeChart();
+            PrepareGecikmisSozlesmeler();
+            PrepareYakindaBitecekSozlesmeler();
+        }
+        catch
+        {
+            loadFailed = true;
+            tasinmazlar = new();
+            kiraSozlesmeler = new();
+            kiraciler = new();
+            odemePlanlari = new();
+            iller = new();
+            bolgeler = new();
+            odemeler = new();
+            yasalFaizler = new();
+            kiraChartItems.Clear();
+            kiraAylikSon5YilSeries.Clear();
+            odemeDurumuItems.Clear();
+            odemeSekliItems.Clear();
+            bolgeSozlesmeItems.Clear();
+            gecikmisSozlesmeler.Clear();
+            yakindaBitecekSozlesmeler.Clear();
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void PrepareKiraGeliriChart()
+    {
+        kiraChartItems.Clear();
+        if (odemeler == null || odemeler.Count == 0) return;
+
+        int currentYear = DateTime.Now.Year;
+        var years = Enumerable.Range(currentYear - 9, 10).ToList();
+
+        var sumsByYear = odemeler
+            .Where(op => op?.OdemeTarihi != null)
+            .GroupBy(op => op!.OdemeTarihi!.Value.Year)
+            .ToDictionary(g => g.Key, g => g.Sum(x => x.OdenenTutar ?? 0m));
+
+        foreach (var y in years)
+        {
+            kiraChartItems.Add(new YearAmount
+            {
+                Year = y,
+                Label = y.ToString(),
+                Amount = sumsByYear.TryGetValue(y, out var v) ? v : 0m
+            });
+        }
+    }
+
+    private void PrepareKiraAylikSon5YilChart()
+    {
+        kiraAylikSon5YilSeries.Clear();
+        if (odemeler == null || odemeler.Count == 0) return;
+
+        var yearNow = DateTime.Now.Year;
+        var years = new[] { yearNow - 4, yearNow - 3, yearNow - 2, yearNow - 1, yearNow };
+
+        foreach (var year in years)
+        {
+            var sumsByMonth = odemeler
+                .Where(o => o?.OdemeTarihi != null && o.OdemeTarihi.Value.Year == year)
+                .GroupBy(o => o!.OdemeTarihi!.Value.Month)
+                .ToDictionary(g => g.Key, g => g.Sum(x => x.OdenenTutar ?? 0m));
+
+            var items = new List<MonthAmount>(12);
+            for (int month = 1; month <= 12; month++)
+            {
+                items.Add(new MonthAmount
+                {
+                    Month = month,
+                    Label = new DateTime(2000, month, 1).ToString("MMM"),
+                    Amount = sumsByMonth.TryGetValue(month, out var v) ? v : 0m
+                });
+            }
+
+            kiraAylikSon5YilSeries.Add(new GenericChart<MonthAmount>.GenericSeries(year.ToString(), items));
+        }
+    }
+
+    private void PrepareOdemeDurumuChart()
+    {
+        odemeDurumuItems.Clear();
+        if (odemePlanlari == null || odemePlanlari.Count == 0) return;
+
+        // Her aktif sözleşme için FaizliBakiye < 0 olanları bul
+        var ayinIlkGunu        = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+        var sonrakiAyinIlkGunu = ayinIlkGunu.AddMonths(1);
+        var ayinSonGunu        = sonrakiAyinIlkGunu.AddDays(-1);  // örn. 31 Mayıs
+
+        // SQL: KiraSozlesme_Table A  INNER JOIN OdemePlani_Table C ON C.SozlesmeId = A.Id
+        var sozlesmeMap = kiraSozlesmeler?
+            .Where(s => s.Id > 0)
+            .ToDictionary(s => s.Id) ?? [];
+
+        var sonKayitlar = odemePlanlari
+            .Where(p => p.SozlesmeId.HasValue && sozlesmeMap.ContainsKey(p.SozlesmeId!.Value))
+            .Select(p => new { Plan = p, Soz = sozlesmeMap[p.SozlesmeId!.Value] })
+            .Where(x =>
+                // C.FaizliBakiye < 0
+                (x.Plan.FaizliBakiye ?? 0m) < 0m
+                // C.VadeBitTar >= ayinIlkGunu AND C.VadeBitTar < sonrakiAyinIlkGunu
+                && x.Plan.VadeBitTar.HasValue
+                && x.Plan.VadeBitTar.Value >= ayinIlkGunu
+                && x.Plan.VadeBitTar.Value < sonrakiAyinIlkGunu
+                // A.SozBasTar < ayinSonGunu  (örn. < 31 Mayıs)
+                && x.Soz.SozBasTar.HasValue && x.Soz.SozBasTar.Value < ayinSonGunu
+                // A.SozBitTar >= ayinIlkGunu
+                && x.Soz.SozBitTar.HasValue && x.Soz.SozBitTar.Value >= ayinIlkGunu
+                // Taksit / bakiye filtresi
+                && (
+                    // Çok taksitli: bakiye en az 1 taksit tutarı kadar birikmiş
+                    (
+                        (x.Soz.TaksitSayisi ?? 0) > 1
+                        && x.Soz.KiraBedeli.HasValue && x.Soz.KiraBedeli.Value != 0m
+                        && (Math.Abs(x.Plan.FaizliBakiye!.Value) - Math.Abs(x.Soz.KiraBedeli.Value))
+                           / x.Soz.KiraBedeli.Value >= 0.5m
+                    )
+                    ||
+                    // Tek taksitli: ay sayısı hesabına göre filtre
+                    (
+                        (x.Soz.TaksitSayisi ?? 0) < 2
+                        && x.Soz.KiraBedeli.HasValue && x.Soz.KiraBedeli.Value != 0m
+                        && x.Plan.Sira.HasValue
+                        && Math.Abs(x.Plan.FaizliBakiye!.Value / x.Soz.KiraBedeli.Value)
+                           * x.Plan.Sira.Value >= 0.5m
+                    )
+                )
+                // Sözleşme durumu filtresi
+                && (
+                    // A.SozlesmeDurumu = 'Devam Ediyor'
+                    x.Soz.SozlesmeDurumu == ProjectConstants.KIRASOZLESME_DURUMU_DEVAM
+                    ||
+                    // A.SozlesmeDurumu NOT IN ('Devam Ediyor','Yenilendi') AND DurumDegismeTar bu ay
+                    (
+                        x.Soz.SozlesmeDurumu != ProjectConstants.KIRASOZLESME_DURUMU_DEVAM
+                        && x.Soz.SozlesmeDurumu != ProjectConstants.KIRASOZLESME_DURUMU_YENILENDI
+                        && x.Soz.DurumDegismeTar.HasValue
+                        && x.Soz.DurumDegismeTar.Value >= ayinIlkGunu
+                        && x.Soz.DurumDegismeTar.Value < sonrakiAyinIlkGunu
+                    )
+                    ||
+                    // A.SozlesmeDurumu = 'Yenilendi' AND A.SozBitTar > ayinSonGunu
+                    (
+                        x.Soz.SozlesmeDurumu == ProjectConstants.KIRASOZLESME_DURUMU_YENILENDI
+                        && x.Soz.SozBitTar.HasValue
+                        && x.Soz.SozBitTar.Value > ayinSonGunu
+                    )
+                )
+            )
+            .Select(x => x.Plan)
+            .ToList();
+
+        var aktifSozlesmeIds = kiraSozlesmeler?
+            .Where(s => s.Aktif == true && s.Id > 0)
+            .Select(s => s.Id)
+            .ToHashSet() ?? [];
+
+        var gecikti = sonKayitlar.Count;
+        var hepsi = aktifSozlesmeIds.Count;
+        var odendi = hepsi - gecikti;
+
+        if (odendi > 0) odemeDurumuItems.Add(new PieItem { Label = "Ödendi", Value = odendi });
+        if (gecikti > 0) odemeDurumuItems.Add(new PieItem { Label = "Gecikti", Value = gecikti });
+    }
+
+    private void PrepareOdemeSekliChart()
+    {
+        odemeSekliItems.Clear();
+        if (kiraSozlesmeler == null || kiraSozlesmeler.Count == 0) return;
+
+        var groups = kiraSozlesmeler
+            .Where(s => s.Aktif == true && !string.IsNullOrWhiteSpace(s.OdemeSekli))
+            .GroupBy(s => s.OdemeSekli!)
+            .OrderByDescending(g => g.Count());
+
+        foreach (var g in groups)
+            odemeSekliItems.Add(new PieItem { Label = g.Key, Value = g.Count() });
+    }
+
+    private void PrepareBolgeChart()
+    {
+        bolgeSozlesmeItems.Clear();
+        if (kiraSozlesmeler == null || kiraSozlesmeler.Count == 0) return;
+
+        var bolgeMap = bolgeler?
+            .Where(b => !string.IsNullOrWhiteSpace(b.KisaAdi))
+            .ToDictionary(b => b.Id, b => b.KisaAdi!) ?? [];
+
+        var groups = kiraSozlesmeler
+            .Where(s => s.Aktif == true && s.BolgeId.HasValue && bolgeMap.ContainsKey(s.BolgeId.Value))
+            .GroupBy(s => bolgeMap[s.BolgeId!.Value])
+            .OrderByDescending(g => g.Count());
+
+        foreach (var g in groups)
+            bolgeSozlesmeItems.Add(new BolgeItem { Label = g.Key, Value = g.Count() });
+    }
+
+    private void PrepareGecikmisSozlesmeler()
+    {
+        gecikmisSozlesmeler.Clear();
+        if (kiraSozlesmeler == null) return;
+
+        var today = DateTime.Today;
+        var gecikti = kiraSozlesmeler
+            .Where(s =>
+                s.SozBitTar.HasValue && s.SozBitTar.Value.Date < today
+                && (s.SozlesmeDurumu == ProjectConstants.KIRASOZLESME_DURUMU_DEVAM
+                    || s.SozlesmeDurumu == ProjectConstants.KIRASOZLESME_DURUMU_TAKIP))
+            .OrderBy(s => s.SozBitTar)
+            .ToList();
+
+        gecikmisSozlesmeler.AddRange(gecikti);
+    }
+
+    private void PrepareYakindaBitecekSozlesmeler()
+    {
+        yakindaBitecekSozlesmeler.Clear();
+        if (kiraSozlesmeler == null) return;
+
+        var today = DateTime.Today;
+        var limit = today.AddDays(60);
+        var liste = kiraSozlesmeler
+            .Where(s =>
+                s.Aktif == true
+                && s.SozBitTar.HasValue
+                && s.SozBitTar.Value.Date >= today
+                && s.SozBitTar.Value.Date <= limit)
+            .OrderBy(s => s.SozBitTar)
+            .ToList();
+
+        yakindaBitecekSozlesmeler.AddRange(liste);
+    }
+
+    private string BuildYakindaSearchText(KiraSozlesme s)
+    {
+        var kiraci = kiraciler?.FirstOrDefault(k => k.Id == s.KiraciId);
+        var bolge  = bolgeler?.FirstOrDefault(b => b.Id == s.BolgeId)?.KisaAdi;
+        return string.Join(" ",
+            kiraci?.Adi, kiraci?.Soyadi,
+            kiraci?.Adres, kiraci?.Ili, kiraci?.Ilcesi,
+            bolge,
+            s.SozBitTar?.ToString("dd.MM.yyyy"));
+    }
+
+    private static string FormatPara(decimal? value)
+    {
+        if (value == null || value == 0) return "—";
+        if (value >= 1_000_000) return $"{value / 1_000_000:0.#}M ₺";
+        if (value >= 1_000) return $"{value / 1_000:0.#}K ₺";
+        return $"{value:N0} ₺";
+    }
+
+    private static string GetDurumBadgeClass(string? durum) => durum switch
+    {
+        ProjectConstants.KIRASOZLESME_DURUMU_TAKIP => "bg-warning text-dark",
+        ProjectConstants.KIRASOZLESME_DURUMU_FESIH => "bg-danger",
+        ProjectConstants.KIRASOZLESME_DURUMU_BITTI => "bg-secondary",
+        _ => "bg-danger"
+    };
+
+    private static readonly string[] _odemePalette = ["#00B894", "#FDCB6E", "#D63031"];
+    private static readonly string[] _sekilPalette = ["#6C5CE7", "#00CEC9", "#E17055", "#74B9FF"];
+    private static readonly string[] _bolgePalette =
+    [
+        "#0984E3", "#00B894", "#6C5CE7", "#E17055",
+        "#FDCB6E", "#00CEC9", "#D63031", "#A29BFE",
+        "#FD79A8", "#55EFC4"
+    ];
+    private static readonly string[] _yilPalette =
+    [
+        "#FEE440", "#00BBF9", "#9B5DE5", "#F15BB5", "#00F5D4"
+    ];
+
+    public void Dispose()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+    }
+
+    private class YearAmount
+    {
+        public int Year { get; set; }
+        public string Label { get; set; } = "";
+        public decimal Amount { get; set; }
+    }
+
+    private class MonthAmount
+    {
+        public int Year { get; set; }
+        public int Month { get; set; }
+        public string Label { get; set; } = "";
+        public decimal Amount { get; set; }
+    }
+
+    private class PieItem
+    {
+        public string Label { get; set; } = "";
+        public decimal Value { get; set; }
+    }
+
+    private class BolgeItem
+    {
+        public string Label { get; set; } = "";
+        public decimal Value { get; set; }
+    }
+}

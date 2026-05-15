@@ -85,9 +85,6 @@ namespace Jenga.Models.TBYS
         [Column("DurumDegismeTar", TypeName = "datetime")]
         public DateTime? DurumDegismeTar { get; set; }
 
-        [Column("Bolge")]
-        public string? Bolge { get; set; }
-
         [Column("GecikmeZammiTipi")]
         public string? GecikmeZammiTipi { get; set; }
 
@@ -105,5 +102,8 @@ namespace Jenga.Models.TBYS
 
         [Column("BolgeId")]
         public int? BolgeId { get; set; }
+
+        [ForeignKey("BolgeId")]
+        public Common.Bolge? Bolge { get; set; }
     }
 }

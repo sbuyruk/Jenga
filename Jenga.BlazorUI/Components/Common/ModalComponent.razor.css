@@ -22,6 +22,12 @@
     max-width: 70vw;
 }
 
+@media (max-width: 575.98px) {
+    .modal-xxl-custom {
+        max-width: 100%;
+    }
+}
+
 .modal-xxl-custom .modal-content {
     min-height: auto;   /* önceki 60vw kaldırıldı */
     height: auto;

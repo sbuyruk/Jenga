@@ -33,6 +33,7 @@ builder.Services.AddTbysServices();
 builder.Services.AddIkysServices();
 builder.Services.AddNbysServices();
 builder.Services.AddFtkServices();
+builder.Services.AddSearchServices();
 
 // UI / uygulama servisleri
 builder.Services.AddApplicationServices();

@@ -7,6 +7,7 @@ namespace Jenga.DataAccess.Services.TBYS
     public interface IOdemePlaniService
     {
         Task<Result<List<OdemePlani>>> GetAllAsync(CancellationToken cancellationToken = default);
+        Task<Result<List<OdemePlani>>> GetAllBySozlesmeIdsAsync(IEnumerable<int> sozlesmeIds, CancellationToken cancellationToken = default);
         Task<Result<OdemePlani>> GetByIdAsync(int id, CancellationToken cancellationToken = default);
         Task<Result> AddAsync(OdemePlani odemePlani, CancellationToken cancellationToken = default);
         Task<Result> UpdateAsync(OdemePlani odemePlani, CancellationToken cancellationToken = default);

@@ -1,0 +1,11 @@
+@* Küçük etiket-değer alan bileşeni *@
+<div class="detail-field @(FullWidth ? "detail-field--full" : "")">
+    <div class="detail-field-label">@Label</div>
+    <div class="detail-field-value">@(string.IsNullOrWhiteSpace(Value) ? "—" : Value)</div>
+</div>
+
+@code {
+    [Parameter] public string Label { get; set; } = string.Empty;
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public bool FullWidth { get; set; }
+}

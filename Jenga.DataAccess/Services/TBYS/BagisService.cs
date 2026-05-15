@@ -35,6 +35,21 @@ namespace Jenga.DataAccess.Services.TBYS
             }
         }
 
+        public async Task<Result<List<Bagis>>> GetAllEnvanterdeAsync(CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                var list = await db.Bagis_Table.AsNoTracking().Where(b => b.Envanterde).ToListAsync(cancellationToken);
+                return Result<List<Bagis>>.Success(list);
+            }
+            catch (Exception ex)
+            {
+                _logService.LogError($"{Source}.GetAllEnvanterdeAsync hata.", ex);
+                return Result<List<Bagis>>.Failure(Error.Unexpected("Envanterdeki bağış listesi alınamadı.", ex));
+            }
+        }
+
         public async Task<Result<Bagis>> GetByIdAsync(int id, CancellationToken cancellationToken = default)
         {
             try

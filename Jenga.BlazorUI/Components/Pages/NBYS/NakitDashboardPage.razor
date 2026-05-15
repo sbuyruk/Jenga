@@ -1,0 +1,945 @@
+@page "/nbys/nakit-dashboard"
+@using System.Globalization
+@using Jenga.BlazorUI.Components.Common
+@using Jenga.BlazorUI.Components.NBYS
+@using Jenga.BlazorUI.Services.Common
+@using Jenga.DataAccess.Services.Common
+@using Jenga.DataAccess.Services.NBYS
+@using Jenga.Models.NBYS
+@using Microsoft.JSInterop
+@rendermode InteractiveServer
+@inject INakitBagisHareketService NakitBagisHareketService
+@inject INakitBagisciService NakitBagisciService
+@inject IIlService IlService
+@inject IJSRuntime JS
+@inject IModalService ModalService
+@implements IDisposable
+
+<div class="nakit-dashboard container-fluid px-0 px-sm-2">
+
+    @if (isLoading)
+    {
+        <div class="text-center">
+
+            <div class="d-flex justify-content-center mt-4">
+
+                <img src="/images/coding.gif"
+                     alt="coding"
+                     loading="lazy"
+                     data-bs-toggle="tooltip"
+                     data-bs-placement="top"
+                     title="Mr.BUYRUK is working hard to make the charts ready.."
+                     class="img-fluid rounded-4 shadow"
+                     style="max-width: 220px; height: auto;" />
+            </div>
+            <div class="text-muted justify-content-center">@loadingMessage</div>
+        </div>
+@*         <div class="d-flex justify-content-center align-items-center py-5">
+            <div class="spinner-border text-primary me-3" role="status"></div>
+            <span class="text-muted">@loadingMessage</span>
+        </div> *@
+    }
+    else if (loadFailed)
+    {
+        <div class="alert alert-danger d-flex align-items-center gap-2">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            Veri yüklenirken bir hata oluştu.
+            <button class="btn btn-sm btn-outline-danger ms-auto" @onclick="RefreshAsync">Tekrar Dene</button>
+        </div>
+    }
+    else
+    {
+        <div class="nd-scrollspy-layout">
+
+            @* ── Scrollspy Nav ── *@
+            <nav id="nd-scrollspy-nav" class="nd-scrollspy-nav">
+                <div class="nav nav-pills flex-column gap-1">
+                    <div class="nd-nav-title">
+                        <i class="bi bi-speedometer2 me-1"></i> Nakit Bağış
+                    </div>
+                    <a class="nav-link" href="#nd-yillik" @onclick:preventDefault="true" @onclick='() => ScrollToAsync("nd-yillik")'>
+                        <i class="bi bi-grid-1x2-fill me-1"></i>Yıllık KPI
+                    </a>
+                    <a class="nav-link" href="#nd-bu-ay" @onclick:preventDefault="true" @onclick='() => ScrollToAsync("nd-bu-ay")'>
+                        <i class="bi bi-lightning-charge-fill me-1"></i>Bu Ay
+                    </a>
+                    <a class="nav-link" href="#nd-trend" @onclick:preventDefault="true" @onclick='() => ScrollToAsync("nd-trend")'>
+                        <i class="bi bi-bar-chart-line-fill me-1"></i>Aylık Trend
+                    </a>
+                    <a class="nav-link" href="#nd-karsilastirma" @onclick:preventDefault="true" @onclick='() => ScrollToAsync("nd-karsilastirma")'>
+                        <i class="bi bi-layers-half me-1"></i>Yıllar Arası
+                    </a>
+                    <a class="nav-link" href="#nd-harita" @onclick:preventDefault="true" @onclick='() => ScrollToAsync("nd-harita")'>
+                        <i class="bi bi-map-fill me-1"></i>Harita
+                    </a>
+                    <a class="nav-link" href="#nd-top10" @onclick:preventDefault="true" @onclick='() => ScrollToAsync("nd-top10")'>
+                        <i class="bi bi-trophy-fill me-1"></i>İlk 10 İl
+                    </a>
+                    <a class="nav-link" href="#nd-bottom10" @onclick:preventDefault="true" @onclick='() => ScrollToAsync("nd-bottom10")'>
+                        <i class="bi bi-arrow-down-circle-fill me-1"></i>Son 10 İl
+                    </a>
+                </div>
+            </nav>
+
+            @* ── Scrollspy Content ── *@
+            <div id="nd-scrollspy-content"
+                 class="nd-scrollspy-content"
+                 data-bs-spy="scroll"
+                 data-bs-target="#nd-scrollspy-nav"
+                 data-bs-smooth-scroll="true"
+                 tabindex="0">
+
+                @* Sayfa başlığı *@
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                    <div>
+                        <h5 class="mb-0 fw-bold">
+                            <i class="bi bi-speedometer2 me-2 text-primary"></i>Nakit Bağışlar
+                        </h5>
+                        <small class="text-muted">Son güncelleme: @_lastRefresh.ToString("dd.MM.yyyy HH:mm", _trCulture)</small>
+                    </div>
+                    <div class="d-flex gap-2 align-items-center flex-wrap">
+                        <select class="form-select form-select-sm" style="width:110px"
+                                @bind="_selectedYear" @bind:after="OnYearChangedAsync">
+                            @for (var y = DateTime.Now.Year; y >= Since; y--)
+                            {
+                                <option value="@y">@y</option>
+                            }
+                        </select>
+                        <button class="btn btn-sm btn-outline-secondary"
+                                @onclick="RefreshAsync"
+                                disabled="@isLoading">
+                            <i class="bi bi-arrow-clockwise @(isLoading ? "nd-spin" : "")"></i>
+                            @(isLoading ? "Yükleniyor..." : "Yenile")
+                        </button>
+                    </div>
+                </div>
+
+                @* ── Yıllık KPI ── *@
+                <section id="nd-yillik" class="nd-section">
+                    <div class="nd-section-label">
+                        <i class="bi bi-grid-1x2-fill me-1"></i>@_selectedYear Yılı Özeti
+                    </div>
+                    <div class="row g-2 g-sm-3 mb-1">
+
+                        <div class="col-6 col-sm-4 col-md-4 col-lg-2">
+                            <div class="nd-kpi-card nd-accent-blue">
+                                <div class="nd-kpi-body">
+                                    <i class="bi bi-currency-exchange nd-kpi-icon"></i>
+                                    <div class="nd-kpi-label">Toplam Gelir</div>
+                                    <div class="nd-kpi-value">@_yearlyTotal.ToString("N0", _trCulture) ₺</div>
+                                    @if (_yearlyTotalYoY.HasValue)
+                                    {
+                                        <div class="nd-kpi-sub @(_yearlyTotalYoY.Value >= 0 ? "nd-up" : "nd-down")">
+                                            <i class="bi @(_yearlyTotalYoY.Value >= 0 ? "bi-arrow-up-short" : "bi-arrow-down-short")"></i>
+                                            @Math.Abs(_yearlyTotalYoY.Value).ToString("N1", _trCulture)%
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-6 col-sm-4 col-md-4 col-lg-2">
+                            <div class="nd-kpi-card nd-accent-sky">
+                                <div class="nd-kpi-body">
+                                    <i class="bi bi-receipt-cutoff nd-kpi-icon"></i>
+                                    <div class="nd-kpi-label">Bağış Adedi</div>
+                                    <div class="nd-kpi-value">@_yearlyDonationCount.ToString("N0", _trCulture)</div>
+                                    @if (_yearlyCountYoY.HasValue)
+                                    {
+                                        <div class="nd-kpi-sub @(_yearlyCountYoY.Value >= 0 ? "nd-up" : "nd-down")">
+                                            <i class="bi @(_yearlyCountYoY.Value >= 0 ? "bi-arrow-up-short" : "bi-arrow-down-short")"></i>
+                                            @Math.Abs(_yearlyCountYoY.Value).ToString("N1", _trCulture)%
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-6 col-sm-4 col-md-4 col-lg-2">
+                            <div class="nd-kpi-card nd-accent-green">
+                                <div class="nd-kpi-body">
+                                    <i class="bi bi-people-fill nd-kpi-icon"></i>
+                                    <div class="nd-kpi-label">Tekil Bağışçı</div>
+                                    <div class="nd-kpi-value">@_yearlyUniqueDonors.ToString("N0", _trCulture)</div>
+                                    @if (_yearlyUniqueDonorsYoY.HasValue)
+                                    {
+                                        <div class="nd-kpi-sub @(_yearlyUniqueDonorsYoY.Value >= 0 ? "nd-up" : "nd-down")">
+                                            <i class="bi @(_yearlyUniqueDonorsYoY.Value >= 0 ? "bi-arrow-up-short" : "bi-arrow-down-short")"></i>
+                                            @Math.Abs(_yearlyUniqueDonorsYoY.Value).ToString("N1", _trCulture)%
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-6 col-sm-4 col-md-4 col-lg-2">
+                            <div class="nd-kpi-card nd-accent-amber">
+                                <div class="nd-kpi-body">
+                                    <i class="bi bi-person-plus-fill nd-kpi-icon"></i>
+                                    <div class="nd-kpi-label">Yeni Bağışçı</div>
+                                    <div class="nd-kpi-value">@_yearlyNewDonors.ToString("N0", _trCulture)</div>
+                                    <div class="nd-kpi-sub">İlk kez bu yılda</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-6 col-sm-4 col-md-4 col-lg-2">
+                            <div class="nd-kpi-card nd-accent-purple">
+                                <div class="nd-kpi-body">
+                                    <i class="bi bi-calculator-fill nd-kpi-icon"></i>
+                                    <div class="nd-kpi-label">Bağış Başı Ort.</div>
+                                    <div class="nd-kpi-value">@_avgDonationAmount.ToString("N0", _trCulture) ₺</div>
+                                    <div class="nd-kpi-sub">Ort. tutar / adet</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-6 col-sm-4 col-md-4 col-lg-2">
+                            <div class="nd-kpi-card nd-accent-teal">
+                                <div class="nd-kpi-body">
+                                    <i class="bi bi-calendar2-check-fill nd-kpi-icon"></i>
+                                    <div class="nd-kpi-label">En Yüksek Ay</div>
+                                    <div class="nd-kpi-value">@_bestMonthAmount.ToString("N0", _trCulture) ₺</div>
+                                    <div class="nd-kpi-sub">@_bestMonthLabel</div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </section>
+
+                <hr class="nd-separator" />
+
+                @* ── Bu Ay KPI ── *@
+                <section id="nd-bu-ay" class="nd-section">
+                    <div class="nd-section-label">
+                        <i class="bi bi-lightning-charge-fill me-1"></i>Bu Ay Anlık Durum
+                        <span class="badge bg-secondary ms-2 fw-normal" style="font-size:0.72rem">
+                            @DateTime.Now.ToString("MMMM yyyy", _trCulture)
+                        </span>
+                    </div>
+                    <div class="row g-2 g-sm-3 mb-1">
+
+                        <div class="col-6 col-sm-3">
+                            <div class="nd-kpi-card nd-kpi-card-sm nd-accent-blue">
+                                <div class="nd-kpi-body">
+                                    <i class="bi bi-lightning-charge-fill nd-kpi-icon"></i>
+                                    <div class="nd-kpi-label">Toplam Gelir</div>
+                                    <div class="nd-kpi-value nd-kpi-value-sm">@_thisMonthTotal.ToString("N0", _trCulture) ₺</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-6 col-sm-3">
+                            <div class="nd-kpi-card nd-kpi-card-sm nd-accent-sky">
+                                <div class="nd-kpi-body">
+                                    <i class="bi bi-clipboard2-data-fill nd-kpi-icon"></i>
+                                    <div class="nd-kpi-label">Bağış Adedi</div>
+                                    <div class="nd-kpi-value nd-kpi-value-sm">@_thisMonthCount.ToString("N0", _trCulture)</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-6 col-sm-3">
+                            <div class="nd-kpi-card nd-kpi-card-sm nd-accent-green">
+                                <div class="nd-kpi-body">
+                                    <i class="bi bi-person-check-fill nd-kpi-icon"></i>
+                                    <div class="nd-kpi-label">Tekil Bağışçı</div>
+                                    <div class="nd-kpi-value nd-kpi-value-sm">@_thisMonthUniqueDonors.ToString("N0", _trCulture)</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-6 col-sm-3">
+                            <div class="nd-kpi-card nd-kpi-card-sm nd-accent-amber">
+                                <div class="nd-kpi-body">
+                                    <i class="bi bi-graph-up-arrow nd-kpi-icon"></i>
+                                    <div class="nd-kpi-label">Geçen Yıl Aynı Aya Göre</div>
+                                    @if (_thisMonthTotalYoY.HasValue)
+                                    {
+                                        <div class="nd-kpi-value nd-kpi-value-sm @(_thisMonthTotalYoY.Value >= 0 ? "nd-up" : "nd-down")">
+                                            @(_thisMonthTotalYoY.Value >= 0 ? "+" : "")@_thisMonthTotalYoY.Value.ToString("N1", _trCulture)%
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="nd-kpi-value nd-kpi-value-sm text-muted">–</div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </section>
+
+                <hr class="nd-separator" />
+
+                @* ── Aylık Trend Grafikleri ── *@
+                <section id="nd-trend" class="nd-section">
+                    <div class="nd-section-label">
+                        <i class="bi bi-bar-chart-line-fill me-1"></i>@_selectedYear Yılı Aylık Bağış Trendi
+                    </div>
+                    <div class="row g-3 mb-1">
+                        <div class="col-12 col-lg-6">
+                            <div class="nd-chart-card">
+                                <GenericChart TItem="MonthlyPoint"
+                                              Series="_monthlyAmountSeries"
+                                              LabelSelector="@(x => x.Label)"
+                                              ValueSelector="@(x => x.Value)"
+                                              Title="Aylık Bağış Tutarı (₺)"
+                                              Type="GenericChart<MonthlyPoint>.GenericChartType.Bar"
+                                              ShowDataLabels="false"
+                                              ShowLegend="false"
+                                              GridPaddingBottom="40"
+                                              ColorPalette="@_palette1"
+                                              LockToMonthCategories="true"
+                                              Height="100%"
+                                              Width="100%" />
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6">
+                            <div class="nd-chart-card">
+                                <GenericChart TItem="MonthlyPoint"
+                                              Series="_monthlyDonorSeries"
+                                              LabelSelector="@(x => x.Label)"
+                                              ValueSelector="@(x => x.Value)"
+                                              Title="Aylık Tekil Bağışçı Sayısı"
+                                              Type="GenericChart<MonthlyPoint>.GenericChartType.Bar"
+                                              ShowDataLabels="false"
+                                              ShowLegend="false"
+                                              GridPaddingBottom="40"
+                                              ColorPalette="@_palette2"
+                                              LockToMonthCategories="true"
+                                              Height="100%"
+                                              Width="100%" />
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <hr class="nd-separator" />
+
+                @* ── Yıllar Arası Karşılaştırma ── *@
+                <section id="nd-karsilastirma" class="nd-section">
+                    <div class="nd-section-label">
+                        <i class="bi bi-layers-half me-1"></i>Son @CompareYears Yıl – Aylık Bağış Tutarı Karşılaştırması
+                    </div>
+                    <div class="nd-chart-card nd-chart-card-wide">
+                        <GenericChart TItem="MonthlyPoint"
+                                      Series="_multiYearAmountSeries"
+                                      LabelSelector="@(x => x.Label)"
+                                      ValueSelector="@(x => x.Value)"
+                                      Title="@($"Son {CompareYears} Yıl – Aylık Bağış Tutarı")"
+                                      Type="GenericChart<MonthlyPoint>.GenericChartType.Bar"
+                                      ShowDataLabels="false"
+                                      ShowLegend="true"
+                                      GridPaddingBottom="40"
+                                      ColorPalette="@_palette3"
+                                      LockToMonthCategories="true"
+                                      Height="100%"
+                                      Width="100%" />
+                    </div>
+                </section>
+
+                <hr class="nd-separator" />
+
+                @* ── Harita ── *@
+                <section id="nd-harita" class="nd-section">
+                    <div class="nd-section-label">
+                        <i class="bi bi-map-fill me-1"></i>İl Bazlı Nakit Bağış Haritası
+                    </div>
+                    <div class="nd-map-card p-2 p-sm-3">
+                        <div class="nd-map-host">
+                            <TurkeyMap OnProvinceClick="OnProvinceClickAsync" />
+                        </div>
+                    </div>
+                </section>
+
+                <hr class="nd-separator" />
+
+                @* ── İlk 10 İl ── *@
+                <section id="nd-top10" class="nd-section">
+                    <div class="nd-section-label">
+                        <i class="bi bi-trophy-fill me-1"></i>@_selectedYear Yılı En Çok Bağış Gelen İlk 10 İl
+                    </div>
+                    <div class="row g-3 mb-1">
+                        <div class="col-12 col-lg-5">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-body p-2 p-sm-3">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover table-sm nd-top10-table mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th>#</th>
+                                                    <th>İl</th>
+                                                    <th class="text-end">Tutar (₺)</th>
+                                                    <th class="text-end">Bağışçı</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @{ var rank = 1; }
+                                                @foreach (var row in _top10Provinces)
+                                                {
+                                                    <tr>
+                                                        <td>
+                                                            <span class="nd-rank-badge @RankBadgeClass(rank)">@rank</span>
+                                                        </td>
+                                                        <td>@row.ProvinceName</td>
+                                                        <td class="text-end fw-semibold">@row.TotalAmount.ToString("N0", _trCulture)</td>
+                                                        <td class="text-end">@row.UniqueDonors.ToString("N0", _trCulture)</td>
+                                                    </tr>
+                                                    rank++;
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-7">
+                            <div class="nd-chart-card">
+                                <GenericChart TItem="ProvincePoint"
+                                              Series="_top10ProvinceSeries"
+                                              LabelSelector="@(x => x.Label)"
+                                              ValueSelector="@(x => x.Value)"
+                                              Title="İlk 10 İl – Bağış Tutarı"
+                                              Type="GenericChart<ProvincePoint>.GenericChartType.Bar"
+                                              ShowDataLabels="true"
+                                              ShowLegend="false"
+                                              GridPaddingBottom="40"
+                                              ColorPalette="@_palette4"
+                                              LockToMonthCategories="false"
+                                              XAxisLabelRotateDegrees="-35"
+                                              XAxisLabelsAlwaysRotate="true"
+                                              Height="100%"
+                                              Width="100%" />
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <hr class="nd-separator" />
+
+                @* ── Son 10 İl ── *@
+                <section id="nd-bottom10" class="nd-section">
+                    <div class="nd-section-label">
+                        <i class="bi bi-arrow-down-circle-fill me-1 text-danger"></i>@_selectedYear Yılı En Az Bağış Gelen 10 İl
+                    </div>
+                    <div class="row g-3 mb-1">
+                        <div class="col-12 col-lg-5">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-body p-2 p-sm-3">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover table-sm nd-top10-table mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th>#</th>
+                                                    <th>İl</th>
+                                                    <th class="text-end">Tutar (₺)</th>
+                                                    <th class="text-end">Bağışçı</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @{ var brank = 1; }
+                                                @foreach (var row in _bottom10Provinces)
+                                                {
+                                                    <tr>
+                                                        <td>
+                                                            <span class="nd-rank-badge bg-light text-dark border">@brank</span>
+                                                        </td>
+                                                        <td>@row.ProvinceName</td>
+                                                        <td class="text-end fw-semibold">@row.TotalAmount.ToString("N0", _trCulture)</td>
+                                                        <td class="text-end">@row.UniqueDonors.ToString("N0", _trCulture)</td>
+                                                    </tr>
+                                                    brank++;
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-7">
+                            <div class="nd-chart-card">
+                                <GenericChart TItem="ProvincePoint"
+                                              Series="_bottom10ProvinceSeries"
+                                              LabelSelector="@(x => x.Label)"
+                                              ValueSelector="@(x => x.Value)"
+                                              Title="Son 10 İl – Bağış Tutarı"
+                                              Type="GenericChart<ProvincePoint>.GenericChartType.Bar"
+                                              ShowDataLabels="true"
+                                              ShowLegend="false"
+                                              GridPaddingBottom="40"
+                                              ColorPalette="@_paletteBottom"
+                                              LockToMonthCategories="false"
+                                              XAxisLabelRotateDegrees="-35"
+                                              XAxisLabelsAlwaysRotate="true"
+                                              Height="100%"
+                                              Width="100%" />
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    // ── Constants ──────────────────────────────────────────────────────────
+    private const int Since = 2005;
+    private const int CompareYears = 3;
+    private static readonly TimeSpan PollInterval = TimeSpan.FromMinutes(5);
+    private static readonly CultureInfo _trCulture = new("tr-TR");
+
+    // ── Palettes ───────────────────────────────────────────────────────────
+    private static readonly string[] _palette1 = ["#1982C4", "#4267AC", "#6A4C93", "#9B5DE5", "#C77DFF"];
+    private static readonly string[] _palette2 = ["#00BBF9", "#00F5D4", "#8AC926", "#FFCA3A", "#FF595E"];
+    private static readonly string[] _palette3 = ["#1982C4", "#FF595E", "#8AC926", "#FFCA3A", "#9B5DE5"];
+    private static readonly string[] _palette4 = ["#F15BB5", "#9B5DE5", "#00BBF9", "#00F5D4", "#FEE440",
+                                                    "#FF595E", "#FFCA3A", "#8AC926", "#1982C4", "#6A4C93"];
+    private static readonly string[] _paletteBottom = ["#adb5bd", "#ced4da", "#dee2e6", "#e9ecef", "#f8f9fa",
+                                                        "#adb5bd", "#ced4da", "#dee2e6", "#e9ecef", "#f8f9fa"];
+
+    // ── State ──────────────────────────────────────────────────────────────
+    private bool isLoading;
+    private bool loadFailed;
+    private string loadingMessage = "Yükleniyor...";
+    private DateTime _lastRefresh;
+    private int _selectedYear = DateTime.Now.Year;
+
+    private CancellationTokenSource? _cts;
+    private PeriodicTimer? _pollTimer;
+    private Task? _pollingTask;
+    private readonly SemaphoreSlim _loadLock = new(1, 1);
+
+    // ── Raw data ───────────────────────────────────────────────────────────
+    private List<NakitBagisHareket> _allData = [];
+    private Dictionary<int, int?> _donorProvinceIdByDonorId = new();
+    private Dictionary<int, string> _ilNameById = new();
+
+    // ── KPI – Yıllık ──────────────────────────────────────────────────────
+    private decimal _yearlyTotal;
+    private int _yearlyDonationCount;
+    private int _yearlyUniqueDonors;
+    private int _yearlyNewDonors;
+    private decimal _avgDonationAmount;
+    private decimal _bestMonthAmount;
+    private string _bestMonthLabel = "";
+    private decimal? _yearlyTotalYoY;
+    private decimal? _yearlyCountYoY;
+    private decimal? _yearlyUniqueDonorsYoY;
+
+    // ── KPI – Bu Ay ───────────────────────────────────────────────────────
+    private decimal _thisMonthTotal;
+    private int _thisMonthCount;
+    private int _thisMonthUniqueDonors;
+    private decimal? _thisMonthTotalYoY;
+
+    // ── Chart series ──────────────────────────────────────────────────────
+    private readonly List<GenericChart<MonthlyPoint>.GenericSeries> _monthlyAmountSeries = [];
+    private readonly List<GenericChart<MonthlyPoint>.GenericSeries> _monthlyDonorSeries = [];
+    private readonly List<GenericChart<MonthlyPoint>.GenericSeries> _multiYearAmountSeries = [];
+    private readonly List<GenericChart<ProvincePoint>.GenericSeries> _top10ProvinceSeries = [];
+    private readonly List<ProvinceRow> _top10Provinces = [];
+    private readonly List<GenericChart<ProvincePoint>.GenericSeries> _bottom10ProvinceSeries = [];
+    private readonly List<ProvinceRow> _bottom10Provinces = [];
+
+    // ── Lifecycle ──────────────────────────────────────────────────────────
+    private bool _scrollSpyInitialized;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _cts = new CancellationTokenSource();
+        await LoadDataSafeAsync(_cts.Token);
+        StartPolling(_cts.Token);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_scrollSpyInitialized || isLoading || loadFailed) return;
+        _scrollSpyInitialized = true;
+        await JS.InvokeVoidAsync("initScrollSpy", "nd-scrollspy-content", "nd-scrollspy-nav", 12);
+    }
+
+    private Task ScrollToAsync(string sectionId)
+        => JS.InvokeVoidAsync("scrollSpyScrollTo", "nd-scrollspy-content", sectionId).AsTask();
+
+    private async Task RefreshAsync()
+    {
+        if (_cts == null) return;
+        await LoadDataSafeAsync(_cts.Token);
+    }
+
+    // ── Data loading ───────────────────────────────────────────────────────
+    private async Task LoadDataAsync(CancellationToken cancellationToken)
+    {
+        isLoading = true;
+        loadFailed = false;
+        loadingMessage = "Yükleniyor...";
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            var years = DateTime.Now.Year - Since + 1;
+
+            loadingMessage = "Bağışçılar yükleniyor...";
+            await InvokeAsync(StateHasChanged);
+
+            var bagisciRes = await NakitBagisciService.GetAllAsync(cancellationToken);
+            var bagiscilar = bagisciRes.IsSuccess ? bagisciRes.Value : [];
+            _donorProvinceIdByDonorId = bagiscilar
+                .Where(x => x != null)
+                .GroupBy(x => x.Id)
+                .ToDictionary(g => g.Key, g => g.First().Ili);
+
+            loadingMessage = "Bağış hareketleri yükleniyor...";
+            await InvokeAsync(StateHasChanged);
+
+            var hareketRes = await NakitBagisHareketService.GetLastYearsAsync(years, cancellationToken);
+            _allData = hareketRes.IsSuccess ? hareketRes.Value : [];
+
+            loadingMessage = "İller yükleniyor...";
+            await InvokeAsync(StateHasChanged);
+
+            var illerRes = await IlService.GetAllAsync(cancellationToken);
+            var iller = illerRes.IsSuccess ? illerRes.Value : [];
+            _ilNameById = iller
+                .Where(x => x != null)
+                .GroupBy(x => x.Id)
+                .ToDictionary(g => g.Key, g => (g.First().IlAdi ?? "").Trim());
+
+            loadingMessage = "KPI'lar ve grafikler hazırlanıyor...";
+            await InvokeAsync(StateHasChanged);
+
+            BuildAllViews();
+
+            _lastRefresh = DateTime.Now;
+            loadingMessage = "Tamamlandı.";
+        }
+        catch (Exception ex)
+        {
+            loadFailed = true;
+            loadingMessage = $"Hata: {ex.Message}";
+            ClearSeries();
+        }
+        finally
+        {
+            isLoading = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task LoadDataSafeAsync(CancellationToken cancellationToken)
+    {
+        await _loadLock.WaitAsync(cancellationToken);
+        try { await LoadDataAsync(cancellationToken); }
+        finally { _loadLock.Release(); }
+    }
+
+    private void StartPolling(CancellationToken cancellationToken)
+    {
+        _pollTimer = new PeriodicTimer(PollInterval);
+        _pollingTask = Task.Run(async () =>
+        {
+            try
+            {
+                while (await _pollTimer.WaitForNextTickAsync(cancellationToken))
+                    await InvokeAsync(async () => await LoadDataSafeAsync(cancellationToken));
+            }
+            catch (OperationCanceledException) { }
+            catch (ObjectDisposedException) { }
+        }, CancellationToken.None);
+    }
+
+    private Task OnYearChangedAsync()
+    {
+        BuildAllViews();
+        return Task.CompletedTask;
+    }
+
+    // ── Build / Prepare ────────────────────────────────────────────────────
+    private void BuildAllViews()
+    {
+        BuildYearlyKpis();
+        BuildThisMonthKpis();
+        BuildMonthlyAmountChart();
+        BuildMonthlyDonorChart();
+        BuildMultiYearChart();
+        BuildTop10Provinces();
+        BuildBottom10Provinces();
+    }
+
+    private List<NakitBagisHareket> YearData(int year) =>
+        _allData.Where(x => x?.BagisTarihi?.Year == year).Select(x => x!).ToList();
+
+    private void BuildYearlyKpis()
+    {
+        var cur = YearData(_selectedYear);
+        var prev = YearData(_selectedYear - 1);
+
+        _yearlyTotal = cur.Sum(x => x.BagisMiktari) ?? 0m;
+        _yearlyDonationCount = cur.Count;
+        _yearlyUniqueDonors = cur.Where(x => x.BagisciId != null)
+                                  .Select(x => x.BagisciId!.Value).Distinct().Count();
+        _avgDonationAmount = _yearlyDonationCount > 0 ? _yearlyTotal / _yearlyDonationCount : 0m;
+
+        // Yeni bağışçı: tüm zamanlar ilk bağışı bu yılda olan
+        var firstDonationYearByDonor = _allData
+            .Where(x => x?.BagisTarihi != null && x.BagisciId != null)
+            .GroupBy(x => x.BagisciId!.Value)
+            .ToDictionary(g => g.Key, g => g.Min(v => v.BagisTarihi!.Value.Year));
+        _yearlyNewDonors = firstDonationYearByDonor.Values.Count(y => y == _selectedYear);
+
+        // En yüksek ay
+        var monthlySums = cur
+            .GroupBy(x => x.BagisTarihi!.Value.Month)
+            .Select(g => new { Month = g.Key, Total = g.Sum(v => v.BagisMiktari) ?? 0m })
+            .OrderByDescending(x => x.Total)
+            .FirstOrDefault();
+        _bestMonthAmount = monthlySums?.Total ?? 0m;
+        _bestMonthLabel = monthlySums != null
+            ? new DateTime(_selectedYear, monthlySums.Month, 1).ToString("MMMM yyyy", _trCulture)
+            : "–";
+
+        // YoY
+        _yearlyTotalYoY = CalcYoY(_yearlyTotal, prev.Sum(x => x.BagisMiktari) ?? 0m);
+        _yearlyCountYoY = CalcYoY(_yearlyDonationCount, prev.Count);
+        var prevUnique = prev.Where(x => x.BagisciId != null)
+                              .Select(x => x.BagisciId!.Value).Distinct().Count();
+        _yearlyUniqueDonorsYoY = CalcYoY(_yearlyUniqueDonors, prevUnique);
+    }
+
+    private void BuildThisMonthKpis()
+    {
+        var now = DateTime.Now;
+        // Ayın başından bugüne kadar olan gün aralığını eşit tut (örn. 15 Haz = her iki yılda da 1–15 arası)
+        var periodStart = new DateTime(now.Year, now.Month, 1);
+        var periodEndExclusive = now.Date.AddDays(1); // bugün dahil
+        var dayOfMonth = now.Day;
+
+        var curMonth = _allData
+            .Where(x => x?.BagisTarihi?.Year == now.Year
+                        && x.BagisTarihi?.Month == now.Month
+                        && x.BagisTarihi.Value.Day <= dayOfMonth)
+            .Select(x => x!).ToList();
+
+        var prevMonth = _allData
+            .Where(x => x?.BagisTarihi?.Year == now.Year - 1
+                        && x.BagisTarihi?.Month == now.Month
+                        && x.BagisTarihi.Value.Day <= dayOfMonth)
+            .Select(x => x!).ToList();
+
+        _thisMonthTotal = curMonth.Sum(x => x.BagisMiktari) ?? 0m;
+        _thisMonthCount = curMonth.Count;
+        _thisMonthUniqueDonors = curMonth.Where(x => x.BagisciId != null)
+                                          .Select(x => x.BagisciId!.Value).Distinct().Count();
+        _thisMonthTotalYoY = CalcYoY(_thisMonthTotal, prevMonth.Sum(x => x.BagisMiktari) ?? 0m);
+    }
+
+    private void BuildMonthlyAmountChart()
+    {
+        _monthlyAmountSeries.Clear();
+        var items = Enumerable.Range(1, 12).Select(m =>
+        {
+            var total = YearData(_selectedYear)
+                .Where(x => x.BagisTarihi!.Value.Month == m)
+                .Sum(x => x.BagisMiktari) ?? 0m;
+            return new MonthlyPoint { Month = m, Label = MonthAbbr(m), Value = total };
+        }).ToList();
+        _monthlyAmountSeries.Add(new GenericChart<MonthlyPoint>.GenericSeries(_selectedYear.ToString(), items));
+    }
+
+    private void BuildMonthlyDonorChart()
+    {
+        _monthlyDonorSeries.Clear();
+        var yearDonations = YearData(_selectedYear);
+        var items = Enumerable.Range(1, 12).Select(m =>
+        {
+            var count = yearDonations
+                .Where(x => x.BagisTarihi!.Value.Month == m && x.BagisciId != null)
+                .Select(x => x.BagisciId!.Value).Distinct().Count();
+            return new MonthlyPoint { Month = m, Label = MonthAbbr(m), Value = count };
+        }).ToList();
+        _monthlyDonorSeries.Add(new GenericChart<MonthlyPoint>.GenericSeries(_selectedYear.ToString(), items));
+    }
+
+    private void BuildMultiYearChart()
+    {
+        _multiYearAmountSeries.Clear();
+        var yearNow = DateTime.Now.Year;
+        for (var y = yearNow - (CompareYears - 1); y <= yearNow; y++)
+        {
+            var items = Enumerable.Range(1, 12).Select(m =>
+            {
+                var total = _allData
+                    .Where(x => x?.BagisTarihi?.Year == y && x.BagisTarihi?.Month == m)
+                    .Sum(x => x.BagisMiktari) ?? 0m;
+                return new MonthlyPoint { Month = m, Label = MonthAbbr(m), Value = total };
+            }).ToList();
+            _multiYearAmountSeries.Add(new GenericChart<MonthlyPoint>.GenericSeries(y.ToString(), items));
+        }
+    }
+
+    private void BuildTop10Provinces()
+    {
+        _top10Provinces.Clear();
+        _top10ProvinceSeries.Clear();
+
+        var yearDonations = YearData(_selectedYear)
+            .Where(x => x.BagisciId != null)
+            .Select(x => new
+            {
+                x.BagisciId,
+                x.BagisMiktari,
+                ProvinceId = _donorProvinceIdByDonorId.TryGetValue(x.BagisciId!.Value, out var pid) ? pid : null
+            })
+            .Where(x => x.ProvinceId != null)
+            .ToList();
+
+        var grouped = yearDonations
+            .GroupBy(x => x.ProvinceId!.Value)
+            .Where(g => _ilNameById.TryGetValue(g.Key, out var n) && !string.IsNullOrWhiteSpace(n))
+            .Select(g => new ProvinceRow
+            {
+                ProvinceId = g.Key,
+                ProvinceName = _ilNameById[g.Key].Trim(),
+                TotalAmount = g.Sum(v => v.BagisMiktari) ?? 0m,
+                UniqueDonors = g.Select(v => v.BagisciId!.Value).Distinct().Count()
+            })
+            .OrderByDescending(x => x.TotalAmount)
+            .Take(10)
+            .ToList();
+
+        _top10Provinces.AddRange(grouped);
+
+        var chartItems = grouped.Select(x => new ProvincePoint { Label = x.ProvinceName, Value = x.TotalAmount }).ToList();
+        _top10ProvinceSeries.Add(new GenericChart<ProvincePoint>.GenericSeries("Tutar", chartItems));
+    }
+
+    private void BuildBottom10Provinces()
+    {
+        _bottom10Provinces.Clear();
+        _bottom10ProvinceSeries.Clear();
+
+        var yearDonations = YearData(_selectedYear)
+            .Where(x => x.BagisciId != null)
+            .Select(x => new
+            {
+                x.BagisciId,
+                x.BagisMiktari,
+                ProvinceId = _donorProvinceIdByDonorId.TryGetValue(x.BagisciId!.Value, out var pid) ? pid : null
+            })
+            .Where(x => x.ProvinceId != null)
+            .ToList();
+
+        var grouped = yearDonations
+            .GroupBy(x => x.ProvinceId!.Value)
+            .Where(g => _ilNameById.TryGetValue(g.Key, out var n) && !string.IsNullOrWhiteSpace(n))
+            .Select(g => new ProvinceRow
+            {
+                ProvinceId = g.Key,
+                ProvinceName = _ilNameById[g.Key].Trim(),
+                TotalAmount = g.Sum(v => v.BagisMiktari) ?? 0m,
+                UniqueDonors = g.Select(v => v.BagisciId!.Value).Distinct().Count()
+            })
+            .OrderBy(x => x.TotalAmount)
+            .Take(10)
+            .ToList();
+
+        _bottom10Provinces.AddRange(grouped);
+
+        var chartItems = grouped.Select(x => new ProvincePoint { Label = x.ProvinceName, Value = x.TotalAmount }).ToList();
+        _bottom10ProvinceSeries.Add(new GenericChart<ProvincePoint>.GenericSeries("Tutar", chartItems));
+    }
+
+    private void ClearSeries()
+    {
+        _monthlyAmountSeries.Clear();
+        _monthlyDonorSeries.Clear();
+        _multiYearAmountSeries.Clear();
+        _top10ProvinceSeries.Clear();
+        _top10Provinces.Clear();
+        _bottom10ProvinceSeries.Clear();
+        _bottom10Provinces.Clear();
+    }
+
+    // ── Helpers ────────────────────────────────────────────────────────────
+    private static decimal? CalcYoY(decimal current, decimal previous)
+        => previous <= 0m ? null : Math.Round((current - previous) / previous * 100m, 1);
+
+    private static decimal? CalcYoY(int current, int previous)
+        => previous <= 0 ? null : Math.Round((current - previous) / (decimal)previous * 100m, 1);
+
+    private string MonthAbbr(int month) => new DateTime(2000, month, 1).ToString("MMM", _trCulture);
+
+    private static string RankBadgeClass(int rank) => rank switch
+    {
+        1 => "bg-warning text-dark",
+        2 => "bg-secondary",
+        3 => "bg-danger",
+        _ => "bg-light text-dark border"
+    };
+
+    // ── Province click ─────────────────────────────────────────────────────
+    private async Task OnProvinceClickAsync(int provinceId)
+    {
+        var ilAdi = _ilNameById.TryGetValue(provinceId, out var name) && !string.IsNullOrWhiteSpace(name)
+            ? name : provinceId.ToString(_trCulture);
+
+        var rows = _allData
+            .Where(x => x?.BagisciId != null
+                        && _donorProvinceIdByDonorId.TryGetValue(x.BagisciId.Value, out var pid)
+                        && pid == provinceId)
+            .Select(x => x!)
+            .ToList();
+
+        RenderFragment content = builder =>
+        {
+            builder.OpenComponent<ProvinceNakitBagisGenericTable>(0);
+            builder.AddAttribute(1, "Items", rows);
+            builder.AddAttribute(2, "Years", 10);
+            builder.CloseComponent();
+        };
+
+        await ModalService.Show(new ModalRequest
+        {
+            Title = $"{ilAdi} İli Nakit Bağış Bilgileri",
+            Content = content,
+            ShowConfirmationButtons = false,
+            DialogClass = "modal-lg modal-narrow"
+        });
+    }
+
+    // ── IDisposable ────────────────────────────────────────────────────────
+    public void Dispose()
+    {
+        _cts?.Cancel();
+        _pollTimer?.Dispose();
+        _cts?.Dispose();
+        _loadLock.Dispose();
+    }
+
+    // ── Local model types ──────────────────────────────────────────────────
+    private sealed class MonthlyPoint
+    {
+        public int Month { get; set; }
+        public string Label { get; set; } = "";
+        public decimal Value { get; set; }
+    }
+
+    private sealed class ProvincePoint
+    {
+        public string Label { get; set; } = "";
+        public decimal Value { get; set; }
+    }
+
+    private sealed class ProvinceRow
+    {
+        public int ProvinceId { get; set; }
+        public string ProvinceName { get; set; } = "";
+        public decimal TotalAmount { get; set; }
+        public int UniqueDonors { get; set; }
+    }
+}

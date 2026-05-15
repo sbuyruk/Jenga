@@ -257,7 +257,7 @@
                                 <div class="card-header fw-semibold">
                                     <i class="bi bi-bar-chart-fill me-1 text-primary"></i>Yaş Grubu Dağılımı
                                 </div>
-                                <div class="card-body p-0 flex-grow-1" style="min-height:200px; height:280px;">
+                                <div class="card-body p-0 flex-grow-1 pd-yas-chart-body">
                                     <GenericChart TItem="PieItem"
                                                   Items="_yasDagilimItems"
                                                   LabelSelector="@(p => p.Label)"
@@ -478,7 +478,7 @@
                                 <div class="card-header fw-semibold">
                                     <i class="bi bi-pie-chart-fill me-1 text-success"></i>Kalan İzin Toplam Dağılımı (Kadrolu)
                                 </div>
-                                <div class="card-body p-0" style="min-height:220px; height:300px;">
+                                <div class="card-body p-0 pd-izin-chart-body">
                                     <GenericChart TItem="PieItem"
                                                   Items="_kalanIzinGrupItems"
                                                   LabelSelector="@(p => p.Label)"
@@ -500,7 +500,7 @@
                                     <i class="bi bi-table me-1 text-success"></i>Personel Bazlı Kalan İzin Toplamı (Kadrolu)
                                 </div>
                                 <div class="card-body p-0">
-                                    <div class="table-responsive" style="max-height:280px; overflow-y:auto;">
+                                    <div class="table-responsive pd-kalanizin-scroll">
                                         <table class="table table-sm table-hover mb-0 small">
                                             <thead class="table-light sticky-top">
                                                 <tr>
@@ -587,7 +587,7 @@
                                     <i class="bi bi-arrow-up-circle-fill me-1 text-success"></i>Bu Yıl Derece Değişimleri
                                 </div>
                                 <div class="card-body p-0">
-                                    <div class="table-responsive" style="max-height:240px; overflow-y:auto;">
+                                    <div class="table-responsive pd-derece-scroll">
                                         <table class="table table-sm table-hover mb-0 small">
                                             <thead class="table-light sticky-top">
                                                 <tr>
@@ -643,13 +643,13 @@
                             <th>Ad Soyad</th>
                             <th>Birim</th>
                             <th>Ünvan</th>
-                            <th>Başlama Tarihi</th>
+                            <th class="d-none d-sm-table-cell">Başlama Tarihi</th>
                         </HeaderTemplate>
                         <RowTemplate Context="row">
                             <td class="fw-medium">@row.AdSoyad</td>
                             <td>@row.BirimAdi</td>
                             <td>@row.Unvan</td>
-                            <td>@(row.BaslamaTarihi?.ToString("dd.MM.yyyy") ?? "–")</td>
+                            <td class="d-none d-sm-table-cell">@(row.BaslamaTarihi?.ToString("dd.MM.yyyy") ?? "–")</td>
                         </RowTemplate>
                     </GenericTable>
 

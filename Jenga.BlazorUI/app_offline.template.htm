@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bakım – Jenga</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background: #f4f6f9;
+            color: #444;
+        }
+        .box {
+            text-align: center;
+            padding: 2rem 3rem;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,.08);
+            max-width: 420px;
+        }
+        h1 { font-size: 1.4rem; margin-bottom: .5rem; color: #1a1a2e; }
+        p  { font-size: .95rem; line-height: 1.6; }
+
+        .status { margin-top: 1.2rem; font-size: .85rem; color: #888; }
+
+        .spinner {
+            display: inline-block;
+            width: 14px; height: 14px;
+            border: 2px solid #ccc;
+            border-top-color: #555;
+            border-radius: 50%;
+            animation: spin .8s linear infinite;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .bar-wrap {
+            margin: 1rem auto 0;
+            width: 100%;
+            background: #e5e7eb;
+            border-radius: 99px;
+            height: 6px;
+            overflow: hidden;
+        }
+        .bar-fill {
+            height: 100%;
+            background: #3b82f6;
+            border-radius: 99px;
+            width: 0%;
+            transition: width .4s linear;
+        }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h1>&#9881;&#65039; Güncelleme Yapılıyor</h1>
+        <p>Jenga şu an bakımda.<br>Kısa süre sonra tekrar kullanılabilir olacaktır.</p>
+
+        <div class="bar-wrap"><div class="bar-fill" id="bar"></div></div>
+
+        <div class="status">
+            <span class="spinner"></span>
+            <span id="msg">10 saniye sonra kontrol edilecek...</span>
+        </div>
+    </div>
+
+    <script>
+        var INTERVAL = 10;
+        var remaining = INTERVAL;
+        var bar = document.getElementById("bar");
+        var msg = document.getElementById("msg");
+
+        function check() {
+            msg.textContent = "Kontrol ediliyor...";
+
+            // img ping: kimlik dogrulama gerektirmeyen statik dosyayi yokla
+            // (fetch NTLM el sikismasini tamamlayamayabilir)
+            var img = new Image();
+            var done = false;
+
+            var timer = setTimeout(function () {
+                if (!done) { done = true; img.src = ""; reset(); }
+            }, 5000); // 5 sn timeout
+
+            img.onload = img.onerror = function (e) {
+                if (done) return;
+                done = true;
+                clearTimeout(timer);
+
+                // onerror: 401/200 bile gelse browser img yukleyemez ama HATA alir
+                // ANCAK 503 app_offline icin de hata verir, ayirt etmek icin
+                // ayri bir fetch ile HTTP status'u kontrol edelim
+                fetch("/favicon.ico", { method: "HEAD", cache: "no-store", credentials: "include" })
+                    .then(function (r) {
+                        console.log("fetch status:", r.status);
+                        if (r.status !== 503) {
+                            goLive();
+                        } else {
+                            reset();
+                        }
+                    })
+                    .catch(function (err) {
+                        console.log("fetch catch:", err);
+                        // fetch basarisiz ama img baglanti kurdu = site ayakta olmali
+                        goLive();
+                    });
+            };
+
+            img.src = "/favicon.ico?t=" + Date.now();
+        }
+
+        function goLive() {
+            msg.textContent = "Guncelleme tamamlandi, yonlendiriliyor...";
+            bar.style.width = "100%";
+            setTimeout(function () { window.location.href = "/"; }, 800);
+        }
+
+        function reset() {
+            remaining = INTERVAL;
+            bar.style.width = "0%";
+            tick();
+        }
+
+        function tick() {
+            remaining--;
+            if (remaining <= 0) {
+                check();
+                return;
+            }
+            var pct = ((INTERVAL - remaining) / INTERVAL) * 100;
+            bar.style.width = pct + "%";
+            msg.textContent = remaining + " saniye sonra kontrol edilecek...";
+            setTimeout(tick, 1000);
+        }
+
+        tick();
+    </script>
+</body>
+</html>

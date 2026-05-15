@@ -1,0 +1,168 @@
+@page "/tbys/tasinmaz/{TasinmazId:int}"
+@rendermode InteractiveServer
+@using Jenga.DataAccess.Services.TBYS
+@using Jenga.Models.TBYS
+@using Jenga.Models.TBYS.Search
+@inject ITbysSearchService SearchService
+@inject NavigationManager Nav
+
+<div class="detay-page">
+
+    @if (_loading)
+    {
+        <div class="detay-loading">
+            <div class="spinner-border text-primary"></div>
+            <span class="ms-3">Yükleniyor...</span>
+        </div>
+    }
+    else if (_hata is not null)
+    {
+        <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle me-2"></i>@_hata
+        </div>
+    }
+    else if (_vm is not null)
+    {
+        var t = _vm.Tasinmaz;
+        var aktif = _vm.Sozlesmeler.Where(s => s.Sozlesme.Aktif == true).ToList();
+        var gecmis = _vm.Sozlesmeler.Where(s => s.Sozlesme.Aktif != true).ToList();
+
+        <!-- Geri Butonu -->
+        <button class="btn btn-sm btn-outline-secondary mb-3" @onclick='() => Nav.NavigateTo("/tbys/arama")'>
+            <i class="bi bi-arrow-left me-1"></i> Aramaya Dön
+        </button>
+
+        <!-- Taşınmaz Hero -->
+        <div class="detay-hero">
+            <div class="detay-hero-ikon detay-ikon-tasinmaz">
+                <i class="bi bi-house-door-fill"></i>
+            </div>
+            <div class="detay-hero-bilgi">
+                <h2 class="detay-hero-ad">@(t.Cinsi ?? "Taşınmaz") — @(t.EmlakSicilNo ?? $"#{t.Id}")</h2>
+                <div class="detay-hero-alt">
+                    <span><i class="bi bi-geo-alt me-1"></i>@t.Ili / @t.Ilcesi</span>
+                    @if (!string.IsNullOrEmpty(t.Adres))
+                    {
+                        <span class="ms-3"><i class="bi bi-pin-map me-1"></i>@t.Adres</span>
+                    }
+                </div>
+            </div>
+            <div class="detay-hero-badge @(t.KiraDurumu == "Kiralık" || aktif.Count > 0 ? "badge-aktif" : "badge-pasif")">
+                @(aktif.Count > 0 ? "Kirada" : (t.KiraDurumu ?? "Boş"))
+            </div>
+        </div>
+
+        <!-- Taşınmaz Bilgileri -->
+        <div class="detay-section">
+            <div class="detay-section-baslik">
+                <i class="bi bi-info-circle-fill me-2"></i>Taşınmaz Bilgileri
+            </div>
+            <div class="detay-grid">
+                <DetailField Label="Cinsi" Value="@t.Cinsi" />
+                <DetailField Label="Emlak Sicil No" Value="@t.EmlakSicilNo" />
+                <DetailField Label="İl" Value="@t.Ili" />
+                <DetailField Label="İlçe" Value="@t.Ilcesi" />
+                <DetailField Label="Adres" Value="@t.Adres" FullWidth="true" />
+                <DetailField Label="Ada No" Value="@t.AdaNo" />
+                <DetailField Label="Parsel No" Value="@t.ParselNo" />
+                <DetailField Label="Pafta No" Value="@t.PaftaNo" />
+                <DetailField Label="Yüzölçümü" Value="@t.Yuzolcumu" />
+                <DetailField Label="Arsa Payı" Value="@t.ArsaPayi" />
+                <DetailField Label="Vakıf Hissesi" Value="@t.VakifHissesi" />
+                <DetailField Label="Kullanım Şekli" Value="@t.KullanimSekli" />
+                <DetailField Label="Mülkiyet Şekli" Value="@t.MulkiyetSekli" />
+                <DetailField Label="Edinme Şekli" Value="@t.EdinmeSekli" />
+                <DetailField Label="Kira Durumu" Value="@t.KiraDurumu" />
+                <DetailField Label="Tapu Tarihi" Value="@(t.TapuTarihi?.ToString("dd.MM.yyyy"))" />
+                <DetailField Label="Bağış Yılı" Value="@t.BagisYili" />
+                <DetailField Label="Sorumlu Bölge" Value="@t.SorumluBolge" />
+                <DetailField Label="Sigorta Durumu" Value="@t.SigortaDurumu" />
+                <DetailField Label="Muhasebeye Kayıtlı Değer" Value="@FormatPara(t.MuhasebeyeKayitliDeger)" />
+                <DetailField Label="Tahmini Rayiç Değeri" Value="@FormatPara(t.TahminiRayicDegeri)" />
+                @if (!string.IsNullOrEmpty(t.Aciklama))
+                {
+                    <DetailField Label="Açıklama" Value="@t.Aciklama" FullWidth="true" />
+                }
+            </div>
+        </div>
+
+        <!-- Bağışçı -->
+        @if (_vm.Bagisci is not null)
+        {
+            var b = _vm.Bagisci;
+            <div class="detay-section">
+                <div class="detay-section-baslik">
+                    <i class="bi bi-gift-fill me-2 text-warning"></i>Bağışçı Bilgileri
+                </div>
+                <div class="detay-grid">
+                    <DetailField Label="Ad Soyad" Value="@($"{b.Adi} {b.Soyadi}")" />
+                    <DetailField Label="TC Kimlik No" Value="@b.TCKimlikNo?.ToString()" />
+                    <DetailField Label="Doğum Yeri" Value="@b.DogumYeri" />
+                    <DetailField Label="Doğum Tarihi" Value="@(b.DogumTarihi?.ToString("dd.MM.yyyy"))" />
+                    <DetailField Label="Mesleği" Value="@b.Meslegi" />
+                    <DetailField Label="İl / İlçe" Value="@($"{b.Ili} / {b.Ilcesi}")" />
+                    <DetailField Label="Telefon" Value="@b.Telefon1" />
+                    <DetailField Label="Durum" Value="@b.Sag_vefat" />
+                </div>
+            </div>
+        }
+
+        <!-- Aktif Sözleşmeler -->
+        @if (aktif.Count > 0)
+        {
+            <div class="detay-section">
+                <div class="detay-section-baslik text-success">
+                    <i class="bi bi-file-earmark-check-fill me-2"></i>Aktif Kira Sözleşmeleri
+                    <span class="badge bg-success ms-2">@aktif.Count</span>
+                </div>
+                @foreach (var sv in aktif)
+                {
+                    <SozlesmeKart Sozlesme="sv" />
+                }
+            </div>
+        }
+
+        <!-- Geçmiş Sözleşmeler -->
+        @if (gecmis.Count > 0)
+        {
+            <div class="detay-section">
+                <div class="detay-section-baslik text-secondary">
+                    <i class="bi bi-file-earmark-x me-2"></i>Geçmiş Kira Sözleşmeleri
+                    <span class="badge bg-secondary ms-2">@gecmis.Count</span>
+                </div>
+                @foreach (var sv in gecmis)
+                {
+                    <SozlesmeKart Sozlesme="sv" />
+                }
+            </div>
+        }
+
+        @if (_vm.Sozlesmeler.Count == 0)
+        {
+            <div class="text-muted mt-3">
+                <i class="bi bi-info-circle me-2"></i>Bu taşınmaza ait kayıtlı sözleşme bulunmuyor.
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public int TasinmazId { get; set; }
+
+    private TasinmazDetayVM? _vm;
+    private bool _loading = true;
+    private string? _hata;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await SearchService.GetTasinmazDetayAsync(TasinmazId);
+        _loading = false;
+        if (result.IsSuccess)
+            _vm = result.Value;
+        else
+            _hata = result.Error?.Message ?? "Taşınmaz bilgileri yüklenemedi.";
+    }
+
+    private static string FormatPara(decimal? amount) =>
+        amount.HasValue ? amount.Value.ToString("N2") + " ₺" : "—";
+}

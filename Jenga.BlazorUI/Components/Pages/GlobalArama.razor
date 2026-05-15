@@ -1,0 +1,192 @@
+@page "/arama"
+@rendermode InteractiveServer
+@using Jenga.DataAccess.Services.Search
+@using Jenga.Models.Search
+@inject IGlobalSearchService SearchService
+@inject NavigationManager Nav
+
+<div class="g-arama-page">
+
+    <div class="g-arama-header">
+        <h2 class="g-arama-title">
+            <i class="bi bi-search me-2"></i>Jenga Arama
+        </h2>
+        <p class="g-arama-subtitle">Taşınmaz, Kiracı, Bağışçı, FTK ve daha fazlasını arayın</p>
+    </div>
+
+    <div class="g-arama-box-wrapper">
+        <div class="g-arama-box @(_focused ? "focused" : "")">
+            <i class="bi bi-search g-arama-icon"></i>
+            <input
+                type="text"
+                class="g-arama-input"
+                placeholder="Örn: Yıldızeli, Ahmet Kaya, 12345..."
+                value="@_query"
+                @oninput="OnInput"
+                @onfocus="() => _focused = true"
+                @onblur="() => _focused = false"
+                @onkeydown="OnKeyDown"
+                autocomplete="off"
+                spellcheck="false" />
+            @if (!string.IsNullOrEmpty(_query))
+            {
+                <button class="g-arama-clear" @onclick="Temizle" title="Temizle">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            }
+        </div>
+    </div>
+
+    @if (_loading)
+    {
+        <div class="g-arama-status">
+            <div class="spinner-border spinner-border-sm text-primary me-2"></div>
+            <span>Aranıyor...</span>
+        </div>
+    }
+    else if (_hata is not null)
+    {
+        <div class="g-arama-status text-danger">
+            <i class="bi bi-exclamation-triangle me-2"></i>@_hata
+        </div>
+    }
+    else if (_sonuc is not null && !_sonuc.HerhangiBirSonuc && _arandi)
+    {
+        <div class="g-arama-status text-muted">
+            <i class="bi bi-info-circle me-2"></i>"@_aramaliQuery" için sonuç bulunamadı.
+        </div>
+    }
+    else if (_sonuc is not null && _sonuc.HerhangiBirSonuc)
+    {
+        <div class="g-arama-sonuclar">
+            <div class="g-arama-ozet text-muted">
+                "@_aramaliQuery" için <strong>@_sonuc.ToplamSonuc</strong> sonuç bulundu.
+            </div>
+
+            @foreach (var grup in _sonuc.Gruplar)
+            {
+                <div class="g-arama-grup">
+                    <div class="g-arama-grup-baslik">
+                        <i class="@grup.IkonCss me-1 @grup.RenkCss"></i>
+                        @grup.GrupBasligi
+                        <span class="g-arama-badge arama-modul-@grup.Modul.ToString().ToLower()">
+                            @grup.Sonuclar.Count
+                        </span>
+                        <span class="arama-modul-rozet">@grup.Modul</span>
+                    </div>
+                    <div class="g-arama-liste">
+                        @foreach (var item in grup.Sonuclar)
+                        {
+                            <div class="g-arama-kart" @onclick="() => GitDetay(item)">
+                                <div class="g-arama-kart-ikon arama-ikon-@item.Tipi.ToString().ToLower()">
+                                    <i class="@grup.IkonCss"></i>
+                                </div>
+                                <div class="g-arama-kart-icerik">
+                                    <div class="g-arama-kart-baslik">@item.Baslik</div>
+                                    @if (!string.IsNullOrWhiteSpace(item.AltBaslik))
+                                    {
+                                        <div class="g-arama-kart-alt">@item.AltBaslik</div>
+                                    }
+                                    @if (!string.IsNullOrEmpty(item.EkBilgi))
+                                    {
+                                        <div class="g-arama-kart-ek">@item.EkBilgi</div>
+                                    }
+                                </div>
+                                <i class="bi bi-chevron-right g-arama-kart-ok"></i>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "q")]
+    public string? Q { get; set; }
+
+    private string _query = string.Empty;
+    private string _aramaliQuery = string.Empty;
+    private GlobalSearchSonucu? _sonuc;
+    private bool _loading;
+    private bool _focused;
+    private bool _arandi;
+    private string? _hata;
+    private CancellationTokenSource? _cts;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!string.IsNullOrWhiteSpace(Q) && Q != _aramaliQuery)
+        {
+            _query = Q;
+            _cts?.Cancel();
+            _cts = new CancellationTokenSource();
+            await AraAsync(_cts.Token);
+        }
+    }
+
+    private async Task OnInput(ChangeEventArgs e)
+    {
+        _query = e.Value?.ToString() ?? string.Empty;
+        _cts?.Cancel();
+        _cts = new CancellationTokenSource();
+
+        if (_query.Trim().Length < 2)
+        {
+            _sonuc = null;
+            _arandi = false;
+            _hata = null;
+            return;
+        }
+
+        try
+        {
+            await Task.Delay(350, _cts.Token); // debounce
+            await AraAsync(_cts.Token);
+        }
+        catch (TaskCanceledException) { }
+    }
+
+    private async Task OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            _cts?.Cancel();
+            _cts = new CancellationTokenSource();
+            await AraAsync(_cts.Token);
+        }
+    }
+
+    private async Task AraAsync(CancellationToken ct)
+    {
+        if (_query.Trim().Length < 2) return;
+
+        _loading = true;
+        _hata = null;
+        _aramaliQuery = _query.Trim();
+        StateHasChanged();
+
+        var result = await SearchService.SearchAsync(_aramaliQuery, ct);
+
+        _loading = false;
+        _arandi = true;
+
+        if (result.IsSuccess)
+            _sonuc = result.Value;
+        else
+            _hata = result.Error?.Message ?? "Arama sırasında hata oluştu.";
+
+        StateHasChanged();
+    }
+
+    private void Temizle()
+    {
+        _query = string.Empty;
+        _sonuc = null;
+        _arandi = false;
+        _hata = null;
+    }
+
+    private void GitDetay(SearchResultItem item) => Nav.NavigateTo(item.HedefUrl);
+}

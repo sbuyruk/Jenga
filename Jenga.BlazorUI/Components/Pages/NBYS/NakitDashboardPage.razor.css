@@ -1,0 +1,314 @@
+/* NakitDashboardPage.razor.css – Mobile-first, fully responsive */
+
+.nakit-dashboard {
+    max-width: 100%;
+    overflow-x: hidden;
+    box-sizing: border-box;
+}
+
+/* ── Spinner ──────────────────────────────────────────────── */
+.nakit-dashboard .nd-spin {
+    animation: nd-spin 0.9s linear infinite;
+    display: inline-block;
+}
+
+@keyframes nd-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ── Section Label ────────────────────────────────────────── */
+.nakit-dashboard .nd-section-label {
+    font-size: 0.70rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: #6b7280;
+    margin-bottom: 0.5rem;
+    padding-left: 0.1rem;
+}
+
+/* ── Section ──────────────────────────────────────────────── */
+.nakit-dashboard .nd-section {
+    scroll-margin-top: 12px;
+    padding-bottom: 4px;
+}
+
+/* ── Separator ────────────────────────────────────────────── */
+.nakit-dashboard .nd-separator {
+    width: 65%;
+    margin-block: 1.8rem;
+    margin-inline: auto;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(0,0,0,.20), transparent);
+    opacity: 1;
+    border: 0;
+}
+
+/* ── KPI Card ─────────────────────────────────────────────── */
+.nakit-dashboard .nd-kpi-card {
+    border: none;
+    border-left: 3px solid var(--nd-accent, #6b7280);
+    border-radius: 0.65rem;
+    background: var(--nd-accent-bg, #fafafa);
+    box-shadow: 0 1px 4px rgba(0,0,0,.07);
+    transition: transform 160ms ease, box-shadow 160ms ease, border-left-width 160ms ease;
+    overflow: hidden;
+    height: 100%;
+}
+
+.nakit-dashboard .nd-kpi-card:hover {
+    transform: translateY(-2px);
+    border-left-width: 5px;
+    box-shadow: 0 6px 18px rgba(0,0,0,.10);
+}
+
+.nakit-dashboard .nd-kpi-card-sm {
+    border-left-width: 3px;
+}
+
+.nakit-dashboard .nd-kpi-body {
+    padding: 0.6rem 0.75rem !important;
+}
+
+.nakit-dashboard .nd-kpi-icon {
+    font-size: 1.05rem;
+    color: var(--nd-accent, #6b7280);
+    opacity: 0.85;
+    display: block;
+    margin-bottom: 0.15rem;
+}
+
+.nakit-dashboard .nd-kpi-label {
+    font-size: 0.67rem;
+    color: #6b7280;
+    line-height: 1.2;
+    margin-bottom: 0.15rem;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.nakit-dashboard .nd-kpi-value {
+    font-size: 1.35rem;
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--nd-accent, #374151);
+    font-variant-numeric: tabular-nums;
+    word-break: break-word;
+}
+
+.nakit-dashboard .nd-kpi-value-sm {
+    font-size: 1.1rem;
+}
+
+.nakit-dashboard .nd-kpi-sub {
+    font-size: 0.67rem;
+    color: #9ca3af;
+    margin-top: 0.1rem;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.nakit-dashboard .nd-up   { color: #16a34a !important; }
+.nakit-dashboard .nd-down { color: #dc2626 !important; }
+
+/* ── Accent Tokens ────────────────────────────────────────── */
+.nakit-dashboard .nd-accent-blue   { --nd-accent: #2563eb; --nd-accent-bg: #eff6ff; }
+.nakit-dashboard .nd-accent-sky    { --nd-accent: #0284c7; --nd-accent-bg: #f0f9ff; }
+.nakit-dashboard .nd-accent-green  { --nd-accent: #16a34a; --nd-accent-bg: #f0fdf4; }
+.nakit-dashboard .nd-accent-amber  { --nd-accent: #d97706; --nd-accent-bg: #fffbeb; }
+.nakit-dashboard .nd-accent-purple { --nd-accent: #7c3aed; --nd-accent-bg: #f5f3ff; }
+.nakit-dashboard .nd-accent-teal   { --nd-accent: #0d9488; --nd-accent-bg: #f0fdfa; }
+.nakit-dashboard .nd-accent-rose   { --nd-accent: #e11d48; --nd-accent-bg: #fff1f2; }
+
+/* ── Chart Card ───────────────────────────────────────────── */
+.nakit-dashboard .nd-chart-card {
+    border-radius: 0.65rem;
+    background: var(--card-bg, #fff);
+    box-shadow: 0 1px 4px rgba(0,0,0,.07);
+    overflow: hidden;
+    height: 300px;
+    transition: box-shadow 160ms ease;
+}
+
+.nakit-dashboard .nd-chart-card:hover {
+    box-shadow: 0 4px 14px rgba(0,0,0,.10);
+}
+
+.nakit-dashboard .nd-chart-card-wide {
+    height: 320px;
+}
+
+/* ── Map Card ─────────────────────────────────────────────── */
+.nakit-dashboard .nd-map-card {
+    border-radius: 0.75rem;
+    background:
+        radial-gradient(900px 300px at 10% 10%, rgba(37,99,235,.12), transparent 60%),
+        radial-gradient(700px 260px at 88% 14%, rgba(124,58,237,.10), transparent 58%),
+        linear-gradient(140deg, #f8fafc 0%, #eef2ff 55%, #f8fafc 100%);
+    border: 1px solid #dbe3f0;
+    box-shadow: 0 4px 16px rgba(15,23,42,.07);
+    overflow: hidden;
+}
+
+.nakit-dashboard .nd-map-card ::deep .turkey-map-root { width: 100%; overflow: hidden; }
+.nakit-dashboard .nd-map-card ::deep .turkey-map-canvas { width: 100%; line-height: 0; overflow: hidden; }
+.nakit-dashboard .nd-map-card ::deep .turkey-map-canvas svg {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    display: block;
+    cursor: pointer;
+}
+
+.nakit-dashboard .nd-map-host {
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+/* ── Top 10 Table ─────────────────────────────────────────── */
+.nakit-dashboard .nd-top10-table {
+    font-size: 0.82rem;
+}
+
+.nakit-dashboard .nd-rank-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.4rem;
+    height: 1.4rem;
+    border-radius: 50%;
+    font-size: 0.65rem;
+    font-weight: 700;
+    flex: 0 0 auto;
+}
+
+.nakit-dashboard .nd-rank-gold    { background: #fbbf24; color: #78350f; }
+.nakit-dashboard .nd-rank-silver  { background: #9ca3af; color: #fff; }
+.nakit-dashboard .nd-rank-bronze  { background: #d97706; color: #fff; }
+.nakit-dashboard .nd-rank-default { background: #e5e7eb; color: #374151; }
+
+/* ── Scrollspy Layout ─────────────────────────────────────── */
+.nd-scrollspy-layout {
+    display: grid;
+    grid-template-columns: 1fr 200px;
+    gap: 18px;
+    align-items: start;
+}
+
+.nd-scrollspy-nav {
+    position: sticky;
+    top: 12px;
+    order: 2;
+    background: var(--card-bg, #fff);
+    border: 1px solid rgba(0,0,0,.08);
+    border-radius: 10px;
+    padding: 12px 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.06);
+}
+
+.nd-nav-title {
+    font-size: 0.76rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--p3, #2563EB);
+    padding: 4px 10px 8px;
+    border-bottom: 1px solid rgba(0,0,0,.07);
+    margin-bottom: 6px;
+}
+
+.nd-scrollspy-nav .nav-link {
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-size: 0.81rem;
+    color: var(--muted, #6b6b6b);
+    transition: background 0.15s, color 0.15s;
+}
+
+.nd-scrollspy-nav .nav-link:hover {
+    background: rgba(37,99,235,.07);
+    color: var(--text, #1E1E1E);
+}
+
+.nd-scrollspy-nav .nav-link.active {
+    background: rgba(37,99,235,.12);
+    color: #1D40AE;
+    font-weight: 700;
+}
+
+.nd-scrollspy-content {
+    order: 1;
+    height: calc(100vh - 120px);
+    overflow-y: auto;
+    padding-right: 6px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(100,116,139,.4) transparent;
+}
+
+/* ── Responsive – tablet (≤991px) ────────────────────────── */
+@media (max-width: 991px) {
+    .nd-scrollspy-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .nd-scrollspy-nav {
+        order: 1;
+        position: static;
+        overflow-x: auto;
+        overflow-y: hidden;
+        border-radius: 8px;
+        padding: 8px 10px;
+    }
+
+    .nd-scrollspy-nav .nav {
+        flex-direction: row !important;
+        flex-wrap: nowrap;
+        gap: 4px !important;
+        overflow-x: auto;
+        padding-bottom: 4px;
+        scrollbar-width: thin;
+    }
+
+    .nd-nav-title { display: none; }
+
+    .nd-scrollspy-nav .nav-link {
+        white-space: nowrap;
+        font-size: 0.75rem;
+        padding: 5px 10px;
+    }
+
+    .nd-scrollspy-content {
+        order: 2;
+        height: calc(100vh - 200px);
+        overflow-y: auto;
+    }
+
+    .nd-section { scroll-margin-top: 48px; }
+}
+
+/* ── Responsive – mobil küçük (≤575px) ───────────────────── */
+@media (max-width: 575px) {
+    .nakit-dashboard .nd-kpi-value  { font-size: 1.05rem; }
+    .nakit-dashboard .nd-kpi-body   { padding: 0.45rem 0.55rem !important; }
+    .nakit-dashboard .nd-kpi-icon   { font-size: 0.9rem; }
+    .nakit-dashboard .nd-chart-card { height: 240px; }
+    .nakit-dashboard .nd-chart-card-wide { height: 260px; }
+    .nakit-dashboard .nd-top10-table { font-size: 0.72rem; }
+    .nakit-dashboard .nd-map-card   { padding: 10px 4px 6px; border-radius: 10px; }
+    .nd-separator { width: 80%; margin-block: 1.2rem; }
+}
+
+/* ── Responsive – mobil orta (576–767px) ─────────────────── */
+@media (min-width: 576px) and (max-width: 767px) {
+    .nakit-dashboard .nd-kpi-value { font-size: 1.15rem; }
+    .nakit-dashboard .nd-chart-card { height: 270px; }
+}
+
+/* ── Responsive – tablet orta (768–991px) ────────────────── */
+@media (min-width: 768px) and (max-width: 991px) {
+    .nakit-dashboard .nd-chart-card { height: 290px; }
+}

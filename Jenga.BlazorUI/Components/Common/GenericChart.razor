@@ -251,7 +251,9 @@
         var jsNumberFormatter =
             "function (val) { try { return (val ?? 0).toLocaleString(); } catch(e) { return val; } }";
 
-        var jsYAxisFormatter = BuildJsYAxisFormatter();
+        var jsCompactFormatter = BuildJsYAxisFormatter();
+
+        var jsYAxisFormatter = jsCompactFormatter;
 
         var jsTooltipCustom = BuildTooltipCustomJs();
 
@@ -289,7 +291,8 @@
                 Style = new DataLabelsStyle
                 {
                     Colors = new List<string> { BarDataLabelColor }
-                }
+                },
+                Formatter = jsCompactFormatter
             },
             Tooltip = tooltip,
             Xaxis = new XAxis

@@ -1,0 +1,131 @@
+@page "/tbys/kiraci/{KiraciId:int}"
+@rendermode InteractiveServer
+@using Jenga.DataAccess.Services.TBYS
+@using Jenga.Models.TBYS
+@using Jenga.Models.TBYS.Search
+@inject ITbysSearchService SearchService
+@inject NavigationManager Nav
+
+<div class="detay-page">
+
+    @if (_loading)
+    {
+        <div class="detay-loading">
+            <div class="spinner-border text-primary"></div>
+            <span class="ms-3">Yükleniyor...</span>
+        </div>
+    }
+    else if (_hata is not null)
+    {
+        <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle me-2"></i>@_hata
+        </div>
+    }
+    else if (_vm is not null)
+    {
+        var k = _vm.Kiraci;
+        var aktif = _vm.Sozlesmeler.Where(s => s.Sozlesme.Aktif == true).ToList();
+        var gecmis = _vm.Sozlesmeler.Where(s => s.Sozlesme.Aktif != true).ToList();
+
+        <!-- Geri Butonu -->
+        <button class="btn btn-sm btn-outline-secondary mb-3" @onclick='() => Nav.NavigateTo("/tbys/arama")'>
+            <i class="bi bi-arrow-left me-1"></i> Aramaya Dön
+        </button>
+
+        <!-- Kiracı Başlığı -->
+        <div class="detay-hero">
+            <div class="detay-hero-ikon detay-ikon-kiraci">
+                <i class="bi bi-person-fill"></i>
+            </div>
+            <div class="detay-hero-bilgi">
+                <h2 class="detay-hero-ad">@k.Adi @k.Soyadi</h2>
+                <div class="detay-hero-alt">
+                    @if (!string.IsNullOrEmpty(k.Ili))
+                    {
+                        <span><i class="bi bi-geo-alt me-1"></i>@k.Ili@(!string.IsNullOrEmpty(k.Ilcesi) ? $" / {k.Ilcesi}" : "")</span>
+                    }
+                    @if (!string.IsNullOrEmpty(k.KiralamaAmaci))
+                    {
+                        <span class="ms-3"><i class="bi bi-tag me-1"></i>@k.KiralamaAmaci</span>
+                    }
+                </div>
+            </div>
+            <div class="detay-hero-badge @(aktif.Count > 0 ? "badge-aktif" : "badge-pasif")">
+                @(aktif.Count > 0 ? "Aktif Kiracı" : "Pasif")
+            </div>
+        </div>
+
+        <!-- Kiracı İletişim Bilgileri -->
+        <div class="detay-section">
+            <div class="detay-section-baslik">
+                <i class="bi bi-person-lines-fill me-2"></i>Kişisel Bilgiler
+            </div>
+            <div class="detay-grid">
+                <DetailField Label="Ad Soyad" Value="@($"{k.Adi} {k.Soyadi}")" />
+                <DetailField Label="TC Kimlik No" Value="@k.TCKimlikNo?.ToString()" />
+                <DetailField Label="Vergi Dairesi" Value="@k.VergiDairesi" />
+                <DetailField Label="Vergi No" Value="@k.VergiNo" />
+                <DetailField Label="Telefon" Value="@k.Telefon" />
+                <DetailField Label="E-posta" Value="@k.Eposta" />
+                <DetailField Label="İl / İlçe" Value="@($"{k.Ili} / {k.Ilcesi}")" />
+                <DetailField Label="Adres" Value="@k.Adres" FullWidth="true" />
+                <DetailField Label="Kiralama Amacı" Value="@k.KiralamaAmaci" />
+            </div>
+        </div>
+
+        <!-- Aktif Sözleşmeler -->
+        @if (aktif.Count > 0)
+        {
+            <div class="detay-section">
+                <div class="detay-section-baslik text-success">
+                    <i class="bi bi-file-earmark-check-fill me-2"></i>Aktif Sözleşmeler
+                    <span class="badge bg-success ms-2">@aktif.Count</span>
+                </div>
+                @foreach (var sv in aktif)
+                {
+                    <SozlesmeKart Sozlesme="sv" />
+                }
+            </div>
+        }
+
+        <!-- Geçmiş Sözleşmeler -->
+        @if (gecmis.Count > 0)
+        {
+            <div class="detay-section">
+                <div class="detay-section-baslik text-secondary">
+                    <i class="bi bi-file-earmark-x me-2"></i>Geçmiş Sözleşmeler
+                    <span class="badge bg-secondary ms-2">@gecmis.Count</span>
+                </div>
+                @foreach (var sv in gecmis)
+                {
+                    <SozlesmeKart Sozlesme="sv" />
+                }
+            </div>
+        }
+
+        @if (_vm.Sozlesmeler.Count == 0)
+        {
+            <div class="text-muted mt-3">
+                <i class="bi bi-info-circle me-2"></i>Bu kiracıya ait kayıtlı sözleşme bulunmuyor.
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public int KiraciId { get; set; }
+
+    private KiraciDetayVM? _vm;
+    private bool _loading = true;
+    private string? _hata;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await SearchService.GetKiraciDetayAsync(KiraciId);
+        _loading = false;
+        if (result.IsSuccess)
+            _vm = result.Value;
+        else
+            _hata = result.Error?.Message ?? "Kiracı bilgileri yüklenemedi.";
+    }
+}

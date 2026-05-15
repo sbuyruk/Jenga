@@ -1,200 +1,104 @@
 ﻿@page "/"
-@* @rendermode InteractiveServer *@
-@* @using Jenga.Models.Common
-@using Microsoft.AspNetCore.Components.Web
-@inject Jenga.BlazorUI.Services.Common.CurrentUserService CurrentUserService
-@inject Jenga.DataAccess.Services.Common.IMenuItemService MenuItemService
-@inject NavigationManager Nav *@
+@rendermode InteractiveServer
+@using Jenga.BlazorUI.Services.Common
+@inject ICurrentUserService CurrentUserService
+@inject NavigationManager Nav
 
-@* <main id="main-content" class="hero" role="main" tabindex="-1">
+<div class="home-hero">
 
-    <section class="quick-cards" aria-label="Hızlı erişim">
-        @if (isLoading)
-        {
-            <p>Yükleniyor...</p>
-        }
-        else if (AllowedMenus?.Any() != true)
-        {
-            <p>Kullanıcı için yetkili menü bulunamadı.</p>
-        }
-        else
-        {
-            <div class="d-flex flex-wrap gap-3">
-                @foreach (var menu in AllowedMenus)
-                {
-                    <div class="col">
-                        <card class="card summary-card" style="height:250px;width:200px;overflow:auto"
-                              role="button"
-                              tabindex="0"
-                              @onclick="() => OpenMenu(menu)"
-                              @onkeydown="@(e => OnKeyDown(e, menu))"
-                              aria-label="@menu.Title">
-                            <div class="card-header" style="@GetCardHeaderStyle(menu)">
-                                @menu.Title
-                            </div>
-                            <div class="card-body">
-                                <p>@menu.Aciklama</p>
-                            </div>
-                            <div class="card-footer text-center">
-                                <button class="btn btn-sm btn-primary"
-                                        @onclick:stopPropagation="true"
-                                        @onclick="() => OpenMenu(menu)">
-                                    Aç
-                                </button>
-                            </div>
-                        </card>
-                    </div>
-                }
-            </div>
-        }
-    </section>
-</main> *@
+    @* ── Karşılama Başlığı ── *@
+    <div class="home-hero__header">
+        <h1 class="home-hero__title">Jenga Yönetim Platformu</h1>
+        <p class="home-hero__subtitle">
+            Hoş geldiniz@(_adSoyad != null ? $", {_adSoyad}" : "")!
+            Sol menüden bir modül seçerek çalışmaya başlayabilirsiniz.
+        </p>
+    </div>
 
-@* @code {
-    private List<MenuItem> AllowedMenus { get; set; } = new();
-    private bool isLoading = true;
+    @* ── Global Arama Kutusu ── *@
+    <div style="display:flex; flex-direction:column; align-items:center; margin: 1.5rem auto 2rem; width:100%; max-width:720px; padding: 0 1rem;">
+        <div style="display:flex; align-items:center; width:100%; background:var(--bs-body-bg,#fff); border:2.5px solid @(_searchFocused ? "#0d6efd" : "#ced4da"); border-radius:50px; padding:.65rem 1.25rem; gap:.5rem; box-shadow: 0 4px 20px rgba(13,110,253,.09); transition: border-color .2s, box-shadow .2s;">
+            <i class="bi bi-search" style="color:#6c757d; font-size:1.2rem; flex-shrink:0;"></i>
+            <input type="text"
+                   style="flex:1; border:none; outline:none; background:transparent; font-size:1.15rem; color:var(--bs-body-color,#212529); min-width:0;"
+                   placeholder="Taşınmaz, kiracı, bağışçı, personel ara..."
+                   value="@_searchQuery"
+                   @oninput="e => _searchQuery = e.Value?.ToString() ?? string.Empty"
+                   @onfocus="() => _searchFocused = true"
+                   @onblur="() => _searchFocused = false"
+                   @onkeydown="OnSearchKeyDown"
+                   autocomplete="off"
+                   spellcheck="false" />
+            @if (!string.IsNullOrEmpty(_searchQuery))
+            {
+                <button style="background:none; border:none; cursor:pointer; color:#6c757d; padding:0 .25rem; font-size:.9rem; flex-shrink:0;" @onclick="() => _searchQuery = string.Empty" title="Temizle">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            }
+            <button style="background:#0d6efd; border:none; color:#fff; border-radius:999px; width:2.2rem; height:2.2rem; display:flex; align-items:center; justify-content:center; flex-shrink:0; cursor:pointer;" @onclick="GoSearch" title="Ara">
+                <i class="bi bi-arrow-right"></i>
+            </button>
+        </div>
+        <p style="margin-top:.4rem; font-size:.78rem; color:#adb5bd;">Enter veya → ile arayın</p>
+    </div>
 
-    // Palette for card headers (choose any hex colors you like)
-    private readonly string[] _headerPalette = new[]
-    {
-        "#0d6efd", // blue
-        "#6610f2", // purple
-        "#198754", // green
-        "#fd7e14", // orange
-        "#dc3545", // red
-        "#0dcaf0", // cyan
-        "#6f42c1", // violet
-        "#20c997", // teal
-        "#ffc107", // yellow
-        "#212529"  // dark
-    };
+    @* ── Hızlı Erişim Kartları ── *@
+    <div class="home-hero__cards">
+
+        <div class="home-card home-card--blue">
+            <i class="bi bi-award-fill home-card__icon"></i>
+            <div class="home-card__title">Armağan</div>
+            <div class="home-card__desc">Armağan yönetimi ve istatistikleri</div>
+        </div>
+
+        <div class="home-card home-card--green">
+            <i class="bi bi-people-fill home-card__icon"></i>
+            <div class="home-card__title">NBYS</div>
+            <div class="home-card__desc">Nakdi bağış yönetim sistemi</div>
+        </div>
+
+        <div class="home-card home-card--purple">
+            <i class="bi bi-house-fill home-card__icon"></i>
+            <div class="home-card__title">TBYS</div>
+            <div class="home-card__desc">Taşınmaz bağış yönetim sistemi</div>
+        </div>
+
+        <div class="home-card home-card--amber">
+            <i class="bi bi-bar-chart-fill home-card__icon"></i>
+            <div class="home-card__title">Raporlar</div>
+            <div class="home-card__desc">İstatistik ve analiz raporları</div>
+        </div>
+
+    </div>
+
+    @* ── Bilgi Kutusu ── *@
+    <div class="home-hero__info">
+        <i class="bi bi-info-circle-fill me-2 text-primary"></i>
+        <span>Daha fazla modüle erişmek için sol taraftaki menüyü kullanabilirsiniz.</span>
+    </div>
+
+</div>
+
+@code {
+    private string? _adSoyad;
+    private string _searchQuery = string.Empty;
+    private bool _searchFocused;
 
     protected override async Task OnInitializedAsync()
     {
-        isLoading = true;
-
-        try
-        {
-            var personel = await CurrentUserService.GetCurrentPersonelAsync();
-            if (personel == null)
-            {
-                AllowedMenus = new List<MenuItem>();
-                return;
-            }
-
-            // Use service to get authorized menu tree for the current personel
-            var menuResult = await MenuItemService.GetAuthorizedMenuAsync(personel.Id);
-            var menuTree = menuResult.IsSuccess ? menuResult.Value : new List<MenuItem>();
-
-            // Flatten tree and filter only actionable items (Url not empty/# and visible)
-            var flat = Flatten(menuTree);
-            AllowedMenus = flat
-                .Where(m => m != null
-                            && m.IsVisible == true
-                            && !string.IsNullOrWhiteSpace(m.Url)
-                            && m.Url != "#")
-                .OrderBy(m => m.DisplayOrder ?? 0)
-                .ToList();
-        }
-        finally
-        {
-            isLoading = false;
-        }
+        var personel = await CurrentUserService.GetCurrentPersonelAsync();
+        if (personel != null)
+            _adSoyad = $"{personel.Adi} {personel.Soyadi}".Trim();
     }
 
-    // Recursively flatten MenuItem tree
-    private List<MenuItem> Flatten(IEnumerable<MenuItem>? items)
+    private void OnSearchKeyDown(KeyboardEventArgs e)
     {
-        var result = new List<MenuItem>();
-        if (items == null) return result;
-
-        foreach (var item in items)
-        {
-            if (item == null) continue;
-            result.Add(item);
-            if (item.Children != null && item.Children.Count > 0)
-            {
-                result.AddRange(Flatten(item.Children));
-            }
-        }
-
-        return result;
+        if (e.Key == "Enter") GoSearch();
     }
 
-    private void OpenMenu(MenuItem menu)
+    private void GoSearch()
     {
-        if (menu == null) return;
-        var url = menu.Url ?? string.Empty;
-        if (string.IsNullOrWhiteSpace(url) || url == "#") return;
-
-        Nav.NavigateTo(url);
+        if (string.IsNullOrWhiteSpace(_searchQuery)) return;
+        Nav.NavigateTo($"/arama?q={Uri.EscapeDataString(_searchQuery.Trim())}");
     }
-
-    private void OnKeyDown(KeyboardEventArgs e, MenuItem menu)
-    {
-        // activate on Enter or Space
-        if (e.Key == "Enter" || e.Key == " ")
-        {
-            OpenMenu(menu);
-        }
-    }
-
-    // Returns inline style for the card header with a deterministic "random" color per menu.
-    // Uses menu.Id (fallback to Title hash) to pick a color from _headerPalette and computes a
-    // readable text color (black/white) based on luminance. Also adds a subtle gradient.
-    private string GetCardHeaderStyle(MenuItem menu)
-    {
-        if (menu == null) return string.Empty;
-
-        var key = menu.Id != 0 ? menu.Id : (menu.Title?.GetHashCode() ?? 0);
-        var idx = Math.Abs(key) % _headerPalette.Length;
-        var baseHex = _headerPalette[idx];
-        var darker = DarkenHex(baseHex, 0.14);
-        var textColor = GetContrastColor(baseHex);
-
-        // inline style overrides .summary-card header background and text color
-        return $"background: linear-gradient(135deg, {baseHex}, {darker}); color: {textColor};";
-    }
-
-    // Darken a hex color by factor (0..1). factor 0.14 means 14% darker.
-    private static string DarkenHex(string hex, double factor)
-    {
-        var (r, g, b) = ParseHex(hex);
-        int dr = (int)Math.Round(r * (1 - factor));
-        int dg = (int)Math.Round(g * (1 - factor));
-        int db = (int)Math.Round(b * (1 - factor));
-        return $"#{dr:X2}{dg:X2}{db:X2}";
-    }
-
-    // Return readable text color for given background hex (#RRGGBB or RRGGBB)
-    private static string GetContrastColor(string hex)
-    {
-        var (r, g, b) = ParseHex(hex);
-        // relative luminance (approx)
-        var lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255.0;
-        // threshold tuned for good contrast: dark backgrounds -> white text
-        return lum < 0.6 ? "#ffffff" : "#000000";
-    }
-
-    private static (int r, int g, int b) ParseHex(string hex)
-    {
-        if (string.IsNullOrWhiteSpace(hex)) return (0, 0, 0);
-        var h = hex.TrimStart('#');
-        if (h.Length == 3)
-        {
-            // short form e.g. #abc -> aabbcc
-            var r = Convert.ToInt32(new string(h[0], 2), 16);
-            var g = Convert.ToInt32(new string(h[1], 2), 16);
-            var b = Convert.ToInt32(new string(h[2], 2), 16);
-            return (r, g, b);
-        }
-        if (h.Length >= 6)
-        {
-            var r = Convert.ToInt32(h.Substring(0, 2), 16);
-            var g = Convert.ToInt32(h.Substring(2, 2), 16);
-            var b = Convert.ToInt32(h.Substring(4, 2), 16);
-            return (r, g, b);
-        }
-        return (0, 0, 0);
-    }
-} *@
+}

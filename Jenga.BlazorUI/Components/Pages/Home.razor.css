@@ -1,0 +1,7 @@
+/* ── Kartlar: sadece görsel dekorasyon ── */
+.home-card {
+    pointer-events: none;
+    opacity: .72;
+    user-select: none;
+    cursor: default;
+}

@@ -81,8 +81,8 @@
                 <!-- ── Sayfa Başlığı ──────────────────────────────── -->
                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
                     <div>
-                        <h5 class="mb-0 fw-bold"><i class="bi bi-gift me-2 text-success"></i>Taşınmaz Bağış &amp; Bağışçı Özeti</h5>
-                        <small class="text-muted">Tüm bağışçı, bağış, taahhüt ve vasiyet verilerinin anlık özeti</small>
+                        <h5 class="mb-0 fw-bold"><i class="bi bi-gift me-2 text-success"></i>Taşınmaz Bağışları</h5>
+                        <small class="text-muted">Taşınmaz bağışları, taahhüt ve vasiyet verileri</small>
                     </div>
                     <button class="btn btn-sm btn-outline-secondary"
                             @onclick="RefreshAsync"
@@ -121,7 +121,7 @@
                             <div class="card db-stat-card db-accent-slate h-100">
                                 <div class="card-body db-stat-body text-center">
                                     <div class="db-stat-icon"><i class="bi bi-person-dash-fill"></i></div>
-                                    <div class="db-stat-label">Vefat/Lağv/Mülga </div>
+                                    <div class="db-stat-label">Vefat eden /Lağv olan </div>
                                     <div class="db-stat-value">@FormatCount(_vefat)</div>
                                     <div class="db-stat-sub">%@Percent(_vefat, _bagiscilar.Count)</div>
                                 </div>
@@ -322,7 +322,7 @@
                     <div class="row g-3 mb-3">
                         <div class="col-12">
                             <div class="card shadow-sm">
-                                <div class="card-header"><strong><i class="bi bi-bar-chart me-1"></i>En Çok Bağış Yapan Bağışçılar (İlk 15)</strong></div>
+                                <div class="card-header"><strong><i class="bi bi-bar-chart me-1"></i>En Çok Bağış Yapan Bağışçılar (İlk 10)</strong></div>
                                 <div class="card-body p-0" style="height:300px;">
                                     <GenericChart TItem="ChartItem"
                                                   Items="_topBagisciItems"
@@ -421,7 +421,7 @@
                                                     var piyasa = item.Tasinmaz!.YaklasikPiyasaDegeri ?? 0m;
                                                     <tr>
                                                         <td class="fw-semibold">@(item.Bagis.BagisYili?.ToString() ?? "–")</td>
-                                                        <td>@(item.Tasinmaz!.Cinsi ?? "–")</td>
+                                                        <td style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">@(item.Tasinmaz!.Cinsi ?? "–")</td>
                                                         <td class="text-end font-monospace">@(rayic == 0 ? "–" : rayic.ToString("N0", TrCulture))</td>
                                                         <td class="text-end font-monospace">
                                                             @if (piyasa == 0)
@@ -691,7 +691,7 @@
                                                   Type="GenericChart<ChartItem>.GenericChartType.Pie"
                                                   Height="100%"
                                                   Width="100%"
-                                                  ShowLegend="true"
+                                                  ShowLegend="false"
                                                   ShowDataLabels="true"
                                                   ColorPalette="@_vasiyetTipiPalette" />
                                 </div>
@@ -712,7 +712,7 @@
                                                   Type="GenericChart<ChartItem>.GenericChartType.Pie"
                                                   Height="100%"
                                                   Width="100%"
-                                                  ShowLegend="true"
+                                                  ShowLegend="false"
                                                   ShowDataLabels="true"
                                                   ColorPalette="@_vasiyetDurumuPalette" />
                                 </div>
@@ -1122,12 +1122,12 @@
         try
         {
             var t1 = BagisciService.GetAllAsync(ct);
-            var t2 = BagisService.GetAllAsync(ct);
+            var t2 = BagisService.GetAllEnvanterdeAsync(ct);
             var t3 = VasiyetciService.GetAllAsync(ct);
             var t4 = TaahhutService.GetAllAsync(ct);
             var t5 = TalepleriService.GetAllAsync(ct);
             var t6 = YakinlariService.GetAllAsync(ct);
-            var t7 = TasinmazService.GetAllAsync(ct);
+            var t7 = TasinmazService.GetEnvanterdekilerAsync(ct);
             var t8 = IlService.GetAllAsync(ct);
             var t9 = BolgeService.GetAllAsync(ct);
 
@@ -1188,7 +1188,7 @@
             .GroupBy(x => x.BagisciId!.Value)
             .Select(g => new { BagisciId = g.Key, Adet = g.Count() })
             .OrderByDescending(x => x.Adet)
-            .Take(15)
+            .Take(10)
             .ToList();
 
         foreach (var g in groups)

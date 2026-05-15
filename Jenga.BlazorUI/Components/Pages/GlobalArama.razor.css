@@ -1,0 +1,198 @@
+/* ── Sayfa İskeleti ── */
+.g-arama-page {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem 1rem 4rem;
+}
+
+/* ── Başlık ── */
+.g-arama-header {
+    text-align: center;
+    margin-bottom: 1.75rem;
+}
+
+.g-arama-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--bs-body-color, #212529);
+}
+
+.g-arama-subtitle {
+    color: var(--bs-secondary-color, #6c757d);
+    margin-top: .25rem;
+}
+
+/* ── Arama Kutusu ── */
+.g-arama-box-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+}
+
+.g-arama-box {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    background: var(--bs-body-bg, #fff);
+    border: 2px solid #ced4da;
+    border-radius: 50px;
+    padding: .5rem 1rem;
+    transition: border-color .2s, box-shadow .2s;
+    gap: .5rem;
+}
+
+.g-arama-box.focused {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 4px rgba(13, 110, 253, .15);
+}
+
+.g-arama-icon {
+    color: #6c757d;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+.g-arama-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 1.05rem;
+    color: var(--bs-body-color, #212529);
+}
+
+.g-arama-clear {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #6c757d;
+    padding: 0 .25rem;
+    line-height: 1;
+    font-size: .9rem;
+    flex-shrink: 0;
+}
+
+.g-arama-clear:hover { color: #212529; }
+
+/* ── Durum Satırı ── */
+.g-arama-status {
+    text-align: center;
+    padding: 1.5rem;
+    font-size: .95rem;
+    color: var(--bs-secondary-color, #6c757d);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ── Sonuçlar ── */
+.g-arama-ozet {
+    font-size: .85rem;
+    margin-bottom: 1rem;
+}
+
+.g-arama-grup {
+    margin-bottom: 1.75rem;
+}
+
+.g-arama-grup-baslik {
+    font-size: .8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: #6c757d;
+    margin-bottom: .6rem;
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+}
+
+.g-arama-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #0d6efd;
+    color: #fff;
+    border-radius: 999px;
+    font-size: .7rem;
+    font-weight: 600;
+    padding: .1em .55em;
+    line-height: 1.4;
+}
+
+.g-badge-kiraci { background: #198754; }
+.g-badge-bagisci { background: #ffc107; color: #212529; }
+
+/* ── Sonuç Kart ── */
+.g-arama-liste {
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+}
+
+.g-arama-kart {
+    display: flex;
+    align-items: center;
+    gap: .85rem;
+    background: var(--bs-body-bg, #fff);
+    border: 1px solid rgba(0,0,0,.1);
+    border-radius: 12px;
+    padding: .8rem 1rem;
+    cursor: pointer;
+    transition: background .15s, border-color .15s, transform .1s;
+}
+
+.g-arama-kart:hover {
+    background: var(--bs-tertiary-bg, #f8f9fa);
+    border-color: #0d6efd;
+    transform: translateY(-1px);
+}
+
+.g-arama-kart-ikon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+.g-ikon-tasinmaz { background: rgba(13,110,253,.12); color: #0d6efd; }
+.g-ikon-kiraci   { background: rgba(25,135,84,.12);  color: #198754; }
+.g-ikon-bagisci  { background: rgba(255,193,7,.18);  color: #b07700; }
+
+.g-arama-kart-icerik { flex: 1; min-width: 0; }
+
+.g-arama-kart-baslik {
+    font-weight: 600;
+    font-size: .95rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.g-arama-kart-alt {
+    font-size: .8rem;
+    color: #6c757d;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.g-arama-kart-ek {
+    font-size: .78rem;
+    color: #adb5bd;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.g-arama-kart-ok {
+    color: #adb5bd;
+    font-size: .8rem;
+    flex-shrink: 0;
+}
+
+.text-purple { color: #6f42c1 !important; }

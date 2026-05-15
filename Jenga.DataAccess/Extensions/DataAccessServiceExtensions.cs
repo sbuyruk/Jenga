@@ -4,6 +4,7 @@ using Jenga.DataAccess.Services.FTK;
 using Jenga.DataAccess.Services.IKYS;
 using Jenga.DataAccess.Services.Inventory;
 using Jenga.DataAccess.Services.NBYS;
+using Jenga.DataAccess.Services.Search;
 using Jenga.DataAccess.Services.TBYS;
 using Jenga.Utility.Logging;
 using Microsoft.EntityFrameworkCore;
@@ -87,6 +88,14 @@ namespace Jenga.DataAccess.Extensions
             services.AddScoped<ITasinmazTaahhutService, TasinmazTaahhutService>();
             services.AddScoped<IVasiyetciService, VasiyetciService>();
             services.AddScoped<IBagisService, BagisService>();
+            services.AddScoped<ITbysSearchService, TbysSearchService>();
+
+            return services;
+        }
+
+        public static IServiceCollection AddSearchServices(this IServiceCollection services)
+        {
+            services.AddScoped<IGlobalSearchService, GlobalSearchService>();
 
             return services;
         }

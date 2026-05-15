@@ -1,0 +1,108 @@
+@page "/tbys/tasinmaz-degerleme"
+@rendermode InteractiveServer
+
+@using Jenga.BlazorUI.Components.Common
+@using Jenga.DataAccess.Services.TBYS
+@using Jenga.Models.TBYS
+@using System.Globalization
+@using Microsoft.JSInterop
+
+@inject ITasinmazService TasinmazService
+@inject IJSRuntime JS
+
+<div class="degerleme-root">
+<div class="d-flex align-items-center gap-2 mb-3">
+    <h5 class="mb-0 fw-bold"><i class="bi bi-file-earmark-bar-graph me-2 text-primary"></i>Taşınmaz Değerleme Raporu</h5>
+    <button class="btn btn-sm btn-outline-secondary ms-auto" @onclick="RefreshAsync">
+        <i class="bi bi-arrow-clockwise me-1"></i>Yenile
+    </button>
+</div>
+
+@if (_loading)
+{
+    <div class="d-flex justify-content-center align-items-center py-5">
+        <div class="spinner-border text-primary me-3" role="status"></div>
+        <span class="text-muted">Veriler yükleniyor…</span>
+    </div>
+}
+else
+{
+    <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span><strong>Envanter Listesi</strong></span>
+            <small class="text-muted">@_tasinmazlar.Count taşınmaz</small>
+        </div>
+        <div class="card-body p-0">
+            <GenericTable TItem="Tasinmaz"
+                          Items="_tasinmazlar"
+                          TableHeight="65vh"
+                          TableClass="table-bordered table-hover"
+                          ShowCopy="false"
+                          ShowExport="false"
+                          SearchTextSelector="@(t => $"{t.Cinsi} {t.Adres} {t.Ili} {t.Ilcesi} {t.MulkiyetSekli} {t.Bagisci}")">
+                <HeaderTemplate>
+                    <th style="min-width: 160px;">Rapor</th>
+                    <th style="min-width: 150px;">Cinsi</th>
+                    <th style="min-width: 350px;">Adres</th>
+                    <th style="min-width: 130px;">İli</th>
+                    <th style="min-width: 150px;">İlçesi</th>
+                    <th style="min-width: 160px;">Mülkiyet Şekli</th>
+                    <th style="min-width: 200px;">Bağışçı</th>
+                    <th style="min-width: 180px;" class="text-end">Yak. Piy. Değeri</th>
+                </HeaderTemplate>
+                <RowTemplate Context="t">
+                    <td>
+                        @if (t.YaklasikPiyasaDegeri is null or 0)
+                        {
+                            <span class="text-muted fst-italic">Raporu Gelmedi</span>
+                        }
+                        else
+                        {
+                            <button class="btn btn-sm btn-outline-primary"
+                                    @onclick="() => AcRaporAsync(t.Id)"
+                                    title="Portalde Görüntüle">
+                                <i class="bi bi-box-arrow-up-right me-1"></i>Raporu Aç
+                            </button>
+                        }
+                    </td>
+                    <td>@t.Cinsi</td>
+                    <td>@t.Adres</td>
+                    <td>@t.Ili</td>
+                    <td>@t.Ilcesi</td>
+                    <td>@t.MulkiyetSekli</td>
+                    <td>@t.Bagisci</td>
+                    <td class="text-end">
+                        @(t.YaklasikPiyasaDegeri is null or 0
+                            ? "–"
+                            : t.YaklasikPiyasaDegeri.Value.ToString("N0", TrCulture))
+                    </td>
+                </RowTemplate>
+            </GenericTable>
+        </div>
+    </div>
+}
+</div>
+
+@code {
+    private static readonly CultureInfo TrCulture = new("tr-TR");
+
+    private List<Tasinmaz> _tasinmazlar = new();
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+        => await RefreshAsync();
+
+    private async Task RefreshAsync()
+    {
+        _loading = true;
+        var result = await TasinmazService.GetEnvanterdekilerAsync();
+        _tasinmazlar = result is { IsSuccess: true } ? result.Value : new();
+        _loading = false;
+    }
+
+    private async Task AcRaporAsync(int tasinmazId)
+        => await JS.InvokeVoidAsync("open", GetPortalUrl(tasinmazId), "_blank");
+
+    private static string GetPortalUrl(int tasinmazId)
+        => $"https://portal.tskgv.org.tr/YonetimBirimleri/InsaatVeEmlakYonetimiSubesi/TBYSBelgeleri/TasinmazRaporu{tasinmazId}.pdf";
+}

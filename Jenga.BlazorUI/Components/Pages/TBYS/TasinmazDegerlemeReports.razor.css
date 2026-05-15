@@ -1,0 +1,15 @@
+.degerleme-root ::deep .gt-table {
+    table-layout: auto;
+    min-width: 1480px;
+}
+
+.degerleme-root ::deep .gt-table th,
+.degerleme-root ::deep .gt-table td {
+    white-space: normal;
+    word-break: break-word;
+}
+
+.degerleme-root ::deep .gt-table-wrapper {
+    overflow-x: auto;
+    overflow-y: auto;
+}

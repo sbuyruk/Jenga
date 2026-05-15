@@ -1,0 +1,197 @@
+﻿/* ===== KPİ Tile Grid ===== */
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0.75rem;
+}
+
+.kpi-tile {
+    border-radius: 0.75rem;
+    padding: 1rem 0.75rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.25rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: transform 0.15s ease;
+}
+
+.kpi-tile:hover {
+    transform: translateY(-2px);
+}
+
+.kpi-icon { font-size: 1.5rem; }
+.kpi-value { font-size: 1.25rem; font-weight: 700; line-height: 1.1; }
+.kpi-label { font-size: 0.7rem; opacity: 0.85; font-weight: 500; }
+
+.kpi-blue   { background: linear-gradient(135deg, #74b9ff, #0984e3); color: #fff; }
+.kpi-green  { background: linear-gradient(135deg, #55efc4, #00b894); color: #fff; }
+.kpi-purple { background: linear-gradient(135deg, #a29bfe, #6c5ce7); color: #fff; }
+.kpi-orange { background: linear-gradient(135deg, #ffeaa7, #fdcb6e); color: #2d3436; }
+.kpi-red    { background: linear-gradient(135deg, #fd79a8, #e17055); color: #fff; }
+.kpi-teal   { background: linear-gradient(135deg, #81ecec, #00cec9); color: #2d3436; }
+
+/* ===== Dashboard Satırları ===== */
+.dashboard-row {
+    display: grid;
+    grid-template-columns: 280px 1fr 280px;
+    gap: 1rem;
+    align-items: stretch;
+    min-height: 360px;
+}
+
+.dashboard-cell {
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.dashboard-cell--card {
+    min-width: 0;
+}
+
+.dashboard-cell--chart {
+    min-width: 0;
+    min-height: 320px;
+}
+
+.dashboard-cell--chart-sm {
+    min-width: 0;
+    min-height: 280px;
+}
+
+.dashboard-cell--chart-lg {
+    min-width: 0;
+    min-height: 280px;
+}
+
+/* İkinci satır için farklı grid */
+.dashboard-row:has(.dashboard-cell--chart-sm) {
+    grid-template-columns: 1fr 2fr 1fr;
+}
+
+/* Ortaya hizalı satır: sabit genişlikli hücrelerin dışı boş kalır */
+.dashboard-row--centered {
+    justify-content: center;
+}
+
+/* ===== Geniş satır ===== */
+.dashboard-wide-row {
+    width: 100%;
+}
+
+/* ===== Chart arka planı ===== */
+.chart-bg {
+    background-color: var(--surface, #fff);
+    background-image:
+        radial-gradient(rgba(180,190,210,0.4) 1px, transparent 1px),
+        radial-gradient(rgba(180,190,210,0.4) 1px, transparent 1px);
+    background-size: 22px 22px;
+    background-position: 0 0, 12px 12px;
+    padding: 0.5rem;
+    box-sizing: border-box;
+}
+
+/* ===== Alert Tablo Bloğu ===== */
+.alert-table-block {
+    border: 1.5px solid #e17055;
+    border-radius: 0.5rem;
+    overflow: visible;
+    background: #fff5f3;
+}
+
+
+
+.alert-table-header {
+    background: #fff3f0;
+    border-bottom: 1px solid #e17055;
+    padding: 0.5rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.alert-icon { font-size: 1.1rem; }
+
+/* ===== Zekayi görsel ===== */
+.kira-dashboard img[alt="Zekayi"] {
+    display: block;
+    max-width: 220px;
+    height: auto;
+    border-radius: 6px;
+    margin: 0 auto;
+}
+
+/* ===== Responsive: Tablet ===== */
+@media (max-width: 1100px) {
+    .kpi-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .dashboard-row {
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: auto auto;
+    }
+
+    .dashboard-cell--chart {
+        grid-column: 1 / -1;
+        min-height: 280px;
+    }
+
+    .dashboard-row:has(.dashboard-cell--chart-sm) {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .dashboard-cell--chart-lg {
+        grid-column: 1 / -1;
+    }
+}
+
+/* ===== Responsive: Mobil ===== */
+@media (max-width: 640px) {
+    .kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+    }
+
+    .kpi-tile {
+        padding: 0.75rem 0.5rem;
+    }
+
+    .kpi-value {
+        font-size: 1rem;
+    }
+
+    .dashboard-row {
+        grid-template-columns: 1fr;
+        min-height: unset;
+    }
+
+    .dashboard-cell--chart {
+        grid-column: 1;
+        min-height: 260px;
+    }
+
+    .dashboard-row:has(.dashboard-cell--chart-sm) {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-cell--chart-lg {
+        grid-column: 1;
+    }
+
+    .dashboard-cell--chart-sm {
+        min-height: 240px;
+    }
+}
+
+@media (max-width: 400px) {
+    .kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .kpi-icon { font-size: 1.2rem; }
+    .kpi-value { font-size: 0.9rem; }
+    .kpi-label { font-size: 0.65rem; }
+}

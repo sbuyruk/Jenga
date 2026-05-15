@@ -94,7 +94,8 @@
         {
             Title = "Kiraya Uygun Olmayan Taşınmazlar",
             Message = string.Empty,
-            ShowConfirmationButtons = false
+            ShowConfirmationButtons = false,
+            DialogClass = "modal-xl modal-xxl-custom modal-fullscreen-sm-down"
         };
 
         req.Content = builder =>
@@ -121,7 +122,8 @@
         {
             Title = "Kiralamaya Uygun Taşınmazlar",
             Message = string.Empty,
-            ShowConfirmationButtons = false
+            ShowConfirmationButtons = false,
+            DialogClass = "modal-xl modal-xxl-custom modal-fullscreen-sm-down"
         };
 
         // render TasinmazChart inside modal; wire chart OnClose to request.Close

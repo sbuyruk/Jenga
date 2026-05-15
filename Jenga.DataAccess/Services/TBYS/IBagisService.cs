@@ -11,6 +11,7 @@ namespace Jenga.DataAccess.Services.TBYS
     public interface IBagisService
     {
         Task<Result<List<Bagis>>> GetAllAsync(CancellationToken cancellationToken = default);
+        Task<Result<List<Bagis>>> GetAllEnvanterdeAsync(CancellationToken cancellationToken = default);
         Task<Result<Bagis>> GetByIdAsync(int id, CancellationToken cancellationToken = default);
         Task<Result<Bagis>> GetByIdWithRelationsAsync(int id, CancellationToken cancellationToken = default);
         Task<Result<List<Bagis>>> GetByBagisciIdAsync(int bagisciId, CancellationToken cancellationToken = default);

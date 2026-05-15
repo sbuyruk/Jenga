@@ -1,4 +1,4 @@
-@page "/inventory/asset-manager"
+ï»¿@page "/inventory/asset-manager"
 @rendermode InteractiveServer
 
 @using Jenga.BlazorUI.Components.Inventory
@@ -13,10 +13,12 @@
 @inject IMaterialService MaterialService
 @inject IMaterialBrandService MaterialBrandService
 @inject IMaterialModelService MaterialModelService
+@inject IMaterialUnitService MaterialUnitService
+@inject IMaterialInventoryService MaterialInventoryService
 @inject ILocationService LocationService
 @inject IPersonelService PersonelService
 
-<h5 class="mb-3"><i class="bi bi-cpu me-2"></i>Demirbas Yönetimi</h5>
+<h5 class="mb-3"><i class="bi bi-cpu me-2"></i>Demirbas DaÄŸÄ±lÄ±mÄ±</h5>
 
 <!-- FILTERS -->
 <div class="card shadow-sm mb-3">
@@ -32,11 +34,11 @@
                             @if (filterCategoryId.HasValue)
                             {
                                 var selected = categories.FirstOrDefault(c => c.Id == filterCategoryId.Value);
-                                <i class="bi bi-folder2-open me-1 text-warning"></i>@(selected?.CategoryName ?? "Tümü")
+                                <i class="bi bi-folder2-open me-1 text-warning"></i>@(selected?.CategoryName ?? "TÃ¼mÃ¼")
                             }
                             else
                             {
-                                <i class="bi bi-grid me-1"></i><span class="text-muted">Tümü</span>
+                                <i class="bi bi-grid me-1"></i><span class="text-muted">TÃ¼mÃ¼</span>
                             }
                         </span>
                         <i class="bi bi-chevron-down ms-1 small"></i>
@@ -48,7 +50,7 @@
                                     type="button"
                                     @onclick="() => SelectCategory(null)">
                                 <i class="bi bi-grid small"></i>
-                                <span>Tümü</span>
+                                <span>TÃ¼mÃ¼</span>
                             </button>
                             <div class="dropdown-divider my-1"></div>
                             @foreach (var (category, depth) in GetFlatCategoryTree())
@@ -72,10 +74,10 @@
                     }
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <label class="form-label small mb-1">Malzeme</label>
                 <select class="form-select form-select-sm" @bind="filterMaterialId" @bind:after="ApplyFilters">
-                    <option value="">Tümü</option>
+                    <option value="">TÃ¼mÃ¼</option>
                     @foreach (var m in assetMaterials)
                     {
                         <option value="@m.Id">@m.MaterialName</option>
@@ -85,21 +87,21 @@
             <div class="col-md-2">
                 <label class="form-label small mb-1">Durum</label>
                 <select class="form-select form-select-sm" @bind="filterStatus" @bind:after="ApplyFilters">
-                    <option value="">Tümü</option>
+                    <option value="">TÃ¼mÃ¼</option>
                     @foreach (var s in Enum.GetValues<AssetStatus>())
                     {
                         <option value="@s">@GetStatusLabel(s)</option>
                     }
                 </select>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <label class="form-label small mb-1">Seri No / Barkod</label>
                 <input class="form-control form-control-sm" placeholder="Ara..." @bind="searchTerm" @bind:event="oninput" @bind:after="ApplyFilters" />
             </div>
             <div class="col-md-2">
                 <label class="form-label small mb-1">Personel</label>
                 <select class="form-select form-select-sm" @bind="filterPersonelId" @bind:after="ApplyFilters">
-                    <option value="">Tümü</option>
+                    <option value="">TÃ¼mÃ¼</option>
                     @foreach (var p in persons)
                     {
                         <option value="@p.Id">@p.Adi @p.Soyadi</option>
@@ -130,6 +132,9 @@
                             Models="models"
                             Locations="locations"
                             Persons="persons"
+                            MaterialInventories="inventories"
+                            MaterialUnits="units"
+                            Categories="categories"
                             OnDataChanged="LoadAllData" />
     </div>
 </div>
@@ -144,10 +149,12 @@
     private List<Location> locations = new();
     private List<Personel> persons = new();
     private List<MaterialCategory> categories = new();
+    private List<MaterialUnit> units = new();
+    private List<MaterialInventory> inventories = new();
 
     private int? filterCategoryId;
     private int? filterMaterialId;
-    private AssetStatus? filterStatus;
+    private AssetStatus? filterStatus = AssetStatus.Active;
     private int? filterPersonelId;
     private string searchTerm = "";
     private bool categoryDropdownOpen = false;
@@ -166,8 +173,10 @@
         var t5 = LocationService.GetAllAsync();
         var t6 = PersonelService.GetCalisanPersonelAsync();
         var t7 = MaterialCategoryService.GetAllAsync();
+        var t8 = MaterialUnitService.GetAllAsync();
+        var t9 = MaterialInventoryService.GetAllAsync();
 
-        await Task.WhenAll(t1, t2, t3, t4, t5, t6, t7);
+        await Task.WhenAll(t1, t2, t3, t4, t5, t6, t7, t8, t9);
 
         allAssets = t1.Result.IsSuccess ? t1.Result.Value : new();
         materials = t2.Result.IsSuccess ? t2.Result.Value : new();
@@ -177,6 +186,8 @@
         var personsResult = t6.Result;
         persons = personsResult.IsSuccess ? personsResult.Value : new List<Personel>();
         categories = t7.Result.IsSuccess ? t7.Result.Value : new();
+        units = t8.Result.IsSuccess ? t8.Result.Value : new();
+        inventories = t9.Result.IsSuccess ? t9.Result.Value : new();
 
         assetMaterials = materials.Where(m => m.IsAsset).ToList();
 
@@ -222,7 +233,13 @@
     private void SelectCategory(int? id)
     {
         filterCategoryId = id;
+        filterMaterialId = null;
         categoryDropdownOpen = false;
+
+        assetMaterials = filterCategoryId.HasValue
+            ? materials.Where(m => m.IsAsset && GetDescendantCategoryIds(filterCategoryId.Value).Contains(m.CategoryId)).ToList()
+            : materials.Where(m => m.IsAsset).ToList();
+
         ApplyFilters();
     }
 
@@ -234,6 +251,7 @@
         filterPersonelId = null;
         searchTerm = "";
         categoryDropdownOpen = false;
+        assetMaterials = materials.Where(m => m.IsAsset).ToList();
         ApplyFilters();
     }
 
