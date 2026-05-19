@@ -11,5 +11,6 @@ namespace Jenga.DataAccess.Services.TBYS
     {
         Task<Result<KiraciDetayVM>> GetKiraciDetayAsync(int kiraciId, CancellationToken cancellationToken = default);
         Task<Result<TasinmazDetayVM>> GetTasinmazDetayAsync(int tasinmazId, CancellationToken cancellationToken = default);
+        Task<Result<BagisciDetayVM>> GetBagisciDetayAsync(int bagisciId, CancellationToken cancellationToken = default);
     }
 }

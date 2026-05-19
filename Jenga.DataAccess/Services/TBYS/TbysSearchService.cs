@@ -170,5 +170,48 @@ namespace Jenga.DataAccess.Services.TBYS
                 return Result<TasinmazDetayVM>.Failure(Error.Unexpected("Taşınmaz detayı alınamadı.", ex));
             }
         }
+
+        public async Task<Result<BagisciDetayVM>> GetBagisciDetayAsync(int bagisciId, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+
+                var bagisci = await db.TasinmazBagisci_Table.AsNoTracking()
+                    .FirstOrDefaultAsync(b => b.Id == bagisciId, cancellationToken);
+
+                if (bagisci is null)
+                    return Result<BagisciDetayVM>.Failure(Error.NotFound("Bağışçı bulunamadı."));
+
+                var tasinmazlar = await db.Tasinmaz_Table.AsNoTracking()
+                    .Where(t => t.BagisciId == bagisciId)
+                    .OrderBy(t => t.Ili)
+                    .ToListAsync(cancellationToken);
+
+                var yakinlar = await db.BagisciYakinlari_Table.AsNoTracking()
+                    .Where(y => y.BagisciId == bagisciId)
+                    .OrderBy(y => y.Sira)
+                    .ToListAsync(cancellationToken);
+
+                var talepler = await db.BagisciTalepleri_Table.AsNoTracking()
+                    .Where(t => t.BagisciId == bagisciId)
+                    .ToListAsync(cancellationToken);
+
+                var vm = new BagisciDetayVM
+                {
+                    Bagisci    = bagisci,
+                    Tasinmazlar = tasinmazlar,
+                    Yakinlar   = yakinlar,
+                    Talepler   = talepler
+                };
+
+                return Result<BagisciDetayVM>.Success(vm);
+            }
+            catch (Exception ex)
+            {
+                _logService.LogError($"{Source}.GetBagisciDetayAsync hata.", ex);
+                return Result<BagisciDetayVM>.Failure(Error.Unexpected("Bağışçı detayı alınamadı.", ex));
+            }
+        }
     }
 }

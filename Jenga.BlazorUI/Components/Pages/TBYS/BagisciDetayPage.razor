@@ -1,11 +1,11 @@
-@page "/tbys/tasinmaz/{TasinmazId:int}"
+@page "/tbys/bagisci/{BagisciId:int}"
 @using Jenga.BlazorUI.Components.TBYS
 @rendermode InteractiveServer
 
-<TasinmazProfil TasinmazId="@TasinmazId" GeriUrl="@Geri" />
+<TasinmazBagisciProfil BagisciId="@BagisciId" GeriUrl="@Geri" />
 
 @code {
-    [Parameter] public int TasinmazId { get; set; }
+    [Parameter] public int BagisciId { get; set; }
 
     [SupplyParameterFromQuery(Name = "geri")]
     public string? Geri { get; set; }

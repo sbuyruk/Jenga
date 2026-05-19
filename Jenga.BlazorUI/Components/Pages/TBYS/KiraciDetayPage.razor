@@ -3,8 +3,10 @@
 @using Jenga.DataAccess.Services.TBYS
 @using Jenga.Models.TBYS
 @using Jenga.Models.TBYS.Search
+@using Microsoft.JSInterop
 @inject ITbysSearchService SearchService
 @inject NavigationManager Nav
+@inject IJSRuntime JS
 
 <div class="detay-page">
 
@@ -28,8 +30,8 @@
         var gecmis = _vm.Sozlesmeler.Where(s => s.Sozlesme.Aktif != true).ToList();
 
         <!-- Geri Butonu -->
-        <button class="btn btn-sm btn-outline-secondary mb-3" @onclick='() => Nav.NavigateTo("/tbys/arama")'>
-            <i class="bi bi-arrow-left me-1"></i> Aramaya Dön
+        <button class="btn btn-sm btn-outline-secondary mb-3" @onclick="GeriGit">
+            <i class="bi bi-arrow-left me-1"></i> Geri
         </button>
 
         <!-- Kiracı Başlığı -->
@@ -115,6 +117,9 @@
 @code {
     [Parameter] public int KiraciId { get; set; }
 
+    [SupplyParameterFromQuery(Name = "geri")]
+    public string? Geri { get; set; }
+
     private KiraciDetayVM? _vm;
     private bool _loading = true;
     private string? _hata;
@@ -127,5 +132,13 @@
             _vm = result.Value;
         else
             _hata = result.Error?.Message ?? "Kiracı bilgileri yüklenemedi.";
+    }
+
+    private async Task GeriGit()
+    {
+        if (!string.IsNullOrEmpty(Geri))
+            Nav.NavigateTo(Uri.UnescapeDataString(Geri));
+        else
+            await JS.InvokeVoidAsync("history.back");
     }
 }

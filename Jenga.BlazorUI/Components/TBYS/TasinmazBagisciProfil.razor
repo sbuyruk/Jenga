@@ -1,0 +1,383 @@
+@using Jenga.DataAccess.Services.TBYS
+@using Jenga.Models.TBYS
+@using Jenga.Models.TBYS.Search
+@using Microsoft.JSInterop
+@inject ITbysSearchService SearchService
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+@* ────────────────────────────────────────────────────────────
+   TasinmazBagisciProfil — Bir bağışçıya ait kapsamlı profil kartı.
+   Kullanım: <TasinmazBagisciProfil BagisciId="42" />
+             <TasinmazBagisciProfil BagisciId="42" GeriUrl="/tbys/bagiscilar" />
+   ──────────────────────────────────────────────────────────── *@
+
+<div class="tp-page">
+
+    @if (_yukleniyor)
+    {
+        <div class="detay-loading">
+            <div class="spinner-border text-primary" role="status"></div>
+            <span class="ms-3">Bağışçı yükleniyor…</span>
+        </div>
+    }
+    else if (_hata is not null)
+    {
+        <div class="alert alert-danger d-flex align-items-center gap-2">
+            <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+            <span>@_hata</span>
+        </div>
+    }
+    else if (_vm is not null)
+    {
+        var b = _vm.Bagisci;
+        var vefatEtti = b.Sag_vefat?.Trim().ToUpperInvariant() is "VEFAT" or "V";
+
+        <!-- Gizli Kayıt Uyarısı -->
+        @if (b.Gizli == true)
+        {
+            <div class="alert alert-warning d-flex align-items-center gap-2 mb-3">
+                <i class="bi bi-eye-slash-fill fs-5"></i>
+                <span>Bu bağışçı <strong>gizli</strong> olarak işaretlenmiştir. Kişisel bilgiler maskelenmiştir.</span>
+            </div>
+        }
+
+        <!-- Geri Butonu -->
+        @if (!string.IsNullOrEmpty(GeriUrl))
+        {
+            <button class="btn btn-sm btn-outline-secondary mb-3" @onclick="GeriGit">
+                <i class="bi bi-arrow-left me-1"></i> Geri
+            </button>
+        }
+
+        <!-- ── HERO ── -->
+        <div class="tp-hero">
+
+            <!-- Sol: avatar + başlık -->
+            <div class="tp-hero-sol">
+                <div class="tp-hero-ikon @(vefatEtti ? "bg-secondary" : "bg-warning bg-opacity-25")">
+                    <i class="bi bi-person-fill @(vefatEtti ? "text-light" : "text-warning")"></i>
+                </div>
+                <div class="tp-hero-bilgi">
+                    <div class="tp-hero-ustbas">
+                        <span class="tp-hero-modul-chip">TBYS</span>
+                        <span class="tp-hero-modul-chip" style="background:var(--bs-warning-bg-subtle);color:var(--bs-warning-text-emphasis)">Bağışçı</span>
+                    </div>
+                    <h2 class="tp-hero-baslik">@b.Adi @b.Soyadi</h2>
+                    <div class="tp-hero-meta">
+                        @if (!string.IsNullOrEmpty(b.Ili))
+                        {
+                            <span class="tp-meta-chip">
+                                <i class="bi bi-geo-alt-fill me-1"></i>@b.Ili@(!string.IsNullOrEmpty(b.Ilcesi) ? $" / {b.Ilcesi}" : "")
+                            </span>
+                        }
+                        @if (!string.IsNullOrEmpty(b.Meslegi))
+                        {
+                            <span class="tp-meta-chip">
+                                <i class="bi bi-briefcase me-1"></i>@b.Meslegi
+                            </span>
+                        }
+                        @if (!string.IsNullOrEmpty(b.Tahsil))
+                        {
+                            <span class="tp-meta-chip">
+                                <i class="bi bi-mortarboard me-1"></i>@b.Tahsil
+                            </span>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sağ: fotoğraf + durum -->
+            <div class="tp-hero-sag">
+                @if (!string.IsNullOrWhiteSpace(b.Foto))
+                {
+                    <div class="tp-profil-foto-wrapper" @onclick="FotoAc" title="Büyütmek için tıklayın">
+                        <img src="@($"/api/bagisci-foto/{Uri.EscapeDataString(b.Foto)}")" alt="Bağışçı fotoğrafı" class="tp-profil-foto" />
+                        <span class="tp-foto-zoom-icon"><i class="bi bi-zoom-in"></i></span>
+                    </div>
+                }
+                else
+                {
+                    <div class="tp-profil-foto-placeholder">
+                        <i class="bi bi-person"></i>
+                    </div>
+                }
+                <div class="tp-durum-badge @(vefatEtti ? "tp-badge-diger" : "tp-badge-kirada")">
+                    <i class="bi @(vefatEtti ? "bi-moon-stars-fill" : "bi-person-check-fill") me-1"></i>
+                    @(b.Sag_vefat ?? "—")
+                </div>
+            </div>
+        </div>
+
+        <!-- ── ÖZET STAT SATIRI ── -->
+        <div class="tp-stat-row">
+            @if (_vm.Tasinmazlar.Count > 0)
+            {
+                <div class="tp-stat-kart">
+                    <div class="tp-stat-ikon text-primary"><i class="bi bi-houses-fill"></i></div>
+                    <div>
+                        <div class="tp-stat-deger">@_vm.Tasinmazlar.Count</div>
+                        <div class="tp-stat-etiket">Taşınmaz</div>
+                    </div>
+                </div>
+            }
+            @if (_vm.Yakinlar.Count > 0)
+            {
+                <div class="tp-stat-kart">
+                    <div class="tp-stat-ikon text-info"><i class="bi bi-people-fill"></i></div>
+                    <div>
+                        <div class="tp-stat-deger">@_vm.Yakinlar.Count</div>
+                        <div class="tp-stat-etiket">Yakın</div>
+                    </div>
+                </div>
+            }
+            @if (b.DogumTarihi.HasValue)
+            {
+                <div class="tp-stat-kart">
+                    <div class="tp-stat-ikon text-secondary"><i class="bi bi-cake2"></i></div>
+                    <div>
+                        <div class="tp-stat-deger">@b.DogumTarihi.Value.ToString("dd.MM.yyyy")</div>
+                        <div class="tp-stat-etiket">Doğum Tarihi</div>
+                    </div>
+                </div>
+            }
+            @if (vefatEtti && b.VefatTarihi.HasValue)
+            {
+                <div class="tp-stat-kart">
+                    <div class="tp-stat-ikon text-muted"><i class="bi bi-calendar-x"></i></div>
+                    <div>
+                        <div class="tp-stat-deger">@b.VefatTarihi.Value.ToString("dd.MM.yyyy")</div>
+                        <div class="tp-stat-etiket">Vefat Tarihi</div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- ── BÖLÜM: KİŞİSEL BİLGİLER ── -->
+        <div class="detay-section">
+            <div class="detay-section-baslik">
+                <i class="bi bi-person-vcard-fill me-2 text-warning"></i>Kişisel Bilgiler
+            </div>
+            <div class="detay-grid">
+                <DetailField Label="Adı Soyadı"       Value="@($"{b.Adi} {b.Soyadi}".Trim())" />
+                <DetailField Label="TC Kimlik No"     Value="@b.TCKimlikNo?.ToString()" />
+                <DetailField Label="Doğum Yeri"       Value="@b.DogumYeri" />
+                <DetailField Label="Doğum Tarihi"     Value="@(b.DogumTarihi?.ToString("dd.MM.yyyy"))" />
+                <DetailField Label="Mesleği"          Value="@b.Meslegi" />
+                <DetailField Label="Tahsil"           Value="@b.Tahsil" />
+                <DetailField Label="Sosyal Güvence"   Value="@b.SosyalGuvence" />
+                <DetailField Label="Durum"            Value="@b.Sag_vefat" />
+                @if (vefatEtti)
+                {
+                    <DetailField Label="Vefat Tarihi"     Value="@(b.VefatTarihi?.ToString("dd.MM.yyyy"))" />
+                    <DetailField Label="Defin Yeri"       Value="@b.DefinYeri" />
+                    <DetailField Label="Defin İli"        Value="@b.DefinIli" />
+                    <DetailField Label="Defin İlçesi"     Value="@b.DefinIlcesi" />
+                    <DetailField Label="Defin Açıklama"   Value="@b.DefinAciklama" FullWidth="true" />
+                }
+            </div>
+        </div>
+
+        <!-- ── BÖLÜM: İLETİŞİM VE ADRES ── -->
+        <div class="detay-section">
+            <div class="detay-section-baslik">
+                <i class="bi bi-telephone-fill me-2 text-success"></i>İletişim ve Adres
+            </div>
+            <div class="detay-grid">
+                <DetailField Label="İl"       Value="@b.Ili" />
+                <DetailField Label="İlçe"     Value="@b.Ilcesi" />
+                <DetailField Label="Adres"    Value="@b.Adres" FullWidth="true" />
+                <DetailField Label="Telefon 1" Value="@b.Telefon1" />
+                <DetailField Label="Telefon 2" Value="@b.Telefon2" />
+                <DetailField Label="E-Posta"  Value="@b.EPosta" />
+            </div>
+        </div>
+
+        <!-- ── BÖLÜM: DİĞER ── -->
+        @if (b.DergiGonderilmesin == true || b.Gizli == true || b.OlusturmaTarihi.HasValue)
+        {
+            <div class="detay-section">
+                <div class="detay-section-baslik">
+                    <i class="bi bi-sliders me-2 text-secondary"></i>Diğer Bilgiler
+                </div>
+                <div class="detay-grid">
+                    @if (b.DergiGonderilmesin.HasValue)
+                    {
+                        <DetailField Label="Dergi Gönderilmesin" Value="@(b.DergiGonderilmesin == true ? "Evet" : "Hayır")" />
+                    }
+                    @if (b.Gizli.HasValue)
+                    {
+                        <DetailField Label="Gizli Kayıt" Value="@(b.Gizli == true ? "Evet" : "Hayır")" />
+                    }
+                    @if (b.OlusturmaTarihi.HasValue)
+                    {
+                        <DetailField Label="Oluşturma Tarihi" Value="@(b.OlusturmaTarihi.Value.ToString("dd.MM.yyyy"))" />
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- ── BÖLÜM: TAŞINMAZLAR ── -->
+        @if (_vm.Tasinmazlar.Count > 0)
+        {
+            <div class="detay-section">
+                <div class="detay-section-baslik">
+                    <i class="bi bi-houses-fill me-2 text-primary"></i>Bağışlanan Taşınmazlar
+                    <span class="badge bg-primary ms-2">@_vm.Tasinmazlar.Count</span>
+                </div>
+                <div class="tp-tasinmaz-liste">
+                    @foreach (var t in _vm.Tasinmazlar)
+                    {
+                        <a href="/tbys/tasinmaz/@t.Id" class="tp-tasinmaz-satir">
+                            <div class="tp-tasinmaz-ikon">
+                                <i class="bi bi-house-door-fill text-primary"></i>
+                            </div>
+                            <div class="tp-tasinmaz-bilgi">
+                                <div class="tp-tasinmaz-ad">@(t.Cinsi ?? "Taşınmaz") @(!string.IsNullOrEmpty(t.Nitelik) ? $"· {t.Nitelik}" : "")</div>
+                                <div class="tp-tasinmaz-alt text-muted small">
+                                    @if (!string.IsNullOrEmpty(t.Ili))
+                                    { <span><i class="bi bi-geo-alt me-1"></i>@t.Ili@(!string.IsNullOrEmpty(t.Ilcesi) ? $" / {t.Ilcesi}" : "")</span> }
+                                    @if (!string.IsNullOrEmpty(t.EmlakSicilNo))
+                                    { <span class="ms-2"><i class="bi bi-hash me-1"></i>@t.EmlakSicilNo</span> }
+                                    @if (t.Metrekare.HasValue)
+                                    { <span class="ms-2"><i class="bi bi-rulers me-1"></i>@($"{t.Metrekare:N0} m²")</span> }
+                                </div>
+                            </div>
+                            <div class="ms-auto">
+                                <span class="badge @(t.KiraDurumu == "Kirada" ? "bg-success" : "bg-secondary")">
+                                    @(t.KiraDurumu ?? "—")
+                                </span>
+                                <i class="bi bi-chevron-right text-muted ms-2"></i>
+                            </div>
+                        </a>
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- ── BÖLÜM: YAKINLAR ── -->
+        @if (_vm.Yakinlar.Count > 0)
+        {
+            <div class="detay-section">
+                <div class="detay-section-baslik">
+                    <i class="bi bi-people-fill me-2 text-info"></i>Yakınları
+                    <span class="badge bg-info ms-2">@_vm.Yakinlar.Count</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Ad Soyad</th>
+                                <th>Yakınlık Derecesi</th>
+                                <th>Telefon</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var y in _vm.Yakinlar)
+                            {
+                                <tr>
+                                    <td class="text-muted">@(y.Sira?.ToString() ?? "—")</td>
+                                    <td>@(y.AdSoyad ?? "—")</td>
+                                    <td>@(y.YakinlikDerecesi ?? "—")</td>
+                                    <td>@(y.Telefon ?? "—")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+
+        <!-- ── BÖLÜM: TALEPLER ── -->
+        @if (_vm.Talepler.Count > 0)
+        {
+            <div class="detay-section">
+                <div class="detay-section-baslik">
+                    <i class="bi bi-envelope-fill me-2 text-danger"></i>Talepler
+                    <span class="badge bg-danger ms-2">@_vm.Talepler.Count</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Tarih</th>
+                                <th>Talep</th>
+                                <th>Aciklama</th>
+                                <th>İrtibat</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var talep in _vm.Talepler)
+                            {
+                                <tr>
+                                    <td class="text-muted text-nowrap">@(talep.Tarih ?? "—")</td>
+                                    <td>@(talep.Talep ?? "—")</td>
+                                    <td>@(talep.Aciklama ?? "—")</td>
+                                    <td>@(talep.Irtibat ?? "—")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+<!-- ── LIGHTBOX (Bağışçı Fotoğrafı) ── -->
+@if (_fotoAcik && _vm is not null && !string.IsNullOrWhiteSpace(_vm.Bagisci.Foto))
+{
+    <div class="tp-lightbox-overlay" @onclick="FotoKapat">
+        <div class="tp-lightbox-kutu" @onclick:stopPropagation="true">
+            <button class="tp-lightbox-kapat" @onclick="FotoKapat" aria-label="Kapat">
+                <i class="bi bi-x-lg"></i>
+            </button>
+            <img src="@($"/api/bagisci-foto/{Uri.EscapeDataString(_vm.Bagisci.Foto)}")
+                 alt="Bağışçı fotoğrafı" class="tp-lightbox-img" />
+        </div>
+    </div>
+}
+
+@code {
+    /// <summary>Gösterilecek bağışçının ID'si. Zorunlu parametre.</summary>
+    [Parameter, EditorRequired] public int BagisciId { get; set; }
+
+    /// <summary>
+    /// "Geri" butonunun yönlendireceği URL.
+    /// Boş bırakılırsa geri butonu gösterilmez.
+    /// </summary>
+    [Parameter] public string? GeriUrl { get; set; }
+
+    private BagisciDetayVM? _vm;
+    private bool    _yukleniyor = true;
+    private string? _hata;
+    private bool    _fotoAcik   = false;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _yukleniyor = true;
+        _hata       = null;
+        _vm         = null;
+        StateHasChanged();
+
+        var result = await SearchService.GetBagisciDetayAsync(BagisciId);
+        _yukleniyor = false;
+
+        if (result.IsSuccess)
+            _vm = result.Value;
+        else
+            _hata = result.Error?.Message ?? "Bağışçı bilgileri yüklenemedi.";
+    }
+
+    private void FotoAc()    => _fotoAcik = true;
+    private void FotoKapat() => _fotoAcik = false;
+
+    private async Task GeriGit()
+    {
+        if (!string.IsNullOrEmpty(GeriUrl))
+            Nav.NavigateTo(Uri.UnescapeDataString(GeriUrl));
+        else
+            await JS.InvokeVoidAsync("history.back");
+    }
+}

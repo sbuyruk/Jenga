@@ -167,6 +167,7 @@
         _aramaliQuery = _query.Trim();
         StateHasChanged();
 
+        
         var result = await SearchService.SearchAsync(_aramaliQuery, ct);
 
         _loading = false;
@@ -188,5 +189,15 @@
         _hata = null;
     }
 
-    private void GitDetay(SearchResultItem item) => Nav.NavigateTo(item.HedefUrl);
+    private void GitDetay(SearchResultItem item)
+    {
+        var geriUrl = string.IsNullOrWhiteSpace(_aramaliQuery)
+            ? "/arama"
+            : $"/arama?q={Uri.EscapeDataString(_aramaliQuery)}";
+        var geri = Uri.EscapeDataString(geriUrl);
+        var hedef = item.HedefUrl.Contains('?')
+            ? $"{item.HedefUrl}&geri={geri}"
+            : $"{item.HedefUrl}?geri={geri}";
+        Nav.NavigateTo(hedef);
+    }
 }

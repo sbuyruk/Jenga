@@ -22,4 +22,12 @@ namespace Jenga.Models.TBYS.Search
         public TasinmazBagisci? Bagisci { get; set; }
         public List<KiraSozlesmeDetayVM> Sozlesmeler { get; set; } = [];
     }
+
+    public class BagisciDetayVM
+    {
+        public TasinmazBagisci Bagisci { get; set; } = new();
+        public List<Tasinmaz> Tasinmazlar { get; set; } = [];
+        public List<BagisciYakinlari> Yakinlar { get; set; } = [];
+        public List<BagisciTalepleri> Talepler { get; set; } = [];
+    }
 }

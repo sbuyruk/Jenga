@@ -6,6 +6,25 @@ namespace Jenga.Models.TBYS
     [Table("TasinmazBagisci_Table")]
     public class TasinmazBagisci : BaseModel
     {
+        /// <summary>
+        /// Gizli==true ise hassas kişisel alanları (Ad, Soyad, TCKimlikNo, Adres, Telefon, Foto) maskeler.
+        /// Servis katmanından döndürülmeden önce çağrılmalıdır.
+        /// </summary>
+        public TasinmazBagisci Maskele()
+        {
+            if (Gizli != true) return this;
+
+            const string gizli = "***";
+            Adi       = gizli;
+            Soyadi    = gizli;
+            TCKimlikNo = null;
+            Adres     = gizli;
+            Telefon1  = gizli;
+            Telefon2  = gizli;
+            Foto      = null;
+            return this;
+        }
+
         [Column("Adi")]
         public string Adi { get; set; } = string.Empty;
 
@@ -53,9 +72,6 @@ namespace Jenga.Models.TBYS
 
         [Column("DergiGonderilmesin")]
         public bool? DergiGonderilmesin { get; set; }
-
-        [Column("OlusturmaTarihi")]
-        public DateTime? OlusturmaTarihi { get; set; }
 
         [Column("Gizli")]
         public bool? Gizli { get; set; }

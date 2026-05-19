@@ -13,10 +13,17 @@ namespace Jenga.DataAccess.Data
 {
     public class ApplicationDbContext : DbContext
     {
+        private static readonly BagisciGizlilikInterceptor _bagisciGizlilikInterceptor = new();
+
         private string? _currentUser;
 
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
+        }
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            optionsBuilder.AddInterceptors(_bagisciGizlilikInterceptor);
         }
 
         /// <summary>

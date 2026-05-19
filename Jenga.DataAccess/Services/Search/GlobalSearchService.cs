@@ -94,8 +94,9 @@ namespace Jenga.DataAccess.Services.Search
 
             var bagiscilar = await db.TasinmazBagisci_Table
                 .AsNoTracking()
-                .Where(b => EF.Functions.Like(b.Adi.ToLower(),    $"%{qLow}%") ||
-                            EF.Functions.Like(b.Soyadi!.ToLower(), $"%{qLow}%"))
+                .Where(b => b.Gizli != true &&
+                           (EF.Functions.Like(b.Adi.ToLower(),     $"%{qLow}%") ||
+                            EF.Functions.Like(b.Soyadi!.ToLower(), $"%{qLow}%")))
                 .Take(MaxPerGroup)
                 .Select(b => new { b.Id, b.Adi, b.Soyadi, b.Ili, b.Ilcesi, b.Meslegi })
                 .ToListAsync(ct);

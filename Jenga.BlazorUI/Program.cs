@@ -188,6 +188,7 @@ app.UseAntiforgery();
 
 app.MapStaticAssets();
 app.MapAuthEndpoints();
+app.MapFotoProxy();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 /*SB Hata Sayfası*/
