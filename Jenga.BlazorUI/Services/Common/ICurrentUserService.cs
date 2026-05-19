@@ -1,3 +1,4 @@
+using Jenga.Models.Enums;
 using Jenga.Models.IKYS;
 
 namespace Jenga.BlazorUI.Services.Common
@@ -30,5 +31,23 @@ namespace Jenga.BlazorUI.Services.Common
         /// Development-only: belirtilen kullanıcıyı aktif circuit için impersonate eder.
         /// </summary>
         Task<bool> SetImpersonationOverrideAsync(string? overrideUser);
+
+        /// <summary>
+        /// Mevcut kullanıcının sahip olduğu tüm modül izinlerini döner.
+        /// Sonuç önbelleklenir; Invalidate() ile temizlenebilir.
+        /// </summary>
+        Task<IReadOnlySet<(ModuleName Module, Operation Operation)>> GetModulePermissionsAsync();
+
+        /// <summary>
+        /// Mevcut kullanıcının yetkili olduğu bölge ID'lerini döner.
+        /// Boş liste → kullanıcıya henüz bölge atanmamış demektir.
+        /// Sonuç önbelleklenir; Invalidate() ile temizlenebilir.
+        /// </summary>
+        Task<IReadOnlyList<int>> GetAuthorizedRegionIdsAsync();
+
+        /// <summary>
+        /// Mevcut kullanıcının belirtilen modül ve operasyon için yetkili olup olmadığını döner.
+        /// </summary>
+        Task<bool> HasPermissionAsync(ModuleName module, Operation operation);
     }
 }

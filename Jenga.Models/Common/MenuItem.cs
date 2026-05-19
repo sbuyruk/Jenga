@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Jenga.Models.Common
 {
 
-    [Table("MenuItem_Table")]
+    [Table("Auth_MenuItem_Table")]
     public class MenuItem : BaseModel
     {
         [Column("Title")]

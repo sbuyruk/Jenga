@@ -1,4 +1,5 @@
 using Jenga.DataAccess.Data;
+using Jenga.Models.Enums;
 using Jenga.Models.IKYS;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.EntityFrameworkCore;
@@ -16,6 +17,8 @@ namespace Jenga.BlazorUI.Services.Common
         private readonly IHostEnvironment _hostEnvironment;
         private readonly ILogger<CurrentUserService> _logger;
         private Personel? _cachedPersonel;
+        private IReadOnlySet<(ModuleName Module, Operation Operation)>? _cachedPermissions;
+        private IReadOnlyList<int>? _cachedRegionIds;
         private readonly SemaphoreSlim _cacheLock = new(1, 1);
 
         public CurrentUserService(
@@ -175,10 +178,86 @@ namespace Jenga.BlazorUI.Services.Common
         /// </summary>
         public void Invalidate()
         {
-            // Interlocked-style: volatile write görünürlüğü için Volatile.Write kullanılır.
-            // SemaphoreSlim.Wait() Blazor render thread'inde deadlock'a yol açabileceğinden
-            // kaçınılır; _cachedPersonel ataması referans boyutunda atomik (64-bit CLR).
             Volatile.Write(ref _cachedPersonel, null);
+            Volatile.Write(ref _cachedPermissions, null);
+            Volatile.Write(ref _cachedRegionIds, null);
+        }
+
+        public async Task<IReadOnlySet<(ModuleName Module, Operation Operation)>> GetModulePermissionsAsync()
+        {
+            var cached = Volatile.Read(ref _cachedPermissions);
+            if (cached != null) return cached;
+
+            var personel = await GetCurrentPersonelAsync();
+            if (personel == null) return new HashSet<(ModuleName, Operation)>();
+
+            await _cacheLock.WaitAsync();
+            try
+            {
+                if (_cachedPermissions != null) return _cachedPermissions;
+
+                await using var db = await _dbFactory.CreateDbContextAsync();
+
+                var roleIds = await db.PersonelRol_Table
+                    .AsNoTracking()
+                    .Where(pr => pr.PersonelId == personel.Id)
+                    .Select(pr => pr.RoleId)
+                    .ToListAsync();
+
+                var permissions = await db.RoleModulePermission_Table
+                    .AsNoTracking()
+                    .Where(rmp => roleIds.Contains(rmp.RoleId))
+                    .Include(rmp => rmp.ModulePermission)
+                    .Select(rmp => new { rmp.ModulePermission!.Module, rmp.ModulePermission.Operation })
+                    .ToListAsync();
+
+                var result = permissions
+                    .Select(p => (p.Module, p.Operation))
+                    .ToHashSet();
+
+                _cachedPermissions = result;
+                return _cachedPermissions;
+            }
+            finally
+            {
+                _cacheLock.Release();
+            }
+        }
+
+        public async Task<IReadOnlyList<int>> GetAuthorizedRegionIdsAsync()
+        {
+            var cached = Volatile.Read(ref _cachedRegionIds);
+            if (cached != null) return cached;
+
+            var personel = await GetCurrentPersonelAsync();
+            if (personel == null) return Array.Empty<int>();
+
+            await _cacheLock.WaitAsync();
+            try
+            {
+                if (_cachedRegionIds != null) return _cachedRegionIds;
+
+                await using var db = await _dbFactory.CreateDbContextAsync();
+
+                var regionIds = await db.PersonnelRegionPermission_Table
+                    .AsNoTracking()
+                    .Where(prp => prp.PersonnelId == personel.Id)
+                    .Select(prp => prp.RegionId)
+                    .ToListAsync();
+
+                _cachedRegionIds = regionIds;
+                return _cachedRegionIds;
+            }
+            finally
+            {
+                _cacheLock.Release();
+            }
+        }
+
+        public async Task<bool> HasPermissionAsync(ModuleName module, Operation operation)
+        {
+            var permissions = await GetModulePermissionsAsync();
+            return permissions.Contains((module, operation));
         }
 
         public void Dispose() => _cacheLock.Dispose();

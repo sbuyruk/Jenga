@@ -1,5 +1,6 @@
 ﻿using Jenga.Models.Common;
 using Jenga.Models.Enums;
+using Jenga.Models.Enums;
 using Jenga.Models.FTK;
 using Jenga.Models.IKYS;
 using Jenga.Models.Inventory;
@@ -61,6 +62,9 @@ namespace Jenga.DataAccess.Data
         public DbSet<Role> Rol_Table { get; set; }
         public DbSet<PersonelRole> PersonelRol_Table { get; set; }
         public DbSet<RoleMenu> RolMenu_Table { get; set; }
+        public DbSet<ModulePermission> ModulePermission_Table { get; set; }
+        public DbSet<RoleModulePermission> RoleModulePermission_Table { get; set; }
+        public DbSet<PersonnelRegionPermission> PersonnelRegionPermission_Table { get; set; }
         //Presence
         public DbSet<UserPresenceSession> UserPresenceSession_Table { get; set; }
         public DbSet<UserNavigationEvent> UserNavigationEvent_Table { get; set; }

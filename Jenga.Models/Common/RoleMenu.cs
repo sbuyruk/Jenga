@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Jenga.Models.Common
 {
 
-    [Table("RoleMenu_Table")]
+    [Table("Auth_RoleMenu_Table")]
     public class RoleMenu : BaseModel
     {
         public int RoleId { get; set; }

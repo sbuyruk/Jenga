@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Jenga.Models.Common
 {
-    [Table("Role_Table")]
+    [Table("Auth_Role_Table")]
     public class Role : BaseModel
     {
         public string Name { get; set; } = string.Empty;
