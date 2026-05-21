@@ -10,11 +10,14 @@
 
 <h3>MaterialUnitTable</h3>
 
+@if (CanCreate)
+{
 <div class="d-flex justify-content-end mb-2">
     <button class="btn btn-success" @onclick="OpenNewUnitModal" type="button">
         <i class="bi bi-plus-lg"></i> Yeni Birim
     </button>
 </div>
+}
 
 @if (MaterialUnits?.Any() != true)
 {
@@ -45,8 +48,14 @@ else
             <td class="align-middle">@unit.Symbol</td>
             <td class="align-middle">@unit.Aciklama</td>
             <td class="text-center align-middle" style="white-space:nowrap;">
-                <button class="btn btn-sm btn-primary me-2" @onclick="() => OnEditClicked(unit)">Düzenle</button>
-                <button class="btn btn-sm btn-danger" @onclick="() => OnDeleteClicked(unit)">Sil</button>
+                @if (CanEdit)
+                {
+                    <button class="btn btn-sm btn-primary me-2" @onclick="() => OnEditClicked(unit)">Düzenle</button>
+                }
+                @if (CanDelete)
+                {
+                    <button class="btn btn-sm btn-danger" @onclick="() => OnDeleteClicked(unit)">Sil</button>
+                }
             </td>
         </RowTemplate>
     </GenericTable>
@@ -63,6 +72,9 @@ else
 @code {
     [Parameter] public List<MaterialUnit> MaterialUnits { get; set; } = new();
     [Parameter] public EventCallback OnRefresh { get; set; }
+    [Parameter] public bool CanCreate { get; set; }
+    [Parameter] public bool CanEdit { get; set; }
+    [Parameter] public bool CanDelete { get; set; }
 
     private MaterialUnit? selectedUnit;
     private bool showEditModal;
@@ -83,11 +95,26 @@ else
                 if (saved.IsSuccess)
                 {
                     MaterialUnits.Add(selectedUnit);
+                    ToastService.ShowToast($"{selectedUnit.Name} eklendi.", ToastType.Success, 3000);
+                }
+                else
+                {
+                    ToastService.ShowToast(saved.Error?.Message ?? "Birim eklenemedi.", ToastType.Error, 5000);
+                    return;
                 }
             }
             else
             {
-                await MaterialUnitService.UpdateAsync(selectedUnit);
+                var updated = await MaterialUnitService.UpdateAsync(selectedUnit);
+                if (updated.IsSuccess)
+                {
+                    ToastService.ShowToast($"{selectedUnit.Name} güncellendi.", ToastType.Success, 3000);
+                }
+                else
+                {
+                    ToastService.ShowToast(updated.Error?.Message ?? "Birim güncellenemedi.", ToastType.Error, 5000);
+                    return;
+                }
             }
 
             showEditModal = false;
@@ -130,6 +157,7 @@ else
                 var deleted = await MaterialUnitService.DeleteAsync(unit);
                 if (deleted.IsSuccess)
                 {
+                    ToastService.ShowToast($"{unit.Name} silindi.", ToastType.Success, 3000);
                     MaterialUnits.Remove(unit);
 
                     if (OnRefresh.HasDelegate)

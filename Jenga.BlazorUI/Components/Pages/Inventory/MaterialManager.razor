@@ -1,7 +1,8 @@
-﻿@page "/inventory/material-manager"
+@page "/inventory/material-manager"
 @rendermode InteractiveServer
 @using Jenga.BlazorUI.Components.Inventory
 @using Jenga.DataAccess.Services.Inventory
+@using Jenga.BlazorUI.Services.Common
 @using Jenga.Models.Inventory
 @using Microsoft.JSInterop
 @inject IMaterialService MaterialService
@@ -10,12 +11,19 @@
 @inject IMaterialModelService MaterialModelService
 @inject IMaterialUnitService MaterialUnitService
 @inject IJSRuntime JS
+@inject ICurrentUserService CurrentUserService
 
-<h3>Malzeme Tanımları</h3>
+<PermissionGuard Module="ModuleName.Inventory" Operation="Operation.View">
+<h3>Malzeme Tanimlari</h3>
 <MaterialTable
     Materials="@materials"
     Categories="@categories"
-    MaterialUnits="@units" />
+    MaterialUnits="@units"
+    CanCreate="@_canCreate"
+    CanEdit="@_canEdit"
+    CanDelete="@_canDelete" />
+
+</PermissionGuard>
 
 @code {
     private List<Material> materials = new();
@@ -23,11 +31,17 @@
     private List<MaterialUnit> units = new();
 
     private bool _dataLoaded;
+    private bool _canCreate;
+    private bool _canEdit;
+    private bool _canDelete;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender && !_dataLoaded)
         {
+            _canCreate = await CurrentUserService.HasPermissionAsync(ModuleName.Inventory, Operation.Create);
+            _canEdit   = await CurrentUserService.HasPermissionAsync(ModuleName.Inventory, Operation.Edit);
+            _canDelete = await CurrentUserService.HasPermissionAsync(ModuleName.Inventory, Operation.Delete);
             var matsR = await MaterialService.GetAllAsync();
             materials = matsR.IsSuccess ? matsR.Value : new();
             var catsR = await MaterialCategoryService.GetAllAsync();

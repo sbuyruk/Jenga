@@ -14,11 +14,14 @@
 @inject IMenuItemService MenuItemService
 @inject IToastService ToastService
 
+@if (CanCreate)
+{
 <div class="d-flex justify-content-end mb-2">
     <button class="btn btn-success" @onclick="OpenNewRolModal" type="button">
         <i class="bi bi-plus-lg"></i> Yeni Rol
     </button>
 </div>
+}
 
 @if (Roles?.Any() != true)
 {
@@ -38,8 +41,14 @@ else
             <td>@row.Name</td>
             <td>@row.Aciklama</td>
             <td>
-                <button class="btn btn-sm btn-primary me-2" @onclick="() => OnEditClicked(row.Original)">Düzenle</button>
-                <button class="btn btn-sm btn-danger" @onclick="() => OnDeleteClicked(row.Original)">Sil</button>
+                @if (CanEdit)
+                {
+                    <button class="btn btn-sm btn-primary me-2" @onclick="() => OnEditClicked(row.Original)">Düzenle</button>
+                }
+                @if (CanDelete)
+                {
+                    <button class="btn btn-sm btn-danger" @onclick="() => OnDeleteClicked(row.Original)">Sil</button>
+                }
             </td>
         </RowTemplate>
     </GenericTable>
@@ -63,6 +72,9 @@ else
     [Parameter] public EventCallback<Role> OnRoleAdded { get; set; }
     [Parameter] public EventCallback<Role> OnRoleUpdated { get; set; }
     [Parameter] public EventCallback<Role> OnRoleDeleted { get; set; }
+    [Parameter] public bool CanCreate { get; set; }
+    [Parameter] public bool CanEdit { get; set; }
+    [Parameter] public bool CanDelete { get; set; }
 
     private Role? selectedRol { get; set; }
     private List<Personel>? personelList { get; set; }

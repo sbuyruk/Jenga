@@ -10,6 +10,8 @@
 @inject ITasinmazService TasinmazService
 @inject IJSRuntime JS
 
+
+<PermissionGuard Module="ModuleName.TBYS" Operation="Operation.View">
 <div class="degerleme-root">
 <div class="d-flex align-items-center gap-2 mb-3">
     <h5 class="mb-0 fw-bold"><i class="bi bi-file-earmark-bar-graph me-2 text-primary"></i>Taşınmaz Değerleme Raporu</h5>
@@ -82,6 +84,7 @@ else
     </div>
 }
 </div>
+</PermissionGuard>
 
 @code {
     private static readonly CultureInfo TrCulture = new("tr-TR");

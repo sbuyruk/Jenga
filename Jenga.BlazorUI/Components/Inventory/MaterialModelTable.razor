@@ -7,11 +7,14 @@
 @inject IMaterialModelService MaterialModelService
 @inject IMaterialEntryService MaterialEntryService
 
+@if (CanCreate)
+{
 <div class="d-flex justify-content-end mb-2">
     <button class="btn btn-success" @onclick="OpenNewModelModal" type="button">
         <i class="bi bi-plus-lg"></i> Yeni Model
     </button>
 </div>
+}
 
 @if (Models?.Any() != true)
 {
@@ -58,8 +61,14 @@ else
             <td class="align-middle">@GetBrandName(model.BrandId)</td>
             <td class="align-middle">@model.Aciklama</td>
             <td class="text-center align-middle" style="white-space:nowrap;">
-                <button class="btn btn-sm btn-primary me-2" @onclick="() => OnEditClicked(model)">Düzenle</button>
-                <button class="btn btn-sm btn-danger" @onclick="() => OnDeleteClicked(model)">Sil</button>
+                @if (CanEdit)
+                {
+                    <button class="btn btn-sm btn-primary me-2" @onclick="() => OnEditClicked(model)">Düzenle</button>
+                }
+                @if (CanDelete)
+                {
+                    <button class="btn btn-sm btn-danger" @onclick="() => OnDeleteClicked(model)">Sil</button>
+                }
             </td>
         </RowTemplate>
     </GenericTable>
@@ -77,6 +86,9 @@ else
 @code {
     [Parameter] public List<MaterialModel> Models { get; set; } = new();
     [Parameter] public List<MaterialBrand> Brands { get; set; } = new();
+    [Parameter] public bool CanCreate { get; set; }
+    [Parameter] public bool CanEdit { get; set; }
+    [Parameter] public bool CanDelete { get; set; }
 
     private readonly Dictionary<int, string> _brandNameById = new();
 
@@ -133,11 +145,26 @@ else
                 if (saved.IsSuccess)
                 {
                     Models.Add(selectedModel);
+                    ToastService.ShowToast($"{selectedModel.ModelName} eklendi.", ToastType.Success, 3000);
+                }
+                else
+                {
+                    ToastService.ShowToast(saved.Error?.Message ?? "Model eklenemedi.", ToastType.Error, 5000);
+                    return;
                 }
             }
             else
             {
-                await MaterialModelService.UpdateAsync(selectedModel);
+                var updated = await MaterialModelService.UpdateAsync(selectedModel);
+                if (updated.IsSuccess)
+                {
+                    ToastService.ShowToast($"{selectedModel.ModelName} güncellendi.", ToastType.Success, 3000);
+                }
+                else
+                {
+                    ToastService.ShowToast(updated.Error?.Message ?? "Model güncellenemedi.", ToastType.Error, 5000);
+                    return;
+                }
             }
 
             showEditModal = false;

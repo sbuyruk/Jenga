@@ -17,6 +17,7 @@
 @inject IBolgeService BolgeService
 @inject IBagisService BagisService
 
+<PermissionGuard Module="ModuleName.NBYS" Operation="Operation.View">
 <div class="armagan-dashboard container-fluid px-0 px-sm-2">
 
     @if (_isLoading)
@@ -422,6 +423,7 @@
         </div>
     }
 </div>
+</PermissionGuard>
 
 @code {
     private bool _isLoading = true;

@@ -1,4 +1,4 @@
-﻿@page "/inventory/material-inventoryChart-page"
+@page "/inventory/material-inventoryChart-page"
 @rendermode InteractiveServer
 @using Jenga.BlazorUI.Components.Inventory
 @using Jenga.DataAccess.Services.Inventory
@@ -11,6 +11,7 @@
 @inject IMaterialUnitService MaterialUnitService
 @inject ILocationService LocationService
 
+<PermissionGuard Module="ModuleName.Inventory" Operation="Operation.View">
 <h3>Stok Durumu (Envanter)</h3>
 
 <MaterialInventoryChart TItem="MaterialInventory"
@@ -20,6 +21,8 @@
                         Models="@models"
                         MaterialUnits="@units"
                         Locations="@locations" />
+
+</PermissionGuard>
 
 @code {
     private List<MaterialInventory> inventories = new();

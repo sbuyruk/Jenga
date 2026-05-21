@@ -6,6 +6,7 @@ namespace Jenga.Models.Enums
         NBYS      = 1,
         FTK       = 2,
         IKYS      = 3,
-        Inventory = 4
+        Inventory = 4,
+        Admin     = 5
     }
 }

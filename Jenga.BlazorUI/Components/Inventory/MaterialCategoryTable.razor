@@ -8,11 +8,14 @@
 @inject IMaterialService MaterialService
 @inject IMaterialBrandService MaterialBrandService
 
+@if (CanCreate)
+{
 <div class="d-flex justify-content-end mb-2">
     <button class="btn btn-success" @onclick="OpenNewCategoryModal" type="button">
         <i class="bi bi-plus-lg"></i> Yeni Kategori
     </button>
 </div>
+}
 
 @if (Categories?.Any() != true)
 {
@@ -43,8 +46,14 @@ else
             <td class="align-middle">@cat.Aciklama</td>
             <td class="align-middle">@GetParentCategoryName(cat.ParentCategoryId)</td>
             <td class="text-center align-middle" style="white-space:nowrap;">
-                <button class="btn btn-sm btn-primary me-2" @onclick="() => OnEditClicked(cat)">Düzenle</button>
-                <button class="btn btn-sm btn-danger" @onclick="() => OnDeleteClicked(cat)">Sil</button>
+                @if (CanEdit)
+                {
+                    <button class="btn btn-sm btn-primary me-2" @onclick="() => OnEditClicked(cat)">Düzenle</button>
+                }
+                @if (CanDelete)
+                {
+                    <button class="btn btn-sm btn-danger" @onclick="() => OnDeleteClicked(cat)">Sil</button>
+                }
             </td>
         </RowTemplate>
     </GenericTable>
@@ -62,6 +71,9 @@ else
 @code
 {
     [Parameter] public List<MaterialCategory> Categories { get; set; } = new();
+    [Parameter] public bool CanCreate { get; set; }
+    [Parameter] public bool CanEdit { get; set; }
+    [Parameter] public bool CanDelete { get; set; }
 
     private readonly Dictionary<int, string> _categoryNameById = new();
 
@@ -101,11 +113,26 @@ else
                 if (saved.IsSuccess)
                 {
                     Categories.Add(selectedCategory);
+                    ToastService.ShowToast($"{selectedCategory.CategoryName} eklendi.", ToastType.Success, 3000);
+                }
+                else
+                {
+                    ToastService.ShowToast(saved.Error?.Message ?? "Kategori eklenemedi.", ToastType.Error, 5000);
+                    return;
                 }
             }
             else
             {
-                await MaterialCategoryService.UpdateAsync(selectedCategory);
+                var updated = await MaterialCategoryService.UpdateAsync(selectedCategory);
+                if (updated.IsSuccess)
+                {
+                    ToastService.ShowToast($"{selectedCategory.CategoryName} güncellendi.", ToastType.Success, 3000);
+                }
+                else
+                {
+                    ToastService.ShowToast(updated.Error?.Message ?? "Kategori güncellenemedi.", ToastType.Error, 5000);
+                    return;
+                }
             }
 
             showEditModal = false;

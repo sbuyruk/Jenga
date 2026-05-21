@@ -19,6 +19,7 @@
 @inject IYasalFaizService YasalFaizService
 @implements IDisposable
 
+<PermissionGuard Module="ModuleName.TBYS" Operation="Operation.View">
 <div class="kira-dashboard p-2 p-md-3">
 
     @if (isLoading)
@@ -262,6 +263,7 @@
              title="Burada yayınlanan tüm Kiralık verileri Emlak Direktörlüğü tarafından girilmektedir. İrtibat için Zekayi ÇALIŞ, dahili tel: 229" />
     </div>
 </div>
+</PermissionGuard>
 
 @code {
     private List<Tasinmaz>? tasinmazlar;

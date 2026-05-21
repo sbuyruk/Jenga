@@ -8,6 +8,7 @@
 
 @inject ITasinmazService TasinmazService
 
+<PermissionGuard Module="ModuleName.TBYS" Operation="Operation.View">
 <div class="no-print d-flex align-items-end gap-2 mb-3">
     <div class="btn-group" role="group">
         <button type="button"
@@ -37,6 +38,8 @@ else
     <TasinmazDurumuDetailTable @ref="_detailTable"
                                Tasinmazlar="@Tasinmazlar" />
 }
+
+</PermissionGuard>
 
 @code {
     private enum Tab { Ozet, Detay }

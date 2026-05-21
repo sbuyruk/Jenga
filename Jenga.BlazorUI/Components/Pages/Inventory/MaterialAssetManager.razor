@@ -1,4 +1,4 @@
-ï»¿@page "/inventory/asset-manager"
+@page "/inventory/asset-manager"
 @rendermode InteractiveServer
 
 @using Jenga.BlazorUI.Components.Inventory
@@ -17,8 +17,10 @@
 @inject IMaterialInventoryService MaterialInventoryService
 @inject ILocationService LocationService
 @inject IPersonelService PersonelService
+@inject ICurrentUserService CurrentUserService
 
-<h5 class="mb-3"><i class="bi bi-cpu me-2"></i>Demirbas DaÄŸÄ±lÄ±mÄ±</h5>
+<PermissionGuard Module="ModuleName.Inventory" Operation="Operation.View">
+<h5 class="mb-3"><i class="bi bi-cpu me-2"></i>Demirbas Dagilimi</h5>
 
 <!-- FILTERS -->
 <div class="card shadow-sm mb-3">
@@ -34,11 +36,11 @@
                             @if (filterCategoryId.HasValue)
                             {
                                 var selected = categories.FirstOrDefault(c => c.Id == filterCategoryId.Value);
-                                <i class="bi bi-folder2-open me-1 text-warning"></i>@(selected?.CategoryName ?? "TÃ¼mÃ¼")
+                                <i class="bi bi-folder2-open me-1 text-warning"></i>@(selected?.CategoryName ?? "Tümü")
                             }
                             else
                             {
-                                <i class="bi bi-grid me-1"></i><span class="text-muted">TÃ¼mÃ¼</span>
+                                <i class="bi bi-grid me-1"></i><span class="text-muted">Tümü</span>
                             }
                         </span>
                         <i class="bi bi-chevron-down ms-1 small"></i>
@@ -50,7 +52,7 @@
                                     type="button"
                                     @onclick="() => SelectCategory(null)">
                                 <i class="bi bi-grid small"></i>
-                                <span>TÃ¼mÃ¼</span>
+                                <span>Tümü</span>
                             </button>
                             <div class="dropdown-divider my-1"></div>
                             @foreach (var (category, depth) in GetFlatCategoryTree())
@@ -77,7 +79,7 @@
             <div class="col-md-2">
                 <label class="form-label small mb-1">Malzeme</label>
                 <select class="form-select form-select-sm" @bind="filterMaterialId" @bind:after="ApplyFilters">
-                    <option value="">TÃ¼mÃ¼</option>
+                    <option value="">Tümü</option>
                     @foreach (var m in assetMaterials)
                     {
                         <option value="@m.Id">@m.MaterialName</option>
@@ -87,7 +89,7 @@
             <div class="col-md-2">
                 <label class="form-label small mb-1">Durum</label>
                 <select class="form-select form-select-sm" @bind="filterStatus" @bind:after="ApplyFilters">
-                    <option value="">TÃ¼mÃ¼</option>
+                    <option value="">Tümü</option>
                     @foreach (var s in Enum.GetValues<AssetStatus>())
                     {
                         <option value="@s">@GetStatusLabel(s)</option>
@@ -101,7 +103,7 @@
             <div class="col-md-2">
                 <label class="form-label small mb-1">Personel</label>
                 <select class="form-select form-select-sm" @bind="filterPersonelId" @bind:after="ApplyFilters">
-                    <option value="">TÃ¼mÃ¼</option>
+                    <option value="">Tümü</option>
                     @foreach (var p in persons)
                     {
                         <option value="@p.Id">@p.Adi @p.Soyadi</option>
@@ -135,9 +137,14 @@
                             MaterialInventories="inventories"
                             MaterialUnits="units"
                             Categories="categories"
+                            CanCreate="@_canCreate"
+                            CanEdit="@_canEdit"
+                            CanDelete="@_canDelete"
                             OnDataChanged="LoadAllData" />
     </div>
 </div>
+
+</PermissionGuard>
 
 @code {
     private List<MaterialAsset> allAssets = new();
@@ -159,9 +166,24 @@
     private string searchTerm = "";
     private bool categoryDropdownOpen = false;
 
+    private bool _canCreate;
+    private bool _canEdit;
+    private bool _canDelete;
+
     protected override async Task OnInitializedAsync()
     {
         await LoadAllData();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _canCreate = await CurrentUserService.HasPermissionAsync(ModuleName.Inventory, Operation.Create);
+            _canEdit   = await CurrentUserService.HasPermissionAsync(ModuleName.Inventory, Operation.Edit);
+            _canDelete = await CurrentUserService.HasPermissionAsync(ModuleName.Inventory, Operation.Delete);
+            StateHasChanged();
+        }
     }
 
     private async Task LoadAllData()

@@ -17,6 +17,7 @@
 @inject IModalService ModalService
 @implements IDisposable
 
+<PermissionGuard Module="ModuleName.TBYS" Operation="Operation.View">
 <div class="admin-overview p-3 manager-summary-layout">
     <div>
         @if (isLoading)
@@ -140,6 +141,7 @@
         </div>
     </div>
 </div>
+</PermissionGuard>
 
 @code {
     private List<Tasinmaz>? tasinmazlar;

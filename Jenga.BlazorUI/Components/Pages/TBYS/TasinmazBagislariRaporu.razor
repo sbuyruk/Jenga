@@ -9,6 +9,7 @@
 @inject ITasinmazService TasinmazService
 
 
+<PermissionGuard Module="ModuleName.TBYS" Operation="Operation.View">
 <div class="card shadow-sm mb-4">
     <div class="card-header bg-light fw-semibold">
         <i class="bi bi-bar-chart"></i> Taşınmaz Bağışları Raporu
@@ -48,6 +49,7 @@
                                      @bind-SelectedYear="@SelectedYear" />
     </div>
 </div>
+</PermissionGuard>
 
 @code {
     private YilBazindaTasinmazBagisTable? _table;

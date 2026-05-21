@@ -7,11 +7,14 @@
 @inject IMaterialBrandService MaterialBrandService
 @inject IMaterialEntryService MaterialEntryService
 
+@if (CanCreate)
+{
 <div class="d-flex justify-content-end mb-2">
     <button class="btn btn-success" @onclick="OpenNewBrandModal" type="button">
         <i class="bi bi-plus-lg"></i> Yeni Marka
     </button>
 </div>
+}
 
 @if (Brands?.Any() != true)
 {
@@ -58,8 +61,14 @@ else
             <td class="align-middle">@GetCategoryName(brand.CategoryId)</td>
             <td class="align-middle">@brand.Aciklama</td>
             <td class="text-center align-middle" style="white-space:nowrap;">
-                <button class="btn btn-sm btn-primary me-2" @onclick="() => OnEditClicked(brand)">Düzenle</button>
-                <button class="btn btn-sm btn-danger" @onclick="() => OnDeleteClicked(brand)">Sil</button>
+                @if (CanEdit)
+                {
+                    <button class="btn btn-sm btn-primary me-2" @onclick="() => OnEditClicked(brand)">Düzenle</button>
+                }
+                @if (CanDelete)
+                {
+                    <button class="btn btn-sm btn-danger" @onclick="() => OnDeleteClicked(brand)">Sil</button>
+                }
             </td>
         </RowTemplate>
     </GenericTable>
@@ -78,6 +87,9 @@ else
 {
     [Parameter] public List<MaterialBrand> Brands { get; set; } = new();
     [Parameter] public List<MaterialCategory> Categories { get; set; } = new();
+    [Parameter] public bool CanCreate { get; set; }
+    [Parameter] public bool CanEdit { get; set; }
+    [Parameter] public bool CanDelete { get; set; }
 
     private readonly Dictionary<int, string> _categoryNameById = new();
 
@@ -134,11 +146,26 @@ else
                 if (saved.IsSuccess)
                 {
                     Brands.Add(selectedBrand);
+                    ToastService.ShowToast($"{selectedBrand.BrandName} eklendi.", ToastType.Success, 3000);
+                }
+                else
+                {
+                    ToastService.ShowToast(saved.Error?.Message ?? "Marka eklenemedi.", ToastType.Error, 5000);
+                    return;
                 }
             }
             else
             {
-                await MaterialBrandService.UpdateAsync(selectedBrand);
+                var updated = await MaterialBrandService.UpdateAsync(selectedBrand);
+                if (updated.IsSuccess)
+                {
+                    ToastService.ShowToast($"{selectedBrand.BrandName} güncellendi.", ToastType.Success, 3000);
+                }
+                else
+                {
+                    ToastService.ShowToast(updated.Error?.Message ?? "Marka güncellenemedi.", ToastType.Error, 5000);
+                    return;
+                }
             }
 
             showEditModal = false;

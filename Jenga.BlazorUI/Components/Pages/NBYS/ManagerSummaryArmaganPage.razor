@@ -17,6 +17,7 @@
 @inject IBolgeService BolgeService
 @inject IBagisService BagisService
 
+<PermissionGuard Module="ModuleName.NBYS" Operation="Operation.View">
 <div class="py-4 px-2">
     <div class="armagan-overview">
         @if (isLoading)
@@ -473,6 +474,7 @@
         }
     </div>
 </div>
+</PermissionGuard>
 
 @code {
     private bool isLoading = true;

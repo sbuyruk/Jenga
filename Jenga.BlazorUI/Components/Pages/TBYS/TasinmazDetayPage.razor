@@ -2,7 +2,9 @@
 @using Jenga.BlazorUI.Components.TBYS
 @rendermode InteractiveServer
 
-<TasinmazProfil TasinmazId="@TasinmazId" GeriUrl="@Geri" />
+<PermissionGuard Module="ModuleName.TBYS" Operation="Operation.View">
+    <TasinmazProfil TasinmazId="@TasinmazId" GeriUrl="@Geri" />
+</PermissionGuard>
 
 @code {
     [Parameter] public int TasinmazId { get; set; }

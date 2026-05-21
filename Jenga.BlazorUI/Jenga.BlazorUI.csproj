@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <Folder Include="Components\Pages\Personel\" />
+    <Folder Include="Pages\" />
   </ItemGroup>
 
   <ItemGroup>

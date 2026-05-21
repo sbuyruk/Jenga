@@ -1,26 +1,40 @@
-﻿@page "/inventory/material-brand-manager"
+@page "/inventory/material-brand-manager"
 @rendermode InteractiveServer
 @using Jenga.BlazorUI.Components.Inventory
 @using Jenga.DataAccess.Services.Inventory
+@using Jenga.BlazorUI.Services.Common
 @using Jenga.Models.Inventory
 @using Microsoft.JSInterop
 @inject IMaterialBrandService MaterialBrandService
 @inject IMaterialCategoryService MaterialCategoryService
 @inject IJSRuntime JS
+@inject ICurrentUserService CurrentUserService
 
-<h3>Malzeme Marka Yönetimi</h3>
+<PermissionGuard Module="ModuleName.Inventory" Operation="Operation.View">
+<h3>Malzeme Marka Y�netimi</h3>
 <MaterialBrandTable Brands="brands"
-                    Categories="categories" />
+                    Categories="categories"
+                    CanCreate="@_canCreate"
+                    CanEdit="@_canEdit"
+                    CanDelete="@_canDelete" />
+
+</PermissionGuard>
 
 @code {
     private List<MaterialBrand> brands = new();
     private List<MaterialCategory> categories = new();
     private bool _dataLoaded;
+    private bool _canCreate;
+    private bool _canEdit;
+    private bool _canDelete;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender && !_dataLoaded)
         {
+            _canCreate = await CurrentUserService.HasPermissionAsync(ModuleName.Inventory, Operation.Create);
+            _canEdit   = await CurrentUserService.HasPermissionAsync(ModuleName.Inventory, Operation.Edit);
+            _canDelete = await CurrentUserService.HasPermissionAsync(ModuleName.Inventory, Operation.Delete);
             var brandsR = await MaterialBrandService.GetAllAsync();
             brands = brandsR.IsSuccess ? brandsR.Value : new();
             var catsR = await MaterialCategoryService.GetAllAsync();

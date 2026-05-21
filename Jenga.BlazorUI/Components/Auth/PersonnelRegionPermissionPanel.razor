@@ -1,0 +1,153 @@
+@using Jenga.DataAccess.Services.Common
+@using Jenga.DataAccess.Services.IKYS
+@using Jenga.Models.Common
+@using Jenga.Models.IKYS
+@using Jenga.BlazorUI.Services.Common
+@inject IPersonelService PersonelService
+@inject IBolgeService BolgeService
+@inject IPersonnelRegionPermissionService PermissionService
+@inject ICurrentUserService CurrentUserService
+@inject IToastService ToastService
+
+<div class="row g-3">
+    <!-- Sol: Personel listesi -->
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-header fw-bold">Personel</div>
+            <div class="card-body p-0">
+                <div class="p-2">
+                    <input class="form-control form-control-sm" placeholder="Ara…"
+                           @bind="search" @bind:event="oninput" />
+                </div>
+                @if (personelList == null)
+                {
+                    <p class="p-3 text-muted">Yükleniyor…</p>
+                }
+                else
+                {
+                    <div class="list-group list-group-flush" style="max-height:500px;overflow-y:auto;">
+                        @foreach (var p in FilteredPersonel)
+                        {
+                            <button type="button"
+                                    class="list-group-item list-group-item-action @(selectedPersonel?.Id == p.Id ? "active" : "")"
+                                    @onclick="() => SelectPersonelAsync(p)">
+                                @p.Adi @p.Soyadi
+                            </button>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Sağ: Bölge checkboxları -->
+    <div class="col-md-8">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span class="fw-bold">
+                    @if (selectedPersonel != null)
+                    {
+                        <span>@selectedPersonel.Adi @selectedPersonel.Soyadi — Bölge Yetkileri</span>
+                    }
+                    else
+                    {
+                        <span class="text-muted">Bir personel seçin</span>
+                    }
+                </span>
+                @if (selectedPersonel != null)
+                {
+                    <button class="btn btn-sm btn-primary" @onclick="SaveAsync" disabled="@saving">
+                        @if (saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                        Kaydet
+                    </button>
+                }
+            </div>
+            <div class="card-body">
+                @if (selectedPersonel != null && bolgeList != null)
+                {
+                    <div class="row row-cols-2 row-cols-md-3 g-2">
+                        @foreach (var bolge in bolgeList)
+                        {
+                            <div class="col">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="bolge-@bolge.Id"
+                                           checked="@checkedIds.Contains(bolge.Id)"
+                                           @onchange="e => Toggle(bolge.Id, (bool)e.Value!)" />
+                                    <label class="form-check-label" for="bolge-@bolge.Id">
+                                        @bolge.Adi
+                                    </label>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else if (selectedPersonel == null)
+                {
+                    <p class="text-muted">Sol taraftan bir personel seçin.</p>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<Personel>? personelList;
+    private List<Bolge>? bolgeList;
+    private Personel? selectedPersonel;
+    private HashSet<int> checkedIds = new();
+    private string search = string.Empty;
+    private bool saving;
+
+    private IEnumerable<Personel> FilteredPersonel =>
+        personelList == null
+            ? Enumerable.Empty<Personel>()
+            : string.IsNullOrWhiteSpace(search)
+                ? personelList
+                : personelList.Where(p =>
+                    (p.Adi + " " + p.Soyadi).Contains(search, StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnInitializedAsync()
+    {
+        var personelResult = await PersonelService.GetCalisanPersonelAsync();
+        personelList = personelResult.IsSuccess ? personelResult.Value : new List<Personel>();
+
+        var bolgeResult = await BolgeService.GetAktifBolgelerAsync();
+        bolgeList = bolgeResult.IsSuccess ? bolgeResult.Value : new List<Bolge>();
+    }
+
+    private async Task SelectPersonelAsync(Personel personel)
+    {
+        selectedPersonel = personel;
+        checkedIds.Clear();
+
+        var result = await PermissionService.GetByPersonnelIdAsync(personel.Id);
+        if (result.IsSuccess)
+        {
+            foreach (var rp in result.Value)
+                checkedIds.Add(rp.RegionId);
+        }
+    }
+
+    private void Toggle(int bolgeId, bool value)
+    {
+        if (value) checkedIds.Add(bolgeId);
+        else checkedIds.Remove(bolgeId);
+    }
+
+    private async Task SaveAsync()
+    {
+        if (selectedPersonel == null) return;
+        saving = true;
+
+        var currentUser = await CurrentUserService.GetUserNameAsync();
+        var result = await PermissionService.ReplaceForPersonnelAsync(
+            selectedPersonel.Id, checkedIds, currentUser ?? "system");
+
+        saving = false;
+
+        if (result.IsSuccess)
+            ToastService.ShowToast($"{selectedPersonel.Adi} {selectedPersonel.Soyadi} bölge yetkileri kaydedildi.", ToastType.Success, 3000);
+        else
+            ToastService.ShowToast(result.Error.Message, ToastType.Error, 4000);
+    }
+}

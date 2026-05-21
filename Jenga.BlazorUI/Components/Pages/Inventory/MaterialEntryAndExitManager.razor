@@ -28,6 +28,7 @@
 @inject IMaterialTransferService MaterialTransferService
 @inject IPersonelService PersonelService
 
+<PermissionGuard Module="ModuleName.Inventory" Operation="Operation.View">
 <div class="row g-4" style="height:90vh;">
     <!-- LEFT: TreeViewer -->
     <div class="col-md-5" style="height:100%;">
@@ -125,6 +126,8 @@
                         Models="models"
                         Categories="categories"
                         IsOpen="isEntryOpen"
+                        CanCreate="@_canCreate"
+                        CanEdit="@_canEdit"
                         OnSave="OnEntryModalSave"
                         OnClose="CloseEntryModal" />
 
@@ -137,6 +140,8 @@
                        Models="models"
                        MaterialInventories="materialInventories"
                        IsOpen="isExitOpen"
+                       CanCreate="@_canCreate"
+                       CanDelete="@_canDelete"
                        OnSave="OnExitModalSave"
                        OnSaveWithAssets="OnExitAssetIdsReceived"
                        OnClose="CloseExitModal" />
@@ -154,7 +159,7 @@
                    OnClose="CloseMaterialModal"
                    MaterialUnits="materialUnits" />
 
-<MaterialTransferEditModalV2 MaterialTransfer="editingTransfer"
+<MaterialTransferEditModal MaterialTransfer="editingTransfer"
                              Materials="materials"
                              MaterialUnits="materialUnits"
                              Locations="locations"
@@ -163,10 +168,13 @@
                              Models="models"
                              MaterialInventories="materialInventories"
                              IsOpen="isTransferOpen"
+                             CanEdit="@_canEdit"
                              InitialSelectedFromInventoryId="modalInitialFromInventoryId"
                              OnSave="OnTransferModalSave"
                              OnSaveWithAssets="OnTransferAssetIdsReceived"
                              OnClose="CloseTransferModal" />
+
+</PermissionGuard>
 
 @code {
     // Models
@@ -203,6 +211,11 @@
     private int? selectedLocationId = null;
     private string CreateContextMenuLabel = "Alt Kategori Tanimla";
 
+    // Permissions
+    private bool _canCreate;
+    private bool _canEdit;
+    private bool _canDelete;
+
     // Modal Controls
     private bool isEntryOpen, isExitOpen, isCategoryEditOpen, isMaterialEditOpen, isTransferOpen;
     private MaterialEntry? editingEntry;
@@ -217,6 +230,17 @@
     protected override async Task OnInitializedAsync()
     {
         await RefreshData();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _canCreate = await CurrentUserService.HasPermissionAsync(ModuleName.Inventory, Operation.Create);
+            _canEdit   = await CurrentUserService.HasPermissionAsync(ModuleName.Inventory, Operation.Edit);
+            _canDelete = await CurrentUserService.HasPermissionAsync(ModuleName.Inventory, Operation.Delete);
+            StateHasChanged();
+        }
     }
 
     private async Task RefreshData()

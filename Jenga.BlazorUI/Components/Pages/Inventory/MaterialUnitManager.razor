@@ -1,21 +1,35 @@
-﻿@page "/inventory/material-unit-manager"
+@page "/inventory/material-unit-manager"
 @rendermode InteractiveServer
 @using Jenga.BlazorUI.Components.Inventory
 @using Jenga.Models.Inventory
 @using Jenga.DataAccess.Services.Inventory
+@using Jenga.BlazorUI.Services.Common
 @inject IMaterialUnitService MaterialUnitService
+@inject ICurrentUserService CurrentUserService
 
+<PermissionGuard Module="ModuleName.Inventory" Operation="Operation.View">
 <h3>Malzeme Birimleri</h3>
-<MaterialUnitTable MaterialUnits="@materialUnits" />
+<MaterialUnitTable MaterialUnits="@materialUnits"
+                   CanCreate="@_canCreate"
+                   CanEdit="@_canEdit"
+                   CanDelete="@_canDelete" />
+
+</PermissionGuard>
 
 @code {
     private List<MaterialUnit> materialUnits = new();
     private bool _dataLoaded;
+    private bool _canCreate;
+    private bool _canEdit;
+    private bool _canDelete;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender && !_dataLoaded)
         {
+            _canCreate = await CurrentUserService.HasPermissionAsync(ModuleName.Inventory, Operation.Create);
+            _canEdit   = await CurrentUserService.HasPermissionAsync(ModuleName.Inventory, Operation.Edit);
+            _canDelete = await CurrentUserService.HasPermissionAsync(ModuleName.Inventory, Operation.Delete);
             var unitsR = await MaterialUnitService.GetAllAsync();
             materialUnits = unitsR.IsSuccess ? unitsR.Value : new();
             StateHasChanged();

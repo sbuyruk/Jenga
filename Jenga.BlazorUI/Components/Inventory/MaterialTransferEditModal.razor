@@ -15,7 +15,19 @@
                     <h5 class="modal-title">Malzeme Transferi</h5>
                     <button type="button" class="btn-close" @onclick="OnClose" aria-label="Kapat"></button>
                 </div>
-
+                @if (!HasPermission)
+                {
+                    <div class="modal-body">
+                        <div class="alert alert-warning">
+                            <i class="bi bi-lock me-2"></i> Bu i?lem için yetkiniz bulunmamaktad?r.
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" @onclick="OnClose">Kapat</button>
+                    </div>
+                }
+                else
+                {
                 <div class="modal-body">
                     <div class="row g-3">
                         <!-- SOL ÜST: Malzeme Seçimi -->
@@ -213,6 +225,7 @@
                     </button>
                     <button class="btn btn-secondary" @onclick="OnClose">Iptal</button>
                 </div>
+                }
             </div>
         </div>
     </div>
@@ -257,10 +270,12 @@
     [Parameter] public EventCallback<MaterialTransfer?> OnSave { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
     [Parameter] public bool IsMaterialFixed { get; set; } = false;
+    [Parameter] public bool CanEdit { get; set; } = true;
     [Parameter] public EventCallback<List<int>> OnSaveWithAssets { get; set; }
     #endregion
 
     #region State
+    private bool HasPermission => CanEdit;
     private string? Reference { get; set; }
     private string toLocationSearch = "";
     private string toPersonSearch = "";

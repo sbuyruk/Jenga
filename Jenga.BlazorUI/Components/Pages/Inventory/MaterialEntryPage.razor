@@ -1,8 +1,9 @@
-﻿@page "/inventory/material-entry-page"
+@page "/inventory/material-entry-page"
 @rendermode InteractiveServer
 @using Jenga.BlazorUI.Components.Inventory
 @using Jenga.DataAccess.Services.IKYS
 @using Jenga.DataAccess.Services.Inventory
+@using Jenga.BlazorUI.Services.Common
 @using Jenga.Models.IKYS
 @using Jenga.Models.Inventory
 @using Microsoft.JSInterop
@@ -15,8 +16,10 @@
 @inject IMaterialModelService MaterialModelService
 @inject IMaterialCategoryService MaterialCategoryService
 @inject IJSRuntime JS
+@inject ICurrentUserService CurrentUserService
 
-<h3>Malzeme Girişleri</h3>
+<PermissionGuard Module="ModuleName.Inventory" Operation="Operation.View">
+<h3>Malzeme Girisleri</h3>
 <MaterialEntryTable MaterialEntries="@materialEntries"
                             Materials="@materials"
                             Locations="@locations"
@@ -24,7 +27,12 @@
                             MaterialUnits="@materialUnits"
                             Brands="@brands"
                             Models="@models"
-                            Categories="@categories"/>
+                            Categories="@categories"
+                            CanCreate="@_canCreate"
+                            CanEdit="@_canEdit"
+                            CanDelete="@_canDelete"/>
+
+</PermissionGuard>
 
 @code {
     private List<MaterialEntry> materialEntries = new();
@@ -36,11 +44,17 @@
     private List<MaterialModel> models = new();
     private List<MaterialCategory> categories = new();
     private bool _dataLoaded;
+    private bool _canCreate;
+    private bool _canEdit;
+    private bool _canDelete;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender && !_dataLoaded)
         {
+            _canCreate = await CurrentUserService.HasPermissionAsync(ModuleName.Inventory, Operation.Create);
+            _canEdit   = await CurrentUserService.HasPermissionAsync(ModuleName.Inventory, Operation.Edit);
+            _canDelete = await CurrentUserService.HasPermissionAsync(ModuleName.Inventory, Operation.Delete);
             var entriesR = await MaterialEntryService.GetAllAsync();
             materialEntries = entriesR.IsSuccess ? entriesR.Value : new();
             var matsR = await MaterialService.GetAllAsync();

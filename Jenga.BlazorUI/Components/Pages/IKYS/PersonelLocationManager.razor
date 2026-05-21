@@ -16,6 +16,7 @@
 @inject IToastService ToastService
 @inject IModalService ModalService
 
+<PermissionGuard Module="ModuleName.IKYS" Operation="Operation.View">
 <div class="row g-4" style="height:90vh;">
     <div class="col-md-5" style="height:100%">
         <h5 class="mb-0">Lokasyonlar</h5>
@@ -130,6 +131,7 @@
                    ParentLocations="locations"
                    OnSave="OnLocationModalSave"
                    OnClose="OnLocationModalClose" />
+</PermissionGuard>
 @code {
     // Tree model
     private List<TreeItem<LocationNode>> locationTree = new();

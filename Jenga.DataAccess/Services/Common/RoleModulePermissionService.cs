@@ -1,5 +1,6 @@
 using Jenga.DataAccess.Data;
 using Jenga.Models.Common;
+using Jenga.Models.Enums;
 using Jenga.Utility.Logging;
 using Jenga.Utility.Results;
 using Microsoft.EntityFrameworkCore;
@@ -111,6 +112,63 @@ namespace Jenga.DataAccess.Services.Common
             {
                 _logService.LogException(ex, $"{Source}.ReplaceForRoleAsync");
                 return Result.Failure(Error.Unexpected("Rol izinleri güncellenemedi.", ex, "RoleModulePermission.Replace.Failed"));
+            }
+        }
+
+        /// <inheritdoc/>
+        public async Task<Result> ReplaceForRoleInScopeAsync(
+            int roleId,
+            IEnumerable<int> modulePermissionIds,
+            IEnumerable<ModuleName> allowedModules,
+            string currentUser,
+            CancellationToken cancellationToken = default)
+        {
+            var scopedModules = allowedModules.ToHashSet();
+            if (scopedModules.Count == 0)
+                return Result.Failure(Error.Validation("En az bir modül kapsamı gereklidir.", "RoleModulePermission.EmptyScope"));
+
+            try
+            {
+                await using var scope = await _scopeFactory.CreateAsync(cancellationToken);
+                var db = scope.Context;
+                db.SetCurrentUser(currentUser);
+
+                // Yalnızca kapsam dahilindeki modüllere ait mevcut izinleri sil.
+                // Kapsam dışı modüllerin izinleri olduğu gibi korunur.
+                var existing = await db.RoleModulePermission_Table
+                    .Where(x => x.RoleId == roleId)
+                    .Include(x => x.ModulePermission)
+                    .ToListAsync(cancellationToken);
+
+                var toRemove = existing
+                    .Where(x => x.ModulePermission != null && scopedModules.Contains(x.ModulePermission.Module))
+                    .ToList();
+
+                db.RoleModulePermission_Table.RemoveRange(toRemove);
+
+                // Yeni izinlerden yalnızca kapsam dahilinde olanları ekle.
+                // Kötü niyetli istek kapsam dışı modül ID'si gönderirse reddedilir.
+                var allScopedPermIds = await db.ModulePermission_Table
+                    .AsNoTracking()
+                    .Where(mp => scopedModules.Contains(mp.Module))
+                    .Select(mp => mp.Id)
+                    .ToHashSetAsync(cancellationToken);
+
+                var newIds = modulePermissionIds.Where(id => allScopedPermIds.Contains(id));
+                var newEntities = newIds.Select(mpId => new RoleModulePermission
+                {
+                    RoleId = roleId,
+                    ModulePermissionId = mpId
+                });
+                await db.RoleModulePermission_Table.AddRangeAsync(newEntities, cancellationToken);
+
+                await scope.CommitAsync(cancellationToken);
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                _logService.LogException(ex, $"{Source}.ReplaceForRoleInScopeAsync");
+                return Result.Failure(Error.Unexpected("Rol izinleri güncellenemedi.", ex, "RoleModulePermission.ReplaceInScope.Failed"));
             }
         }
     }

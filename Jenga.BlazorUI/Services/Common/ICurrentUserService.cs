@@ -47,6 +47,8 @@ namespace Jenga.BlazorUI.Services.Common
 
         /// <summary>
         /// Mevcut kullanıcının belirtilen modül ve operasyon için yetkili olup olmadığını döner.
+        /// <see cref="Operation.Manage"/> izni, aynı modüldeki tüm operasyonları kapsar;
+        /// yani kullanıcının <c>Manage</c> iznine sahip olması bu metodu her operasyon için <c>true</c> döndürür.
         /// </summary>
         Task<bool> HasPermissionAsync(ModuleName module, Operation operation);
     }

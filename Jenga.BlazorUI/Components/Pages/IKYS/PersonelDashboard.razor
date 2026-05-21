@@ -24,6 +24,7 @@
 @inject ILogger<PersonelDashboard> Logger
 @implements IDisposable
 
+<PermissionGuard Module="ModuleName.IKYS" Operation="Operation.View">
 <div class="personel-dashboard container-fluid px-0 px-sm-2 px-md-3">
     @if (_isLoading)
     {
@@ -660,6 +661,7 @@
         </div><!-- scrollspy-layout -->
     }
 </div>
+</PermissionGuard>
 
 @code {
     // ── Yükleme durumu ───────────────────────────────────────────

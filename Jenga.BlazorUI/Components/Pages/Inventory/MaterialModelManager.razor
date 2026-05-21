@@ -1,25 +1,39 @@
-﻿@page "/inventory/material-model-manager"
+@page "/inventory/material-model-manager"
 @rendermode InteractiveServer
 @using Jenga.BlazorUI.Components.Inventory
 @using Jenga.DataAccess.Services.Inventory
+@using Jenga.BlazorUI.Services.Common
 @using Jenga.Models.Inventory
 @using Microsoft.JSInterop
 @inject IMaterialModelService MaterialModelService
 @inject IMaterialBrandService MaterialBrandService
 @inject IJSRuntime JS
+@inject ICurrentUserService CurrentUserService
 
-<h3>Malzeme Model Yönetimi</h3>
-<MaterialModelTable Models="@models" Brands="@brands" />
+<PermissionGuard Module="ModuleName.Inventory" Operation="Operation.View">
+<h3>Malzeme Model Y�netimi</h3>
+<MaterialModelTable Models="@models" Brands="@brands"
+                    CanCreate="@_canCreate"
+                    CanEdit="@_canEdit"
+                    CanDelete="@_canDelete" />
+
+</PermissionGuard>
 
 @code {
     private List<MaterialModel> models = new();
     private List<MaterialBrand> brands = new();
     private bool _dataLoaded;
+    private bool _canCreate;
+    private bool _canEdit;
+    private bool _canDelete;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender && !_dataLoaded)
         {
+            _canCreate = await CurrentUserService.HasPermissionAsync(ModuleName.Inventory, Operation.Create);
+            _canEdit   = await CurrentUserService.HasPermissionAsync(ModuleName.Inventory, Operation.Edit);
+            _canDelete = await CurrentUserService.HasPermissionAsync(ModuleName.Inventory, Operation.Delete);
             var modelsResult = await MaterialModelService.GetAllAsync();
             if (modelsResult.IsSuccess) models = modelsResult.Value;
             var brandsResult = await MaterialBrandService.GetAllAsync();

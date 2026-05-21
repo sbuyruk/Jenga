@@ -23,6 +23,7 @@
 @inject IJSRuntime JS
 @implements IDisposable
 
+<PermissionGuard Module="ModuleName.TBYS" Operation="Operation.View">
 <div class="bagis-dashboard container-fluid px-0 px-sm-2">
     @if (_isLoading)
     {
@@ -1032,6 +1033,7 @@
         </div> <!-- /db-scrollspy-layout -->
     }
 </div>
+</PermissionGuard>
 
 @code {
     private static readonly CultureInfo TrCulture = new("tr-TR");

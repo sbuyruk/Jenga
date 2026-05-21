@@ -16,6 +16,7 @@
 @inject NavigationManager NavigationManager
 @implements IDisposable
 
+<PermissionGuard Module="ModuleName.TBYS" Operation="Operation.View">
 <div class="admin-overview p-3 manager-summary-layout">
     <div class="manager-summary-content">
         @if (isLoading)
@@ -120,6 +121,7 @@
         </nav>
     </aside>
 </div>
+</PermissionGuard>
 
 @code {
     private List<Tasinmaz>? tasinmazlar;

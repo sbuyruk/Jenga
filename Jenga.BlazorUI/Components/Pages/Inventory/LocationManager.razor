@@ -13,16 +13,21 @@
 @inject ILocationService LocationService
 @inject IModalService ModalService
 @inject IToastService ToastService
+@inject ICurrentUserService CurrentUserService
 
+<PermissionGuard Module="ModuleName.Inventory" Operation="Operation.View">
 <div class="navbar navbar-expand-lg bg-body-tertiary gap-5 mb-3 shadow-sm rounded py-2 px-3" style="min-height:56px;">
     <h3 class="mb-0 flex-grow-1">Lokasyon Yönetimi</h3>
     <input class="form-control" style="max-width: 250px;"
            placeholder="Lokasyon Ara..."
            @bind="searchTerm"
            @bind:event="oninput" />
+    @if (_canCreate)
+    {
     <button class="btn btn-success" @onclick="OpenNewLocationModal" type="button">
         <i class="bi bi-plus-lg"></i> Yeni Lokasyon
     </button>
+    }
 </div>
 <div class="treeview-container">
     <TreeViewer T="Location"
@@ -35,9 +40,9 @@
                 LabelSelector="@(item => item.Data.LocationName)"
                 DescriptionSelector="@(item => item.Data.Aciklama)"
                 ChildrenSelector="@(item => item.Children)"
-                ShowCreateSelector="@(item => item.ShowCreate)"
-                ShowEditSelector="@(item => item.ShowEdit)"
-                ShowDeleteSelector="@(item => item.ShowDelete)" 
+                ShowCreateSelector="@(item => item.ShowCreate && _canCreate)"
+                ShowEditSelector="@(item => item.ShowEdit && _canEdit)"
+                ShowDeleteSelector="@(item => item.ShowDelete && _canDelete)"
                 SortSelector='@(item => item.Data.LocationName)'
                 SortAscending="@sortAscending" SortAscendingChanged="@(v => sortAscending = v)" />
 
@@ -48,6 +53,8 @@
                        OnClose="OnModalClose" />
 </div>
 
+</PermissionGuard>
+
 @code {
     // Fields
     private List<Location> locations = new();
@@ -57,6 +64,9 @@
     private bool _dataLoaded = false;
     private string searchTerm = "";
     private bool sortAscending = true;
+    private bool _canCreate;
+    private bool _canEdit;
+    private bool _canDelete;
 
     private Func<TreeItem<MaterialCategory>, object?> sortSelector = item =>
         item.Data?.CategoryName ;
@@ -69,6 +79,9 @@
     // Lifecycle
     protected override async Task OnInitializedAsync()
     {
+        _canCreate = await CurrentUserService.HasPermissionAsync(ModuleName.Inventory, Operation.Create);
+        _canEdit   = await CurrentUserService.HasPermissionAsync(ModuleName.Inventory, Operation.Edit);
+        _canDelete = await CurrentUserService.HasPermissionAsync(ModuleName.Inventory, Operation.Delete);
         await RefreshData();
     }
 

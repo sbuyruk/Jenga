@@ -19,6 +19,7 @@
 @inject IMaterialBrandService MaterialBrandService
 @inject IMaterialModelService MaterialModelService
 
+<PermissionGuard Module="ModuleName.Inventory" Operation="Operation.View">
 <div class="navbar navbar-expand-lg bg-body-tertiary gap-5 mb-3 shadow-sm rounded py-2 px-3" style="min-height:56px;">
     <h3 class="mb-0 flex-grow-1">Malzeme ve Kategori Tanimlari</h3>
     <input class="form-control" style="max-width: 250px;"
@@ -66,6 +67,8 @@
                        OnSave="OnModalMaterialSave"
                        OnClose="OnModalMaterialClose" />
 </div>
+
+</PermissionGuard>
 
 @code {
     // Fields

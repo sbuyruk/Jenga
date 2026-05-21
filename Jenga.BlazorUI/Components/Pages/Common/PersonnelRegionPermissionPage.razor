@@ -1,0 +1,8 @@
+@page "/common/personnel-region-permissions"
+@rendermode InteractiveServer
+@using Jenga.BlazorUI.Components.Auth
+
+<PermissionGuard Module="ModuleName.Admin" Operation="Operation.View">
+<h3>Personel Bölge Yetkileri</h3>
+<PersonnelRegionPermissionPanel />
+</PermissionGuard>

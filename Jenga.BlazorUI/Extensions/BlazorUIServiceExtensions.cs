@@ -2,6 +2,7 @@ using Jenga.BlazorUI.Services.Common;
 using Jenga.BlazorUI.Services.Common.Error;
 using Jenga.BlazorUI.Services.Common.Toast;
 using Jenga.BlazorUI.Services.Presence;
+using Jenga.DataAccess.Services.Common;
 using Jenga.Utility.Logging;
 using Microsoft.AspNetCore.Components.Server.Circuits;
 using Microsoft.AspNetCore.Diagnostics;
@@ -30,6 +31,7 @@ namespace Jenga.BlazorUI.Extensions
             services.AddScoped<IModalService, ModalService>();
             services.AddScoped<MenuStateService>();
             services.AddScoped<ICurrentUserService, CurrentUserService>();
+            services.AddScoped<IServiceAuthorizationContext, BlazorServiceAuthorizationContext>();
             services.AddScoped<ImpersonationService>();
             services.AddScoped<ThemeService>();
 

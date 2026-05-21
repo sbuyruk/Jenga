@@ -15,6 +15,7 @@
 @inject IModalService ModalService
 @implements IDisposable
 
+<PermissionGuard Module="ModuleName.NBYS" Operation="Operation.View">
 <div class="nakit-dashboard container-fluid px-0 px-sm-2">
 
     @if (isLoading)
@@ -485,6 +486,7 @@
         </div>
     }
 </div>
+</PermissionGuard>
 
 @code {
     // ── Constants ──────────────────────────────────────────────────────────

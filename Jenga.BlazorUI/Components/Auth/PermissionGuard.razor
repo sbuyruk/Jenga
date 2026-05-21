@@ -1,0 +1,58 @@
+@using Jenga.BlazorUI.Services.Common
+@using Jenga.Models.Enums
+@inject ICurrentUserService CurrentUserService
+
+@if (_checked)
+{
+    @if (_hasPermission)
+    {
+        @ChildContent
+    }
+    else if (!HideWhenUnauthorized && !string.IsNullOrEmpty(FallbackMessage))
+    {
+        <div class="alert alert-warning py-2">
+            <i class="bi bi-shield-exclamation me-1"></i>@FallbackMessage
+        </div>
+    }
+}
+
+@code {
+    /// <summary>İzin verildiğinde gösterilecek içerik.</summary>
+    [Parameter, EditorRequired] public RenderFragment ChildContent { get; set; } = default!;
+
+    /// <summary>Kontrol edilecek modül.</summary>
+    [Parameter, EditorRequired] public ModuleName Module { get; set; }
+
+    /// <summary>Kontrol edilecek operasyon.</summary>
+    [Parameter, EditorRequired] public Operation Operation { get; set; }
+
+    /// <summary>İzin yoksa gösterilecek hazır uyarı metni. Varsayılan: "Bu işlem için yetkiniz bulunmamaktadır."</summary>
+    [Parameter] public string FallbackMessage { get; set; } = "Bu işlem için yetkiniz bulunmamaktadır.";
+
+    /// <summary>true ise izin yokken hiçbir şey render edilmez.</summary>
+    [Parameter] public bool HideWhenUnauthorized { get; set; } = false;
+
+    private bool _hasPermission;
+    private bool _checked;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _checked = false;
+        _hasPermission = await CurrentUserService.HasPermissionAsync(Module, Operation);
+        _checked = true;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        // Prerender sırasında JS hazır değilse impersonation kontrol edilemez ve
+        // gerçek kullanıcı cache'e yazılmaz. Interactive aşamada (OnAfterRenderAsync)
+        // JS hazır olduğundan tekrar kontrol ederek doğru kullanıcıyı çözümleriz.
+        var updated = await CurrentUserService.HasPermissionAsync(Module, Operation);
+        if (updated != _hasPermission)
+        {
+            _hasPermission = updated;
+            StateHasChanged();
+        }
+    }
+}

@@ -1,4 +1,5 @@
 using Jenga.DataAccess.Data;
+using Jenga.DataAccess.Services.Common;
 using Jenga.Models.Inventory;
 using Jenga.Utility.Logging;
 using Jenga.Utility.Results;
@@ -14,7 +15,10 @@ namespace Jenga.DataAccess.Services.Inventory
         private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
         private readonly ILogService _logService;
 
-        public MaterialBrandService(IDbContextFactory<ApplicationDbContext> dbFactory, ILogService logService)
+        public MaterialBrandService(
+            IDbContextFactory<ApplicationDbContext> dbFactory,
+            ILogService logService,
+            IServiceAuthorizationContext? authContext = null)
         {
             _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
             _logService = logService ?? throw new ArgumentNullException(nameof(logService));

@@ -18,6 +18,19 @@
                     <h5 class="modal-title text-danger-emphasis">Malzeme Çıkış Düzenle</h5>
                     <button type="button" class="btn-close" @onclick="OnClose" aria-label="Kapat"></button>
                 </div>
+                @if (!HasPermission)
+                {
+                    <div class="modal-body">
+                        <div class="alert alert-warning">
+                            <i class="bi bi-lock me-2"></i> Bu işlem için yetkiniz bulunmamaktadır.
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" @onclick="OnClose">Kapat</button>
+                    </div>
+                }
+                else
+                {
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Malzeme</label>
@@ -168,6 +181,7 @@
                     </button>
                     <button class="btn btn-secondary" @onclick="OnClose">Iptal</button>
                 </div>
+                }
             </div>
         </div>
     </div>
@@ -208,6 +222,8 @@
     [Parameter] public List<MaterialModel> Models { get; set; } = new();
     [Parameter] public List<MaterialInventory> MaterialInventories { get; set; } = new();
     [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public bool CanCreate { get; set; } = true;
+    [Parameter] public bool CanDelete { get; set; } = true;
     [Parameter] public EventCallback OnSave { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
     [Parameter] public bool IsMaterialFixed { get; set; } = false;
@@ -215,6 +231,8 @@
     #endregion
 
     #region State
+    private bool IsNewExit => MaterialExit == null || MaterialExit.Id == 0;
+    private bool HasPermission => IsNewExit ? CanCreate : CanDelete;
     private List<InventoryOption> AvailableInventoryOptions { get; set; } = new();
     private List<SourceOption> SourceOptions { get; set; } = new();
 

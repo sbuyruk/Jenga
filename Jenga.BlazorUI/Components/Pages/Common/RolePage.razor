@@ -2,33 +2,45 @@
 @rendermode InteractiveServer
 @using Jenga.BlazorUI.Components.Menus
 @using Jenga.DataAccess.Services.Common
+@using Jenga.BlazorUI.Services.Common
 @using Jenga.Models.Common
 @inject IRoleService RolService
 @inject IErrorService ErrorService
 @inject IToastService ToastService
+@inject ICurrentUserService CurrentUserService
 
-<h3>Rol Yönetimi</h3>
+<PermissionGuard Module="ModuleName.Admin" Operation="Operation.View">
+<h3>Rol Yï¿½netimi</h3>
 <RoleTable Roles="@roles"
            OnRoleAdded="ReloadAsync"
            OnRoleUpdated="ReloadAsync"
-           OnRoleDeleted="ReloadAsync" />
+           OnRoleDeleted="ReloadAsync"
+           CanCreate="@_canCreate"
+           CanEdit="@_canEdit"
+           CanDelete="@_canDelete" />
+
+</PermissionGuard>
 
 @code {
     private List<Role> roles = new();
-
-
     private bool _dataLoaded;
+    private bool _canCreate;
+    private bool _canEdit;
+    private bool _canDelete;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender && !_dataLoaded)
         {
+            _canCreate = await CurrentUserService.HasPermissionAsync(ModuleName.Admin, Operation.Create);
+            _canEdit   = await CurrentUserService.HasPermissionAsync(ModuleName.Admin, Operation.Edit);
+            _canDelete = await CurrentUserService.HasPermissionAsync(ModuleName.Admin, Operation.Delete);
             await ReloadAsync();
             _dataLoaded = true;
         }
     }
 
-    // Tek dogru kaynak burasi: ekleme/güncelleme/silme sonrasi listeyi DB'den tazeler.
+    // Tek dogru kaynak burasi: ekleme/gï¿½ncelleme/silme sonrasi listeyi DB'den tazeler.
     // RoleTable artik parent koleksiyonunu dogrudan mutate etmez.
     private async Task ReloadAsync(Role _ = null!)
     {

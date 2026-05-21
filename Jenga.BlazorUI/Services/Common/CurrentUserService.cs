@@ -20,6 +20,9 @@ namespace Jenga.BlazorUI.Services.Common
         private IReadOnlySet<(ModuleName Module, Operation Operation)>? _cachedPermissions;
         private IReadOnlyList<int>? _cachedRegionIds;
         private readonly SemaphoreSlim _cacheLock = new(1, 1);
+        // Development: impersonation JS interop'u başarıyla çalıştırıldı mı?
+        // Prerender sırasında false kalır; interactive aşamada true olunca cache geçerli sayılır.
+        private bool _impersonationChecked;
 
         public CurrentUserService(
             IDbContextFactory<ApplicationDbContext> dbFactory,
@@ -60,11 +63,16 @@ namespace Jenga.BlazorUI.Services.Common
 
             // Development ortamında impersonation override kontrolü.
             // JS interop prerender sırasında çalışmayabileceğinden sessizce atlanır.
+            // Önemli: impersonation kontrolü başarısız olduğunda gerçek kullanıcı cache'e
+            // yazılmaz; bir sonraki çağrıda JS hazır olduğunda tekrar kontrol edilir.
             if (!skipImpersonation && _hostEnvironment.IsDevelopment())
             {
+                bool impersonationJsAvailable = false;
                 try
                 {
                     var overrideUser = await _impersonationService.GetOverrideAsync();
+                    impersonationJsAvailable = true; // JS interop başarıyla çalıştı
+                    _impersonationChecked = true;
                     if (!string.IsNullOrWhiteSpace(overrideUser))
                     {
                         await using var overrideDb = await _dbFactory.CreateDbContextAsync();
@@ -81,7 +89,13 @@ namespace Jenga.BlazorUI.Services.Common
                 catch
                 {
                     // Prerender sırasında JS interop çalışmaz; hata normal, görmezden gelinir.
+                    // impersonationJsAvailable false kalır → gerçek kullanıcı cache'e yazılmaz.
                 }
+
+                // JS henüz hazır değildi; gerçek kullanıcıyı cache'lemeden null dön.
+                // PermissionGuard / OnAfterRenderAsync interactive aşamada tekrar çağıracak.
+                if (!impersonationJsAvailable)
+                    return null;
             }
 
             // NOTE: Do NOT call JS interop from here (prerender may be active).
@@ -151,9 +165,18 @@ namespace Jenga.BlazorUI.Services.Common
         /// <summary>
         /// Mevcut kullanıcının adını döner (DB sorgusu yapmaz).
         /// Audit alanlarına (<c>modifiedBy</c>) yazılmak üzere servis katmanına iletilir.
+        /// Impersonation aktifse cache'deki personelin adını döner; bu sayede
+        /// audit kayıtları gerçek Windows hesabı yerine impersonate edilen kullanıcıyı yansıtır.
         /// </summary>
         public async Task<string?> GetUserNameAsync()
         {
+            // Cache doluysa (impersonation dahil) doğrudan oradan dön; DB/auth round-trip yok.
+            var cached = Volatile.Read(ref _cachedPersonel);
+            if (cached != null)
+                return cached.KullaniciAdi;
+
+            // Cache boş: prerender veya henüz çözümlenmemiş oturum.
+            // HttpContext → AuthState zinciriyle Windows kimliğini okumaya çalış.
             var principal = _httpContextAccessor.HttpContext?.User;
 
             if (principal == null || principal.Identity == null || !principal.Identity.IsAuthenticated)
@@ -181,6 +204,7 @@ namespace Jenga.BlazorUI.Services.Common
             Volatile.Write(ref _cachedPersonel, null);
             Volatile.Write(ref _cachedPermissions, null);
             Volatile.Write(ref _cachedRegionIds, null);
+            _impersonationChecked = false;
         }
 
         public async Task<IReadOnlySet<(ModuleName Module, Operation Operation)>> GetModulePermissionsAsync()
@@ -198,24 +222,22 @@ namespace Jenga.BlazorUI.Services.Common
 
                 await using var db = await _dbFactory.CreateDbContextAsync();
 
-                var roleIds = await db.PersonelRol_Table
-                    .AsNoTracking()
-                    .Where(pr => pr.PersonelId == personel.Id)
-                    .Select(pr => pr.RoleId)
-                    .ToListAsync();
+                // Tek join: PersonelRol → RoleModulePermission → ModulePermission
+                // İki ayrı round-trip yerine tek sorguda tüm izin seti çekilir.
+                var result = await (
+                    from pr  in db.PersonelRol_Table.AsNoTracking()
+                    join rmp in db.RoleModulePermission_Table.AsNoTracking()
+                        on pr.RoleId equals rmp.RoleId
+                    join mp  in db.ModulePermission_Table.AsNoTracking()
+                        on rmp.ModulePermissionId equals mp.Id
+                    where pr.PersonelId == personel.Id
+                    select new { mp.Module, mp.Operation }
+                ).Distinct().ToListAsync();
 
-                var permissions = await db.RoleModulePermission_Table
-                    .AsNoTracking()
-                    .Where(rmp => roleIds.Contains(rmp.RoleId))
-                    .Include(rmp => rmp.ModulePermission)
-                    .Select(rmp => new { rmp.ModulePermission!.Module, rmp.ModulePermission.Operation })
-                    .ToListAsync();
-
-                var result = permissions
+                _cachedPermissions = result
                     .Select(p => (p.Module, p.Operation))
                     .ToHashSet();
 
-                _cachedPermissions = result;
                 return _cachedPermissions;
             }
             finally
@@ -257,7 +279,9 @@ namespace Jenga.BlazorUI.Services.Common
         public async Task<bool> HasPermissionAsync(ModuleName module, Operation operation)
         {
             var permissions = await GetModulePermissionsAsync();
-            return permissions.Contains((module, operation));
+            // Manage izni, aynı modüldeki tüm operasyonları kapsar (üst-izin).
+            return permissions.Contains((module, operation))
+                || permissions.Contains((module, Operation.Manage));
         }
 
         public void Dispose() => _cacheLock.Dispose();
@@ -280,25 +304,39 @@ namespace Jenga.BlazorUI.Services.Common
 
             var trimmed = overrideUser.Trim();
 
-            // Yeni kullanıcıya geçmeden önce mevcut cache'i temizle.
-            Invalidate();
-
             try
             {
+                // DB sorgusu lock dışında; uzun süren I/O ile _cacheLock'u bloklamayız.
                 await using var db = await _dbFactory.CreateDbContextAsync();
                 var found = await db.Personel_Table.AsNoTracking()
                     .FirstOrDefaultAsync(p => p.KullaniciAdi != null &&
                                               EF.Functions.Like(p.KullaniciAdi, trimmed));
 
-                if (found != null)
+                if (found == null)
                 {
-                    await _impersonationService.SetOverrideAsync(trimmed);
-                    _cachedPersonel = found;
-                    return true;
+                    _logger.LogWarning("SetImpersonationOverrideAsync: '{User}' bulunamadı.", trimmed);
+                    return false;
                 }
 
-                _logger.LogWarning("SetImpersonationOverrideAsync: '{User}' bulunamadı.", trimmed);
-                return false;
+                await _impersonationService.SetOverrideAsync(trimmed);
+
+                // Invalidate + yeni personel ataması tek lock bölgesinde atomik.
+                // Bu sayede DB sorgusu ile atama arasındaki pencerede GetCurrentPersonelAsync'in
+                // gerçek kullanıcıyı cache'e yazması önlenir.
+                await _cacheLock.WaitAsync();
+                try
+                {
+                    _cachedPersonel      = found;
+                    _cachedPermissions   = null;
+                    _cachedRegionIds     = null;
+                    _impersonationChecked = true;
+                }
+                finally
+                {
+                    _cacheLock.Release();
+                }
+
+                return true;
             }
             catch (Exception ex)
             {

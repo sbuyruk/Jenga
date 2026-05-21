@@ -52,8 +52,14 @@ else
             <td class="align-middle">@r.ExitTypeText</td>
             <td class="align-middle">@r.Description</td>
             <td class="text-center align-middle" style="white-space:nowrap;">
-                <button class="btn btn-sm btn-primary me-2" @onclick="() => OnEditClicked(r.OriginalExit)">D�zenle</button>
-                <button class="btn btn-sm btn-danger" @onclick="() => OnDeleteClicked(r.OriginalExit)">Sil</button>
+                @if (CanEdit)
+                {
+                    <button class="btn btn-sm btn-primary me-2" @onclick="() => OnEditClicked(r.OriginalExit)">Düzenle</button>
+                }
+                @if (CanDelete)
+                {
+                    <button class="btn btn-sm btn-danger" @onclick="() => OnDeleteClicked(r.OriginalExit)">Sil</button>
+                }
             </td>
         </RowTemplate>
     </GenericTable>
@@ -67,6 +73,8 @@ else
                            MaterialUnits="MaterialUnits"
                            Locations="Locations"
                            MaterialInventories="MaterialInventories"
+                           CanCreate="@CanCreate"
+                           CanDelete="@CanDelete"
                            OnSave="HandleSave"
                            OnClose="HideModal" />
 }
@@ -77,6 +85,9 @@ else
     [Parameter] public List<MaterialUnit> MaterialUnits { get; set; } = new();
     [Parameter] public List<Location> Locations { get; set; } = new();
     [Parameter] public List<MaterialInventory> MaterialInventories { get; set; } = new();
+    [Parameter] public bool CanCreate { get; set; }
+    [Parameter] public bool CanEdit { get; set; }
+    [Parameter] public bool CanDelete { get; set; }
 
     private readonly Dictionary<int, string> _materialNameById = new();
     private readonly Dictionary<int, string> _unitNameById = new();

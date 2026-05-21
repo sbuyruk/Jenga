@@ -1,7 +1,8 @@
-﻿@page "/inventory/material-exit-manager"
+@page "/inventory/material-exit-manager"
 @rendermode InteractiveServer
 @using Jenga.BlazorUI.Components.Inventory
 @using Jenga.DataAccess.Services.Inventory
+@using Jenga.BlazorUI.Services.Common
 @using Jenga.Models.Inventory
 @using Microsoft.JSInterop
 @inject IMaterialExitService MaterialExitService
@@ -10,14 +11,21 @@
 @inject ILocationService LocationService
 @inject IMaterialInventoryService MaterialInventoryService
 @inject IJSRuntime JS
+@inject ICurrentUserService CurrentUserService
 
-<h3>Malzeme Çıkış Yönetimi</h3>
+<PermissionGuard Module="ModuleName.Inventory" Operation="Operation.View">
+<h3>Malzeme �ikis Y�netimi</h3>
 
 <MaterialExitTable MaterialExits="@materialExits"
                    Materials="@materials"
                    MaterialUnits="@units"
                    Locations="@locations"
-                   MaterialInventories="@materialInventories" />
+                   MaterialInventories="@materialInventories"
+                   CanCreate="@_canCreate"
+                   CanEdit="@_canEdit"
+                   CanDelete="@_canDelete" />
+
+</PermissionGuard>
 
 @code {
     private List<MaterialExit> materialExits = new();
@@ -27,11 +35,17 @@
     private List<MaterialInventory> materialInventories = new();
 
     private bool _dataLoaded;
+    private bool _canCreate;
+    private bool _canEdit;
+    private bool _canDelete;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender && !_dataLoaded)
         {
+            _canCreate = await CurrentUserService.HasPermissionAsync(ModuleName.Inventory, Operation.Create);
+            _canEdit   = await CurrentUserService.HasPermissionAsync(ModuleName.Inventory, Operation.Edit);
+            _canDelete = await CurrentUserService.HasPermissionAsync(ModuleName.Inventory, Operation.Delete);
             var exitsR = await MaterialExitService.GetAllAsync();
             materialExits = exitsR.IsSuccess ? exitsR.Value : new();
             var matsR = await MaterialService.GetAllAsync();

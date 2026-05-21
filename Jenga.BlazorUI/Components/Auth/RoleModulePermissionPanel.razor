@@ -1,0 +1,169 @@
+@using Jenga.DataAccess.Services.Common
+@using Jenga.Models.Common
+@using Jenga.Models.Enums
+@using Jenga.BlazorUI.Services.Common
+@inject IRoleService RoleService
+@inject IModulePermissionService ModulePermissionService
+@inject IRoleModulePermissionService RoleModulePermissionService
+@inject ICurrentUserService CurrentUserService
+@inject IToastService ToastService
+
+<div class="row g-3">
+    <!-- Sol: Rol seçimi -->
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-header fw-bold">Roller</div>
+            <div class="card-body p-0">
+                @if (roles == null)
+                {
+                    <p class="p-3 text-muted">Yükleniyor…</p>
+                }
+                else if (!roles.Any())
+                {
+                    <p class="p-3 text-muted">Rol bulunamadı.</p>
+                }
+                else
+                {
+                    <div class="list-group list-group-flush">
+                        @foreach (var role in roles)
+                        {
+                            <button type="button"
+                                    class="list-group-item list-group-item-action @(selectedRole?.Id == role.Id ? "active" : "")"
+                                    @onclick="() => SelectRoleAsync(role)">
+                                @role.Name
+                            </button>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Sağ: İzin matrisi -->
+    <div class="col-md-8">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span class="fw-bold">
+                    @if (selectedRole != null)
+                    {
+                        <span>@selectedRole.Name — Modül İzinleri</span>
+                    }
+                    else
+                    {
+                        <span class="text-muted">Bir rol seçin</span>
+                    }
+                </span>
+                @if (selectedRole != null)
+                {
+                    <button class="btn btn-sm btn-primary" @onclick="SaveAsync" disabled="@saving">
+                        @if (saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                        Kaydet
+                    </button>
+                }
+            </div>
+            <div class="card-body">
+                @if (selectedRole != null && allPermissions != null)
+                {
+                    <table class="table table-bordered table-sm align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Modül</th>
+                                @foreach (var op in Operations)
+                                {
+                                    <th class="text-center">@op</th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var module in Modules.Where(m => AllowedModules.Contains(m)))
+                            {
+                                <tr>
+                                    <td class="fw-semibold">@module</td>
+                                    @foreach (var op in Operations)
+                                    {
+                                        var perm = allPermissions.FirstOrDefault(p => p.Module == module && p.Operation == op);
+                                        <td class="text-center">
+                                            @if (perm != null)
+                                            {
+                                                <input type="checkbox"
+                                                       class="form-check-input"
+                                                       checked="@checkedIds.Contains(perm.Id)"
+                                                       @onchange="e => Toggle(perm.Id, (bool)e.Value!)" />
+                                            }
+                                        </td>
+                                    }
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else if (selectedRole == null)
+                {
+                    <p class="text-muted">Sol taraftan bir rol seçin.</p>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private static readonly ModuleName[] Modules = Enum.GetValues<ModuleName>();
+    private static readonly Operation[] Operations = Enum.GetValues<Operation>();
+
+    /// <summary>
+    /// Bu panelin yönetebileceği modüller. Sayfadan hesaplanarak iletilir.
+    /// Admin/Manage → tüm modüller; TBYS/Manage → yalnızca TBYS.
+    /// </summary>
+    [Parameter, EditorRequired] public HashSet<ModuleName> AllowedModules { get; set; } = new();
+
+    private List<Role>? roles;
+    private List<ModulePermission>? allPermissions;
+    private Role? selectedRole;
+    private HashSet<int> checkedIds = new();
+    private bool saving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await RoleService.GetAllAsync();
+        roles = result.IsSuccess ? result.Value : new List<Role>();
+
+        var permResult = await ModulePermissionService.GetAllAsync();
+        allPermissions = permResult.IsSuccess ? permResult.Value : new List<ModulePermission>();
+    }
+
+    private async Task SelectRoleAsync(Role role)
+    {
+        selectedRole = role;
+        checkedIds.Clear();
+
+        var result = await RoleModulePermissionService.GetByRoleIdAsync(role.Id);
+        if (result.IsSuccess)
+        {
+            foreach (var rmp in result.Value)
+                checkedIds.Add(rmp.ModulePermissionId);
+        }
+    }
+
+    private void Toggle(int permissionId, bool value)
+    {
+        if (value) checkedIds.Add(permissionId);
+        else checkedIds.Remove(permissionId);
+    }
+
+    private async Task SaveAsync()
+    {
+        if (selectedRole == null) return;
+        saving = true;
+
+        var currentUser = await CurrentUserService.GetUserNameAsync();
+        var result = await RoleModulePermissionService.ReplaceForRoleInScopeAsync(
+            selectedRole.Id, checkedIds, AllowedModules, currentUser ?? "system");
+
+        saving = false;
+
+        if (result.IsSuccess)
+            ToastService.ShowToast($"{selectedRole.Name} izinleri kaydedildi.", ToastType.Success, 3000);
+        else
+            ToastService.ShowToast(result.Error.Message, ToastType.Error, 4000);
+    }
+}

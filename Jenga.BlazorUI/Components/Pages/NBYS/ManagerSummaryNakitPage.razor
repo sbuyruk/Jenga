@@ -15,6 +15,7 @@
 @inject IModalService ModalService
 @implements IDisposable
 
+<PermissionGuard Module="ModuleName.NBYS" Operation="Operation.View">
 <div class="page-container py-4">
     <div class="admin-overview p-3 manager-summary-layout">
         @if (isLoading)
@@ -336,6 +337,7 @@
         }
     </div>
 </div>
+</PermissionGuard>
 
 @code {
     private GenericTable<ProvinceMonthlyDonorRow>? _ilAyTable;

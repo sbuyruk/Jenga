@@ -1,0 +1,42 @@
+@page "/common/role-module-permissions"
+@rendermode InteractiveServer
+@using Jenga.BlazorUI.Components.Auth
+@using Jenga.BlazorUI.Services.Common
+@using Jenga.Models.Enums
+@inject ICurrentUserService CurrentUserService
+
+@if (!_checked)
+{
+    <p class="text-muted p-3">Yükleniyor…</p>
+}
+else if (!_hasAccess)
+{
+    <div class="alert alert-warning py-2">
+        <i class="bi bi-shield-exclamation me-1"></i>Bu sayfaya erişim için yetkiniz bulunmamaktadır.
+    </div>
+}
+else
+{
+    <h3>Rol Modül İzinleri</h3>
+    <RoleModulePermissionPanel AllowedModules="_allowedModules" />
+}
+
+@code {
+    private bool _checked;
+    private bool _hasAccess;
+    private HashSet<ModuleName> _allowedModules = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var permissions = await CurrentUserService.GetModulePermissionsAsync();
+
+        // Herhangi bir modülde Manage yetkisi → sayfaya erişim hakkı.
+        _allowedModules = permissions
+            .Where(p => p.Operation == Operation.Manage)
+            .Select(p => p.Module)
+            .ToHashSet();
+
+        _hasAccess = _allowedModules.Count > 0;
+        _checked   = true;
+    }
+}

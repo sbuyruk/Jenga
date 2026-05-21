@@ -8,6 +8,7 @@
 @inject NavigationManager Nav
 @inject IJSRuntime JS
 
+<PermissionGuard Module="ModuleName.TBYS" Operation="Operation.View">
 <div class="detay-page">
 
     @if (_loading)
@@ -113,6 +114,7 @@
         }
     }
 </div>
+</PermissionGuard>
 
 @code {
     [Parameter] public int KiraciId { get; set; }
