@@ -8,7 +8,7 @@ namespace Jenga.BlazorUI.Services.Common
         public Guid InstanceId { get; } = Guid.NewGuid();
         public List<MenuItem>? MenuItems { get; private set; }
 
-        private readonly IMenuItemService _menuService;
+        private readonly MenuItemService _menuService;
         private readonly SemaphoreSlim _gate = new(1, 1);
 
         // UI state
@@ -41,7 +41,7 @@ namespace Jenga.BlazorUI.Services.Common
 
         private void NotifyChange() => OnChange?.Invoke();
 
-        public MenuStateService(IMenuItemService menuService)
+        public MenuStateService(MenuItemService menuService)
         {
             _menuService = menuService;
             Console.WriteLine($"MenuStateService created: {InstanceId}");
@@ -50,7 +50,18 @@ namespace Jenga.BlazorUI.Services.Common
         public async Task EnsureLoadedAsync(int userId = 127)
         {
             if (MenuItems is { Count: > 0 }) return;
+            await LoadAsync(userId);
+        }
 
+        public async Task ReloadAsync(int userId = 127)
+        {
+            MenuItems = null;
+            await LoadAsync(userId);
+            NotifyChange();
+        }
+
+        private async Task LoadAsync(int userId)
+        {
             await _gate.WaitAsync();
             try
             {

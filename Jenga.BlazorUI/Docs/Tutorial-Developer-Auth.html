@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Jenga — Auth & Yetkilendirme Sistemi (Developer / Architect)</title>
+<style>
+  :root {
+    --primary: #1e3a5f;
+    --accent:  #2e86de;
+    --light:   #f4f7fb;
+    --border:  #dde3ec;
+    --success: #27ae60;
+    --danger:  #e74c3c;
+    --warn:    #f39c12;
+    --code-bg: #1e2432;
+    --code-fg: #cdd6f4;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #fff;
+    color: #2c3e50;
+    line-height: 1.7;
+    font-size: 15px;
+  }
+  /* ─── COVER ─── */
+  .cover {
+    background: linear-gradient(135deg, var(--primary) 0%, #2e4e7e 60%, var(--accent) 100%);
+    color: #fff;
+    padding: 72px 60px 56px;
+    position: relative;
+    overflow: hidden;
+  }
+  .cover::after {
+    content: '';
+    position: absolute;
+    right: -80px; top: -80px;
+    width: 420px; height: 420px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.06);
+  }
+  .cover .badge {
+    display: inline-block;
+    background: rgba(255,255,255,.18);
+    border: 1px solid rgba(255,255,255,.35);
+    border-radius: 20px;
+    padding: 4px 14px;
+    font-size: 12px;
+    letter-spacing: .8px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+  .cover h1 { font-size: 2.4rem; font-weight: 700; line-height: 1.25; margin-bottom: 14px; }
+  .cover p  { font-size: 1.05rem; opacity: .85; max-width: 620px; }
+  .cover .meta { margin-top: 36px; font-size: 13px; opacity: .7; }
+  /* ─── LAYOUT ─── */
+  .toc {
+    background: var(--light);
+    border-right: 1px solid var(--border);
+    padding: 36px 28px;
+    min-width: 240px;
+    max-width: 260px;
+    float: left;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  .toc h2 { font-size: .8rem; text-transform: uppercase; letter-spacing: 1px; color: #888; margin-bottom: 12px; }
+  .toc ol { list-style: none; counter-reset: toc; }
+  .toc ol li { counter-increment: toc; margin: 6px 0; }
+  .toc ol li::before { content: counter(toc) ". "; color: var(--accent); font-weight: 600; font-size: .85rem; }
+  .toc a { text-decoration: none; color: #444; font-size: .88rem; }
+  .toc a:hover { color: var(--accent); }
+  .content { margin-left: 260px; padding: 48px 56px; max-width: 980px; }
+  /* ─── HEADINGS ─── */
+  h2 {
+    font-size: 1.55rem; color: var(--primary);
+    border-bottom: 3px solid var(--accent);
+    padding-bottom: 8px; margin: 48px 0 20px;
+  }
+  h3 { font-size: 1.15rem; color: #2e4e7e; margin: 28px 0 12px; }
+  h4 { font-size: 1rem; color: #444; margin: 20px 0 8px; }
+  /* ─── PARAGRAPHS ─── */
+  p { margin-bottom: 14px; }
+  ul, ol { padding-left: 22px; margin-bottom: 14px; }
+  li { margin: 5px 0; }
+  /* ─── CODE ─── */
+  pre {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    border-radius: 10px;
+    padding: 20px 22px;
+    font-size: 13.5px;
+    font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+    overflow-x: auto;
+    margin: 14px 0 22px;
+    line-height: 1.55;
+    border-left: 4px solid var(--accent);
+  }
+  code {
+    background: #e8edf5;
+    color: #c0392b;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-family: 'Cascadia Code', Consolas, monospace;
+    font-size: .9em;
+  }
+  pre code { background: transparent; color: inherit; padding: 0; font-size: inherit; }
+  /* ─── TABLES ─── */
+  table { border-collapse: collapse; width: 100%; margin: 16px 0 24px; font-size: .92rem; }
+  th { background: var(--primary); color: #fff; padding: 10px 14px; text-align: left; }
+  td { padding: 9px 14px; border: 1px solid var(--border); }
+  tr:nth-child(even) td { background: var(--light); }
+  /* ─── CALLOUTS ─── */
+  .callout {
+    border-radius: 8px; padding: 14px 18px; margin: 18px 0;
+    border-left: 5px solid;
+    font-size: .93rem;
+  }
+  .callout.info    { background: #eaf4fb; border-color: var(--accent); }
+  .callout.warn    { background: #fef9e7; border-color: var(--warn); }
+  .callout.danger  { background: #fdedec; border-color: var(--danger); }
+  .callout.success { background: #eafaf1; border-color: var(--success); }
+  .callout strong  { display: block; margin-bottom: 4px; }
+  /* ─── DIAGRAM ─── */
+  .diagram {
+    background: #0d1117;
+    color: #8b949e;
+    border-radius: 10px;
+    padding: 20px 24px;
+    font-family: 'Cascadia Code', Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    margin: 14px 0 22px;
+    overflow-x: auto;
+  }
+  /* ─── SECTION DIVIDER ─── */
+  hr { border: none; border-top: 2px dashed var(--border); margin: 40px 0; }
+  /* ─── PRINT ─── */
+  @media print {
+    .toc { display: none; }
+    .content { margin-left: 0; padding: 20px 30px; }
+    pre { font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- COVER -->
+<div class="cover">
+  <div class="badge">Teknik Referans Kılavuzu</div>
+  <h1>Jenga Auth &amp;<br/>Erişim Yetkilendirme Sistemi</h1>
+  <p>Developer · Programmer · Architect Seviyesi — Tam Teknik Döküman</p>
+  <div class="meta">Proje: Jenga.BlazorUI &nbsp;|&nbsp; .NET 10 &nbsp;|&nbsp; C# 14 &nbsp;|&nbsp; Blazor Server</div>
+</div>
+
+<!-- TOC -->
+<nav class="toc">
+  <h2>İçindekiler</h2>
+  <ol>
+    <li><a href="#s1">Genel Mimari</a></li>
+    <li><a href="#s2">Kimlik Doğrulama</a></li>
+    <li><a href="#s3">Veritabanı Şeması</a></li>
+    <li><a href="#s4">Enum'lar</a></li>
+    <li><a href="#s5">ICurrentUserService</a></li>
+    <li><a href="#s6">IServiceAuthorizationContext</a></li>
+    <li><a href="#s7">PermissionGuard</a></li>
+    <li><a href="#s8">RoleModulePermissionPanel</a></li>
+    <li><a href="#s9">PersonnelRegionPermissionPanel</a></li>
+    <li><a href="#s10">Impersonation</a></li>
+    <li><a href="#s11">Fallback Policy</a></li>
+    <li><a href="#s12">Güvenlik Özeti</a></li>
+  </ol>
+</nav>
+
+<!-- CONTENT -->
+<main class="content">
+
+<!-- ─────────────────────────────────────── -->
+<h2 id="s1">1. Genel Mimari</h2>
+
+<p>Sistem <strong>iki katmanlı</strong> bir yetkilendirme modelinden oluşur:</p>
+
+<div class="diagram">
+┌─────────────────────────────────────────────────────────────────┐
+│  KİMLİK DOĞRULAMA (Authentication)                              │
+│  Hibrit: Windows Negotiate (intranet) + Cookie/LDAP (internet)  │
+├─────────────────────────────────────────────────────────────────┤
+│  YETKİLENDİRME (Authorization) — 2 Boyut                        │
+│                                                                  │
+│  1. Modül-Operasyon İzinleri  ────►  ne yapabilir?              │
+│     Personel → Rol → RoleModulePermission → ModulePermission    │
+│                                                                  │
+│  2. Bölge İzinleri            ────►  nerede yapabilir?          │
+│     Personel → PersonnelRegionPermission → Bolge                │
+└─────────────────────────────────────────────────────────────────┘
+</div>
+
+<p>Tüm yetkilendirme işlemleri <code>ICurrentUserService</code> arayüzü üzerinden yürütülür.
+Servis <strong>Scoped</strong> olarak kayıtlıdır; her Blazor <em>circuit</em> (WebSocket bağlantısı)
+için ayrı bir instance oluşturulur.</p>
+
+<!-- ─────────────────────────────────────── -->
+<h2 id="s2">2. Kimlik Doğrulama (Authentication)</h2>
+
+<h3>2.1 Hibrit PolicyScheme</h3>
+<p><code>Program.cs</code>'te <code>"JengaAuth"</code> adlı bir <code>PolicyScheme</code> forwarder tanımlıdır.
+Her HTTP isteğinde aşağıdaki öncelik sırası işletilir:</p>
+
+<div class="diagram">
+İstek geldi
+    │
+    ├─ Cookie ".Jenga.Auth" mevcut?          → CookieScheme   (internet / mobil)
+    ├─ Authorization: Negotiate/NTLM başlığı?→ NegotiateScheme (Windows SSO)
+    ├─ İntranet IP + masaüstü tarayıcı?      → NegotiateScheme (challenge gönder)
+    └─ Diğer                                 → CookieScheme   (login sayfasına yönlendir)
+</div>
+
+<h3>2.2 LDAP / Cookie Akışı (internet)</h3>
+<p><code>LdapAuthenticator</code> servisi <code>System.DirectoryServices.AccountManagement</code>
+kullanarak Active Directory'ye karşı doğrulama yapar:</p>
+
+<pre><code>POST /auth/login
+  → LdapAuthenticator.ValidateCredentials(userName, password)
+      → PrincipalContext(ContextType.Domain, "tskgv.org.tr")
+      → UserPrincipal.FindByIdentity → ValidateCredentials
+  ← true ise ClaimsPrincipal oluştur, ".Jenga.Auth" cookie'si yaz
+  ← false ise 401 / login formuna geri dön</code></pre>
+
+<p>Config (<code>appsettings.json</code>):</p>
+<pre><code>"Auth": {
+  "Ldap": {
+    "Domain":         "tskgv.org.tr",   // FQDN
+    "DomainFallback": "TSKGV",          // NetBIOS fallback
+    "Container":      null              // null = tüm domain
+  }
+}</code></pre>
+
+<h3>2.3 Cookie Ayarları</h3>
+<pre><code>o.Cookie.Name         = ".Jenga.Auth"
+o.Cookie.HttpOnly     = true
+o.Cookie.SameSite     = SameSiteMode.Lax
+o.ExpireTimeSpan      = TimeSpan.FromDays(30)
+o.SlidingExpiration   = true
+o.Cookie.MaxAge       = TimeSpan.FromDays(30)  // iOS Safari kalıcılığı</code></pre>
+
+<h3>2.4 Negotiate (intranet)</h3>
+<p>IIS + Kerberos/NTLM — kullanıcı şifre girmez.
+<code>AddNegotiate()</code> middleware token'ı çözümler.
+Mobil cihazlar VPN üzerinden intranet IP alsa da <code>IsMobileBrowser()</code> kontrolü ile
+Cookie akışına yönlendirilir.</p>
+
+<div class="callout danger">
+  <strong>⚠️ Güvenlik Notu</strong>
+  <code>Environment.UserName</code> fallback kasıtlı olarak <strong>kaldırılmıştır</strong>.
+  Eski haliyle Negotiate auth başarısız olduğunda uygulama havuzu hesabı personel olarak
+  çözümlenebiliyordu (auth-bypass). Şimdi başarısız auth → <code>null</code> döner.
+</div>
+
+<!-- ─────────────────────────────────────── -->
+<h2 id="s3">3. Veritabanı Şeması</h2>
+
+<table>
+  <tr><th>Tablo</th><th>Açıklama</th></tr>
+  <tr><td><code>Auth_Role_Table</code></td><td>Roller katalogu</td></tr>
+  <tr><td><code>Auth_PersonnelRole_Table</code></td><td>Personel ↔ Rol (M:N köprü)</td></tr>
+  <tr><td><code>Auth_ModulePermission_Table</code></td><td>Tüm olası Modül+Operasyon kombinasyonları (katalog)</td></tr>
+  <tr><td><code>Auth_RoleModulePermission_Table</code></td><td>Rol ↔ ModulePermission (M:N köprü)</td></tr>
+  <tr><td><code>Auth_PersonnelRegionPermission_Table</code></td><td>Personel → Bölge (M:N)</td></tr>
+</table>
+
+<div class="diagram">
+Personel
+   │
+   ├──[Auth_PersonnelRole_Table]──► Role
+   │                                  │
+   │                                  └──[Auth_RoleModulePermission_Table]──► ModulePermission
+   │                                                                              ├── Module   : TBYS|NBYS|FTK|IKYS|Inventory|Admin
+   │                                                                              └── Operation: View|Create|Edit|Delete|Manage
+   │
+   └──[Auth_PersonnelRegionPermission_Table]──► Bolge
+</div>
+
+<h3>Entity Sınıfları</h3>
+<pre><code>// Role
+[Table("Auth_Role_Table")]
+public class Role : BaseModel
+{
+    public string Name { get; set; }
+    public ICollection&lt;PersonelRole&gt;? PersonelRoles { get; set; }
+    public ICollection&lt;RoleMenu&gt;? RoleMenus { get; set; }
+}
+
+// ModulePermission — katalog tablosu
+[Table("Auth_ModulePermission_Table")]
+public class ModulePermission : BaseModel
+{
+    public ModuleName Module { get; set; }
+    public Operation  Operation { get; set; }
+}
+
+// Köprü tabloları
+[Table("Auth_PersonnelRole_Table")]
+public class PersonelRole : BaseModel
+{
+    public int PersonelId { get; set; }
+    public int RoleId     { get; set; }
+}
+
+[Table("Auth_RoleModulePermission_Table")]
+public class RoleModulePermission : BaseModel
+{
+    public int RoleId            { get; set; }
+    public int ModulePermissionId{ get; set; }
+}
+
+[Table("Auth_PersonnelRegionPermission_Table")]
+public class PersonnelRegionPermission : BaseModel
+{
+    public int PersonnelId { get; set; }
+    public int RegionId    { get; set; }
+}</code></pre>
+
+<!-- ─────────────────────────────────────── -->
+<h2 id="s4">4. ModuleName ve Operation Enum'ları</h2>
+
+<pre><code>public enum ModuleName
+{
+    TBYS      = 0,
+    NBYS      = 1,
+    FTK       = 2,
+    IKYS      = 3,
+    Inventory = 4,
+    Admin     = 5
+}
+
+public enum Operation
+{
+    View   = 0,
+    Create = 1,
+    Edit   = 2,
+    Delete = 3,
+    Manage = 4   // ← Üst-izin: aynı modüldeki tüm operasyonları kapsar
+}</code></pre>
+
+<div class="callout info">
+  <strong>💡 Manage Kuralı</strong>
+  <code>HasPermissionAsync(module, anyOperation)</code> çağrıldığında, kullanıcı o modülde
+  <code>Manage</code> iznine sahipse her zaman <code>true</code> döner.
+  Yani <code>Manage</code> verildiyse <code>View</code>, <code>Create</code>, <code>Edit</code>,
+  <code>Delete</code>'i ayrıca tanımlamak gerekmez.
+</div>
+
+<pre><code>// CurrentUserService.cs
+public async Task&lt;bool&gt; HasPermissionAsync(ModuleName module, Operation operation)
+{
+    var permissions = await GetModulePermissionsAsync();
+    return permissions.Contains((module, operation))
+        || permissions.Contains((module, Operation.Manage)); // ← üst-izin kontrolü
+}</code></pre>
+
+<!-- ─────────────────────────────────────── -->
+<h2 id="s5">5. ICurrentUserService ve Yaşam Döngüsü</h2>
+
+<h3>5.1 Arayüz</h3>
+<pre><code>public interface ICurrentUserService
+{
+    // Prerender / JS hazır değilken (impersonation atlanır)
+    Task&lt;Personel?&gt; GetCurrentPersonelWithoutImpersonationAsync();
+
+    // Normal çağrı (impersonation dahil)
+    Task&lt;Personel?&gt; GetCurrentPersonelAsync();
+
+    // DB sorgusu yapmaz; audit için
+    Task&lt;string?&gt; GetUserNameAsync();
+
+    // Cache temizleme
+    void Invalidate();
+
+    // Dev-only impersonation
+    Task&lt;bool&gt; SetImpersonationOverrideAsync(string? overrideUser);
+
+    // HashSet&lt;(ModuleName, Operation)&gt; döner — önbelleklenir
+    Task&lt;IReadOnlySet&lt;(ModuleName Module, Operation Operation)&gt;&gt; GetModulePermissionsAsync();
+
+    // Yetkili bölge ID listesi — önbelleklenir
+    Task&lt;IReadOnlyList&lt;int&gt;&gt; GetAuthorizedRegionIdsAsync();
+
+    // Manage üst-iznini de değerlendirir
+    Task&lt;bool&gt; HasPermissionAsync(ModuleName module, Operation operation);
+}</code></pre>
+
+<h3>5.2 Kayıt (DI)</h3>
+<pre><code>// BlazorUIServiceExtensions.cs
+services.AddScoped&lt;ICurrentUserService, CurrentUserService&gt;();</code></pre>
+
+<p><strong>Scoped</strong> = Her Blazor circuit için tek instance.
+Kullanıcı sekmeyi kapattığında / circuit kesildiğinde dispose edilir.</p>
+
+<h3>5.3 Cache Stratejisi — Double-Check Lock</h3>
+<div class="diagram">
+İlk çağrı
+    │
+    ├─ Volatile.Read(_cachedPersonel) != null → hızlı dön (lock-free)
+    │
+    └─ null → SemaphoreSlim.WaitAsync()
+                   │
+                   ├─ tekrar kontrol (başka thread yazdı mı?)
+                   │
+                   └─ DB sorgusu → _cachedPersonel = sonuç
+                                    _cacheLock.Release()
+
+Invalidate() çağrılırsa:
+    _cachedPersonel    = null  (Volatile.Write)
+    _cachedPermissions = null
+    _cachedRegionIds   = null
+    _impersonationChecked = false
+</div>
+
+<h3>5.4 Prerender / JS-Interop Sorunu</h3>
+<pre><code>// skipImpersonation = true  → prerender aşamasında impersonation atlanır
+// skipImpersonation = false → interaktif aşamada JS hazır mı dene
+//
+// JS hazır değilse → null dön, CACHE'LEME
+// PermissionGuard.OnAfterRenderAsync tekrar deneyecek
+
+if (!impersonationJsAvailable)
+    return null;   // ← gerçek kullanıcı cache'e YAZILMAZ</code></pre>
+
+<h3>5.5 GetModulePermissionsAsync — Tek Round-Trip Join</h3>
+<pre><code>var result = await (
+    from pr  in db.PersonelRol_Table.AsNoTracking()
+    join rmp in db.RoleModulePermission_Table.AsNoTracking()
+        on pr.RoleId equals rmp.RoleId
+    join mp  in db.ModulePermission_Table.AsNoTracking()
+        on rmp.ModulePermissionId equals mp.Id
+    where pr.PersonelId == personel.Id
+    select new { mp.Module, mp.Operation }
+).Distinct().ToListAsync();
+
+_cachedPermissions = result
+    .Select(p => (p.Module, p.Operation))
+    .ToHashSet();   // O(1) lookup</code></pre>
+
+<h3>5.6 GetAuthorizedRegionIdsAsync</h3>
+<pre><code>var regionIds = await db.PersonnelRegionPermission_Table
+    .AsNoTracking()
+    .Where(prp =&gt; prp.PersonnelId == personel.Id)
+    .Select(prp =&gt; prp.RegionId)
+    .ToListAsync();</code></pre>
+
+<p>Boş liste → kullanıcıya henüz bölge atanmamış demektir.</p>
+
+<h3>5.7 userName Normalizasyonu</h3>
+<pre><code>// DOMAIN\\user → user
+if (userName.Contains('\\')) userName = userName.Split('\\', 2)[1];
+// user@domain  → user
+if (userName.Contains('@'))  userName = userName.Split('@',  2)[0];
+
+// SQL Server CI collation sayesinde Like exact match case-insensitive çalışır.
+EF.Functions.Like(p.KullaniciAdi, trimmed)</code></pre>
+
+<!-- ─────────────────────────────────────── -->
+<h2 id="s6">6. IServiceAuthorizationContext — Katman Köprüsü</h2>
+
+<p><code>DataAccess</code> katmanı Blazor UI'ya bağımlı olamaz.
+Bu yüzden bir <em>interface segregation</em> köprüsü kullanılır:</p>
+
+<pre><code>// DataAccess katmanı (Blazor bağımlılığı yok)
+public interface IServiceAuthorizationContext
+{
+    Task&lt;bool&gt;    HasPermissionAsync(ModuleName module, Operation operation, CancellationToken ct);
+    Task&lt;string?&gt; GetUserNameAsync(CancellationToken ct);
+}
+
+// BlazorUI implementasyonu — ICurrentUserService üzerine yönlendirir
+public sealed class BlazorServiceAuthorizationContext : IServiceAuthorizationContext
+{
+    private readonly ICurrentUserService _currentUserService;
+
+    public Task&lt;bool&gt; HasPermissionAsync(ModuleName module, Operation operation, CancellationToken ct)
+        =&gt; _currentUserService.HasPermissionAsync(module, operation);
+
+    public Task&lt;string?&gt; GetUserNameAsync(CancellationToken ct)
+        =&gt; _currentUserService.GetUserNameAsync();
+}
+
+// DI kaydı
+services.AddScoped&lt;IServiceAuthorizationContext, BlazorServiceAuthorizationContext&gt;();</code></pre>
+
+<!-- ─────────────────────────────────────── -->
+<h2 id="s7">7. PermissionGuard Bileşeni</h2>
+
+<h3>Kullanım</h3>
+<pre><code>&lt;PermissionGuard Module="ModuleName.TBYS" Operation="Operation.Create"&gt;
+    &lt;button @onclick="TasinmazEkle"&gt;Taşınmaz Ekle&lt;/button&gt;
+&lt;/PermissionGuard&gt;
+
+&lt;!-- İzin yoksa gizle (uyarı bile gösterme) --&gt;
+&lt;PermissionGuard Module="ModuleName.Admin" Operation="Operation.Manage"
+                 HideWhenUnauthorized="true"&gt;
+    &lt;AdminPanel /&gt;
+&lt;/PermissionGuard&gt;</code></pre>
+
+<h3>Parametreler</h3>
+<table>
+  <tr><th>Parametre</th><th>Tip</th><th>Zorunlu</th><th>Açıklama</th></tr>
+  <tr><td><code>Module</code></td><td>ModuleName</td><td>✅</td><td>Kontrol edilecek modül</td></tr>
+  <tr><td><code>Operation</code></td><td>Operation</td><td>✅</td><td>Kontrol edilecek operasyon</td></tr>
+  <tr><td><code>FallbackMessage</code></td><td>string</td><td>—</td><td>İzin yokken gösterilen uyarı metni</td></tr>
+  <tr><td><code>HideWhenUnauthorized</code></td><td>bool</td><td>—</td><td><code>true</code> → hiçbir şey render edilmez</td></tr>
+</table>
+
+<h3>Render Akışı</h3>
+<div class="diagram">
+OnParametersSetAsync
+    → HasPermissionAsync (prerender'da null dönebilir → false)
+    → _checked = true → render
+
+OnAfterRenderAsync (firstRender=true)
+    → interaktif aşama, JS hazır
+    → HasPermissionAsync tekrar çağrılır
+    → değer değiştiyse → StateHasChanged()
+</div>
+
+<!-- ─────────────────────────────────────── -->
+<h2 id="s8">8. RoleModulePermissionPanel</h2>
+
+<p><strong>Rota:</strong> <code>/common/role-module-permissions</code><br/>
+<strong>Erişim koşulu:</strong> En az bir modülde <code>Operation.Manage</code> izni gereklidir.
+Sayfada yalnızca kullanıcının "Yönet" iznine sahip olduğu modüller gösterilir.</p>
+
+<pre><code>// RoleModulePermissionPage.razor — OnInitializedAsync
+_allowedModules = permissions
+    .Where(p =&gt; p.Operation == Operation.Manage)
+    .Select(p =&gt; p.Module)
+    .ToHashSet();
+
+_hasAccess = _allowedModules.Count &gt; 0;</code></pre>
+
+<h3>Panel Akışı</h3>
+<div class="diagram">
+Sol panel → Auth_Role_Table listesi
+    │
+    └─ Rol seçildi
+         │
+         └─ Sağ panel → ModuleName × Operation matrisi (checkbox)
+                            │
+                            └─ [Kaydet] → RoleModulePermissionService
+                                              .SetRolePermissionsAsync(roleId, checkedIds)
+</div>
+
+<!-- ─────────────────────────────────────── -->
+<h2 id="s9">9. PersonnelRegionPermissionPanel</h2>
+
+<p><strong>Rota:</strong> <code>/common/personnel-region-permissions</code></p>
+
+<div class="diagram">
+Sol panel → Personel listesi (arama destekli, max-height:500px scroll)
+    │
+    └─ Personel seçildi
+         │
+         └─ Sağ panel → Bolge checkbox listesi
+                            │
+                            └─ [Kaydet] → IPersonnellRegionPermissionService
+                                              .SetPersonnelRegionsAsync(personnelId, checkedIds)
+</div>
+
+<!-- ─────────────────────────────────────── -->
+<h2 id="s10">10. Impersonation (Sadece Development)</h2>
+
+<pre><code>// SwitchUser.razor üzerinden
+await CurrentUserService.SetImpersonationOverrideAsync("testkullanici");
+</code></pre>
+
+<ul>
+  <li>Production'da <code>IHostEnvironment.IsDevelopment()</code> kontrolü ile <strong>kesin engellenir</strong>.</li>
+  <li>Override değeri <code>ImpersonationService</code> aracılığıyla browser <em>sessionStorage</em>'a yazılır (JS interop).</li>
+  <li>Cache ataması <code>_cacheLock</code> içinde <strong>atomik</strong> yapılır: DB sorgusu ile atama arasındaki pencerede gerçek kullanıcının cache'e yazılması önlenir.</li>
+  <li><code>Invalidate()</code> çağrıldığında tüm cache temizlenir.</li>
+</ul>
+
+<pre><code>// Atomik cache ataması
+await _cacheLock.WaitAsync();
+try {
+    _cachedPersonel    = found;
+    _cachedPermissions = null;   // yeni personelin izinleri yeniden yüklensin
+    _cachedRegionIds   = null;
+    _impersonationChecked = true;
+}
+finally { _cacheLock.Release(); }</code></pre>
+
+<!-- ─────────────────────────────────────── -->
+<h2 id="s11">11. Authorization Fallback Policy</h2>
+
+<pre><code>// Program.cs
+options.FallbackPolicy = new AuthorizationPolicyBuilder(PolicyScheme)
+    .RequireAuthenticatedUser()
+    .Build();</code></pre>
+
+<p>Tüm endpoint'ler varsayılan olarak kimlik doğrulaması gerektirir.
+<code>[AllowAnonymous]</code> açıkça işaretlenmeden hiçbir sayfa anonim erişime açık değildir.</p>
+
+<!-- ─────────────────────────────────────── -->
+<h2 id="s12">12. Güvenlik Özeti</h2>
+
+<table>
+  <tr><th>Tehdit / Risk</th><th>Mitigasyon</th></tr>
+  <tr><td>Auth-bypass (host user fallback)</td><td><code>Environment.UserName</code> fallback kaldırıldı; başarısız auth → <code>null</code></td></tr>
+  <tr><td>Paralel DB round-trip (cache race)</td><td><code>SemaphoreSlim(1,1)</code> double-check lock</td></tr>
+  <tr><td>Production impersonation</td><td><code>IsDevelopment()</code> hard guard</td></tr>
+  <tr><td>Cookie session hijack</td><td>HttpOnly + SameSite=Lax + 30 gün sliding expiry</td></tr>
+  <tr><td>Cookie kayıp (iOS Safari)</td><td><code>Cookie.MaxAge = 30 gün</code> (kalıcı cookie)</td></tr>
+  <tr><td>HSTS intranet kırılması</td><td><code>UseHsts</code> kasıtlı kaldırıldı; HTTP→HTTPS IIS URL Rewrite ile</td></tr>
+  <tr><td>Mobil Negotiate hatası</td><td><code>IsMobileBrowser()</code> → Cookie akışına yönlendir</td></tr>
+  <tr><td>Prerender cache zehirlenmesi</td><td>JS interop başarısızsa null dön, cache'leme</td></tr>
+</table>
+
+<hr/>
+<p style="text-align:center; color:#aaa; font-size:.85rem; margin-top:40px;">
+  Jenga Projesi — Teknik Referans Kılavuzu &nbsp;|&nbsp; .NET 10 / Blazor Server &nbsp;|&nbsp; Otomatik Oluşturuldu
+</p>
+
+</main>
+</body>
+</html>

@@ -201,15 +201,85 @@
                                     <i class="bi bi-calendar2-check-fill nd-kpi-icon"></i>
                                     <div class="nd-kpi-label">En Yüksek Ay</div>
                                     <div class="nd-kpi-value">@_bestMonthAmount.ToString("N0", _trCulture) ₺</div>
-                                    <div class="nd-kpi-sub">@_bestMonthLabel</div>
-                                </div>
-                            </div>
-                        </div>
+                                                         <div class="nd-kpi-sub">@_bestMonthLabel</div>
+                                                    </div>
+                                                </div>
+                                            </div>
 
-                    </div>
-                </section>
+                                        </div>
 
-                <hr class="nd-separator" />
+                                        <div class="row g-2 g-sm-3 mb-1">
+
+                                            <div class="col-6 col-sm-4 col-md-4 col-lg-2">
+                                                <div class="nd-kpi-card nd-accent-rose">
+                                                    <div class="nd-kpi-body">
+                                                        <i class="bi bi-building-fill nd-kpi-icon"></i>
+                                                        <div class="nd-kpi-label">Tüzel Kişi</div>
+                                                        <div class="nd-kpi-value">@_yearlyTuzelKisiCount.ToString("N0", _trCulture)</div>
+                                                        <div class="nd-kpi-sub">Tekil tüzel bağışçı</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-6 col-sm-4 col-md-4 col-lg-2">
+                                                <div class="nd-kpi-card nd-accent-indigo">
+                                                    <div class="nd-kpi-body">
+                                                        <i class="bi bi-building-fill nd-kpi-icon"></i>
+                                                        <div class="nd-kpi-label">Tüzel Kişi Toplam</div>
+                                                        <div class="nd-kpi-value">@_yearlyTuzelKisiTotal.ToString("N0", _trCulture) ₺</div>
+                                                        <div class="nd-kpi-sub">Tüzel kişi bağışları</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-6 col-sm-4 col-md-4 col-lg-2">
+                                                <div class="nd-kpi-card nd-accent-sky">
+                                                    <div class="nd-kpi-body">
+                                                        <i class="bi bi-chevron-double-down nd-kpi-icon"></i>
+                                                        <div class="nd-kpi-label">&lt; 1.000 ₺</div>
+                                                        <div class="nd-kpi-value">@_bracketUnder1K.ToString("N0", _trCulture)</div>
+                                                        <div class="nd-kpi-sub">bağış adedi</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-6 col-sm-4 col-md-4 col-lg-2">
+                                                <div class="nd-kpi-card nd-accent-green">
+                                                    <div class="nd-kpi-body">
+                                                        <i class="bi bi-bar-chart-steps nd-kpi-icon"></i>
+                                                        <div class="nd-kpi-label">1K – 50K ₺</div>
+                                                        <div class="nd-kpi-value">@_bracket1KTo50K.ToString("N0", _trCulture)</div>
+                                                        <div class="nd-kpi-sub">bağış adedi</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-6 col-sm-4 col-md-4 col-lg-2">
+                                                <div class="nd-kpi-card nd-accent-amber">
+                                                    <div class="nd-kpi-body">
+                                                        <i class="bi bi-bar-chart-fill nd-kpi-icon"></i>
+                                                        <div class="nd-kpi-label">50K – 100K ₺</div>
+                                                        <div class="nd-kpi-value">@_bracket50KTo100K.ToString("N0", _trCulture)</div>
+                                                        <div class="nd-kpi-sub">bağış adedi</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-6 col-sm-4 col-md-4 col-lg-2">
+                                                <div class="nd-kpi-card nd-accent-purple">
+                                                    <div class="nd-kpi-body">
+                                                        <i class="bi bi-chevron-double-up nd-kpi-icon"></i>
+                                                        <div class="nd-kpi-label">&gt; 100K ₺</div>
+                                                        <div class="nd-kpi-value">@_bracketOver100K.ToString("N0", _trCulture)</div>
+                                                        <div class="nd-kpi-sub">bağış adedi</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                        </div>
+                                    </section>
+
+                                    <hr class="nd-separator" />
 
                 @* ── Bu Ay KPI ── *@
                 <section id="nd-bu-ay" class="nd-section">
@@ -517,11 +587,13 @@
     private readonly SemaphoreSlim _loadLock = new(1, 1);
 
     // ── Raw data ───────────────────────────────────────────────────────────
-    private List<NakitBagisHareket> _allData = [];
+    private List<NakitBagisDashboardItem> _allData = [];
     private Dictionary<int, int?> _donorProvinceIdByDonorId = new();
+    private Dictionary<int, bool> _tuzelKisiById = new();
     private Dictionary<int, string> _ilNameById = new();
+    private Dictionary<int, int> _firstDonationYearByDonor = new();
 
-    // ── KPI – Yıllık ──────────────────────────────────────────────────────
+    // ── KPI – Yıllık
     private decimal _yearlyTotal;
     private int _yearlyDonationCount;
     private int _yearlyUniqueDonors;
@@ -532,8 +604,14 @@
     private decimal? _yearlyTotalYoY;
     private decimal? _yearlyCountYoY;
     private decimal? _yearlyUniqueDonorsYoY;
+    private int _yearlyTuzelKisiCount;
+    private decimal _yearlyTuzelKisiTotal;
+    private int _bracketUnder1K;
+    private int _bracket1KTo50K;
+    private int _bracket50KTo100K;
+    private int _bracketOver100K;
 
-    // ── KPI – Bu Ay ───────────────────────────────────────────────────────
+    // ── KPI – Bu Ay
     private decimal _thisMonthTotal;
     private int _thisMonthCount;
     private int _thisMonthUniqueDonors;
@@ -586,27 +664,34 @@
         {
             var years = DateTime.Now.Year - Since + 1;
 
-            loadingMessage = "Bağışçılar yükleniyor...";
+            loadingMessage = "Veriler yükleniyor...";
             await InvokeAsync(StateHasChanged);
 
-            var bagisciRes = await NakitBagisciService.GetAllAsync(cancellationToken);
-            var bagiscilar = bagisciRes.IsSuccess ? bagisciRes.Value : [];
+            // Üç bağımsız servis çağrısını paralel başlat
+            var bagisciTask = NakitBagisciService.GetAllForDashboardAsync(cancellationToken);
+            var hareketTask = NakitBagisHareketService.GetLastYearsForDashboardAsync(years, cancellationToken);
+            var illerTask   = IlService.GetAllAsync(cancellationToken);
+            await Task.WhenAll(bagisciTask, hareketTask, illerTask);
+
+            var bagiscilar = bagisciTask.Result.IsSuccess ? bagisciTask.Result.Value : [];
             _donorProvinceIdByDonorId = bagiscilar
                 .Where(x => x != null)
                 .GroupBy(x => x.Id)
                 .ToDictionary(g => g.Key, g => g.First().Ili);
+            _tuzelKisiById = bagiscilar
+                .Where(x => x != null)
+                .GroupBy(x => x.Id)
+                .ToDictionary(g => g.Key, g => g.First().TuzelKisi == true);
 
-            loadingMessage = "Bağış hareketleri yükleniyor...";
-            await InvokeAsync(StateHasChanged);
+            _allData = hareketTask.Result.IsSuccess ? hareketTask.Result.Value : [];
 
-            var hareketRes = await NakitBagisHareketService.GetLastYearsAsync(years, cancellationToken);
-            _allData = hareketRes.IsSuccess ? hareketRes.Value : [];
+            // İlk bağış yılı cache'i: veri değiştiğinde bir kez hesapla
+            _firstDonationYearByDonor = _allData
+                .Where(x => x?.BagisTarihi != null && x.BagisciId != null)
+                .GroupBy(x => x.BagisciId!.Value)
+                .ToDictionary(g => g.Key, g => g.Min(v => v.BagisTarihi!.Value.Year));
 
-            loadingMessage = "İller yükleniyor...";
-            await InvokeAsync(StateHasChanged);
-
-            var illerRes = await IlService.GetAllAsync(cancellationToken);
-            var iller = illerRes.IsSuccess ? illerRes.Value : [];
+            var iller = illerTask.Result.IsSuccess ? illerTask.Result.Value : [];
             _ilNameById = iller
                 .Where(x => x != null)
                 .GroupBy(x => x.Id)
@@ -615,7 +700,7 @@
             loadingMessage = "KPI'lar ve grafikler hazırlanıyor...";
             await InvokeAsync(StateHasChanged);
 
-            BuildAllViews();
+            await Task.Run(BuildAllViews);
 
             _lastRefresh = DateTime.Now;
             loadingMessage = "Tamamlandı.";
@@ -655,60 +740,91 @@
         }, CancellationToken.None);
     }
 
-    private Task OnYearChangedAsync()
+    private async Task OnYearChangedAsync()
     {
-        BuildAllViews();
-        return Task.CompletedTask;
+        await Task.Run(BuildAllViews);
+        await InvokeAsync(StateHasChanged);
     }
 
     // ── Build / Prepare ────────────────────────────────────────────────────
     private void BuildAllViews()
     {
-        BuildYearlyKpis();
+        var curYearData = YearData(_selectedYear);
+        BuildYearlyKpis(curYearData);
         BuildThisMonthKpis();
-        BuildMonthlyAmountChart();
-        BuildMonthlyDonorChart();
+        BuildMonthlyAmountChart(curYearData);
+        BuildMonthlyDonorChart(curYearData);
         BuildMultiYearChart();
-        BuildTop10Provinces();
-        BuildBottom10Provinces();
+        BuildProvinces(curYearData);
     }
 
-    private List<NakitBagisHareket> YearData(int year) =>
+    private List<NakitBagisDashboardItem> YearData(int year) =>
         _allData.Where(x => x?.BagisTarihi?.Year == year).Select(x => x!).ToList();
 
-    private void BuildYearlyKpis()
+    private void BuildYearlyKpis(List<NakitBagisDashboardItem> cur)
     {
-        var cur = YearData(_selectedYear);
         var prev = YearData(_selectedYear - 1);
 
-        _yearlyTotal = cur.Sum(x => x.BagisMiktari) ?? 0m;
-        _yearlyDonationCount = cur.Count;
-        _yearlyUniqueDonors = cur.Where(x => x.BagisciId != null)
-                                  .Select(x => x.BagisciId!.Value).Distinct().Count();
-        _avgDonationAmount = _yearlyDonationCount > 0 ? _yearlyTotal / _yearlyDonationCount : 0m;
+        // Tek geçişte tüm yıllık KPI değerlerini hesapla
+        decimal total = 0m;
+        int count = 0;
+        decimal tuzelTotal = 0m;
+        int bracketUnder1K = 0, bracket1KTo50K = 0, bracket50KTo100K = 0, bracketOver100K = 0;
+        var uniqueDonors  = new HashSet<int>();
+        var tuzelDonors   = new HashSet<int>();
+        decimal bestMonthAmount = 0m;
+        int bestMonth = 1;
+        var monthTotals = new decimal[13]; // index 1-12
 
-        // Yeni bağışçı: tüm zamanlar ilk bağışı bu yılda olan
-        var firstDonationYearByDonor = _allData
-            .Where(x => x?.BagisTarihi != null && x.BagisciId != null)
-            .GroupBy(x => x.BagisciId!.Value)
-            .ToDictionary(g => g.Key, g => g.Min(v => v.BagisTarihi!.Value.Year));
-        _yearlyNewDonors = firstDonationYearByDonor.Values.Count(y => y == _selectedYear);
+        foreach (var x in cur)
+        {
+            var amount = x.BagisMiktari ?? 0m;
+            total += amount;
+            count++;
 
-        // En yüksek ay
-        var monthlySums = cur
-            .GroupBy(x => x.BagisTarihi!.Value.Month)
-            .Select(g => new { Month = g.Key, Total = g.Sum(v => v.BagisMiktari) ?? 0m })
-            .OrderByDescending(x => x.Total)
-            .FirstOrDefault();
-        _bestMonthAmount = monthlySums?.Total ?? 0m;
-        _bestMonthLabel = monthlySums != null
-            ? new DateTime(_selectedYear, monthlySums.Month, 1).ToString("MMMM yyyy", _trCulture)
+            if (x.BagisciId != null)
+                uniqueDonors.Add(x.BagisciId.Value);
+
+            if (x.BagisciId != null && _tuzelKisiById.TryGetValue(x.BagisciId.Value, out var isTuzel) && isTuzel)
+            {
+                tuzelTotal += amount;
+                tuzelDonors.Add(x.BagisciId.Value);
+            }
+
+            if (amount < 1_000m)             bracketUnder1K++;
+            else if (amount < 50_000m)        bracket1KTo50K++;
+            else if (amount < 100_000m)       bracket50KTo100K++;
+            else                              bracketOver100K++;
+
+            if (x.BagisTarihi?.Month is int m)
+                monthTotals[m] += amount;
+        }
+
+        for (var m = 1; m <= 12; m++)
+            if (monthTotals[m] > bestMonthAmount) { bestMonthAmount = monthTotals[m]; bestMonth = m; }
+
+        _yearlyTotal          = total;
+        _yearlyDonationCount  = count;
+        _yearlyUniqueDonors   = uniqueDonors.Count;
+        _avgDonationAmount    = count > 0 ? total / count : 0m;
+        _bestMonthAmount      = bestMonthAmount;
+        _bestMonthLabel       = count > 0
+            ? new DateTime(_selectedYear, bestMonth, 1).ToString("MMMM yyyy", _trCulture)
             : "–";
+        _yearlyTuzelKisiCount  = tuzelDonors.Count;
+        _yearlyTuzelKisiTotal  = tuzelTotal;
+        _bracketUnder1K        = bracketUnder1K;
+        _bracket1KTo50K        = bracket1KTo50K;
+        _bracket50KTo100K      = bracket50KTo100K;
+        _bracketOver100K       = bracketOver100K;
+
+        // Yeni bağışçı: cache'lenmiş ilk bağış yılı verisini kullan
+        _yearlyNewDonors = _firstDonationYearByDonor.Values.Count(y => y == _selectedYear);
 
         // YoY
         _yearlyTotalYoY = CalcYoY(_yearlyTotal, prev.Sum(x => x.BagisMiktari) ?? 0m);
         _yearlyCountYoY = CalcYoY(_yearlyDonationCount, prev.Count);
-        var prevUnique = prev.Where(x => x.BagisciId != null)
+        var prevUnique  = prev.Where(x => x.BagisciId != null)
                               .Select(x => x.BagisciId!.Value).Distinct().Count();
         _yearlyUniqueDonorsYoY = CalcYoY(_yearlyUniqueDonors, prevUnique);
     }
@@ -740,92 +856,72 @@
         _thisMonthTotalYoY = CalcYoY(_thisMonthTotal, prevMonth.Sum(x => x.BagisMiktari) ?? 0m);
     }
 
-    private void BuildMonthlyAmountChart()
+    private void BuildMonthlyAmountChart(List<NakitBagisDashboardItem> curYearData)
     {
         _monthlyAmountSeries.Clear();
-        var items = Enumerable.Range(1, 12).Select(m =>
-        {
-            var total = YearData(_selectedYear)
-                .Where(x => x.BagisTarihi!.Value.Month == m)
-                .Sum(x => x.BagisMiktari) ?? 0m;
-            return new MonthlyPoint { Month = m, Label = MonthAbbr(m), Value = total };
-        }).ToList();
+        var byMonth = curYearData
+            .GroupBy(x => x.BagisTarihi!.Value.Month)
+            .ToDictionary(g => g.Key, g => g.Sum(v => v.BagisMiktari) ?? 0m);
+        var items = Enumerable.Range(1, 12)
+            .Select(m => new MonthlyPoint
+            {
+                Month = m,
+                Label = MonthAbbr(m),
+                Value = byMonth.TryGetValue(m, out var v) ? v : 0m
+            }).ToList();
         _monthlyAmountSeries.Add(new GenericChart<MonthlyPoint>.GenericSeries(_selectedYear.ToString(), items));
     }
 
-    private void BuildMonthlyDonorChart()
+    private void BuildMonthlyDonorChart(List<NakitBagisDashboardItem> curYearData)
     {
         _monthlyDonorSeries.Clear();
-        var yearDonations = YearData(_selectedYear);
-        var items = Enumerable.Range(1, 12).Select(m =>
-        {
-            var count = yearDonations
-                .Where(x => x.BagisTarihi!.Value.Month == m && x.BagisciId != null)
-                .Select(x => x.BagisciId!.Value).Distinct().Count();
-            return new MonthlyPoint { Month = m, Label = MonthAbbr(m), Value = count };
-        }).ToList();
+        var byMonth = curYearData
+            .Where(x => x.BagisciId != null)
+            .GroupBy(x => x.BagisTarihi!.Value.Month)
+            .ToDictionary(g => g.Key, g => g.Select(v => v.BagisciId!.Value).Distinct().Count());
+        var items = Enumerable.Range(1, 12)
+            .Select(m => new MonthlyPoint
+            {
+                Month = m,
+                Label = MonthAbbr(m),
+                Value = byMonth.TryGetValue(m, out var v) ? v : 0
+            }).ToList();
         _monthlyDonorSeries.Add(new GenericChart<MonthlyPoint>.GenericSeries(_selectedYear.ToString(), items));
     }
 
     private void BuildMultiYearChart()
     {
         _multiYearAmountSeries.Clear();
-        var yearNow = DateTime.Now.Year;
-        for (var y = yearNow - (CompareYears - 1); y <= yearNow; y++)
+        var yearNow   = DateTime.Now.Year;
+        var yearStart = yearNow - (CompareYears - 1);
+
+        // Tek geçişte (yıl, ay) bazında gruplama
+        var byYearMonth = _allData
+            .Where(x => x?.BagisTarihi?.Year >= yearStart)
+            .GroupBy(x => (x.BagisTarihi!.Value.Year, x.BagisTarihi.Value.Month))
+            .ToDictionary(g => g.Key, g => g.Sum(v => v.BagisMiktari) ?? 0m);
+
+        for (var y = yearStart; y <= yearNow; y++)
         {
-            var items = Enumerable.Range(1, 12).Select(m =>
+            var items = Enumerable.Range(1, 12).Select(m => new MonthlyPoint
             {
-                var total = _allData
-                    .Where(x => x?.BagisTarihi?.Year == y && x.BagisTarihi?.Month == m)
-                    .Sum(x => x.BagisMiktari) ?? 0m;
-                return new MonthlyPoint { Month = m, Label = MonthAbbr(m), Value = total };
+                Month = m,
+                Label = MonthAbbr(m),
+                Value = byYearMonth.TryGetValue((y, m), out var v) ? v : 0m
             }).ToList();
             _multiYearAmountSeries.Add(new GenericChart<MonthlyPoint>.GenericSeries(y.ToString(), items));
         }
     }
 
-    private void BuildTop10Provinces()
+    private void BuildProvinces(List<NakitBagisDashboardItem> curYearData)
     {
         _top10Provinces.Clear();
         _top10ProvinceSeries.Clear();
-
-        var yearDonations = YearData(_selectedYear)
-            .Where(x => x.BagisciId != null)
-            .Select(x => new
-            {
-                x.BagisciId,
-                x.BagisMiktari,
-                ProvinceId = _donorProvinceIdByDonorId.TryGetValue(x.BagisciId!.Value, out var pid) ? pid : null
-            })
-            .Where(x => x.ProvinceId != null)
-            .ToList();
-
-        var grouped = yearDonations
-            .GroupBy(x => x.ProvinceId!.Value)
-            .Where(g => _ilNameById.TryGetValue(g.Key, out var n) && !string.IsNullOrWhiteSpace(n))
-            .Select(g => new ProvinceRow
-            {
-                ProvinceId = g.Key,
-                ProvinceName = _ilNameById[g.Key].Trim(),
-                TotalAmount = g.Sum(v => v.BagisMiktari) ?? 0m,
-                UniqueDonors = g.Select(v => v.BagisciId!.Value).Distinct().Count()
-            })
-            .OrderByDescending(x => x.TotalAmount)
-            .Take(10)
-            .ToList();
-
-        _top10Provinces.AddRange(grouped);
-
-        var chartItems = grouped.Select(x => new ProvincePoint { Label = x.ProvinceName, Value = x.TotalAmount }).ToList();
-        _top10ProvinceSeries.Add(new GenericChart<ProvincePoint>.GenericSeries("Tutar", chartItems));
-    }
-
-    private void BuildBottom10Provinces()
-    {
         _bottom10Provinces.Clear();
         _bottom10ProvinceSeries.Clear();
 
-        var yearDonations = YearData(_selectedYear)
+        // Projeksiyon + gruplama tek seferlik
+        var provinceRows = curYearData
             .Where(x => x.BagisciId != null)
             .Select(x => new
             {
@@ -834,9 +930,6 @@
                 ProvinceId = _donorProvinceIdByDonorId.TryGetValue(x.BagisciId!.Value, out var pid) ? pid : null
             })
             .Where(x => x.ProvinceId != null)
-            .ToList();
-
-        var grouped = yearDonations
             .GroupBy(x => x.ProvinceId!.Value)
             .Where(g => _ilNameById.TryGetValue(g.Key, out var n) && !string.IsNullOrWhiteSpace(n))
             .Select(g => new ProvinceRow
@@ -846,14 +939,17 @@
                 TotalAmount = g.Sum(v => v.BagisMiktari) ?? 0m,
                 UniqueDonors = g.Select(v => v.BagisciId!.Value).Distinct().Count()
             })
-            .OrderBy(x => x.TotalAmount)
-            .Take(10)
             .ToList();
 
-        _bottom10Provinces.AddRange(grouped);
+        var top10 = provinceRows.OrderByDescending(x => x.TotalAmount).Take(10).ToList();
+        _top10Provinces.AddRange(top10);
+        _top10ProvinceSeries.Add(new GenericChart<ProvincePoint>.GenericSeries("Tutar",
+            top10.Select(x => new ProvincePoint { Label = x.ProvinceName, Value = x.TotalAmount }).ToList()));
 
-        var chartItems = grouped.Select(x => new ProvincePoint { Label = x.ProvinceName, Value = x.TotalAmount }).ToList();
-        _bottom10ProvinceSeries.Add(new GenericChart<ProvincePoint>.GenericSeries("Tutar", chartItems));
+        var bottom10 = provinceRows.OrderBy(x => x.TotalAmount).Take(10).ToList();
+        _bottom10Provinces.AddRange(bottom10);
+        _bottom10ProvinceSeries.Add(new GenericChart<ProvincePoint>.GenericSeries("Tutar",
+            bottom10.Select(x => new ProvincePoint { Label = x.ProvinceName, Value = x.TotalAmount }).ToList()));
     }
 
     private void ClearSeries()

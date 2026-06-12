@@ -85,6 +85,7 @@ namespace Jenga.DataAccess.Services.Common
         /// Belirtilen role ait tüm modül izinlerini siler, yenileriyle değiştirir.
         /// Tek transaction içinde çalışır.
         /// </summary>
+        [Obsolete("Kapsam koruması olmadığından ReplaceForRoleInScopeAsync kullanın.")]
         public async Task<Result> ReplaceForRoleAsync(int roleId, IEnumerable<int> modulePermissionIds, string currentUser, CancellationToken cancellationToken = default)
         {
             try

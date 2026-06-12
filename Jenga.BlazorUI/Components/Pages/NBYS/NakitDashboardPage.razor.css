@@ -122,6 +122,7 @@
 .nakit-dashboard .nd-accent-purple { --nd-accent: #7c3aed; --nd-accent-bg: #f5f3ff; }
 .nakit-dashboard .nd-accent-teal   { --nd-accent: #0d9488; --nd-accent-bg: #f0fdfa; }
 .nakit-dashboard .nd-accent-rose   { --nd-accent: #e11d48; --nd-accent-bg: #fff1f2; }
+.nakit-dashboard .nd-accent-indigo { --nd-accent: #4338ca; --nd-accent-bg: #eef2ff; }
 
 /* ── Chart Card ───────────────────────────────────────────── */
 .nakit-dashboard .nd-chart-card {

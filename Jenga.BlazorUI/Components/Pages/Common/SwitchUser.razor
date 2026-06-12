@@ -1,4 +1,4 @@
-﻿@page "/common/switch-user"
+@page "/common/switch-user"
 @rendermode InteractiveServer
 @using Jenga.BlazorUI.Services.Common
 @inject ImpersonationService ImpersonationService
@@ -69,7 +69,7 @@
         if (string.IsNullOrWhiteSpace(_username)) return;
         await ImpersonationService.SetOverrideAsync(_username.Trim());
         CurrentUserService.Invalidate();
-        _message = $"Kullaniciya gecildi. Sayfa yenileniyor...";
+        _message = $"Kullanıcıya geçildi. Sayfa yenileniyor...";
         StateHasChanged();
         await Task.Delay(800);
         NavigationManager.NavigateTo("/", forceLoad: true);

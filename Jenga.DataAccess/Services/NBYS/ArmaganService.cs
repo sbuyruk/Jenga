@@ -34,6 +34,36 @@ namespace Jenga.DataAccess.Services.NBYS
             }
         }
 
+        public async Task<Result<List<ArmaganDashboardItem>>> GetAllForDashboardAsync(CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                var list = await db.Armagan_Table
+                    .AsNoTracking()
+                    .Where(x => x.Tarih != null && x.Tarih.Value >= new DateTime(2005, 1, 1))
+                    .Select(x => new ArmaganDashboardItem
+                    {
+                        BagisciId       = x.BagisciId,
+                        ArmaganTanimId  = x.ArmaganTanimId,
+                        Tarih           = x.Tarih,
+                        Durum           = x.Durum,
+                        BagisMiktari    = x.BagisMiktari,
+                        DovizCinsi      = x.DovizCinsi,
+                        BelgedeYazanIsim = x.BelgedeYazanIsim,
+                        DuzenliBagis    = x.DuzenliBagis,
+                        CokluBagis      = x.CokluBagis
+                    })
+                    .ToListAsync(cancellationToken);
+                return Result<List<ArmaganDashboardItem>>.Success(list);
+            }
+            catch (Exception ex)
+            {
+                _logService.LogError($"{Source}.GetAllForDashboardAsync hata.", ex);
+                return Result<List<ArmaganDashboardItem>>.Failure(Error.Unexpected("Armağan listesi alınamadı.", ex));
+            }
+        }
+
         public async Task<Result<Armagan>> GetByIdAsync(int id, CancellationToken cancellationToken = default)
         {
             try

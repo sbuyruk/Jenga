@@ -53,6 +53,31 @@ namespace Jenga.DataAccess.Services.NBYS
             }
         }
 
+        public async Task<Result<List<NakitBagisDashboardItem>>> GetLastYearsForDashboardAsync(int years, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var startDate = DateTime.Today.AddYears(-years);
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                var list = await db.NakitBagisHareket_Table
+                    .AsNoTracking()
+                    .Where(x => x.BagisTarihi != null && x.BagisTarihi.Value >= startDate)
+                    .Select(x => new NakitBagisDashboardItem
+                    {
+                        BagisTarihi = x.BagisTarihi,
+                        BagisMiktari = x.BagisMiktari,
+                        BagisciId = x.BagisciId
+                    })
+                    .ToListAsync(cancellationToken);
+                return Result<List<NakitBagisDashboardItem>>.Success(list);
+            }
+            catch (Exception ex)
+            {
+                _logService.LogError($"{Source}.GetLastYearsForDashboardAsync hata.", ex);
+                return Result<List<NakitBagisDashboardItem>>.Failure(Error.Unexpected("Nakit bağış hareket listesi alınamadı.", ex));
+            }
+        }
+
         public async Task<Result<NakitBagisHareket>> GetByIdAsync(int id, CancellationToken cancellationToken = default)
         {
             try

@@ -7,6 +7,7 @@ namespace Jenga.DataAccess.Services.NBYS
     {
         Task<Result<List<NakitBagisHareket>>> GetAllAsync(CancellationToken cancellationToken = default);
         Task<Result<List<NakitBagisHareket>>> GetLastYearsAsync(int years, CancellationToken cancellationToken = default);
+        Task<Result<List<NakitBagisDashboardItem>>> GetLastYearsForDashboardAsync(int years, CancellationToken cancellationToken = default);
         Task<Result<NakitBagisHareket>> GetByIdAsync(int id, CancellationToken cancellationToken = default);
         Task<Result> AddAsync(NakitBagisHareket model, CancellationToken cancellationToken = default);
         Task<Result> UpdateAsync(NakitBagisHareket model, CancellationToken cancellationToken = default);

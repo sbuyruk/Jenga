@@ -431,7 +431,7 @@
     private static readonly CultureInfo _tr = new("tr-TR");
 
     // ── Veri ───────────────────────────────────────────
-    private List<Armagan> _armaganlar = [];
+    private List<ArmaganDashboardItem> _armaganlar = [];
 
     // ── KPI ────────────────────────────────────────────
     private int _buYilArmaganSayisi,    _gecenYilArmaganSayisi;
@@ -475,10 +475,21 @@
         int curYear  = DateTime.Now.Year;
         int prevYear = curYear - 1;
 
-        var armaganRes = await ArmaganService.GetAllAsync();
-        _armaganlar = (armaganRes.IsSuccess ? armaganRes.Value : [])
-            .Where(a => a.Tarih.HasValue && a.Tarih.Value >= new DateTime(2005, 1, 1))
-            .ToList();
+        // Tüm bağımsız servis çağrılarını paralel başlat
+        var armaganTask   = ArmaganService.GetAllForDashboardAsync();
+        var bagisTask     = BagisService.GetAllForArmaganDashboardAsync();
+        var tanimTask     = ArmaganTanimService.GetAllAsync();
+        var bagisciTask   = NakitBagisciService.GetAllForArmaganDashboardAsync();
+        var ilTask        = IlService.GetAllAsync();
+        var bolgeTask     = BolgeService.GetAllAsync();
+
+        await Task.WhenAll(armaganTask, bagisTask, tanimTask, bagisciTask, ilTask, bolgeTask);
+
+        _armaganlar = (armaganTask.Result.IsSuccess ? armaganTask.Result.Value : []);
+
+        var bagisList = bagisTask.Result.IsSuccess ? bagisTask.Result.Value : [];
+        var tanimlar  = tanimTask.Result.IsSuccess ? tanimTask.Result.Value : [];
+        var aktifIds  = tanimlar.Where(t => t.Aktif == true).Select(t => t.Id).ToHashSet();
 
         // KPI
         _buYilArmaganSayisi    = _armaganlar.Count(a => a.Tarih!.Value.Year == curYear);
@@ -494,15 +505,8 @@
         (_buYilTesekkurSayisi,       _gecenYilTesekkurSayisi)       = Count(1);
         (_buYilDuzenliBagisciSayisi, _gecenYilDuzenliBagisciSayisi) = Count(9);
 
-        var bagisRes = await BagisService.GetAllAsync();
-        var bagisList = bagisRes.IsSuccess ? bagisRes.Value : [];
-        _buYilTasinmazSayisi   = bagisList.Count(b => b.ArmaganTarihi?.Year == curYear  && b.BagisciId.HasValue);
+        _buYilTasinmazSayisi    = bagisList.Count(b => b.ArmaganTarihi?.Year == curYear  && b.BagisciId.HasValue);
         _gecenYilTasinmazSayisi = bagisList.Count(b => b.ArmaganTarihi?.Year == prevYear && b.BagisciId.HasValue);
-
-        // ArmaganTanim
-        var tanimRes = await ArmaganTanimService.GetAllAsync();
-        var tanimlar = tanimRes.IsSuccess ? tanimRes.Value : [];
-        var aktifIds = tanimlar.Where(t => t.Aktif == true).Select(t => t.Id).ToHashSet();
 
         _tickerItems = tanimlar
             .Where(t => t.Id is >= 1 and <= 3)
@@ -565,10 +569,9 @@
 
         // Son Armağanlar
         var tanimAdi    = tanimlar.ToDictionary(t => t.Id, t => t.Armagan ?? $"Tür #{t.Id}");
-        var bagisciRes  = await NakitBagisciService.GetAllAsync();
-        var bagisciDict = (bagisciRes.IsSuccess ? bagisciRes.Value : []).ToDictionary(b => b.Id);
-        var ilDict      = ((await IlService.GetAllAsync())    is { IsSuccess: true } ilRes    ? ilRes.Value    : []).ToDictionary(i => i.Id);
-        var bolgeDict   = ((await BolgeService.GetAllAsync()) is { IsSuccess: true } bolgeRes ? bolgeRes.Value : []).ToDictionary(b => b.Id);
+        var bagisciDict = (bagisciTask.Result.IsSuccess ? bagisciTask.Result.Value : []).ToDictionary(b => b.Id);
+        var ilDict      = (ilTask.Result.IsSuccess    ? ilTask.Result.Value    : []).ToDictionary(i => i.Id);
+        var bolgeDict   = (bolgeTask.Result.IsSuccess  ? bolgeTask.Result.Value  : []).ToDictionary(b => b.Id);
 
         _sonArmaganlar.AddRange(
             _armaganlar

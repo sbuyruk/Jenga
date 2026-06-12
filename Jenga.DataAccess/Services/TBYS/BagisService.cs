@@ -35,6 +35,28 @@ namespace Jenga.DataAccess.Services.TBYS
             }
         }
 
+        public async Task<Result<List<BagisTasinmazItem>>> GetAllForArmaganDashboardAsync(CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                var list = await db.Bagis_Table
+                    .AsNoTracking()
+                    .Select(x => new BagisTasinmazItem
+                    {
+                        BagisciId     = x.BagisciId,
+                        ArmaganTarihi = x.ArmaganTarihi
+                    })
+                    .ToListAsync(cancellationToken);
+                return Result<List<BagisTasinmazItem>>.Success(list);
+            }
+            catch (Exception ex)
+            {
+                _logService.LogError($"{Source}.GetAllForArmaganDashboardAsync hata.", ex);
+                return Result<List<BagisTasinmazItem>>.Failure(Error.Unexpected("Bağış listesi alınamadı.", ex));
+            }
+        }
+
         public async Task<Result<List<Bagis>>> GetAllEnvanterdeAsync(CancellationToken cancellationToken = default)
         {
             try

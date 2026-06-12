@@ -1,4 +1,4 @@
-﻿@using Jenga.DataAccess.Services.Inventory
+@using Jenga.DataAccess.Services.Inventory
 @using Jenga.Models.IKYS
 @using Jenga.Models.Inventory
 @using Jenga.BlazorUI.Helpers
@@ -12,7 +12,7 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header bg-success-subtle">
-                    <h5 class="modal-title">@(IsNewEntry ? "Envantere Malzeme Girisi" : "Giris D�zenle")</h5>
+                    <h5 class="modal-title">@(IsNewEntry ? "Envantere Malzeme Girişi" : "Giriş Düzenle")</h5>
                     <button type="button" class="btn-close" @onclick="OnClose" aria-label="Kapat"></button>
                 </div>
                 @if (!HasPermission)
@@ -46,7 +46,7 @@
                         else
                         {
                             <select class="form-select" @bind="MaterialId">
-                                <option value="0">Se�iniz</option>
+                                <option value="0">Seçiniz</option>
                                 @foreach (var mat in Materials)
                                 {
                                     <option value="@mat.Id">@mat.MaterialName</option>
@@ -56,7 +56,7 @@
 
                         @if (MaterialId == 0)
                         {
-                            <div class="text-danger small mt-2">L�tfen bir malzeme se�iniz.</div>
+                            <div class="text-danger small mt-2">Lütfen bir malzeme seçiniz.</div>
                         }
                     </div>
 
@@ -80,7 +80,7 @@
                         <div class="col-6">
                             <label class="form-label">Marka (Opsiyonel)</label>
                             <select class="form-select form-select-sm" @bind="BrandId" @bind:event="onchange">
-                                <option value="">Se�iniz</option>
+                                <option value="">Seçiniz</option>
                                 @foreach (var b in FilteredBrands)
                                 {
                                     <option value="@b.Id">@b.BrandName</option>
@@ -90,7 +90,7 @@
                         <div class="col-6">
                             <label class="form-label">Model (Opsiyonel)</label>
                             <select class="form-select form-select-sm" @bind="MaterialEntry.ModelId">
-                                <option value="">Se�iniz</option>
+                                <option value="">Seçiniz</option>
                                 @foreach (var m in FilteredModels)
                                 {
                                     <option value="@m.Id">@m.ModelName</option>
@@ -99,7 +99,7 @@
                         </div>
                     </div>
 
-                    <!-- Hedef Se�imi -->
+                    <!-- Hedef Seçimi -->
                     <div class="mb-3 bg-light p-3 rounded border">
                         <label class="form-label fw-bold">Malzeme Yeri</label>
 
@@ -107,7 +107,7 @@
                             <label class="small text-muted">Lokasyon</label>
                             <input class="form-control form-control-sm mb-1" placeholder="Ara..." @bind="locSearch" @bind:event="oninput" />
                             <select class="form-select form-select-sm" @bind="MaterialEntry.LocationId">
-                                <option value="">Se�iniz</option>
+                                <option value="">Seçiniz</option>
                                 @foreach (var loc in FilteredLocations)
                                 {
                                     <option value="@loc.Id">@InventoryUIHelper.GetLocationFullName(loc.Id, Locations)</option>
@@ -119,7 +119,7 @@
                             <label class="small text-muted">Personel (Opsiyonel)</label>
                             <input class="form-control form-control-sm mb-1" placeholder="Ara..." @bind="persSearch" @bind:event="oninput" />
                             <select class="form-select form-select-sm" @bind="MaterialEntry.PersonelId">
-                                <option value="">Se�iniz</option>
+                                <option value="">Seçiniz</option>
                                 @foreach (var p in FilteredPersons)
                                 {
                                     <option value="@p.Id">@p.Adi @p.Soyadi</option>
@@ -129,7 +129,7 @@
 
                         @if (IsLocationInvalid)
                         {
-                            <div class="text-danger small mt-2">Bir lokasyon veya personel se�melisiniz.</div>
+                            <div class="text-danger small mt-2">Bir lokasyon veya personel seçmelisiniz.</div>
                         }
                     </div>
 
@@ -199,7 +199,7 @@
                 if (mat != null)
                 {
                     MaterialEntry.MaterialUnitId = mat.MaterialUnitId;
-                    // IMPORTANT: Do NOT read or assign BrandId/ModelId from the Material entity �
+                    // IMPORTANT: Do NOT read or assign BrandId/ModelId from the Material entity 
                     // Material no longer contains BrandId/ModelId.
                 }
                 else
@@ -344,7 +344,7 @@
     {
         if (IsSaveDisabled)
         {
-            ToastService.ShowWarning("L�tfen zorunlu alanlari doldurunuz.");
+            ToastService.ShowWarning("Lütfen zorunlu alanları doldurunuz.");
             return;
         }
         await OnSave.InvokeAsync();

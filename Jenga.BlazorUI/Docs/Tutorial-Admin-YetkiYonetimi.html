@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Jenga — Yetki Yönetimi Kullanım Kılavuzu (Yetkili Admin)</title>
+<style>
+  :root {
+    --primary: #1a5276;
+    --accent:  #2980b9;
+    --green:   #1e8449;
+    --red:     #c0392b;
+    --orange:  #d35400;
+    --light:   #f0f4f8;
+    --border:  #d5dde8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #fff;
+    color: #2c3e50;
+    line-height: 1.75;
+    font-size: 15px;
+  }
+
+  /* ─── COVER ─── */
+  .cover {
+    background: linear-gradient(135deg, #1a5276 0%, #154360 50%, #1abc9c 100%);
+    color: #fff;
+    padding: 64px 60px 52px;
+    position: relative;
+    overflow: hidden;
+  }
+  .cover::before {
+    content: '';
+    position: absolute;
+    left: -60px; bottom: -60px;
+    width: 320px; height: 320px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.06);
+  }
+  .cover .badge {
+    display: inline-block;
+    background: rgba(255,255,255,.2);
+    border: 1px solid rgba(255,255,255,.4);
+    border-radius: 20px;
+    padding: 4px 14px;
+    font-size: 12px;
+    letter-spacing: .8px;
+    text-transform: uppercase;
+    margin-bottom: 18px;
+  }
+  .cover h1 { font-size: 2.2rem; font-weight: 700; line-height: 1.3; margin-bottom: 12px; }
+  .cover p  { font-size: 1.05rem; opacity: .88; max-width: 580px; }
+  .cover .meta { margin-top: 32px; font-size: 13px; opacity: .65; }
+
+  /* ─── TOC ─── */
+  .toc {
+    background: var(--light);
+    border-right: 1px solid var(--border);
+    padding: 32px 24px;
+    min-width: 230px;
+    max-width: 250px;
+    float: left;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  .toc h2 { font-size: .78rem; text-transform: uppercase; letter-spacing: 1px; color: #999; margin-bottom: 10px; }
+  .toc ol { list-style: none; counter-reset: toc; }
+  .toc ol li { counter-increment: toc; margin: 7px 0; }
+  .toc ol li::before { content: counter(toc) ". "; color: var(--accent); font-weight: 700; font-size: .82rem; }
+  .toc a { text-decoration: none; color: #444; font-size: .87rem; }
+  .toc a:hover { color: var(--accent); }
+
+  .content { margin-left: 250px; padding: 44px 56px; max-width: 960px; }
+
+  /* ─── HEADINGS ─── */
+  h2 {
+    font-size: 1.5rem; color: var(--primary);
+    border-bottom: 3px solid var(--accent);
+    padding-bottom: 8px; margin: 46px 0 18px;
+  }
+  h3 { font-size: 1.1rem; color: #1a5276; margin: 26px 0 10px; }
+
+  p { margin-bottom: 13px; }
+  ul, ol { padding-left: 22px; margin-bottom: 14px; }
+  li { margin: 6px 0; }
+  strong { color: #1a3a52; }
+
+  /* ─── STEP BOXES ─── */
+  .steps { counter-reset: step; margin: 18px 0 28px; }
+  .step {
+    counter-increment: step;
+    display: flex;
+    gap: 18px;
+    align-items: flex-start;
+    margin-bottom: 16px;
+    padding: 16px 18px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0 2px 6px rgba(0,0,0,.04);
+  }
+  .step-num {
+    min-width: 36px; height: 36px;
+    background: var(--primary);
+    color: #fff;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 1rem;
+    flex-shrink: 0;
+  }
+  .step-body { flex: 1; }
+  .step-body strong { display: block; font-size: 1rem; color: var(--primary); margin-bottom: 4px; }
+
+  /* ─── CALLOUTS ─── */
+  .callout {
+    border-radius: 8px; padding: 13px 17px; margin: 16px 0;
+    border-left: 5px solid;
+    font-size: .93rem;
+  }
+  .callout.info    { background: #eaf4fb; border-color: var(--accent); }
+  .callout.warn    { background: #fef9e7; border-color: var(--orange); }
+  .callout.success { background: #eafaf1; border-color: var(--green); }
+  .callout.danger  { background: #fdedec; border-color: var(--red); }
+  .callout strong  { display: block; margin-bottom: 4px; color: inherit; }
+
+  /* ─── TABLES ─── */
+  table { border-collapse: collapse; width: 100%; margin: 14px 0 22px; font-size: .9rem; }
+  th { background: var(--primary); color: #fff; padding: 9px 13px; text-align: left; }
+  td { padding: 9px 13px; border: 1px solid var(--border); }
+  tr:nth-child(even) td { background: #f8fafd; }
+  td:first-child { font-weight: 600; }
+
+  /* ─── MATRIX TABLE ─── */
+  .matrix th, .matrix td { text-align: center; }
+  .matrix td:first-child { text-align: left; }
+  .check { color: var(--green); font-size: 1.1rem; }
+  .cross { color: #bbb; font-size: 1rem; }
+
+  /* ─── SCENARIO CARD ─── */
+  .scenario {
+    background: linear-gradient(135deg, #f8fbff 0%, #edf2f7 100%);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 22px;
+    margin: 16px 0 24px;
+  }
+  .scenario h4 {
+    color: var(--primary); font-size: 1rem;
+    margin: 0 0 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .scenario ol { margin: 0; }
+
+  /* ─── DIAGRAM ─── */
+  .diagram {
+    background: #0d1117;
+    color: #8b949e;
+    border-radius: 10px;
+    padding: 18px 22px;
+    font-family: 'Cascadia Code', Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    margin: 12px 0 20px;
+    overflow-x: auto;
+  }
+
+  code {
+    background: #e8edf5; color: #c0392b;
+    border-radius: 4px; padding: 2px 6px;
+    font-family: Consolas, monospace; font-size: .88em;
+  }
+
+  .menu-path {
+    background: #1a5276; color: #fff;
+    border-radius: 6px; padding: 5px 12px;
+    font-size: .85rem; display: inline-block; margin: 4px 0 10px;
+  }
+
+  hr { border: none; border-top: 2px dashed var(--border); margin: 36px 0; }
+
+  @media print {
+    .toc { display: none; }
+    .content { margin-left: 0; padding: 20px 30px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- COVER -->
+<div class="cover">
+  <div class="badge">Kullanım Kılavuzu</div>
+  <h1>Jenga Sistemi<br/>Yetki Yönetimi Rehberi</h1>
+  <p>Yetkili Admin Kullanıcı İçin Adım Adım Kılavuz —<br/>
+     Rol Oluşturma · İzin Atama · Bölge Yetkilendirme</p>
+  <div class="meta">TBYS / NBYS / IKYS / FTK / Inventory / Admin Modülleri</div>
+</div>
+
+<!-- TOC -->
+<nav class="toc">
+  <h2>İçindekiler</h2>
+  <ol>
+    <li><a href="#s1">Sisteme Giriş</a></li>
+    <li><a href="#s2">Temel Kavramlar</a></li>
+    <li><a href="#s3">Modüller</a></li>
+    <li><a href="#s4">İşlemler</a></li>
+    <li><a href="#s5">Roller</a></li>
+    <li><a href="#s6">Rol Oluşturmak</a></li>
+    <li><a href="#s7">Modül İzni Atamak</a></li>
+    <li><a href="#s8">Personele Rol Atamak</a></li>
+    <li><a href="#s9">Bölge İzni Vermek</a></li>
+    <li><a href="#s10">Değişiklikler Ne Zaman Geçerli?</a></li>
+    <li><a href="#s11">Senaryolar</a></li>
+    <li><a href="#s12">İyi Uygulamalar</a></li>
+  </ol>
+</nav>
+
+<!-- CONTENT -->
+<main class="content">
+
+<!-- ─────────────────── -->
+<h2 id="s1">1. Sisteme Giriş</h2>
+
+<p>Jenga'da bir kullanıcının sisteme <strong>giriş yapabilmesi</strong> yetmez.
+Hangi <strong>modülleri</strong> görebileceği ve bu modüllerde ne <strong>yapabileceği</strong>
+ayrıca tanımlanmalıdır.</p>
+
+<p>Yetki sistemi iki soruyu yanıtlar:</p>
+
+<table>
+  <tr><th>Soru</th><th>Yanıtı Kim/Ne Verir?</th></tr>
+  <tr><td>Bu kullanıcı ne <em>yapabilir</em>?</td><td>Rol → Modül İzinleri</td></tr>
+  <tr><td>Bu kullanıcı <em>nerede</em> yapabilir?</td><td>Bölge İzinleri</td></tr>
+</table>
+
+<div class="callout info">
+  <strong>📌 Bu kılavuz kimin için?</strong>
+  Sistemi <strong>kullanan son kullanıcılara</strong> izin atama yetkisi verilmiş
+  (delegate admin) kişiler için hazırlanmıştır.
+  Yazılım bilgisi gerekmez; sadece bu kılavuzdaki adımları takip etmeniz yeterlidir.
+</div>
+
+<!-- ─────────────────── -->
+<h2 id="s2">2. Temel Kavramlar — Hızlı Bakış</h2>
+
+<div class="diagram">
+ PERSONEL
+    │
+    ├──► ROL  ──────────────────────► MODÜL İZNİ
+    │    (örn: "TBYS Editörü")         (örn: TBYS / Ekle)
+    │
+    └──► BÖLGE İZNİ
+         (örn: Ankara Bölgesi, İzmir Bölgesi)
+</div>
+
+<ul>
+  <li>Bir personelin <strong>birden fazla rolü</strong> olabilir.</li>
+  <li>Bir rolün <strong>birden fazla personelde</strong> kullanılabilir.</li>
+  <li>İzinler <strong>toplanır</strong>: iki rolün izinleri birleşerek uygulanır.</li>
+  <li>Bölge izinleri <strong>role değil, personele doğrudan atanır</strong>.</li>
+</ul>
+
+<!-- ─────────────────── -->
+<h2 id="s3">3. Modüller — Sistemdeki Uygulama Alanları</h2>
+
+<table>
+  <tr><th>Modül Adı</th><th>Ne İşe Yarar?</th></tr>
+  <tr><td>TBYS</td><td>Taşınmaz Bilgi Yönetim Sistemi — taşınmazlar, kira, bağış takibi</td></tr>
+  <tr><td>NBYS</td><td>Nakit Bağış Yönetim Sistemi — nakit ve armağan bağışları</td></tr>
+  <tr><td>FTK</td><td>Fon Takip — fon hareketleri ve işlemleri</td></tr>
+  <tr><td>IKYS</td><td>İnsan Kaynakları — personel bilgileri, izin, görev</td></tr>
+  <tr><td>Inventory</td><td>Demirbaş ve Malzeme Takip — giriş, çıkış, envanter</td></tr>
+  <tr><td>Admin</td><td>Sistem Yönetimi — online kullanıcılar, loglar, rol yönetimi</td></tr>
+</table>
+
+<!-- ─────────────────── -->
+<h2 id="s4">4. İşlemler — Bir Modülde Ne Yapılabilir?</h2>
+
+<table>
+  <tr><th>İşlem Adı</th><th>Ne Anlama Gelir?</th></tr>
+  <tr><td>Görüntüle</td><td>Sadece okuma. Kayıt ekleyemez, değiştiremez, silemez.</td></tr>
+  <tr><td>Ekle</td><td>Yeni kayıt oluşturabilir.</td></tr>
+  <tr><td>Düzenle</td><td>Mevcut kayıtları değiştirebilir.</td></tr>
+  <tr><td>Sil</td><td>Kayıt silebilir.</td></tr>
+  <tr><td>Yönet</td><td>Yukarıdaki <strong>tüm işlemleri</strong> kapsar. En geniş yetki.</td></tr>
+</table>
+
+<div class="callout success">
+  <strong>💡 "Yönet" İzni Hakkında</strong>
+  Bir kullanıcıya <strong>Yönet</strong> izni verildiyse, aynı modül için
+  Görüntüle, Ekle, Düzenle ve Sil'i <em>ayrıca</em> işaretlemenize gerek yoktur.
+  "Yönet" tümünü otomatik olarak kapsar.
+</div>
+
+<!-- ─────────────────── -->
+<h2 id="s5">5. Roller — İzin Paketleri</h2>
+
+<p>Rol, bir <strong>izin paketidir</strong>.
+Birden fazla personele aynı izin setini atamak için önce bir rol oluşturursunuz,
+sonra o rolü istediğiniz personellere bağlarsınız.</p>
+
+<p><strong>Örnek roller:</strong></p>
+<table>
+  <tr><th>Rol Adı</th><th>İzin Seti</th></tr>
+  <tr><td>TBYS Editörü</td><td>TBYS/Görüntüle + TBYS/Ekle + TBYS/Düzenle</td></tr>
+  <tr><td>TBYS Yöneticisi</td><td>TBYS/Yönet</td></tr>
+  <tr><td>Salt Görüntüleyici</td><td>TBYS/Görüntüle + NBYS/Görüntüle</td></tr>
+  <tr><td>Sistem Yöneticisi</td><td>Admin/Yönet + (ihtiyaca göre diğerleri)</td></tr>
+</table>
+
+<!-- ─────────────────── -->
+<h2 id="s6">6. Adım 1 — Rol Oluşturmak veya Düzenlemek</h2>
+
+<div class="menu-path">📍 Yönetim → Roller</div>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <strong>Roller sayfasını açın.</strong>
+      Mevcut roller listelenir.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <strong>"Yeni Rol" düğmesine tıklayın.</strong>
+      Anlamlı bir ad girin — örn. <em>"TBYS Bölge Sorumlusu"</em>, <em>"NBYS Okuyucu"</em>.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <strong>Kaydedin.</strong>
+      Rol listeye eklenir. Artık bu role izin atayabilirsiniz.
+    </div>
+  </div>
+</div>
+
+<div class="callout warn">
+  <strong>⚠️ Dikkat</strong>
+  Mevcut bir rolü <strong>silmeden önce</strong> o role bağlı personel kalıp kalmadığını kontrol edin.
+  Rol silinirse bağlı personeller o izinleri kaybeder.
+</div>
+
+<!-- ─────────────────── -->
+<h2 id="s7">7. Adım 2 — Role Modül İzinleri Atamak</h2>
+
+<div class="menu-path">📍 Yönetim → Rol Modül İzinleri</div>
+
+<div class="callout warn">
+  <strong>⚠️ Bu sayfayı görmek için gerekli yetki</strong>
+  Bu sayfaya erişmek için <strong>en az bir modülde "Yönet" iznine</strong> sahip olmanız gerekir.
+  Sayfada yalnızca sizin "Yönet" yetkinizin bulunduğu modüller görünür.
+</div>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <strong>Sol panelden bir rol seçin.</strong>
+      Üzerine tıklayın; seçili rol mavi olarak vurgulanır.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <strong>Sağ panelde izin matrisini inceleyin.</strong>
+      Satırlar modülleri, sütunlar işlemleri gösterir.
+      Her hücrede bir onay kutusu vardır.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <strong>Vermek istediğiniz izinleri işaretleyin.</strong>
+      Kaldırmak istediklerinizin işaretini kaldırın.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-body">
+      <strong>"Kaydet" düğmesine tıklayın.</strong>
+      Değişiklikler anında kaydedilir.
+    </div>
+  </div>
+</div>
+
+<h3>Örnek: "TBYS Bölge Sorumlusu" Rolü İçin İzin Matrisi</h3>
+
+<table class="matrix">
+  <tr>
+    <th>Modül</th>
+    <th>Görüntüle</th>
+    <th>Ekle</th>
+    <th>Düzenle</th>
+    <th>Sil</th>
+    <th>Yönet</th>
+  </tr>
+  <tr>
+    <td>TBYS</td>
+    <td><span class="check">✅</span></td>
+    <td><span class="check">✅</span></td>
+    <td><span class="check">✅</span></td>
+    <td><span class="cross">☐</span></td>
+    <td><span class="cross">☐</span></td>
+  </tr>
+  <tr>
+    <td>NBYS</td>
+    <td><span class="check">✅</span></td>
+    <td><span class="cross">☐</span></td>
+    <td><span class="cross">☐</span></td>
+    <td><span class="cross">☐</span></td>
+    <td><span class="cross">☐</span></td>
+  </tr>
+  <tr>
+    <td>IKYS</td>
+    <td><span class="cross">☐</span></td>
+    <td><span class="cross">☐</span></td>
+    <td><span class="cross">☐</span></td>
+    <td><span class="cross">☐</span></td>
+    <td><span class="cross">☐</span></td>
+  </tr>
+  <tr>
+    <td>Admin</td>
+    <td><span class="cross">☐</span></td>
+    <td><span class="cross">☐</span></td>
+    <td><span class="cross">☐</span></td>
+    <td><span class="cross">☐</span></td>
+    <td><span class="cross">☐</span></td>
+  </tr>
+</table>
+
+<!-- ─────────────────── -->
+<h2 id="s8">8. Adım 3 — Personele Rol Atamak</h2>
+
+<div class="menu-path">📍 Yönetim → Rol Atamaları</div>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <strong>Listeden personeli bulun.</strong>
+      Arama kutusunu kullanabilirsiniz.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <strong>Atanacak rolü/rolleri seçin.</strong>
+      Bir personele birden fazla rol atanabilir; izinler birleştirilir.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <strong>Kaydedin.</strong>
+    </div>
+  </div>
+</div>
+
+<div class="callout info">
+  <strong>📌 Birden Fazla Rol</strong>
+  Bir personele iki rol atanmışsa izinler toplanır. Örneğin:
+  "Salt Görüntüleyici" (TBYS/Görüntüle) + "NBYS Editörü" (NBYS/Ekle, NBYS/Düzenle)
+  → personel hem TBYS'yi okuyabilir hem NBYS'ye kayıt girebilir.
+</div>
+
+<!-- ─────────────────── -->
+<h2 id="s9">9. Adım 4 — Personele Bölge İzni Vermek</h2>
+
+<div class="menu-path">📍 Yönetim → Personel Bölge Yetkileri</div>
+
+<p>Bazı modüllerde (özellikle TBYS) veriler <strong>bölgeye göre filtrelenir</strong>.
+Personelin yalnızca atandığı bölgelerin verilerini görmesi/yönetmesi sağlanır.</p>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <strong>Sol panelden personeli bulun.</strong>
+      Üstteki arama kutusunu kullanabilirsiniz. Üzerine tıklayın.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <strong>Sağ panelde bölgeleri işaretleyin.</strong>
+      Yetkili olacağı bölgelerin kutucuklarını işaretleyin.
+      Kaldırmak istediklerinizin işaretini kaldırın.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <strong>"Kaydet" düğmesine tıklayın.</strong>
+    </div>
+  </div>
+</div>
+
+<div class="callout warn">
+  <strong>⚠️ Hiç Bölge İşaretlenmemişse</strong>
+  Personele bölge atanmamışsa bölge bazlı verileri <strong>göremez</strong>.
+  Rolü olsa bile bölge filtresi boş kaldığında ilgili veriler listelenmez.
+</div>
+
+<!-- ─────────────────── -->
+<h2 id="s10">10. Yetki Değişikliği Ne Zaman Geçerli Olur?</h2>
+
+<table>
+  <tr><th>Durum</th><th>Ne Olur?</th></tr>
+  <tr>
+    <td>Kullanıcı o anda sayfadaysa ve sayfayı yenilemezse</td>
+    <td>Eski yetkileriyle çalışmaya devam eder (geçici önbellek).</td>
+  </tr>
+  <tr>
+    <td>Kullanıcı sayfayı <strong>yenilediğinde</strong></td>
+    <td>Yeni izinler devreye girer.</td>
+  </tr>
+  <tr>
+    <td>Kullanıcı <strong>yeni bir sayfaya gittiğinde</strong></td>
+    <td>Yeni izinler devreye girer.</td>
+  </tr>
+  <tr>
+    <td>Kullanıcı <strong>tarayıcıyı yeniden açtığında</strong></td>
+    <td>Kesinlikle yeni izinler geçerli olur.</td>
+  </tr>
+</table>
+
+<div class="callout success">
+  <strong>✅ Acil Durum</strong>
+  Bir kullanıcının yetkisini hemen kaldırmanız gerekiyorsa
+  IT departmanından kullanıcının oturumunun kapatılmasını talep edebilirsiniz.
+</div>
+
+<!-- ─────────────────── -->
+<h2 id="s11">11. Sık Karşılaşılan Senaryolar</h2>
+
+<div class="scenario">
+  <h4>📋 Senaryo A — Yeni Gelen Personele Erişim Vermek</h4>
+  <ol>
+    <li>Uygun rol var mı? → <strong>Varsa 3. adıma geç</strong>.</li>
+    <li>Uygun rol yoksa → <strong>Adım 1</strong>: Yeni rol oluştur.</li>
+    <li><strong>Adım 2</strong>: Role gerekli modül izinlerini ata.</li>
+    <li><strong>Adım 3</strong>: Personele rolü bağla.</li>
+    <li><strong>Adım 4</strong>: Personelin çalışacağı bölgeleri ata.</li>
+  </ol>
+</div>
+
+<div class="scenario">
+  <h4>🔄 Senaryo B — Görev Değişikliği: TBYS Erişimini Kaldırmak</h4>
+  <ol>
+    <li><code>Yönetim → Rol Atamaları</code></li>
+    <li>Personeli seçin.</li>
+    <li>TBYS içeren rolün işaretini <strong>kaldırın</strong>.</li>
+    <li>Kaydedin.</li>
+  </ol>
+</div>
+
+<div class="scenario">
+  <h4>👁️ Senaryo C — Kullanıcıya Sadece Raporları Göstermek (Salt Okunur)</h4>
+  <ol>
+    <li>"Salt Görüntüleyici" adında bir rol oluşturun (yoksa).</li>
+    <li>Bu role yalnızca <strong>Görüntüle</strong> işlemlerini atayın. Ekle/Düzenle/Sil <em>verilmez</em>.</li>
+    <li>Personele bu rolü atayın.</li>
+    <li>Gerekiyorsa bölge iznini de verin.</li>
+  </ol>
+</div>
+
+<div class="scenario">
+  <h4>🔑 Senaryo D — Yeni Sistem Yöneticisi Eklemek</h4>
+  <ol>
+    <li>"Sistem Yöneticisi" adında bir rol oluşturun (yoksa).</li>
+    <li>Bu role <strong>Admin / Yönet</strong> iznini verin.</li>
+    <li>Diğer modüller için de Yönet verilmesi isteniyorsa ekleyin.</li>
+    <li>Personele bu rolü atayın.</li>
+  </ol>
+</div>
+
+<div class="scenario">
+  <h4>🗺️ Senaryo E — Bölge Değişikliği: Personeli Başka Bölgeye Atamak</h4>
+  <ol>
+    <li><code>Yönetim → Personel Bölge Yetkileri</code></li>
+    <li>Personeli seçin.</li>
+    <li>Eski bölgenin işaretini <strong>kaldırın</strong>, yeni bölgeyi <strong>işaretleyin</strong>.</li>
+    <li>Kaydedin.</li>
+  </ol>
+</div>
+
+<!-- ─────────────────── -->
+<h2 id="s12">12. İyi Uygulamalar ve Dikkat Edilecekler</h2>
+
+<table>
+  <tr><th>✅ Yapılması Önerilen</th><th>❌ Kaçınılması Gereken</th></tr>
+  <tr>
+    <td>Her personele iş tanımına göre en kısıtlayıcı rolü verin.</td>
+    <td>Herkese "Yönet" iznini vermek.</td>
+  </tr>
+  <tr>
+    <td>Görev biterken/değişince rolü ve bölgeyi <strong>güncellemeyi</strong> unutmayın.</td>
+    <td>Ayrılan personelin sistemdeki rolünü silmemek.</td>
+  </tr>
+  <tr>
+    <td>Rol adlarını görev tanımıyla örtüşecek şekilde anlamlı tutun.</td>
+    <td>"Rol1", "Yeni Rol", "Test" gibi belirsiz isimler.</td>
+  </tr>
+  <tr>
+    <td>Bölge izinlerini iş birimlerine göre verin.</td>
+    <td>Tüm bölgeleri herkese açmak.</td>
+  </tr>
+  <tr>
+    <td>Admin modülünü yalnızca gerçek sistem yöneticilerine açın.</td>
+    <td>Admin iznini geniş bir kitleye vermek.</td>
+  </tr>
+</table>
+
+<hr/>
+
+<h3>Özet Akış</h3>
+<div class="diagram">
+[Yeni Personel]
+      │
+      ▼
+ Uygun Rol var mı?
+      ├─ Evet ──────────────────────────────┐
+      └─ Hayır → Yeni Rol Oluştur (Adım 1) │
+                     ↓                     │
+              Modül İzinlerini Ata (Adım 2) │
+                                           ▼
+                               Personele Rol Ata (Adım 3)
+                                           │
+                                           ▼
+                              Bölge Kısıtlaması Gerekli mi?
+                                     ├─ Evet → Bölge İzni Ata (Adım 4)
+                                     └─ Hayır → ✅ Tamamdır
+</div>
+
+<hr/>
+<p style="text-align:center; color:#aaa; font-size:.85rem; margin-top:40px;">
+  Jenga Sistemi — Yetkili Admin Kullanım Kılavuzu &nbsp;|&nbsp; Otomatik Oluşturuldu
+</p>
+
+</main>
+</body>
+</html>

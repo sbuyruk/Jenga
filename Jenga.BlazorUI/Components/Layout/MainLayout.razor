@@ -102,7 +102,7 @@
             {
                 _personel = resolved;
                 var personelId = _personel?.Id ?? 127;
-                await MenuState.EnsureLoadedAsync(personelId);
+                await MenuState.ReloadAsync(personelId);
                 if (_personel != null)
                     _windowsUser = $"{_personel.Adi} {_personel.Soyadi}";
                 StateHasChanged();

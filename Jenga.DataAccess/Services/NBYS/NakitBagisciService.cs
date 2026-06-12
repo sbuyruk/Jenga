@@ -34,6 +34,53 @@ namespace Jenga.DataAccess.Services.NBYS
             }
         }
 
+        public async Task<Result<List<NakitBagisciDashboardItem>>> GetAllForDashboardAsync(CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                var list = await db.NakitBagisci_Table
+                    .AsNoTracking()
+                    .Select(x => new NakitBagisciDashboardItem
+                    {
+                        Id = x.Id,
+                        Ili = x.Ili,
+                        TuzelKisi = x.TuzelKisi
+                    })
+                    .ToListAsync(cancellationToken);
+                return Result<List<NakitBagisciDashboardItem>>.Success(list);
+            }
+            catch (Exception ex)
+            {
+                _logService.LogError($"{Source}.GetAllForDashboardAsync hata.", ex);
+                return Result<List<NakitBagisciDashboardItem>>.Failure(Error.Unexpected("Nakit bağışçı listesi alınamadı.", ex));
+            }
+        }
+
+        public async Task<Result<List<NakitBagisciArmaganItem>>> GetAllForArmaganDashboardAsync(CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                var list = await db.NakitBagisci_Table
+                    .AsNoTracking()
+                    .Select(x => new NakitBagisciArmaganItem
+                    {
+                        Id     = x.Id,
+                        Adi    = x.Adi,
+                        Soyadi = x.Soyadi,
+                        Ili    = x.Ili
+                    })
+                    .ToListAsync(cancellationToken);
+                return Result<List<NakitBagisciArmaganItem>>.Success(list);
+            }
+            catch (Exception ex)
+            {
+                _logService.LogError($"{Source}.GetAllForArmaganDashboardAsync hata.", ex);
+                return Result<List<NakitBagisciArmaganItem>>.Failure(Error.Unexpected("Nakit bağışçı listesi alınamadı.", ex));
+            }
+        }
+
         public async Task<Result<NakitBagisci>> GetByIdAsync(int id, CancellationToken cancellationToken = default)
         {
             try
