@@ -57,6 +57,34 @@ namespace Jenga.DataAccess.Services.TBYS
             }
         }
 
+        public async Task<Result<List<OdemeDashboardItem>>> GetLastYearsForDashboardKiralarAsync(int years, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var startDate = DateTime.Today.AddYears(-years);
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                var list = await db.Odeme_Table
+                    .Where(o => o.OdemePlaniId != null && o.OdemeTarihi != null && o.OdemeTarihi.Value >= startDate)
+                    .Join(db.OdemePlani_Table,
+                          o => o.OdemePlaniId,
+                          p => p.Id,
+                          (o, p) => o)
+                    .AsNoTracking()
+                    .Select(o => new OdemeDashboardItem
+                    {
+                        OdemeTarihi = o.OdemeTarihi,
+                        OdenenTutar = o.OdenenTutar
+                    })
+                    .ToListAsync(cancellationToken);
+                return Result<List<OdemeDashboardItem>>.Success(list);
+            }
+            catch (Exception ex)
+            {
+                _logService.LogError($"{Source}.GetLastYearsForDashboardKiralarAsync hata.", ex);
+                return Result<List<OdemeDashboardItem>>.Failure(Error.Unexpected("Kira ödemeleri alınamadı.", ex));
+            }
+        }
+
         public async Task<Result<Odeme>> GetByIdAsync(int id, CancellationToken cancellationToken = default)
         {
             try

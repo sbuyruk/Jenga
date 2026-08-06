@@ -1,4 +1,4 @@
-﻿@page "/tbys/kira-dashboard"
+@page "/tbys/kira-dashboard"
 @rendermode InteractiveServer
 @using Jenga.BlazorUI.Components.TBYS
 @using Jenga.BlazorUI.Components.Common
@@ -24,13 +24,24 @@
 
     @if (isLoading)
     {
-        <div class="d-flex justify-content-center align-items-center py-5 text-muted">
-            <i class="bi bi-hourglass-split me-2"></i> Yükleniyor...
+        <div class="text-center">
+            <div class="d-flex justify-content-center mt-4">
+                    <img src="/images/zekayi.gif"
+                        alt="coding"
+                        loading="lazy"
+                        class="img-fluid rounded-4 shadow"
+                        style="max-width: 220px; height: auto;" />
+            </div>
+            <div class="text-muted justify-content-center">@loadingMessage</div>
         </div>
     }
     else if (loadFailed)
     {
-        <div class="alert alert-danger">Veri yüklenirken hata oluştu.</div>
+        <div class="alert alert-danger d-flex align-items-center gap-2">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            Veri yüklenirken bir hata oluştu.
+            <button class="btn btn-sm btn-outline-danger ms-auto" @onclick="RefreshAsync">Tekrar Dene</button>
+        </div>
     }
     else
     {
@@ -195,7 +206,7 @@
                                   ShowCopy="false"
                                   ShowExport="false"
                                   PageSize="60"
-                                  PageSizeOptions="@(new[] { 60 })">
+                                  PageSizeOptions="@(new int[] { 60 })">
                         <HeaderTemplate>
                             <th>Kiracı Süresi</th>
                             <th>Kiracı Adı</th>
@@ -210,7 +221,7 @@
                         <RowTemplate Context="s">
                             @{
                                 var kalanGun = (s.SozBitTar!.Value.Date - DateTime.Today).Days;
-                                var kiraci   = kiraciler?.FirstOrDefault(k => k.Id == s.KiraciId);
+                                _kiraciById.TryGetValue(s.KiraciId ?? 0, out var kiraci);
                                 var basTar   = s.IlkSozlesmeTar ?? s.SozBasTar;
                             }
                             <td>
@@ -245,7 +256,7 @@
                             <td>@s.SozBitTar?.ToString("dd.MM.yyyy")</td>
                             <td><span class="badge @(kalanGun <= 14 ? "bg-danger" : kalanGun <= 30 ? "bg-warning text-dark" : "bg-info text-dark")">@kalanGun gün</span></td>
                             <td class="d-none d-md-table-cell">@FormatPara(s.KiraBedeli)</td>
-                            <td class="d-none d-md-table-cell">@(bolgeler?.FirstOrDefault(b => b.Id == s.BolgeId)?.KisaAdi)</td>
+                            <td class="d-none d-md-table-cell">@(_bolgeKisaAdiById.GetValueOrDefault(s.BolgeId ?? 0))</td>
                         </RowTemplate>
                     </GenericTable>
                 </div>
@@ -253,15 +264,6 @@
             <hr class="my-2" />
         }
     }
-
-    <div class="d-flex justify-content-center mt-3 mb-4">
-        <img src="/images/zekayi.gif"
-             alt="Zekayi"
-             loading="lazy"
-             data-bs-toggle="tooltip"
-             data-bs-placement="top"
-             title="Burada yayınlanan tüm Kiralık verileri Emlak Direktörlüğü tarafından girilmektedir. İrtibat için Zekayi ÇALIŞ, dahili tel: 229" />
-    </div>
 </div>
 </PermissionGuard>
 
@@ -269,13 +271,14 @@
     private List<Tasinmaz>? tasinmazlar;
     private List<KiraSozlesme>? kiraSozlesmeler;
     private List<Kiraci>? kiraciler;
-    private List<OdemePlani>? odemePlanlari;
+    private List<OdemePlaniDashboardItem>? odemePlanlari;
     private List<Il>? iller;
     private List<Bolge>? bolgeler;
-    private List<Odeme>? odemeler;
+    private List<OdemeDashboardItem>? odemeler;
     private List<YasalFaiz>? yasalFaizler;
     private bool isLoading;
     private bool loadFailed;
+    private string loadingMessage = "Yükleniyor...";
     private CancellationTokenSource? _cts;
 
     // Chart data
@@ -287,67 +290,93 @@
     private readonly List<KiraSozlesme> gecikmisSozlesmeler = new();
     private readonly List<KiraSozlesme> yakindaBitecekSozlesmeler = new();
 
-    // KPI computed values
-    private int AktifSozlesmeCount => kiraSozlesmeler?.Count(s => s.Aktif == true) ?? 0;
+    // KPI cached values
+    private int _aktifSozlesmeCount;
+    private decimal _gelecekAyTahminiGelir;
+    private decimal _buYilToplamGelir;
+    private decimal _buAyToplamGelir;
+    private decimal _gecenAyToplamGelir;
+    private decimal _ortalamaKiraBedeli;
 
-    private decimal GelecekAyTahminiGelir
-    {
-        get
-        {
-            var gelecekAyIlk = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(1);
-            var gelecekAySon  = gelecekAyIlk.AddMonths(1);
-            return kiraSozlesmeler?
-                .Where(s => s.Aktif == true
-                    && s.KiraBedeli.HasValue
-                    && s.SozBasTar.HasValue && s.SozBasTar.Value < gelecekAySon
-                    && s.SozBitTar.HasValue && s.SozBitTar.Value >= gelecekAyIlk)
-                .Sum(s => s.KiraBedeli!.Value) ?? 0m;
-        }
-    }
+    private int AktifSozlesmeCount => _aktifSozlesmeCount;
 
-    private decimal BuYilToplamGelir
-    {
-        get
-        {
-            var y = DateTime.Now.Year;
-            return odemeler?
-                .Where(o => o.OdemeTarihi?.Year == y)
-                .Sum(o => o.OdenenTutar ?? 0m) ?? 0m;
-        }
-    }
+    private decimal GelecekAyTahminiGelir => _gelecekAyTahminiGelir;
 
-    private decimal BuAyToplamGelir
-    {
-        get
-        {
-            var today = DateTime.Today;
-            return odemeler?
-                .Where(o => o.OdemeTarihi?.Year == today.Year && o.OdemeTarihi?.Month == today.Month)
-                .Sum(o => o.OdenenTutar ?? 0m) ?? 0m;
-        }
-    }
+    private decimal BuYilToplamGelir => _buYilToplamGelir;
 
-    private decimal GecenAyToplamGelir
-    {
-        get
-        {
-            var gecenAyIlk = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(-1);
-            return odemeler?
-                .Where(o => o.OdemeTarihi?.Year == gecenAyIlk.Year && o.OdemeTarihi?.Month == gecenAyIlk.Month)
-                .Sum(o => o.OdenenTutar ?? 0m) ?? 0m;
-        }
-    }
+    private decimal BuAyToplamGelir => _buAyToplamGelir;
+
+    private decimal GecenAyToplamGelir => _gecenAyToplamGelir;
 
     private int GecikmisSozlesmeCount => gecikmisSozlesmeler.Count;
 
-    private decimal OrtalamaKiraBedeli
+    private decimal OrtalamaKiraBedeli => _ortalamaKiraBedeli;
+
+    // Lookup dictionaries
+    private Dictionary<int, Kiraci> _kiraciById = new();
+    private Dictionary<int, string> _bolgeKisaAdiById = new();
+
+    private void BuildAllViews()
     {
-        get
-        {
-            var aktif = kiraSozlesmeler?.Where(s => s.Aktif == true && s.KiraBedeli.HasValue).ToList();
-            if (aktif == null || aktif.Count == 0) return 0m;
-            return aktif.Average(s => s.KiraBedeli!.Value);
-        }
+        BuildLookupDictionaries();
+        ComputeKpis();
+        PrepareKiraGeliriChart();
+        PrepareKiraAylikSon5YilChart();
+        PrepareOdemeDurumuChart();
+        PrepareOdemeSekliChart();
+        PrepareBolgeChart();
+        PrepareGecikmisSozlesmeler();
+        PrepareYakindaBitecekSozlesmeler();
+    }
+
+    private void ComputeKpis()
+    {
+        _aktifSozlesmeCount = kiraSozlesmeler?.Count(s => s.Aktif == true) ?? 0;
+
+        var gelecekAyIlk = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(1);
+        var gelecekAySon = gelecekAyIlk.AddMonths(1);
+        _gelecekAyTahminiGelir = kiraSozlesmeler?
+            .Where(s => s.Aktif == true
+                && s.KiraBedeli.HasValue
+                && s.SozBasTar.HasValue && s.SozBasTar.Value < gelecekAySon
+                && s.SozBitTar.HasValue && s.SozBitTar.Value >= gelecekAyIlk)
+            .Sum(s => s.KiraBedeli!.Value) ?? 0m;
+
+        var y = DateTime.Now.Year;
+        _buYilToplamGelir = odemeler?
+            .Where(o => o.OdemeTarihi?.Year == y)
+            .Sum(o => o.OdenenTutar ?? 0m) ?? 0m;
+
+        var today = DateTime.Today;
+        _buAyToplamGelir = odemeler?
+            .Where(o => o.OdemeTarihi?.Year == today.Year && o.OdemeTarihi?.Month == today.Month)
+            .Sum(o => o.OdenenTutar ?? 0m) ?? 0m;
+
+        var gecenAyIlk = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(-1);
+        _gecenAyToplamGelir = odemeler?
+            .Where(o => o.OdemeTarihi?.Year == gecenAyIlk.Year && o.OdemeTarihi?.Month == gecenAyIlk.Month)
+            .Sum(o => o.OdenenTutar ?? 0m) ?? 0m;
+
+        var aktif = kiraSozlesmeler?.Where(s => s.Aktif == true && s.KiraBedeli.HasValue).ToList();
+        _ortalamaKiraBedeli = aktif == null || aktif.Count == 0
+            ? 0m
+            : aktif.Average(s => s.KiraBedeli!.Value);
+    }
+
+    private void ResetKpis()
+    {
+        _aktifSozlesmeCount = 0;
+        _gelecekAyTahminiGelir = 0m;
+        _buYilToplamGelir = 0m;
+        _buAyToplamGelir = 0m;
+        _gecenAyToplamGelir = 0m;
+        _ortalamaKiraBedeli = 0m;
+    }
+
+    private void BuildLookupDictionaries()
+    {
+        _kiraciById = kiraciler?.ToDictionary(k => k.Id, k => k) ?? new();
+        _bolgeKisaAdiById = bolgeler?.ToDictionary(b => b.Id, b => b.KisaAdi ?? string.Empty) ?? new();
     }
 
     private string KiraSozlesmeleriTitle => $"{DateTime.Today:MMMM yyyy} Kira Sözleşmeleri";
@@ -355,36 +384,82 @@
     protected override async Task OnInitializedAsync()
     {
         _cts = new CancellationTokenSource();
-        await LoadDataAsync(_cts.Token);
+        await LoadDataSafeAsync(_cts.Token);
     }
+
+    private async Task RefreshAsync()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+        _cts = new CancellationTokenSource();
+        await LoadDataSafeAsync(_cts.Token);
+    }
+
+    private async Task LoadDataSafeAsync(CancellationToken cancellationToken)
+    {
+        if (_loadLock.CurrentCount == 0) return;
+        await _loadLock.WaitAsync(cancellationToken);
+        try
+        {
+            await LoadDataAsync(cancellationToken);
+        }
+        finally
+        {
+            _loadLock.Release();
+        }
+    }
+
+    private readonly SemaphoreSlim _loadLock = new(1, 1);
 
     private async Task LoadDataAsync(CancellationToken cancellationToken)
     {
         isLoading = true;
         loadFailed = false;
+        loadingMessage = "Yükleniyor...";
+        await InvokeAsync(StateHasChanged);
 
         try
         {
-            tasinmazlar = (await TasinmazService.GetAllAsync(cancellationToken)) is { IsSuccess: true } tRes ? tRes.Value : new();
-            kiraSozlesmeler = (await KiraSozlesmeService.GetAllAsync(cancellationToken)) is { IsSuccess: true } ksRes ? ksRes.Value : new();
-            kiraciler = (await KiraciService.GetAllAsync(cancellationToken)) is { IsSuccess: true } kcRes ? kcRes.Value : new();
+            loadingMessage = "Veriler yükleniyor...";
+            await InvokeAsync(StateHasChanged);
+
+            // Birbirine bağımlı olmayan servis çağrılarını paralelleştir
+            var tasinmazTask = TasinmazService.GetAllAsync(cancellationToken);
+            var kiraSozlesmeTask = KiraSozlesmeService.GetAllAsync(cancellationToken);
+            var kiraciTask = KiraciService.GetAllAsync(cancellationToken);
+            var ilTask = IlService.GetAllAsync(cancellationToken);
+            var bolgeTask = BolgeService.GetAllAsync(cancellationToken);
+            var yasalFaizTask = YasalFaizService.GetAllAsync(cancellationToken);
+
+            await Task.WhenAll(tasinmazTask, kiraSozlesmeTask, kiraciTask,
+                               ilTask, bolgeTask, yasalFaizTask);
+
+            tasinmazlar = tasinmazTask.Result is { IsSuccess: true } tRes ? tRes.Value : new();
+            kiraSozlesmeler = kiraSozlesmeTask.Result is { IsSuccess: true } ksRes ? ksRes.Value : new();
+            kiraciler = kiraciTask.Result is { IsSuccess: true } kcRes ? kcRes.Value : new();
+            iller = ilTask.Result is { IsSuccess: true } ilRes2 ? ilRes2.Value : new();
+            bolgeler = bolgeTask.Result is { IsSuccess: true } bRes2 ? bRes2.Value : new();
+            yasalFaizler = yasalFaizTask.Result is { IsSuccess: true } yfRes2 ? yfRes2.Value : new();
 
             var tumSozlesmeIds = kiraSozlesmeler.Where(s => s.Id > 0).Select(s => s.Id).ToList();
-            odemePlanlari = tumSozlesmeIds.Count > 0
-                ? (await OdemePlaniService.GetAllBySozlesmeIdsAsync(tumSozlesmeIds, cancellationToken)) is { IsSuccess: true } opRes ? opRes.Value : new()
-                : new();
-            iller = (await IlService.GetAllAsync(cancellationToken)) is { IsSuccess: true } ilRes ? ilRes.Value : new();
-            bolgeler = (await BolgeService.GetAllAsync(cancellationToken)) is { IsSuccess: true } bRes ? bRes.Value : new();
-            odemeler = (await OdemeService.GetAllAsyncKiralar(cancellationToken)) is { IsSuccess: true } odRes ? odRes.Value : new();
-            yasalFaizler = (await YasalFaizService.GetAllAsync(cancellationToken)) is { IsSuccess: true } yfRes ? yfRes.Value : new();
 
-            PrepareKiraGeliriChart();
-            PrepareKiraAylikSon5YilChart();
-            PrepareOdemeDurumuChart();
-            PrepareOdemeSekliChart();
-            PrepareBolgeChart();
-            PrepareGecikmisSozlesmeler();
-            PrepareYakindaBitecekSozlesmeler();
+            var odemeTask = OdemeService.GetLastYearsForDashboardKiralarAsync(10, cancellationToken);
+            var odemePlaniTask = tumSozlesmeIds.Count > 0
+                ? OdemePlaniService.GetAllForDashboardBySozlesmeIdsAsync(tumSozlesmeIds, cancellationToken)
+                : null;
+
+            if (odemePlaniTask != null)
+                await Task.WhenAll(odemeTask, odemePlaniTask);
+            else
+                await odemeTask;
+
+            odemePlanlari = odemePlaniTask?.Result is { IsSuccess: true } opRes ? opRes.Value : new();
+            odemeler = odemeTask.Result is { IsSuccess: true } odRes ? odRes.Value : new();
+
+            loadingMessage = "KPI'lar ve grafikler hazırlanıyor...";
+            await InvokeAsync(StateHasChanged);
+
+            await Task.Run(BuildAllViews, cancellationToken);
         }
         catch
         {
@@ -404,6 +479,7 @@
             bolgeSozlesmeItems.Clear();
             gecikmisSozlesmeler.Clear();
             yakindaBitecekSozlesmeler.Clear();
+            ResetKpis();
         }
         finally
         {
@@ -622,8 +698,8 @@
 
     private string BuildYakindaSearchText(KiraSozlesme s)
     {
-        var kiraci = kiraciler?.FirstOrDefault(k => k.Id == s.KiraciId);
-        var bolge  = bolgeler?.FirstOrDefault(b => b.Id == s.BolgeId)?.KisaAdi;
+        _kiraciById.TryGetValue(s.KiraciId ?? 0, out var kiraci);
+        _bolgeKisaAdiById.TryGetValue(s.BolgeId ?? 0, out var bolge);
         return string.Join(" ",
             kiraci?.Adi, kiraci?.Soyadi,
             kiraci?.Adres, kiraci?.Ili, kiraci?.Ilcesi,
@@ -664,6 +740,7 @@
     {
         _cts?.Cancel();
         _cts?.Dispose();
+        _loadLock.Dispose();
     }
 
     private class YearAmount
