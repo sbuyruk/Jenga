@@ -1050,87 +1050,46 @@
             var ilIdToAdi = _bolgeIller.ToDictionary(i => i.Id, i => i.IlAdi ?? "?");
 
             // ── Paralel veri yükleme ────────────────────────────
-            var tTasinmazBagisci = TasinmazBagisciService.GetAllAsync(ct);
-            var tTasinmaz = TasinmazService.GetEnvanterdekilerAsync(ct);
-            var tKiraSozlesme = KiraSozlesmeService.GetAllAsync(ct);
-            var tOdeme = OdemeService.GetAllAsync(ct);
-            var tNakitHareket = NakitBagisHareketService.GetAllAsync(ct);
-            var tNakitBagisci = NakitBagisciService.GetAllAsync(ct);
-            var tArmagan = ArmaganService.GetAllAsync(ct);
+            var tTasinmazBagisciSayisi = TasinmazBagisciService.CountByIlIdsAsync(_bolgeIlIds, ct);
+            var tTasinmaz = TasinmazService.GetEnvanterdekilerForBolgeDashboardAsync(_secilenBolge!.Adi, _bolgeIlAdlari, ct);
+            var tKiraSozlesme = KiraSozlesmeService.GetAllForBolgeDashboardAsync(_secilenBolge!.Id, ct);
+            var tNakitBagisci = NakitBagisciService.GetAllForBolgeDashboardAsync(_bolgeIlIds, ct);
+            var tFtk = FtkService.GetLatestPerIslemForBolgeDashboardAsync(_secilenBolge!.Id, ct);
+            var tPersonelDash = IsBilgileriService.GetPersonelForBolgeDashboardAsync(_secilenBolge!.Id, ct);
             var tArmaganTanim = ArmaganTanimService.GetAllAsync(ct);
-            var tFtk = FtkService.GetLatestPerIslemAsync(ct);
-            var tFtkIslem = FtkIslemService.GetAllAsync(ct);
-            var tPersonel = PersonelService.GetCalisanPersonelAsync(ct);
-            var tIsBilgileri = IsBilgileriService.GetAllAsync(ct);
 
-            await Task.WhenAll(tTasinmazBagisci, tTasinmaz, tKiraSozlesme, tOdeme, tNakitHareket, tNakitBagisci,
-                               tArmagan, tArmaganTanim, tFtk, tFtkIslem, tPersonel, tIsBilgileri);
+            await Task.WhenAll(tTasinmazBagisciSayisi, tTasinmaz, tKiraSozlesme, tNakitBagisci, tFtk, tPersonelDash, tArmaganTanim);
 
-            var tasinmazBagiscilar = tTasinmazBagisci.Result.IsSuccess ? tTasinmazBagisci.Result.Value : [];
-            var tasinmazlar = tTasinmaz.Result.IsSuccess ? tTasinmaz.Result.Value : [];
-            var kiraSozlesmeler = tKiraSozlesme.Result.IsSuccess ? tKiraSozlesme.Result.Value : [];
-
-            var odemeler = tOdeme.Result.IsSuccess ? tOdeme.Result.Value : [];
-            var nakitHareketler = tNakitHareket.Result.IsSuccess ? tNakitHareket.Result.Value : [];
-            var nakitBagiscilar = tNakitBagisci.Result.IsSuccess ? tNakitBagisci.Result.Value : [];
-            var armaganlar = tArmagan.Result.IsSuccess ? tArmagan.Result.Value : [];
+            var bolgeTasinmazlar = tTasinmaz.Result.IsSuccess ? tTasinmaz.Result.Value : [];
+            var bolgeKiraSozlesmeler = tKiraSozlesme.Result.IsSuccess ? tKiraSozlesme.Result.Value : [];
+            var bolgeNakitBagiscilar = tNakitBagisci.Result.IsSuccess ? tNakitBagisci.Result.Value : [];
+            var bolgeFtkler = tFtk.Result.IsSuccess ? tFtk.Result.Value : [];
+            var bolgePersoneller = tPersonelDash.Result.IsSuccess ? tPersonelDash.Result.Value : [];
             var armaganTanimlar = tArmaganTanim.Result.IsSuccess ? tArmaganTanim.Result.Value : [];
-            var ftkler = tFtk.Result.IsSuccess ? tFtk.Result.Value : [];
-            var ftkIslemler = tFtkIslem.Result.IsSuccess ? tFtkIslem.Result.Value : [];
-            var personeller = tPersonel.Result.IsSuccess ? tPersonel.Result.Value : [];
-            var isBilgileriList = tIsBilgileri.Result.IsSuccess ? tIsBilgileri.Result.Value : [];
+            var tasinmazBagisciSayisi = tTasinmazBagisciSayisi.Result.IsSuccess ? tTasinmazBagisciSayisi.Result.Value : 0;
 
-            // ── Bölge filtreli taşınmazlar ──────────────────────
-            // Tasinmaz.SorumluBolge string (bölge adı) veya il adına göre filtreleme
-            var bolgeTasinmazlar = tasinmazlar
-                .Where(t => (!string.IsNullOrEmpty(t.SorumluBolge) &&
-                             t.SorumluBolge.Contains(_secilenBolge!.Adi, StringComparison.OrdinalIgnoreCase))
-                            || (!string.IsNullOrEmpty(t.Ili) &&
-                                _bolgeIlAdlari.Contains(t.Ili)))
-                .ToList();
-
-            // ── Kira sözleşmeleri (KiraSozlesme.BolgeId üzerinden) ─
-            var bolgeKiraSozlesmeler = kiraSozlesmeler
-                .Where(k => k.BolgeId == _secilenBolge!.Id)
-                .ToList();
-
-            // ── Ödemeler (sözleşme SozlesmeId üzerinden) ─────────────
             var bolgeSozlesmeIds = bolgeKiraSozlesmeler.Select(s => s.Id).ToHashSet();
-            var bolgeOdemeler = odemeler
-                .Where(o => o.SozlesmeId.HasValue && bolgeSozlesmeIds.Contains(o.SozlesmeId.Value))
-                .ToList();
 
-            // ── Nakit bağış (bölge illere göre) ─────────────────
-            // NakitBagisci.Ili = il Id
-            var bolgeBagisciIds = nakitBagiscilar
-                .Where(nb => nb.Ili.HasValue && _bolgeIlIds.Contains(nb.Ili.Value))
+            var bolgeBagisciIds = bolgeNakitBagiscilar
                 .Select(nb => nb.Id)
                 .ToHashSet();
-            var bolgeNakitHareketler = nakitHareketler
-                .Where(h => h.BagisciId.HasValue && bolgeBagisciIds.Contains(h.BagisciId.Value))
-                .ToList();
 
-            // ── Armağan (bölge il bazlı bağışçılar) ─────────────
-            var bolgeArmaganlar = armaganlar
-                .Where(a => a.BagisciId.HasValue && bolgeBagisciIds.Contains(a.BagisciId.Value))
-                .ToList();
+            var bolgeFtkIslemIds0 = bolgeFtkler.Select(f => f.FtkIslemId).Where(x => x.HasValue).Select(x => x!.Value).ToHashSet();
 
-            // ── FTK (BolgeId) ────────────────────────────────────
-            var bolgeFtkler = ftkler.Where(f => f.BolgeId == _secilenBolge!.Id).ToList();
-            var bolgeFtkIslemIds = bolgeFtkler.Select(f => f.FtkIslemId).Where(x => x.HasValue).Select(x => x!.Value).ToHashSet();
-            var bolgeFtkIslemler = ftkIslemler.Where(i => bolgeFtkIslemIds.Contains(i.Id)).ToList();
+            var tOdeme = OdemeService.GetAllForBolgeDashboardBySozlesmeIdsAsync(bolgeSozlesmeIds, ct);
+            var tNakitHareket = NakitBagisHareketService.GetAllForBolgeDashboardAsync(bolgeBagisciIds, ct);
+            var tArmagan = ArmaganService.GetAllForBolgeDashboardAsync(bolgeBagisciIds, ct);
+            var tFtkIslem = FtkIslemService.GetForBolgeDashboardAsync(bolgeFtkIslemIds0, ct);
+
+            await Task.WhenAll(tOdeme, tNakitHareket, tArmagan, tFtkIslem);
+
+            var bolgeOdemeler = tOdeme.Result.IsSuccess ? tOdeme.Result.Value : [];
+            var bolgeNakitHareketler = tNakitHareket.Result.IsSuccess ? tNakitHareket.Result.Value : [];
+            var bolgeArmaganlar = tArmagan.Result.IsSuccess ? tArmagan.Result.Value : [];
+            var bolgeFtkIslemler = tFtkIslem.Result.IsSuccess ? tFtkIslem.Result.Value : [];
+
             var ilceDict = new Dictionary<int, string>(); // doldurulmadı, sadece FTK tablosu için
             var ilDict2 = tumIller.ToDictionary(i => i.Id, i => i.IlAdi ?? "?");
-
-            // ── Personel (bölge illeri) ──────────────────────────
-            // PersonelId → IsBilgileri.BirimId → BirimTanim.BolgeId ile filtreleme
-            var bolgeBirimPersonelIds = isBilgileriList
-                .Where(ib => ib.BirimTanim?.BolgeId == _secilenBolge!.Id)
-                .Select(ib => ib.PersonelId)
-                .ToHashSet();
-            var bolgePersoneller = personeller
-                .Where(p => bolgeBirimPersonelIds.Contains(p.Id))
-                .ToList();
 
             // ══════════════════════════════════
             // HESAPLAMALAR
@@ -1219,8 +1178,7 @@
                 .ToList();
 
             // Taşınmaz bağışçı
-            _toplamTasinmazBagisci = tasinmazBagiscilar
-                .Count(tb => tb.IlId.HasValue && _bolgeIlIds.Contains(tb.IlId.Value));
+            _toplamTasinmazBagisci = tasinmazBagisciSayisi;
 
             // Nakit bağış
             _toplamNakitBagisci = bolgeBagisciIds.Count;
@@ -1302,17 +1260,13 @@
             _yasOrtalamasi = 0;
 
             _personelSatirlari = bolgePersoneller
-                .Select(p =>
-                {
-                    var isB = isBilgileriList.FirstOrDefault(ib => ib.PersonelId == p.Id);
-                    return (ProtokolSiraNo: isB?.ProtokolSiraNo ?? int.MaxValue, Satir: new PersonelSatir(
+                .Select(p => (ProtokolSiraNo: p.ProtokolSiraNo ?? int.MaxValue, Satir: new PersonelSatir(
                         $"{p.Adi} {p.Soyadi}",
                         p.SicilNo,
-                        isB?.UnvanTanim?.Adi,
-                        isB?.BirimTanim?.Adi,
-                        isB?.CalismaDurumu?.ToString()
-                    ));
-                })
+                        p.UnvanAdi,
+                        p.BirimAdi,
+                        p.CalismaDurumu
+                    )))
                 .OrderBy(x => x.ProtokolSiraNo)
                 .Select(x => x.Satir)
                 .ToList();

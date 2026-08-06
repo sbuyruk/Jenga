@@ -3,6 +3,8 @@ using Jenga.Models.FTK;
 using Jenga.Utility.Logging;
 using Jenga.Utility.Results;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Jenga.DataAccess.Services.FTK
 {
@@ -31,6 +33,33 @@ namespace Jenga.DataAccess.Services.FTK
             {
                 _logService.LogException(ex, $"{Source}.GetAllAsync");
                 return Result.Failure<List<FtkIslem>>(Error.Unexpected("FTK işlem listesi alınamadı.", ex, "FtkIslem.GetAll.Failed"));
+            }
+        }
+
+        public async Task<Result<List<FtkIslemDashboardItem>>> GetForBolgeDashboardAsync(IEnumerable<int> ftkIslemIds, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var idsList = ftkIslemIds?.ToList() ?? [];
+                if (idsList.Count == 0)
+                    return Result.Success(new List<FtkIslemDashboardItem>());
+
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                var list = await db.FTKIslem_Table.AsNoTracking()
+                    .Where(i => idsList.Contains(i.Id))
+                    .Select(i => new FtkIslemDashboardItem
+                    {
+                        Id = i.Id,
+                        KurulusTarihi = i.KurulusTarihi,
+                        GuncellemeTarihi = i.GuncellemeTarihi
+                    })
+                    .ToListAsync(cancellationToken);
+                return Result.Success(list);
+            }
+            catch (Exception ex)
+            {
+                _logService.LogException(ex, $"{Source}.GetForBolgeDashboardAsync");
+                return Result.Failure<List<FtkIslemDashboardItem>>(Error.Unexpected("Bölge FTK işlem listesi alınamadı.", ex, "FtkIslem.GetForBolgeDashboard.Failed"));
             }
         }
 

@@ -141,4 +141,34 @@ public class IsBilgileriService : IIsBilgileriService
             return Result.Failure(Error.Unexpected("İş bilgisi silinemedi.", ex, "IsBilgileri.Delete.Failed"));
         }
     }
+
+    public async Task<Result<List<PersonelBolgeDashboardItem>>> GetPersonelForBolgeDashboardAsync(int bolgeId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            var list = await db.IsBilgileri_Table.AsNoTracking()
+                .Where(ib => ib.BirimTanim != null
+                             && ib.BirimTanim.BolgeId == bolgeId
+                             && ib.CalismaDurumu == Jenga.Models.Enums.CalismaDurumu.Calisiyor)
+                .Select(ib => new PersonelBolgeDashboardItem
+                {
+                    PersonelId = ib.PersonelId,
+                    Adi = ib.Personel.Adi,
+                    Soyadi = ib.Personel.Soyadi,
+                    SicilNo = ib.Personel.SicilNo,
+                    UnvanAdi = ib.UnvanTanim != null ? ib.UnvanTanim.Adi : null,
+                    BirimAdi = ib.BirimTanim != null ? ib.BirimTanim.Adi : null,
+                    CalismaDurumu = ib.CalismaDurumu.ToString(),
+                    ProtokolSiraNo = ib.ProtokolSiraNo
+                })
+                .ToListAsync(cancellationToken);
+            return Result.Success(list);
+        }
+        catch (Exception ex)
+        {
+            _logService.LogException(ex, $"{Source}.GetPersonelForBolgeDashboardAsync");
+            return Result.Failure<List<PersonelBolgeDashboardItem>>(Error.Unexpected("Bölge personel listesi alınamadı.", ex, "IsBilgileri.GetPersonelForBolgeDashboard.Failed"));
+        }
+    }
 }

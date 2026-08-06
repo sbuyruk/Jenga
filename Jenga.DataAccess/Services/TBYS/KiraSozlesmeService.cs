@@ -150,5 +150,28 @@ namespace Jenga.DataAccess.Services.TBYS
                 return Result<bool>.Failure(Error.Unexpected("Kira sözleşmesi sorgulanamadı.", ex));
             }
         }
+
+        public async Task<Result<List<KiraSozlesmeBolgeDashboardItem>>> GetAllForBolgeDashboardAsync(int bolgeId, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                var list = await db.KiraSozlesme_Table.AsNoTracking()
+                    .Where(k => k.BolgeId == bolgeId)
+                    .Select(k => new KiraSozlesmeBolgeDashboardItem
+                    {
+                        Id = k.Id,
+                        SozBasTar = k.SozBasTar,
+                        SozBitTar = k.SozBitTar
+                    })
+                    .ToListAsync(cancellationToken);
+                return Result<List<KiraSozlesmeBolgeDashboardItem>>.Success(list);
+            }
+            catch (Exception ex)
+            {
+                _logService.LogError($"{Source}.GetAllForBolgeDashboardAsync hata.", ex);
+                return Result<List<KiraSozlesmeBolgeDashboardItem>>.Failure(Error.Unexpected("Bölge kira sözleşme listesi alınamadı.", ex));
+            }
+        }
     }
 }

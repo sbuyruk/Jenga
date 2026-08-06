@@ -85,6 +85,34 @@ namespace Jenga.DataAccess.Services.TBYS
             }
         }
 
+        public async Task<Result<List<OdemeBolgeDashboardItem>>> GetAllForBolgeDashboardBySozlesmeIdsAsync(
+            IEnumerable<int> sozlesmeIds, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var idsList = sozlesmeIds?.ToList() ?? [];
+                if (idsList.Count == 0)
+                    return Result<List<OdemeBolgeDashboardItem>>.Success([]);
+
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                var list = await db.Odeme_Table.AsNoTracking()
+                    .Where(o => o.SozlesmeId.HasValue && idsList.Contains(o.SozlesmeId.Value))
+                    .Select(o => new OdemeBolgeDashboardItem
+                    {
+                        OdemeTarihi = o.OdemeTarihi,
+                        OdenenTutar = o.OdenenTutar,
+                        SozlesmeId = o.SozlesmeId
+                    })
+                    .ToListAsync(cancellationToken);
+                return Result<List<OdemeBolgeDashboardItem>>.Success(list);
+            }
+            catch (Exception ex)
+            {
+                _logService.LogError($"{Source}.GetAllForBolgeDashboardBySozlesmeIdsAsync hata.", ex);
+                return Result<List<OdemeBolgeDashboardItem>>.Failure(Error.Unexpected("Bölge ödemeleri alınamadı.", ex));
+            }
+        }
+
         public async Task<Result<Odeme>> GetByIdAsync(int id, CancellationToken cancellationToken = default)
         {
             try

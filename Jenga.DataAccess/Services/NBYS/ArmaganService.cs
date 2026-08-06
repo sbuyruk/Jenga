@@ -64,6 +64,40 @@ namespace Jenga.DataAccess.Services.NBYS
             }
         }
 
+        public async Task<Result<List<ArmaganDashboardItem>>> GetAllForBolgeDashboardAsync(IEnumerable<int> bagisciIds, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var idsList = bagisciIds?.ToList() ?? [];
+                if (idsList.Count == 0)
+                    return Result<List<ArmaganDashboardItem>>.Success([]);
+
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                var list = await db.Armagan_Table
+                    .AsNoTracking()
+                    .Where(x => x.BagisciId.HasValue && idsList.Contains(x.BagisciId.Value))
+                    .Select(x => new ArmaganDashboardItem
+                    {
+                        BagisciId       = x.BagisciId,
+                        ArmaganTanimId  = x.ArmaganTanimId,
+                        Tarih           = x.Tarih,
+                        Durum           = x.Durum,
+                        BagisMiktari    = x.BagisMiktari,
+                        DovizCinsi      = x.DovizCinsi,
+                        BelgedeYazanIsim = x.BelgedeYazanIsim,
+                        DuzenliBagis    = x.DuzenliBagis,
+                        CokluBagis      = x.CokluBagis
+                    })
+                    .ToListAsync(cancellationToken);
+                return Result<List<ArmaganDashboardItem>>.Success(list);
+            }
+            catch (Exception ex)
+            {
+                _logService.LogError($"{Source}.GetAllForBolgeDashboardAsync hata.", ex);
+                return Result<List<ArmaganDashboardItem>>.Failure(Error.Unexpected("Bölge armağan listesi alınamadı.", ex));
+            }
+        }
+
         public async Task<Result<Armagan>> GetByIdAsync(int id, CancellationToken cancellationToken = default)
         {
             try

@@ -78,6 +78,35 @@ namespace Jenga.DataAccess.Services.NBYS
             }
         }
 
+        public async Task<Result<List<NakitBagisDashboardItem>>> GetAllForBolgeDashboardAsync(IEnumerable<int> bagisciIds, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var idsList = bagisciIds?.ToList() ?? [];
+                if (idsList.Count == 0)
+                    return Result<List<NakitBagisDashboardItem>>.Success([]);
+
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                var list = await db.NakitBagisHareket_Table
+                    .AsNoTracking()
+                    .Where(x => x.BagisciId.HasValue && idsList.Contains(x.BagisciId.Value))
+                    .Select(x => new NakitBagisDashboardItem
+                    {
+                        BagisTarihi = x.BagisTarihi,
+                        BagisMiktari = x.BagisMiktari,
+                        BagisciId = x.BagisciId,
+                        IadeEdildiMi = x.IadeEdildiMi
+                    })
+                    .ToListAsync(cancellationToken);
+                return Result<List<NakitBagisDashboardItem>>.Success(list);
+            }
+            catch (Exception ex)
+            {
+                _logService.LogError($"{Source}.GetAllForBolgeDashboardAsync hata.", ex);
+                return Result<List<NakitBagisDashboardItem>>.Failure(Error.Unexpected("Bölge nakit bağış hareket listesi alınamadı.", ex));
+            }
+        }
+
         public async Task<Result<NakitBagisHareket>> GetByIdAsync(int id, CancellationToken cancellationToken = default)
         {
             try

@@ -1,4 +1,4 @@
-﻿using Jenga.Models.TBYS;
+using Jenga.Models.TBYS;
 using Jenga.Utility.Results;
 using System.Linq.Expressions;
 
@@ -13,5 +13,6 @@ namespace Jenga.DataAccess.Services.TBYS
         Task<Result> DeleteAsync(int sozlesmeId, CancellationToken cancellationToken = default);
         Task<Result<bool>> AnyAsync(Expression<Func<KiraSozlesme, bool>> predicate, CancellationToken cancellationToken = default);
         Task<Result<List<KiraSozlesme>>> GetKiraSozlesmeAktifAsync(CancellationToken cancellationToken = default);
+        Task<Result<List<KiraSozlesmeBolgeDashboardItem>>> GetAllForBolgeDashboardAsync(int bolgeId, CancellationToken cancellationToken = default);
     }
 }

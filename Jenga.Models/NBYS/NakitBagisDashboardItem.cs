@@ -9,5 +9,6 @@ namespace Jenga.Models.NBYS
         public DateTime? BagisTarihi { get; set; }
         public decimal? BagisMiktari { get; set; }
         public int? BagisciId { get; set; }
+        public bool? IadeEdildiMi { get; set; }
     }
 }

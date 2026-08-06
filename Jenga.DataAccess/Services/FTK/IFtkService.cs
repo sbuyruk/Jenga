@@ -7,6 +7,7 @@ namespace Jenga.DataAccess.Services.FTK
     {
         Task<Result<List<Ftk>>> GetAllAsync(CancellationToken cancellationToken = default);
         Task<Result<List<Ftk>>> GetLatestPerIslemAsync(CancellationToken cancellationToken = default);
+        Task<Result<List<FtkBolgeDashboardItem>>> GetLatestPerIslemForBolgeDashboardAsync(int bolgeId, CancellationToken cancellationToken = default);
         Task<Result<Ftk>> GetByIdAsync(int id, CancellationToken cancellationToken = default);
         Task<Result> AddAsync(Ftk model, CancellationToken cancellationToken = default);
         Task<Result> UpdateAsync(Ftk model, CancellationToken cancellationToken = default);

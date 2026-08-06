@@ -185,5 +185,25 @@ namespace Jenga.DataAccess.Services.TBYS
                 return Result.Failure<bool>(Error.Unexpected("Bağışçı varlık kontrolü yapılamadı.", ex, "TasinmazBagisci.Exists.Failed"));
             }
         }
+
+        public async Task<Result<int>> CountByIlIdsAsync(IEnumerable<int> ilIds, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var idsList = ilIds?.ToList() ?? [];
+                if (idsList.Count == 0)
+                    return Result.Success(0);
+
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                var count = await db.TasinmazBagisci_Table.AsNoTracking()
+                    .CountAsync(b => b.IlId.HasValue && idsList.Contains(b.IlId.Value), cancellationToken);
+                return Result.Success(count);
+            }
+            catch (Exception ex)
+            {
+                _logService.LogException(ex, $"{Source}.CountByIlIdsAsync");
+                return Result.Failure<int>(Error.Unexpected("Bağışçı sayısı hesaplanamadı.", ex, "TasinmazBagisci.CountByIlIds.Failed"));
+            }
+        }
     }
 }

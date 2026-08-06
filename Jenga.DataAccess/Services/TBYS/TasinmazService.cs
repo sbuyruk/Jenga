@@ -55,6 +55,48 @@ namespace Jenga.DataAccess.Services.TBYS
         public Task<Result<List<Tasinmaz>>> GetEnvanterdekilerAsync(CancellationToken cancellationToken = default)
             => GetByEnvanterDurumuAsync(1, cancellationToken);
 
+        public async Task<Result<List<TasinmazBolgeDashboardItem>>> GetEnvanterdekilerForBolgeDashboardAsync(
+            string bolgeAdi, IEnumerable<string> bolgeIlAdlari, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var ilAdlariSet = new HashSet<string>(bolgeIlAdlari ?? [], StringComparer.OrdinalIgnoreCase);
+
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                var list = await db.Tasinmaz_Table.AsNoTracking()
+                    .Where(t => t.EnvanterdeMi == 1 &&
+                                ((t.SorumluBolge != null && t.SorumluBolge.Contains(bolgeAdi)) ||
+                                 (t.Ili != null && ilAdlariSet.Contains(t.Ili))))
+                    .Select(t => new TasinmazBolgeDashboardItem
+                    {
+                        Ili = t.Ili,
+                        SorumluBolge = t.SorumluBolge,
+                        MulkiyetSekli = t.MulkiyetSekli,
+                        KirayaUygunluk = t.KirayaUygunluk,
+                        KullanimSekli = t.KullanimSekli,
+                        MuhasebeyeKayitliDeger = t.MuhasebeyeKayitliDeger,
+                        TahminiRayicDegeri = t.TahminiRayicDegeri,
+                        EmlakBeyanDegeri = t.EmlakBeyanDegeri,
+                        YaklasikPiyasaDegeri = t.YaklasikPiyasaDegeri
+                    })
+                    .ToListAsync(cancellationToken);
+
+                // SQL Contains ile Türkçe küçük/büyük harf duyarlılığı garanti değil; ek client-side eşleştirme
+                var filtered = list
+                    .Where(t => (!string.IsNullOrEmpty(t.SorumluBolge) &&
+                                 t.SorumluBolge.Contains(bolgeAdi, StringComparison.OrdinalIgnoreCase))
+                                || (!string.IsNullOrEmpty(t.Ili) && ilAdlariSet.Contains(t.Ili)))
+                    .ToList();
+
+                return Result.Success(filtered);
+            }
+            catch (Exception ex)
+            {
+                _logService.LogException(ex, $"{Source}.GetEnvanterdekilerForBolgeDashboardAsync");
+                return Result.Failure<List<TasinmazBolgeDashboardItem>>(Error.Unexpected("Bölge taşınmazları getirilemedi.", ex, "Tasinmaz.GetEnvanterdekilerForBolgeDashboard.Failed"));
+            }
+        }
+
         public async Task<Result<Tasinmaz>> GetByIdAsync(int id, CancellationToken cancellationToken = default)
         {
             try

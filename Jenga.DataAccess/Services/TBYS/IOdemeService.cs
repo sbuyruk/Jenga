@@ -1,5 +1,6 @@
 using Jenga.Models.TBYS;
 using Jenga.Utility.Results;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 
 namespace Jenga.DataAccess.Services.TBYS
@@ -9,6 +10,7 @@ namespace Jenga.DataAccess.Services.TBYS
         Task<Result<List<Odeme>>> GetAllAsync(CancellationToken cancellationToken = default);
         Task<Result<List<Odeme>>> GetAllAsyncKiralar(CancellationToken cancellationToken = default);
         Task<Result<List<OdemeDashboardItem>>> GetLastYearsForDashboardKiralarAsync(int years, CancellationToken cancellationToken = default);
+        Task<Result<List<OdemeBolgeDashboardItem>>> GetAllForBolgeDashboardBySozlesmeIdsAsync(IEnumerable<int> sozlesmeIds, CancellationToken cancellationToken = default);
         Task<Result<Odeme>> GetByIdAsync(int id, CancellationToken cancellationToken = default);
         Task<Result<Odeme>> GetByIdWithRelationsAsync(int id, CancellationToken cancellationToken = default);
         Task<Result<List<Odeme>>> GetBySozlesmeIdAsync(int sozlesmeId, CancellationToken cancellationToken = default);

@@ -59,6 +59,41 @@ namespace Jenga.DataAccess.Services.FTK
             }
         }
 
+        public async Task<Result<List<FtkBolgeDashboardItem>>> GetLatestPerIslemForBolgeDashboardAsync(int bolgeId, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                var ftkSet = db.FTK_Table.AsNoTracking();
+
+                // WHERE Sayac = (SELECT MAX(Sayac) FROM FTK_Table WHERE FTKIslemId = A.FTKIslemId)
+                var list = await (
+                    from f in ftkSet
+                    where f.FtkIslemId != null
+                       && f.BolgeId == bolgeId
+                       && f.Sayac == ftkSet
+                            .Where(x => x.FtkIslemId == f.FtkIslemId)
+                            .Max(x => x.Sayac)
+                    select new FtkBolgeDashboardItem
+                    {
+                        FtkIslemId = f.FtkIslemId,
+                        Ili = f.Ili,
+                        Ilcesi = f.Ilcesi,
+                        Adi = f.Adi,
+                        Soyadi = f.Soyadi,
+                        FtkGorevi = f.FtkGorevi,
+                        BolgeId = f.BolgeId
+                    }
+                ).ToListAsync(cancellationToken);
+                return Result.Success(list);
+            }
+            catch (Exception ex)
+            {
+                _logService.LogException(ex, $"{Source}.GetLatestPerIslemForBolgeDashboardAsync");
+                return Result.Failure<List<FtkBolgeDashboardItem>>(Error.Unexpected("Bölge FTK son kayıtları alınamadı.", ex, "Ftk.GetLatestPerIslemForBolgeDashboard.Failed"));
+            }
+        }
+
         public async Task<Result<Ftk>> GetByIdAsync(int id, CancellationToken cancellationToken = default)
         {
             try
