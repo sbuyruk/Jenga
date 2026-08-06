@@ -239,8 +239,8 @@
                 <DetailField Label="Metrekare"            Value="@(t.Metrekare.HasValue ? $"{t.Metrekare:N4} m²" : null)" />
                 <DetailField Label="Toplam Metrekare"     Value="@(t.ToplamMetrekare.HasValue ? $"{t.ToplamMetrekare:N4} m²" : null)" />
                 <DetailField Label="Proje m²"             Value="@t.ProjeM2" />
-                <DetailField Label="BB Brüt Alan"         Value="@t.BBBrutAlan" />
-                <DetailField Label="BB Net Alan"          Value="@t.BBNetAlan" />
+                <DetailField Label="BB Brüt Alan"         Value="@(t.BBBrutAlan.HasValue ? $"{t.BBBrutAlan:N4} m²" : null)" />
+                <DetailField Label="BB Net Alan"          Value="@(t.BBNetAlan.HasValue ? $"{t.BBNetAlan:N4} m²" : null)" />
                 <DetailField Label="Arsa Payı"            Value="@t.ArsaPayi" />
                 <DetailField Label="Kat (Bulunduğu)"      Value="@t.BulunduguKat" />
                 <DetailField Label="Toplam Kat Sayısı"    Value="@t.ToplamKatSayisi" />

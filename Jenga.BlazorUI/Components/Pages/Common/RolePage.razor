@@ -10,7 +10,7 @@
 @inject ICurrentUserService CurrentUserService
 
 <PermissionGuard Module="ModuleName.Admin" Operation="Operation.View">
-<h3>Rol Y�netimi</h3>
+<h3>Rol Yönetimi</h3>
 <RoleTable Roles="@roles"
            OnRoleAdded="ReloadAsync"
            OnRoleUpdated="ReloadAsync"

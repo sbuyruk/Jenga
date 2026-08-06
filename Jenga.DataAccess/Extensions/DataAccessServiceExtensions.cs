@@ -164,14 +164,15 @@ namespace Jenga.DataAccess.Extensions
 
             return services;
         }
-
-        public static IServiceCollection AddFtkServices(this IServiceCollection services)
+        public static IServiceCollection AddFTKServices(this IServiceCollection services)
         {
-            services.AddScopedWithAuthProxy<IFtkService, FtkService>(ModuleName.FTK);
-            services.AddScopedWithAuthProxy<IFtkIslemService, FtkIslemService>(ModuleName.FTK);
-            services.AddScopedWithAuthProxy<IFtkKisiService, FtkKisiService>(ModuleName.FTK);
+            services.AddScoped<IFtkService, FtkService>();
+            services.AddScoped<IFtkIslemService, FtkIslemService>();
+            services.AddScoped<IFtkKisiService, FtkKisiService>();
 
             return services;
         }
+
+
     }
 }

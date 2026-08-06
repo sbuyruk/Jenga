@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Jenga.Models.Sistem;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -234,10 +234,10 @@ namespace Jenga.Models.TBYS
         public string? ZeminHisse { get; set; }
 
         [Column("BBBrutAlan")]
-        public string? BBBrutAlan { get; set; }
+        public decimal? BBBrutAlan { get; set; }
 
         [Column("BBNetAlan")]
-        public string? BBNetAlan { get; set; }
+        public decimal? BBNetAlan { get; set; }
 
         [Column("TapuIslemTarihi")]
         public string? TapuIslemTarihi { get; set; }

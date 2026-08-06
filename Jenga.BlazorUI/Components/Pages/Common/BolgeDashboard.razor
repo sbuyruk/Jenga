@@ -35,7 +35,7 @@
 @inject ILogger<BolgeDashboard> Logger
 @implements IDisposable
 
-<PermissionGuard Module="ModuleName.Admin" Operation="Operation.View">
+<PermissionGuard Module="ModuleName.TBYS" Operation="Operation.View">
 <div class="bolge-dashboard container-fluid px-0 px-sm-2">
 
     @if (_isLoading && _bolgeler.Count == 0)

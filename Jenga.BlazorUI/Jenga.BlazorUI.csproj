@@ -13,12 +13,13 @@
 
   <ItemGroup>
     <Folder Include="Pages\" />
+    <Folder Include="SeedData\Auth\" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Blazor-ApexCharts" Version="6.1.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.Negotiate" Version="10.0.7" />
-    <PackageReference Include="System.DirectoryServices.AccountManagement" Version="10.0.7" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Negotiate" Version="10.0.10" />
+    <PackageReference Include="System.DirectoryServices.AccountManagement" Version="10.0.10" />
   </ItemGroup>
 
 </Project>

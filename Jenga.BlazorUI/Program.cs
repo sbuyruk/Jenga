@@ -1,4 +1,4 @@
-﻿using Jenga.BlazorUI.Components;
+using Jenga.BlazorUI.Components;
 using Jenga.BlazorUI.Endpoints;
 using Jenga.BlazorUI.Extensions;
 using Jenga.BlazorUI.Services.Common.Auth;
@@ -32,8 +32,8 @@ builder.Services.AddInventoryServices();
 builder.Services.AddTbysServices();
 builder.Services.AddIkysServices();
 builder.Services.AddNbysServices();
-builder.Services.AddFtkServices();
 builder.Services.AddSearchServices();
+builder.Services.AddFTKServices();
 
 // UI / uygulama servisleri
 builder.Services.AddApplicationServices();

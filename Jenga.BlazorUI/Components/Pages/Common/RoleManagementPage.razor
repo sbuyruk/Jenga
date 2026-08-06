@@ -1,0 +1,440 @@
+@page "/common/role-management"
+@rendermode InteractiveServer
+@using Jenga.BlazorUI.Services.Common
+@using Jenga.DataAccess.Services.Common
+@using Jenga.Models.Common
+@using Jenga.Models.Enums
+@using Jenga.Utility.Results
+@using Microsoft.AspNetCore.Components.Rendering
+@inject IRoleService RoleService
+@inject IRoleModulePermissionService RoleModulePermissionService
+@inject IModulePermissionService ModulePermissionService
+@inject IMenuItemService MenuItemService
+@inject ICurrentUserService CurrentUserService
+@inject IToastService ToastNotifier
+
+
+@if (!_checked)
+{
+    <p class="text-muted p-3">Yükleniyor…</p>
+}
+else if (!_hasAccess)
+{
+    <div class="alert alert-warning py-2">
+        <i class="bi bi-shield-exclamation me-1"></i>Bu sayfaya erişim için yetkiniz bulunmamaktadır.
+    </div>
+}
+else
+{
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">Roller</h5>
+                        <button class="btn btn-outline-primary btn-sm" @onclick="CreateNewRole">Yeni Rol</button>
+                    </div>
+
+                    @if (_isLoadingRoles)
+                    {
+                        <p class="text-muted">Roller yükleniyor…</p>
+                    }
+                    else if (_roles.Count == 0)
+                    {
+                        <div class="alert alert-info py-2">Henüz rol kaydı yok.</div>
+                    }
+                    else
+                    {
+                        <div class="list-group">
+                            @foreach (var role in _roles)
+                            {
+                                <button type="button"
+                                        class="list-group-item list-group-item-action @(role.Id == _selectedRole.Id ? "active" : string.Empty)"
+                                        @onclick="() => SelectRole(role.Id)">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span>@role.Name</span>
+                                        <small class="opacity-75">#@role.Id</small>
+                                    </div>
+                                </button>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h4 class="mb-1">@(string.IsNullOrWhiteSpace(_selectedRole.Name) ? "Yeni Rol" : _selectedRole.Name)</h4>
+                            <p class="text-muted mb-0">Menü erişimi ve modül/operasyon izinlerini aynı ekranda yönetin.</p>
+                        </div>
+                        <button class="btn btn-primary" @onclick="SaveAsync" disabled="@_isSaving">
+                            @if (_isSaving)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                            }
+                            <span>Kaydet</span>
+                        </button>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(_statusMessage))
+                    {
+                        <div class="alert alert-success py-2">@_statusMessage</div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(_errorMessage))
+                    {
+                        <div class="alert alert-danger py-2">@_errorMessage</div>
+                    }
+
+                    <div class="mb-3">
+                        <label class="form-label">Rol adı</label>
+                        <input class="form-control" @bind="_selectedRole.Name" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Açıklama</label>
+                        <input class="form-control" @bind="_selectedRole.Aciklama" />
+                    </div>
+
+                    <ul class="nav nav-tabs mb-3">
+                        <li class="nav-item">
+                            <button class='nav-link @( _activeTab == "menus" ? "active" : string.Empty )' @onclick='() => _activeTab = "menus"'>Menü Erişimi</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class='nav-link @( _activeTab == "modules" ? "active" : string.Empty )' @onclick='() => _activeTab = "modules"'>Modül / Operasyon</button>
+                        </li>
+                    </ul>
+
+                    @if (_activeTab == "menus")
+                    {
+                        <div class="border rounded p-3 bg-light-subtle">
+                            @if (_menuTree.Count == 0)
+                            {
+                                <p class="text-muted mb-0">Menü kaydı bulunamadı.</p>
+                            }
+                            else
+                            {
+                                <div class="small text-muted mb-3">Rolün erişebileceği menüleri seçin.</div>
+                                <div class="d-grid gap-2">
+                                    @foreach (var menu in _menuTree.OrderBy(m => m.DisplayOrder))
+                                    {
+                                        @RenderMenuNode(menu, 0)
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="row g-3">
+                            @foreach (var moduleGroup in _modulePermissions.GroupBy(p => p.Module).OrderBy(g => g.Key.ToString()))
+                            {
+                                <div class="col-12 col-lg-6">
+                                    <div class="border rounded p-3 h-100">
+                                        <div class="fw-semibold mb-3">@moduleGroup.Key</div>
+                                        @foreach (var operation in Enum.GetValues<Operation>())
+                                        {
+                                            var permission = moduleGroup.FirstOrDefault(p => p.Operation == operation);
+                                            if (permission is null)
+                                                continue;
+
+                                            <div class="form-check">
+                                                <input class="form-check-input"
+                                                       type="checkbox"
+                                                       checked="@_selectedPermissionIds.Contains(permission.Id)"
+                                                       @onchange="args => TogglePermission(permission.Id, args.Value is bool b && b)" />
+                                                <label class="form-check-label">@operation</label>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private bool _checked;
+    private bool _hasAccess;
+    private bool _isLoadingRoles;
+    private bool _isSaving;
+    private string? _statusMessage;
+    private string? _errorMessage;
+    private string _activeTab = "menus";
+    private HashSet<ModuleName> _allowedModules = new();
+
+    private List<Role> _roles = new();
+    private Role _selectedRole = new();
+    private List<MenuItem> _menuTree = new();
+    private List<ModulePermission> _modulePermissions = new();
+    private HashSet<int> _selectedMenuIds = new();
+    private HashSet<int> _selectedPermissionIds = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var permissions = await CurrentUserService.GetModulePermissionsAsync();
+        _allowedModules = permissions
+            .Where(p => p.Operation == Operation.Manage)
+            .Select(p => p.Module)
+            .ToHashSet();
+
+        _hasAccess = _allowedModules.Count > 0;
+        _checked = true;
+
+        if (_hasAccess)
+        {
+            await LoadDataAsync();
+        }
+    }
+
+    private async Task LoadDataAsync()
+    {
+        _isLoadingRoles = true;
+        _statusMessage = null;
+        _errorMessage = null;
+
+        var rolesResult = await RoleService.GetAllAsync();
+        if (rolesResult.IsSuccess)
+        {
+            _roles = rolesResult.Value ?? new List<Role>();
+        }
+        else
+        {
+            _errorMessage = rolesResult.Error?.Message ?? "Roller yüklenemedi.";
+            _roles = new List<Role>();
+        }
+
+        var menuResult = await MenuItemService.GetRecursiveMenuAsync();
+        if (menuResult.IsSuccess)
+        {
+            _menuTree = menuResult.Value ?? new List<MenuItem>();
+        }
+        else
+        {
+            _menuTree = new List<MenuItem>();
+            _errorMessage = string.IsNullOrWhiteSpace(_errorMessage) ? (menuResult.Error?.Message ?? "Menüler yüklenemedi.") : _errorMessage;
+        }
+
+        var modulePermissionResult = await ModulePermissionService.GetAllAsync();
+        if (modulePermissionResult.IsSuccess)
+        {
+            _modulePermissions = modulePermissionResult.Value ?? new List<ModulePermission>();
+        }
+        else
+        {
+            _modulePermissions = new List<ModulePermission>();
+            _errorMessage = string.IsNullOrWhiteSpace(_errorMessage) ? (modulePermissionResult.Error?.Message ?? "Modül izinleri yüklenemedi.") : _errorMessage;
+        }
+
+        if (_roles.Count > 0)
+        {
+            await SelectRole(_roles[0].Id);
+        }
+        else
+        {
+            CreateNewRole();
+        }
+
+        _isLoadingRoles = false;
+    }
+
+    private void CreateNewRole()
+    {
+        _selectedRole = new Role
+        {
+            Name = string.Empty,
+            Aciklama = string.Empty,
+            RoleMenus = new List<RoleMenu>(),
+            PersonelRoles = new List<PersonelRole>()
+        };
+        _selectedMenuIds = new HashSet<int>();
+        _selectedPermissionIds = new HashSet<int>();
+        _statusMessage = null;
+        _errorMessage = null;
+    }
+
+    private async Task SelectRole(int roleId)
+    {
+        _statusMessage = null;
+        _errorMessage = null;
+
+        var roleResult = await RoleService.GetByIdWithRelationsAsync(roleId);
+        if (!roleResult.IsSuccess)
+        {
+            _errorMessage = roleResult.Error?.Message ?? "Rol detayları yüklenemedi.";
+            return;
+        }
+
+        _selectedRole = roleResult.Value ?? new Role();
+        _selectedMenuIds = (_selectedRole.RoleMenus ?? new List<RoleMenu>())
+            .Select(rm => rm.MenuId)
+            .ToHashSet();
+
+        var rolePermissionsResult = await RoleModulePermissionService.GetByRoleIdAsync(roleId);
+        if (rolePermissionsResult.IsSuccess)
+        {
+            _selectedPermissionIds = (rolePermissionsResult.Value ?? new List<RoleModulePermission>())
+                .Select(rp => rp.ModulePermissionId)
+                .ToHashSet();
+        }
+        else
+        {
+            _selectedPermissionIds = new HashSet<int>();
+            _errorMessage = string.IsNullOrWhiteSpace(_errorMessage) ? (rolePermissionsResult.Error?.Message ?? "Rol izinleri yüklenemedi.") : _errorMessage;
+        }
+    }
+
+    private void ToggleMenu(int menuId, bool isSelected)
+    {
+        if (isSelected)
+        {
+            _selectedMenuIds.Add(menuId);
+        }
+        else
+        {
+            _selectedMenuIds.Remove(menuId);
+        }
+    }
+
+    private void TogglePermission(int permissionId, bool isSelected)
+    {
+        if (isSelected)
+        {
+            _selectedPermissionIds.Add(permissionId);
+        }
+        else
+        {
+            _selectedPermissionIds.Remove(permissionId);
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_selectedRole.Name))
+        {
+            var message = "Rol adı zorunludur.";
+            _errorMessage = message;
+            ToastNotifier.ShowToast(message, ToastType.Error, 4000);
+            return;
+        }
+
+        _isSaving = true;
+        _errorMessage = null;
+        _statusMessage = null;
+
+        _selectedRole.RoleMenus = _selectedMenuIds
+            .Select(menuId => new RoleMenu { MenuId = menuId })
+            .ToList();
+
+        _selectedRole.PersonelRoles ??= new List<PersonelRole>();
+
+        Result result = _selectedRole.Id == 0
+            ? await RoleService.AddWithRelationsAsync(_selectedRole)
+            : await RoleService.UpdateWithRelationsAsync(_selectedRole);
+
+        if (result.IsSuccess)
+        {
+            var permissionIds = _selectedPermissionIds.ToList();
+            var currentUser = await CurrentUserService.GetUserNameAsync() ?? "system";
+            var replaceResult = await RoleModulePermissionService.ReplaceForRoleInScopeAsync(
+                _selectedRole.Id,
+                permissionIds,
+                _allowedModules,
+                currentUser,
+                CancellationToken.None);
+
+            if (replaceResult.IsSuccess)
+            {
+                var message = "Rol başarıyla kaydedildi.";
+                _statusMessage = message;
+                ToastNotifier.ShowToast(message, ToastType.Success, 3000);
+                await LoadDataAsync();
+            }
+            else
+            {
+                var message = replaceResult.Error?.Message ?? "Rol kaydedildi ancak modül izinleri güncellenemedi.";
+                _errorMessage = message;
+                ToastNotifier.ShowToast(message, ToastType.Error, 4000);
+            }
+        }
+        else
+        {
+            var message = result.Error?.Message ?? "Rol kaydedilemedi.";
+            _errorMessage = message;
+            ToastNotifier.ShowToast(message, ToastType.Error, 4000);
+        }
+
+        _isSaving = false;
+    }
+    private RenderFragment RenderMenuNode(MenuItem item, int depth) => builder =>
+    {
+        var seq = 0;
+        var hasChildren = item.Children?.Any() == true;
+        var isSelected = _selectedMenuIds.Contains(item.Id);
+
+        builder.OpenElement(seq++, "div");
+        builder.AddAttribute(seq++, "class", "ps-0");
+
+        builder.OpenElement(seq++, "div");
+        builder.AddAttribute(seq++, "class", isSelected
+            ? "d-flex align-items-center justify-content-between gap-2 rounded-3 border border-primary-subtle bg-primary-subtle px-3 py-2"
+            : "d-flex align-items-center justify-content-between gap-2 rounded-3 border border-light bg-white px-3 py-2");
+        builder.AddAttribute(seq++, "style", $"margin-left:{depth * 18}px");
+
+        builder.OpenElement(seq++, "div");
+        builder.AddAttribute(seq++, "class", "d-flex align-items-center gap-2 flex-grow-1");
+
+        builder.OpenElement(seq++, "div");
+        builder.AddAttribute(seq++, "class", "form-check m-0");
+        builder.OpenElement(seq++, "input");
+        builder.AddAttribute(seq++, "type", "checkbox");
+        builder.AddAttribute(seq++, "class", "form-check-input");
+        builder.AddAttribute(seq++, "checked", isSelected);
+        builder.AddAttribute(seq++, "onchange", EventCallback.Factory.Create<ChangeEventArgs>(this, args => ToggleMenu(item.Id, args.Value is bool b && b)));
+        builder.CloseElement();
+        builder.CloseElement();
+
+        builder.OpenElement(seq++, "i");
+        builder.AddAttribute(seq++, "class", hasChildren ? "bi bi-folder2-open text-muted" : "bi bi-file-earmark-text text-muted");
+        builder.CloseElement();
+
+        builder.OpenElement(seq++, "span");
+        builder.AddAttribute(seq++, "class", isSelected ? "fw-semibold text-primary" : "fw-semibold text-dark");
+        builder.AddContent(seq++, item.Title ?? "(İsimsiz Menü)");
+        builder.CloseElement();
+
+        builder.CloseElement(); // inner flex
+
+        if (hasChildren)
+        {
+            builder.OpenElement(seq++, "span");
+            builder.AddAttribute(seq++, "class", "badge rounded-pill bg-light text-muted");
+            builder.AddContent(seq++, item.Children.Count.ToString());
+            builder.CloseElement();
+        }
+
+        builder.CloseElement(); // row
+
+        if (hasChildren)
+        {
+            builder.OpenElement(seq++, "div");
+            builder.AddAttribute(seq++, "class", "mt-1");
+            builder.AddAttribute(seq++, "style", "border-left: 1px solid rgba(13,110,253,.15); margin-left: 0.75rem; padding-left: 0.75rem;");
+            foreach (var child in item.Children.OrderBy(c => c.DisplayOrder))
+            {
+                builder.AddContent(seq++, RenderMenuNode(child, depth + 1));
+            }
+            builder.CloseElement();
+        }
+
+        builder.CloseElement(); // outer wrapper
+    };
+}
