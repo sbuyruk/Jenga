@@ -62,7 +62,12 @@ namespace Jenga.DataAccess.Extensions
 
             services.AddSingleton<IDbContextScopeFactory, DbContextScopeFactory>();
 
-            // ILogService kayıtlı değilse (ör. test ortamı, standalone kullanım) NullLogService devreye girer.
+            // Dosyaya log yazan gerçek implementasyon.
+            services.AddSingleton<ILogWriter, FileLogWriter>();
+            services.AddSingleton<ILogService, LogService>();
+
+            // Yukarıdaki iki sat ır bir sebeple atlanırsa (ör. test/standalone senaryo)
+            // ILogService en azından NullLogService ile karşılanır.
             services.TryAddSingleton<ILogService, NullLogService>();
 
             return services;
