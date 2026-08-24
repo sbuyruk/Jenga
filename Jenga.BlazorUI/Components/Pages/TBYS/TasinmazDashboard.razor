@@ -1,4 +1,4 @@
-﻿@page "/tbys/tasinmaz-dashboard"
+@page "/tbys/tasinmaz-dashboard"
 @rendermode InteractiveServer
 
 @using Jenga.BlazorUI.Components.Common
@@ -788,11 +788,11 @@
         ToplamYaklasikPiyasa = list.Sum(x => x.YaklasikPiyasaDegeri ?? 0m);
 
         // ── Cinsi ─────────────────────────────────────────────────
-        BinaAdet = list.Count(x => GetCat(x.KullanimSekli) == Cat.Bina);
-        MeskenAdet = list.Count(x => GetCat(x.KullanimSekli) == Cat.Mesken);
-        IsyeriAdet = list.Count(x => GetCat(x.KullanimSekli) == Cat.Isyeri);
-        ArsaAdet = list.Count(x => GetCat(x.KullanimSekli) == Cat.Arsa);
-        TarlaAdet = list.Count(x => GetCat(x.KullanimSekli) == Cat.Tarla);
+        BinaAdet = list.Count(x => GetCat(x.Cinsi) == Cat.Bina);
+        MeskenAdet = list.Count(x => GetCat(x.Cinsi) == Cat.Mesken);
+        IsyeriAdet = list.Count(x => GetCat(x.Cinsi) == Cat.Isyeri);
+        ArsaAdet = list.Count(x => GetCat(x.Cinsi) == Cat.Arsa);
+        TarlaAdet = list.Count(x => GetCat(x.Cinsi) == Cat.Tarla);
         DigerAdet = ToplamAdet - BinaAdet - MeskenAdet - IsyeriAdet - ArsaAdet - TarlaAdet;
 
         // ── Grafik: Cinsi Donut ────────────────────────────────────

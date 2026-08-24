@@ -78,17 +78,19 @@ static bool IsIntranetRequest(Microsoft.AspNetCore.Http.HttpContext ctx)
     return false;
 }
 
-// Mobil/tablet User-Agent tespiti — VPN üzerinden gelen mobil cihazlar
-// intranet IP alsa da Negotiate yerine Cookie (login formu) kullanmalıdır.
-static bool IsMobileBrowser(Microsoft.AspNetCore.Http.HttpContext ctx)
+// Mobil/tablet ve Windows-dışı masaüstü User-Agent tespiti — VPN üzerinden gelen
+// bu cihazlar intranet IP alsa da Negotiate/NTLM'i tamamlayamaz; Cookie (login formu) kullanmalıdır.
+static bool ShouldUseCookieInsteadOfNegotiate(Microsoft.AspNetCore.Http.HttpContext ctx)
 {
     var ua = ctx.Request.Headers.UserAgent.ToString();
     if (string.IsNullOrEmpty(ua)) return false;
-    return ua.Contains("Mobile",  StringComparison.OrdinalIgnoreCase)
-        || ua.Contains("Android", StringComparison.OrdinalIgnoreCase)
-        || ua.Contains("iPhone",  StringComparison.OrdinalIgnoreCase)
-        || ua.Contains("iPad",    StringComparison.OrdinalIgnoreCase)
-        || ua.Contains("Tablet",  StringComparison.OrdinalIgnoreCase);
+    return ua.Contains("Mobile",     StringComparison.OrdinalIgnoreCase)
+        || ua.Contains("Android",    StringComparison.OrdinalIgnoreCase)
+        || ua.Contains("iPhone",     StringComparison.OrdinalIgnoreCase)
+        || ua.Contains("iPad",       StringComparison.OrdinalIgnoreCase)
+        || ua.Contains("Tablet",     StringComparison.OrdinalIgnoreCase)
+        || ua.Contains("Macintosh",  StringComparison.OrdinalIgnoreCase)
+        || ua.Contains("Mac OS X",   StringComparison.OrdinalIgnoreCase);
 }
 
 builder.Services
@@ -111,9 +113,9 @@ builder.Services
             // 3. İntranet IP'den geliyorsa ve mobil cihaz değilse Negotiate challenge gönder.
             //    Windows tarayıcısı (Edge/Chrome) challenge'a otomatik Kerberos/NTLM ile cevap verir.
             //    Mobil cihazlar VPN üzerinden intranet IP alsa da Negotiate desteklemez → Cookie.
-            if (IsIntranetRequest(ctx) && !IsMobileBrowser(ctx))
-                return NegotiateDefaults.AuthenticationScheme;
 
+            if (IsIntranetRequest(ctx) && !ShouldUseCookieInsteadOfNegotiate(ctx))
+                return NegotiateDefaults.AuthenticationScheme;
             // 4. Diğer durumlarda cookie (login formuna yönlendirir).
             return AuthEndpoints.CookieScheme;
         };

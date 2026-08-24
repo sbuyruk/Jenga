@@ -679,7 +679,7 @@
 
                     <div class="row g-3 mb-3">
                         <!-- Vasiyet Tipi Dağılımı -->
-                        <div class="col-12 col-lg-6">
+@*                         <div class="col-12 col-lg-6">
                             <div class="card shadow-sm h-100">
                                 <div class="card-header"><strong><i class="bi bi-pie-chart me-1"></i>Vasiyet Tipi</strong></div>
                                 <div class="card-body p-0" style="height:320px;">
@@ -692,15 +692,15 @@
                                                   Type="GenericChart<ChartItem>.GenericChartType.Pie"
                                                   Height="100%"
                                                   Width="100%"
-                                                  ShowLegend="false"
+                                                  ShowLegend="true"
                                                   ShowDataLabels="true"
                                                   ColorPalette="@_vasiyetTipiPalette" />
                                 </div>
                             </div>
-                        </div>
+                        </div> *@
 
                         <!-- Vasiyet Durumu Dağılımı -->
-                        <div class="col-12 col-lg-6">
+                        <div class="justify-content-center">
                             <div class="card shadow-sm h-100">
                                 <div class="card-header"><strong><i class="bi bi-pie-chart me-1"></i>Vasiyet Durumu</strong></div>
                                 <div class="card-body p-0" style="height:320px;">
@@ -713,7 +713,7 @@
                                                   Type="GenericChart<ChartItem>.GenericChartType.Pie"
                                                   Height="100%"
                                                   Width="100%"
-                                                  ShowLegend="false"
+                                                  ShowLegend="true"
                                                   ShowDataLabels="true"
                                                   ColorPalette="@_vasiyetDurumuPalette" />
                                 </div>
