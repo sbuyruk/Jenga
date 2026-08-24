@@ -1,0 +1,19 @@
+@using Jenga.Models.Enums
+
+@{
+    var (cssClass, icon, label) = Status switch
+    {
+        ApprovalStatus.Approved    => ("success", "bi-check-circle-fill", "Onaylandı"),
+        ApprovalStatus.Rejected    => ("danger",  "bi-x-circle-fill",     "Reddedildi"),
+        ApprovalStatus.NotRequired => ("secondary","bi-dash-circle",       "Onay Gerekmiyor"),
+        _                          => ("warning",  "bi-hourglass-split",   "Onay Bekliyor")
+    };
+}
+
+<span class="badge text-bg-@cssClass">
+    <i class="bi @icon me-1"></i>@label
+</span>
+
+@code {
+    [Parameter] public ApprovalStatus Status { get; set; }
+}
