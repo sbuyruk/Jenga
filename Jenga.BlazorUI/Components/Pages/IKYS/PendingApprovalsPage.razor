@@ -1,0 +1,360 @@
+@page "/ikys/pending-approvals"
+@rendermode InteractiveServer
+
+@using Jenga.BlazorUI.Components.Common
+@using Jenga.BlazorUI.Services.Common
+@using Jenga.DataAccess.Services.IKYS
+@using Jenga.Models.Enums
+@using Jenga.Models.IKYS
+
+@inject IGorevOnayService GorevOnayService
+@inject IPersonelService PersonelService
+@inject ICurrentUserService CurrentUserService
+@inject ILogger<PendingApprovalsPage> Logger
+
+<PermissionGuard Module="ModuleName.IKYS" Operation="Operation.View">
+
+    <h3 class="mb-3">
+        <i class="bi bi-clock-history me-2"></i>Bekleyen İşlemler
+    </h3>
+
+    @if (_isLoading)
+    {
+        <div class="d-flex justify-content-center align-items-center py-5">
+            <div class="spinner-border text-primary me-3" role="status"></div>
+            <span class="text-muted">Veriler yükleniyor…</span>
+        </div>
+    }
+    else if (_loadFailed)
+    {
+        <div class="alert alert-danger d-flex align-items-center gap-2">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <span>@_loadError</span>
+            <button class="btn btn-sm btn-outline-danger ms-auto" @onclick="LoadDataAsync">Tekrar Dene</button>
+        </div>
+    }
+    else if (_noManagerUnits)
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle me-2"></i>
+            Amir olduğunuz bir birim bulunamadığından bekleyen onay bulunmamaktadır.
+        </div>
+    }
+    else
+    {
+        @if (!string.IsNullOrEmpty(_successMessage))
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle me-2"></i>@_successMessage
+                <button type="button" class="btn-close" @onclick="() => _successMessage = null"></button>
+            </div>
+        }
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle me-2"></i>@_errorMessage
+                <button type="button" class="btn-close" @onclick="() => _errorMessage = null"></button>
+            </div>
+        }
+
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Ad Soyad</th>
+                        <th>Başlangıç</th>
+                        <th>Bitiş</th>
+                        <th>Görevin Sebebi</th>
+                        <th>Görevin Yeri</th>
+                        <th>Ulaşım</th>
+                        <th>Transfer</th>
+                        <th>Konaklama</th>
+                        <th>Durum</th>
+                        <th>İşlemler</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in _items)
+                    {
+                        var rowClass = item.ApprovalStatus switch
+                        {
+                            ApprovalStatus.Approved => "table-success",
+                            ApprovalStatus.Rejected => "table-danger",
+                            _ => ""
+                        };
+                        <tr class="@rowClass">
+                            <td>@item.AdiSoyadi</td>
+                            <td>@item.BaslangicTarihi?.ToString("dd.MM.yyyy")</td>
+                            <td>@item.BitisTarihi?.ToString("dd.MM.yyyy")</td>
+                            <td>@item.GorevinSebebi</td>
+                            <td>@item.GorevinYeri</td>
+                            <td>@item.UlasimAraci</td>
+                            <td>@item.Transfer</td>
+                            <td>@item.Konaklama</td>
+                            <td>
+                                <ApprovalStatusBadge Status="item.ApprovalStatus" />
+                            </td>
+                            <td>
+                                <div class="d-flex gap-1">
+                                    <button class="btn btn-sm btn-outline-secondary"
+                                            @onclick="() => OpenDetail(item)">
+                                        <i class="bi bi-eye"></i> İncele
+                                    </button>
+                                    @if (item.ApprovalStatus == ApprovalStatus.PendingApproval)
+                                    {
+                                        <button class="btn btn-sm btn-outline-success"
+                                                @onclick="() => OpenApproveConfirm(item)"
+                                                disabled="@_isBusy">
+                                            <i class="bi bi-check-lg"></i> Onayla
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger"
+                                                @onclick="() => OpenRejectDialog(item)"
+                                                disabled="@_isBusy">
+                                            <i class="bi bi-x-lg"></i> Reddet
+                                        </button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    @if (_items.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="10" class="text-center text-muted py-4">
+                                <i class="bi bi-inbox me-2"></i>Bekleyen işlem bulunamadı.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+</PermissionGuard>
+
+<!-- Detail Modal -->
+@if (_detailItem != null)
+{
+    <PendingApprovalDetailModal Item="_detailItem" OnClose="CloseDetail" />
+}
+
+<!-- Approve Confirmation Modal -->
+@if (_approveItem != null)
+{
+    <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,0.4)">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Onaylama Onayı</h5>
+                    <button type="button" class="btn-close" @onclick="() => _approveItem = null"></button>
+                </div>
+                <div class="modal-body">
+                    <p>
+                        <strong>@_approveItem.AdiSoyadi</strong> için
+                        @_approveItem.BaslangicTarihi?.ToString("dd.MM.yyyy") -
+                        @_approveItem.BitisTarihi?.ToString("dd.MM.yyyy")
+                        tarihleri arasındaki görevi onaylamak istediğinize emin misiniz?
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="() => _approveItem = null">İptal</button>
+                    <button class="btn btn-success" @onclick="ConfirmApproveAsync" disabled="@_isBusy">
+                        @if (_isBusy) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                        Evet, Onayla
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Reject Dialog Modal -->
+@if (_rejectItem != null)
+{
+    <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,0.4)">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Reddetme Gerekçesi</h5>
+                    <button type="button" class="btn-close" @onclick="() => { _rejectItem = null; _rejectReason = null; }"></button>
+                </div>
+                <div class="modal-body">
+                    <p>
+                        <strong>@_rejectItem.AdiSoyadi</strong> için
+                        @_rejectItem.BaslangicTarihi?.ToString("dd.MM.yyyy") -
+                        @_rejectItem.BitisTarihi?.ToString("dd.MM.yyyy")
+                        tarihleri arasındaki görevi reddetmek için gerekçe giriniz:
+                    </p>
+                    <textarea class="form-control" rows="4" placeholder="Reddetme gerekçesi (zorunlu)"
+                              @bind="_rejectReason"></textarea>
+                    @if (_rejectReasonError)
+                    {
+                        <div class="text-danger small mt-1">Gerekçe alanı boş bırakılamaz.</div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="() => { _rejectItem = null; _rejectReason = null; _rejectReasonError = false; }">İptal</button>
+                    <button class="btn btn-danger" @onclick="ConfirmRejectAsync" disabled="@_isBusy">
+                        @if (_isBusy) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                        Reddet
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<PendingApprovalItem> _items = new();
+    private bool _isLoading = true;
+    private bool _loadFailed;
+    private bool _noManagerUnits;
+    private string? _loadError;
+    private string? _successMessage;
+    private string? _errorMessage;
+    private bool _isBusy;
+
+    private PendingApprovalItem? _detailItem;
+    private PendingApprovalItem? _approveItem;
+    private PendingApprovalItem? _rejectItem;
+    private string? _rejectReason;
+    private bool _rejectReasonError;
+
+    private int? _managerPersonelId;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+            await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        _isLoading = true;
+        _loadFailed = false;
+        _noManagerUnits = false;
+        StateHasChanged();
+
+        try
+        {
+            var personel = await CurrentUserService.GetCurrentPersonelAsync();
+            if (personel is null)
+            {
+                _loadFailed = true;
+                _loadError = "Mevcut kullanıcı bilgisi alınamadı.";
+                return;
+            }
+            _managerPersonelId = personel.Id;
+
+            var result = await GorevOnayService.GetPendingByManagerAsync(personel.Id);
+            if (!result.IsSuccess)
+            {
+                _loadFailed = true;
+                _loadError = result.Error?.Message ?? "Veriler yüklenemedi.";
+                return;
+            }
+
+            _items = result.Value ?? new();
+            if (_items.Count == 0)
+            {
+                // Check if user has no manager units at all (info message) vs truly empty list
+                _noManagerUnits = false; // The service already returns empty list for both cases;
+                                         // show the "no pending approvals" row in the table instead.
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "PendingApprovalsPage.LoadDataAsync");
+            _loadFailed = true;
+            _loadError = "Beklenmeyen bir hata oluştu.";
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void OpenDetail(PendingApprovalItem item) => _detailItem = item;
+    private void CloseDetail() => _detailItem = null;
+
+    private void OpenApproveConfirm(PendingApprovalItem item) => _approveItem = item;
+
+    private void OpenRejectDialog(PendingApprovalItem item)
+    {
+        _rejectItem = item;
+        _rejectReason = null;
+        _rejectReasonError = false;
+    }
+
+    private async Task ConfirmApproveAsync()
+    {
+        if (_approveItem is null) return;
+        _isBusy = true;
+        _successMessage = null;
+        _errorMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            var userName = await CurrentUserService.GetUserNameAsync();
+            var result = await GorevOnayService.ApproveAsync(_approveItem.GorevOnayId, userName);
+            if (result.IsSuccess)
+            {
+                _successMessage = $"{_approveItem.AdiSoyadi} için görev başarıyla onaylandı.";
+                _approveItem = null;
+                await LoadDataAsync();
+            }
+            else
+            {
+                _errorMessage = result.Error?.Message ?? "Onaylama başarısız oldu.";
+                _approveItem = null;
+            }
+        }
+        finally
+        {
+            _isBusy = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ConfirmRejectAsync()
+    {
+        if (_rejectItem is null) return;
+
+        if (string.IsNullOrWhiteSpace(_rejectReason))
+        {
+            _rejectReasonError = true;
+            return;
+        }
+
+        _isBusy = true;
+        _successMessage = null;
+        _errorMessage = null;
+        _rejectReasonError = false;
+        StateHasChanged();
+
+        try
+        {
+            var userName = await CurrentUserService.GetUserNameAsync();
+            var result = await GorevOnayService.RejectAsync(_rejectItem.GorevOnayId, _rejectReason!, userName);
+            if (result.IsSuccess)
+            {
+                _successMessage = $"{_rejectItem.AdiSoyadi} için görev reddedildi.";
+                _rejectItem = null;
+                _rejectReason = null;
+                await LoadDataAsync();
+            }
+            else
+            {
+                _errorMessage = result.Error?.Message ?? "Reddetme başarısız oldu.";
+                _rejectItem = null;
+            }
+        }
+        finally
+        {
+            _isBusy = false;
+            StateHasChanged();
+        }
+    }
+}
