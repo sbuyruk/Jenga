@@ -134,13 +134,20 @@ namespace Jenga.DataAccess.Services.Common
                 methodName.StartsWith("Any", StringComparison.Ordinal))
                 return Operation.View;
 
-            return methodName switch
-            {
-                "AddAsync"    => Operation.Create,
-                "UpdateAsync" => Operation.Edit,
-                "DeleteAsync" => Operation.Delete,
-                _             => null
-            };
+            if (methodName.StartsWith("Add", StringComparison.Ordinal))
+                return Operation.Create;
+
+            if (methodName.StartsWith("Update", StringComparison.Ordinal))
+                return Operation.Edit;
+
+            if (methodName.StartsWith("Delete", StringComparison.Ordinal))
+                return Operation.Delete;
+
+            if (methodName.StartsWith("Approve", StringComparison.Ordinal) ||
+                methodName.StartsWith("Reject", StringComparison.Ordinal))
+                return Operation.Manage;
+
+            return null;
         }
     }
 }

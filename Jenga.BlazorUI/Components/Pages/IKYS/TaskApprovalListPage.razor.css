@@ -1,0 +1,6 @@
+.task-approval-error-row td,
+.task-approval-error-row td a,
+.task-approval-error-row td button,
+.task-approval-error-row td span {
+    color: var(--bs-danger) !important;
+}

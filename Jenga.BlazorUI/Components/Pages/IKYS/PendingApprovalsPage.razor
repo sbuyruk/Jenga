@@ -12,7 +12,7 @@
 @inject ICurrentUserService CurrentUserService
 @inject ILogger<PendingApprovalsPage> Logger
 
-<PermissionGuard Module="ModuleName.IKYS" Operation="Operation.View">
+<PermissionGuard Module="ModuleName.IKYS" Operation="Operation.Manage">
 
     <h3 class="mb-3">
         <i class="bi bi-clock-history me-2"></i>Bekleyen İşlemler
@@ -100,7 +100,7 @@
                                             @onclick="() => OpenDetail(item)">
                                         <i class="bi bi-eye"></i> İncele
                                     </button>
-                                    @if (item.ApprovalStatus == ApprovalStatus.PendingApproval)
+                                    @if (_canManage && item.ApprovalStatus == ApprovalStatus.PendingApproval)
                                     {
                                         <button class="btn btn-sm btn-outline-success"
                                                 @onclick="() => OpenApproveConfirm(item)"
@@ -209,6 +209,7 @@
     private bool _isLoading = true;
     private bool _loadFailed;
     private bool _noManagerUnits;
+    private bool _canManage;
     private string? _loadError;
     private string? _successMessage;
     private string? _errorMessage;
@@ -245,6 +246,7 @@
                 return;
             }
             _managerPersonelId = personel.Id;
+            _canManage = await CurrentUserService.HasPermissionAsync(ModuleName.IKYS, Operation.Manage);
 
             var result = await GorevOnayService.GetPendingByManagerAsync(personel.Id);
             if (!result.IsSuccess)
@@ -298,7 +300,7 @@
         try
         {
             var userName = await CurrentUserService.GetUserNameAsync();
-            var result = await GorevOnayService.ApproveAsync(_approveItem.GorevOnayId, userName);
+            var result = await GorevOnayService.ApproveAsync(_approveItem.GorevOnayId, _managerPersonelId ?? 0, userName);
             if (result.IsSuccess)
             {
                 _successMessage = $"{_approveItem.AdiSoyadi} için görev başarıyla onaylandı.";
@@ -337,7 +339,7 @@
         try
         {
             var userName = await CurrentUserService.GetUserNameAsync();
-            var result = await GorevOnayService.RejectAsync(_rejectItem.GorevOnayId, _rejectReason!, userName);
+            var result = await GorevOnayService.RejectAsync(_rejectItem.GorevOnayId, _managerPersonelId ?? 0, _rejectReason!, userName);
             if (result.IsSuccess)
             {
                 _successMessage = $"{_rejectItem.AdiSoyadi} için görev reddedildi.";
