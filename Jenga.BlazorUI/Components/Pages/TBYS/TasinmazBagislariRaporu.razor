@@ -65,9 +65,45 @@
     private Task OnYearChanged()
         => Task.CompletedTask;
 
-    private async Task RefreshAsync()
-        => Tasinmazlar = (await TasinmazService.GetEnvanterdekilerAsync()) is { IsSuccess: true } r ? r.Value : new();
+    // private async Task RefreshAsync()
+    //     => Tasinmazlar = (await TasinmazService.GetEnvanterdekilerAsync()) is { IsSuccess: true } r ? r.Value : new();
 
+    private static readonly HashSet<string> GecerliEnvanterdenCikmaSebepleri = new(StringComparer.Ordinal)
+    {
+        "Satış", "Kamulaştırma", "Tevhit"
+    };
+
+    private async Task RefreshAsync()
+    {
+        var bagisResult = await BagisService.GetAllAsync();
+        var tasinmazResult = await TasinmazService.GetAllAsync();
+
+        if (bagisResult is not { IsSuccess: true, Value: not null } ||
+            tasinmazResult is not { IsSuccess: true, Value: not null })
+        {
+            Tasinmazlar = new();
+            return;
+        }
+
+        var tasinmazById = tasinmazResult.Value.ToDictionary(t => t.Id);
+
+        // var tasinmazIds = bagisResult.Value
+        //     .Where(b => b.TasinmazId.HasValue &&
+        //                 tasinmazById.TryGetValue(b.TasinmazId.Value, out var tasinmaz) &&
+        //                 (b.Envanterde ||
+        //                  tasinmaz.EnvanterdeMi == 1 ||
+        //                  (tasinmaz.EnvanterdenCikmaSebebi is not null &&
+        //                   GecerliEnvanterdenCikmaSebepleri.Contains(tasinmaz.EnvanterdenCikmaSebebi))))
+        var tasinmazIds = bagisResult.Value
+            .Where(b => b.TasinmazId.HasValue &&
+                tasinmazById.TryGetValue(b.TasinmazId.Value, out var tasinmaz))
+            .Select(b => b.TasinmazId!.Value)
+            .Distinct();
+
+        Tasinmazlar = tasinmazIds
+            .Select(id => tasinmazById[id])
+            .ToList();
+    }
     private async Task ExportExcelAsync()
     {
         if (_table is null) return;
