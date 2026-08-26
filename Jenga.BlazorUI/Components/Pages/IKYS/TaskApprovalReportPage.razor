@@ -50,6 +50,9 @@
     [SupplyParameterFromQuery(Name = "taskApprovalId")]
     public int? TaskApprovalId { get; set; }
 
+    [SupplyParameterFromQuery(Name = "GorevOnayId")]
+    public int? LegacyTaskApprovalId { get; set; }
+
     [SupplyParameterFromQuery(Name = "ids")]
     public string? Ids { get; set; }
 
@@ -77,9 +80,10 @@
             _isAuthorizedUnitView = string.Equals(Auth, AuthorizedUnitCode, StringComparison.OrdinalIgnoreCase)
                 && await CurrentUserService.HasPermissionAsync(ModuleName.IKYS, Operation.Manage);
 
+            var effectiveTaskApprovalId = TaskApprovalId ?? LegacyTaskApprovalId;
             var ids = ParseIds();
-            if (TaskApprovalId.HasValue && !ids.Contains(TaskApprovalId.Value))
-                ids.Insert(0, TaskApprovalId.Value);
+            if (effectiveTaskApprovalId.HasValue && !ids.Contains(effectiveTaskApprovalId.Value))
+                ids.Insert(0, effectiveTaskApprovalId.Value);
 
             var result = await GorevOnayService.GetTaskApprovalReportItemsAsync(ids, _currentPersonel?.Id, _isAuthorizedUnitView);
 

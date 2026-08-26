@@ -329,8 +329,8 @@
     private string BuildEditUrl(int? taskApprovalId = null)
     {
         var path = taskApprovalId.HasValue
-            ? $"/ikys/task-approvals/edit/{taskApprovalId.Value}"
-            : "/ikys/task-approvals/new";
+            ? $"/ikys/task-approval-entry/{taskApprovalId.Value}"
+            : "/ikys/task-approval-entry";
 
         return _isAuthorizedUnitView ? $"{path}?Auth={AuthorizedUnitCode}" : path;
     }
