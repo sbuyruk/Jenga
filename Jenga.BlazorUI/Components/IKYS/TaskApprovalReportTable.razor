@@ -1,0 +1,90 @@
+@using Jenga.Models.IKYS
+@inject IJSRuntime JS
+
+<div id="@ReportRootId" class="print-area">
+    @foreach (var item in Items)
+    {
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">Görev Onay Belgesi</span>
+                <span class="text-muted small">#@item.TaskApprovalId</span>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm table-bordered align-middle mb-0">
+                    <tbody>
+                        <tr>
+                            <th style="width: 220px;">Adı Soyadı</th>
+                            <td>@item.FullName</td>
+                        </tr>
+                        <tr>
+                            <th>Görevin Sebebi</th>
+                            <td>@item.Reason</td>
+                        </tr>
+                        <tr>
+                            <th>Gidiş Tarihi</th>
+                            <td>@item.StartDate?.ToString("dd.MM.yyyy HH:mm")</td>
+                        </tr>
+                        <tr>
+                            <th>Dönüş Tarihi</th>
+                            <td>@item.EndDate?.ToString("dd.MM.yyyy HH:mm")</td>
+                        </tr>
+                        <tr>
+                            <th>Görevin Yeri</th>
+                            <td>@item.Destination</td>
+                        </tr>
+                        <tr>
+                            <th>Amir Onayı</th>
+                            <td>@item.ManagerApprovalDisplay</td>
+                        </tr>
+                        <tr>
+                            <th>Ulaşım Aracı</th>
+                            <td>@item.Transportation</td>
+                        </tr>
+                        <tr>
+                            <th>Transfer</th>
+                            <td>@item.Transfer</td>
+                        </tr>
+                        <tr>
+                            <th>Konaklama</th>
+                            <td>@item.Accommodation</td>
+                        </tr>
+                        <tr>
+                            <th>Süre</th>
+                            <td>@item.DurationText</td>
+                        </tr>
+                        <tr>
+                            <th>Günlük Yevmiye</th>
+                            <td>@item.DailyAllowanceText @item.Currency</td>
+                        </tr>
+                        <tr>
+                            <th>Yevmiye</th>
+                            <td>@item.AllowanceText</td>
+                        </tr>
+                        @if (!string.IsNullOrWhiteSpace(item.Description))
+                        {
+                            <tr>
+                                <th>Açıklama</th>
+                                <td>@item.Description</td>
+                            </tr>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(item.RejectionNote))
+                        {
+                            <tr>
+                                <th>Red Açıklaması</th>
+                                <td class="text-danger">@item.RejectionNote</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public IReadOnlyList<TaskApprovalListItem> Items { get; set; } = Array.Empty<TaskApprovalListItem>();
+    [Parameter] public string ReportRootId { get; set; } = "taskApprovalReportRoot";
+
+    public async Task PrintAsync()
+        => await JS.InvokeVoidAsync("printElementById", ReportRootId);
+}

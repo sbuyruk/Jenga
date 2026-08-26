@@ -1,0 +1,132 @@
+@page "/ikys/task-approvals/report"
+@rendermode InteractiveServer
+
+@using Jenga.BlazorUI.Components.IKYS
+@using Jenga.BlazorUI.Services.Common
+@using Jenga.DataAccess.Services.IKYS
+@using Jenga.Models.Enums
+@using Jenga.Models.IKYS
+@using Microsoft.AspNetCore.Components
+
+@inject IGorevOnayService GorevOnayService
+@inject ICurrentUserService CurrentUserService
+@inject NavigationManager NavigationManager
+@inject ILogger<TaskApprovalReportPage> Logger
+
+<PermissionGuard Module="ModuleName.IKYS" Operation="Operation.View">
+    <div class="no-print d-flex flex-wrap align-items-center gap-2 mb-3">
+        <button class="btn btn-outline-secondary" @onclick="GoBack">
+            <i class="bi bi-arrow-left me-1"></i>Listeye Dön
+        </button>
+        <button class="btn btn-primary" @onclick="PrintAsync" disabled="@(_items.Count == 0)">
+            <i class="bi bi-printer me-1"></i>Yazdır
+        </button>
+    </div>
+
+    @if (_isLoading)
+    {
+        <div class="d-flex justify-content-center align-items-center py-5">
+            <div class="spinner-border text-primary me-3" role="status"></div>
+            <span class="text-muted">Rapor hazırlanıyor…</span>
+        </div>
+    }
+    else if (!string.IsNullOrWhiteSpace(_loadError))
+    {
+        <div class="alert alert-danger">@_loadError</div>
+    }
+    else if (_items.Count == 0)
+    {
+        <div class="alert alert-info">Raporlanacak görev bulunamadı.</div>
+    }
+    else
+    {
+        <TaskApprovalReportTable @ref="_reportTable" Items="_items" />
+    }
+</PermissionGuard>
+
+@code {
+    private const string AuthorizedUnitCode = "IKYS";
+
+    [SupplyParameterFromQuery(Name = "taskApprovalId")]
+    public int? TaskApprovalId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "ids")]
+    public string? Ids { get; set; }
+
+    [SupplyParameterFromQuery(Name = "Auth")]
+    public string? Auth { get; set; }
+
+    private TaskApprovalReportTable? _reportTable;
+    private List<TaskApprovalListItem> _items = new();
+    private bool _isLoading = true;
+    private string? _loadError;
+    private bool _isAuthorizedUnitView;
+    private Personel? _currentPersonel;
+
+    protected override async Task OnParametersSetAsync()
+        => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        _loadError = null;
+
+        try
+        {
+            _currentPersonel = await CurrentUserService.GetCurrentPersonelAsync();
+            _isAuthorizedUnitView = string.Equals(Auth, AuthorizedUnitCode, StringComparison.OrdinalIgnoreCase)
+                && await CurrentUserService.HasPermissionAsync(ModuleName.IKYS, Operation.Manage);
+
+            var ids = ParseIds();
+            if (TaskApprovalId.HasValue && !ids.Contains(TaskApprovalId.Value))
+                ids.Insert(0, TaskApprovalId.Value);
+
+            var result = await GorevOnayService.GetTaskApprovalReportItemsAsync(ids, _currentPersonel?.Id, _isAuthorizedUnitView);
+
+            if (!result.IsSuccess)
+            {
+                _loadError = result.Error?.Message ?? "Rapor verileri alınamadı.";
+                _items = new();
+                return;
+            }
+
+            _items = result.Value ?? new();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "TaskApprovalReportPage.LoadAsync");
+            _loadError = "Beklenmeyen bir hata oluştu.";
+            _items = new();
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task PrintAsync()
+    {
+        if (_reportTable is not null)
+            await _reportTable.PrintAsync();
+    }
+
+    private void GoBack()
+    {
+        var url = _isAuthorizedUnitView
+            ? $"/ikys/task-approvals?Auth={AuthorizedUnitCode}"
+            : "/ikys/task-approvals";
+        NavigationManager.NavigateTo(url);
+    }
+
+    private List<int> ParseIds()
+    {
+        if (string.IsNullOrWhiteSpace(Ids))
+            return new List<int>();
+
+        return Ids.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(value => int.TryParse(value, out var parsed) ? parsed : 0)
+            .Where(value => value > 0)
+            .Distinct()
+            .ToList();
+    }
+}

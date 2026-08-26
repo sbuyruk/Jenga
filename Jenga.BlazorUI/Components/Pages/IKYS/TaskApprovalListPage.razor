@@ -1,0 +1,361 @@
+@page "/ikys/task-approvals"
+@rendermode InteractiveServer
+
+@using Jenga.BlazorUI.Services.Common
+@using Jenga.DataAccess.Services.IKYS
+@using Jenga.Models.Enums
+@using Jenga.Models.IKYS
+@using Microsoft.AspNetCore.Components
+
+@inject IGorevOnayService GorevOnayService
+@inject ICurrentUserService CurrentUserService
+@inject NavigationManager NavigationManager
+@inject ILogger<TaskApprovalListPage> Logger
+
+<PermissionGuard Module="ModuleName.IKYS" Operation="Operation.View">
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <h3 class="mb-0 me-auto">
+            <i class="bi bi-card-checklist me-2"></i>Görev Onay Listesi
+        </h3>
+        @if (_canCreate)
+        {
+            <button class="btn btn-outline-success" @onclick="NavigateToNew">
+                <i class="bi bi-plus-lg me-1"></i>Yeni Görev Onayı
+            </button>
+        }
+        <button class="btn btn-outline-primary"
+                @onclick="CreateBulkReport"
+                disabled="@(_selectedIds.Count == 0)">
+            <i class="bi bi-printer me-1"></i>Seçilen Görevler İçin Rapor Al
+        </button>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(_message))
+    {
+        <div class="alert alert-warning">@_message</div>
+    }
+
+    @if (_isLoading)
+    {
+        <div class="d-flex justify-content-center align-items-center py-5">
+            <div class="spinner-border text-primary me-3" role="status"></div>
+            <span class="text-muted">Görev onayları yükleniyor…</span>
+        </div>
+    }
+    else if (!string.IsNullOrWhiteSpace(_loadError))
+    {
+        <div class="alert alert-danger d-flex align-items-center gap-2">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <span>@_loadError</span>
+            <button class="btn btn-sm btn-outline-danger ms-auto" @onclick="LoadAsync">Tekrar Dene</button>
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                    <div class="form-check">
+                        <input id="selectCurrentPage"
+                               class="form-check-input"
+                               type="checkbox"
+                               checked="@AreAllCurrentPageSelected"
+                               @onchange="ToggleCurrentPageSelection" />
+                        <label class="form-check-label" for="selectCurrentPage">Bu Sayfadakileri Seç</label>
+                    </div>
+                    <span class="text-muted small">@_selectedIds.Count kayıt seçildi</span>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover align-middle">
+                        <thead class="table-dark">
+                            <tr>
+                                <th style="width: 70px;">Seç</th>
+                                <th>Adı Soyadı</th>
+                                <th>Görevin Sebebi</th>
+                                <th>Gidiş Tarihi</th>
+                                <th>Dönüş Tarihi</th>
+                                <th>Görevin Yeri</th>
+                                <th>Amir Onayı</th>
+                                <th>Rapor Al</th>
+                                <th>Düzenle</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in CurrentPageItems)
+                            {
+                                <tr class="@GetRowClass(item)">
+                                    <td>
+                                        @if (!item.IsRejected)
+                                        {
+                                            <input class="form-check-input"
+                                                   type="checkbox"
+                                                   checked="@_selectedIds.Contains(item.TaskApprovalId)"
+                                                   @onchange="args => ToggleSelection(item.TaskApprovalId, args.Value is bool value && value)" />
+                                        }
+                                    </td>
+                                    <td>@item.FullName</td>
+                                    <td>@item.Reason</td>
+                                    <td>@item.StartDate?.ToString("dd.MM.yyyy HH:mm")</td>
+                                    <td>@item.EndDate?.ToString("dd.MM.yyyy HH:mm")</td>
+                                    <td>@item.Destination</td>
+                                    <td>@item.ManagerApprovalDisplay</td>
+                                    <td>
+                                        @if (CanShowReport(item))
+                                        {
+                                            <button class="btn btn-sm btn-outline-primary" @onclick="() => NavigateToReport(item.TaskApprovalId)">
+                                                Rapor Al
+                                            </button>
+                                        }
+                                        else if (item.IsRejected && !string.IsNullOrWhiteSpace(item.RejectionNote))
+                                        {
+                                            <span class="text-danger">@item.RejectionNote</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (_canEdit && CanEdit(item))
+                                        {
+                                            <button class="btn btn-sm btn-outline-primary" @onclick="() => NavigateToEdit(item.TaskApprovalId)">
+                                                Düzenle
+                                            </button>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                            @if (_items.Count == 0)
+                            {
+                                <tr>
+                                    <td colspan="9" class="text-center text-muted py-4">
+                                        <i class="bi bi-inbox me-2"></i>Kayıt bulunamadı.
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                @if (TotalPages > 1)
+                {
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <span class="text-muted small">Sayfa @_pageNumber / @TotalPages</span>
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-outline-secondary" @onclick="PreviousPage" disabled="@(_pageNumber <= 1)">Önceki</button>
+                            <button class="btn btn-sm btn-outline-secondary" @onclick="NextPage" disabled="@(_pageNumber >= TotalPages)">Sonraki</button>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</PermissionGuard>
+
+@code {
+    private const string AuthorizedUnitCode = "IKYS";
+    private const int PageSize = 10;
+
+    [SupplyParameterFromQuery(Name = "Auth")]
+    public string? Auth { get; set; }
+
+    [SupplyParameterFromQuery(Name = "SecilenId")]
+    public int? SelectedTaskApprovalId { get; set; }
+
+    private readonly HashSet<int> _selectedIds = new();
+    private List<TaskApprovalListItem> _items = new();
+    private Personel? _currentPersonel;
+    private bool _isAuthorizedUnitView;
+    private bool _isLoading = true;
+    private bool _canCreate;
+    private bool _canEdit;
+    private string? _loadError;
+    private string? _message;
+    private int _pageNumber = 1;
+    private bool _initialized;
+
+    private IEnumerable<TaskApprovalListItem> CurrentPageItems
+        => _items.Skip((_pageNumber - 1) * PageSize).Take(PageSize);
+
+    private int TotalPages => Math.Max(1, (int)Math.Ceiling(_items.Count / (double)PageSize));
+
+    private bool AreAllCurrentPageSelected
+    {
+        get
+        {
+            var pageIds = CurrentPageItems.Where(x => !x.IsRejected).Select(x => x.TaskApprovalId).ToList();
+            return pageIds.Count > 0 && pageIds.All(_selectedIds.Contains);
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_initialized)
+        {
+            _initialized = true;
+            await LoadAsync();
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        _loadError = null;
+        _message = null;
+        StateHasChanged();
+
+        try
+        {
+            _currentPersonel = await CurrentUserService.GetCurrentPersonelAsync();
+            _canCreate = await CurrentUserService.HasPermissionAsync(ModuleName.IKYS, Operation.Create);
+            _canEdit = await CurrentUserService.HasPermissionAsync(ModuleName.IKYS, Operation.Edit);
+            var hasManagePermission = await CurrentUserService.HasPermissionAsync(ModuleName.IKYS, Operation.Manage);
+            _isAuthorizedUnitView = string.Equals(Auth, AuthorizedUnitCode, StringComparison.OrdinalIgnoreCase) && hasManagePermission;
+
+            var result = await GorevOnayService.GetTaskApprovalListAsync(_currentPersonel?.Id, _isAuthorizedUnitView);
+            if (!result.IsSuccess)
+            {
+                _loadError = result.Error?.Message ?? "Görev onay listesi yüklenemedi.";
+                return;
+            }
+
+            _items = result.Value ?? new();
+            _selectedIds.Clear();
+            _pageNumber = NormalizePageNumber(_pageNumber);
+
+            if (!_isAuthorizedUnitView && _currentPersonel is null)
+                _message = "Mevcut kullanıcı personel kaydı ile eşleşmediği için liste boş döndü.";
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "TaskApprovalListPage.LoadAsync");
+            _loadError = "Beklenmeyen bir hata oluştu.";
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private string GetRowClass(TaskApprovalListItem item)
+    {
+        var classes = new List<string>();
+        if (item.TaskApprovalId == SelectedTaskApprovalId)
+            classes.Add("table-active");
+
+        if (item.ManagerApprovalStatus == ApprovalStatus.Approved)
+            classes.Add("table-success");
+        else if (item.ManagerApprovalStatus == ApprovalStatus.Rejected)
+            classes.Add("table-danger");
+
+        if (item.HasCalculationError)
+            classes.Add("task-approval-error-row");
+
+        return string.Join(" ", classes);
+    }
+
+    private bool CanShowReport(TaskApprovalListItem item)
+    {
+        if (item.IsRejected)
+            return false;
+
+        if (_isAuthorizedUnitView)
+            return true;
+
+        return item.StartDate.HasValue && (DateTime.Today - item.StartDate.Value).Days < 4;
+    }
+
+    private bool CanEdit(TaskApprovalListItem item)
+    {
+        if (item.IsRejected)
+            return false;
+
+        if (_isAuthorizedUnitView)
+            return true;
+
+        return item.StartDate.HasValue && (DateTime.Today - item.StartDate.Value).Days < 4;
+    }
+
+    private void ToggleSelection(int taskApprovalId, bool isChecked)
+    {
+        if (isChecked)
+            _selectedIds.Add(taskApprovalId);
+        else
+            _selectedIds.Remove(taskApprovalId);
+    }
+
+    private void ToggleCurrentPageSelection(ChangeEventArgs args)
+    {
+        var isChecked = args.Value is bool value && value;
+        foreach (var taskApprovalId in CurrentPageItems.Where(x => !x.IsRejected).Select(x => x.TaskApprovalId))
+        {
+            if (isChecked)
+                _selectedIds.Add(taskApprovalId);
+            else
+                _selectedIds.Remove(taskApprovalId);
+        }
+    }
+
+    private void CreateBulkReport()
+    {
+        var eligibleIds = _selectedIds
+            .Select(id => _items.FirstOrDefault(item => item.TaskApprovalId == id))
+            .Where(item => item is not null && CanShowReport(item))
+            .Select(item => item!.TaskApprovalId)
+            .Distinct()
+            .OrderBy(id => id)
+            .ToArray();
+
+        if (eligibleIds.Length == 0)
+        {
+            _message = "Toplu rapor almak için en az bir görev seçmeniz gerekli.";
+            return;
+        }
+
+        _message = eligibleIds.Length == _selectedIds.Count
+            ? null
+            : "Rapor süresi dolan veya reddedilmiş kayıtlar toplu rapora dahil edilmedi.";
+
+        NavigationManager.NavigateTo(BuildReportUrl(ids: eligibleIds));
+    }
+
+    private void NavigateToNew()
+        => NavigationManager.NavigateTo(BuildEditUrl());
+
+    private void NavigateToEdit(int taskApprovalId)
+        => NavigationManager.NavigateTo(BuildEditUrl(taskApprovalId));
+
+    private void NavigateToReport(int taskApprovalId)
+        => NavigationManager.NavigateTo(BuildReportUrl(taskApprovalId));
+
+    private string BuildEditUrl(int? taskApprovalId = null)
+    {
+        var path = taskApprovalId.HasValue
+            ? $"/ikys/task-approvals/edit/{taskApprovalId.Value}"
+            : "/ikys/task-approvals/new";
+
+        return _isAuthorizedUnitView ? $"{path}?Auth={AuthorizedUnitCode}" : path;
+    }
+
+    private string BuildReportUrl(int? taskApprovalId = null, IReadOnlyCollection<int>? ids = null)
+    {
+        var queryParts = new List<string>();
+        if (taskApprovalId.HasValue)
+            queryParts.Add($"taskApprovalId={taskApprovalId.Value}");
+        if (ids is { Count: > 0 })
+            queryParts.Add($"ids={string.Join(",", ids)}");
+        if (_isAuthorizedUnitView)
+            queryParts.Add($"Auth={AuthorizedUnitCode}");
+
+        return queryParts.Count == 0
+            ? "/ikys/task-approvals/report"
+            : $"/ikys/task-approvals/report?{string.Join("&", queryParts)}";
+    }
+
+    private void PreviousPage()
+        => _pageNumber = NormalizePageNumber(_pageNumber - 1);
+
+    private void NextPage()
+        => _pageNumber = NormalizePageNumber(_pageNumber + 1);
+
+    private int NormalizePageNumber(int value)
+        => Math.Min(Math.Max(value, 1), TotalPages);
+}
