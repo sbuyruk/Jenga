@@ -1,5 +1,10 @@
+@page "/ikys/task-approval-entry"
+@page "/ikys/task-approval-entry/{TaskApprovalId:int}"
 @page "/ikys/task-approvals/new"
 @page "/ikys/task-approvals/edit/{TaskApprovalId:int}"
+@page "/ikys/gorevonaygirisiwp"
+@page "/IKYS/GorevOnayGirisiWP"
+@page "/IKYS/GorevOnayGirisiWP.aspx"
 @rendermode InteractiveServer
 
 @using System.ComponentModel.DataAnnotations
@@ -15,7 +20,7 @@
 @inject IPersonelService PersonelService
 @inject ICurrentUserService CurrentUserService
 @inject NavigationManager NavigationManager
-@inject ILogger<TaskApprovalEditPage> Logger
+@inject ILogger<TaskApprovalEntryPage> Logger
 
 <PermissionGuard Module="ModuleName.IKYS" Operation="Operation.View">
     <div class="d-flex align-items-center gap-2 mb-3">
@@ -146,6 +151,9 @@
 
     [Parameter] public int? TaskApprovalId { get; set; }
 
+    [SupplyParameterFromQuery(Name = "GorevOnayId")]
+    public int? LegacyTaskApprovalId { get; set; }
+
     [SupplyParameterFromQuery(Name = "Auth")]
     public string? Auth { get; set; }
 
@@ -163,8 +171,9 @@
     private string _startTimeText = "00:00";
     private string _endTimeText = "00:00";
 
-    private string PageTitle => TaskApprovalId.HasValue ? "Görev Onayı Düzenle" : "Yeni Görev Onayı";
-    private bool CanSave => TaskApprovalId.HasValue ? _canEdit : _canCreate;
+    private int? EffectiveTaskApprovalId => TaskApprovalId ?? LegacyTaskApprovalId;
+    private string PageTitle => EffectiveTaskApprovalId.HasValue ? "Görev Onayı Düzenle" : "Yeni Görev Onayı";
+    private bool CanSave => EffectiveTaskApprovalId.HasValue ? _canEdit : _canCreate;
 
     protected override async Task OnParametersSetAsync()
         => await LoadAsync();
@@ -193,9 +202,9 @@
                     _personels.AddRange(personelResult.Value.OrderBy(x => x.Adi).ThenBy(x => x.Soyadi));
             }
 
-            if (TaskApprovalId.HasValue)
+            if (EffectiveTaskApprovalId.HasValue)
             {
-                var result = await GorevOnayService.GetScopedByIdAsync(TaskApprovalId.Value, _currentPersonel?.Id, _isAuthorizedUnitView);
+                var result = await GorevOnayService.GetScopedByIdAsync(EffectiveTaskApprovalId.Value, _currentPersonel?.Id, _isAuthorizedUnitView);
                 if (!result.IsSuccess || result.Value is null)
                 {
                     _statusMessage = result.Error?.Message ?? "Görev onayı bulunamadı.";
@@ -223,7 +232,7 @@
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "TaskApprovalEditPage.LoadAsync");
+            Logger.LogError(ex, "TaskApprovalEntryPage.LoadAsync");
             _statusMessage = "Beklenmeyen bir hata oluştu.";
         }
         finally
@@ -249,7 +258,7 @@
             _model.OnayRedAciklama = null;
 
             var currentUserName = await CurrentUserService.GetUserNameAsync();
-            var result = TaskApprovalId.HasValue
+            var result = EffectiveTaskApprovalId.HasValue
                 ? await GorevOnayService.UpdateScopedAsync(_model, _currentPersonel?.Id, _isAuthorizedUnitView)
                 : await GorevOnayService.AddScopedAsync(_model, _currentPersonel?.Id, _isAuthorizedUnitView, currentUserName);
 
@@ -263,7 +272,7 @@
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "TaskApprovalEditPage.SaveAsync");
+            Logger.LogError(ex, "TaskApprovalEntryPage.SaveAsync");
             _statusMessage = "Görev onayı kaydedilirken beklenmeyen bir hata oluştu.";
         }
         finally
@@ -364,7 +373,7 @@
     }
 
     private void NavigateBack()
-        => NavigateBack(TaskApprovalId);
+        => NavigateBack(EffectiveTaskApprovalId);
 
     private void NavigateBack(int? selectedTaskApprovalId)
     {
