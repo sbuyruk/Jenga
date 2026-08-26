@@ -1,0 +1,29 @@
+.task-approval-entry-page .legacy-section {
+    border: 1px solid #e9ecef;
+    border-radius: .5rem;
+    padding: 1rem;
+    background: #fff;
+}
+
+.task-approval-entry-page .legacy-section-title {
+    font-weight: 600;
+    color: #198754;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    margin-bottom: .75rem;
+    border-bottom: 1px solid #e9ecef;
+    padding-bottom: .4rem;
+}
+
+.task-approval-entry-page .task-reason-editor {
+    min-height: 120px;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+}
+
+.task-approval-entry-page .harcirah-summary-box {
+    background: #eafaf1;
+    border: 1px solid #b7ebc6;
+    border-radius: .6rem;
+}

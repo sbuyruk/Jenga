@@ -7,142 +7,289 @@
 @page "/IKYS/GorevOnayGirisiWP.aspx"
 @rendermode InteractiveServer
 
-@using System.ComponentModel.DataAnnotations
 @using System.Globalization
 @using Jenga.BlazorUI.Services.Common
 @using Jenga.DataAccess.Services.IKYS
 @using Jenga.Models.Enums
 @using Jenga.Models.IKYS
+@using Jenga.Utility.Results
 @using Microsoft.AspNetCore.Components
 @using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.JSInterop
 
 @inject IGorevOnayService GorevOnayService
+@inject IGorevTanimService GorevTanimService
+@inject IIsBilgileriService IsBilgileriService
 @inject IPersonelService PersonelService
 @inject ICurrentUserService CurrentUserService
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JS
 @inject ILogger<TaskApprovalEntryPage> Logger
 
 <PermissionGuard Module="ModuleName.IKYS" Operation="Operation.View">
-    <div class="d-flex align-items-center gap-2 mb-3">
-        <button class="btn btn-outline-secondary" @onclick="NavigateBack">
-            <i class="bi bi-arrow-left me-1"></i>Listeye Dön
-        </button>
-        <h3 class="mb-0">@PageTitle</h3>
-    </div>
-
-    @if (!string.IsNullOrWhiteSpace(_statusMessage))
-    {
-        <div class="alert alert-warning">@_statusMessage</div>
-    }
-
-    @if (_isLoading)
-    {
-        <div class="d-flex justify-content-center align-items-center py-5">
-            <div class="spinner-border text-primary me-3" role="status"></div>
-            <span class="text-muted">Görev onayı hazırlanıyor…</span>
+    <div class="task-approval-entry-page">
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+            <button class="btn btn-outline-secondary" @onclick="NavigateBack">
+                <i class="bi bi-arrow-left me-1"></i>Görev Onay Listesi
+            </button>
+            <h3 class="mb-0 me-auto">
+                Görev Onayı Girişi
+                @if (!string.IsNullOrWhiteSpace(_selectedPersonDisplayName))
+                {
+                    <span class="text-muted fs-6 ms-2">@_selectedPersonDisplayName</span>
+                }
+            </h3>
+            @if (_model.Id > 0)
+            {
+                <span class="badge bg-secondary">#@_model.Id</span>
+            }
         </div>
-    }
-    else if (_loadFailed)
-    {
-        <div class="alert alert-danger">Kayıt yüklenemedi. Listeye dönüp başka bir kayıt seçin.</div>
-    }
-    else if (!CanSave)
-    {
-        <div class="alert alert-danger">Bu işlem için yetkiniz bulunmuyor.</div>
-    }
-    else
-    {
-        <EditForm Model="_model" OnValidSubmit="SaveAsync">
-            <DataAnnotationsValidator />
-            <ValidationSummary />
 
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <div class="row g-3">
-                        @if (_isAuthorizedUnitView)
-                        {
-                            <div class="col-md-6">
-                                <label class="form-label">Personel</label>
-                                <InputSelect class="form-select" @bind-Value="_model.PersonelId">
-                                    <option value="">Seçiniz</option>
-                                    @foreach (var personel in _personels)
-                                    {
-                                        <option value="@personel.Id">@($"{personel.Adi} {personel.Soyadi}")</option>
-                                    }
-                                </InputSelect>
+        @if (!string.IsNullOrWhiteSpace(_statusMessage))
+        {
+            <div class="alert alert-warning">@_statusMessage</div>
+        }
+
+        @if (_isLoading)
+        {
+            <div class="d-flex justify-content-center align-items-center py-5">
+                <div class="spinner-border text-primary me-3" role="status"></div>
+                <span class="text-muted">Görev onayı hazırlanıyor…</span>
+            </div>
+        }
+        else if (_loadFailed)
+        {
+            <div class="alert alert-danger">Kayıt yüklenemedi. Görev onay listesine dönüp tekrar deneyiniz.</div>
+        }
+        else if (!CanSave)
+        {
+            <div class="alert alert-danger">Bu işlem için yetkiniz bulunmuyor.</div>
+        }
+        else
+        {
+            <EditForm Model="_model" OnValidSubmit="SaveAsync">
+                <DataAnnotationsValidator />
+
+                <div class="card shadow-sm">
+                    <div class="card-body d-flex flex-column gap-3">
+                        <div class="legacy-section">
+                            <div class="legacy-section-title"><i class="bi bi-person-badge"></i> Personel Bilgileri</div>
+                            <div class="row g-3 align-items-end">
+                                <div class="col-md-6">
+                                    <label class="form-label">Personel Seçimi</label>
+                                    <InputSelect class="form-select" @bind-Value="_model.PersonelId" @bind-Value:after="OnPersonChangedAsync">
+                                        @foreach (var personel in _personelOptions)
+                                        {
+                                            <option value="@personel.Id">@personel.DisplayName</option>
+                                        }
+                                    </InputSelect>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check mt-4 pt-2">
+                                        <input id="harcirahHesaplansin" class="form-check-input" type="checkbox" checked="@_harcirahHesaplansin" @onchange="OnHarcirahToggleChanged" />
+                                        <label class="form-check-label" for="harcirahHesaplansin">Harcırah Hesaplansın</label>
+                                    </div>
+                                </div>
                             </div>
-                        }
-                        <div class="col-md-6">
-                            <label class="form-label">Görevin Sebebi</label>
-                            <InputText class="form-control" @bind-Value="_model.GorevinSebebi" />
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Görevin Yeri</label>
-                            <InputText class="form-control" @bind-Value="_model.GorevinYeri" />
+
+                        <div class="legacy-section">
+                            <div class="legacy-section-title"><i class="bi bi-calendar-range"></i> Görev Tarihi ve Süresi</div>
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <label class="form-label">Başlangıç Tarihi</label>
+                                    <input type="date" class="form-control" value="@FormatDateValue(_startDate)" @onchange="OnStartDateChanged" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Baş.Saat</label>
+                                    <InputSelect class="form-select" @bind-Value="_startTimeText" @bind-Value:after="OnDateTimeChangedAsync">
+                                        @foreach (var option in _timeOptions)
+                                        {
+                                            <option value="@option">@option</option>
+                                        }
+                                    </InputSelect>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Bitiş Tarihi</label>
+                                    <input type="date" class="form-control" value="@FormatDateValue(_endDate)" @onchange="OnEndDateChanged" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Bit.Saat</label>
+                                    <InputSelect class="form-select" @bind-Value="_endTimeText" @bind-Value:after="OnDateTimeChangedAsync">
+                                        @foreach (var option in _timeOptions)
+                                        {
+                                            <option value="@option">@option</option>
+                                        }
+                                    </InputSelect>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Süre Gün</label>
+                                    <input class="form-control" value="@_durationDayText" readonly />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Süre Saat/Dk</label>
+                                    <input class="form-control" value="@_durationHourMinuteText" readonly />
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Gidiş Tarihi</label>
-                            <InputDate class="form-control" @bind-Value="_model.BaslangicTarihi" />
+
+                        <div class="legacy-section">
+                            <div class="legacy-section-title"><i class="bi bi-truck"></i> Ulaşım, Avans ve Onay Bilgileri</div>
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <label class="form-label">Harcırah Grubu</label>
+                                    <input class="form-control" value="@_harcirahGroup" readonly />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Ülke</label>
+                                    <InputSelect class="form-select" @bind-Value="_selectedCountry" @bind-Value:after="OnCountryChangedAsync">
+                                        @foreach (var option in _countryRates)
+                                        {
+                                            <option value="@option.Country">@option.Country</option>
+                                        }
+                                    </InputSelect>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Günlük Yev.</label>
+                                    <input class="form-control" value="@_dailyAllowanceInput" readonly />
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Para Birimi</label>
+                                    <input class="form-control" value="@_model.ParaBirimi" readonly />
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Avans</label>
+                                    <InputText class="form-control" @bind-Value="_model.Avans" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Ulaşım Aracı</label>
+                                    <InputSelect class="form-select" @bind-Value="_model.UlasimAraci">
+                                        @foreach (var option in _ulasimAraclari)
+                                        {
+                                            <option value="@option">@option</option>
+                                        }
+                                    </InputSelect>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Transfer</label>
+                                    <InputSelect class="form-select" @bind-Value="_model.Transfer">
+                                        @foreach (var option in _transferSecenekleri)
+                                        {
+                                            <option value="@option">@option</option>
+                                        }
+                                    </InputSelect>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Araç Plakası</label>
+                                    <InputText class="form-control" @bind-Value="_model.AracPlakasi" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Konaklama</label>
+                                    <InputSelect class="form-select" @bind-Value="_model.Konaklama">
+                                        @foreach (var option in _konaklamaSecenekleri)
+                                        {
+                                            <option value="@option">@option</option>
+                                        }
+                                    </InputSelect>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Per.Dir.</label>
+                                    <InputSelect class="form-select" @bind-Value="_model.PerSubeImza">
+                                        <option value="">Seçiniz</option>
+                                        @foreach (var option in _perDirOptions)
+                                        {
+                                            <option value="@option.Id">@option.DisplayName</option>
+                                        }
+                                    </InputSelect>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Per.Uzm.</label>
+                                    <InputSelect class="form-select" @bind-Value="_model.OnayImza">
+                                        <option value="">Seçiniz</option>
+                                        @foreach (var option in _perUzmOptions)
+                                        {
+                                            <option value="@option.Id">@option.DisplayName</option>
+                                        }
+                                    </InputSelect>
+                                </div>
+                                <div class="col-md-4 d-flex align-items-end">
+                                    <div class="form-check mb-2">
+                                        <InputCheckbox id="vekilCheck" class="form-check-input" @bind-Value="PerSubeVekilValue" />
+                                        <label class="form-check-label" for="vekilCheck">Vekil</label>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Gidiş Saati</label>
-                            <InputText class="form-control" @bind-Value="_startTimeText" />
+
+                        <div class="legacy-section">
+                            <div class="legacy-section-title"><i class="bi bi-pencil-square"></i> Görev İçeriği</div>
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label">Görevin Sebebi</label>
+                                    <div class="btn-toolbar mb-2" role="toolbar" aria-label="Görevin sebebi biçimlendirme araçları">
+                                        <div class="btn-group btn-group-sm">
+                                            <button type="button" class="btn btn-outline-secondary" @onclick='() => ApplyReasonCommandAsync("bold")'><b>B</b></button>
+                                            <button type="button" class="btn btn-outline-secondary" @onclick='() => ApplyReasonCommandAsync("italic")'><i>I</i></button>
+                                            <button type="button" class="btn btn-outline-secondary" @onclick='() => ApplyReasonCommandAsync("underline")'><u>U</u></button>
+                                            <button type="button" class="btn btn-outline-secondary" @onclick='() => ApplyReasonCommandAsync("insertUnorderedList")'>• Liste</button>
+                                            <button type="button" class="btn btn-outline-secondary" @onclick='() => ApplyReasonCommandAsync("insertOrderedList")'>1. Liste</button>
+                                        </div>
+                                    </div>
+                                    <div class="task-reason-editor form-control" contenteditable="true" @ref="_reasonEditor" @onblur="SyncReasonFromEditorAsync"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Görevin Yeri</label>
+                                    <InputText class="form-control" @bind-Value="_model.GorevinYeri" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Açıklama</label>
+                                    <InputTextArea class="form-control" rows="3" @bind-Value="_model.Aciklama" />
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Dönüş Tarihi</label>
-                            <InputDate class="form-control" @bind-Value="_model.BitisTarihi" />
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Dönüş Saati</label>
-                            <InputText class="form-control" @bind-Value="_endTimeText" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Ulaşım Aracı</label>
-                            <InputText class="form-control" @bind-Value="_model.UlasimAraci" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Transfer</label>
-                            <InputText class="form-control" @bind-Value="_model.Transfer" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Konaklama</label>
-                            <InputText class="form-control" @bind-Value="_model.Konaklama" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Günlük Yevmiye</label>
-                            <InputText class="form-control" @bind-Value="_dailyAllowanceInput" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Para Birimi</label>
-                            <InputText class="form-control" @bind-Value="_model.ParaBirimi" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Toplam Yevmiye</label>
-                            <InputText class="form-control" @bind-Value="_model.Yevmiye" readonly />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Süre</label>
-                            <InputText class="form-control" @bind-Value="_model.Sure" readonly />
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label">Açıklama</label>
-                            <InputTextArea class="form-control" rows="4" @bind-Value="_model.Aciklama" />
+
+                        <div class="legacy-section">
+                            <div class="legacy-section-title"><i class="bi bi-cash-coin"></i> Hesaplanan Harcırah</div>
+                            <div class="row g-3 align-items-start">
+                                <div class="col-md-7">
+                                    <div class="harcirah-summary-box p-3">
+                                        <div class="row g-2">
+                                            <div class="col-md-4">
+                                                <label class="form-label">Hak edilen Yevmiye</label>
+                                                <input class="form-control text-primary fw-semibold" value="@_model.Yevmiye" readonly />
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">Para Birimi</label>
+                                                <input class="form-control text-primary fw-semibold" value="@_model.ParaBirimi" readonly />
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">Hak edilen Gün</label>
+                                                <input class="form-control text-primary fw-semibold" value="@_model.Sure" readonly />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label">Hesap Açıklaması</label>
+                                    <textarea class="form-control" rows="4" readonly>@_calculationExplanation</textarea>
+                                </div>
+                            </div>
                         </div>
                     </div>
+                    <div class="card-footer d-flex flex-wrap justify-content-end gap-2">
+                        <button type="button" class="btn btn-outline-secondary" @onclick="NavigateBack">İptal</button>
+                        <button type="submit" class="btn btn-success" disabled="@_isSaving">
+                            @if (_isSaving)
+                            {
+                                <span class="spinner-border spinner-border-sm me-1"></span>
+                            }
+                            Kaydet
+                        </button>
+                    </div>
                 </div>
-                <div class="card-footer d-flex justify-content-end gap-2">
-                    <button type="button" class="btn btn-outline-secondary" @onclick="NavigateBack">İptal</button>
-                    <button type="submit" class="btn btn-success" disabled="@_isSaving">
-                        @if (_isSaving)
-                        {
-                            <span class="spinner-border spinner-border-sm me-1"></span>
-                        }
-                        Kaydet
-                    </button>
-                </div>
-            </div>
-        </EditForm>
-    }
+            </EditForm>
+        }
+    </div>
 </PermissionGuard>
 
 @code {
@@ -158,7 +305,23 @@
     public string? Auth { get; set; }
 
     private GorevOnay _model = new();
-    private readonly List<Personel> _personels = new();
+    private readonly List<PersonelOption> _personelOptions = new();
+    private readonly List<SignatureOption> _perDirOptions = new();
+    private readonly List<SignatureOption> _perUzmOptions = new();
+
+    private readonly string[] _ulasimAraclari = ["", "Uçak", "Otobüs", "Tren", "Vakıf Aracı"];
+    private readonly string[] _transferSecenekleri = ["", "Vakıf Aracı", "Toplu Taşıma", "Taksi", "Diğer"];
+    private readonly string[] _konaklamaSecenekleri = ["Limit Dahilinde", "Limit Aşımı"];
+    private readonly IReadOnlyList<CountryRate> _countryRates =
+    [
+        new("Türkiye", "TL", 1250m),
+        new("Avrupa", "EUR", 150m),
+        new("İngiltere", "GBP", 175m),
+        new("Avrupa Harici", "USD", 200m)
+    ];
+
+    private readonly List<string> _timeOptions = BuildTimeOptions();
+
     private Personel? _currentPersonel;
     private bool _isAuthorizedUnitView;
     private bool _isLoading = true;
@@ -167,16 +330,45 @@
     private bool _canEdit;
     private bool _loadFailed;
     private string? _statusMessage;
+
+    private DateTime? _startDate;
+    private DateTime? _endDate;
+    private string _startTimeText = "08:30";
+    private string _endTimeText = "17:00";
+
+    private string _selectedCountry = "Türkiye";
     private string _dailyAllowanceInput = "0";
-    private string _startTimeText = "00:00";
-    private string _endTimeText = "00:00";
+    private bool _harcirahHesaplansin = true;
+    private string _harcirahGroup = "";
+
+    private string _durationDayText = "0 Gün";
+    private string _durationHourMinuteText = "0 Saat 0 Dakika";
+    private decimal _earnedDayValue;
+    private string _calculationExplanation = string.Empty;
+    private string _selectedPersonDisplayName = string.Empty;
+
+    private ElementReference _reasonEditor;
+    private bool _pendingReasonEditorSync;
 
     private int? EffectiveTaskApprovalId => TaskApprovalId ?? LegacyTaskApprovalId;
-    private string PageTitle => EffectiveTaskApprovalId.HasValue ? "Görev Onayı Düzenle" : "Yeni Görev Onayı";
     private bool CanSave => EffectiveTaskApprovalId.HasValue ? _canEdit : _canCreate;
+    private bool PerSubeVekilValue
+    {
+        get => _model.PerSubeVekil ?? false;
+        set => _model.PerSubeVekil = value;
+    }
 
     protected override async Task OnParametersSetAsync()
         => await LoadAsync();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_pendingReasonEditorSync && !_isLoading && CanSave)
+        {
+            await JS.InvokeVoidAsync("taskApprovalEditor.setHtml", _reasonEditor, _model.GorevinSebebi ?? string.Empty);
+            _pendingReasonEditorSync = false;
+        }
+    }
 
     private async Task LoadAsync()
     {
@@ -192,19 +384,15 @@
             _isAuthorizedUnitView = string.Equals(Auth, AuthorizedUnitCode, StringComparison.OrdinalIgnoreCase)
                 && await CurrentUserService.HasPermissionAsync(ModuleName.IKYS, Operation.Manage);
 
-            if (_isAuthorizedUnitView)
-            {
-                var personelResult = _currentPersonel is null
-                    ? null
-                    : await GorevOnayService.GetManagedPersonnelAsync(_currentPersonel.Id);
-                _personels.Clear();
-                if (personelResult is { IsSuccess: true, Value: not null })
-                    _personels.AddRange(personelResult.Value.OrderBy(x => x.Adi).ThenBy(x => x.Soyadi));
-            }
+            await LoadPersonelOptionsAsync();
+            await LoadSignatureOptionsAsync();
 
             if (EffectiveTaskApprovalId.HasValue)
             {
-                var result = await GorevOnayService.GetScopedByIdAsync(EffectiveTaskApprovalId.Value, _currentPersonel?.Id, _isAuthorizedUnitView);
+                var result = _isAuthorizedUnitView
+                    ? await GorevOnayService.GetByIdAsync(EffectiveTaskApprovalId.Value)
+                    : await GorevOnayService.GetScopedByIdAsync(EffectiveTaskApprovalId.Value, _currentPersonel?.Id, _isAuthorizedUnitView);
+
                 if (!result.IsSuccess || result.Value is null)
                 {
                     _statusMessage = result.Error?.Message ?? "Görev onayı bulunamadı.";
@@ -219,16 +407,19 @@
             {
                 _model = new GorevOnay
                 {
-                    PersonelId = _currentPersonel?.Id,
+                    PersonelId = _isAuthorizedUnitView ? _personelOptions.FirstOrDefault()?.Id : _currentPersonel?.Id,
                     ParaBirimi = "TL",
-                    AmirOnayi = (int)ApprovalStatus.PendingApproval
+                    AmirOnayi = (int)ApprovalStatus.PendingApproval,
+                    Konaklama = _konaklamaSecenekleri[0],
+                    Transfer = _transferSecenekleri[0],
+                    UlasimAraci = _ulasimAraclari[0]
                 };
             }
 
-            _startTimeText = (_model.BaslangicTarihi?.TimeOfDay ?? TimeSpan.Zero).ToString(@"hh\:mm", CultureInfo.InvariantCulture);
-            _endTimeText = (_model.BitisTarihi?.TimeOfDay ?? TimeSpan.Zero).ToString(@"hh\:mm", CultureInfo.InvariantCulture);
-            _dailyAllowanceInput = _model.GunlukYevmiye ?? "0";
+            HydrateUiFieldsFromModel();
+            await UpdatePersonDependentFieldsAsync();
             RecalculateDerivedFields();
+            _pendingReasonEditorSync = true;
         }
         catch (Exception ex)
         {
@@ -241,11 +432,168 @@
         }
     }
 
+    private async Task LoadPersonelOptionsAsync()
+    {
+        _personelOptions.Clear();
+
+        if (_isAuthorizedUnitView)
+        {
+            var result = await PersonelService.GetCalisanPersonelAsync();
+            if (result is { IsSuccess: true, Value: not null })
+            {
+                _personelOptions.AddRange(result.Value
+                    .OrderBy(x => x.Adi)
+                    .ThenBy(x => x.Soyadi)
+                    .Select(x => new PersonelOption(x.Id, $"{x.Adi} {x.Soyadi}")));
+            }
+        }
+        else if (_currentPersonel is not null)
+        {
+            _personelOptions.Add(new PersonelOption(_currentPersonel.Id, $"{_currentPersonel.Adi} {_currentPersonel.Soyadi}"));
+        }
+    }
+
+    private async Task LoadSignatureOptionsAsync()
+    {
+        _perDirOptions.Clear();
+        _perUzmOptions.Clear();
+
+        var personelResult = await PersonelService.GetCalisanPersonelAsync();
+        var isBilgileriResult = await IsBilgileriService.GetAllAsync();
+        if (personelResult is not { IsSuccess: true, Value: not null } || isBilgileriResult is not { IsSuccess: true, Value: not null })
+            return;
+
+        var personelById = personelResult.Value.ToDictionary(x => x.Id);
+
+        var signatureCandidates = isBilgileriResult.Value
+            .Where(x => personelById.ContainsKey(x.PersonelId) && !string.IsNullOrWhiteSpace(x.UnvanTanim?.Adi))
+            .Select(x =>
+            {
+                var personel = personelById[x.PersonelId];
+                var fullName = $"{personel.Adi} {personel.Soyadi}";
+                return new SignatureOption(x.PersonelId, fullName, x.UnvanTanim!.Adi!);
+            })
+            .OrderBy(x => x.DisplayName)
+            .ToList();
+
+        _perDirOptions.AddRange(signatureCandidates
+            .Where(x => ContainsAny(x.Title, "DİREKTÖR", "DIREKTOR", "BAŞUZMAN", "BASUZMAN", "KIDEMLİ UZMAN", "KIDEMLI UZMAN", "KIDEMLIUZMAN"))
+            .DistinctBy(x => x.Id));
+
+        _perUzmOptions.AddRange(signatureCandidates
+            .Where(x => ContainsAny(x.Title, "UZMAN", "KIDEMLİ UZMAN", "KIDEMLI UZMAN", "KIDEMLIUZMAN"))
+            .DistinctBy(x => x.Id));
+    }
+
+    private void HydrateUiFieldsFromModel()
+    {
+        var now = DateTime.Now;
+        var modelStart = _model.BaslangicTarihi ?? now.Date.AddHours(8).AddMinutes(30);
+        var modelEnd = _model.BitisTarihi ?? now.Date.AddHours(17);
+
+        _startDate = modelStart.Date;
+        _endDate = modelEnd.Date;
+        _startTimeText = modelStart.ToString("HH:mm", CultureInfo.InvariantCulture);
+        _endTimeText = modelEnd.ToString("HH:mm", CultureInfo.InvariantCulture);
+
+        _harcirahHesaplansin = true;
+
+        _selectedCountry = ResolveCountryFromModel(_model.ParaBirimi);
+        var rate = ResolveCountryRate(_selectedCountry);
+        _model.ParaBirimi = rate.Currency;
+        _dailyAllowanceInput = (_model.GunlukYevmiye ?? rate.DailyAmount.ToString("N2", TrCulture)).Trim();
+
+        if (string.IsNullOrWhiteSpace(_model.Transfer))
+            _model.Transfer = _transferSecenekleri[0];
+        if (string.IsNullOrWhiteSpace(_model.Konaklama))
+            _model.Konaklama = _konaklamaSecenekleri[0];
+        if (string.IsNullOrWhiteSpace(_model.UlasimAraci))
+            _model.UlasimAraci = _ulasimAraclari[0];
+
+        _selectedPersonDisplayName = _personelOptions.FirstOrDefault(x => x.Id == _model.PersonelId)?.DisplayName
+            ?? _selectedPersonDisplayName;
+    }
+
+    private async Task OnPersonChangedAsync()
+    {
+        _selectedPersonDisplayName = _personelOptions.FirstOrDefault(x => x.Id == _model.PersonelId)?.DisplayName ?? string.Empty;
+        await UpdatePersonDependentFieldsAsync();
+        RecalculateDerivedFields();
+    }
+
+    private async Task UpdatePersonDependentFieldsAsync()
+    {
+        if (!_model.PersonelId.HasValue)
+        {
+            _harcirahGroup = string.Empty;
+            return;
+        }
+
+        var gorevTanimResult = await GorevTanimService.GetAllAsync();
+        if (gorevTanimResult is { IsSuccess: true, Value: not null })
+        {
+            var gorevTanim = gorevTanimResult.Value
+                .Where(x => x.PersonelId == _model.PersonelId)
+                .OrderByDescending(x => x.OlusturmaTarihi)
+                .FirstOrDefault();
+
+            _harcirahGroup = gorevTanim?.Adi ?? "Standart";
+        }
+        else
+        {
+            _harcirahGroup = "Standart";
+        }
+    }
+
+    private async Task OnCountryChangedAsync()
+    {
+        ApplyCountryRate();
+        RecalculateDerivedFields();
+        await Task.CompletedTask;
+    }
+
+    private void ApplyCountryRate()
+    {
+        var rate = ResolveCountryRate(_selectedCountry);
+        _model.ParaBirimi = rate.Currency;
+        _dailyAllowanceInput = rate.DailyAmount.ToString("N2", TrCulture);
+    }
+
+    private async Task OnHarcirahToggleChanged(ChangeEventArgs args)
+    {
+        _harcirahHesaplansin = args.Value is bool value && value;
+        RecalculateDerivedFields();
+        await Task.CompletedTask;
+    }
+
+    private async Task OnStartDateChanged(ChangeEventArgs args)
+    {
+        if (DateTime.TryParse(args.Value?.ToString(), out var parsed))
+            _startDate = parsed.Date;
+
+        await OnDateTimeChangedAsync();
+    }
+
+    private async Task OnEndDateChanged(ChangeEventArgs args)
+    {
+        if (DateTime.TryParse(args.Value?.ToString(), out var parsed))
+            _endDate = parsed.Date;
+
+        await OnDateTimeChangedAsync();
+    }
+
+    private async Task OnDateTimeChangedAsync()
+    {
+        RecalculateDerivedFields();
+        await Task.CompletedTask;
+    }
+
     private async Task SaveAsync()
     {
         _statusMessage = null;
+        await SyncReasonFromEditorAsync();
 
-        if (!ValidateModel())
+        if (!await ValidateModelAsync())
             return;
 
         _isSaving = true;
@@ -256,11 +604,22 @@
             _model.GunlukYevmiye = _dailyAllowanceInput;
             _model.AmirOnayi = (int)ApprovalStatus.PendingApproval;
             _model.OnayRedAciklama = null;
+            _model.AracTahsisi = string.Equals(_model.UlasimAraci, "Uçak", StringComparison.OrdinalIgnoreCase);
 
             var currentUserName = await CurrentUserService.GetUserNameAsync();
-            var result = EffectiveTaskApprovalId.HasValue
-                ? await GorevOnayService.UpdateScopedAsync(_model, _currentPersonel?.Id, _isAuthorizedUnitView)
-                : await GorevOnayService.AddScopedAsync(_model, _currentPersonel?.Id, _isAuthorizedUnitView, currentUserName);
+            Result result;
+            if (EffectiveTaskApprovalId.HasValue)
+            {
+                result = _isAuthorizedUnitView
+                    ? await GorevOnayService.UpdateAsync(_model)
+                    : await GorevOnayService.UpdateScopedAsync(_model, _currentPersonel?.Id, _isAuthorizedUnitView);
+            }
+            else
+            {
+                result = _isAuthorizedUnitView
+                    ? await GorevOnayService.AddAsync(_model, currentUserName)
+                    : await GorevOnayService.AddScopedAsync(_model, _currentPersonel?.Id, _isAuthorizedUnitView, currentUserName);
+            }
 
             if (!result.IsSuccess)
             {
@@ -281,11 +640,37 @@
         }
     }
 
-    private bool ValidateModel()
+    private async Task<bool> ValidateModelAsync()
     {
-        if ((_isAuthorizedUnitView && !_model.PersonelId.HasValue) || (!_isAuthorizedUnitView && _currentPersonel is null))
+        if (!_model.PersonelId.HasValue)
         {
-            _statusMessage = "Personel bilgisi zorunludur.";
+            _statusMessage = "Personel seçimi zorunludur.";
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(_model.GorevinSebebi))
+        {
+            _statusMessage = "Görevin sebebi zorunludur.";
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(_model.GorevinYeri))
+        {
+            _statusMessage = "Görevin yeri zorunludur.";
+            return false;
+        }
+
+        if (!TryGetTimes(out _, out _) || !_startDate.HasValue || !_endDate.HasValue)
+        {
+            _statusMessage = "Başlangıç/bitiş tarihi ve saat alanlarını geçerli giriniz.";
+            return false;
+        }
+
+        ApplyDateTimes();
+
+        if (!_model.BaslangicTarihi.HasValue || !_model.BitisTarihi.HasValue || _model.BitisTarihi <= _model.BaslangicTarihi)
+        {
+            _statusMessage = "Bitiş tarihi başlangıç tarihinden sonra olmalıdır.";
             return false;
         }
 
@@ -295,22 +680,21 @@
             return false;
         }
 
-        ApplyDateTimes();
-        if (!_model.BaslangicTarihi.HasValue || !_model.BitisTarihi.HasValue)
+        var overlapResult = await GorevOnayService.HasOverlappingTaskApprovalAsync(
+            _model.PersonelId.Value,
+            _model.BaslangicTarihi.Value,
+            _model.BitisTarihi.Value,
+            EffectiveTaskApprovalId);
+
+        if (!overlapResult.IsSuccess)
         {
-            _statusMessage = "Başlangıç ve bitiş tarihi zorunludur.";
+            _statusMessage = overlapResult.Error?.Message ?? "Görev tarih çakışma kontrolü yapılamadı.";
             return false;
         }
 
-        if (!TryGetTimes(out _, out _))
+        if (overlapResult.Value)
         {
-            _statusMessage = "Saat alanlarını HH:mm formatında giriniz.";
-            return false;
-        }
-
-        if (_model.BitisTarihi <= _model.BaslangicTarihi)
-        {
-            _statusMessage = "Bitiş tarihi başlangıç tarihinden sonra olmalıdır.";
+            _statusMessage = "Bu tarihlerde başka bir görev kaydı bulunmaktadır.";
             return false;
         }
 
@@ -322,14 +706,11 @@
 
     private void ApplyDateTimes()
     {
-        if (!TryGetTimes(out var startTime, out var endTime))
+        if (!TryGetTimes(out var startTime, out var endTime) || !_startDate.HasValue || !_endDate.HasValue)
             return;
 
-        if (_model.BaslangicTarihi.HasValue)
-            _model.BaslangicTarihi = _model.BaslangicTarihi.Value.Date + startTime;
-
-        if (_model.BitisTarihi.HasValue)
-            _model.BitisTarihi = _model.BitisTarihi.Value.Date + endTime;
+        _model.BaslangicTarihi = _startDate.Value.Date + startTime;
+        _model.BitisTarihi = _endDate.Value.Date + endTime;
     }
 
     private bool TryGetTimes(out TimeSpan startTime, out TimeSpan endTime)
@@ -349,28 +730,60 @@
 
     private void RecalculateDerivedFields()
     {
-        if (!_model.BaslangicTarihi.HasValue || !_model.BitisTarihi.HasValue)
-            return;
+        ApplyDateTimes();
 
-        var duration = CalculateDuration(_model.BaslangicTarihi.Value, _model.BitisTarihi.Value);
-        _model.Sure = $"{duration.ToString("0.##", TrCulture)} gün";
+        if (!_model.BaslangicTarihi.HasValue || !_model.BitisTarihi.HasValue)
+        {
+            _durationDayText = "0 Gün";
+            _durationHourMinuteText = "0 Saat 0 Dakika";
+            _model.Sure = "0 gün";
+            _model.Yevmiye = "0";
+            _calculationExplanation = string.Empty;
+            return;
+        }
+
+        var diff = _model.BitisTarihi.Value - _model.BaslangicTarihi.Value;
+        if (diff.TotalMinutes < 0)
+        {
+            _durationDayText = "0 Gün";
+            _durationHourMinuteText = "0 Saat 0 Dakika";
+            _model.Sure = "0 gün";
+            _model.Yevmiye = "0";
+            _calculationExplanation = "Bitiş tarihi başlangıç tarihinden önce olamaz.";
+            return;
+        }
+
+        var totalMinutes = (int)Math.Floor(diff.TotalMinutes);
+        var days = totalMinutes / (24 * 60);
+        var hours = (totalMinutes % (24 * 60)) / 60;
+        var minutes = totalMinutes % 60;
+
+        _durationDayText = $"{days} Gün";
+        _durationHourMinuteText = $"{hours} Saat {minutes} Dakika";
+
+        var roundedHours = hours + (minutes > 0 ? 1 : 0);
+        var remainder = roundedHours == 0 ? 0m : roundedHours > 12 ? 1m : 0.5m;
+        _earnedDayValue = days + remainder;
+
+        _model.Sure = $"{_earnedDayValue.ToString("0.##", TrCulture)} gün";
 
         _ = decimal.TryParse(_dailyAllowanceInput, NumberStyles.Number, TrCulture, out var parsedDailyAllowance);
-        var totalAllowance = duration * parsedDailyAllowance;
+        var totalAllowance = _harcirahHesaplansin ? _earnedDayValue * parsedDailyAllowance : 0m;
+
         _model.Yevmiye = totalAllowance.ToString("N2", TrCulture);
+        _calculationExplanation = _harcirahHesaplansin
+            ? $"{parsedDailyAllowance.ToString("N2", TrCulture)} {_model.ParaBirimi} x {_earnedDayValue.ToString("0.##", TrCulture)} gün = {_model.Yevmiye} {_model.ParaBirimi}"
+            : "Harcırah Hesaplanmadı";
     }
 
-    private static decimal CalculateDuration(DateTime startDate, DateTime endDate)
+    private async Task ApplyReasonCommandAsync(string command)
     {
-        if (endDate <= startDate)
-            return 0m;
-
-        var minutes = (endDate - startDate).TotalMinutes;
-        var hours = (minutes / 60d) % 24d;
-        var days = (int)((minutes / 60d) / 24d);
-        var remainder = hours == 0d ? 0m : hours > 12d ? 1m : 0.5m;
-        return days + remainder;
+        await JS.InvokeVoidAsync("taskApprovalEditor.execCommand", _reasonEditor, command);
+        await SyncReasonFromEditorAsync();
     }
+
+    private async Task SyncReasonFromEditorAsync()
+        => _model.GorevinSebebi = await JS.InvokeAsync<string>("taskApprovalEditor.getHtml", _reasonEditor);
 
     private void NavigateBack()
         => NavigateBack(EffectiveTaskApprovalId);
@@ -389,4 +802,40 @@
 
         NavigationManager.NavigateTo(url);
     }
+
+    private static List<string> BuildTimeOptions()
+    {
+        var values = new List<string>();
+        var time = TimeSpan.Zero;
+        while (time < TimeSpan.FromDays(1))
+        {
+            values.Add($"{time.Hours:00}:{time.Minutes:00}");
+            time = time.Add(TimeSpan.FromMinutes(5));
+        }
+
+        return values;
+    }
+
+    private static bool ContainsAny(string source, params string[] tokens)
+        => tokens.Any(token => source.Contains(token, StringComparison.OrdinalIgnoreCase));
+
+    private static string FormatDateValue(DateTime? value)
+        => value?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? string.Empty;
+
+    private CountryRate ResolveCountryRate(string country)
+        => _countryRates.FirstOrDefault(x => string.Equals(x.Country, country, StringComparison.OrdinalIgnoreCase))
+            ?? _countryRates[0];
+
+    private string ResolveCountryFromModel(string? currency)
+    {
+        if (string.IsNullOrWhiteSpace(currency))
+            return _countryRates[0].Country;
+
+        var found = _countryRates.FirstOrDefault(x => string.Equals(x.Currency, currency, StringComparison.OrdinalIgnoreCase));
+        return found?.Country ?? _countryRates[0].Country;
+    }
+
+    private sealed record CountryRate(string Country, string Currency, decimal DailyAmount);
+    private sealed record PersonelOption(int Id, string DisplayName);
+    private sealed record SignatureOption(int Id, string DisplayName, string Title);
 }
