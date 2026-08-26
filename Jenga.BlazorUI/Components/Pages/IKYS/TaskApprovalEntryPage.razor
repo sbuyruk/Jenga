@@ -2,12 +2,9 @@
 @page "/ikys/task-approval-entry/{TaskApprovalId:int}"
 @page "/ikys/task-approvals/new"
 @page "/ikys/task-approvals/edit/{TaskApprovalId:int}"
-@page "/ikys/gorevonaygirisiwp"
-@page "/IKYS/GorevOnayGirisiWP"
 @page "/IKYS/GorevOnayGirisiWP.aspx"
 @rendermode InteractiveServer
 
-@using System.Globalization
 @using Jenga.BlazorUI.Services.Common
 @using Jenga.DataAccess.Services.IKYS
 @using Jenga.Models.Enums
@@ -17,8 +14,8 @@
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.JSInterop
 
+@inject ITaskApprovalEntryService TaskApprovalEntryService
 @inject IGorevOnayService GorevOnayService
-@inject IPersonelService PersonelService
 @inject ICurrentUserService CurrentUserService
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JS
@@ -27,19 +24,20 @@
 <PermissionGuard Module="ModuleName.IKYS" Operation="Operation.View">
     <div class="task-approval-entry-page">
         <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-            <button class="btn btn-outline-secondary" @onclick="NavigateBack">
-                <i class="bi bi-arrow-left me-1"></i>Görev Onay Listesi
-            </button>
             <h3 class="mb-0 me-auto">
                 Görev Onayı Girişi
-                @if (!string.IsNullOrWhiteSpace(_selectedPersonDisplayName))
+                @if (!string.IsNullOrWhiteSpace(_selectedPersonName))
                 {
-                    <span class="text-muted fs-6 ms-2">@_selectedPersonDisplayName</span>
+                    <span class="text-muted fs-6 ms-2">@_selectedPersonName</span>
                 }
             </h3>
             @if (_model.Id > 0)
             {
                 <span class="badge bg-secondary">#@_model.Id</span>
+            }
+            @if (_isPaid)
+            {
+                <span class="badge bg-danger">ÖDENDİ</span>
             }
         </div>
 
@@ -52,20 +50,16 @@
         {
             <div class="d-flex justify-content-center align-items-center py-5">
                 <div class="spinner-border text-primary me-3" role="status"></div>
-                <span class="text-muted">Görev onayı hazırlanıyor…</span>
+                <span class="text-muted">Görev onay girişi hazırlanıyor…</span>
             </div>
         }
         else if (_loadFailed)
         {
-            <div class="alert alert-danger">Kayıt yüklenemedi. Görev onay listesine dönüp tekrar deneyiniz.</div>
-        }
-        else if (!CanSave)
-        {
-            <div class="alert alert-danger">Bu işlem için yetkiniz bulunmuyor.</div>
+            <div class="alert alert-danger">Kayıt yüklenemedi.</div>
         }
         else
         {
-            <EditForm Model="_model" OnValidSubmit="SaveAsync">
+            <EditForm Model="_model" OnValidSubmit="SubmitPrimaryAsync">
                 <DataAnnotationsValidator />
 
                 <div class="card shadow-sm">
@@ -76,16 +70,16 @@
                                 <div class="col-md-6">
                                     <label class="form-label">Personel Seçimi</label>
                                     <InputSelect class="form-select" @bind-Value="_model.PersonelId" @bind-Value:after="OnPersonChangedAsync">
-                                        @foreach (var personel in _personelOptions)
+                                        @foreach (var option in _personOptions)
                                         {
-                                            <option value="@personel.Id">@personel.DisplayName</option>
+                                            <option value="@option.Id">@option.Label</option>
                                         }
                                     </InputSelect>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-check mt-4 pt-2">
-                                        <input id="harcirahHesaplansin" class="form-check-input" type="checkbox" checked="@_harcirahHesaplansin" @onchange="OnHarcirahToggleChanged" />
-                                        <label class="form-check-label" for="harcirahHesaplansin">Harcırah Hesaplansın</label>
+                                        <input id="harcirahToggle" class="form-check-input" type="checkbox" checked="@_harcirahHesaplansin" @onchange="OnHarcirahToggleChangedAsync" />
+                                        <label class="form-check-label" for="harcirahToggle">Harcırah Hesaplansın</label>
                                     </div>
                                 </div>
                             </div>
@@ -96,27 +90,27 @@
                             <div class="row g-3">
                                 <div class="col-md-3">
                                     <label class="form-label">Başlangıç Tarihi</label>
-                                    <input type="date" class="form-control" value="@FormatDateValue(_startDate)" @onchange="OnStartDateChanged" />
+                                    <input type="date" class="form-control" value="@_startDate.ToString("yyyy-MM-dd")" @onchange="OnStartDateChangedAsync" />
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label">Baş.Saat</label>
-                                    <InputSelect class="form-select" @bind-Value="_startTimeText" @bind-Value:after="OnDateTimeChangedAsync">
-                                        @foreach (var option in _timeOptions)
+                                    <InputSelect class="form-select" @bind-Value="_startTime" @bind-Value:after="RecalculateAsync">
+                                        @foreach (var time in _timeOptions)
                                         {
-                                            <option value="@option">@option</option>
+                                            <option value="@time">@time</option>
                                         }
                                     </InputSelect>
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label">Bitiş Tarihi</label>
-                                    <input type="date" class="form-control" value="@FormatDateValue(_endDate)" @onchange="OnEndDateChanged" />
+                                    <input type="date" class="form-control" value="@_endDate.ToString("yyyy-MM-dd")" @onchange="OnEndDateChangedAsync" />
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label">Bit.Saat</label>
-                                    <InputSelect class="form-select" @bind-Value="_endTimeText" @bind-Value:after="OnDateTimeChangedAsync">
-                                        @foreach (var option in _timeOptions)
+                                    <InputSelect class="form-select" @bind-Value="_endTime" @bind-Value:after="RecalculateAsync">
+                                        @foreach (var time in _timeOptions)
                                         {
-                                            <option value="@option">@option</option>
+                                            <option value="@time">@time</option>
                                         }
                                     </InputSelect>
                                 </div>
@@ -140,16 +134,16 @@
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label">Ülke</label>
-                                    <InputSelect class="form-select" @bind-Value="_selectedCountry" @bind-Value:after="OnCountryChangedAsync">
-                                        @foreach (var option in _countryRates)
+                                    <InputSelect class="form-select" @bind-Value="_selectedCountry" @bind-Value:after="RecalculateAsync">
+                                        @foreach (var country in _countryRates)
                                         {
-                                            <option value="@option.Country">@option.Country</option>
+                                            <option value="@country.Country">@country.Country</option>
                                         }
                                     </InputSelect>
                                 </div>
                                 <div class="col-md-2">
                                     <label class="form-label">Günlük Yev.</label>
-                                    <input class="form-control" value="@_dailyAllowanceInput" readonly />
+                                    <input class="form-control" value="@_dailyAllowanceText" readonly />
                                 </div>
                                 <div class="col-md-2">
                                     <label class="form-label">Para Birimi</label>
@@ -159,6 +153,7 @@
                                     <label class="form-label">Avans</label>
                                     <InputText class="form-control" @bind-Value="_model.Avans" />
                                 </div>
+
                                 <div class="col-md-3">
                                     <label class="form-label">Ulaşım Aracı</label>
                                     <InputSelect class="form-select" @bind-Value="_model.UlasimAraci">
@@ -190,13 +185,14 @@
                                         }
                                     </InputSelect>
                                 </div>
+
                                 <div class="col-md-4">
                                     <label class="form-label">Per.Dir.</label>
                                     <InputSelect class="form-select" @bind-Value="_model.PerSubeImza">
                                         <option value="">Seçiniz</option>
                                         @foreach (var option in _perDirOptions)
                                         {
-                                            <option value="@option.Id">@option.DisplayName</option>
+                                            <option value="@option.Id">@option.Label</option>
                                         }
                                     </InputSelect>
                                 </div>
@@ -206,13 +202,13 @@
                                         <option value="">Seçiniz</option>
                                         @foreach (var option in _perUzmOptions)
                                         {
-                                            <option value="@option.Id">@option.DisplayName</option>
+                                            <option value="@option.Id">@option.Label</option>
                                         }
                                     </InputSelect>
                                 </div>
                                 <div class="col-md-4 d-flex align-items-end">
                                     <div class="form-check mb-2">
-                                        <InputCheckbox id="vekilCheck" class="form-check-input" @bind-Value="PerSubeVekilValue" />
+                                        <InputCheckbox id="vekilCheck" class="form-check-input" @bind-Value="PerSubeVekil" />
                                         <label class="form-check-label" for="vekilCheck">Vekil</label>
                                     </div>
                                 </div>
@@ -224,7 +220,7 @@
                             <div class="row g-3">
                                 <div class="col-12">
                                     <label class="form-label">Görevin Sebebi</label>
-                                    <div class="btn-toolbar mb-2" role="toolbar" aria-label="Görevin sebebi biçimlendirme araçları">
+                                    <div class="btn-toolbar mb-2" role="toolbar">
                                         <div class="btn-group btn-group-sm">
                                             <button type="button" class="btn btn-outline-secondary" @onclick='() => ApplyReasonCommandAsync("bold")'><b>B</b></button>
                                             <button type="button" class="btn btn-outline-secondary" @onclick='() => ApplyReasonCommandAsync("italic")'><i>I</i></button>
@@ -233,7 +229,7 @@
                                             <button type="button" class="btn btn-outline-secondary" @onclick='() => ApplyReasonCommandAsync("insertOrderedList")'>1. Liste</button>
                                         </div>
                                     </div>
-                                    <div class="task-reason-editor form-control" contenteditable="true" @ref="_reasonEditor" @onblur="SyncReasonFromEditorAsync"></div>
+                                    <div class="task-reason-editor form-control" contenteditable="true" @ref="_reasonEditor" @onblur="SyncReasonAsync"></div>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Görevin Yeri</label>
@@ -269,20 +265,33 @@
                                 </div>
                                 <div class="col-md-5">
                                     <label class="form-label">Hesap Açıklaması</label>
-                                    <textarea class="form-control" rows="4" readonly>@_calculationExplanation</textarea>
+                                    <textarea class="form-control" rows="4" readonly>@_explanationText</textarea>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="card-footer d-flex flex-wrap justify-content-end gap-2">
-                        <button type="button" class="btn btn-outline-secondary" @onclick="NavigateBack">İptal</button>
-                        <button type="submit" class="btn btn-success" disabled="@_isSaving">
-                            @if (_isSaving)
+
+                    <div class="card-footer d-flex flex-wrap align-items-center gap-2">
+                        @if (_showSave)
+                        {
+                            <button type="submit" class="btn btn-success" disabled="@_isSaving">Kaydet</button>
+                        }
+                        @if (_showUpdate)
+                        {
+                            <button type="button" class="btn btn-primary" disabled="@_isSaving" @onclick="UpdateAsync">Güncelle</button>
+                        }
+                        @if (_showDelete)
+                        {
+                            <button type="button" class="btn btn-danger" disabled="@_isSaving" @onclick="DeleteAsync">Sil</button>
+                        }
+
+                        <div class="ms-auto d-flex gap-2">
+                            @if (_showReport)
                             {
-                                <span class="spinner-border spinner-border-sm me-1"></span>
+                                <button type="button" class="btn btn-secondary" @onclick="GoReport">Rapor Al</button>
                             }
-                            Kaydet
-                        </button>
+                            <button type="button" class="btn btn-outline-secondary" @onclick="() => GoList()">Görev Onay Listesi</button>
+                        </div>
                     </div>
                 </div>
             </EditForm>
@@ -291,66 +300,58 @@
 </PermissionGuard>
 
 @code {
-    private const string AuthorizedUnitCode = "IKYS";
-    private static readonly CultureInfo TrCulture = new("tr-TR");
-
     [Parameter] public int? TaskApprovalId { get; set; }
 
-    [SupplyParameterFromQuery(Name = "GorevOnayId")]
-    public int? LegacyTaskApprovalId { get; set; }
+    [SupplyParameterFromQuery(Name = "GorevOnayId")] public int? GorevOnayIdQuery { get; set; }
+    [SupplyParameterFromQuery(Name = "PersonelId")] public int? PersonelIdQuery { get; set; }
+    [SupplyParameterFromQuery(Name = "BirimTanimId")] public int? BirimTanimIdQuery { get; set; }
+    [SupplyParameterFromQuery(Name = "Auth")] public string? Auth { get; set; }
 
-    [SupplyParameterFromQuery(Name = "Auth")]
-    public string? Auth { get; set; }
+    private const string AuthorizedUnitCode = "IKYS";
 
     private GorevOnay _model = new();
-    private readonly List<PersonelOption> _personelOptions = new();
-    private readonly List<SignatureOption> _perDirOptions = new();
-    private readonly List<SignatureOption> _perUzmOptions = new();
-
-    private readonly string[] _ulasimAraclari = ["", "Uçak", "Otobüs", "Tren", "Vakıf Aracı"];
-    private readonly string[] _transferSecenekleri = ["", "Vakıf Aracı", "Toplu Taşıma", "Taksi", "Diğer"];
-    private readonly string[] _konaklamaSecenekleri = ["Limit Dahilinde", "Limit Aşımı"];
-    private readonly IReadOnlyList<CountryRate> _countryRates =
-    [
-        new("Türkiye", "TL", 1250m),
-        new("Avrupa", "EUR", 150m),
-        new("İngiltere", "GBP", 175m),
-        new("Avrupa Harici", "USD", 200m)
-    ];
-
+    private readonly List<TaskApprovalOptionItem> _personOptions = [];
+    private readonly List<TaskApprovalOptionItem> _perDirOptions = [];
+    private readonly List<TaskApprovalOptionItem> _perUzmOptions = [];
+    private readonly List<TaskApprovalCountryRateOption> _countryRates = [];
+    private readonly List<string> _ulasimAraclari = [];
+    private readonly List<string> _transferSecenekleri = [];
+    private readonly List<string> _konaklamaSecenekleri = [];
     private readonly List<string> _timeOptions = BuildTimeOptions();
 
-    private Personel? _currentPersonel;
-    private bool _isAuthorizedUnitView;
-    private bool _isLoading = true;
-    private bool _isSaving;
-    private bool _canCreate;
-    private bool _canEdit;
-    private bool _loadFailed;
-    private string? _statusMessage;
-
-    private DateTime? _startDate;
-    private DateTime? _endDate;
-    private string _startTimeText = "08:30";
-    private string _endTimeText = "17:00";
-
-    private string _selectedCountry = "Türkiye";
-    private string _dailyAllowanceInput = "0";
-    private bool _harcirahHesaplansin = true;
-    private string _harcirahGroup = "";
-
+    private DateTime _startDate = DateTime.Today;
+    private DateTime _endDate = DateTime.Today;
+    private string _startTime = "08:30";
+    private string _endTime = "17:00";
     private string _durationDayText = "0 Gün";
     private string _durationHourMinuteText = "0 Saat 0 Dakika";
-    private decimal _earnedDayValue;
-    private string _calculationExplanation = string.Empty;
-    private string _selectedPersonDisplayName = string.Empty;
+    private string _dailyAllowanceText = "0";
+    private string _explanationText = string.Empty;
+    private string _selectedCountry = "Türkiye";
+    private string _harcirahGroup = "Standart";
+    private string _selectedPersonName = string.Empty;
 
+    private bool _harcirahHesaplansin = true;
+    private bool _isLoading = true;
+    private bool _isSaving;
+    private bool _loadFailed;
+    private bool _canCreate;
+    private bool _canEdit;
+    private bool _canDelete;
+    private bool _canManage;
+    private bool _showSave;
+    private bool _showUpdate;
+    private bool _showDelete;
+    private bool _showReport;
+    private bool _isPaid;
+    private string? _statusMessage;
+
+    private Personel? _currentPersonel;
     private ElementReference _reasonEditor;
-    private bool _pendingReasonEditorSync;
+    private bool _syncReasonEditor;
 
-    private int? EffectiveTaskApprovalId => TaskApprovalId ?? LegacyTaskApprovalId;
-    private bool CanSave => EffectiveTaskApprovalId.HasValue ? _canEdit : _canCreate;
-    private bool PerSubeVekilValue
+    private int? EffectiveTaskApprovalId => TaskApprovalId ?? GorevOnayIdQuery;
+    private bool PerSubeVekil
     {
         get => _model.PerSubeVekil ?? false;
         set => _model.PerSubeVekil = value;
@@ -361,67 +362,52 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (_pendingReasonEditorSync && !_isLoading && CanSave)
+        if (_syncReasonEditor && !_isLoading)
         {
             await JS.InvokeVoidAsync("taskApprovalEditor.setHtml", _reasonEditor, _model.GorevinSebebi ?? string.Empty);
-            _pendingReasonEditorSync = false;
+            _syncReasonEditor = false;
         }
     }
 
     private async Task LoadAsync()
     {
         _isLoading = true;
+        _loadFailed = false;
         _statusMessage = null;
 
         try
         {
-            _loadFailed = false;
             _currentPersonel = await CurrentUserService.GetCurrentPersonelAsync();
             _canCreate = await CurrentUserService.HasPermissionAsync(ModuleName.IKYS, Operation.Create);
             _canEdit = await CurrentUserService.HasPermissionAsync(ModuleName.IKYS, Operation.Edit);
-            _isAuthorizedUnitView = string.Equals(Auth, AuthorizedUnitCode, StringComparison.OrdinalIgnoreCase)
-                && await CurrentUserService.HasPermissionAsync(ModuleName.IKYS, Operation.Manage);
+            _canDelete = await CurrentUserService.HasPermissionAsync(ModuleName.IKYS, Operation.Delete);
+            _canManage = await CurrentUserService.HasPermissionAsync(ModuleName.IKYS, Operation.Manage);
 
-            await LoadPersonelOptionsAsync();
-            await LoadSignatureOptionsAsync();
-
-            if (EffectiveTaskApprovalId.HasValue)
+            var loadResult = await TaskApprovalEntryService.LoadAsync(new TaskApprovalEntryLoadRequest
             {
-                var result = _isAuthorizedUnitView
-                    ? await GorevOnayService.GetByIdAsync(EffectiveTaskApprovalId.Value)
-                    : await GorevOnayService.GetScopedByIdAsync(EffectiveTaskApprovalId.Value, _currentPersonel?.Id, _isAuthorizedUnitView);
+                GorevOnayId = EffectiveTaskApprovalId,
+                CurrentPersonelId = _currentPersonel?.Id,
+                QueryPersonelId = PersonelIdQuery,
+                QueryBirimTanimId = BirimTanimIdQuery,
+                Auth = Auth,
+                CanManage = _canManage
+            });
 
-                if (!result.IsSuccess || result.Value is null)
-                {
-                    _statusMessage = result.Error?.Message ?? "Görev onayı bulunamadı.";
-                    _loadFailed = true;
-                    _model = new GorevOnay();
-                    return;
-                }
-
-                _model = result.Value;
-            }
-            else
+            if (!loadResult.IsSuccess || loadResult.Value is null)
             {
-                _model = new GorevOnay
-                {
-                    PersonelId = _isAuthorizedUnitView ? _personelOptions.FirstOrDefault()?.Id : _currentPersonel?.Id,
-                    ParaBirimi = "TL",
-                    AmirOnayi = (int)ApprovalStatus.PendingApproval,
-                    Konaklama = _konaklamaSecenekleri[0],
-                    Transfer = _transferSecenekleri[0],
-                    UlasimAraci = _ulasimAraclari[0]
-                };
+                _loadFailed = true;
+                _statusMessage = loadResult.Error?.Message ?? "Görev onayı yüklenemedi.";
+                return;
             }
 
-            HydrateUiFieldsFromModel();
-            await UpdatePersonDependentFieldsAsync();
-            RecalculateDerivedFields();
-            _pendingReasonEditorSync = true;
+            ApplyLoadData(loadResult.Value);
+            await RecalculateAsync();
+            _syncReasonEditor = true;
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "TaskApprovalEntryPage.LoadAsync");
+            _loadFailed = true;
             _statusMessage = "Beklenmeyen bir hata oluştu.";
         }
         finally
@@ -430,179 +416,168 @@
         }
     }
 
-    private async Task LoadPersonelOptionsAsync()
+    private void ApplyLoadData(TaskApprovalEntryLoadResult loaded)
     {
-        _personelOptions.Clear();
+        _model = loaded.Model;
 
-        if (_isAuthorizedUnitView)
-        {
-            var result = await PersonelService.GetCalisanPersonelAsync();
-            if (result is { IsSuccess: true, Value: not null })
-            {
-                _personelOptions.AddRange(result.Value
-                    .OrderBy(x => x.Adi)
-                    .ThenBy(x => x.Soyadi)
-                    .Select(x => new PersonelOption(x.Id, $"{x.Adi} {x.Soyadi}")));
-            }
-        }
-        else if (_currentPersonel is not null)
-        {
-            _personelOptions.Add(new PersonelOption(_currentPersonel.Id, $"{_currentPersonel.Adi} {_currentPersonel.Soyadi}"));
-        }
-    }
-
-    private async Task LoadSignatureOptionsAsync()
-    {
+        _personOptions.Clear();
+        _personOptions.AddRange(loaded.PersonOptions);
         _perDirOptions.Clear();
+        _perDirOptions.AddRange(loaded.PerDirOptions);
         _perUzmOptions.Clear();
+        _perUzmOptions.AddRange(loaded.PerUzmOptions);
+        _countryRates.Clear();
+        _countryRates.AddRange(loaded.CountryRates);
+        _ulasimAraclari.Clear();
+        _ulasimAraclari.AddRange(loaded.UlasimAraclari);
+        _transferSecenekleri.Clear();
+        _transferSecenekleri.AddRange(loaded.TransferSecenekleri);
+        _konaklamaSecenekleri.Clear();
+        _konaklamaSecenekleri.AddRange(loaded.KonaklamaSecenekleri);
 
-        var signatureCandidates = _personelOptions
-            .Select(x => new SignatureOption(x.Id, x.DisplayName, string.Empty))
-            .OrderBy(x => x.DisplayName)
-            .ToList();
+        _selectedPersonName = loaded.SelectedPersonDisplayName ?? string.Empty;
+        _harcirahGroup = loaded.HarcirahGroup;
+        _selectedCountry = loaded.SelectedCountry;
+        _harcirahHesaplansin = loaded.HarcirahHesaplansin;
 
-        _perDirOptions.AddRange(signatureCandidates
-            .DistinctBy(x => x.Id));
+        _showSave = loaded.ShowSave && _canCreate;
+        _showUpdate = loaded.ShowUpdate && _canEdit;
+        _showDelete = loaded.ShowDelete && _canDelete;
+        _showReport = loaded.ShowReport;
+        _isPaid = loaded.IsPaid;
 
-        _perUzmOptions.AddRange(signatureCandidates
-            .DistinctBy(x => x.Id));
-    }
-
-    private void HydrateUiFieldsFromModel()
-    {
-        var now = DateTime.Now;
-        var modelStart = _model.BaslangicTarihi ?? now.Date.AddHours(8).AddMinutes(30);
-        var modelEnd = _model.BitisTarihi ?? now.Date.AddHours(17);
-
-        _startDate = modelStart.Date;
-        _endDate = modelEnd.Date;
-        _startTimeText = modelStart.ToString("HH:mm", CultureInfo.InvariantCulture);
-        _endTimeText = modelEnd.ToString("HH:mm", CultureInfo.InvariantCulture);
-
-        _harcirahHesaplansin = true;
-
-        _selectedCountry = ResolveCountryFromModel(_model.ParaBirimi);
-        var rate = ResolveCountryRate(_selectedCountry);
-        _model.ParaBirimi = rate.Currency;
-        _dailyAllowanceInput = (_model.GunlukYevmiye ?? rate.DailyAmount.ToString("N2", TrCulture)).Trim();
-
-        if (string.IsNullOrWhiteSpace(_model.Transfer))
-            _model.Transfer = _transferSecenekleri[0];
-        if (string.IsNullOrWhiteSpace(_model.Konaklama))
-            _model.Konaklama = _konaklamaSecenekleri[0];
-        if (string.IsNullOrWhiteSpace(_model.UlasimAraci))
-            _model.UlasimAraci = _ulasimAraclari[0];
-
-        _selectedPersonDisplayName = _personelOptions.FirstOrDefault(x => x.Id == _model.PersonelId)?.DisplayName
-            ?? _selectedPersonDisplayName;
+        _startDate = (_model.BaslangicTarihi ?? DateTime.Today).Date;
+        _endDate = (_model.BitisTarihi ?? DateTime.Today).Date;
+        _startTime = (_model.BaslangicTarihi ?? DateTime.Today.AddHours(8).AddMinutes(30)).ToString("HH:mm");
+        _endTime = (_model.BitisTarihi ?? DateTime.Today.AddHours(17)).ToString("HH:mm");
     }
 
     private async Task OnPersonChangedAsync()
     {
-        _selectedPersonDisplayName = _personelOptions.FirstOrDefault(x => x.Id == _model.PersonelId)?.DisplayName ?? string.Empty;
-        await UpdatePersonDependentFieldsAsync();
-        RecalculateDerivedFields();
+        _selectedPersonName = _personOptions.FirstOrDefault(x => x.Id == _model.PersonelId)?.Label ?? string.Empty;
+        await RecalculateAsync();
     }
 
-    private async Task UpdatePersonDependentFieldsAsync()
-    {
-        if (!_model.PersonelId.HasValue)
-        {
-            _harcirahGroup = string.Empty;
-            return;
-        }
-
-        _harcirahGroup = "Standart";
-        await Task.CompletedTask;
-    }
-
-    private async Task OnCountryChangedAsync()
-    {
-        ApplyCountryRate();
-        RecalculateDerivedFields();
-        await Task.CompletedTask;
-    }
-
-    private void ApplyCountryRate()
-    {
-        var rate = ResolveCountryRate(_selectedCountry);
-        _model.ParaBirimi = rate.Currency;
-        _dailyAllowanceInput = rate.DailyAmount.ToString("N2", TrCulture);
-    }
-
-    private async Task OnHarcirahToggleChanged(ChangeEventArgs args)
-    {
-        _harcirahHesaplansin = args.Value is bool value && value;
-        RecalculateDerivedFields();
-        await Task.CompletedTask;
-    }
-
-    private async Task OnStartDateChanged(ChangeEventArgs args)
+    private async Task OnStartDateChangedAsync(ChangeEventArgs args)
     {
         if (DateTime.TryParse(args.Value?.ToString(), out var parsed))
             _startDate = parsed.Date;
 
-        await OnDateTimeChangedAsync();
+        await RecalculateAsync();
     }
 
-    private async Task OnEndDateChanged(ChangeEventArgs args)
+    private async Task OnEndDateChangedAsync(ChangeEventArgs args)
     {
         if (DateTime.TryParse(args.Value?.ToString(), out var parsed))
             _endDate = parsed.Date;
 
-        await OnDateTimeChangedAsync();
+        await RecalculateAsync();
     }
 
-    private async Task OnDateTimeChangedAsync()
+    private async Task OnHarcirahToggleChangedAsync(ChangeEventArgs args)
     {
-        RecalculateDerivedFields();
-        await Task.CompletedTask;
+        _harcirahHesaplansin = args.Value is bool flag && flag;
+        await RecalculateAsync();
+    }
+
+    private async Task RecalculateAsync()
+    {
+        var calc = await TaskApprovalEntryService.CalculateAsync(new TaskApprovalCalculationInput
+        {
+            StartDate = _startDate,
+            StartTime = _startTime,
+            EndDate = _endDate,
+            EndTime = _endTime,
+            Country = _selectedCountry,
+            HarcirahHesaplansin = _harcirahHesaplansin
+        });
+
+        _durationDayText = calc.DurationDayText;
+        _durationHourMinuteText = calc.DurationHourMinuteText;
+        _dailyAllowanceText = calc.DailyAllowance.ToString("N2");
+        _explanationText = calc.ExplanationText;
+
+        if (calc.StartDateTime.HasValue) _model.BaslangicTarihi = calc.StartDateTime;
+        if (calc.EndDateTime.HasValue) _model.BitisTarihi = calc.EndDateTime;
+
+        _model.Sure = calc.EarnedDayText;
+        _model.Yevmiye = calc.TotalAllowanceText;
+        _model.GunlukYevmiye = calc.DailyAllowance.ToString("N2");
+        _model.ParaBirimi = calc.Currency;
+
+        if (calc.IsNegativeDuration)
+            _statusMessage = "Bitiş tarihi başlangıç tarihinden sonra olmalıdır.";
+        else if (_statusMessage == "Bitiş tarihi başlangıç tarihinden sonra olmalıdır.")
+            _statusMessage = null;
+    }
+
+    private async Task SubmitPrimaryAsync()
+    {
+        if (_showSave)
+            await SaveAsync();
+        else if (_showUpdate)
+            await UpdateAsync();
     }
 
     private async Task SaveAsync()
     {
-        _statusMessage = null;
-        await SyncReasonFromEditorAsync();
+        await PersistAsync(isUpdate: false);
+    }
 
-        if (!await ValidateModelAsync())
+    private async Task UpdateAsync()
+    {
+        await PersistAsync(isUpdate: true);
+    }
+
+    private async Task PersistAsync(bool isUpdate)
+    {
+        _statusMessage = null;
+        await SyncReasonAsync();
+
+        if (!ValidateBeforePersist())
             return;
+
+        var overlap = await TaskApprovalEntryService.HasOverlapAsync(
+            _model.PersonelId!.Value,
+            _model.BaslangicTarihi!.Value,
+            _model.BitisTarihi!.Value,
+            isUpdate ? _model.Id : null);
+
+        if (!overlap.IsSuccess)
+        {
+            _statusMessage = overlap.Error?.Message ?? "Tarih çakışma kontrolü yapılamadı.";
+            return;
+        }
+
+        if (overlap.Value)
+        {
+            _statusMessage = "Bu tarihlerde başka bir görev kaydı bulunmaktadır.";
+            return;
+        }
 
         _isSaving = true;
         try
         {
-            ApplyDateTimes();
-            RecalculateDerivedFields();
-            _model.GunlukYevmiye = _dailyAllowanceInput;
             _model.AmirOnayi = (int)ApprovalStatus.PendingApproval;
             _model.OnayRedAciklama = null;
             _model.AracTahsisi = string.Equals(_model.UlasimAraci, "Uçak", StringComparison.OrdinalIgnoreCase);
 
-            var currentUserName = await CurrentUserService.GetUserNameAsync();
-            Result result;
-            if (EffectiveTaskApprovalId.HasValue)
-            {
-                result = _isAuthorizedUnitView
-                    ? await GorevOnayService.UpdateAsync(_model)
-                    : await GorevOnayService.UpdateScopedAsync(_model, _currentPersonel?.Id, _isAuthorizedUnitView);
-            }
-            else
-            {
-                result = _isAuthorizedUnitView
-                    ? await GorevOnayService.AddAsync(_model, currentUserName)
-                    : await GorevOnayService.AddScopedAsync(_model, _currentPersonel?.Id, _isAuthorizedUnitView, currentUserName);
-            }
+            var userName = await CurrentUserService.GetUserNameAsync();
+            Result result = isUpdate
+                ? await GorevOnayService.UpdateAsync(_model)
+                : await GorevOnayService.AddAsync(_model, userName);
 
             if (!result.IsSuccess)
             {
-                _statusMessage = result.Error?.Message ?? "Görev onayı kaydedilemedi.";
+                _statusMessage = result.Error?.Message ?? "Kaydetme işlemi başarısız.";
                 return;
             }
 
-            NavigateBack(_model.Id);
+            GoList(_model.Id);
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "TaskApprovalEntryPage.SaveAsync");
+            Logger.LogError(ex, "TaskApprovalEntryPage.PersistAsync");
             _statusMessage = "Görev onayı kaydedilirken beklenmeyen bir hata oluştu.";
         }
         finally
@@ -611,11 +586,51 @@
         }
     }
 
-    private async Task<bool> ValidateModelAsync()
+    private async Task DeleteAsync()
+    {
+        if (_model.Id <= 0)
+            return;
+
+        _isSaving = true;
+        try
+        {
+            var result = await GorevOnayService.DeleteAsync(_model);
+            if (!result.IsSuccess)
+            {
+                _statusMessage = result.Error?.Message ?? "Silme işlemi başarısız.";
+                return;
+            }
+
+            GoList();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "TaskApprovalEntryPage.DeleteAsync");
+            _statusMessage = "Silme işlemi sırasında beklenmeyen bir hata oluştu.";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private bool ValidateBeforePersist()
     {
         if (!_model.PersonelId.HasValue)
         {
             _statusMessage = "Personel seçimi zorunludur.";
+            return false;
+        }
+
+        if (!_model.BaslangicTarihi.HasValue || !_model.BitisTarihi.HasValue)
+        {
+            _statusMessage = "Başlangıç ve bitiş tarihleri zorunludur.";
+            return false;
+        }
+
+        if (_model.BitisTarihi <= _model.BaslangicTarihi)
+        {
+            _statusMessage = "Bitiş tarihi başlangıç tarihinden sonra olmalıdır.";
             return false;
         }
 
@@ -631,146 +646,39 @@
             return false;
         }
 
-        if (!TryGetTimes(out _, out _) || !_startDate.HasValue || !_endDate.HasValue)
-        {
-            _statusMessage = "Başlangıç/bitiş tarihi ve saat alanlarını geçerli giriniz.";
-            return false;
-        }
-
-        ApplyDateTimes();
-
-        if (!_model.BaslangicTarihi.HasValue || !_model.BitisTarihi.HasValue || _model.BitisTarihi <= _model.BaslangicTarihi)
-        {
-            _statusMessage = "Bitiş tarihi başlangıç tarihinden sonra olmalıdır.";
-            return false;
-        }
-
-        if (!decimal.TryParse(_dailyAllowanceInput, NumberStyles.Number, TrCulture, out var parsedDailyAllowance) || parsedDailyAllowance < 0m)
-        {
-            _statusMessage = "Günlük yevmiye alanını sayısal bir değer olarak giriniz.";
-            return false;
-        }
-
-        var overlapResult = await GorevOnayService.HasOverlappingTaskApprovalAsync(
-            _model.PersonelId.Value,
-            _model.BaslangicTarihi.Value,
-            _model.BitisTarihi.Value,
-            EffectiveTaskApprovalId);
-
-        if (!overlapResult.IsSuccess)
-        {
-            _statusMessage = overlapResult.Error?.Message ?? "Görev tarih çakışma kontrolü yapılamadı.";
-            return false;
-        }
-
-        if (overlapResult.Value)
-        {
-            _statusMessage = "Bu tarihlerde başka bir görev kaydı bulunmaktadır.";
-            return false;
-        }
-
-        if (!_isAuthorizedUnitView)
-            _model.PersonelId = _currentPersonel?.Id;
-
         return true;
-    }
-
-    private void ApplyDateTimes()
-    {
-        if (!TryGetTimes(out var startTime, out var endTime) || !_startDate.HasValue || !_endDate.HasValue)
-            return;
-
-        _model.BaslangicTarihi = _startDate.Value.Date + startTime;
-        _model.BitisTarihi = _endDate.Value.Date + endTime;
-    }
-
-    private bool TryGetTimes(out TimeSpan startTime, out TimeSpan endTime)
-    {
-        startTime = TimeSpan.Zero;
-        endTime = TimeSpan.Zero;
-
-        var startOk = TimeOnly.TryParseExact(_startTimeText, "HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedStart);
-        var endOk = TimeOnly.TryParseExact(_endTimeText, "HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedEnd);
-        if (!startOk || !endOk)
-            return false;
-
-        startTime = parsedStart.ToTimeSpan();
-        endTime = parsedEnd.ToTimeSpan();
-        return true;
-    }
-
-    private void RecalculateDerivedFields()
-    {
-        ApplyDateTimes();
-
-        if (!_model.BaslangicTarihi.HasValue || !_model.BitisTarihi.HasValue)
-        {
-            _durationDayText = "0 Gün";
-            _durationHourMinuteText = "0 Saat 0 Dakika";
-            _model.Sure = "0 gün";
-            _model.Yevmiye = "0";
-            _calculationExplanation = string.Empty;
-            return;
-        }
-
-        var diff = _model.BitisTarihi.Value - _model.BaslangicTarihi.Value;
-        if (diff.TotalMinutes < 0)
-        {
-            _durationDayText = "0 Gün";
-            _durationHourMinuteText = "0 Saat 0 Dakika";
-            _model.Sure = "0 gün";
-            _model.Yevmiye = "0";
-            _calculationExplanation = "Bitiş tarihi başlangıç tarihinden önce olamaz.";
-            return;
-        }
-
-        var totalMinutes = (int)Math.Floor(diff.TotalMinutes);
-        var days = totalMinutes / (24 * 60);
-        var hours = (totalMinutes % (24 * 60)) / 60;
-        var minutes = totalMinutes % 60;
-
-        _durationDayText = $"{days} Gün";
-        _durationHourMinuteText = $"{hours} Saat {minutes} Dakika";
-
-        var roundedHours = hours + (minutes > 0 ? 1 : 0);
-        var remainder = roundedHours == 0 ? 0m : roundedHours > 12 ? 1m : 0.5m;
-        _earnedDayValue = days + remainder;
-
-        _model.Sure = $"{_earnedDayValue.ToString("0.##", TrCulture)} gün";
-
-        _ = decimal.TryParse(_dailyAllowanceInput, NumberStyles.Number, TrCulture, out var parsedDailyAllowance);
-        var totalAllowance = _harcirahHesaplansin ? _earnedDayValue * parsedDailyAllowance : 0m;
-
-        _model.Yevmiye = totalAllowance.ToString("N2", TrCulture);
-        _calculationExplanation = _harcirahHesaplansin
-            ? $"{parsedDailyAllowance.ToString("N2", TrCulture)} {_model.ParaBirimi} x {_earnedDayValue.ToString("0.##", TrCulture)} gün = {_model.Yevmiye} {_model.ParaBirimi}"
-            : "Harcırah Hesaplanmadı";
     }
 
     private async Task ApplyReasonCommandAsync(string command)
     {
         await JS.InvokeVoidAsync("taskApprovalEditor.execCommand", _reasonEditor, command);
-        await SyncReasonFromEditorAsync();
+        await SyncReasonAsync();
     }
 
-    private async Task SyncReasonFromEditorAsync()
+    private async Task SyncReasonAsync()
         => _model.GorevinSebebi = await JS.InvokeAsync<string>("taskApprovalEditor.getHtml", _reasonEditor);
 
-    private void NavigateBack()
-        => NavigateBack(EffectiveTaskApprovalId);
-
-    private void NavigateBack(int? selectedTaskApprovalId)
+    private void GoReport()
     {
-        var queryParts = new List<string>();
-        if (selectedTaskApprovalId.HasValue)
-            queryParts.Add($"SecilenId={selectedTaskApprovalId.Value}");
-        if (_isAuthorizedUnitView)
-            queryParts.Add($"Auth={AuthorizedUnitCode}");
+        if (_model.Id <= 0)
+            return;
 
-        var url = queryParts.Count == 0
-            ? "/ikys/task-approvals"
-            : $"/ikys/task-approvals?{string.Join("&", queryParts)}";
+        var query = new List<string> { $"taskApprovalId={_model.Id}" };
+        if (!string.IsNullOrWhiteSpace(Auth))
+            query.Add($"Auth={Uri.EscapeDataString(Auth)}");
 
+        NavigationManager.NavigateTo($"/ikys/task-approvals/report?{string.Join("&", query)}");
+    }
+
+    private void GoList(int? selectedId = null)
+    {
+        var query = new List<string>();
+        if (selectedId.HasValue)
+            query.Add($"SecilenId={selectedId.Value}");
+        if (!string.IsNullOrWhiteSpace(Auth))
+            query.Add($"Auth={Uri.EscapeDataString(Auth)}");
+
+        var url = query.Count == 0 ? "/ikys/task-approvals" : $"/ikys/task-approvals?{string.Join("&", query)}";
         NavigationManager.NavigateTo(url);
     }
 
@@ -786,24 +694,4 @@
 
         return values;
     }
-
-    private static string FormatDateValue(DateTime? value)
-        => value?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? string.Empty;
-
-    private CountryRate ResolveCountryRate(string country)
-        => _countryRates.FirstOrDefault(x => string.Equals(x.Country, country, StringComparison.OrdinalIgnoreCase))
-            ?? _countryRates[0];
-
-    private string ResolveCountryFromModel(string? currency)
-    {
-        if (string.IsNullOrWhiteSpace(currency))
-            return _countryRates[0].Country;
-
-        var found = _countryRates.FirstOrDefault(x => string.Equals(x.Currency, currency, StringComparison.OrdinalIgnoreCase));
-        return found?.Country ?? _countryRates[0].Country;
-    }
-
-    private sealed record CountryRate(string Country, string Currency, decimal DailyAmount);
-    private sealed record PersonelOption(int Id, string DisplayName);
-    private sealed record SignatureOption(int Id, string DisplayName, string Title);
 }
