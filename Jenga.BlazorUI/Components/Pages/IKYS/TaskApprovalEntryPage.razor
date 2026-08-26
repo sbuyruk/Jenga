@@ -18,8 +18,6 @@
 @using Microsoft.JSInterop
 
 @inject IGorevOnayService GorevOnayService
-@inject IGorevTanimService GorevTanimService
-@inject IIsBilgileriService IsBilgileriService
 @inject IPersonelService PersonelService
 @inject ICurrentUserService CurrentUserService
 @inject NavigationManager NavigationManager
@@ -458,30 +456,15 @@
         _perDirOptions.Clear();
         _perUzmOptions.Clear();
 
-        var personelResult = await PersonelService.GetCalisanPersonelAsync();
-        var isBilgileriResult = await IsBilgileriService.GetAllAsync();
-        if (personelResult is not { IsSuccess: true, Value: not null } || isBilgileriResult is not { IsSuccess: true, Value: not null })
-            return;
-
-        var personelById = personelResult.Value.ToDictionary(x => x.Id);
-
-        var signatureCandidates = isBilgileriResult.Value
-            .Where(x => personelById.ContainsKey(x.PersonelId) && !string.IsNullOrWhiteSpace(x.UnvanTanim?.Adi))
-            .Select(x =>
-            {
-                var personel = personelById[x.PersonelId];
-                var fullName = $"{personel.Adi} {personel.Soyadi}";
-                return new SignatureOption(x.PersonelId, fullName, x.UnvanTanim!.Adi!);
-            })
+        var signatureCandidates = _personelOptions
+            .Select(x => new SignatureOption(x.Id, x.DisplayName, string.Empty))
             .OrderBy(x => x.DisplayName)
             .ToList();
 
         _perDirOptions.AddRange(signatureCandidates
-            .Where(x => ContainsAny(x.Title, "DİREKTÖR", "DIREKTOR", "BAŞUZMAN", "BASUZMAN", "KIDEMLİ UZMAN", "KIDEMLI UZMAN", "KIDEMLIUZMAN"))
             .DistinctBy(x => x.Id));
 
         _perUzmOptions.AddRange(signatureCandidates
-            .Where(x => ContainsAny(x.Title, "UZMAN", "KIDEMLİ UZMAN", "KIDEMLI UZMAN", "KIDEMLIUZMAN"))
             .DistinctBy(x => x.Id));
     }
 
@@ -529,20 +512,8 @@
             return;
         }
 
-        var gorevTanimResult = await GorevTanimService.GetAllAsync();
-        if (gorevTanimResult is { IsSuccess: true, Value: not null })
-        {
-            var gorevTanim = gorevTanimResult.Value
-                .Where(x => x.PersonelId == _model.PersonelId)
-                .OrderByDescending(x => x.OlusturmaTarihi)
-                .FirstOrDefault();
-
-            _harcirahGroup = gorevTanim?.Adi ?? "Standart";
-        }
-        else
-        {
-            _harcirahGroup = "Standart";
-        }
+        _harcirahGroup = "Standart";
+        await Task.CompletedTask;
     }
 
     private async Task OnCountryChangedAsync()
@@ -815,9 +786,6 @@
 
         return values;
     }
-
-    private static bool ContainsAny(string source, params string[] tokens)
-        => tokens.Any(token => source.Contains(token, StringComparison.OrdinalIgnoreCase));
 
     private static string FormatDateValue(DateTime? value)
         => value?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? string.Empty;
