@@ -1,3 +1,4 @@
+using Jenga.Models.Enums;
 using Jenga.Models.Sistem;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -51,4 +52,12 @@ public class GorevOnay : BaseModel
     public string? GunlukYevmiye { get; set; }
     [DisplayName("Ödendi")]
     public bool? Odendi { get; set; }
+    [DisplayName("Amir Onayı")]
+    public int AmirOnayi { get; set; }
+    [DisplayName("Transfer")]
+    public string? Transfer { get; set; }
+    [DisplayName("Konaklama")]
+    public string? Konaklama { get; set; }
+    [DisplayName("Onay/Red Açıklaması")]
+    public string? OnayRedAciklama { get; set; }
 }

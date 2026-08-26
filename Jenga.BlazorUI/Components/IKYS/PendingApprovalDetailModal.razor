@@ -1,0 +1,83 @@
+@using Jenga.Models.IKYS
+@using Jenga.Models.Enums
+
+@if (Item != null)
+{
+    <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,0.4)">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-file-earmark-text me-2"></i>Görev Detayı — @Item.AdiSoyadi
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="OnClose"></button>
+                </div>
+                <div class="modal-body">
+                    <table class="table table-bordered table-sm">
+                        <tbody>
+                            <tr>
+                                <th style="width:35%">Ad Soyad</th>
+                                <td>@Item.AdiSoyadi</td>
+                            </tr>
+                            <tr>
+                                <th>Başlangıç Tarihi</th>
+                                <td>@Item.BaslangicTarihi?.ToString("dd.MM.yyyy")</td>
+                            </tr>
+                            <tr>
+                                <th>Bitiş Tarihi</th>
+                                <td>@Item.BitisTarihi?.ToString("dd.MM.yyyy")</td>
+                            </tr>
+                            <tr>
+                                <th>Süre</th>
+                                <td>@Item.Sure</td>
+                            </tr>
+                            <tr>
+                                <th>Görevin Sebebi</th>
+                                <td>@Item.GorevinSebebi</td>
+                            </tr>
+                            <tr>
+                                <th>Görevin Yeri</th>
+                                <td>@Item.GorevinYeri</td>
+                            </tr>
+                            <tr>
+                                <th>Ulaşım Aracı</th>
+                                <td>@Item.UlasimAraci</td>
+                            </tr>
+                            <tr>
+                                <th>Transfer</th>
+                                <td>@Item.Transfer</td>
+                            </tr>
+                            <tr>
+                                <th>Konaklama</th>
+                                <td>@Item.Konaklama</td>
+                            </tr>
+                            <tr>
+                                <th>Açıklama</th>
+                                <td>@Item.Aciklama</td>
+                            </tr>
+                            <tr>
+                                <th>Amir Onay Durumu</th>
+                                <td><ApprovalStatusBadge Status="Item.ApprovalStatus" /></td>
+                            </tr>
+                            @if (!string.IsNullOrWhiteSpace(Item.OnayRedAciklama))
+                            {
+                                <tr>
+                                    <th>Onay/Red Açıklaması</th>
+                                    <td class="text-danger">@Item.OnayRedAciklama</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="OnClose">Kapat</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public PendingApprovalItem? Item { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+}

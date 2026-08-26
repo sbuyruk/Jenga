@@ -70,6 +70,9 @@ namespace Jenga.DataAccess.Extensions
             // ILogService en azından NullLogService ile karşılanır.
             services.TryAddSingleton<ILogService, NullLogService>();
 
+            // E-posta servisi
+            services.AddScoped<IEmailService, SmtpEmailService>();
+
             return services;
         }
 

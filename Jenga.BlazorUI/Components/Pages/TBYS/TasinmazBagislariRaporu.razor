@@ -9,7 +9,6 @@
 @inject ITasinmazService TasinmazService
 @inject IBagisService BagisService
 
-
 <PermissionGuard Module="ModuleName.TBYS" Operation="Operation.View">
 <div class="card shadow-sm mb-4">
     <div class="card-header bg-light fw-semibold">
@@ -55,7 +54,7 @@
 @code {
     private YilBazindaTasinmazBagisTable? _table;
 
-    private List<int> Years { get; } = Enumerable.Range(DateTime.Now.Year - 9, 10).Reverse().ToList();
+    private List<int> Years { get; } = Enumerable.Range(DateTime.Now.Year - 22, 23).Reverse().ToList();
     private int SelectedYear { get; set; } = DateTime.Now.Year;
 
     private List<Tasinmaz> Tasinmazlar { get; set; } = new();
@@ -66,42 +65,8 @@
     private Task OnYearChanged()
         => Task.CompletedTask;
 
-    private static readonly HashSet<string> GecerliEnvanterdenCikmaSebepleri = new(StringComparer.Ordinal)
-    {
-        "Satış", "Kamulaştırma", "Tevhit"
-    };
-
     private async Task RefreshAsync()
-    {
-        var bagisResult = await BagisService.GetAllAsync();
-        var tasinmazResult = await TasinmazService.GetAllAsync();
-
-        if (bagisResult is not { IsSuccess: true, Value: not null } ||
-            tasinmazResult is not { IsSuccess: true, Value: not null })
-        {
-            Tasinmazlar = new();
-            return;
-        }
-
-        var tasinmazById = tasinmazResult.Value.ToDictionary(t => t.Id);
-
-        // var tasinmazIds = bagisResult.Value
-        //     .Where(b => b.TasinmazId.HasValue &&
-        //                 tasinmazById.TryGetValue(b.TasinmazId.Value, out var tasinmaz) &&
-        //                 (b.Envanterde ||
-        //                  tasinmaz.EnvanterdeMi == 1 ||
-        //                  (tasinmaz.EnvanterdenCikmaSebebi is not null &&
-        //                   GecerliEnvanterdenCikmaSebepleri.Contains(tasinmaz.EnvanterdenCikmaSebebi))))
-        var tasinmazIds = bagisResult.Value
-            .Where(b => b.TasinmazId.HasValue &&
-                tasinmazById.TryGetValue(b.TasinmazId.Value, out var tasinmaz))
-            .Select(b => b.TasinmazId!.Value)
-            .Distinct();
-
-        Tasinmazlar = tasinmazIds
-            .Select(id => tasinmazById[id])
-            .ToList();
-    }
+        => Tasinmazlar = (await TasinmazService.GetEnvanterdekilerAsync()) is { IsSuccess: true } r ? r.Value : new();
 
     private async Task ExportExcelAsync()
     {
