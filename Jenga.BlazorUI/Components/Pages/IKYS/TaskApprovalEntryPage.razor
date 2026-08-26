@@ -12,35 +12,15 @@
 @using Jenga.Utility.Results
 @using Microsoft.AspNetCore.Components
 @using Microsoft.AspNetCore.Components.Forms
-@using Microsoft.JSInterop
 
 @inject ITaskApprovalEntryService TaskApprovalEntryService
 @inject IGorevOnayService GorevOnayService
 @inject ICurrentUserService CurrentUserService
 @inject NavigationManager NavigationManager
-@inject IJSRuntime JS
 @inject ILogger<TaskApprovalEntryPage> Logger
 
 <PermissionGuard Module="ModuleName.IKYS" Operation="Operation.View">
     <div class="task-approval-entry-page">
-        <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-            <h3 class="mb-0 me-auto">
-                Görev Onayı Girişi
-                @if (!string.IsNullOrWhiteSpace(_selectedPersonName))
-                {
-                    <span class="text-muted fs-6 ms-2">@_selectedPersonName</span>
-                }
-            </h3>
-            @if (_model.Id > 0)
-            {
-                <span class="badge bg-secondary">#@_model.Id</span>
-            }
-            @if (_isPaid)
-            {
-                <span class="badge bg-danger">ÖDENDİ</span>
-            }
-        </div>
-
         @if (!string.IsNullOrWhiteSpace(_statusMessage))
         {
             <div class="alert alert-warning">@_statusMessage</div>
@@ -62,13 +42,31 @@
             <EditForm Model="_model" OnValidSubmit="SubmitPrimaryAsync">
                 <DataAnnotationsValidator />
 
-                <div class="card shadow-sm">
-                    <div class="card-body d-flex flex-column gap-3">
+                <div class="card shadow-sm legacy-card">
+                    <div class="card-header legacy-card-header">
+                        <h3 class="mb-0">
+                            <i class="bi bi-luggage-fill me-1"></i>Yurt Dışı/Şehir Dışı Görev Girişi
+                            @if (!string.IsNullOrWhiteSpace(_selectedPersonName))
+                            {
+                                <span class="ms-2 person-name">@_selectedPersonName</span>
+                            }
+                            @if (_model.Id > 0)
+                            {
+                                <span class="badge bg-light text-dark ms-2">#@_model.Id</span>
+                            }
+                            @if (_isPaid)
+                            {
+                                <span class="badge bg-danger ms-2">ÖDENDİ</span>
+                            }
+                        </h3>
+                        <button type="button" class="btn-close btn-close-sm" aria-label="Kapat" @onclick="() => GoList()"></button>
+                    </div>
+                    <div class="card-body d-flex flex-column gap-3 p-2">
                         <div class="legacy-section">
                             <div class="legacy-section-title"><i class="bi bi-person-badge"></i> Personel Bilgileri</div>
-                            <div class="row g-3 align-items-end">
-                                <div class="col-md-6">
-                                    <label class="form-label">Personel Seçimi</label>
+                            <div class="row g-2 align-items-end">
+                                <div class="col-md-4">
+                                    <label class="form-label">Personel</label>
                                     <InputSelect class="form-select" @bind-Value="_model.PersonelId" @bind-Value:after="OnPersonChangedAsync">
                                         @foreach (var option in _personOptions)
                                         {
@@ -76,8 +74,12 @@
                                         }
                                     </InputSelect>
                                 </div>
-                                <div class="col-md-6">
-                                    <div class="form-check mt-4 pt-2">
+                                <div class="col-md-5">
+                                    <label class="form-label">Harcırah Grubu</label>
+                                    <input class="form-control" value="@_harcirahGroup" readonly />
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-check mt-4 pt-1">
                                         <input id="harcirahToggle" class="form-check-input" type="checkbox" checked="@_harcirahHesaplansin" @onchange="OnHarcirahToggleChangedAsync" />
                                         <label class="form-check-label" for="harcirahToggle">Harcırah Hesaplansın</label>
                                     </div>
@@ -87,51 +89,61 @@
 
                         <div class="legacy-section">
                             <div class="legacy-section-title"><i class="bi bi-calendar-range"></i> Görev Tarihi ve Süresi</div>
-                            <div class="row g-3">
-                                <div class="col-md-3">
-                                    <label class="form-label">Başlangıç Tarihi</label>
-                                    <input type="date" class="form-control" value="@_startDate.ToString("yyyy-MM-dd")" @onchange="OnStartDateChangedAsync" />
+                            <div class="row g-2 align-items-start">
+                                <div class="col-md-4">
+                                    <div class="row g-2">
+                                        <div class="col-4">
+                                            <label class="form-label">Başlangıç Tarihi</label>
+                                            <input type="date" class="form-control" value="@_startDate.ToString("yyyy-MM-dd")" @onchange="OnStartDateChangedAsync" />
+                                        </div>
+                                        <div class="col-4">
+                                            <label class="form-label">Baş.Saat</label>
+                                            <InputSelect class="form-select" @bind-Value="_startTime" @bind-Value:after="RecalculateAsync">
+                                                @foreach (var time in _timeOptions)
+                                                {
+                                                    <option value="@time">@time</option>
+                                                }
+                                            </InputSelect>
+                                        </div>
+                                        <div class="col-4">
+                                            <label class="form-label">Süre Gün</label>
+                                            <input class="form-control readonly-look" value="@_durationDayText" readonly />
+                                        </div>
+                                        <div class="col-4">
+                                            <label class="form-label">Bitiş Tarihi</label>
+                                            <input type="date" class="form-control" value="@_endDate.ToString("yyyy-MM-dd")" @onchange="OnEndDateChangedAsync" />
+                                        </div>
+                                        <div class="col-4">
+                                            <label class="form-label">Bit.Saat</label>
+                                            <InputSelect class="form-select" @bind-Value="_endTime" @bind-Value:after="RecalculateAsync">
+                                                @foreach (var time in _timeOptions)
+                                                {
+                                                    <option value="@time">@time</option>
+                                                }
+                                            </InputSelect>
+                                        </div>
+                                        <div class="col-4">
+                                            <label class="form-label">Süre Saat/Dk</label>
+                                            <input class="form-control readonly-look" value="@_durationHourMinuteText" readonly />
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Baş.Saat</label>
-                                    <InputSelect class="form-select" @bind-Value="_startTime" @bind-Value:after="RecalculateAsync">
-                                        @foreach (var time in _timeOptions)
-                                        {
-                                            <option value="@time">@time</option>
-                                        }
-                                    </InputSelect>
+                                <div class="col-md-4">
+                                    <label class="form-label">Görevin Sebebi</label>
+                                    <InputTextArea class="form-control" rows="4" @bind-Value="_model.GorevinSebebi" />
                                 </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Bitiş Tarihi</label>
-                                    <input type="date" class="form-control" value="@_endDate.ToString("yyyy-MM-dd")" @onchange="OnEndDateChangedAsync" />
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Bit.Saat</label>
-                                    <InputSelect class="form-select" @bind-Value="_endTime" @bind-Value:after="RecalculateAsync">
-                                        @foreach (var time in _timeOptions)
-                                        {
-                                            <option value="@time">@time</option>
-                                        }
-                                    </InputSelect>
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Süre Gün</label>
-                                    <input class="form-control" value="@_durationDayText" readonly />
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Süre Saat/Dk</label>
-                                    <input class="form-control" value="@_durationHourMinuteText" readonly />
+                                <div class="col-md-4">
+                                    <label class="form-label">Görevin Yeri</label>
+                                    <InputText class="form-control mb-2" @bind-Value="_model.GorevinYeri" />
+                                    <label class="form-label">Açıklama</label>
+                                    <InputText class="form-control" @bind-Value="_model.Aciklama" />
                                 </div>
                             </div>
                         </div>
 
                         <div class="legacy-section">
                             <div class="legacy-section-title"><i class="bi bi-truck"></i> Ulaşım, Avans ve Onay Bilgileri</div>
-                            <div class="row g-3">
-                                <div class="col-md-3">
-                                    <label class="form-label">Harcırah Grubu</label>
-                                    <input class="form-control" value="@_harcirahGroup" readonly />
-                                </div>
+                            <div class="row g-2">
                                 <div class="col-md-3">
                                     <label class="form-label">Ülke</label>
                                     <InputSelect class="form-select" @bind-Value="_selectedCountry" @bind-Value:after="RecalculateAsync">
@@ -141,19 +153,6 @@
                                         }
                                     </InputSelect>
                                 </div>
-                                <div class="col-md-2">
-                                    <label class="form-label">Günlük Yev.</label>
-                                    <input class="form-control" value="@_dailyAllowanceText" readonly />
-                                </div>
-                                <div class="col-md-2">
-                                    <label class="form-label">Para Birimi</label>
-                                    <input class="form-control" value="@_model.ParaBirimi" readonly />
-                                </div>
-                                <div class="col-md-2">
-                                    <label class="form-label">Avans</label>
-                                    <InputText class="form-control" @bind-Value="_model.Avans" />
-                                </div>
-
                                 <div class="col-md-3">
                                     <label class="form-label">Ulaşım Aracı</label>
                                     <InputSelect class="form-select" @bind-Value="_model.UlasimAraci">
@@ -164,6 +163,29 @@
                                     </InputSelect>
                                 </div>
                                 <div class="col-md-3">
+                                    <label class="form-label">Avans</label>
+                                    <InputText class="form-control" @bind-Value="_model.Avans" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label d-block">Konaklama</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="konaklamaGroup" id="konaklamaDahil" checked="@KonaklamaDahilinde" @onchange="() => SetKonaklama(true)" />
+                                        <label class="form-check-label" for="konaklamaDahil">Limit Dahilinde</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="konaklamaGroup" id="konaklamaAsimi" checked="@KonaklamaAsimi" @onchange="() => SetKonaklama(false)" />
+                                        <label class="form-check-label" for="konaklamaAsimi">Limit Aşımı</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Günlük Yev.</label>
+                                    <input class="form-control readonly-look" value="@_dailyAllowanceText" readonly />
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Para Birimi</label>
+                                    <input class="form-control readonly-look" value="@_model.ParaBirimi" readonly />
+                                </div>
+                                <div class="col-md-2">
                                     <label class="form-label">Transfer</label>
                                     <InputSelect class="form-select" @bind-Value="_model.Transfer">
                                         @foreach (var option in _transferSecenekleri)
@@ -176,76 +198,13 @@
                                     <label class="form-label">Araç Plakası</label>
                                     <InputText class="form-control" @bind-Value="_model.AracPlakasi" />
                                 </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Konaklama</label>
-                                    <InputSelect class="form-select" @bind-Value="_model.Konaklama">
-                                        @foreach (var option in _konaklamaSecenekleri)
-                                        {
-                                            <option value="@option">@option</option>
-                                        }
-                                    </InputSelect>
-                                </div>
-
-                                <div class="col-md-4">
-                                    <label class="form-label">Per.Dir.</label>
-                                    <InputSelect class="form-select" @bind-Value="_model.PerSubeImza">
-                                        <option value="">Seçiniz</option>
-                                        @foreach (var option in _perDirOptions)
-                                        {
-                                            <option value="@option.Id">@option.Label</option>
-                                        }
-                                    </InputSelect>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">Per.Uzm.</label>
-                                    <InputSelect class="form-select" @bind-Value="_model.OnayImza">
-                                        <option value="">Seçiniz</option>
-                                        @foreach (var option in _perUzmOptions)
-                                        {
-                                            <option value="@option.Id">@option.Label</option>
-                                        }
-                                    </InputSelect>
-                                </div>
-                                <div class="col-md-4 d-flex align-items-end">
-                                    <div class="form-check mb-2">
-                                        <InputCheckbox id="vekilCheck" class="form-check-input" @bind-Value="PerSubeVekil" />
-                                        <label class="form-check-label" for="vekilCheck">Vekil</label>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="legacy-section">
-                            <div class="legacy-section-title"><i class="bi bi-pencil-square"></i> Görev İçeriği</div>
-                            <div class="row g-3">
-                                <div class="col-12">
-                                    <label class="form-label">Görevin Sebebi</label>
-                                    <div class="btn-toolbar mb-2" role="toolbar">
-                                        <div class="btn-group btn-group-sm">
-                                            <button type="button" class="btn btn-outline-secondary" @onclick='() => ApplyReasonCommandAsync("bold")'><b>B</b></button>
-                                            <button type="button" class="btn btn-outline-secondary" @onclick='() => ApplyReasonCommandAsync("italic")'><i>I</i></button>
-                                            <button type="button" class="btn btn-outline-secondary" @onclick='() => ApplyReasonCommandAsync("underline")'><u>U</u></button>
-                                            <button type="button" class="btn btn-outline-secondary" @onclick='() => ApplyReasonCommandAsync("insertUnorderedList")'>• Liste</button>
-                                            <button type="button" class="btn btn-outline-secondary" @onclick='() => ApplyReasonCommandAsync("insertOrderedList")'>1. Liste</button>
-                                        </div>
-                                    </div>
-                                    <div class="task-reason-editor form-control" contenteditable="true" @ref="_reasonEditor" @onblur="SyncReasonAsync"></div>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Görevin Yeri</label>
-                                    <InputText class="form-control" @bind-Value="_model.GorevinYeri" />
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Açıklama</label>
-                                    <InputTextArea class="form-control" rows="3" @bind-Value="_model.Aciklama" />
-                                </div>
                             </div>
                         </div>
 
                         <div class="legacy-section">
                             <div class="legacy-section-title"><i class="bi bi-cash-coin"></i> Hesaplanan Harcırah</div>
-                            <div class="row g-3 align-items-start">
-                                <div class="col-md-7">
+                            <div class="row g-2 align-items-start">
+                                <div class="col-md-6">
                                     <div class="harcirah-summary-box p-3">
                                         <div class="row g-2">
                                             <div class="col-md-4">
@@ -263,9 +222,32 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-md-5">
-                                    <label class="form-label">Hesap Açıklaması</label>
-                                    <textarea class="form-control" rows="4" readonly>@_explanationText</textarea>
+                                <div class="col-md-3">
+                                    <textarea class="form-control readonly-look" rows="4" readonly>@_explanationText</textarea>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Per.Dir.</label>
+                                    <InputSelect class="form-select" @bind-Value="_model.PerSubeImza">
+                                        <option value="">Seçiniz</option>
+                                        @foreach (var option in _perDirOptions)
+                                        {
+                                            <option value="@option.Id">@option.Label</option>
+                                        }
+                                    </InputSelect>
+                                    <label class="form-label mt-2">Per.Uzm.</label>
+                                    <InputSelect class="form-select" @bind-Value="_model.OnayImza">
+                                        <option value="">Seçiniz</option>
+                                        @foreach (var option in _perUzmOptions)
+                                        {
+                                            <option value="@option.Id">@option.Label</option>
+                                        }
+                                    </InputSelect>
+                                </div>
+                                <div class="col-md-1">
+                                    <label class="form-label">Vekil</label>
+                                    <div class="form-check mt-2">
+                                        <InputCheckbox id="vekilCheckSummary" class="form-check-input" @bind-Value="PerSubeVekil" />
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -284,6 +266,9 @@
                         {
                             <button type="button" class="btn btn-danger" disabled="@_isSaving" @onclick="DeleteAsync">Sil</button>
                         }
+                        <span class="legacy-warning">
+                            <i class="bi bi-exclamation-triangle"></i> (Yaptığınız değişikliklerin geçerli olması için lütfen Kaydet veya Güncelle düğmesine basınız.)
+                        </span>
 
                         <div class="ms-auto d-flex gap-2">
                             @if (_showReport)
@@ -347,8 +332,6 @@
     private string? _statusMessage;
 
     private Personel? _currentPersonel;
-    private ElementReference _reasonEditor;
-    private bool _syncReasonEditor;
 
     private int? EffectiveTaskApprovalId => TaskApprovalId ?? GorevOnayIdQuery;
     private bool PerSubeVekil
@@ -356,18 +339,11 @@
         get => _model.PerSubeVekil ?? false;
         set => _model.PerSubeVekil = value;
     }
+    private bool KonaklamaDahilinde => string.Equals(_model.Konaklama, "Limit Dahilinde", StringComparison.OrdinalIgnoreCase);
+    private bool KonaklamaAsimi => string.Equals(_model.Konaklama, "Limit Aşımı", StringComparison.OrdinalIgnoreCase);
 
     protected override async Task OnParametersSetAsync()
         => await LoadAsync();
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (_syncReasonEditor && !_isLoading)
-        {
-            await JS.InvokeVoidAsync("taskApprovalEditor.setHtml", _reasonEditor, _model.GorevinSebebi ?? string.Empty);
-            _syncReasonEditor = false;
-        }
-    }
 
     private async Task LoadAsync()
     {
@@ -402,7 +378,6 @@
 
             ApplyLoadData(loadResult.Value);
             await RecalculateAsync();
-            _syncReasonEditor = true;
         }
         catch (Exception ex)
         {
@@ -532,7 +507,6 @@
     private async Task PersistAsync(bool isUpdate)
     {
         _statusMessage = null;
-        await SyncReasonAsync();
 
         if (!ValidateBeforePersist())
             return;
@@ -649,14 +623,10 @@
         return true;
     }
 
-    private async Task ApplyReasonCommandAsync(string command)
+    private void SetKonaklama(bool limitDahilinde)
     {
-        await JS.InvokeVoidAsync("taskApprovalEditor.execCommand", _reasonEditor, command);
-        await SyncReasonAsync();
+        _model.Konaklama = limitDahilinde ? "Limit Dahilinde" : "Limit Aşımı";
     }
-
-    private async Task SyncReasonAsync()
-        => _model.GorevinSebebi = await JS.InvokeAsync<string>("taskApprovalEditor.getHtml", _reasonEditor);
 
     private void GoReport()
     {

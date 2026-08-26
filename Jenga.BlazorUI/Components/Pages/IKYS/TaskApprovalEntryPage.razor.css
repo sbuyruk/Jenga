@@ -1,29 +1,62 @@
+.task-approval-entry-page {
+    font-size: 14px;
+}
+
+.task-approval-entry-page .legacy-card {
+    border-radius: .35rem;
+}
+
+.task-approval-entry-page .legacy-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: .4rem .6rem;
+    border-bottom: 1px solid #d7d7d7;
+    background: #f7f7f7;
+}
+
+.task-approval-entry-page .legacy-card-header h3 {
+    font-size: 1.65rem;
+    color: #0d6efd;
+    font-weight: 500;
+}
+
+.task-approval-entry-page .legacy-card-header .person-name {
+    color: #495057;
+    font-size: 1.45rem;
+}
+
 .task-approval-entry-page .legacy-section {
-    border: 1px solid #e9ecef;
-    border-radius: .5rem;
-    padding: 1rem;
-    background: #fff;
+    border-top: 1px solid #ececec;
+    padding-top: .5rem;
 }
 
 .task-approval-entry-page .legacy-section-title {
-    font-weight: 600;
     color: #198754;
+    font-weight: 600;
+    margin-bottom: .5rem;
     display: flex;
     align-items: center;
-    gap: .5rem;
-    margin-bottom: .75rem;
-    border-bottom: 1px solid #e9ecef;
-    padding-bottom: .4rem;
+    gap: .4rem;
 }
 
-.task-approval-entry-page .task-reason-editor {
-    min-height: 120px;
-    white-space: pre-wrap;
-    overflow-wrap: break-word;
+.task-approval-entry-page .form-label {
+    margin-bottom: .2rem;
+    font-weight: 600;
+}
+
+.task-approval-entry-page .readonly-look {
+    background: #e9ecef !important;
+    color: #495057;
 }
 
 .task-approval-entry-page .harcirah-summary-box {
     background: #eafaf1;
     border: 1px solid #b7ebc6;
-    border-radius: .6rem;
+    border-radius: .4rem;
+}
+
+.task-approval-entry-page .legacy-warning {
+    color: #dc3545;
+    font-size: .85rem;
 }
