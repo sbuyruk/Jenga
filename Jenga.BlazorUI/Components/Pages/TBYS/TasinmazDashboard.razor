@@ -50,7 +50,10 @@
                         <i class="bi bi-buildings me-1"></i> Taşınmaz
                     </div>
                     <a class="nav-link" href="#bolge-ozeti" @onclick:preventDefault="true" @onclick='() => ScrollToAsync("bolge-ozeti")'>
-                        <i class="bi bi-table me-1"></i>Bölge Özeti
+                        <i class="bi bi-table me-1"></i>Taşınmazların Güncel Durumu
+                    </a>
+                    <a class="nav-link" href="#bolge-ozeti-yil" @onclick:preventDefault="true" @onclick='() => ScrollToAsync("bolge-ozeti-yil")'>
+                        <i class="bi bi-table me-1"></i>@_bolgeYilBaslik
                     </a>
                     <a class="nav-link" href="#envanter-ozeti" @onclick:preventDefault="true" @onclick='() => ScrollToAsync("envanter-ozeti")'>
                         <i class="bi bi-grid-1x2-fill me-1"></i>Envanter Özeti
@@ -101,7 +104,7 @@
 
                 <!-- ── BÖLGE ÖZETİ (Tam Genişlik) ───────────────────────────────── -->
                 <section id="bolge-ozeti" class="db-section">
-                    <div class="section-label">Bölge Özeti</div>
+                    <div class="section-label">Taşınmazların Güncel Durumu</div>
                     <div class="row mb-4">
                         <div class="col-12">
                             <div class="card shadow-sm">
@@ -110,7 +113,7 @@
                                      role="button">
                                     <span>
                                         <i class="bi @(_isBolgeOpen ? "bi-chevron-down" : "bi-chevron-right") me-2"></i>
-                                        <strong>Bölge Özeti</strong>
+                                            <strong>Taşınmazların Güncel Durumu</strong>
                                     </span>
                                     <small class="text-muted">@_bolgeSummaries.Count bölge</small>
                                 </div>
@@ -169,6 +172,82 @@
                 </section>
 
                 <!-- ── BÖLÜM 1 : Adet KPI Kartları ──────────────────────────── -->
+                <!-- YIL BAZLI BÖLGE ÖZETİ (EnvantereGirisTarihi) -->
+                <section id="bolge-ozeti-yil" class="db-section">
+                    <div class="section-label">@_bolgeYilBaslik</div>
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card shadow-sm">
+                                <div class="card-header db-collapsible-header"
+                                     @onclick="() => _isBolgeYilOpen = !_isBolgeYilOpen"
+                                     role="button">
+                                    <span>
+                                        <i class="bi @(_isBolgeYilOpen ? "bi-chevron-down" : "bi-chevron-right") me-2"></i>
+                                        <strong>@_bolgeYilBaslik</strong>
+                                    </span>
+                                    <small class="text-muted">@_bolgeSummariesYil.Count bölge</small>
+                                </div>
+                                @if (_isBolgeYilOpen)
+                                {
+                                    <div class="card-body p-0">
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-hover table-bordered mb-0 db-bolge-table">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>Bölge</th>
+                                                        <th class="text-center">Toplam</th>
+                                                        <th class="text-center">TM</th>
+                                                        <th class="text-center">ÇM</th>
+                                                        <th class="text-end">Emlak Beyan Değeri</th>
+                                                        <th class="text-end">Tah.Ray.Değeri</th>
+                                                        <th class="text-end">Muh.Kay.Değeri</th>
+                                                        @* <th class="text-end">Yak.Piy.Değeri</th> *@
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach (var b in _bolgeSummariesYil)
+                                                    {
+                                                        <tr>
+                                                            <td class="fw-semibold">@b.BolgeAdi</td>
+                                                            <td class="text-center">@b.Adet</td>
+                                                            <td class="text-center text-primary">@b.TM</td>
+                                                            <td class="text-center text-info">@b.CM</td>
+                                                            <td class="text-end">@(b.EmlakBeyan == 0 ? "–" : b.EmlakBeyan.ToString("N0", TrCulture))</td>
+                                                            <td class="text-end">@(b.TahminiRayic == 0 ? "–" : b.TahminiRayic.ToString("N0", TrCulture))</td>
+                                                            <td class="text-end">@(b.MuhasebeyeKayitli == 0 ? "–" : b.MuhasebeyeKayitli.ToString("N0", TrCulture))</td>
+                                                            @* <td class="text-end">@(b.YaklasikPiyasa == 0 ? "–" : b.YaklasikPiyasa.ToString("N0", TrCulture))</td> *@
+                                                        </tr>
+                                                    }
+                                                    @if (_bolgeSummariesYil.Count == 0)
+                                                    {
+                                                        <tr>
+                                                            <td colspan="8" class="text-center text-muted py-3">@_bolgeYilSecili yılında envantere giren taşınmaz bulunmamaktadır.</td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                                <tfoot class="table-secondary fw-bold">
+                                                    <tr>
+                                                        <td>Toplam</td>
+                                                        <td class="text-center">@ToplamAdetYil</td>
+                                                        <td class="text-center">@TamMulkAdetYil</td>
+                                                        <td class="text-center">@CiplakMulkAdetYil</td>
+                                                        <td class="text-end">@(ToplamEmlakBeyanYil == 0 ? "–" : ToplamEmlakBeyanYil.ToString("N0", TrCulture))</td>
+                                                        <td class="text-end">@(ToplamTahminiRayicYil == 0 ? "–" : ToplamTahminiRayicYil.ToString("N0", TrCulture))</td>
+                                                        <td class="text-end">@(ToplamMuhasebeyeKayitliYil == 0 ? "–" : ToplamMuhasebeyeKayitliYil.ToString("N0", TrCulture))</td>
+                                                        @* <td class="text-end">@(ToplamYaklasikPiyasaYil == 0 ? "–" : ToplamYaklasikPiyasaYil.ToString("N0", TrCulture))</td> *@
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    <hr class="db-separator" />
+                </section>
+
+                <!-- BÖLÜM 1 : Adet KPI Kartları -->
                 <section id="envanter-ozeti" class="db-section">
                     <div class="section-label">Envanter Özeti</div>
                     <div class="row g-2 mb-3">
@@ -685,12 +764,24 @@
 
     // ── Tablo Verileri ─────────────────────────────────────────────
     private List<BolgeSummary> _bolgeSummaries = new();
+    private List<BolgeSummary> _bolgeSummariesYil = new();
+    private readonly int _bolgeYilSecili = DateTime.Now.Year;
+    private string _bolgeYilBaslik => $"{_bolgeYilSecili} Yılı Bölge Özeti";
+
+    private int ToplamAdetYil;
+    private int TamMulkAdetYil;
+    private int CiplakMulkAdetYil;
+    private decimal ToplamEmlakBeyanYil;
+    private decimal ToplamTahminiRayicYil;
+    private decimal ToplamMuhasebeyeKayitliYil;
+    private decimal ToplamYaklasikPiyasaYil;
     private List<(string IlAdi, int Count)> _topIller = new();
     private List<(string IlAdi, int Count)> _bottomIller = new();
     private List<string> _noTasinmazIller = new();
 
     // ── UI Durumu ──────────────────────────────────────────────────
     private bool _isBolgeOpen = true;
+    private bool _isBolgeYilOpen = true;
     private bool _isTopIlOpen = true;
     private bool _isBottomIlOpen = true;
     private bool _isNoTasinmazIlOpen = true;
@@ -815,25 +906,24 @@
         };
 
         // ── Bölge Özeti ───────────────────────────────────────────
-        _bolgeSummaries = list
-            .GroupBy(x => GetBolgeName(x.IlId))
-            .OrderBy(g => g.Key)
-            .Select(g => new BolgeSummary
-            {
-                BolgeAdi = g.Key,
-                Adet = g.Count(),
-                TM = g.Count(x => IsTM(x.MulkiyetSekli)),
-                CM = g.Count(x => IsCM(x.MulkiyetSekli)),
-                EmlakBeyan = g.Sum(x => x.EmlakBeyanDegeri ?? 0m),
-                TahminiRayic = g.Sum(x => x.TahminiRayicDegeri ?? 0m),
-                MuhasebeyeKayitli = g.Sum(x => x.MuhasebeyeKayitliDeger ?? 0m),
-                YaklasikPiyasa = g.Sum(x => x.YaklasikPiyasaDegeri ?? 0m)
-            })
-            .ToList();
+        _bolgeSummaries = BuildBolgeSummaries(list);
 
         ToplamBolgeAdet = _bolgeSummaries.Count;
 
-        // ── Grafik: Bölge Bar ──────────────────────────────────────
+        // ── Bölge Özeti (Yıl bazlı - EnvantereGirisTarihi) ──────────────
+        var yilList = list.Where(x => x.EnvantereGirisTarihi.HasValue && x.EnvantereGirisTarihi.Value.Year == _bolgeYilSecili).ToList();
+
+        _bolgeSummariesYil = BuildBolgeSummaries(yilList);
+
+        ToplamAdetYil = yilList.Count;
+        TamMulkAdetYil = yilList.Count(x => IsTM(x.MulkiyetSekli));
+        CiplakMulkAdetYil = yilList.Count(x => IsCM(x.MulkiyetSekli));
+        ToplamEmlakBeyanYil = yilList.Sum(x => x.EmlakBeyanDegeri ?? 0m);
+        ToplamTahminiRayicYil = yilList.Sum(x => x.TahminiRayicDegeri ?? 0m);
+        ToplamMuhasebeyeKayitliYil = yilList.Sum(x => x.MuhasebeyeKayitliDeger ?? 0m);
+        ToplamYaklasikPiyasaYil = yilList.Sum(x => x.YaklasikPiyasaDegeri ?? 0m);
+
+        // ── Grafik: Bölge Bar ─
         _bolgeChartItems = _bolgeSummaries
             .Select(b => new PieItem { Label = b.BolgeAdi, Value = b.Adet })
             .ToList();
@@ -916,6 +1006,40 @@
     }
 
     // ── Yardımcı Metotlar ──────────────────────────────────────────
+    private List<BolgeSummary> BuildBolgeSummaries(List<Tasinmaz> source)
+    {
+        var grouped = source
+            .GroupBy(x => GetBolgeName(x.IlId))
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        var allNames = _bolgeler
+            .Where(b => b.Id != 0 && b.Aktif && b.TemsilcilikMi)
+            .Select(b => (b.KisaAdi ?? "").Trim())
+            .Where(n => !string.IsNullOrWhiteSpace(n))
+            .Concat(grouped.Keys)
+            .Distinct()
+            .OrderBy(n => n)
+            .ToList();
+
+        return allNames
+            .Select(name =>
+            {
+                var g = grouped.TryGetValue(name, out var gr) ? gr : new List<Tasinmaz>();
+                return new BolgeSummary
+                {
+                    BolgeAdi = name,
+                    Adet = g.Count,
+                    TM = g.Count(x => IsTM(x.MulkiyetSekli)),
+                    CM = g.Count(x => IsCM(x.MulkiyetSekli)),
+                    EmlakBeyan = g.Sum(x => x.EmlakBeyanDegeri ?? 0m),
+                    TahminiRayic = g.Sum(x => x.TahminiRayicDegeri ?? 0m),
+                    MuhasebeyeKayitli = g.Sum(x => x.MuhasebeyeKayitliDeger ?? 0m),
+                    YaklasikPiyasa = g.Sum(x => x.YaklasikPiyasaDegeri ?? 0m)
+                };
+            })
+            .ToList();
+    }
+
     private string GetBolgeName(int? ilId)
     {
         if (!ilId.HasValue || ilId.Value == 0) return "Bölgesiz";

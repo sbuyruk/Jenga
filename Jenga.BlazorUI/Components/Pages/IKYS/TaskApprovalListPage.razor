@@ -1,6 +1,7 @@
 @page "/ikys/task-approvals"
 @rendermode InteractiveServer
 
+@using Jenga.BlazorUI.Components.Common
 @using Jenga.BlazorUI.Services.Common
 @using Jenga.DataAccess.Services.IKYS
 @using Jenga.Models.Enums
@@ -59,90 +60,78 @@
                         <input id="selectCurrentPage"
                                class="form-check-input"
                                type="checkbox"
-                               checked="@AreAllCurrentPageSelected"
-                               @onchange="ToggleCurrentPageSelection" />
-                        <label class="form-check-label" for="selectCurrentPage">Bu Sayfadakileri Seç</label>
+                               checked="@AreAllSelected"
+                               @onchange="ToggleAllSelection" />
+                        <label class="form-check-label" for="selectCurrentPage">Tümünü Seç</label>
                     </div>
                     <span class="text-muted small">@_selectedIds.Count kayıt seçildi</span>
                 </div>
 
-                <div class="table-responsive">
-                    <table class="table table-striped table-hover align-middle">
-                        <thead class="table-dark">
-                            <tr>
-                                <th style="width: 70px;">Seç</th>
-                                <th>Adı Soyadı</th>
-                                <th>Görevin Sebebi</th>
-                                <th>Gidiş Tarihi</th>
-                                <th>Dönüş Tarihi</th>
-                                <th>Görevin Yeri</th>
-                                <th>Amir Onayı</th>
-                                <th>Rapor Al</th>
-                                <th>Düzenle</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var item in CurrentPageItems)
-                            {
-                                <tr class="@GetRowClass(item)">
-                                    <td>
-                                        @if (!item.IsRejected)
-                                        {
-                                            <input class="form-check-input"
-                                                   type="checkbox"
-                                                   checked="@_selectedIds.Contains(item.TaskApprovalId)"
-                                                   @onchange="args => ToggleSelection(item.TaskApprovalId, args.Value is bool value && value)" />
-                                        }
-                                    </td>
-                                    <td>@item.FullName</td>
-                                    <td>@item.Reason</td>
-                                    <td>@item.StartDate?.ToString("dd.MM.yyyy HH:mm")</td>
-                                    <td>@item.EndDate?.ToString("dd.MM.yyyy HH:mm")</td>
-                                    <td>@item.Destination</td>
-                                    <td>@item.ManagerApprovalDisplay</td>
-                                    <td>
-                                        @if (CanShowReport(item))
-                                        {
-                                            <button class="btn btn-sm btn-outline-primary" @onclick="() => NavigateToReport(item.TaskApprovalId)">
-                                                Rapor Al
-                                            </button>
-                                        }
-                                        else if (item.IsRejected && !string.IsNullOrWhiteSpace(item.RejectionNote))
-                                        {
-                                            <span class="text-danger">@item.RejectionNote</span>
-                                        }
-                                    </td>
-                                    <td>
-                                        @if (_canEdit && CanEdit(item))
-                                        {
-                                            <button class="btn btn-sm btn-outline-primary" @onclick="() => NavigateToEdit(item.TaskApprovalId)">
-                                                Düzenle
-                                            </button>
-                                        }
-                                    </td>
-                                </tr>
-                            }
-                            @if (_items.Count == 0)
-                            {
-                                <tr>
-                                    <td colspan="9" class="text-center text-muted py-4">
-                                        <i class="bi bi-inbox me-2"></i>Kayıt bulunamadı.
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-
-                @if (TotalPages > 1)
+                @if (_items.Count == 0)
                 {
-                    <div class="d-flex justify-content-between align-items-center mt-3">
-                        <span class="text-muted small">Sayfa @_pageNumber / @TotalPages</span>
-                        <div class="btn-group">
-                            <button class="btn btn-sm btn-outline-secondary" @onclick="PreviousPage" disabled="@(_pageNumber <= 1)">Önceki</button>
-                            <button class="btn btn-sm btn-outline-secondary" @onclick="NextPage" disabled="@(_pageNumber >= TotalPages)">Sonraki</button>
-                        </div>
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-inbox me-2"></i>Kayıt bulunamadı.
                     </div>
+                }
+                else
+                {
+                    <GenericTable TItem="TaskApprovalListItem"
+                                  Items="_items"
+                                  TableHeight="Auto"
+                                  ShowSearch="true"
+                                  ShowExport="true"
+                                  ExportFileName="gorev-onaylari.xlsx"
+                                  RowClassSelector="GetRowClass"
+                                  KeySelector="(x => x.TaskApprovalId)">
+                        <HeaderTemplate>
+                            <th style="width: 70px;">Seç</th>
+                            <th>Adı Soyadı</th>
+                            <th>Görevin Sebebi</th>
+                            <th>Gidiş Tarihi</th>
+                            <th>Dönüş Tarihi</th>
+                            <th>Görevin Yeri</th>
+                            <th>Amir Onayı</th>
+                            <th>Rapor Al</th>
+                            <th>Düzenle</th>
+                        </HeaderTemplate>
+                        <RowTemplate Context="taskItem">
+                            <td>
+                                @if (!taskItem.IsRejected)
+                                {
+                                    <input class="form-check-input"
+                                           type="checkbox"
+                                           checked="@_selectedIds.Contains(taskItem.TaskApprovalId)"
+                                           @onchange="args => ToggleSelection(taskItem.TaskApprovalId, args.Value is bool value && value)" />
+                                }
+                            </td>
+                            <td>@taskItem.FullName</td>
+                            <td>@taskItem.Reason</td>
+                            <td>@taskItem.StartDate?.ToString("dd.MM.yyyy HH:mm")</td>
+                            <td>@taskItem.EndDate?.ToString("dd.MM.yyyy HH:mm")</td>
+                            <td>@taskItem.Destination</td>
+                            <td>@taskItem.ManagerApprovalDisplay</td>
+                            <td>
+                                @if (CanShowReport(taskItem))
+                                {
+                                    <button class="btn btn-sm btn-outline-primary" @onclick="() => NavigateToReport(taskItem.TaskApprovalId)">
+                                        Rapor Al
+                                    </button>
+                                }
+                                else if (taskItem.IsRejected && !string.IsNullOrWhiteSpace(taskItem.RejectionNote))
+                                {
+                                    <span class="text-danger">@taskItem.RejectionNote</span>
+                                }
+                            </td>
+                            <td>
+                                @if (_canEdit && CanEdit(taskItem))
+                                {
+                                    <button class="btn btn-sm btn-outline-primary" @onclick="() => NavigateToEdit(taskItem.TaskApprovalId)">
+                                        Düzenle
+                                    </button>
+                                }
+                            </td>
+                        </RowTemplate>
+                    </GenericTable>
                 }
             </div>
         </div>
@@ -151,7 +140,6 @@
 
 @code {
     private const string AuthorizedUnitCode = "IKYS";
-    private const int PageSize = 10;
 
     [SupplyParameterFromQuery(Name = "Auth")]
     public string? Auth { get; set; }
@@ -168,20 +156,14 @@
     private bool _canEdit;
     private string? _loadError;
     private string? _message;
-    private int _pageNumber = 1;
     private bool _initialized;
 
-    private IEnumerable<TaskApprovalListItem> CurrentPageItems
-        => _items.Skip((_pageNumber - 1) * PageSize).Take(PageSize);
-
-    private int TotalPages => Math.Max(1, (int)Math.Ceiling(_items.Count / (double)PageSize));
-
-    private bool AreAllCurrentPageSelected
+    private bool AreAllSelected
     {
         get
         {
-            var pageIds = CurrentPageItems.Where(x => !x.IsRejected).Select(x => x.TaskApprovalId).ToList();
-            return pageIds.Count > 0 && pageIds.All(_selectedIds.Contains);
+            var selectableIds = _items.Where(x => !x.IsRejected).Select(x => x.TaskApprovalId).ToList();
+            return selectableIds.Count > 0 && selectableIds.All(_selectedIds.Contains);
         }
     }
 
@@ -218,7 +200,6 @@
 
             _items = result.Value ?? new();
             _selectedIds.Clear();
-            _pageNumber = NormalizePageNumber(_pageNumber);
 
             if (!_isAuthorizedUnitView && _currentPersonel is null)
                 _message = "Mevcut kullanıcı personel kaydı ile eşleşmediği için liste boş döndü.";
@@ -282,10 +263,10 @@
             _selectedIds.Remove(taskApprovalId);
     }
 
-    private void ToggleCurrentPageSelection(ChangeEventArgs args)
+    private void ToggleAllSelection(ChangeEventArgs args)
     {
         var isChecked = args.Value is bool value && value;
-        foreach (var taskApprovalId in CurrentPageItems.Where(x => !x.IsRejected).Select(x => x.TaskApprovalId))
+        foreach (var taskApprovalId in _items.Where(x => !x.IsRejected).Select(x => x.TaskApprovalId))
         {
             if (isChecked)
                 _selectedIds.Add(taskApprovalId);
@@ -349,13 +330,4 @@
             ? "/ikys/task-approvals/report"
             : $"/ikys/task-approvals/report?{string.Join("&", queryParts)}";
     }
-
-    private void PreviousPage()
-        => _pageNumber = NormalizePageNumber(_pageNumber - 1);
-
-    private void NextPage()
-        => _pageNumber = NormalizePageNumber(_pageNumber + 1);
-
-    private int NormalizePageNumber(int value)
-        => Math.Min(Math.Max(value, 1), TotalPages);
 }

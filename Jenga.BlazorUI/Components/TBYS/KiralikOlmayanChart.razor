@@ -1,4 +1,4 @@
-﻿@using Jenga.Models.Common
+@using Jenga.Models.Common
 @using Jenga.Models.TBYS
 @using Jenga.Utility
 @using Microsoft.AspNetCore.Components
@@ -127,7 +127,7 @@
 
         // prepare lookups
         var ilById = (Iller ?? Enumerable.Empty<Il>()).Where(i => i != null).ToDictionary(i => i.Id, i => i);
-        var activeBolgeler = (Bolgeler ?? Enumerable.Empty<Bolge>()).Where(b => b != null && b.Aktif).ToList();
+        var activeBolgeler = (Bolgeler ?? Enumerable.Empty<Bolge>()).Where(b => b != null && b.Aktif && b.TemsilcilikMi).ToList();
         RegionList = activeBolgeler;
 
         var regionIds = new HashSet<int>(RegionList.Select(r => r.Id));
