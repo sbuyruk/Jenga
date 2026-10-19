@@ -70,7 +70,10 @@
 
     private static readonly HashSet<string> GecerliEnvanterdenCikmaSebepleri = new(StringComparer.Ordinal)
     {
-        "Satış", "Kamulaştırma", "Tevhit"
+        //envanterden Cikarma
+        "Satış","Taşınmaz İadesi", "Taşınmaz Satın Alma","İzale-i Şuyu ile Satış","Trampa","Takas","Kat İrtifakından Kat Mülkiyetine Geçiş",
+        "Kat Mülkiyeti Terkini","Mahkeme Kararı ile Envanterden Çıkarma", "Resmi Kuruma Bedelsiz Devir", "Hisse Birleştirme Yoluyla Bağış",
+        "Kat Karşılığı İnşaat","Kamulaştırma","İmar Uygulaması","İfraz","Tevhit","Resmi Kurumdan Gelen Yazı ile Düşülmesi"
     };
 
     private async Task RefreshAsync()
@@ -87,18 +90,18 @@
 
         var tasinmazById = tasinmazResult.Value.ToDictionary(t => t.Id);
 
-        // var tasinmazIds = bagisResult.Value
-        //     .Where(b => b.TasinmazId.HasValue &&
-        //                 tasinmazById.TryGetValue(b.TasinmazId.Value, out var tasinmaz) &&
-        //                 (b.Envanterde ||
-        //                  tasinmaz.EnvanterdeMi == 1 ||
-        //                  (tasinmaz.EnvanterdenCikmaSebebi is not null &&
-        //                   GecerliEnvanterdenCikmaSebepleri.Contains(tasinmaz.EnvanterdenCikmaSebebi))))
         var tasinmazIds = bagisResult.Value
             .Where(b => b.TasinmazId.HasValue &&
-                tasinmazById.TryGetValue(b.TasinmazId.Value, out var tasinmaz))
-            .Select(b => b.TasinmazId!.Value)
-            .Distinct();
+                        tasinmazById.TryGetValue(b.TasinmazId.Value, out var tasinmaz) &&
+                        (//b.Envanterde ||
+                         tasinmaz.EnvanterdeMi == 1 ||
+                         (tasinmaz.EnvanterdenCikmaSebebi is not null &&
+                          GecerliEnvanterdenCikmaSebepleri.Contains(tasinmaz.EnvanterdenCikmaSebebi))))
+        // var tasinmazIds = bagisResult.Value
+        //     .Where(b => b.TasinmazId.HasValue &&
+        //         tasinmazById.TryGetValue(b.TasinmazId.Value, out var tasinmaz))
+             .Select(b => b.TasinmazId!.Value)
+             .Distinct();
 
         Tasinmazlar = tasinmazIds
             .Select(id => tasinmazById[id])

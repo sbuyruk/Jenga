@@ -54,4 +54,11 @@ public interface IGorevOnayService
         int? currentPersonelId,
         bool authorizedUnitView,
         CancellationToken cancellationToken = default);
+
+    Task<Result<bool>> HasOverlappingTaskApprovalAsync(
+        int personelId,
+        DateTime startDate,
+        DateTime endDate,
+        int? excludeTaskApprovalId = null,
+        CancellationToken cancellationToken = default);
 }

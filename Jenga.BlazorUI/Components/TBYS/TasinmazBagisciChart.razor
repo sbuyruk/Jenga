@@ -1,4 +1,4 @@
-﻿@using Jenga.Models.Common
+@using Jenga.Models.Common
 @using Jenga.Models.TBYS
 @using System.Linq
 @using System.Globalization
@@ -85,7 +85,7 @@
         var ilById = (Iller ?? Enumerable.Empty<Il>()).ToDictionary(i => i.Id, i => i);
         // map BolgeId to display name (first Il found's Bolge string)
         var bolgeById = (Bolgeler ?? Enumerable.Empty<Bolge>())
-            .Where(b=>b.Aktif)
+            .Where(b=>b.Aktif && b.TemsilcilikMi)
             .ToDictionary(b => b.Id, b=>b);
 
         // Group by BolgeId (if Iller supplied) otherwise group by IlId; fallback key -1 means unknown

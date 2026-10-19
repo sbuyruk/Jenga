@@ -1,7 +1,10 @@
+@using System.IO
 @using Jenga.Utility.Logging
+@using Microsoft.AspNetCore.Hosting
 @inherits ErrorBoundary
 @inject ILogService LogService
 @inject IToastService ToastService
+@inject IWebHostEnvironment HostEnvironment
 
 @if (CurrentException is null)
 {
@@ -16,11 +19,22 @@ else
     else
     {
         <div class="alert alert-danger m-3" role="alert">
-            <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex justify-content-between align-items-start gap-3">
                 <div>
-                    <strong>Beklenmeyen bir hata oluştu.</strong>
-                    <div class="small text-muted">Ekibe bildirim gönderildi. Sayfayı yenilemeyi deneyebilirsiniz.</div>
+                    <strong>İşlem tamamlanamadı.</strong>
+                    <div class="small text-muted">Hata kaydı oluşturuldu. Lütfen birkaç dakika sonra tekrar deneyin.</div>
+
+                    @if (HostEnvironment.IsDevelopment())
+                    {
+                        <div class="mt-2">
+                            <div class="small"><strong>Hata:</strong> <code>@CurrentException.GetType().Name</code></div>
+                            <div class="small"><strong>Mesaj:</strong> @CurrentException.Message</div>
+                            <div class="small text-muted mt-2">Log dosyası: <code>@TodayLogPath</code></div>
+                            <pre class="small bg-dark text-light p-2 mt-2 rounded mb-0 overflow-auto" style="white-space: pre-wrap; max-height: 260px;">@CurrentException</pre>
+                        </div>
+                    }
                 </div>
+
                 <button class="btn btn-sm btn-outline-light" @onclick="Recover" type="button">
                     Tekrar Dene
                 </button>
@@ -30,6 +44,10 @@ else
 }
 
 @code {
+    private string TodayLogPath => Path.Combine(Directory.GetCurrentDirectory(), "Logs", $"jenga-{DateTime.Today:yyyy-MM-dd}.log");
+
+    // Log files are created relative to the app's working directory so local debugging writes into the project Logs folder.
+
     protected override Task OnErrorAsync(Exception exception)
     {
         try

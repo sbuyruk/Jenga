@@ -34,7 +34,7 @@ namespace Jenga.DataAccess.Services.Common
             catch (Exception ex)
             {
                 _logService.LogException(ex, $"{Source}.GetAllAsync");
-                return Result.Failure<List<Bolge>>(Error.Unexpected("Bölgeler getirilemedi.", ex, "Bolge.GetAll.Failed"));
+                return Result.Failure<List<Bolge>>(Error.Unexpected("BÃ¶lgeler getirilemedi.", ex, "Bolge.GetAll.Failed"));
             }
         }
 
@@ -45,13 +45,13 @@ namespace Jenga.DataAccess.Services.Common
                 await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
                 var entity = await db.Bolge_Table.AsNoTracking().FirstOrDefaultAsync(b => b.Id == id, cancellationToken);
                 if (entity is null)
-                    return Result.Failure<Bolge>(Error.NotFound($"Bölge bulunamadi (Id={id}).", "Bolge.NotFound"));
+                    return Result.Failure<Bolge>(Error.NotFound($"BÃ¶lge bulunamadi (Id={id}).", "Bolge.NotFound"));
                 return Result.Success(entity);
             }
             catch (Exception ex)
             {
                 _logService.LogException(ex, $"{Source}.GetByIdAsync");
-                return Result.Failure<Bolge>(Error.Unexpected("Bölge getirilemedi.", ex, "Bolge.GetById.Failed"));
+                return Result.Failure<Bolge>(Error.Unexpected("BÃ¶lge getirilemedi.", ex, "Bolge.GetById.Failed"));
             }
         }
 
@@ -65,20 +65,20 @@ namespace Jenga.DataAccess.Services.Common
                 var trimmed = name.Trim();
                 var entity = await db.Bolge_Table.AsNoTracking().FirstOrDefaultAsync(b => b.Adi == trimmed, cancellationToken);
                 if (entity is null)
-                    return Result.Failure<Bolge>(Error.NotFound($"Bölge bulunamadi (Adi={trimmed}).", "Bolge.NotFound"));
+                    return Result.Failure<Bolge>(Error.NotFound($"BÃ¶lge bulunamadi (Adi={trimmed}).", "Bolge.NotFound"));
                 return Result.Success(entity);
             }
             catch (Exception ex)
             {
                 _logService.LogException(ex, $"{Source}.GetByNameAsync");
-                return Result.Failure<Bolge>(Error.Unexpected("Bölge getirilemedi.", ex, "Bolge.GetByName.Failed"));
+                return Result.Failure<Bolge>(Error.Unexpected("BÃ¶lge getirilemedi.", ex, "Bolge.GetByName.Failed"));
             }
         }
 
         public async Task<Result> AddAsync(Bolge bolge, CancellationToken cancellationToken = default)
         {
             if (bolge == null)
-                return Result.Failure(Error.Validation("Bölge bos olamaz.", "Bolge.Null"));
+                return Result.Failure(Error.Validation("BÃ¶lge bos olamaz.", "Bolge.Null"));
             try
             {
                 await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
@@ -90,14 +90,14 @@ namespace Jenga.DataAccess.Services.Common
             catch (Exception ex)
             {
                 _logService.LogException(ex, $"{Source}.AddAsync");
-                return Result.Failure(Error.Unexpected("Bölge eklenemedi.", ex, "Bolge.Add.Failed"));
+                return Result.Failure(Error.Unexpected("BÃ¶lge eklenemedi.", ex, "Bolge.Add.Failed"));
             }
         }
 
         public async Task<Result> UpdateAsync(Bolge bolge, CancellationToken cancellationToken = default)
         {
             if (bolge == null)
-                return Result.Failure(Error.Validation("Bölge bos olamaz.", "Bolge.Null"));
+                return Result.Failure(Error.Validation("BÃ¶lge bos olamaz.", "Bolge.Null"));
             try
             {
                 await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
@@ -109,7 +109,7 @@ namespace Jenga.DataAccess.Services.Common
             catch (Exception ex)
             {
                 _logService.LogException(ex, $"{Source}.UpdateAsync");
-                return Result.Failure(Error.Unexpected("Bölge güncellenemedi.", ex, "Bolge.Update.Failed"));
+                return Result.Failure(Error.Unexpected("BÃ¶lge gÃ¼ncellenemedi.", ex, "Bolge.Update.Failed"));
             }
         }
 
@@ -120,7 +120,7 @@ namespace Jenga.DataAccess.Services.Common
                 await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
                 var entity = await db.Bolge_Table.FirstOrDefaultAsync(b => b.Id == bolgeId, cancellationToken);
                 if (entity == null)
-                    return Result.Failure(Error.NotFound($"Bölge bulunamadi (Id={bolgeId}).", "Bolge.NotFound"));
+                    return Result.Failure(Error.NotFound($"BÃ¶lge bulunamadi (Id={bolgeId}).", "Bolge.NotFound"));
 
                 db.Bolge_Table.Remove(entity);
                 await db.SaveChangesAsync(cancellationToken);
@@ -130,7 +130,7 @@ namespace Jenga.DataAccess.Services.Common
             catch (Exception ex)
             {
                 _logService.LogException(ex, $"{Source}.DeleteAsync");
-                return Result.Failure(Error.Unexpected("Bölge silinemedi.", ex, "Bolge.Delete.Failed"));
+                return Result.Failure(Error.Unexpected("BÃ¶lge silinemedi.", ex, "Bolge.Delete.Failed"));
             }
         }
 
@@ -139,13 +139,13 @@ namespace Jenga.DataAccess.Services.Common
             try
             {
                 await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-                var list = await db.Bolge_Table.AsNoTracking().Where(b => b.Aktif).ToListAsync(cancellationToken);
+                var list = await db.Bolge_Table.AsNoTracking().Where(b => b.Aktif && b.TemsilcilikMi).ToListAsync(cancellationToken);
                 return Result.Success(list);
             }
             catch (Exception ex)
             {
                 _logService.LogException(ex, $"{Source}.GetAktifBolgelerAsync");
-                return Result.Failure<List<Bolge>>(Error.Unexpected("Aktif bölgeler getirilemedi.", ex, "Bolge.GetAktif.Failed"));
+                return Result.Failure<List<Bolge>>(Error.Unexpected("Aktif bÃ¶lgeler getirilemedi.", ex, "Bolge.GetAktif.Failed"));
             }
         }
 
@@ -160,7 +160,7 @@ namespace Jenga.DataAccess.Services.Common
             catch (Exception ex)
             {
                 _logService.LogException(ex, $"{Source}.AnyAsync");
-                return Result.Failure<bool>(Error.Unexpected("Bölge sorgusu basarisiz.", ex, "Bolge.Any.Failed"));
+                return Result.Failure<bool>(Error.Unexpected("BÃ¶lge sorgusu basarisiz.", ex, "Bolge.Any.Failed"));
             }
         }
     }

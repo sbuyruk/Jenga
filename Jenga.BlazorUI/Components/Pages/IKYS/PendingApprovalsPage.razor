@@ -120,6 +120,7 @@
             </GenericTable>
         }
     }
+ }
 
 </PermissionGuard>
 
@@ -150,7 +151,10 @@
                 <div class="modal-footer">
                     <button class="btn btn-secondary" @onclick="() => _approveItem = null">İptal</button>
                     <button class="btn btn-success" @onclick="ConfirmApproveAsync" disabled="@_isBusy">
-                        @if (_isBusy) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                        @if (_isBusy)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1"></span>
+                        }
                         Evet, Onayla
                     </button>
                 </div>
@@ -186,7 +190,10 @@
                 <div class="modal-footer">
                     <button class="btn btn-secondary" @onclick="() => { _rejectItem = null; _rejectReason = null; _rejectReasonError = false; }">İptal</button>
                     <button class="btn btn-danger" @onclick="ConfirmRejectAsync" disabled="@_isBusy">
-                        @if (_isBusy) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                        @if (_isBusy)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1"></span>
+                        }
                         Reddet
                     </button>
                 </div>
@@ -277,6 +284,7 @@
 
     private void OpenDetail(PendingApprovalItem item) => _detailItem = item;
     private void CloseDetail() => _detailItem = null;
+
 
     private void OpenApproveConfirm(PendingApprovalItem item) => _approveItem = item;
 

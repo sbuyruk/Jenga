@@ -67,3 +67,16 @@ window.printElementById = (elementId) => {
 };
 
 window.isMobileViewport = () => window.innerWidth < 768;
+
+window.taskApprovalEditor = {
+    execCommand: (element, command) => {
+        if (!element || !command) return;
+        element.focus();
+        document.execCommand(command, false, null);
+    },
+    getHtml: (element) => element?.innerHTML ?? "",
+    setHtml: (element, html) => {
+        if (!element) return;
+        element.innerHTML = html ?? "";
+    }
+};

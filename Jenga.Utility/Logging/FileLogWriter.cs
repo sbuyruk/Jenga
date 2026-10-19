@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 
 namespace Jenga.Utility.Logging
 {
@@ -14,7 +14,10 @@ namespace Jenga.Utility.Logging
 
         public FileLogWriter(string directory = "Logs", string fileNamePrefix = "jenga")
         {
-            _directory = directory;
+            _directory = Path.IsPathRooted(directory)
+                ? directory
+                : Path.Combine(Directory.GetCurrentDirectory(), directory);
+
             _fileNamePrefix = fileNamePrefix;
             Directory.CreateDirectory(_directory);
         }

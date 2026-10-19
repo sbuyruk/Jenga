@@ -1,4 +1,4 @@
-﻿using Jenga.Models.Sistem;
+using Jenga.Models.Sistem;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
@@ -14,6 +14,7 @@ namespace Jenga.Models.Common
         public string? KisaAdi { get; set; }
 
         public bool Aktif { get; set; } 
+        public bool TemsilcilikMi { get; set; }  
 
     }
 }

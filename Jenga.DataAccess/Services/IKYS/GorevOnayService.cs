@@ -567,6 +567,39 @@ public class GorevOnayService : IGorevOnayService
         }
     }
 
+    public async Task<Result<bool>> HasOverlappingTaskApprovalAsync(
+        int personelId,
+        DateTime startDate,
+        DateTime endDate,
+        int? excludeTaskApprovalId = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (endDate <= startDate)
+            return Result.Success(false);
+
+        try
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            var query = db.GorevOnay_Table.AsNoTracking()
+                .Where(x => x.PersonelId == personelId && x.BaslangicTarihi.HasValue && x.BitisTarihi.HasValue);
+
+            if (excludeTaskApprovalId.HasValue)
+                query = query.Where(x => x.Id != excludeTaskApprovalId.Value);
+
+            var hasOverlap = await query.AnyAsync(x =>
+                x.BaslangicTarihi!.Value < endDate &&
+                x.BitisTarihi!.Value > startDate, cancellationToken);
+
+            return Result.Success(hasOverlap);
+        }
+        catch (Exception ex)
+        {
+            _logService.LogException(ex, $"{Source}.HasOverlappingTaskApprovalAsync");
+            return Result.Failure<bool>(Error.Unexpected(
+                "Görev tarih çakışma kontrolü yapılamadı.", ex, "GorevOnay.OverlapCheck.Failed"));
+        }
+    }
+
     // ── Private helpers ──────────────────────────────────────────────────────
 
     private static readonly CultureInfo TrCulture = new("tr-TR");

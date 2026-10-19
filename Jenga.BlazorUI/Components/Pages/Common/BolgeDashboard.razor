@@ -55,7 +55,7 @@
                     <strong>Bölge Seç:</strong>
                 </div>
                 <div class="d-flex flex-wrap gap-2">
-                    @foreach (var b in _bolgeler.Where(x => x.Aktif))
+                    @foreach (var b in _bolgeler.Where(x => x.Aktif && x.TemsilcilikMi))
                     {
                         <button class="btn btn-sm @(_secilenBolge?.Id == b.Id ? "btn-primary" : "btn-outline-primary")"
                                 @onclick="() => SelectBolgeAsync(b)">

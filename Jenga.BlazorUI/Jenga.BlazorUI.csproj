@@ -14,6 +14,7 @@
   <ItemGroup>
     <Folder Include="Pages\" />
     <Folder Include="SeedData\Auth\" />
+    <Folder Include="wwwroot\temp\" />
   </ItemGroup>
 
   <ItemGroup>
