@@ -6,6 +6,16 @@ namespace Jenga.Models.IKYS;
 
 public class IzinTalep : BaseModel
 {
+    public enum OnayDurumuTipi
+    {
+        IslemBekliyor = 0,
+        KontrolEdildi = 1,
+        KayitlaraIslendi = 2,
+        Reddedildi = 3,
+        IptalEdildi = 4,
+        DilekceBekleniyor = 5
+    }
+
     public int? PersonelId { get; set; }
     [ForeignKey("PersonelId")]
     public Personel? Personel { get; set; }
@@ -34,7 +44,7 @@ public class IzinTalep : BaseModel
     [ForeignKey("IzinDonemId")]
     public IzinDonem? IzinDonem { get; set; }
     [DisplayName("Onay Durumu")]
-    public int? OnayDurumu { get; set; }
+    public OnayDurumuTipi? OnayDurumu { get; set; }
     [DisplayName("E-Posta Gönder")]
     public bool? EPostaGonder { get; set; }
 }

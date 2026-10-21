@@ -870,18 +870,21 @@
                     : "Tarih belirtilmedi",
                 x.OnayDurumu switch
                 {
-                    (int)ApprovalStatus.PendingApproval => "waiting",
-                    (int)ApprovalStatus.Approved => "completed",
-                    (int)ApprovalStatus.Rejected => "critical",
-                    _ => "inprogress"
+                    IzinTalep.OnayDurumuTipi.IslemBekliyor => "waiting",
+                    IzinTalep.OnayDurumuTipi.KontrolEdildi => "inprogress",
+                    IzinTalep.OnayDurumuTipi.KayitlaraIslendi => "completed",
+                    IzinTalep.OnayDurumuTipi.Reddedildi or IzinTalep.OnayDurumuTipi.IptalEdildi => "critical",
+                    IzinTalep.OnayDurumuTipi.DilekceBekleniyor => "waiting",
+                    _ => "waiting"
                 },
                 x.OnayDurumu switch
                 {
-                    (int)ApprovalStatus.PendingApproval => "Onay bekliyor",
-                    (int)ApprovalStatus.Approved => "Onaylandı",
-                    (int)ApprovalStatus.Rejected => "Reddedildi",
-                    (int)ApprovalStatus.NotRequired => "Onay gerekmiyor",
-                    (int)ApprovalStatus.Other => "Diğer",
+                    IzinTalep.OnayDurumuTipi.IslemBekliyor => "İşlem Bekliyor",
+                    IzinTalep.OnayDurumuTipi.KontrolEdildi => "Kontrol Edildi",
+                    IzinTalep.OnayDurumuTipi.KayitlaraIslendi => "Kayıtlara İşlendi",
+                    IzinTalep.OnayDurumuTipi.Reddedildi => "Reddedildi",
+                    IzinTalep.OnayDurumuTipi.IptalEdildi => "İptal Edildi",
+                    IzinTalep.OnayDurumuTipi.DilekceBekleniyor => "Dilekçe Bekleniyor",
                     _ => "Durum belirtilmedi"
                 }))
             .ToList();

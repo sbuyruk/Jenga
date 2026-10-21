@@ -72,7 +72,7 @@ public class IzinTalepService : IIzinTalepService
         try
         {
             entity.Aktif ??= true;
-            entity.OnayDurumu ??= 0;
+            entity.OnayDurumu ??= IzinTalep.OnayDurumuTipi.IslemBekliyor;
             await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
             db.SetCurrentUser(modifiedBy);
             await db.IzinTalep_Table.AddAsync(entity, cancellationToken);

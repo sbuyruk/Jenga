@@ -1019,6 +1019,61 @@
                     </div>
                 </section>
 
+                @{
+                    var currentYearDonations = GetCurrentYearDonations();
+                }
+                <section class="db-section">
+                    <div class="section-label">@DateTime.Today.Year Yılı Bağışları</div>
+                    <div class="card shadow-sm mb-3">
+                        <div class="card-header d-flex align-items-center justify-content-between">
+                            <strong><i class="bi bi-calendar-check me-1"></i>Taşınmaz Bağışları</strong>
+                            <small class="text-muted">@currentYearDonations.Count kayıt</small>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover table-bordered mb-0 db-bolge-table">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th class="text-center">Sıra No</th>
+                                            <th>Taşınmazın Cinsi</th>
+                                            <th>Adresi</th>
+                                            <th>İlçesi</th>
+                                            <th>İli</th>
+                                            <th>Mülkiyet Şekli</th>
+                                            <th class="text-end">Emlak Beyan Değeri (₺)</th>
+                                            <th class="text-end">Tah. Ray. Değeri (₺)</th>
+                                            <th class="text-end">Yak. Piy. Değeri (₺)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @for (var i = 0; i < currentYearDonations.Count; i++)
+                                        {
+                                            var item = currentYearDonations[i];
+                                            <tr>
+                                                <td class="text-center">@(i + 1)</td>
+                                                <td>@(item.Tasinmaz.Cinsi ?? "–")</td>
+                                                <td>@(item.Tasinmaz.Adres ?? "–")</td>
+                                                <td>@(item.Tasinmaz.Ilcesi ?? "–")</td>
+                                                <td>@(item.Tasinmaz.Ili ?? "–")</td>
+                                                <td>@(item.Tasinmaz.MulkiyetSekli ?? "–")</td>
+                                                <td class="text-end font-monospace">@(item.Tasinmaz.EmlakBeyanDegeri?.ToString("N0", TrCulture) ?? "–")</td>
+                                                <td class="text-end font-monospace">@(item.Tasinmaz.TahminiRayicDegeri?.ToString("N0", TrCulture) ?? "–")</td>
+                                                <td class="text-end font-monospace">@(item.Tasinmaz.YaklasikPiyasaDegeri?.ToString("N0", TrCulture) ?? "–")</td>
+                                            </tr>
+                                        }
+                                        @if (currentYearDonations.Count == 0)
+                                        {
+                                            <tr>
+                                                <td colspan="9" class="text-center text-muted py-3">Bu yıl için bağış kaydı bulunamadı.</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
                 <!-- ── Zekayi Gif Footer ───────────────────────── -->
                 <div class="d-flex justify-content-center mt-4 mb-2">
                     <img src="/images/zekayi.gif"
@@ -1124,12 +1179,14 @@
         try
         {
             var t1 = BagisciService.GetAllAsync(ct);
-            var t2 = BagisService.GetAllEnvanterdeAsync(ct);
+            // Yıllık bağış grafiği ve toplam oranlar tüm bağış kayıtlarını esas almalı;
+            // envanter filtresi yalnızca envanter gösteren bölümlerde uygulanır.
+            var t2 = BagisService.GetAllAsync(ct);
             var t3 = VasiyetciService.GetAllAsync(ct);
             var t4 = TaahhutService.GetAllAsync(ct);
             var t5 = TalepleriService.GetAllAsync(ct);
             var t6 = YakinlariService.GetAllAsync(ct);
-            var t7 = TasinmazService.GetEnvanterdekilerAsync(ct);
+            var t7 = TasinmazService.GetAllAsync(ct);
             var t8 = IlService.GetAllAsync(ct);
             var t9 = BolgeService.GetAllAsync(ct);
 
@@ -1169,6 +1226,19 @@
             .Select(x => x.Ili!.Trim())
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Count();
+    }
+
+    private List<(Bagis Bagis, Tasinmaz Tasinmaz)> GetCurrentYearDonations()
+    {
+        var currentYear = DateTime.Today.Year;
+        var tasinmazlarById = _tasinmazlar.ToDictionary(x => x.Id);
+
+        return _bagislar
+            .Where(b => (b.BagisYili == currentYear || b.BagisTarihi?.Year == currentYear) &&
+                        b.TasinmazId.HasValue && tasinmazlarById.ContainsKey(b.TasinmazId.Value))
+            .OrderByDescending(b => b.BagisTarihi)
+            .Select(b => (Bagis: b, Tasinmaz: tasinmazlarById[b.TasinmazId!.Value]))
+            .ToList();
     }
 
     private void PrepareCharts()
