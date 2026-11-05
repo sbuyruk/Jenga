@@ -125,6 +125,9 @@ namespace Jenga.DataAccess.Extensions
             services.AddScopedWithAuthProxy<ITasinmazTaahhutService, TasinmazTaahhutService>(ModuleName.TBYS);
             services.AddScopedWithAuthProxy<IVasiyetciService, VasiyetciService>(ModuleName.TBYS);
             services.AddScopedWithAuthProxy<IBagisService, BagisService>(ModuleName.TBYS);
+            services.AddScopedWithAuthProxy<ITasinmazKontrolFormService, TasinmazKontrolFormService>(ModuleName.TBYS);
+            services.AddScopedWithAuthProxy<ITasinmazKontrolService, TasinmazKontrolService>(ModuleName.TBYS);
+            services.AddSingleton<IKontrolEkDeposu, DosyaSistemiKontrolEkDeposu>();
             // TbysSearchService: salt okunur arama — proxy gerekmez
             services.AddScoped<ITbysSearchService, TbysSearchService>();
 

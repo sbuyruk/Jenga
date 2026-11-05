@@ -1,0 +1,196 @@
+@using Jenga.Models.TBYS.Kontrol
+@using Jenga.DataAccess.Services.TBYS
+@using System.Globalization
+
+@foreach (var bolum in Tanim.Bolumler.OrderBy(b => b.Sira))
+{
+    <div class="card mb-3">
+        <div class="card-header py-2"><strong>@bolum.Baslik</strong>
+            @if (!string.IsNullOrWhiteSpace(bolum.Aciklama)) { <small class="text-muted ms-2">@bolum.Aciklama</small> }
+        </div>
+        <div class="card-body">
+            @if (bolum.Alanlar.Count > 0)
+            {
+                <div class="row g-3">
+                    @foreach (var alan in bolum.Alanlar.OrderBy(a => a.Sira))
+                    {
+                        <div class="@(alan.Tip is KontrolAlanTipi.UzunMetin or KontrolAlanTipi.Ek ? "col-12" : "col-md-6 col-lg-4")">
+                            @RenderAlan(alan, () => Cevaplar.Al(alan.Kod), v => Cevaplar.Alanlar[alan.Kod] = v, null, null)
+                        </div>
+                    }
+                </div>
+            }
+
+            @foreach (var grup in bolum.Gruplar.OrderBy(g => g.Sira))
+            {
+                var satirlar = Satirlar(grup);
+                <div class="mt-3">
+                    <div class="d-flex align-items-center mb-2">
+                        <strong class="me-auto">@grup.Baslik</strong>
+                        @if (!ReadOnly && grup.Tekrarlanabilir)
+                        {
+                            <button type="button" class="btn btn-sm btn-outline-primary" @onclick="() => satirlar.Add(new(StringComparer.OrdinalIgnoreCase))">
+                                <i class="bi bi-plus-lg me-1"></i>Satır Ekle
+                            </button>
+                        }
+                    </div>
+                    @if (satirlar.Count == 0)
+                    {
+                        <div class="text-muted small fst-italic">Kayıt yok.</div>
+                    }
+                    @for (int i = 0; i < satirlar.Count; i++)
+                    {
+                        var idx = i;
+                        var satir = satirlar[idx];
+                        <div class="border rounded p-2 mb-2 bg-light-subtle">
+                            <div class="d-flex align-items-center mb-1">
+                                <small class="text-muted me-auto">#@(idx + 1)</small>
+                                @if (!ReadOnly && grup.Tekrarlanabilir)
+                                {
+                                    <button type="button" class="btn btn-sm btn-link text-danger p-0" @onclick="() => satirlar.RemoveAt(idx)" title="Satırı sil"><i class="bi bi-trash"></i></button>
+                                }
+                            </div>
+                            <div class="row g-2">
+                                @foreach (var alan in grup.Alanlar.OrderBy(a => a.Sira))
+                                {
+                                    <div class="@(alan.Tip is KontrolAlanTipi.UzunMetin or KontrolAlanTipi.Ek ? "col-12" : "col-md-6 col-lg-4")">
+                                        @RenderAlan(alan, () => satir.TryGetValue(alan.Kod, out var v) ? v : null, v => satir[alan.Kod] = v, grup.Kod, idx)
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public KontrolFormTanimi Tanim { get; set; } = new();
+    [Parameter, EditorRequired] public KontrolCevaplari Cevaplar { get; set; } = new();
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public IReadOnlyList<TasinmazKontrolEk> Ekler { get; set; } = Array.Empty<TasinmazKontrolEk>();
+    /// <summary>BölgePersoneli tipli alanlar için seçenekler (amir başta).</summary>
+    [Parameter] public IReadOnlyList<BolgePersoneli> BolgePersonelleri { get; set; } = Array.Empty<BolgePersoneli>();
+    /// <summary>Ek alanı için yükleme UI'ı (alanKodu, grupKodu, satirNo).</summary>
+    [Parameter] public RenderFragment<(string AlanKodu, string? GrupKodu, int? SatirNo)>? EkYukleTemplate { get; set; }
+    [Parameter] public EventCallback<TasinmazKontrolEk> OnEkSil { get; set; }
+
+    private List<Dictionary<string, string?>> Satirlar(KontrolGrupTanimi grup)
+    {
+        if (!Cevaplar.Gruplar.TryGetValue(grup.Kod, out var s))
+        {
+            s = new List<Dictionary<string, string?>>();
+            Cevaplar.Gruplar[grup.Kod] = s;
+        }
+        if (!grup.Tekrarlanabilir && s.Count == 0 && !ReadOnly) s.Add(new(StringComparer.OrdinalIgnoreCase));
+        return s;
+    }
+
+    private RenderFragment RenderAlan(KontrolAlanTanimi alan, Func<string?> oku, Action<string?> yaz, string? grupKodu, int? satirNo) => __builder =>
+    {
+        var saltOkunur = ReadOnly || alan.VeriKaynagi == KontrolVeriKaynagiTipi.TasinmazSaltOkunur;
+        var deger = oku();
+        var id = $"f_{alan.Kod}_{satirNo?.ToString() ?? "x"}";
+
+        <label class="form-label small mb-1" for="@id">
+            @alan.Baslik
+            @if (alan.Zorunlu) { <span class="text-danger">*</span> }
+            @if (!string.IsNullOrWhiteSpace(alan.Birim)) { <span class="text-muted">(@alan.Birim)</span> }
+            @if (alan.VeriKaynagi != KontrolVeriKaynagiTipi.Manuel) { <i class="bi bi-building text-muted ms-1" title="Taşınmaz kaydından"></i> }
+        </label>
+
+        @switch (alan.Tip)
+        {
+            case KontrolAlanTipi.Ek:
+                var ekler = Ekler.Where(e => e.AlanKodu.Equals(alan.Kod, StringComparison.OrdinalIgnoreCase) && e.SatirNo == satirNo).ToList();
+                <div>
+                    @foreach (var ek in ekler)
+                    {
+                        <div class="d-flex align-items-center gap-2 small mb-1">
+                            <a href="/api/tbys/kontrol-ek/@ek.Id" target="_blank"><i class="bi bi-paperclip"></i> @ek.DosyaAdi</a>
+                            <span class="text-muted">(@((ek.Boyut / 1024.0).ToString("N0")) KB)</span>
+                            @if (!ReadOnly)
+                            {
+                                <button type="button" class="btn btn-sm btn-link text-danger p-0" @onclick="() => OnEkSil.InvokeAsync(ek)"><i class="bi bi-x-circle"></i></button>
+                            }
+                        </div>
+                    }
+                    @if (ekler.Count == 0) { <div class="text-muted small fst-italic">Ek yok.</div> }
+                    @if (!ReadOnly && EkYukleTemplate is not null) { @EkYukleTemplate((alan.Kod, grupKodu, satirNo)) }
+                </div>
+                break;
+
+            case KontrolAlanTipi.UzunMetin:
+                <textarea id="@id" class="form-control form-control-sm" rows="3" disabled="@saltOkunur" value="@deger" @onchange="e => yaz(e.Value?.ToString())"></textarea>
+                break;
+
+            case KontrolAlanTipi.TamSayi:
+            case KontrolAlanTipi.OndalikSayi:
+                <input id="@id" type="text" inputmode="decimal" class="form-control form-control-sm" disabled="@saltOkunur" value="@deger" @onchange="e => yaz(SayiNormalize(e.Value?.ToString()))" />
+                break;
+
+            case KontrolAlanTipi.Tarih:
+                <input id="@id" type="date" class="form-control form-control-sm" disabled="@saltOkunur" value="@deger" @onchange="e => yaz(e.Value?.ToString())" />
+                break;
+
+            case KontrolAlanTipi.EvetHayir:
+                <select id="@id" class="form-select form-select-sm" disabled="@saltOkunur" value="@(deger ?? "")" @onchange="e => yaz(string.IsNullOrEmpty(e.Value?.ToString()) ? null : e.Value!.ToString())">
+                    <option value="">—</option>
+                    <option value="@nameof(EvetHayirCevabi.Evet)">Evet</option>
+                    <option value="@nameof(EvetHayirCevabi.Hayir)">Hayır</option>
+                    <option value="@nameof(EvetHayirCevabi.Uygulanamaz)">Uygulanamaz</option>
+                </select>
+                break;
+
+            case KontrolAlanTipi.TekliSecim:
+                <select id="@id" class="form-select form-select-sm" disabled="@saltOkunur" value="@(deger ?? "")" @onchange="e => yaz(string.IsNullOrEmpty(e.Value?.ToString()) ? null : e.Value!.ToString())">
+                    <option value="">—</option>
+                    @foreach (var s in alan.Secenekler.OrderBy(s => s.Sira)) { <option value="@s.Kod">@s.Etiket</option> }
+                </select>
+                break;
+
+            case KontrolAlanTipi.CokluSecim:
+                var secili = new HashSet<string>((deger ?? "").Split(KontrolCevaplari.CokluSecimAyirici, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries), StringComparer.OrdinalIgnoreCase);
+                <div class="d-flex flex-wrap gap-3">
+                    @foreach (var s in alan.Secenekler.OrderBy(s => s.Sira))
+                    {
+                        var kod = s.Kod;
+                        <div class="form-check form-check-sm">
+                            <input class="form-check-input" type="checkbox" id="@($"{id}_{kod}")" disabled="@saltOkunur" checked="@secili.Contains(kod)"
+                                   @onchange="e => { if ((bool)e.Value!) secili.Add(kod); else secili.Remove(kod); yaz(secili.Count == 0 ? null : string.Join(KontrolCevaplari.CokluSecimAyirici, alan.Secenekler.Where(x => secili.Contains(x.Kod)).Select(x => x.Kod))); }" />
+                            <label class="form-check-label small" for="@($"{id}_{kod}")">@s.Etiket</label>
+                        </div>
+                    }
+                </div>
+                break;
+
+            case KontrolAlanTipi.BolgePersoneli:
+                var listede = deger is not null && BolgePersonelleri.Any(p => p.AdSoyad == deger);
+                <select id="@id" class="form-select form-select-sm" disabled="@saltOkunur" value="@(deger ?? "")" @onchange="e => yaz(string.IsNullOrEmpty(e.Value?.ToString()) ? null : e.Value!.ToString())">
+                    <option value="">—</option>
+                    @if (deger is not null && !listede) { <option value="@deger">@deger</option> }
+                    @foreach (var p in BolgePersonelleri)
+                    {
+                        <option value="@p.AdSoyad">@p.AdSoyad@(p.Unvan is null ? "" : $" – {p.Unvan}")@(p.Amir ? " (Birim Amiri)" : "")</option>
+                    }
+                </select>
+                @if (BolgePersonelleri.Count == 0 && !saltOkunur) { <small class="text-muted">Bu bölgede tanımlı personel bulunamadı.</small> }
+                break;
+
+            default:
+                <input id="@id" type="text" class="form-control form-control-sm" disabled="@saltOkunur" value="@deger" @onchange="e => yaz(e.Value?.ToString())" />
+                break;
+        }
+    };
+
+    private static string? SayiNormalize(string? s)
+    {
+        if (string.IsNullOrWhiteSpace(s)) return null;
+        s = s.Trim();
+        // Kullanıcı tr-TR ondalık virgül girebilir; depolama invariant.
+        if (s.Contains(',') && !s.Contains('.')) s = s.Replace(',', '.');
+        return s;
+    }
+}

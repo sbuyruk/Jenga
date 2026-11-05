@@ -3,6 +3,10 @@ using Jenga.BlazorUI.Endpoints;
 using Jenga.BlazorUI.Extensions;
 using Jenga.BlazorUI.Services.Common.Auth;
 using Jenga.DataAccess.Extensions;
+using Jenga.DataAccess.Data;
+using Jenga.DataAccess.Services.TBYS;
+using Jenga.Utility.Logging;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Negotiate;
@@ -154,6 +158,11 @@ CultureInfo.DefaultThreadCurrentUICulture = defaultCulture;
 builder.Services.AddLocalization();
 var app = builder.Build();
 
+// TBYS Taşınmaz Kontrolü: Excel'den türetilen varsayılan form şablonunu idempotent ekle (şema: docs/sql/2025-TBYS-TasinmazKontrol.sql).
+await KontrolFormSeed.UygulaAsync(
+    app.Services.GetRequiredService<IDbContextFactory<ApplicationDbContext>>(),
+    app.Services.GetRequiredService<ILogService>());
+
 var supportedCultures = new[] { defaultCulture };
 var localizationOptions = new RequestLocalizationOptions
 {
@@ -191,6 +200,7 @@ app.UseAntiforgery();
 app.MapStaticAssets();
 app.MapAuthEndpoints();
 app.MapFotoProxy();
+app.MapKontrolEkIndir();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 /*SB Hata Sayfası*/

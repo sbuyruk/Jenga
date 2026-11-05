@@ -1,0 +1,32 @@
+@* Gerekçe isteyen basit onay penceresi. *@
+<div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,.4)">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title">@Baslik</h6>
+                <button type="button" class="btn-close" @onclick="OnKapat"></button>
+            </div>
+            <div class="modal-body">
+                @ChildContent
+                <label class="form-label small mb-1">@Etiket <span class="text-danger">*</span></label>
+                <textarea class="form-control form-control-sm" rows="3" @bind="_gerekce"></textarea>
+            </div>
+            <div class="modal-footer py-2">
+                <button class="btn btn-sm btn-secondary" @onclick="OnKapat">Vazgeç</button>
+                <button class="btn btn-sm @OnayStil" disabled="@string.IsNullOrWhiteSpace(_gerekce)" @onclick="() => OnOnay.InvokeAsync(_gerekce!.Trim())">@OnayMetni</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Baslik { get; set; } = "Onay";
+    [Parameter] public string Etiket { get; set; } = "Gerekçe";
+    [Parameter] public string OnayMetni { get; set; } = "Onayla";
+    [Parameter] public string OnayStil { get; set; } = "btn-primary";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public EventCallback OnKapat { get; set; }
+    [Parameter] public EventCallback<string> OnOnay { get; set; }
+
+    private string? _gerekce;
+}
