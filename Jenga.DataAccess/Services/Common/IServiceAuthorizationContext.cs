@@ -18,5 +18,10 @@ namespace Jenga.DataAccess.Services.Common
         /// Audit alanlarına yazılmak üzere mevcut kullanıcının adını döner.
         /// </summary>
         Task<string?> GetUserNameAsync(CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Mevcut kullanıcının yetkili olduğu bölge Id'leri (boş liste = hiçbir bölge).
+        /// </summary>
+        Task<IReadOnlyList<int>> GetAuthorizedRegionIdsAsync(CancellationToken cancellationToken = default);
     }
 }

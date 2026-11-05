@@ -1,0 +1,93 @@
+@using Jenga.DataAccess.Services.IKYS
+@using Jenga.Models.IKYS
+@inject IPersonelService PersonelService
+
+<div class="d-flex flex-wrap gap-1 mb-1">
+    @foreach (var kisi in Kisiler)
+    {
+        <span class="badge bg-secondary d-inline-flex align-items-center">
+            @kisi
+            @if (!Disabled)
+            {
+                <button type="button" class="btn-close btn-close-white ms-1" style="font-size:.6rem" title="Kaldır" @onclick="() => KaldirAsync(kisi)"></button>
+            }
+        </span>
+    }
+    @if (Kisiler.Count == 0) { <span class="text-muted small">Henüz kimse eklenmedi.</span> }
+</div>
+@if (!Disabled)
+{
+    <div class="input-group input-group-sm">
+        <select class="form-select" @onchange="PersonelSecildiAsync">
+            <option value="">Kurum personeli seç...</option>
+            @foreach (var p in _personeller)
+            {
+                <option value="@p.Id">@p.Adi @p.Soyadi</option>
+            }
+        </select>
+        <input type="text" class="form-control" placeholder="Kurum dışı kişi adı yazıp Ekle'ye basın" @bind="_serbest" @onkeydown="SerbestTusAsync" />
+        <button type="button" class="btn btn-outline-primary" @onclick="SerbestEkleAsync"><i class="bi bi-plus-lg"></i> Ekle</button>
+    </div>
+}
+
+@code {
+    public const char Ayirici = ';';
+
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public EventCallback<string?> ValueChanged { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+
+    private List<Personel> _personeller = new();
+    private string? _serbest;
+
+    private List<string> Kisiler => (Value ?? string.Empty)
+        .Split(Ayirici, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+        .ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var r = await PersonelService.GetCalisanPersonelAsync();
+        if (r.IsSuccess)
+            _personeller = r.Value.OrderBy(p => p.Adi).ThenBy(p => p.Soyadi).ToList();
+    }
+
+    private async Task PersonelSecildiAsync(ChangeEventArgs e)
+    {
+        if (!int.TryParse(e.Value?.ToString(), out var id)) return;
+        var p = _personeller.FirstOrDefault(x => x.Id == id);
+        if (p is not null) await EkleAsync($"{p.Adi} {p.Soyadi}");
+    }
+
+    private async Task SerbestTusAsync(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") await SerbestEkleAsync();
+    }
+
+    private async Task SerbestEkleAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_serbest)) return;
+        await EkleAsync(_serbest.Trim());
+        _serbest = null;
+    }
+
+    private async Task EkleAsync(string ad)
+    {
+        var liste = Kisiler;
+        if (liste.Contains(ad, StringComparer.OrdinalIgnoreCase)) return;
+        liste.Add(ad);
+        await YazAsync(liste);
+    }
+
+    private async Task KaldirAsync(string ad)
+    {
+        var liste = Kisiler;
+        liste.Remove(ad);
+        await YazAsync(liste);
+    }
+
+    private async Task YazAsync(List<string> liste)
+    {
+        Value = liste.Count == 0 ? null : string.Join($"{Ayirici} ", liste);
+        await ValueChanged.InvokeAsync(Value);
+    }
+}

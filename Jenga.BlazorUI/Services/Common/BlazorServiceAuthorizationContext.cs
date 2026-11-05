@@ -21,5 +21,8 @@ namespace Jenga.BlazorUI.Services.Common
 
         public async Task<string?> GetUserNameAsync(CancellationToken cancellationToken = default)
             => await _currentUserService.GetUserNameAsync();
+
+        public async Task<IReadOnlyList<int>> GetAuthorizedRegionIdsAsync(CancellationToken cancellationToken = default)
+            => await _currentUserService.GetAuthorizedRegionIdsAsync();
     }
 }
