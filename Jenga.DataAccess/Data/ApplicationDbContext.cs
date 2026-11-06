@@ -86,6 +86,13 @@ namespace Jenga.DataAccess.Data
         public DbSet<MaterialAssetLog> MaterialAssetLog_Table { get; set; }
 
         //IKYS
+        public DbSet<OvertimeEntry> OvertimeEntries { get; set; }
+        public DbSet<OvertimeInterval> OvertimeIntervals { get; set; }
+        public DbSet<OvertimePeriod> OvertimePeriods { get; set; }
+        public DbSet<OvertimeDelivery> OvertimeDeliveries { get; set; }
+        public DbSet<OvertimeSchedule> OvertimeSchedules { get; set; }
+        public DbSet<OvertimePersonResult> OvertimeResults { get; set; }
+        public DbSet<OvertimeEvent> OvertimeEvents { get; set; }
         public DbSet<Personel> Personel_Table { get; set; }
         public DbSet<Kimlik> Kimlik_Table { get; set; }
         public DbSet<IsBilgileri> IsBilgileri_Table { get; set; }
@@ -138,6 +145,19 @@ namespace Jenga.DataAccess.Data
         
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<OvertimeEntry>().HasMany(x => x.Intervals).WithOne()
+                .HasForeignKey(x => x.EntryId).OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<OvertimeEntry>().HasIndex(x => new { x.PersonelId, x.WorkDate }).IsUnique();
+            modelBuilder.Entity<OvertimeEntry>().HasIndex(x => new { x.UnitId, x.WorkDate });
+            modelBuilder.Entity<OvertimeEntry>().HasOne<OvertimePeriod>().WithMany()
+                .HasForeignKey(x => x.PeriodId).OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<OvertimeDelivery>().HasIndex(x => new { x.PeriodId, x.UnitId }).IsUnique();
+            modelBuilder.Entity<OvertimeDelivery>().HasOne<OvertimePeriod>().WithMany()
+                .HasForeignKey(x => x.PeriodId).OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<OvertimeSchedule>().HasIndex(x => x.TitleId).IsUnique();
+            modelBuilder.Entity<OvertimePersonResult>().HasIndex(x => new { x.PeriodId, x.PersonelId }).IsUnique();
+            modelBuilder.Entity<OvertimePersonResult>().HasOne<OvertimePeriod>().WithMany()
+                .HasForeignKey(x => x.PeriodId).OnDelete(DeleteBehavior.Restrict);
             modelBuilder.Entity<UserPresenceSession>()
                 .HasIndex(x => x.CircuitId)
                 .IsUnique();
