@@ -1,4 +1,1 @@
 .overtime-page { max-width: 1600px; margin: 0 auto; }
-.ot-reason { white-space: pre-wrap; overflow-wrap: anywhere; max-width: 28rem; }
-.ot-history { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 20rem; overflow-y: auto; }
-summary { cursor: pointer; font-weight: 600; }

@@ -101,6 +101,7 @@ public sealed class OvertimeEntryInput
     public int Id { get; set; }
     public byte[] Version { get; set; } = [];
     public DateTime WorkDate { get; set; } = DateTime.Today;
+    public DateTime? EndWorkDate { get; set; }
     public string Reason { get; set; } = "";
     public bool Submit { get; set; }
     public List<OvertimeTimeInput> Intervals { get; set; } = [new()];

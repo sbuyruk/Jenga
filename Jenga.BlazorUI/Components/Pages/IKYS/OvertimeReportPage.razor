@@ -4,17 +4,17 @@
 @using Jenga.DataAccess.Services.IKYS
 @using Jenga.Models.IKYS
 @inject IOvertimeService Overtime
+@inject IToastService ToastService
 @inject IJSRuntime JS
 
 <PageTitle>Fazla Mesai Çizelgesi</PageTitle>
 <div class="d-flex flex-wrap gap-2 mb-3 no-print">
-    <a class="btn btn-outline-secondary" href="/ikys/overtime">Fazla Mesaiye Dön</a>
+    <a class="btn btn-outline-secondary" href="@(ReturnTo == "hr" ? "/ikys/overtime/hr" : "/ikys/overtime")">@(ReturnTo == "hr" ? "İK Dönem İşlemlerine Dön" : "Mesailerime Dön")</a>
     <button class="btn btn-outline-secondary" disabled="@_busy" @onclick="LoadAsync">Yenile</button>
     <button class="btn btn-primary" disabled="@(_busy || _report is null)" @onclick="Print">Yazdır</button>
     @if (_report?.CanSeeSummary == true && _report.Period.Status == OvertimePeriodStatus.Finalized)
     { <button class="btn btn-outline-success" disabled="@_busy" @onclick="Download">İmzalı Belgeyi İndir</button> }
 </div>
-@if (_error is not null) { <div class="alert alert-danger">@_error</div> }
 @if (_busy) { <p>Çizelge hazırlanıyor…</p> }
 @if (_report is not null)
 {
@@ -99,8 +99,8 @@
     [Parameter] public int PeriodId { get; set; }
     [SupplyParameterFromQuery] public int? UnitId { get; set; }
     [SupplyParameterFromQuery] public int? PersonelId { get; set; }
+    [SupplyParameterFromQuery] public string? ReturnTo { get; set; }
     private OvertimeReport? _report;
-    private string? _error;
     private bool _busy, _reload;
     protected override void OnParametersSet() => _reload = true;
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -109,18 +109,18 @@
     }
     private async Task LoadAsync()
     {
-        _busy = true; _error = null; _report = null;
-        try { var result = await Overtime.GetReportAsync(PeriodId, UnitId, PersonelId); if (result.IsSuccess) _report = result.Value; else _error = result.Error.Message; }
+        _busy = true; _report = null;
+        try { var result = await Overtime.GetReportAsync(PeriodId, UnitId, PersonelId); if (result.IsSuccess) _report = result.Value; else ToastService.ShowError(result.Error.Message, 6000); }
         finally { _busy = false; }
     }
     private async Task Print() => await JS.InvokeVoidAsync("printElementById", "overtime-report");
     private async Task Download()
     {
-        _busy = true; _error = null;
+        _busy = true;
         try
         {
             var result = await Overtime.GetSignedDocumentAsync(PeriodId);
-            if (!result.IsSuccess) { _error = result.Error.Message; return; }
+            if (!result.IsSuccess) { ToastService.ShowError(result.Error.Message, 6000); return; }
             using var stream = new MemoryStream(result.Value.Data);
             using var reference = new DotNetStreamReference(stream);
             await JS.InvokeVoidAsync("overtimeFiles.download", result.Value.Name, result.Value.ContentType, reference);

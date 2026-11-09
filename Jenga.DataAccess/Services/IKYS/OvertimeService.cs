@@ -118,8 +118,9 @@ public sealed class OvertimeService(IDbContextFactory<ApplicationDbContext> fact
                 Deliveries = await deliveries.Where(x => db.OvertimePeriods.Any(p => p.Id == x.PeriodId && p.EndDate >= start.Date && p.StartDate <= end.Date))
                     .OrderBy(x => x.UnitName).ToListAsync(cancellationToken)
             };
-            if (actor.IsHr)
-                result.Titles = await (from title in db.UnvanTanim_Table.AsNoTracking()
+            if (scope == "hr")
+                // Legacy rows can have null names despite Required; filter before materialization.
+                result.Titles = await (from title in db.UnvanTanim_Table.AsNoTracking().Where(x => !string.IsNullOrWhiteSpace(x.Adi))
                     join schedule in db.OvertimeSchedules.AsNoTracking() on title.Id equals schedule.TitleId into schedules
                     from schedule in schedules.DefaultIfEmpty()
                     orderby title.Adi
@@ -141,55 +142,101 @@ public sealed class OvertimeService(IDbContextFactory<ApplicationDbContext> fact
     public Task<Result<int>> SaveEntryAsync(OvertimeEntryInput input, CancellationToken cancellationToken = default)
         => Run(true, async (db, actor) =>
         {
-            Require(!string.IsNullOrWhiteSpace(input.Reason) && input.Reason.Trim().Length <= 2000, "Çalışma sebebi zorunludur ve en fazla 2000 karakter olabilir.");
-            Require(input.Intervals.Count is > 0 and <= 12, "Bir gün için 1–12 çalışma aralığı girin.");
-            var intervals = input.Intervals.OrderBy(x => x.StartMinute).ToList();
-            foreach (var interval in intervals)
+            if (!input.EndWorkDate.HasValue || input.EndWorkDate.Value.Date == input.WorkDate.Date)
+                return await SaveDayEntry(db, actor, input, cancellationToken);
+
+            Require(input.Intervals.Count == 1, "Gece yarısını aşan çalışma için tek saat aralığı girin.");
+            var interval = input.Intervals[0];
+            var start = input.WorkDate.Date.AddMinutes(interval.StartMinute);
+            var end = input.EndWorkDate.Value.Date.AddMinutes(interval.End.Hour * 60 + interval.End.Minute);
+            Require(end > start && end - start <= TimeSpan.FromHours(24), "Bitiş başlangıçtan sonra olmalı; tek çalışma aralığı 24 saati aşmamalıdır.");
+            var firstId = 0;
+            // Save all calendar-day parts in the same transaction; a conflict must roll back every part.
+            while (start < end)
             {
-                Require(interval.EndMinute > interval.StartMinute && interval.EndMinute - interval.StartMinute <= 1440, "Bitiş başlangıçtan sonra olmalı; aralık 24 saati aşmamalıdır.");
-                // Keep each declaration within one calendar day so period ownership stays unambiguous.
-                Require(interval.EndMinute <= 1440, "Gece yarısını aşan çalışmayı iki güne ayırın. Gün sonu için 00:00 ve Ertesi gün seçin.");
+                var until = end < start.Date.AddDays(1) ? end : start.Date.AddDays(1);
+                var day = new OvertimeEntryInput
+                {
+                    Id = firstId == 0 ? input.Id : 0,
+                    Version = firstId == 0 ? input.Version : [],
+                    WorkDate = start.Date, Reason = input.Reason, Submit = input.Submit,
+                    Intervals = [new OvertimeTimeInput
+                    {
+                        Start = TimeOnly.FromDateTime(start), End = TimeOnly.FromDateTime(until),
+                        EndsNextDay = until.Date > start.Date
+                    }]
+                };
+                var id = await SaveDayEntry(db, actor, day, cancellationToken);
+                if (firstId == 0) firstId = id;
+                start = until;
             }
-            Require(!intervals.Zip(intervals.Skip(1)).Any(x => x.First.EndMinute > x.Second.StartMinute), "Çalışma aralıkları çakışamaz.");
-            var entry = input.Id == 0 ? null : await db.OvertimeEntries.Include(x => x.Intervals)
-                .SingleOrDefaultAsync(x => x.Id == input.Id && x.PersonelId == actor.Id, cancellationToken);
-            if (input.Id != 0)
-            {
-                Require(entry is not null, "Kayıt bulunamadı.");
-                CheckVersion(entry!.Version, input.Version);
-                Require(entry.Status is OvertimeEntryStatus.Draft or OvertimeEntryStatus.Correction, "Yalnızca taslak veya düzeltmeye gönderilen kayıt düzenlenebilir.");
-                Require(entry.PeriodId is null, "İmzaya çıkarılan kayıt değiştirilemez.");
-                await EnsureOpen(db, entry.UnitId, entry.WorkDate, cancellationToken);
-            }
-            var info = await db.IsBilgileri_Table.AsNoTracking().Include(x => x.BirimTanim).Include(x => x.UnvanTanim)
-                .SingleOrDefaultAsync(x => x.PersonelId == actor.Id, cancellationToken);
-            Require(info?.BirimId is not null && info.UnvanId is not null && info.BirimTanim?.Aktif == true, "Aktif birim ve unvan bilgilerinizin tamamlanması gerekiyor.");
-            var hours = await db.OvertimeSchedules.Where(x => x.TitleId == info!.UnvanId).Select(x => (int?)x.WeeklyHours).SingleOrDefaultAsync(cancellationToken);
-            Require(hours is 40 or 45, "Unvanınızın 40/45 saat çalışma grubu İK tarafından tanımlanmalıdır.");
-            await EnsureOpen(db, info!.BirimId!.Value, input.WorkDate.Date, cancellationToken);
-            Require(!await db.OvertimeEntries.AnyAsync(x => x.PersonelId == actor.Id && x.WorkDate == input.WorkDate.Date && x.Id != input.Id, cancellationToken), "Bu güne ait kayıt var. Aynı gündeki aralıkları mevcut kayda ekleyin.");
-            var person = await db.Personel_Table.AsNoTracking().SingleAsync(x => x.Id == actor.Id, cancellationToken);
-            var isNew = entry is null;
-            entry ??= new OvertimeEntry { PersonelId = actor.Id };
-            var before = isNew ? null : EntrySnapshot(entry);
-            entry.WorkDate = input.WorkDate.Date;
-            entry.UnitId = info.BirimId.Value;
-            entry.UnitName = info.BirimTanim!.Adi ?? "";
-            entry.Title = info.UnvanTanim?.Adi ?? "";
-            entry.NormalWeeklyMinutes = hours!.Value * 60;
-            entry.FullName = actor.FullName;
-            entry.SicilNo = person.SicilNo;
-            entry.Reason = input.Reason.Trim();
-            entry.Status = input.Submit ? OvertimeEntryStatus.Pending : OvertimeEntryStatus.Draft;
-            entry.ReviewReason = null;
-            db.OvertimeIntervals.RemoveRange(entry.Intervals);
-            entry.Intervals = intervals.Select(x => new OvertimeInterval { StartMinute = x.StartMinute, EndMinute = x.EndMinute }).ToList();
-            if (isNew) db.OvertimeEntries.Add(entry);
-            else db.Entry(entry).Property(x => x.Reason).IsModified = true;
-            await db.SaveChangesAsync(cancellationToken);
-            Audit(db, input.Submit ? "Amire gönderildi" : "Taslak kaydedildi", JsonSerializer.Serialize(new { Before = before, After = EntrySnapshot(entry) }), entry.Id);
-            return entry.Id;
+            return firstId;
         }, cancellationToken);
+
+    private static async Task<int> SaveDayEntry(ApplicationDbContext db, Actor actor, OvertimeEntryInput input, CancellationToken cancellationToken)
+    {
+        Require(!string.IsNullOrWhiteSpace(input.Reason) && input.Reason.Trim().Length <= 2000, "Çalışma sebebi zorunludur ve en fazla 2000 karakter olabilir.");
+        Require(input.Intervals.Count is > 0 and <= 12, "Bir gün için 1–12 çalışma aralığı girin.");
+        var intervals = input.Intervals.OrderBy(x => x.StartMinute).ToList();
+        foreach (var interval in intervals)
+        {
+            Require(interval.EndMinute > interval.StartMinute && interval.EndMinute - interval.StartMinute <= 1440, "Bitiş başlangıçtan sonra olmalı; aralık 24 saati aşmamalıdır.");
+            Require(interval.EndMinute <= 1440, "Çalışma aralığının başlangıç ve bitiş tarihlerini kontrol edin.");
+        }
+        Require(!intervals.Zip(intervals.Skip(1)).Any(x => x.First.EndMinute > x.Second.StartMinute), "Çalışma aralıkları çakışamaz.");
+        var entry = input.Id == 0 ? null : await db.OvertimeEntries.Include(x => x.Intervals)
+            .SingleOrDefaultAsync(x => x.Id == input.Id && x.PersonelId == actor.Id, cancellationToken);
+        if (input.Id != 0)
+        {
+            Require(entry is not null, "Kayıt bulunamadı.");
+            CheckVersion(entry!.Version, input.Version);
+            Require(entry.Status is OvertimeEntryStatus.Draft or OvertimeEntryStatus.Correction, "Yalnızca taslak veya düzeltmeye gönderilen kayıt düzenlenebilir.");
+            Require(entry.PeriodId is null, "İmzaya çıkarılan kayıt değiştirilemez.");
+            await EnsureOpen(db, entry.UnitId, entry.WorkDate, cancellationToken);
+        }
+        var info = await db.IsBilgileri_Table.AsNoTracking().Include(x => x.BirimTanim).Include(x => x.UnvanTanim)
+            .SingleOrDefaultAsync(x => x.PersonelId == actor.Id, cancellationToken);
+        Require(info?.BirimId is not null && info.UnvanId is not null && info.BirimTanim?.Aktif == true, "Aktif birim ve unvan bilgilerinizin tamamlanması gerekiyor.");
+        var hours = await db.OvertimeSchedules.Where(x => x.TitleId == info!.UnvanId).Select(x => (int?)x.WeeklyHours).SingleOrDefaultAsync(cancellationToken);
+        Require(hours is 40 or 45, "Unvanınızın 40/45 saat çalışma grubu İK tarafından tanımlanmalıdır.");
+        await EnsureOpen(db, info!.BirimId!.Value, input.WorkDate.Date, cancellationToken);
+        var existing = await db.OvertimeEntries.Where(x => x.PersonelId == actor.Id && x.WorkDate == input.WorkDate.Date && x.Id != input.Id)
+            .Select(x => new { x.Status, x.PeriodId }).SingleOrDefaultAsync(cancellationToken);
+        if (existing is not null)
+        {
+            var message = existing.PeriodId.HasValue
+                ? "Bu tarihte imza çizelgesine alınmış bir mesai kaydınız var. Değişiklik için İK ile görüşün."
+                : existing.Status switch
+                {
+                    OvertimeEntryStatus.Approved => "Bu tarihte onaylı bir mesai kaydınız var. Ek çalışma girmek için amirinizden mevcut kaydı düzeltmeye göndermesini isteyin.",
+                    OvertimeEntryStatus.Pending => "Bu tarihte amir onayında bir kaydınız var. Mesailerim listesinden Geri Çek işlemini yapıp Düzenle ile ek saat aralığını girin.",
+                    OvertimeEntryStatus.Rejected => "Bu tarihte reddedilmiş bir mesai kaydınız var. Yeniden giriş için amirinizle görüşün.",
+                    _ => "Bu tarihte bir mesai kaydınız var. Mesailerim listesindeki Düzenle düğmesiyle aynı güne ek saat aralığı ekleyin."
+                };
+            Require(false, message);
+        }
+        var person = await db.Personel_Table.AsNoTracking().SingleAsync(x => x.Id == actor.Id, cancellationToken);
+        var isNew = entry is null;
+        entry ??= new OvertimeEntry { PersonelId = actor.Id };
+        var before = isNew ? null : EntrySnapshot(entry);
+        entry.WorkDate = input.WorkDate.Date;
+        entry.UnitId = info.BirimId.Value;
+        entry.UnitName = info.BirimTanim!.Adi ?? "";
+        entry.Title = info.UnvanTanim?.Adi ?? "";
+        entry.NormalWeeklyMinutes = hours!.Value * 60;
+        entry.FullName = actor.FullName;
+        entry.SicilNo = person.SicilNo;
+        entry.Reason = input.Reason.Trim();
+        entry.Status = input.Submit ? OvertimeEntryStatus.Pending : OvertimeEntryStatus.Draft;
+        entry.ReviewReason = null;
+        db.OvertimeIntervals.RemoveRange(entry.Intervals);
+        entry.Intervals = intervals.Select(x => new OvertimeInterval { StartMinute = x.StartMinute, EndMinute = x.EndMinute }).ToList();
+        if (isNew) db.OvertimeEntries.Add(entry);
+        else db.Entry(entry).Property(x => x.Reason).IsModified = true;
+        await db.SaveChangesAsync(cancellationToken);
+        Audit(db, input.Submit ? "Amire gönderildi" : "Taslak kaydedildi", JsonSerializer.Serialize(new { Before = before, After = EntrySnapshot(entry) }), entry.Id);
+        return entry.Id;
+    }
 
     private static object EntrySnapshot(OvertimeEntry entry) => new
     {

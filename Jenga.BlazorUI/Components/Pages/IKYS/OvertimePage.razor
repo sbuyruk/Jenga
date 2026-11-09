@@ -5,135 +5,50 @@
 @using Jenga.Models.IKYS
 @using Jenga.Utility.Results
 @inject IOvertimeService Overtime
+@inject IToastService ToastService
 @inject NavigationManager Navigation
 
-<PageTitle>Fazla Mesai Yönetimi</PageTitle>
+<PageTitle>Mesailerim</PageTitle>
 <div class="overtime-page">
     <div class="d-flex flex-wrap justify-content-between gap-2 mb-3">
-        <div><h3><i class="bi bi-clock-history me-2"></i>Fazla Mesai Yönetimi</h3><span class="text-muted">@_workspace?.FullName</span></div>
+        <div><h3><i class="bi bi-clock-history me-2"></i>Mesailerim</h3><span class="text-muted">@_workspace?.FullName</span></div>
         <button class="btn btn-outline-secondary" disabled="@_busy" @onclick="LoadAsync">Yenile</button>
     </div>
-    @if (_error is not null) { <div class="alert alert-danger" role="alert">@_error</div> }
-    @if (_message is not null) { <div class="alert alert-success" role="status">@_message</div> }
     @if (_workspace is null)
     {
         @if (_busy) { <p>Fazla mesai bilgileri yükleniyor…</p> }
     }
     else
     {
-        <div class="nav nav-pills gap-2 mb-3">
-            <button class="nav-link @(_scope == "mine" ? "active" : "")" disabled="@_busy" @onclick='() => ChangeScope("mine")'>Mesailerim</button>
-            @if (_workspace.IsManager)
-            {
+        @if (_workspace.IsManager)
+        {
+            <div class="nav nav-pills gap-2 mb-3">
+                <button class="nav-link @(_scope == "mine" ? "active" : "")" disabled="@_busy" @onclick='() => ChangeScope("mine")'>Mesailerim</button>
                 <button class="nav-link @(_scope == "team" ? "active" : "")" disabled="@_busy" @onclick='() => ChangeScope("team")'>Amir İşlemleri</button>
-            }
-            @if (_workspace.IsHr)
-            {
-                <button class="nav-link @(_scope == "hr" ? "active" : "")" disabled="@_busy" @onclick='() => ChangeScope("hr")'>İK Dönem İşlemleri</button>
-            }
-        </div>
-        <div class="card card-body mb-3">
-            <div class="row g-2 align-items-end">
-                <div class="col-sm-4"><label class="form-label" for="ot-start">Başlangıç</label><input id="ot-start" type="date" class="form-control" @bind="_start" /></div>
-                <div class="col-sm-4"><label class="form-label" for="ot-end">Bitiş</label><input id="ot-end" type="date" class="form-control" @bind="_end" /></div>
-                <div class="col-sm-4"><button class="btn btn-outline-primary" disabled="@_busy" @onclick="LoadAsync">Göster</button></div>
+            </div>
+        }
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-3 mb-3">
+            <div>
+                <h5 class="mb-1">@(_scope == "mine" ? "Mesai Kayıtlarım" : "Personelin Mesai Kayıtları")</h5>
+                <span class="small text-muted">@_start.ToString("dd.MM.yyyy") – @_end.ToString("dd.MM.yyyy")</span>
+            </div>
+            <div class="d-flex flex-wrap gap-2 ms-auto">
+                <button type="button" class="btn btn-outline-secondary" disabled="@_busy" @onclick="() => _filterOpen = true"><i class="bi bi-calendar3 me-1"></i>Tarih Aralığı</button>
+                @if (_scope == "mine")
+                {
+                    <button type="button" class="btn btn-success" disabled="@_busy" @onclick="NewEntry"><i class="bi bi-plus-lg me-1"></i>Mesai Ekle</button>
+                }
             </div>
         </div>
-
         @if (_scope == "mine")
         {
-            <button class="btn btn-primary mb-3" disabled="@_busy" @onclick="NewEntry"><i class="bi bi-plus-lg me-1"></i>Mesai Ekle</button>
-            @if (_editing)
-            {
-                <section class="card card-body mb-3" aria-label="Mesai girişi">
-                    <h5>@(_edit.Id == 0 ? "Yeni Mesai" : "Mesaiyi Düzenle")</h5>
-                    <p class="text-muted small">Aynı gündeki çalışmaları ayrı aralıklar halinde ekleyin. Gece yarısını aşan çalışmayı iki güne ayırın; gün sonu için 00:00 ve “Ertesi gün” seçin.</p>
-                    <div class="row g-2 mb-3">
-                        <div class="col-sm-4"><label class="form-label" for="ot-date">Çalışma tarihi</label><input id="ot-date" type="date" class="form-control" @bind="_edit.WorkDate" /></div>
-                        <div class="col-sm-8"><label class="form-label" for="ot-reason">Açıklama / Çalışma Sebebi *</label><textarea id="ot-reason" class="form-control" maxlength="2000" @bind="_edit.Reason" required></textarea></div>
-                    </div>
-                    @foreach (var interval in _edit.Intervals)
-                    {
-                        <div class="row g-2 align-items-end mb-2" @key="interval">
-                            <div class="col-4 col-md-3"><label class="form-label">Başlangıç<input aria-label="Başlangıç saati" type="time" class="form-control" value="@interval.Start.ToString("HH:mm")" @onchange="e => SetTime(interval, true, e)" /></label></div>
-                            <div class="col-4 col-md-3"><label class="form-label">Bitiş<input aria-label="Bitiş saati" type="time" class="form-control" value="@interval.End.ToString("HH:mm")" @onchange="e => SetTime(interval, false, e)" /></label></div>
-                            <div class="col-4 col-md-3 pb-2"><label><input type="checkbox" @bind="interval.EndsNextDay" /> Ertesi gün</label></div>
-                            <div class="col-md-3 pb-1"><button class="btn btn-sm btn-outline-danger" disabled="@(_edit.Intervals.Count == 1 || _busy)" @onclick="() => _edit.Intervals.Remove(interval)">Aralığı kaldır</button></div>
-                        </div>
-                    }
-                    <div class="d-flex flex-wrap gap-2 mt-2">
-                        <button class="btn btn-outline-secondary" disabled="@(_edit.Intervals.Count >= 12 || _busy)" @onclick="() => _edit.Intervals.Add(new())">Aralık Ekle</button>
-                        <button class="btn btn-outline-primary" disabled="@_busy" @onclick="() => SaveEntry(false)">Taslak Kaydet</button>
-                        <button class="btn btn-primary" disabled="@_busy" @onclick="() => SaveEntry(true)">Amire Gönder</button>
-                        <button class="btn btn-outline-secondary" disabled="@_busy" @onclick="() => _editing = false">Vazgeç</button>
-                    </div>
-                </section>
-            }
+            <OvertimeEntryTable Entries="_workspace.Entries" IsBusy="_busy" OnEdit="EditEntry" OnWithdraw="Withdraw" OnHistory="ShowHistory" />
         }
-
-        @if (_scope == "hr")
+        else
         {
-            <details class="card card-body mb-3">
-                <summary>Unvanların haftalık çalışma süreleri</summary>
-                <p class="small text-muted mt-2">İlk kullanımdan önce unvanları 40 veya 45 saat grubuna atayın. Değişiklik önceden girilmiş kayıtları değiştirmez.</p>
-                <div class="row g-2 align-items-end">
-                    <div class="col-md-6"><label class="form-label" for="ot-title">Unvan</label><select id="ot-title" class="form-select" @bind="_titleId">
-                        <option value="0">Unvan seçin</option>
-                        @foreach (var title in _workspace.Titles) { <option value="@title.Id">@title.Name — @(title.WeeklyHours.HasValue ? $"{title.WeeklyHours} saat" : "Tanımsız")</option> }
-                    </select></div>
-                    <div class="col-md-3"><label class="form-label" for="ot-hours">Haftalık süre</label><select id="ot-hours" class="form-select" @bind="_weeklyHours"><option value="40">40 saat</option><option value="45">45 saat</option></select></div>
-                    <div class="col-md-3"><button class="btn btn-primary" disabled="@(_busy || _titleId == 0)" @onclick="SaveSchedule">Kaydet</button></div>
-                </div>
-            </details>
-            <details class="card card-body mb-3">
-                <summary>Yeni dönem / Birimlerden toplama çağrısı</summary>
-                <p class="small text-muted mt-2">Pazartesi–Pazar tam haftaları seçin. Ay sınırını aşan haftanın hangi döneme alınacağını tarihleri seçerek belirleyin.</p>
-                <div class="row g-2 align-items-end">
-                    <div class="col-md-3"><label class="form-label" for="ot-period-name">Dönem adı</label><input id="ot-period-name" class="form-control" maxlength="200" @bind="_periodName" /></div>
-                    <div class="col-md-3"><label class="form-label" for="ot-period-start">Başlangıç (Pazartesi)</label><input id="ot-period-start" class="form-control" type="date" @bind="_periodStart" /></div>
-                    <div class="col-md-3"><label class="form-label" for="ot-period-end">Bitiş (Pazar)</label><input id="ot-period-end" class="form-control" type="date" @bind="_periodEnd" /></div>
-                    <div class="col-md-3"><label class="form-label" for="ot-period-due">Son teslim</label><input id="ot-period-due" class="form-control" type="date" @bind="_dueDate" /></div>
-                </div>
-                <div class="mt-3"><button class="btn btn-primary" disabled="@_busy" @onclick="CreatePeriod">Toplama Çağrısı Aç</button></div>
-            </details>
+            <OvertimeEntryTable Entries="_workspace.Entries" IsBusy="_busy" OnApprove="Approve" OnHistory="ShowHistory"
+                                OnCorrection="entry => StartReview(entry, OvertimeEntryStatus.Correction)" OnReject="entry => StartReview(entry, OvertimeEntryStatus.Rejected)" />
         }
-
-        <h5 class="mt-3">@(_scope == "mine" ? "Mesai Kayıtlarım" : _scope == "team" ? "Personelin Mesai Kayıtları" : "Dönem Aralığındaki Kayıtlar")</h5>
-        <GenericTable TItem="OvertimeEntry" Items="_workspace.Entries" TableHeight="Auto" ShowSearch="true" ShowExport="true" ExportFileName="fazla-mesailer.xlsx"
-                      ExportHeaders="EntryExportHeaders" ExportRow="ExportEntry" KeySelector="x => x.Id">
-            <HeaderTemplate><th>Personel</th><th>Tarih</th><th>Çalışma Aralıkları</th><th>Süre</th><th>Çalışma Sebebi</th><th>Durum</th><th>İşlemler</th></HeaderTemplate>
-            <RowTemplate Context="entry">
-                <td>@entry.FullName<div class="small text-muted">@entry.UnitName</div></td>
-                <td>@entry.WorkDate.ToString("dd.MM.yyyy")</td>
-                <td>@string.Join(" / ", entry.Intervals.OrderBy(x => x.StartMinute).Select(IntervalText))</td>
-                <td>@OvertimeDisplay.Duration(entry.Intervals.Sum(x => x.EndMinute - x.StartMinute))</td>
-                <td class="ot-reason">@entry.Reason</td>
-                <td><span class="badge @(entry.Status == OvertimeEntryStatus.Approved ? "bg-success" : entry.Status == OvertimeEntryStatus.Rejected ? "bg-danger" : "bg-secondary")">@entry.Status.Label()</span>
-                    @if (entry.PeriodId.HasValue) { <div class="small text-muted">Çizelgeye alındı #@entry.PeriodId</div> }
-                    @if (!string.IsNullOrWhiteSpace(entry.ReviewReason)) { <div class="small ot-reason">@entry.ReviewReason</div> }
-                </td>
-                <td><div class="d-flex flex-wrap gap-1">
-                    @if (_scope == "mine" && entry.PeriodId is null)
-                    {
-                        @if (entry.Status is OvertimeEntryStatus.Draft or OvertimeEntryStatus.Correction)
-                        { <button class="btn btn-sm btn-outline-primary" disabled="@_busy" @onclick="() => EditEntry(entry)">Düzenle</button> }
-                        @if (entry.Status == OvertimeEntryStatus.Pending)
-                        { <button class="btn btn-sm btn-outline-secondary" disabled="@_busy" @onclick='() => Act(() => Overtime.WithdrawAsync(entry.Id, entry.Version), "Kayıt taslağa alındı.")'>Geri Çek</button> }
-                    }
-                    @if (_scope == "team" && entry.PersonelId != _workspace.PersonelId && entry.Status == OvertimeEntryStatus.Pending && entry.PeriodId is null)
-                    {
-                        <button class="btn btn-sm btn-outline-success" disabled="@_busy" @onclick='() => Act(() => Overtime.ReviewAsync(entry.Id, entry.Version, OvertimeEntryStatus.Approved, ""), "Kayıt onaylandı.")'>Onayla</button>
-                        <button class="btn btn-sm btn-outline-warning" disabled="@_busy" @onclick="() => StartReview(entry, OvertimeEntryStatus.Correction)">Düzeltme İste</button>
-                        <button class="btn btn-sm btn-outline-danger" disabled="@_busy" @onclick="() => StartReview(entry, OvertimeEntryStatus.Rejected)">Reddet</button>
-                    }
-                    @if (_scope == "team" && entry.PersonelId != _workspace.PersonelId && entry.Status == OvertimeEntryStatus.Approved && entry.PeriodId is null)
-                    {
-                        <button class="btn btn-sm btn-outline-warning" disabled="@_busy" @onclick="() => StartReview(entry, OvertimeEntryStatus.Correction)">Düzeltme İste</button>
-                    }
-                    <button class="btn btn-sm btn-outline-secondary" disabled="@_busy" @onclick="() => ShowHistory(entry)">Geçmiş</button>
-                </div></td>
-            </RowTemplate>
-        </GenericTable>
 
         @if (_reviewEntry is not null)
         {
@@ -143,18 +58,7 @@
                 <div><button class="btn btn-primary me-2" disabled="@_busy" @onclick="CommitReview">Kararı Kaydet</button><button class="btn btn-outline-secondary" @onclick="() => _reviewEntry = null">Vazgeç</button></div>
             </section>
         }
-        @if (_history is not null)
-        {
-            <section class="card card-body my-3">
-                <div class="d-flex justify-content-between"><h5>Kayıt İşlem Geçmişi</h5><button class="btn-close" aria-label="Geçmişi kapat" @onclick="() => _history = null"></button></div>
-                @foreach (var item in _history)
-                {
-                    <div class="border-bottom py-2"><strong>@item.Action</strong> — @item.Olusturan — @item.OlusturmaTarihi?.ToString("dd.MM.yyyy HH:mm")
-                        <details><summary>Ayrıntı</summary><pre class="ot-history">@OvertimeDisplay.EventDetails(item.Details)</pre></details>
-                    </div>
-                }
-            </section>
-        }
+        <OvertimeHistory Items="_history" OnClose="() => _history = null" />
 
         <h5 class="mt-4">Dönemler ve Toplama Çağrıları</h5>
         @if (_workspace.Periods.Count == 0) { <p class="text-muted">Seçilen tarihlerde dönem bulunmuyor.</p> }
@@ -168,99 +72,32 @@
                     <p>@period.StartDate.ToString("dd.MM.yyyy") – @period.EndDate.ToString("dd.MM.yyyy") · Son teslim: @period.DueDate.ToString("dd.MM.yyyy")</p>
                     <div class="d-flex flex-wrap gap-2 mb-3">
                         <a class="btn btn-sm btn-outline-primary" href="@($"/ikys/overtime/report/{period.Id}?personelId={_workspace.PersonelId}")">Kendi Çizelgem</a>
-                        @if (_scope == "hr")
-                        {
-                            <a class="btn btn-sm btn-outline-primary" href="@($"/ikys/overtime/report/{period.Id}")">Hesaplama ve İmza Listesi</a>
-                            @if (period.Status == OvertimePeriodStatus.Collecting)
-                            { <button class="btn btn-sm btn-primary" disabled="@_busy" @onclick='() => Act(() => Overtime.PrepareSignatureAsync(period.Id, period.Version), "Hesaplar sabitlendi; liste GMY ıslak imzasına hazır.")'>GMY İmzasına Hazırla</button> }
-                            @if (period.Status == OvertimePeriodStatus.AwaitingSignature)
-                            {
-                                <button class="btn btn-sm btn-outline-warning" disabled="@_busy" @onclick="() => StartReopen(period)">İmza Listesini Geri Al</button>
-                                <button class="btn btn-sm btn-success" disabled="@_busy" @onclick="() => StartFinalize(period)">İmzalı Belgeyi Kaydet ve Kesinleştir</button>
-                            }
-                            @if (period.Status == OvertimePeriodStatus.Finalized)
-                            { <a class="btn btn-sm btn-outline-success" href="@($"/ikys/overtime/report/{period.Id}")">İmzalı Belge / Arşiv</a> }
-                        }
                     </div>
-                    @if (_scope is "team" or "hr")
+                    @if (_scope == "team")
                     {
-                        <div class="table-responsive"><table class="table table-sm align-middle">
-                            <thead><tr><th>Birim</th><th>Durum</th><th>Teslim</th><th>İşlemler</th></tr></thead>
-                            <tbody>
-                            @foreach (var delivery in _workspace.Deliveries.Where(x => x.PeriodId == period.Id))
-                            {
-                                <tr><td>@delivery.UnitName @if (!delivery.ManagerId.HasValue) { <span class="text-danger small">Amir tanımsız</span> }</td><td>@delivery.Status.Label()</td><td>@delivery.ReceivedAt?.ToString("dd.MM.yyyy HH:mm")</td>
-                                    <td><div class="d-flex flex-wrap gap-1">
-                                        @if (delivery.Status == OvertimeDeliveryStatus.Requested && period.Status == OvertimePeriodStatus.Collecting)
-                                        { <button class="btn btn-sm btn-outline-primary" disabled="@_busy" @onclick="() => Issue(delivery)">Çizelgeyi Sabitle ve Aç</button> }
-                                        @if (delivery.Status != OvertimeDeliveryStatus.Requested)
-                                        { <a class="btn btn-sm btn-outline-secondary" href="@($"/ikys/overtime/report/{period.Id}?unitId={delivery.UnitId}")">Birim Çizelgesi</a> }
-                                        @if (_scope == "hr" && period.Status == OvertimePeriodStatus.Collecting)
-                                        {
-                                            @if (delivery.Status == OvertimeDeliveryStatus.Issued)
-                                            { <button class="btn btn-sm btn-outline-success" disabled="@_busy" @onclick='() => Act(() => Overtime.ReceiveUnitAsync(delivery.Id, delivery.Version), "İmzalı birim çizelgesi teslim alındı.")'>İmzalı Evrak Teslim Alındı</button> }
-                                            @if (delivery.Status != OvertimeDeliveryStatus.Requested)
-                                            { <button class="btn btn-sm btn-outline-warning" disabled="@_busy" @onclick="() => StartReopen(delivery)">Birimi Yeniden Aç</button> }
-                                        }
-                                    </div></td>
-                                </tr>
-                            }
-                            </tbody>
-                        </table></div>
+                        <OvertimeDeliveryTable Period="period" Deliveries="_workspace.Deliveries" IsBusy="_busy" OnIssue="Issue" />
                     }
                 </div>
-            </section>
-        }
-        @if (_reopenPeriod is not null || _reopenDelivery is not null)
-        {
-            <section class="card card-body my-3">
-                <h5>@(_reopenDelivery is null ? "İmza Listesini Geri Al" : "Birimi Yeniden Aç")</h5>
-                <p>Önceki çıktı geçersiz olacak. Birim yeniden açılırsa kayıtlar düzeltme ve yeniden onay sürecine dönecek.</p>
-                <label class="form-label" for="ot-reopen-reason">Gerekçe *</label><textarea id="ot-reopen-reason" class="form-control mb-2" maxlength="2000" @bind="_reopenReason"></textarea>
-                <div><button class="btn btn-warning me-2" disabled="@_busy" @onclick="CommitReopen">Gerekçeyle Yeniden Aç</button><button class="btn btn-outline-secondary" @onclick="CancelReopen">Vazgeç</button></div>
-            </section>
-        }
-        @if (_finalizePeriod is not null)
-        {
-            <section class="card card-body my-3">
-                <h5>@_finalizePeriod.Name — İmzalı Belge</h5>
-                <p>GMY'nin ıslak imzasından dönen belgeyi ekleyin. Kesinleşen dönem değiştirilemez.</p>
-                <label class="form-label">İmzalı nüsha (PDF, JPEG, PNG; en fazla 10 MB)<InputFile OnChange="SelectFile" accept=".pdf,.jpg,.jpeg,.png" class="form-control" disabled="@_busy" /></label>
-                @if (_signedName is not null) { <p>@_signedName</p> }
-                <div class="mt-2"><button class="btn btn-success me-2" disabled="@(_busy || _signedData is null)" @onclick="FinalizePeriod">İmzalı Belge Alındı — Kesinleştir</button><button class="btn btn-outline-secondary" @onclick="() => _finalizePeriod = null">Vazgeç</button></div>
             </section>
         }
     }
 </div>
 
+<OvertimeEntryEditModal Model="_edit" IsOpen="@(_editing && _scope == "mine")" IsBusy="_busy" OnSave="SaveEntry" OnClose="CloseEntry" />
+<OvertimeDateFilterModal IsOpen="_filterOpen" StartDate="_start" EndDate="_end" OnApply="ApplyFilter" OnClose="() => _filterOpen = false" />
+
 @code {
     private OvertimeWorkspace? _workspace;
     private string _scope = "mine";
-    private DateTime _start = new(DateTime.Today.Year, DateTime.Today.Month, 1);
-    private DateTime _end = DateTime.Today;
+    private DateTime _start = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(-1);
+    private DateTime _end = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(2).AddDays(-1);
     private bool _busy = true;
-    private string? _error, _message;
-    private bool _editing;
+    private bool _editing, _filterOpen;
     private OvertimeEntryInput _edit = new();
-    private readonly HashSet<(OvertimeTimeInput Row, bool Start)> _invalidTimes = [];
     private OvertimeEntry? _reviewEntry;
     private OvertimeEntryStatus _decision;
     private string _reviewReason = "";
     private List<OvertimeEvent>? _history;
-    private string _periodName = "";
-    private DateTime _periodStart = OvertimeCalculator.MondayOf(DateTime.Today);
-    private DateTime _periodEnd = OvertimeCalculator.MondayOf(DateTime.Today).AddDays(6);
-    private DateTime _dueDate = OvertimeCalculator.MondayOf(DateTime.Today).AddDays(10);
-    private int _titleId, _weeklyHours = 40;
-    private OvertimePeriod? _reopenPeriod, _finalizePeriod;
-    private OvertimeDelivery? _reopenDelivery;
-    private string _reopenReason = "";
-    private string? _signedName;
-    private byte[]? _signedData;
-    private static readonly string[] EntryExportHeaders = ["Personel", "Sicil", "Birim", "Tarih", "Aralıklar", "Süre", "Çalışma Sebebi", "Durum", "Gerekçe"];
-    private static IReadOnlyList<object?> ExportEntry(OvertimeEntry x) => [x.FullName, x.SicilNo, x.UnitName, x.WorkDate.ToString("dd.MM.yyyy"), string.Join(" / ", x.Intervals.Select(IntervalText)), OvertimeDisplay.Duration(x.Intervals.Sum(i => i.EndMinute - i.StartMinute)), x.Reason, x.Status.Label(), x.ReviewReason];
-    private static string IntervalText(OvertimeInterval x) => $"{OvertimeDisplay.Duration(x.StartMinute)}–{OvertimeDisplay.Duration(x.EndMinute)}";
-
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender) { await LoadAsync(); StateHasChanged(); }
@@ -269,60 +106,69 @@
     private async Task LoadAsync()
     {
         _busy = true;
-        _error = null;
         try
         {
             var result = await Overtime.LoadAsync(_scope, _start, _end);
             if (result.IsSuccess) _workspace = result.Value;
-            else _error = result.Error.Message;
+            else ToastService.ShowError(result.Error.Message, 6000);
         }
         finally { _busy = false; }
     }
 
-    private async Task ChangeScope(string scope)
+    private async Task ApplyFilter((DateTime Start, DateTime End) range)
     {
-        _scope = scope; _editing = false; _reviewEntry = null; _history = null; CancelReopen(); _finalizePeriod = null; _message = null;
+        _filterOpen = false;
+        _start = range.Start;
+        _end = range.End;
         await LoadAsync();
     }
 
-    private void NewEntry() { _edit = new(); _invalidTimes.Clear(); _editing = true; _message = null; }
+    private async Task ChangeScope(string scope)
+    {
+        _scope = scope; _editing = false; _reviewEntry = null; _history = null;
+        await LoadAsync();
+    }
+
+    private void NewEntry() { _edit = new(); _editing = true; }
     private void EditEntry(OvertimeEntry entry)
     {
-        _invalidTimes.Clear();
         _edit = new() { Id = entry.Id, Version = entry.Version.ToArray(), WorkDate = entry.WorkDate, Reason = entry.Reason,
             Intervals = entry.Intervals.Select(x => new OvertimeTimeInput { Start = TimeOnly.FromTimeSpan(TimeSpan.FromMinutes(x.StartMinute)), End = TimeOnly.FromTimeSpan(TimeSpan.FromMinutes(x.EndMinute % 1440)), EndsNextDay = x.EndMinute >= 1440 }).ToList() };
         _editing = true;
     }
-    private void SetTime(OvertimeTimeInput row, bool start, ChangeEventArgs args)
+    private void CloseEntry()
     {
-        if (TimeOnly.TryParse(args.Value?.ToString(), out var time))
-        {
-            _invalidTimes.Remove((row, start));
-            if (start) row.Start = time; else row.End = time;
-        }
-        else _invalidTimes.Add((row, start));
+        if (_busy) return;
+        _editing = false;
     }
+
     private async Task SaveEntry(bool submit)
     {
         if (_busy) return;
-        if (_invalidTimes.Any(x => _edit.Intervals.Contains(x.Row))) { _error = "Başlangıç ve bitiş saatlerini doldurun."; return; }
+        _busy = true;
         _edit.Submit = submit;
-        await Act(async () =>
+        try
         {
             var result = await Overtime.SaveEntryAsync(_edit);
-            if (result.IsSuccess) { _editing = false; _start = _edit.WorkDate < _start ? _edit.WorkDate : _start; _end = _edit.WorkDate > _end ? _edit.WorkDate : _end; }
-            return result;
-        }, submit ? "Kayıt amire gönderildi." : "Taslak kaydedildi.");
+            if (!result.IsSuccess) { ToastService.ShowError(result.Error.Message, 6000); return; }
+            _editing = false;
+            _start = _edit.WorkDate < _start ? _edit.WorkDate : _start;
+            _end = (_edit.EndWorkDate ?? _edit.WorkDate) > _end ? (_edit.EndWorkDate ?? _edit.WorkDate) : _end;
+            ToastService.ShowSuccess(submit ? "Kayıt amire gönderildi." : "Taslak kaydedildi.");
+            await LoadAsync();
+        }
+        finally { _busy = false; }
     }
-    private async Task Act<T>(Func<Task<Result<T>>> operation, string message)
+
+    private async Task Act<T>(Func<Task<Result<T>>> operation, string message, ToastType type = ToastType.Success)
     {
         if (_busy) return;
-        _busy = true; _error = _message = null;
+        _busy = true;
         try
         {
             var result = await operation();
-            if (result.IsSuccess) { _message = message; await LoadAsync(); }
-            else _error = result.Error.Message;
+            if (result.IsSuccess) { ToastService.ShowToast(message, type); await LoadAsync(); }
+            else ToastService.ShowError(result.Error.Message, 6000);
         }
         finally { _busy = false; }
     }
@@ -334,42 +180,14 @@
     }
     private async Task ShowHistory(OvertimeEntry entry)
     {
-        await Act(async () => { var result = await Overtime.GetEntryHistoryAsync(entry.Id); if (result.IsSuccess) _history = result.Value; return result; }, "İşlem geçmişi açıldı.");
+        await Act(async () => { var result = await Overtime.GetEntryHistoryAsync(entry.Id); if (result.IsSuccess) _history = result.Value; return result; }, "İşlem geçmişi açıldı.", ToastType.Info);
     }
-    private async Task SaveSchedule() => await Act(() => Overtime.SetScheduleAsync(_titleId, _weeklyHours), "Unvan çalışma grubu kaydedildi.");
-    private async Task CreatePeriod()
-    {
-        await Act(async () => { var result = await Overtime.CreatePeriodAsync(_periodName, _periodStart, _periodEnd, _dueDate); if (result.IsSuccess) { _start = _periodStart; _end = _periodEnd; } return result; }, "Toplama çağrısı açıldı. Birimler çağrıyı uygulamada görebilir.");
-    }
+    private Task Withdraw(OvertimeEntry entry)
+        => Act(() => Overtime.WithdrawAsync(entry.Id, entry.Version), "Kayıt taslağa alındı.");
+    private Task Approve(OvertimeEntry entry)
+        => Act(() => Overtime.ReviewAsync(entry.Id, entry.Version, OvertimeEntryStatus.Approved, ""), "Kayıt onaylandı.");
     private async Task Issue(OvertimeDelivery delivery)
     {
         await Act(async () => { var result = await Overtime.IssueUnitAsync(delivery.Id, delivery.Version); if (result.IsSuccess) Navigation.NavigateTo($"/ikys/overtime/report/{delivery.PeriodId}?unitId={delivery.UnitId}"); return result; }, "Birim çizelgesi sabitlendi.");
-    }
-    private void StartReopen(OvertimePeriod period) { _reopenPeriod = period; _reopenDelivery = null; _reopenReason = ""; }
-    private void StartReopen(OvertimeDelivery delivery) { _reopenDelivery = delivery; _reopenPeriod = null; _reopenReason = ""; }
-    private void CancelReopen() { _reopenPeriod = null; _reopenDelivery = null; }
-    private async Task CommitReopen()
-    {
-        await Act(async () => { var result = _reopenDelivery is not null ? await Overtime.ReopenUnitAsync(_reopenDelivery.Id, _reopenDelivery.Version, _reopenReason) : await Overtime.ReopenPeriodAsync(_reopenPeriod!.Id, _reopenPeriod.Version, _reopenReason); if (result.IsSuccess) CancelReopen(); return result; }, "Yeniden açıldı. Önceki çıktı geçersizdir.");
-    }
-    private void StartFinalize(OvertimePeriod period) { _finalizePeriod = period; _signedName = null; _signedData = null; }
-    private async Task SelectFile(InputFileChangeEventArgs args)
-    {
-        _signedData = null; _signedName = null; _error = null;
-        _busy = true;
-        try
-        {
-            var file = args.File;
-            await using var stream = file.OpenReadStream(10 * 1024 * 1024);
-            using var memory = new MemoryStream();
-            await stream.CopyToAsync(memory);
-            _signedData = memory.ToArray(); _signedName = file.Name;
-        }
-        catch (Exception) { _error = "Belge okunamadı. PDF, JPEG veya PNG seçin; dosya 10 MB'ı aşmamalıdır."; }
-        finally { _busy = false; }
-    }
-    private async Task FinalizePeriod()
-    {
-        await Act(async () => { var result = await Overtime.FinalizeAsync(_finalizePeriod!.Id, _finalizePeriod.Version, _signedName!, _signedData!); if (result.IsSuccess) { _finalizePeriod = null; _signedData = null; } return result; }, "İmzalı belge arşivlendi; dönem kesinleştirildi.");
     }
 }

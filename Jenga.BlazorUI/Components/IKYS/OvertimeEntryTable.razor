@@ -1,0 +1,73 @@
+@using Jenga.BlazorUI.Components.Common
+@using Jenga.Models.IKYS
+
+@foreach (var month in _months)
+{
+    <section class="ot-month mb-4" @key="month.Month">
+        @if (month.Month.HasValue)
+        {
+            <div class="ot-month-heading d-flex align-items-center gap-2 mb-2">
+                <h6 class="mb-0">@month.Month.Value.ToString("MMMM yyyy", System.Globalization.CultureInfo.GetCultureInfo("tr-TR"))</h6>
+                <span class="badge bg-secondary-subtle text-secondary-emphasis">@month.Entries.Count kayıt</span>
+            </div>
+        }
+        <GenericTable TItem="OvertimeEntry" Items="month.Entries" TableHeight="Auto" ShowSearch="true" ShowExport="true" ExportFileName="@(month.Month.HasValue ? $"fazla-mesailer-{month.Month.Value:yyyy-MM}.xlsx" : "fazla-mesailer.xlsx")"
+                      ExportHeaders="ExportHeaders" ExportRow="ExportEntry" KeySelector="x => x.Id">
+            <HeaderTemplate><th>Personel</th><th>Tarih</th><th>Çalışma Aralıkları</th><th>Süre</th><th>Çalışma Sebebi</th><th>Durum</th><th>İşlemler</th></HeaderTemplate>
+            <RowTemplate Context="entry">
+                <td>@entry.FullName<div class="small text-muted">@entry.UnitName</div></td>
+                <td>@entry.WorkDate.ToString("dd.MM.yyyy")</td>
+                <td>@string.Join(" / ", entry.Intervals.OrderBy(x => x.StartMinute).Select(IntervalText))</td>
+                <td>@OvertimeDisplay.Duration(entry.Intervals.Sum(x => x.EndMinute - x.StartMinute))</td>
+                <td class="ot-reason">@entry.Reason</td>
+                <td><span class="badge @(entry.Status == OvertimeEntryStatus.Approved ? "bg-success" : entry.Status == OvertimeEntryStatus.Rejected ? "bg-danger" : "bg-secondary")">@entry.Status.Label()</span>
+                    @if (entry.PeriodId.HasValue) { <div class="small text-muted">Çizelgeye alındı #@entry.PeriodId</div> }
+                    @if (!string.IsNullOrWhiteSpace(entry.ReviewReason)) { <div class="small ot-reason">@entry.ReviewReason</div> }
+                </td>
+                <td><div class="d-flex flex-wrap gap-1">
+                    @if (entry.PeriodId is null)
+                    {
+                        @if (OnEdit.HasDelegate && entry.Status is OvertimeEntryStatus.Draft or OvertimeEntryStatus.Correction)
+                        { <button class="btn btn-sm btn-outline-primary" disabled="@IsBusy" @onclick="() => OnEdit.InvokeAsync(entry)">Düzenle</button> }
+                        @if (OnWithdraw.HasDelegate && entry.Status == OvertimeEntryStatus.Pending)
+                        { <button class="btn btn-sm btn-outline-secondary" disabled="@IsBusy" @onclick="() => OnWithdraw.InvokeAsync(entry)">Geri Çek</button> }
+                        @if (entry.Status == OvertimeEntryStatus.Pending)
+                        {
+                            @if (OnApprove.HasDelegate) { <button class="btn btn-sm btn-outline-success" disabled="@IsBusy" @onclick="() => OnApprove.InvokeAsync(entry)">Onayla</button> }
+                            @if (OnReject.HasDelegate) { <button class="btn btn-sm btn-outline-danger" disabled="@IsBusy" @onclick="() => OnReject.InvokeAsync(entry)">Reddet</button> }
+                        }
+                        @if (OnCorrection.HasDelegate && entry.Status is OvertimeEntryStatus.Pending or OvertimeEntryStatus.Approved)
+                        { <button class="btn btn-sm btn-outline-warning" disabled="@IsBusy" @onclick="() => OnCorrection.InvokeAsync(entry)">Düzeltme İste</button> }
+                    }
+                    <button class="btn btn-sm btn-outline-secondary" disabled="@IsBusy" @onclick="() => OnHistory.InvokeAsync(entry)">İşlemler</button>
+                </div></td>
+            </RowTemplate>
+        </GenericTable>
+    </section>
+}
+
+@code {
+    private sealed record MonthEntries(DateTime? Month, List<OvertimeEntry> Entries);
+    private List<MonthEntries> _months = [];
+
+    protected override void OnParametersSet()
+    {
+        _months = Entries.GroupBy(x => new DateTime(x.WorkDate.Year, x.WorkDate.Month, 1))
+            .OrderByDescending(x => x.Key)
+            .Select(x => new MonthEntries(x.Key, x.OrderByDescending(entry => entry.WorkDate).ThenBy(entry => entry.FullName).ToList()))
+            .ToList();
+        if (_months.Count == 0) _months.Add(new(null, []));
+    }
+
+    [Parameter] public List<OvertimeEntry> Entries { get; set; } = [];
+    [Parameter] public bool IsBusy { get; set; }
+    [Parameter] public EventCallback<OvertimeEntry> OnEdit { get; set; }
+    [Parameter] public EventCallback<OvertimeEntry> OnWithdraw { get; set; }
+    [Parameter] public EventCallback<OvertimeEntry> OnApprove { get; set; }
+    [Parameter] public EventCallback<OvertimeEntry> OnReject { get; set; }
+    [Parameter] public EventCallback<OvertimeEntry> OnCorrection { get; set; }
+    [Parameter] public EventCallback<OvertimeEntry> OnHistory { get; set; }
+    private static readonly string[] ExportHeaders = ["Personel", "Sicil", "Birim", "Tarih", "Aralıklar", "Süre", "Çalışma Sebebi", "Durum", "Gerekçe"];
+    private static IReadOnlyList<object?> ExportEntry(OvertimeEntry x) => [x.FullName, x.SicilNo, x.UnitName, x.WorkDate.ToString("dd.MM.yyyy"), string.Join(" / ", x.Intervals.Select(IntervalText)), OvertimeDisplay.Duration(x.Intervals.Sum(i => i.EndMinute - i.StartMinute)), x.Reason, x.Status.Label(), x.ReviewReason];
+    private static string IntervalText(OvertimeInterval x) => $"{OvertimeDisplay.Duration(x.StartMinute)}–{OvertimeDisplay.Duration(x.EndMinute)}";
+}

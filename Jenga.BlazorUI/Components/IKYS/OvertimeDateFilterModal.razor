@@ -1,0 +1,60 @@
+@inject IToastService ToastService
+
+@if (IsOpen)
+{
+    <div class="modal-backdrop fade show"></div>
+    <div class="modal show" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="ot-filter-title" style="display: block;" @onkeydown="HandleKeyDown">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="ot-filter-title">Gösterilecek Tarih Aralığı</h5>
+                    <button type="button" class="btn-close" aria-label="Kapat" @onclick="OnClose"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-muted">Listede görmek istediğiniz mesailerin tarihlerini seçin.</p>
+                    <div class="row g-3">
+                        <div class="col-sm-6"><label class="form-label" for="ot-filter-start">İlk tarih</label><input id="ot-filter-start" type="date" class="form-control" @bind="_start" /></div>
+                        <div class="col-sm-6"><label class="form-label" for="ot-filter-end">Son tarih</label><input id="ot-filter-end" type="date" class="form-control" @bind="_end" /></div>
+                    </div>
+                    <div class="d-flex flex-wrap gap-3 mt-2">
+                        <button type="button" class="btn btn-link px-0" @onclick="DefaultRange">Varsayılan aralık</button>
+                        <button type="button" class="btn btn-link px-0" @onclick="ThisMonth">Bu ayı seç</button>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" @onclick="OnClose">Vazgeç</button>
+                    <button type="button" class="btn btn-primary" @onclick="Apply">Listeyi Göster</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public DateTime StartDate { get; set; }
+    [Parameter] public DateTime EndDate { get; set; }
+    [Parameter] public EventCallback<(DateTime Start, DateTime End)> OnApply { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    private bool _wasOpen;
+    private DateTime _start, _end;
+    protected override void OnParametersSet()
+    {
+        if (IsOpen && !_wasOpen) { _start = StartDate; _end = EndDate; }
+        _wasOpen = IsOpen;
+    }
+    private void DefaultRange()
+    {
+        var month = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+        _start = month.AddMonths(-1);
+        _end = month.AddMonths(2).AddDays(-1);
+    }
+    private void ThisMonth() { _start = new(DateTime.Today.Year, DateTime.Today.Month, 1); _end = _start.AddMonths(1).AddDays(-1); }
+    private async Task Apply()
+    {
+        if (_end.Date < _start.Date || (_end.Date - _start.Date).TotalDays > 370)
+        { ToastService.ShowWarning("Son tarih ilk tarihten önce olamaz. En fazla bir yıllık aralık seçin.", 5000); return; }
+        await OnApply.InvokeAsync((_start.Date, _end.Date));
+    }
+    private Task HandleKeyDown(KeyboardEventArgs args) => args.Key == "Escape" ? OnClose.InvokeAsync() : Task.CompletedTask;
+}

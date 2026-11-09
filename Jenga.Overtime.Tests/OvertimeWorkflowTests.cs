@@ -52,6 +52,18 @@ public sealed class OvertimeDatabase : IAsyncLifetime, IDbContextFactory<Applica
         await _connection.OpenAsync();
         await using var db = CreateDbContext();
         await db.Database.EnsureCreatedAsync();
+        // Legacy SQL Server data permits a null title name despite the model's Required annotation.
+        await db.Database.ExecuteSqlRawAsync("""
+            PRAGMA foreign_keys = OFF;
+            DROP TABLE UnvanTanim_Table;
+            CREATE TABLE UnvanTanim_Table (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                GorTipId INTEGER NOT NULL, Adi TEXT NULL, KisaAdi TEXT NULL,
+                Aciklama TEXT NULL, Olusturan TEXT NULL, OlusturmaTarihi TEXT NULL,
+                Degistiren TEXT NULL, DegistirmeTarihi TEXT NULL
+            );
+            PRAGMA foreign_keys = ON;
+            """);
     }
 
     public async Task DisposeAsync()
@@ -240,6 +252,25 @@ public sealed class OvertimeWorkflowTests(OvertimeDatabase database) : IClassFix
     }
 
     [Fact]
+    public async Task HrTitleOptionsIgnoreLegacyNullAndBlankNames_AndKeepUnconfiguredTitles()
+    {
+        var seed = await Reset();
+        await using (var db = database.CreateDbContext())
+        {
+            await db.Database.ExecuteSqlRawAsync("""
+                INSERT INTO UnvanTanim_Table (GorTipId, Adi)
+                VALUES (1, NULL), (1, ''), (1, '   '), (1, 'Şoför');
+                """);
+        }
+
+        var workspace = Success(await Service("hr", true).LoadAsync("hr", Monday, Monday.AddDays(6)));
+
+        Assert.Equal(2, workspace.Titles.Count);
+        Assert.Equal(40, Assert.Single(workspace.Titles, x => x.Id == seed.Title).WeeklyHours);
+        Assert.Null(Assert.Single(workspace.Titles, x => x.Name == "Şoför").WeeklyHours);
+    }
+
+    [Fact]
     public async Task ManagerCannotApproveOwnEntry_ExistingParentUnitProvidesSuperiorApproval()
     {
         var seed = await Reset();
@@ -332,5 +363,114 @@ public sealed class OvertimeWorkflowTests(OvertimeDatabase database) : IClassFix
         period = await Period();
         Success(await hr.PrepareSignatureAsync(id, period.Version));
         Assert.NotEqual(first.Reference, Success(await hr.GetReportAsync(id, null, null)).Reference);
+    }
+
+    [Fact]
+    public async Task OvernightEntrySplitsIntoCalendarDays_AndAppliesWeekendRestOnlyOnSaturday()
+    {
+        await Reset(45);
+        var input = Input(Monday.AddDays(4));
+        input.EndWorkDate = Monday.AddDays(5);
+        input.Intervals = [new() { Start = new(22, 0), End = new(6, 0) }];
+        Success(await Service("worker").SaveEntryAsync(input));
+
+        var entries = Success(await Service("worker").LoadAsync("mine", Monday, Monday.AddDays(6))).Entries.OrderBy(x => x.WorkDate).ToList();
+        Assert.Equal(2, entries.Count);
+        Assert.Equal(Monday.AddDays(4), entries[0].WorkDate);
+        Assert.Equal(1440, Assert.Single(entries[0].Intervals).EndMinute);
+        Assert.Equal(Monday.AddDays(5), entries[1].WorkDate);
+        Assert.Equal(0, Assert.Single(entries[1].Intervals).StartMinute);
+        Assert.Equal(360, entries[1].Intervals[0].EndMinute);
+        Assert.All(entries, x => Assert.Equal(OvertimeEntryStatus.Pending, x.Status));
+        var week = Assert.Single(OvertimeCalculator.Calculate(entries, Monday, Monday.AddDays(6)));
+        Assert.Equal(480, week.GrossMinutes);
+        Assert.Equal(30, week.RestMinutes);
+        Assert.Equal(450, week.OvertimeMinutes);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task OvernightConflictRollsBackEveryDayAndHistory(bool editExisting)
+    {
+        await Reset();
+        var worker = Service("worker");
+        var occupied = Input(Monday.AddDays(5));
+        Success(await worker.SaveEntryAsync(occupied));
+        var input = Input(Monday.AddDays(4));
+        byte[]? previousVersion = null;
+        if (editExisting)
+        {
+            var draft = Input(Monday.AddDays(4));
+            draft.Submit = false;
+            draft.Reason = "Önceki taslak";
+            Success(await worker.SaveEntryAsync(draft));
+            var entry = Success(await worker.LoadAsync("mine", Monday.AddDays(4), Monday.AddDays(4))).Entries.Single();
+            input.Id = entry.Id;
+            input.Version = entry.Version;
+            previousVersion = entry.Version;
+        }
+        input.EndWorkDate = Monday.AddDays(5);
+        input.Intervals = [new() { Start = new(22, 0), End = new(6, 0) }];
+
+        Assert.False((await worker.SaveEntryAsync(input)).IsSuccess);
+
+        var entries = Success(await worker.LoadAsync("mine", Monday, Monday.AddDays(6))).Entries;
+        Assert.Equal(editExisting ? 2 : 1, entries.Count);
+        await using var db = database.CreateDbContext();
+        Assert.Equal(editExisting ? 2 : 1, await db.OvertimeEvents.CountAsync());
+        if (editExisting)
+        {
+            var original = Assert.Single(entries, x => x.WorkDate == Monday.AddDays(4));
+            Assert.Equal("Önceki taslak", original.Reason);
+            Assert.Equal(OvertimeEntryStatus.Draft, original.Status);
+            Assert.Equal(previousVersion, original.Version);
+        }
+    }
+
+    [Fact]
+    public async Task EndingExactlyAtMidnightDoesNotCreateAnEmptyNextDay()
+    {
+        await Reset();
+        var input = Input(Monday);
+        input.EndWorkDate = Monday.AddDays(1);
+        input.Intervals = [new() { Start = new(22, 0), End = TimeOnly.MinValue }];
+        Success(await Service("worker").SaveEntryAsync(input));
+        var entry = await Entry();
+        Assert.Equal(Monday, entry.WorkDate);
+        Assert.Equal(1440, Assert.Single(entry.Intervals).EndMinute);
+    }
+
+    [Fact]
+    public async Task InvalidOvernightDateRangeDoesNotCreateAnyRecords()
+    {
+        await Reset();
+        var input = Input(Monday);
+        input.EndWorkDate = Monday.AddDays(2);
+        input.Intervals = [new() { Start = new(22, 0), End = new(6, 0) }];
+        Assert.False((await Service("worker").SaveEntryAsync(input)).IsSuccess);
+        await using var db = database.CreateDbContext();
+        Assert.Empty(await db.OvertimeEntries.ToListAsync());
+        Assert.Empty(await db.OvertimeEvents.ToListAsync());
+    }
+
+    [Fact]
+    public async Task SecondEntryOnApprovedDayExplainsCorrectionAndPreservesExistingRecord()
+    {
+        await Reset();
+        var worker = Service("worker");
+        var input = Input();
+        Success(await worker.SaveEntryAsync(input));
+        var entry = await Entry();
+        Success(await Service("manager").ReviewAsync(entry.Id, entry.Version, OvertimeEntryStatus.Approved, ""));
+
+        var result = await worker.SaveEntryAsync(Input());
+
+        Assert.False(result.IsSuccess);
+        Assert.Contains("onaylı", result.Error.Message);
+        Assert.Contains("düzeltmeye", result.Error.Message);
+        Assert.Equal(OvertimeEntryStatus.Approved, (await Entry()).Status);
+        Success(await worker.SaveEntryAsync(Input(input.WorkDate.AddDays(1))));
+        Assert.Equal(2, Success(await worker.LoadAsync("mine", Monday, Monday.AddDays(13))).Entries.Count);
     }
 }

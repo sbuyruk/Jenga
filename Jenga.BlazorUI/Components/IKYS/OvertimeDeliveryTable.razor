@@ -1,0 +1,35 @@
+@using Jenga.Models.IKYS
+
+<div class="table-responsive"><table class="table table-sm align-middle">
+    <thead><tr><th>Birim</th><th>Durum</th><th>Teslim</th><th>İşlemler</th></tr></thead>
+    <tbody>
+    @foreach (var delivery in Deliveries.Where(x => x.PeriodId == Period.Id))
+    {
+        <tr><td>@delivery.UnitName @if (!delivery.ManagerId.HasValue) { <span class="text-danger small">Amir tanımsız</span> }</td><td>@delivery.Status.Label()</td><td>@delivery.ReceivedAt?.ToString("dd.MM.yyyy HH:mm")</td>
+            <td><div class="d-flex flex-wrap gap-1">
+                @if (delivery.Status == OvertimeDeliveryStatus.Requested && Period.Status == OvertimePeriodStatus.Collecting && OnIssue.HasDelegate)
+                { <button class="btn btn-sm btn-outline-primary" disabled="@IsBusy" @onclick="() => OnIssue.InvokeAsync(delivery)">Çizelgeyi Sabitle ve Aç</button> }
+                @if (delivery.Status != OvertimeDeliveryStatus.Requested)
+                { <a class="btn btn-sm btn-outline-secondary" href="@($"/ikys/overtime/report/{Period.Id}?unitId={delivery.UnitId}{(ReturnToHr ? "&returnTo=hr" : "")}")">Birim Çizelgesi</a> }
+                @if (Period.Status == OvertimePeriodStatus.Collecting)
+                {
+                    @if (delivery.Status == OvertimeDeliveryStatus.Issued && OnReceive.HasDelegate)
+                    { <button class="btn btn-sm btn-outline-success" disabled="@IsBusy" @onclick="() => OnReceive.InvokeAsync(delivery)">İmzalı Evrak Teslim Alındı</button> }
+                    @if (delivery.Status != OvertimeDeliveryStatus.Requested && OnReopen.HasDelegate)
+                    { <button class="btn btn-sm btn-outline-warning" disabled="@IsBusy" @onclick="() => OnReopen.InvokeAsync(delivery)">Birimi Yeniden Aç</button> }
+                }
+            </div></td>
+        </tr>
+    }
+    </tbody>
+</table></div>
+
+@code {
+    [Parameter, EditorRequired] public OvertimePeriod Period { get; set; } = new();
+    [Parameter] public List<OvertimeDelivery> Deliveries { get; set; } = [];
+    [Parameter] public bool IsBusy { get; set; }
+    [Parameter] public bool ReturnToHr { get; set; }
+    [Parameter] public EventCallback<OvertimeDelivery> OnIssue { get; set; }
+    [Parameter] public EventCallback<OvertimeDelivery> OnReceive { get; set; }
+    [Parameter] public EventCallback<OvertimeDelivery> OnReopen { get; set; }
+}
