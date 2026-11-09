@@ -1,0 +1,187 @@
+@using Jenga.Models.IKYS
+@inject IToastService ToastService
+
+@if (IsOpen)
+{
+    <div class="modal-backdrop fade show"></div>
+    <div class="modal show" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="overtime-entry-title" style="display: block;" @onkeydown="HandleKeyDown">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <h5 class="modal-title" id="overtime-entry-title">@(Model.Id == 0 ? "Mesai Ekle" : "Mesaiyi Düzenle")</h5>
+                        <p class="text-muted small mb-0 mt-1">Çalışma bilgilerinizi girin, amirinizin onayına gönderin.</p>
+                    </div>
+                    <button type="button" class="btn-close" disabled="@IsBusy" @onclick="Close" aria-label="Kapat"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <fieldset disabled="@IsBusy">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="ot-date-card">
+                                    <div class="fw-semibold mb-3"><i class="bi bi-play-circle me-2 text-success"></i>Başlangıç</div>
+                                    <label class="form-label small" for="ot-entry-start-date">Tarih</label>
+                                    <input id="ot-entry-start-date" type="date" class="form-control mb-3" @bind="Model.WorkDate" @bind:after="StartDateChanged" @ref="_dateInput" />
+                                    <label class="form-label small" for="ot-entry-start-time">Saat</label>
+                                    <input id="ot-entry-start-time" type="time" class="form-control" value="@First.Start.ToString("HH:mm")" @onchange="e => SetTime(First, true, e)" />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="ot-date-card">
+                                    <div class="fw-semibold mb-3"><i class="bi bi-stop-circle me-2 text-success"></i>Bitiş</div>
+                                    <label class="form-label small" for="ot-entry-end-date">Tarih</label>
+                                    <input id="ot-entry-end-date" type="date" class="form-control mb-3" min="@Model.WorkDate.ToString("yyyy-MM-dd")" @bind="Model.EndWorkDate" />
+                                    <label class="form-label small" for="ot-entry-end-time">Saat</label>
+                                    <input id="ot-entry-end-time" type="time" class="form-control" value="@First.End.ToString("HH:mm")" @onchange="e => SetTime(First, false, e)" />
+                                </div>
+                            </div>
+                        </div>
+                        <p class="small text-muted mt-2 mb-3">Gece yarısını geçiyorsanız bitiş tarihini bir sonraki gün seçin.</p>
+
+                        @foreach (var interval in Model.Intervals.Skip(1).ToList())
+                        {
+                            <div class="ot-extra-range mb-2" @key="interval">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <span class="small fw-semibold">Aynı gün için ek çalışma</span>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" aria-label="Ek çalışma aralığını kaldır" @onclick="() => Model.Intervals.Remove(interval)"><i class="bi bi-trash"></i></button>
+                                </div>
+                                <div class="row g-2">
+                                    <div class="col-6"><label class="form-label small">Başlangıç saati<input type="time" class="form-control" value="@interval.Start.ToString("HH:mm")" @onchange="e => SetTime(interval, true, e)" /></label></div>
+                                    <div class="col-6"><label class="form-label small">Bitiş saati<input type="time" class="form-control" value="@interval.End.ToString("HH:mm")" @onchange="e => SetTime(interval, false, e)" /></label></div>
+                                </div>
+                            </div>
+                        }
+                        @if (Model.EndWorkDate?.Date == Model.WorkDate.Date && Model.Intervals.Count < 12)
+                        { <button type="button" class="btn btn-link px-0 pt-0 mb-3 text-decoration-none" @onclick="AddInterval"><i class="bi bi-plus-circle me-1"></i>Aynı güne başka saat aralığı ekle</button> }
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" for="ot-entry-reason">Çalışma sebebi <span class="text-danger">*</span></label>
+                            <textarea id="ot-entry-reason" class="form-control" rows="3" maxlength="2000" placeholder="Örneğin: Havalimanı transferi, toplantı hazırlığı…" @bind="Model.Reason" required></textarea>
+                            <div class="form-text">Yaptığınız işi kısaca açıklayın.</div>
+                        </div>
+                        @if (TotalMinutes is int minutes)
+                        {
+                            <div class="ot-duration d-flex justify-content-between align-items-center gap-2">
+                                <span>Girilen çalışma süresi</span><strong>@DurationText(minutes)</strong>
+                            </div>
+                            <div class="form-text mt-2">Dinlenme kesintileri ve haftalık hesaplama İK değerlendirmesinde uygulanır.</div>
+                        }
+                    </fieldset>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary me-auto" disabled="@IsBusy" @onclick="Close">Vazgeç</button>
+                    <button type="button" class="btn btn-outline-primary" disabled="@IsBusy" @onclick="() => Save(false)">Taslak Kaydet</button>
+                    <button type="button" class="btn btn-success" disabled="@IsBusy" @onclick="() => Save(true)">
+                        @if (IsBusy) { <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> }
+                        Amire Gönder
+                    </button>
+                    @if (IsBusy) { <span class="visually-hidden" role="status">Kaydediliyor…</span> }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public OvertimeEntryInput Model { get; set; } = new();
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public bool IsBusy { get; set; }
+    [Parameter] public EventCallback<bool> OnSave { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    private readonly HashSet<(OvertimeTimeInput Row, bool Start)> _invalidTimes = [];
+    private OvertimeEntryInput? _loadedModel;
+    private bool _wasOpen, _focusPending;
+    private DateTime _previousStart;
+    private ElementReference _dateInput;
+    private OvertimeTimeInput First => Model.Intervals[0];
+
+    protected override void OnParametersSet()
+    {
+        if (IsOpen && (!_wasOpen || !ReferenceEquals(_loadedModel, Model)))
+        {
+            if (Model.Intervals.Count == 0) Model.Intervals.Add(new());
+            Model.EndWorkDate ??= Model.WorkDate.Date.AddDays(First.EndsNextDay ? 1 : 0);
+            _previousStart = Model.WorkDate.Date;
+            _invalidTimes.Clear();
+            _loadedModel = Model;
+            _focusPending = true;
+        }
+        _wasOpen = IsOpen;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (IsOpen && _focusPending)
+        {
+            _focusPending = false;
+            await _dateInput.FocusAsync();
+        }
+    }
+
+    private void StartDateChanged()
+    {
+        if (Model.EndWorkDate?.Date == _previousStart || Model.EndWorkDate?.Date < Model.WorkDate.Date)
+            Model.EndWorkDate = Model.WorkDate.Date;
+        _previousStart = Model.WorkDate.Date;
+    }
+
+    private void SetTime(OvertimeTimeInput row, bool start, ChangeEventArgs args)
+    {
+        if (TimeOnly.TryParse(args.Value?.ToString(), out var time))
+        {
+            _invalidTimes.Remove((row, start));
+            if (start) row.Start = time; else row.End = time;
+        }
+        else _invalidTimes.Add((row, start));
+    }
+
+    private void AddInterval()
+    {
+        var start = Model.Intervals.Last().End;
+        Model.Intervals.Add(new() { Start = start, End = start.AddHours(1) });
+    }
+
+    private int? TotalMinutes
+    {
+        get
+        {
+            if (Model.EndWorkDate is null || _invalidTimes.Any(x => Model.Intervals.Contains(x.Row))) return null;
+            var start = Model.WorkDate.Date.AddMinutes(First.StartMinute);
+            var end = Model.EndWorkDate.Value.Date.AddMinutes(First.End.Hour * 60 + First.End.Minute);
+            var duration = end - start;
+            if (duration <= TimeSpan.Zero || duration > TimeSpan.FromHours(24)) return null;
+            if (Model.Intervals.Count > 1 && Model.EndWorkDate.Value.Date != Model.WorkDate.Date) return null;
+            var total = (int)duration.TotalMinutes;
+            foreach (var extra in Model.Intervals.Skip(1))
+            {
+                var endMinute = extra.End.Hour * 60 + extra.End.Minute;
+                if (endMinute == 0) endMinute = 1440;
+                if (endMinute <= extra.StartMinute) return null;
+                total += endMinute - extra.StartMinute;
+            }
+            return total;
+        }
+    }
+
+    private static string DurationText(int minutes) => minutes % 60 == 0 ? $"{minutes / 60} saat" : $"{minutes / 60} saat {minutes % 60} dakika";
+
+    private async Task Save(bool submit)
+    {
+        if (IsBusy) return;
+        if (TotalMinutes is null)
+        {
+            var message = Model.Intervals.Count > 1 && Model.EndWorkDate?.Date != Model.WorkDate.Date
+                ? "Gece yarısını aşan çalışma için tek saat aralığı girin. Ek aralıkları kaldırın veya aynı günün tarihlerini seçin."
+                : "Başlangıç ve bitiş tarih/saatlerini kontrol edin. Bitiş başlangıçtan sonra olmalı; tek aralık 24 saati aşmamalıdır.";
+            ToastService.ShowWarning(message, 6000);
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(Model.Reason)) { ToastService.ShowWarning("Çalışma sebebini kısaca açıklayın.", 4000); return; }
+        First.EndsNextDay = Model.EndWorkDate!.Value.Date > Model.WorkDate.Date;
+        foreach (var extra in Model.Intervals.Skip(1)) extra.EndsNextDay = extra.End == TimeOnly.MinValue;
+        await OnSave.InvokeAsync(submit);
+    }
+
+    private Task Close() => IsBusy ? Task.CompletedTask : OnClose.InvokeAsync();
+    private Task HandleKeyDown(KeyboardEventArgs args) => args.Key == "Escape" ? Close() : Task.CompletedTask;
+}

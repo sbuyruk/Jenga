@@ -1,0 +1,19 @@
+@using Jenga.Models.IKYS
+
+@if (Items is not null)
+{
+    <section class="card card-body my-3">
+        <div class="d-flex justify-content-between"><h5>Kayıt İşlem Geçmişi</h5><button class="btn-close" aria-label="Geçmişi kapat" @onclick="OnClose"></button></div>
+        @foreach (var item in Items)
+        {
+            <div class="border-bottom py-2"><strong>@item.Action</strong> — @item.Olusturan — @item.OlusturmaTarihi?.ToString("dd.MM.yyyy HH:mm")
+                <details><summary>Ayrıntı</summary><pre class="ot-history">@OvertimeDisplay.EventDetails(item.Details)</pre></details>
+            </div>
+        }
+    </section>
+}
+
+@code {
+    [Parameter] public List<OvertimeEvent>? Items { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+}

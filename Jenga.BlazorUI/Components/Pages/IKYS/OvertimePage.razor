@@ -1,0 +1,193 @@
+@page "/ikys/overtime"
+@rendermode InteractiveServer
+@using Jenga.BlazorUI.Components.Common
+@using Jenga.DataAccess.Services.IKYS
+@using Jenga.Models.IKYS
+@using Jenga.Utility.Results
+@inject IOvertimeService Overtime
+@inject IToastService ToastService
+@inject NavigationManager Navigation
+
+<PageTitle>Mesailerim</PageTitle>
+<div class="overtime-page">
+    <div class="d-flex flex-wrap justify-content-between gap-2 mb-3">
+        <div><h3><i class="bi bi-clock-history me-2"></i>Mesailerim</h3><span class="text-muted">@_workspace?.FullName</span></div>
+        <button class="btn btn-outline-secondary" disabled="@_busy" @onclick="LoadAsync">Yenile</button>
+    </div>
+    @if (_workspace is null)
+    {
+        @if (_busy) { <p>Fazla mesai bilgileri yükleniyor…</p> }
+    }
+    else
+    {
+        @if (_workspace.IsManager)
+        {
+            <div class="nav nav-pills gap-2 mb-3">
+                <button class="nav-link @(_scope == "mine" ? "active" : "")" disabled="@_busy" @onclick='() => ChangeScope("mine")'>Mesailerim</button>
+                <button class="nav-link @(_scope == "team" ? "active" : "")" disabled="@_busy" @onclick='() => ChangeScope("team")'>Amir İşlemleri</button>
+            </div>
+        }
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-3 mb-3">
+            <div>
+                <h5 class="mb-1">@(_scope == "mine" ? "Mesai Kayıtlarım" : "Personelin Mesai Kayıtları")</h5>
+                <span class="small text-muted">@_start.ToString("dd.MM.yyyy") – @_end.ToString("dd.MM.yyyy")</span>
+            </div>
+            <div class="d-flex flex-wrap gap-2 ms-auto">
+                <button type="button" class="btn btn-outline-secondary" disabled="@_busy" @onclick="() => _filterOpen = true"><i class="bi bi-calendar3 me-1"></i>Tarih Aralığı</button>
+                @if (_scope == "mine")
+                {
+                    <button type="button" class="btn btn-success" disabled="@_busy" @onclick="NewEntry"><i class="bi bi-plus-lg me-1"></i>Mesai Ekle</button>
+                }
+            </div>
+        </div>
+        @if (_scope == "mine")
+        {
+            <OvertimeEntryTable Entries="_workspace.Entries" IsBusy="_busy" OnEdit="EditEntry" OnWithdraw="Withdraw" OnHistory="ShowHistory" />
+        }
+        else
+        {
+            <OvertimeEntryTable Entries="_workspace.Entries" IsBusy="_busy" OnApprove="Approve" OnHistory="ShowHistory"
+                                OnCorrection="entry => StartReview(entry, OvertimeEntryStatus.Correction)" OnReject="entry => StartReview(entry, OvertimeEntryStatus.Rejected)" />
+        }
+
+        @if (_reviewEntry is not null)
+        {
+            <section class="card card-body my-3">
+                <h5>@_reviewEntry.FullName — @_reviewEntry.WorkDate.ToString("dd.MM.yyyy") — @_decision.Label()</h5>
+                <label class="form-label" for="ot-review-reason">Gerekçe *</label><textarea id="ot-review-reason" class="form-control mb-2" maxlength="2000" @bind="_reviewReason"></textarea>
+                <div><button class="btn btn-primary me-2" disabled="@_busy" @onclick="CommitReview">Kararı Kaydet</button><button class="btn btn-outline-secondary" @onclick="() => _reviewEntry = null">Vazgeç</button></div>
+            </section>
+        }
+        <OvertimeHistory Items="_history" OnClose="() => _history = null" />
+
+        <h5 class="mt-4">Dönemler ve Toplama Çağrıları</h5>
+        @if (_workspace.Periods.Count == 0) { <p class="text-muted">Seçilen tarihlerde dönem bulunmuyor.</p> }
+        @foreach (var period in _workspace.Periods)
+        {
+            <section class="card my-3" @key="period.Id">
+                <div class="card-header d-flex flex-wrap justify-content-between gap-2">
+                    <strong>@period.Name <span class="small text-muted">#@period.Id</span></strong><span class="badge bg-secondary">@period.Status.Label()</span>
+                </div>
+                <div class="card-body">
+                    <p>@period.StartDate.ToString("dd.MM.yyyy") – @period.EndDate.ToString("dd.MM.yyyy") · Son teslim: @period.DueDate.ToString("dd.MM.yyyy")</p>
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <a class="btn btn-sm btn-outline-primary" href="@($"/ikys/overtime/report/{period.Id}?personelId={_workspace.PersonelId}")">Kendi Çizelgem</a>
+                    </div>
+                    @if (_scope == "team")
+                    {
+                        <OvertimeDeliveryTable Period="period" Deliveries="_workspace.Deliveries" IsBusy="_busy" OnIssue="Issue" />
+                    }
+                </div>
+            </section>
+        }
+    }
+</div>
+
+<OvertimeEntryEditModal Model="_edit" IsOpen="@(_editing && _scope == "mine")" IsBusy="_busy" OnSave="SaveEntry" OnClose="CloseEntry" />
+<OvertimeDateFilterModal IsOpen="_filterOpen" StartDate="_start" EndDate="_end" OnApply="ApplyFilter" OnClose="() => _filterOpen = false" />
+
+@code {
+    private OvertimeWorkspace? _workspace;
+    private string _scope = "mine";
+    private DateTime _start = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(-1);
+    private DateTime _end = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(2).AddDays(-1);
+    private bool _busy = true;
+    private bool _editing, _filterOpen;
+    private OvertimeEntryInput _edit = new();
+    private OvertimeEntry? _reviewEntry;
+    private OvertimeEntryStatus _decision;
+    private string _reviewReason = "";
+    private List<OvertimeEvent>? _history;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender) { await LoadAsync(); StateHasChanged(); }
+    }
+
+    private async Task LoadAsync()
+    {
+        _busy = true;
+        try
+        {
+            var result = await Overtime.LoadAsync(_scope, _start, _end);
+            if (result.IsSuccess) _workspace = result.Value;
+            else ToastService.ShowError(result.Error.Message, 6000);
+        }
+        finally { _busy = false; }
+    }
+
+    private async Task ApplyFilter((DateTime Start, DateTime End) range)
+    {
+        _filterOpen = false;
+        _start = range.Start;
+        _end = range.End;
+        await LoadAsync();
+    }
+
+    private async Task ChangeScope(string scope)
+    {
+        _scope = scope; _editing = false; _reviewEntry = null; _history = null;
+        await LoadAsync();
+    }
+
+    private void NewEntry() { _edit = new(); _editing = true; }
+    private void EditEntry(OvertimeEntry entry)
+    {
+        _edit = new() { Id = entry.Id, Version = entry.Version.ToArray(), WorkDate = entry.WorkDate, Reason = entry.Reason,
+            Intervals = entry.Intervals.Select(x => new OvertimeTimeInput { Start = TimeOnly.FromTimeSpan(TimeSpan.FromMinutes(x.StartMinute)), End = TimeOnly.FromTimeSpan(TimeSpan.FromMinutes(x.EndMinute % 1440)), EndsNextDay = x.EndMinute >= 1440 }).ToList() };
+        _editing = true;
+    }
+    private void CloseEntry()
+    {
+        if (_busy) return;
+        _editing = false;
+    }
+
+    private async Task SaveEntry(bool submit)
+    {
+        if (_busy) return;
+        _busy = true;
+        _edit.Submit = submit;
+        try
+        {
+            var result = await Overtime.SaveEntryAsync(_edit);
+            if (!result.IsSuccess) { ToastService.ShowError(result.Error.Message, 6000); return; }
+            _editing = false;
+            _start = _edit.WorkDate < _start ? _edit.WorkDate : _start;
+            _end = (_edit.EndWorkDate ?? _edit.WorkDate) > _end ? (_edit.EndWorkDate ?? _edit.WorkDate) : _end;
+            ToastService.ShowSuccess(submit ? "Kayıt amire gönderildi." : "Taslak kaydedildi.");
+            await LoadAsync();
+        }
+        finally { _busy = false; }
+    }
+
+    private async Task Act<T>(Func<Task<Result<T>>> operation, string message, ToastType type = ToastType.Success)
+    {
+        if (_busy) return;
+        _busy = true;
+        try
+        {
+            var result = await operation();
+            if (result.IsSuccess) { ToastService.ShowToast(message, type); await LoadAsync(); }
+            else ToastService.ShowError(result.Error.Message, 6000);
+        }
+        finally { _busy = false; }
+    }
+    private void StartReview(OvertimeEntry entry, OvertimeEntryStatus decision) { _reviewEntry = entry; _decision = decision; _reviewReason = ""; }
+    private async Task CommitReview()
+    {
+        var entry = _reviewEntry!;
+        await Act(async () => { var result = await Overtime.ReviewAsync(entry.Id, entry.Version, _decision, _reviewReason); if (result.IsSuccess) _reviewEntry = null; return result; }, "Karar kaydedildi.");
+    }
+    private async Task ShowHistory(OvertimeEntry entry)
+    {
+        await Act(async () => { var result = await Overtime.GetEntryHistoryAsync(entry.Id); if (result.IsSuccess) _history = result.Value; return result; }, "İşlem geçmişi açıldı.", ToastType.Info);
+    }
+    private Task Withdraw(OvertimeEntry entry)
+        => Act(() => Overtime.WithdrawAsync(entry.Id, entry.Version), "Kayıt taslağa alındı.");
+    private Task Approve(OvertimeEntry entry)
+        => Act(() => Overtime.ReviewAsync(entry.Id, entry.Version, OvertimeEntryStatus.Approved, ""), "Kayıt onaylandı.");
+    private async Task Issue(OvertimeDelivery delivery)
+    {
+        await Act(async () => { var result = await Overtime.IssueUnitAsync(delivery.Id, delivery.Version); if (result.IsSuccess) Navigation.NavigateTo($"/ikys/overtime/report/{delivery.PeriodId}?unitId={delivery.UnitId}"); return result; }, "Birim çizelgesi sabitlendi.");
+    }
+}

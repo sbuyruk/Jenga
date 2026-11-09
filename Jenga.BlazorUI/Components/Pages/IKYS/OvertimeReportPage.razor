@@ -1,0 +1,130 @@
+@page "/ikys/overtime/report/{PeriodId:int}"
+@rendermode InteractiveServer
+@using System.Text.Json
+@using Jenga.DataAccess.Services.IKYS
+@using Jenga.Models.IKYS
+@inject IOvertimeService Overtime
+@inject IToastService ToastService
+@inject IJSRuntime JS
+
+<PageTitle>Fazla Mesai Çizelgesi</PageTitle>
+<div class="d-flex flex-wrap gap-2 mb-3 no-print">
+    <a class="btn btn-outline-secondary" href="@(ReturnTo == "hr" ? "/ikys/overtime/hr" : "/ikys/overtime")">@(ReturnTo == "hr" ? "İK Dönem İşlemlerine Dön" : "Mesailerime Dön")</a>
+    <button class="btn btn-outline-secondary" disabled="@_busy" @onclick="LoadAsync">Yenile</button>
+    <button class="btn btn-primary" disabled="@(_busy || _report is null)" @onclick="Print">Yazdır</button>
+    @if (_report?.CanSeeSummary == true && _report.Period.Status == OvertimePeriodStatus.Finalized)
+    { <button class="btn btn-outline-success" disabled="@_busy" @onclick="Download">İmzalı Belgeyi İndir</button> }
+</div>
+@if (_busy) { <p>Çizelge hazırlanıyor…</p> }
+@if (_report is not null)
+{
+    <div id="overtime-report" class="overtime-report">
+        @if (_report.IsPreview)
+        { <p class="alert alert-warning">ÖNİZLEME — İmzaya esas değildir. Kayıtlar henüz sabitlenmemiştir.</p> }
+        @if (_report.CanSeeSummary)
+        {
+            <section class="ot-sheet">
+                <h4 class="text-center">FAZLA ÇALIŞMA ONAY LİSTESİ</h4>
+                <p class="text-center">@_report.Period.Name · @_report.Period.StartDate.ToString("dd.MM.yyyy") – @_report.Period.EndDate.ToString("dd.MM.yyyy")</p>
+                <p>Belge: @_report.Reference · @_report.Period.Status.Label()</p>
+                <table class="table table-bordered table-sm">
+                    <thead><tr><th>Sıra</th><th>Sicil</th><th>Adı Soyadı</th><th>Hesaplanan Süre</th><th>Yuvarlanmış Fazla Mesai</th></tr></thead>
+                    <tbody>
+                    @{ var index = 0; }
+                    @foreach (var person in _report.Results)
+                    {
+                        <tr><td>@(++index)</td><td>@person.SicilNo</td><td>@person.FullName</td><td>@OvertimeDisplay.Duration(person.RawMinutes)</td><td>@OvertimeDisplay.Duration(person.RoundedMinutes)</td></tr>
+                    }
+                    </tbody>
+                    <tfoot><tr><th colspan="3">TOPLAM</th><td>@OvertimeDisplay.Duration(_report.Results.Sum(x => x.RawMinutes))</td><th>@OvertimeDisplay.Duration(_report.Results.Sum(x => x.RoundedMinutes))</th></tr></tfoot>
+                </table>
+                <p class="small">Süreler saat:dakika biçimindedir. Normal haftalık çalışma tamamlanmış kabul edilir. Pazartesi–Pazar haftalarında 45 saati aşan süreler toplanır; yalnızca personelin dönem toplamı yukarı doğru 30 dakikaya tamamlanır.</p>
+                <div class="ot-signatures"><div>Hazırlayan<br />İnsan Kaynakları<br /><br />İmza</div><div>ONAY<br />Genel Müdür Yardımcısı<br /><br />Islak İmza / Tarih</div></div>
+            </section>
+        }
+        else
+        {
+            @if (_report.Entries.Count == 0) { <section class="ot-sheet"><h4>@_report.Period.Name — Birim Çizelgesi</h4><p>Bu kapsamda onaylı fazla mesai kaydı bulunmamaktadır.</p><p>Belge: @_report.Reference · @_report.Period.StartDate.ToString("dd.MM.yyyy") – @_report.Period.EndDate.ToString("dd.MM.yyyy")</p><div class="ot-signatures"><div>Birim Amiri<br /><br />İmza / Tarih</div><div>İK Teslim<br /><br />İmza / Tarih</div></div></section> }
+            @foreach (var person in _report.Entries.GroupBy(x => x.PersonelId))
+            {
+                var first = person.First();
+                <section class="ot-sheet">
+                    <h4 class="text-center">AYLIK FAZLA ÇALIŞMA ÇİZELGESİ</h4>
+                    <p class="text-center">@_report.Period.Name · @_report.Period.StartDate.ToString("dd.MM.yyyy") – @_report.Period.EndDate.ToString("dd.MM.yyyy")</p>
+                    <p>Adı Soyadı: <strong>@first.FullName</strong><br />Sicil No: @first.SicilNo<br />Birimi: @first.UnitName<br />Görevi / Unvanı: @first.Title</p>
+                    <p class="small">Belge: @_report.Reference · @_report.Period.Status.Label() · Süreler saat:dakika biçimindedir.</p>
+                    <table class="table table-bordered table-sm ot-daily">
+                        <thead><tr><th>Gün</th><th>Başlama / Bitiş</th><th>Brüt Süre</th><th>Dinlenme</th><th>Net Süre</th><th>İmza</th><th>Açıklama / Çalışma Sebebi</th></tr></thead>
+                        <tbody>
+                        @for (var day = _report.Period.StartDate; day <= _report.Period.EndDate; day = day.AddDays(1))
+                        {
+                            var entry = person.SingleOrDefault(x => x.WorkDate.Date == day.Date);
+                            var gross = entry?.Intervals.Sum(x => x.EndMinute - x.StartMinute) ?? 0;
+                            var rest = day.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday ? OvertimeCalculator.RestMinutes(gross) : 0;
+                            <tr><td>@day.ToString("dd.MM.yyyy")</td><td>@(entry is null ? "" : string.Join(" / ", entry.Intervals.OrderBy(x => x.StartMinute).Select(x => $"{OvertimeDisplay.Duration(x.StartMinute)}–{OvertimeDisplay.Duration(x.EndMinute)}")))</td><td>@(entry is null ? "" : OvertimeDisplay.Duration(gross))</td><td>@(entry is null ? "" : OvertimeDisplay.Duration(rest))</td><td>@(entry is null ? "" : OvertimeDisplay.Duration(gross - rest))</td><td class="ot-sign"></td><td class="ot-reason">@entry?.Reason</td></tr>
+                        }
+                        </tbody>
+                        <tfoot><tr><th colspan="2">GENEL TOPLAM</th><td>@OvertimeDisplay.Duration(person.Sum(x => x.Intervals.Sum(i => i.EndMinute - i.StartMinute)))</td><td colspan="4">Haftalık eşik ve dönem yuvarlaması İK hesaplama özetinde uygulanır.</td></tr></tfoot>
+                    </table>
+                    <div class="ot-signatures"><div>Çalışan<br /><br />İmza / Tarih</div><div>Birim Amiri<br /><br />İmza / Tarih</div></div>
+                </section>
+            }
+        }
+    </div>
+    @if (_report.Results.Count > 0)
+    {
+        <section class="card card-body my-3 no-print">
+            <h5>Hesaplama Ayrıntıları</h5>
+            @foreach (var person in _report.Results)
+            {
+                <details class="mb-3"><summary>@person.FullName — Sonuç: @OvertimeDisplay.Duration(person.RoundedMinutes)</summary>
+                    <div class="table-responsive"><table class="table table-sm"><thead><tr><th>Hafta</th><th>Normal Süre</th><th>Ek Çalışma</th><th>Dinlenme</th><th>45 Saat Üzeri</th></tr></thead><tbody>
+                    @foreach (var week in JsonSerializer.Deserialize<List<OvertimeWeek>>(person.WeeksJson) ?? [])
+                    { <tr><td>@week.Monday.ToString("dd.MM.yyyy") – @week.Monday.AddDays(6).ToString("dd.MM.yyyy")</td><td>@OvertimeDisplay.Duration(week.NormalMinutes)</td><td>@OvertimeDisplay.Duration(week.GrossMinutes)</td><td>@OvertimeDisplay.Duration(week.RestMinutes)</td><td>@OvertimeDisplay.Duration(week.OvertimeMinutes)</td></tr> }
+                    </tbody></table></div>
+                    <p>Toplam: @OvertimeDisplay.Duration(person.RawMinutes) → Yuvarlanmış: @OvertimeDisplay.Duration(person.RoundedMinutes) · Kural: @person.RuleVersion</p>
+                </details>
+            }
+        </section>
+    }
+    @if (_report.Events.Count > 0)
+    {
+        <details class="card card-body my-3 no-print"><summary>Dönem İşlem Geçmişi</summary>
+            @foreach (var item in _report.Events) { <div class="border-bottom py-2"><strong>@item.Action</strong> · @item.Olusturan · @item.OlusturmaTarihi?.ToString("dd.MM.yyyy HH:mm")<details><summary>Ayrıntı</summary><pre style="white-space:pre-wrap">@OvertimeDisplay.EventDetails(item.Details)</pre></details></div> }
+        </details>
+    }
+}
+
+@code {
+    [Parameter] public int PeriodId { get; set; }
+    [SupplyParameterFromQuery] public int? UnitId { get; set; }
+    [SupplyParameterFromQuery] public int? PersonelId { get; set; }
+    [SupplyParameterFromQuery] public string? ReturnTo { get; set; }
+    private OvertimeReport? _report;
+    private bool _busy, _reload;
+    protected override void OnParametersSet() => _reload = true;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_reload) { _reload = false; await LoadAsync(); StateHasChanged(); }
+    }
+    private async Task LoadAsync()
+    {
+        _busy = true; _report = null;
+        try { var result = await Overtime.GetReportAsync(PeriodId, UnitId, PersonelId); if (result.IsSuccess) _report = result.Value; else ToastService.ShowError(result.Error.Message, 6000); }
+        finally { _busy = false; }
+    }
+    private async Task Print() => await JS.InvokeVoidAsync("printElementById", "overtime-report");
+    private async Task Download()
+    {
+        _busy = true;
+        try
+        {
+            var result = await Overtime.GetSignedDocumentAsync(PeriodId);
+            if (!result.IsSuccess) { ToastService.ShowError(result.Error.Message, 6000); return; }
+            using var stream = new MemoryStream(result.Value.Data);
+            using var reference = new DotNetStreamReference(stream);
+            await JS.InvokeVoidAsync("overtimeFiles.download", result.Value.Name, result.Value.ContentType, reference);
+        }
+        finally { _busy = false; }
+    }
+}
