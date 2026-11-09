@@ -5,6 +5,13 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Pages\**" />
+    <Content Remove="Pages\**" />
+    <EmbeddedResource Remove="Pages\**" />
+    <None Remove="Pages\**" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Jenga.DataAccess\Jenga.DataAccess.csproj" />
     <ProjectReference Include="..\Jenga.Models\Jenga.Models.csproj" />
@@ -12,7 +19,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Pages\" />
     <Folder Include="SeedData\Auth\" />
     <Folder Include="wwwroot\temp\" />
   </ItemGroup>
