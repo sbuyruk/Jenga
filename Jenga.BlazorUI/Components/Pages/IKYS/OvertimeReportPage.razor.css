@@ -1,14 +1,30 @@
 .overtime-report { color: #111; background: white; padding: 1rem; }
 .ot-sheet { margin: 0 auto 2rem; max-width: 1100px; break-after: page; }
 .ot-sheet:last-child { break-after: auto; }
-.ot-daily { font-size: .8rem; }
+.ot-monthly-title { font-size: 1.1rem; }
+.ot-approval-table { width: 100%; table-layout: fixed; font-size: .8rem; }
+.ot-approval-table th, .ot-approval-table td { overflow-wrap: anywhere; }
+.ot-approval-request { break-inside: avoid; }
+.ot-director-signature { width: 40%; margin: 3rem 0 2rem auto; text-align: center; overflow-wrap: anywhere; }
+.ot-signature-date { white-space: pre; margin-bottom: 1rem; }
+.ot-daily { font-size: .8rem; width: 100%; table-layout: fixed; }
+.ot-day-column { width: 12%; }
+.ot-interval-column { width: 20%; }
+.ot-duration-column { width: 9%; }
+.ot-sign-column { width: 15%; }
+.ot-reason-column { width: 44%; }
 .ot-daily td { min-height: 1.5rem; }
-.ot-sign { min-width: 65px; }
 .ot-reason { white-space: pre-wrap; overflow-wrap: anywhere; }
 .ot-signatures { display: flex; justify-content: space-around; gap: 2rem; margin: 3rem 0; text-align: center; break-inside: avoid; }
+.ot-signatures > div { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 thead { display: table-header-group; }
 tr { break-inside: avoid; }
+@page overtime-approval {
+    size: A4 landscape;
+    margin: 12mm;
+}
 @media print {
+    .ot-approval-sheet { page: overtime-approval; }
     .ot-sheet { max-width: none; }
     .overtime-report { padding: 0; }
     table { width: 100%; border-collapse: collapse; }

@@ -1,2 +1,5 @@
 .overtime-page { max-width: 1600px; margin: 0 auto; }
+.ot-date-filter-field { width: 12rem; max-width: 100%; }
+.ot-title-field { width: 22rem; max-width: 100%; }
+.ot-weekly-hours-field { width: 9rem; max-width: 100%; }
 summary { cursor: pointer; font-weight: 600; }

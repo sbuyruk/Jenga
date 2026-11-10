@@ -9,7 +9,7 @@
 
 <PageTitle>Fazla Mesai Çizelgesi</PageTitle>
 <div class="d-flex flex-wrap gap-2 mb-3 no-print">
-    <a class="btn btn-outline-secondary" href="@(ReturnTo == "hr" ? "/ikys/overtime/hr" : "/ikys/overtime")">@(ReturnTo == "hr" ? "İK Dönem İşlemlerine Dön" : "Mesailerime Dön")</a>
+    <a class="btn btn-outline-secondary" href="@(ReturnTo == "hr" ? "/ikys/overtime/hr" : ReturnTo == "delegated" ? "/ikys/overtime?scope=delegated" : "/ikys/overtime")">@(ReturnTo == "hr" ? "İK Dönem İşlemlerine Dön" : ReturnTo == "delegated" ? "Başkası Adına Mesaiye Dön" : "Mesailerime Dön")</a>
     <button class="btn btn-outline-secondary" disabled="@_busy" @onclick="LoadAsync">Yenile</button>
     <button class="btn btn-primary" disabled="@(_busy || _report is null)" @onclick="Print">Yazdır</button>
     @if (_report?.CanSeeSummary == true && _report.Period.Status == OvertimePeriodStatus.Finalized)
@@ -23,23 +23,29 @@
         { <p class="alert alert-warning">ÖNİZLEME — İmzaya esas değildir. Kayıtlar henüz sabitlenmemiştir.</p> }
         @if (_report.CanSeeSummary)
         {
-            <section class="ot-sheet">
+            <section class="ot-sheet ot-approval-sheet">
                 <h4 class="text-center">FAZLA ÇALIŞMA ONAY LİSTESİ</h4>
                 <p class="text-center">@_report.Period.Name · @_report.Period.StartDate.ToString("dd.MM.yyyy") – @_report.Period.EndDate.ToString("dd.MM.yyyy")</p>
-                <p>Belge: @_report.Reference · @_report.Period.Status.Label()</p>
-                <table class="table table-bordered table-sm">
-                    <thead><tr><th>Sıra</th><th>Sicil</th><th>Adı Soyadı</th><th>Hesaplanan Süre</th><th>Yuvarlanmış Fazla Mesai</th></tr></thead>
+                <table class="table table-bordered table-sm ot-approval-table">
+                    <colgroup><col style="width: 5%;" /><col style="width: 18%;" /><col style="width: 15%;" /><col style="width: 12%;" /><col style="width: 12%;" /><col style="width: 12%;" /><col style="width: 26%;" /></colgroup>
+                    <thead><tr><th>Sıra No</th><th>Adı Soyadı</th><th>Ünvanı</th><th>Normal Mesai Başlama Saati</th><th>Normal Mesai Bitirme Saati</th><th>Fazla Çalışma Süresi</th><th>Fazla Çalışmayı Gerektiren Sebepler</th></tr></thead>
                     <tbody>
                     @{ var index = 0; }
                     @foreach (var person in _report.Results)
                     {
-                        <tr><td>@(++index)</td><td>@person.SicilNo</td><td>@person.FullName</td><td>@OvertimeDisplay.Duration(person.RawMinutes)</td><td>@OvertimeDisplay.Duration(person.RoundedMinutes)</td></tr>
+                        var entries = _report.Entries.Where(x => x.PersonelId == person.PersonelId).OrderBy(x => x.WorkDate).ToList();
+                        var info = entries.FirstOrDefault();
+                        var normalStart = info?.NormalWeeklyMinutes switch { 2400 => "08:00", 2700 => "07:00", _ => "—" };
+                        <tr><td>@(++index)</td><td>@person.FullName</td><td>@info?.Title</td><td>@normalStart</td><td>17:00</td><td>@OvertimeDisplay.Duration(person.RoundedMinutes)</td><td class="ot-reason">@string.Join("; ", entries.Select(x => x.Reason).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct())</td></tr>
                     }
                     </tbody>
-                    <tfoot><tr><th colspan="3">TOPLAM</th><td>@OvertimeDisplay.Duration(_report.Results.Sum(x => x.RawMinutes))</td><th>@OvertimeDisplay.Duration(_report.Results.Sum(x => x.RoundedMinutes))</th></tr></tfoot>
+                    <tfoot><tr><th colspan="5">TOPLAM</th><th>@OvertimeDisplay.Duration(_report.Results.Sum(x => x.RoundedMinutes))</th><td></td></tr></tfoot>
                 </table>
-                <p class="small">Süreler saat:dakika biçimindedir. Normal haftalık çalışma tamamlanmış kabul edilir. Pazartesi–Pazar haftalarında 45 saati aşan süreler toplanır; yalnızca personelin dönem toplamı yukarı doğru 30 dakikaya tamamlanır.</p>
-                <div class="ot-signatures"><div>Hazırlayan<br />İnsan Kaynakları<br /><br />İmza</div><div>ONAY<br />Genel Müdür Yardımcısı<br /><br />Islak İmza / Tarih</div></div>
+                <div class="ot-approval-request">
+                    <p class="text-center">Yukarıda kimlikleri yazılı Vakıf personeli, @_report.Period.StartDate.ToString("dd.MM.yyyy") ve @_report.Period.EndDate.ToString("dd.MM.yyyy") tarihleri arasında, çizelgede belirtilen süre ve nedenlerle fazla mesai yapmış olup, fazla mesai ücretlerinin ödenmesini arz ederim.</p>
+                    <div class="ot-director-signature"><strong>@_report.PersonnelDirectorName</strong><br />Personel ve İdari İşler Direktörü</div>
+                </div>
+                <div class="ot-signatures"><div><div class="ot-signature-date">@($"   /    /{_report.Period.EndDate.Year}")</div><strong>@_report.SummaryDeputyGeneralManagerName</strong><br />Genel Müdür Yardımcısı</div></div>
             </section>
         }
         else
@@ -48,25 +54,32 @@
             @foreach (var person in _report.Entries.GroupBy(x => x.PersonelId))
             {
                 var first = person.First();
+                var signatures = _report.UnitSignatures.GetValueOrDefault(first.UnitId) ?? new OvertimeUnitSignatures();
                 <section class="ot-sheet">
-                    <h4 class="text-center">AYLIK FAZLA ÇALIŞMA ÇİZELGESİ</h4>
+                    <h4 class="text-center ot-monthly-title">AYLIK FAZLA ÇALIŞMA ÇİZELGESİ</h4>
                     <p class="text-center">@_report.Period.Name · @_report.Period.StartDate.ToString("dd.MM.yyyy") – @_report.Period.EndDate.ToString("dd.MM.yyyy")</p>
                     <p>Adı Soyadı: <strong>@first.FullName</strong><br />Sicil No: @first.SicilNo<br />Birimi: @first.UnitName<br />Görevi / Unvanı: @first.Title</p>
-                    <p class="small">Belge: @_report.Reference · @_report.Period.Status.Label() · Süreler saat:dakika biçimindedir.</p>
                     <table class="table table-bordered table-sm ot-daily">
-                        <thead><tr><th>Gün</th><th>Başlama / Bitiş</th><th>Brüt Süre</th><th>Dinlenme</th><th>Net Süre</th><th>İmza</th><th>Açıklama / Çalışma Sebebi</th></tr></thead>
+                        <colgroup><col class="ot-day-column" /><col class="ot-interval-column" /><col class="ot-duration-column" /><col class="ot-sign-column" /><col class="ot-reason-column" /></colgroup>
+                        <thead><tr><th>Gün</th><th>Başlama / Bitiş</th><th>Brüt Süre</th><th>İmza</th><th>Açıklama / Çalışma Sebebi</th></tr></thead>
                         <tbody>
                         @for (var day = _report.Period.StartDate; day <= _report.Period.EndDate; day = day.AddDays(1))
                         {
                             var entry = person.SingleOrDefault(x => x.WorkDate.Date == day.Date);
                             var gross = entry?.Intervals.Sum(x => x.EndMinute - x.StartMinute) ?? 0;
-                            var rest = day.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday ? OvertimeCalculator.RestMinutes(gross) : 0;
-                            <tr><td>@day.ToString("dd.MM.yyyy")</td><td>@(entry is null ? "" : string.Join(" / ", entry.Intervals.OrderBy(x => x.StartMinute).Select(x => $"{OvertimeDisplay.Duration(x.StartMinute)}–{OvertimeDisplay.Duration(x.EndMinute)}")))</td><td>@(entry is null ? "" : OvertimeDisplay.Duration(gross))</td><td>@(entry is null ? "" : OvertimeDisplay.Duration(rest))</td><td>@(entry is null ? "" : OvertimeDisplay.Duration(gross - rest))</td><td class="ot-sign"></td><td class="ot-reason">@entry?.Reason</td></tr>
+                            <tr><td>@day.ToString("dd.MM.yyyy")</td><td>@(entry is null ? "" : string.Join(" / ", entry.Intervals.OrderBy(x => x.StartMinute).Select(x => $"{OvertimeDisplay.Duration(x.StartMinute)}–{OvertimeDisplay.Duration(x.EndMinute)}")))</td><td>@(entry is null ? "" : OvertimeDisplay.Duration(gross))</td><td></td><td class="ot-reason">@entry?.Reason</td></tr>
                         }
                         </tbody>
-                        <tfoot><tr><th colspan="2">GENEL TOPLAM</th><td>@OvertimeDisplay.Duration(person.Sum(x => x.Intervals.Sum(i => i.EndMinute - i.StartMinute)))</td><td colspan="4">Haftalık eşik ve dönem yuvarlaması İK hesaplama özetinde uygulanır.</td></tr></tfoot>
+                        <tfoot><tr><th colspan="2">GENEL TOPLAM</th><td>@OvertimeDisplay.Duration(person.Sum(x => x.Intervals.Sum(i => i.EndMinute - i.StartMinute)))</td><td colspan="2"></td></tr></tfoot>
                     </table>
-                    <div class="ot-signatures"><div>Çalışan<br /><br />İmza / Tarih</div><div>Birim Amiri<br /><br />İmza / Tarih</div></div>
+                    <div class="ot-signatures">
+                        @if (_report.DelegateName is not null)
+                        {
+                            <div><strong>@_report.DelegateName</strong><br />@_report.DelegateDuty</div>
+                        }
+                        <div><strong>@signatures.ManagerName</strong><br />@signatures.ManagerDuty</div>
+                        <div><strong>@signatures.DeputyGeneralManagerName</strong><br />Genel Müdür Yardımcısı</div>
+                    </div>
                 </section>
             }
         }

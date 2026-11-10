@@ -23,7 +23,7 @@ public sealed class OvertimeDatabase : IAsyncLifetime, IDbContextFactory<Applica
             base.OnModelCreating(modelBuilder);
             var keep = new HashSet<Type>
             {
-                typeof(Personel), typeof(IsBilgileri), typeof(BirimTanim), typeof(UnvanTanim),
+                typeof(Personel), typeof(IsBilgileri), typeof(BirimTanim), typeof(UnvanTanim), typeof(GorevTanim),
                 typeof(OvertimeEntry), typeof(OvertimeInterval), typeof(OvertimePeriod), typeof(OvertimeDelivery),
                 typeof(OvertimeSchedule), typeof(OvertimePersonResult), typeof(OvertimeEvent), typeof(OvertimeDelegation)
             };
@@ -98,7 +98,7 @@ public sealed class OvertimeWorkflowTests(OvertimeDatabase database) : IClassFix
             DELETE FROM OvertimeDelegation_Table; DELETE FROM OvertimeEvent_Table; DELETE FROM OvertimeInterval_Table;
             DELETE FROM OvertimeResult_Table; DELETE FROM OvertimeEntry_Table; DELETE FROM OvertimeDelivery_Table;
             DELETE FROM OvertimePeriod_Table; DELETE FROM OvertimeSchedule_Table;
-            DELETE FROM IsBilgileri_Table; DELETE FROM Personel_Table; DELETE FROM BirimTanim_Table; DELETE FROM UnvanTanim_Table;
+            DELETE FROM IsBilgileri_Table; DELETE FROM GorevTanim_Table; DELETE FROM Personel_Table; DELETE FROM BirimTanim_Table; DELETE FROM UnvanTanim_Table;
             """);
         var people = new[] { "worker", "manager", "other", "hr" }.Select((x, i) => new Personel { Adi = x, Soyadi = "Test", SicilNo = i + 1, KullaniciAdi = x }).ToList();
         db.Personel_Table.AddRange(people);
@@ -117,11 +117,115 @@ public sealed class OvertimeWorkflowTests(OvertimeDatabase database) : IClassFix
     private async Task<OvertimeEntry> Entry(string user = "worker")
         => Assert.Single(Success(await Service(user).LoadAsync("mine", Monday, Monday.AddDays(13))).Entries);
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ReportSignaturesUseUnitManagerDutyAndCorrectDeputyInAncestorChain(bool hasDeputy)
+    {
+        var seed = await Reset();
+        var managerId = await PersonId("manager");
+        var otherId = await PersonId("other");
+        var deputyId = await PersonId("hr");
+        await using (var db = database.CreateDbContext())
+        {
+            var duty = new GorevTanim { Adi = "İdari İşler Müdürü", BirimId = seed.Unit, Aktif = true };
+            var deputyUnit = new BirimTanim { Adi = hasDeputy ? "Genel Müdür Yardımcılığı" : "Genel Müdürlük", KisaAdi = "UST", ParentId = 0, AmirId = deputyId, Aktif = true, Sira = 1, BolgeId = 1 };
+            db.GorevTanim_Table.Add(duty);
+            db.BirimTanim_Table.Add(deputyUnit);
+            await db.SaveChangesAsync();
+            var intermediate = new BirimTanim { Adi = "Ara Birim", KisaAdi = "ARA", ParentId = deputyUnit.Id, AmirId = otherId, Aktif = true, Sira = 1, BolgeId = 1 };
+            db.BirimTanim_Table.Add(intermediate);
+            await db.SaveChangesAsync();
+            (await db.BirimTanim_Table.SingleAsync(x => x.Id == seed.Unit)).ParentId = intermediate.Id;
+            (await db.IsBilgileri_Table.SingleAsync(x => x.PersonelId == managerId)).GorevId = duty.Id;
+            // A malformed ancestor cycle must not hang or select an unrelated manager.
+            if (!hasDeputy) deputyUnit.ParentId = intermediate.Id;
+            await db.SaveChangesAsync();
+        }
+        Success(await Service("worker").SaveEntryAsync(Input()));
+        var entry = await Entry();
+        Success(await Service("manager").ReviewAsync(entry.Id, entry.Version, OvertimeEntryStatus.Approved, ""));
+        var periodId = Success(await Service("hr", true).CreatePeriodAsync("İmza testi", Monday, Monday.AddDays(6), Monday.AddDays(9)));
+        var report = Success(await Service("manager").GetReportAsync(periodId, seed.Unit, null));
+        var signatures = report.UnitSignatures[seed.Unit];
+        Assert.Equal("manager Test", signatures.ManagerName);
+        Assert.Equal("İdari İşler Müdürü", signatures.ManagerDuty);
+        Assert.Equal(hasDeputy ? "hr Test" : "Bağlı GMY tanımlanmamış", signatures.DeputyGeneralManagerName);
+        var personal = Success(await Service("worker").GetReportAsync(periodId, null, null));
+        Assert.Equal(signatures.DeputyGeneralManagerName, personal.UnitSignatures[seed.Unit].DeputyGeneralManagerName);
+    }
+
     private async Task<OvertimePeriod> Period()
         => Assert.Single(Success(await Service("hr", true).LoadAsync("hr", Monday, Monday.AddDays(13))).Periods);
 
     private async Task<OvertimeDelivery> Delivery()
         => Assert.Single(Success(await Service("hr", true).LoadAsync("hr", Monday, Monday.AddDays(13))).Deliveries);
+
+    [Fact]
+    public async Task EmptyUnitsCannotIssueChartsAndDoNotBlockSignaturePreparation()
+    {
+        var seed = await Reset();
+        var otherId = await PersonId("other");
+        int emptyUnitId;
+        await using (var db = database.CreateDbContext())
+        {
+            var unit = new BirimTanim { Adi = "Mesaisiz Birim", KisaAdi = "BOS", ParentId = 0, AmirId = otherId, Aktif = true, Sira = 2, BolgeId = 1 };
+            db.BirimTanim_Table.Add(unit);
+            await db.SaveChangesAsync();
+            emptyUnitId = unit.Id;
+            (await db.IsBilgileri_Table.SingleAsync(x => x.PersonelId == otherId)).BirimId = unit.Id;
+            await db.SaveChangesAsync();
+        }
+        var hr = Service("hr", true);
+        var periodId = Success(await hr.CreatePeriodAsync("Test", Monday, Monday.AddDays(6), Monday.AddDays(9)));
+        var workspace = Success(await hr.LoadAsync("hr", Monday, Monday.AddDays(6)));
+        var empty = Assert.Single(workspace.Deliveries, x => x.UnitId == emptyUnitId);
+        Assert.Equal(0, empty.EntryCount);
+        Assert.Equal(0, empty.ApprovedEntryCount);
+        Assert.False((await hr.IssueUnitAsync(empty.Id, empty.Version)).IsSuccess);
+        Success(await Service("worker").SaveEntryAsync(Input()));
+        var entry = await Entry();
+        workspace = Success(await hr.LoadAsync("hr", Monday, Monday.AddDays(6)));
+        Assert.Equal(0, Assert.Single(workspace.Deliveries, x => x.UnitId == seed.Unit).ApprovedEntryCount);
+        Assert.False((await hr.PrepareSignatureAsync(periodId, (await Period()).Version)).IsSuccess);
+        Success(await Service("manager").ReviewAsync(entry.Id, entry.Version, OvertimeEntryStatus.Approved, ""));
+        // Counts cover the entire period even when the page filter covers only Monday.
+        workspace = Success(await hr.LoadAsync("hr", Monday, Monday));
+        var populated = Assert.Single(workspace.Deliveries, x => x.UnitId == seed.Unit);
+        Assert.Equal(1, populated.EntryCount);
+        Assert.Equal(1, populated.ApprovedEntryCount);
+        Assert.False((await hr.PrepareSignatureAsync(periodId, (await Period()).Version)).IsSuccess);
+        Success(await hr.IssueUnitAsync(populated.Id, populated.Version));
+        workspace = Success(await hr.LoadAsync("hr", Monday, Monday.AddDays(6)));
+        populated = Assert.Single(workspace.Deliveries, x => x.UnitId == seed.Unit);
+        Success(await hr.ReceiveUnitAsync(populated.Id, populated.Version));
+        Success(await hr.PrepareSignatureAsync(periodId, (await Period()).Version));
+        Assert.Equal(OvertimePeriodStatus.AwaitingSignature, (await Period()).Status);
+    }
+
+    [Theory]
+    [InlineData("Personel ve İdari İşler Direktörlüğü")]
+    [InlineData("Per.ve İd.İşl. Direktörlüğü")]
+    public async Task SummaryDirectorComesFromActivePersonnelAndAdministrativeAffairsUnit(string unitName)
+    {
+        await Reset();
+        var directorId = await PersonId("other");
+        await using (var db = database.CreateDbContext())
+        {
+            var deputyUnit = new BirimTanim { Adi = "Genel Müdür Yardımcılığı", KisaAdi = "GMY", ParentId = 0, AmirId = await PersonId("manager"), Aktif = true, Sira = 1, BolgeId = 1 };
+            db.BirimTanim_Table.Add(deputyUnit);
+            await db.SaveChangesAsync();
+            db.BirimTanim_Table.Add(new BirimTanim { Adi = unitName, KisaAdi = "PID", ParentId = deputyUnit.Id, AmirId = directorId, Aktif = true, Sira = 2, BolgeId = 1 });
+            db.BirimTanim_Table.Add(new BirimTanim { Adi = unitName, KisaAdi = "ESKI", ParentId = 0, AmirId = await PersonId("manager"), Aktif = false, Sira = 3, BolgeId = 1 });
+            await db.SaveChangesAsync();
+        }
+        var hr = Service("hr", true);
+        var periodId = Success(await hr.CreatePeriodAsync("İmza testi", Monday, Monday.AddDays(6), Monday.AddDays(9)));
+        var report = Success(await hr.GetReportAsync(periodId, null, null));
+        Assert.True(report.CanSeeSummary);
+        Assert.Equal("other Test", report.PersonnelDirectorName);
+        Assert.Equal("manager Test", report.SummaryDeputyGeneralManagerName);
+    }
 
     [Fact]
     public async Task CompleteWorkflow_FreezesRecordsAndArchivesSignedDocument()
@@ -302,9 +406,59 @@ public sealed class OvertimeWorkflowTests(OvertimeDatabase database) : IClassFix
         Success(await Service("manager").ReviewAsync(entry.Id, entry.Version, OvertimeEntryStatus.Approved, ""));
         var id = Success(await Service("hr", true).CreatePeriodAsync("Test", Monday, Monday.AddDays(6), Monday.AddDays(9)));
         var other = Service("other");
-        Assert.Empty(Success(await other.GetReportAsync(id, null, seed.Worker)).Entries);
+        Assert.False((await other.GetReportAsync(id, null, seed.Worker)).IsSuccess);
         Assert.False((await other.GetReportAsync(id, seed.Unit, null)).IsSuccess);
         Assert.False((await Service("manager").GetReportAsync(id, seed.Unit, seed.Worker)).IsSuccess);
+    }
+
+    [Theory]
+    [InlineData("revoked")]
+    [InlineData("operatorLeft")]
+    [InlineData("targetLeft")]
+    public async Task DelegatedReportAccessIsLimitedToAssignedActivePersonnelAndRevokedImmediately(string change)
+    {
+        var seed = await Reset();
+        var otherId = await PersonId("other");
+        var managerId = await PersonId("manager");
+        var hr = Service("hr", true);
+        Success(await hr.SetDelegationsAsync(otherId, [seed.Worker], []));
+        await using (var db = database.CreateDbContext())
+        {
+            var duty = new GorevTanim { Adi = "İdari İşler Görevlisi", BirimId = seed.Unit, Aktif = true };
+            db.GorevTanim_Table.Add(duty);
+            await db.SaveChangesAsync();
+            (await db.IsBilgileri_Table.SingleAsync(x => x.PersonelId == otherId)).GorevId = duty.Id;
+            await db.SaveChangesAsync();
+        }
+        Success(await Service("worker").SaveEntryAsync(Input()));
+        var entry = await Entry();
+        Success(await Service("manager").ReviewAsync(entry.Id, entry.Version, OvertimeEntryStatus.Approved, ""));
+        // Unapproved entries must never appear on the printable chart.
+        Success(await Service("worker").SaveEntryAsync(Input(Monday.AddDays(4))));
+        var periodId = Success(await hr.CreatePeriodAsync("Yetkili çıktı testi", Monday, Monday.AddDays(6), Monday.AddDays(9)));
+        var delegated = Service("other");
+        var report = Success(await delegated.GetReportAsync(periodId, null, seed.Worker));
+        Assert.Equal(seed.Worker, Assert.Single(report.Entries).PersonelId);
+        Assert.Equal(entry.Id, Assert.Single(report.Entries).Id);
+        Assert.False(report.CanSeeSummary);
+        Assert.Equal("other Test", report.DelegateName);
+        Assert.Equal("İdari İşler Görevlisi", report.DelegateDuty);
+        Assert.Null(Success(await Service("worker").GetReportAsync(periodId, null, null)).DelegateName);
+        Assert.Empty(report.Events);
+        Assert.False((await delegated.GetReportAsync(periodId, null, managerId)).IsSuccess);
+        Assert.False((await delegated.GetReportAsync(periodId, seed.Unit, null)).IsSuccess);
+        Assert.False((await delegated.GetReportAsync(periodId, seed.Unit, seed.Worker)).IsSuccess);
+        Assert.Empty(Success(await delegated.GetReportAsync(periodId, null, null)).Entries);
+        if (change == "revoked")
+            Success(await hr.SetDelegationsAsync(otherId, [], [seed.Worker]));
+        else
+        {
+            await using var db = database.CreateDbContext();
+            var id = change == "operatorLeft" ? otherId : seed.Worker;
+            (await db.IsBilgileri_Table.SingleAsync(x => x.PersonelId == id)).CalismaDurumu = CalismaDurumu.Ayrildi;
+            await db.SaveChangesAsync();
+        }
+        Assert.False((await delegated.GetReportAsync(periodId, null, seed.Worker)).IsSuccess);
     }
 
     [Fact]
