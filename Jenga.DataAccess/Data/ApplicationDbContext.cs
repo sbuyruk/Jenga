@@ -93,6 +93,7 @@ namespace Jenga.DataAccess.Data
         public DbSet<OvertimeSchedule> OvertimeSchedules { get; set; }
         public DbSet<OvertimePersonResult> OvertimeResults { get; set; }
         public DbSet<OvertimeEvent> OvertimeEvents { get; set; }
+        public DbSet<OvertimeDelegation> OvertimeDelegations { get; set; }
         public DbSet<Personel> Personel_Table { get; set; }
         public DbSet<Kimlik> Kimlik_Table { get; set; }
         public DbSet<IsBilgileri> IsBilgileri_Table { get; set; }
@@ -144,6 +145,11 @@ namespace Jenga.DataAccess.Data
         
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<OvertimeDelegation>().HasIndex(x => new { x.DelegatePersonelId, x.TargetPersonelId }).IsUnique();
+            modelBuilder.Entity<OvertimeDelegation>().HasOne<Personel>().WithMany()
+                .HasForeignKey(x => x.DelegatePersonelId).OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<OvertimeDelegation>().HasOne<Personel>().WithMany()
+                .HasForeignKey(x => x.TargetPersonelId).OnDelete(DeleteBehavior.Restrict);
             modelBuilder.Entity<OvertimeEntry>().HasMany(x => x.Intervals).WithOne()
                 .HasForeignKey(x => x.EntryId).OnDelete(DeleteBehavior.Cascade);
             modelBuilder.Entity<OvertimeEntry>().HasIndex(x => new { x.PersonelId, x.WorkDate }).IsUnique();

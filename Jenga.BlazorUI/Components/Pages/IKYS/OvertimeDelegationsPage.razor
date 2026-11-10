@@ -1,0 +1,143 @@
+@page "/ikys/overtime/delegations"
+@rendermode InteractiveServer
+@using Jenga.BlazorUI.Components.Common
+@using Jenga.DataAccess.Services.IKYS
+@using Jenga.Models.IKYS
+@inject IOvertimeService Overtime
+@inject IToastService ToastService
+
+<PageTitle>Mesai Giriş Yetkileri</PageTitle>
+<div class="container-fluid px-0">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div><h3>Mesai Giriş Yetkileri</h3><p class="text-muted mb-0">Bir kullanıcıya, seçtiğiniz personeller adına mesai girişi yapma yetkisi verin.</p></div>
+        <div class="d-flex gap-2"><a class="btn btn-outline-secondary" href="/ikys/overtime/hr">İK Dönem İşlemleri</a><button class="btn btn-outline-secondary" disabled="@_busy" @onclick="LoadAsync">Yenile</button></div>
+    </div>
+    @if (_busy && _data is null) { <p>Yetki bilgileri yükleniyor…</p> }
+    @if (_data is not null)
+    {
+        <section class="card mb-4">
+            <div class="card-header fw-semibold">Yetki Tanımla / Değiştir</div>
+            <div class="card-body">
+                <fieldset disabled="@_busy">
+                    <div class="row g-4">
+                        <div class="col-md-5">
+                            <label class="form-label fw-semibold" for="ot-delegate-search">Mesai girişi yapacak kullanıcı</label>
+                            <input id="ot-delegate-search" class="form-control mb-2" placeholder="Ad, kullanıcı adı veya sicil ile ara…" @bind="_userSearch" @bind:event="oninput" />
+                            <select class="form-select" size="8" aria-label="Yetki verilecek kullanıcı" @bind="_delegateId" @bind:after="SelectDelegate">
+                                <option value="0">Kullanıcı seçin</option>
+                                @foreach (var person in _data.People.Where(x => !string.IsNullOrWhiteSpace(x.UserName) && Matches(x, _userSearch)))
+                                { <option value="@person.Id">@person.FullName (@person.UserName) · @person.SicilNo</option> }
+                            </select>
+                        </div>
+                        <div class="col-md-7">
+                            <label class="form-label fw-semibold" for="ot-target-search">Adına mesai girilebilecek personeller</label>
+                            <input id="ot-target-search" class="form-control mb-2" placeholder="Personel adı veya sicil ile ara…" disabled="@(_delegateId == 0)" @bind="_personSearch" @bind:event="oninput" />
+                            <div class="border rounded p-3" style="max-height: 280px; overflow-y: auto;">
+                                @if (_delegateId == 0) { <p class="text-muted mb-0">Önce yetki verilecek kullanıcıyı seçin.</p> }
+                                else
+                                {
+                                    @foreach (var person in _data.People.Where(x => x.Id != _delegateId && Matches(x, _personSearch)))
+                                    {
+                                        <label class="d-flex align-items-center gap-2 py-1" @key="person.Id">
+                                            <input type="checkbox" class="form-check-input mt-0" checked="@_selected.Contains(person.Id)" @onchange="e => Toggle(person.Id, e)" />
+                                            <span>@person.FullName <small class="text-muted">· Sicil: @person.SicilNo</small></span>
+                                        </label>
+                                    }
+                                }
+                            </div>
+                            <div class="form-text mt-2">@_selected.Count personel seçili. Kullanıcı, bu personellerin taslak ve düzeltme bekleyen kayıtlarını düzenleyebilir ve amire gönderebilir.</div>
+                        </div>
+                    </div>
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3">
+                        <p class="small text-muted mb-0">Onay süreci ilgili personelin amirinde devam eder. Girişi yapan kullanıcı işlem geçmişine kaydedilir.</p>
+                        <button class="btn btn-success" disabled="@(_delegateId == 0)" @onclick="Save">Yetkileri Kaydet</button>
+                    </div>
+                </fieldset>
+            </div>
+        </section>
+        <h5>Tanımlı Giriş Yetkileri</h5>
+        <GenericTable TItem="DelegationRow" Items="_rows" TableHeight="Auto" ShowSearch="true" ShowExport="false" KeySelector="x => x.DelegateId">
+            <HeaderTemplate><th>Yetkili Kullanıcı</th><th>Adına Mesai Girilebilecek Personeller</th><th>İşlemler</th></HeaderTemplate>
+            <RowTemplate Context="row">
+                <td>@PersonName(row.DelegateId)</td>
+                <td>
+                    @if (row.Targets.Any(IsWorking)) { @string.Join(", ", row.Targets.Where(IsWorking).Select(PersonName)) }
+                    else { <span class="text-muted">Çalışan personel ataması bulunmuyor.</span> }
+                </td>
+                <td><div class="d-flex flex-wrap gap-2">
+                    <button class="btn btn-sm btn-outline-primary" disabled="@_busy" @onclick="() => Edit(row.DelegateId)">Değiştir</button>
+                    <button class="btn btn-sm btn-outline-danger" disabled="@_busy" @onclick="() => Remove(row)">Yetkileri Kaldır</button>
+                </div></td>
+            </RowTemplate>
+        </GenericTable>
+    }
+</div>
+
+@code {
+    private sealed record DelegationRow(int DelegateId, List<int> Targets);
+    private OvertimeDelegationAdminData? _data;
+    private List<DelegationRow> _rows = [];
+    private bool _busy = true;
+    private int _delegateId;
+    private HashSet<int> _selected = [];
+    private List<int> _expected = [];
+    private string _userSearch = "", _personSearch = "";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender) { await LoadAsync(); StateHasChanged(); }
+    }
+
+    private async Task LoadAsync()
+    {
+        _busy = true;
+        try
+        {
+            var result = await Overtime.GetDelegationsAsync();
+            if (!result.IsSuccess) { _data = null; ToastService.ShowError(result.Error.Message, 6000); return; }
+            _data = result.Value;
+            if (_delegateId != 0 && !_data.People.Any(x => x.Id == _delegateId && !string.IsNullOrWhiteSpace(x.UserName)))
+                _delegateId = 0;
+            _rows = _data.Assignments.Where(x => IsWorking(x.DelegatePersonelId)).GroupBy(x => x.DelegatePersonelId)
+                .Select(x => new DelegationRow(x.Key, x.Select(a => a.TargetPersonelId).OrderBy(PersonName).ToList()))
+                .OrderBy(x => PersonName(x.DelegateId)).ToList();
+            SelectDelegate();
+        }
+        finally { _busy = false; }
+    }
+
+    private void SelectDelegate()
+    {
+        _expected = _data?.Assignments.Where(x => x.DelegatePersonelId == _delegateId).Select(x => x.TargetPersonelId).ToList() ?? [];
+        _selected = _expected.Where(IsWorking).ToHashSet();
+        _personSearch = "";
+    }
+    private void Edit(int id) { _userSearch = ""; _delegateId = id; SelectDelegate(); }
+    private bool IsWorking(int id) => _data?.People.Any(x => x.Id == id) == true;
+    private void Toggle(int id, ChangeEventArgs args) { if (args.Value is true) _selected.Add(id); else _selected.Remove(id); }
+    private string PersonName(int id)
+    {
+        var person = _data?.People.FirstOrDefault(x => x.Id == id);
+        return person is null ? $"Personel #{id}" : string.IsNullOrWhiteSpace(person.UserName) ? person.FullName : $"{person.FullName} ({person.UserName})";
+    }
+    private static bool Matches(OvertimePersonOption person, string search) => string.IsNullOrWhiteSpace(search)
+        || person.FullName.Contains(search, StringComparison.CurrentCultureIgnoreCase)
+        || person.UserName.Contains(search, StringComparison.OrdinalIgnoreCase)
+        || person.SicilNo.ToString().Contains(search.Trim(), StringComparison.Ordinal);
+
+    private Task Save() => Update(_delegateId, _selected.ToList(), _expected);
+    private Task Remove(DelegationRow row) => Update(row.DelegateId, [], row.Targets);
+    private async Task Update(int id, List<int> targets, List<int> expected)
+    {
+        if (_busy) return;
+        _busy = true;
+        try
+        {
+            var result = await Overtime.SetDelegationsAsync(id, targets, expected);
+            if (!result.IsSuccess) { ToastService.ShowError(result.Error.Message, 6000); return; }
+            ToastService.ShowSuccess(targets.Count == 0 ? "Mesai giriş yetkileri kaldırıldı." : "Mesai giriş yetkileri kaydedildi.");
+            await LoadAsync();
+        }
+        finally { _busy = false; }
+    }
+}

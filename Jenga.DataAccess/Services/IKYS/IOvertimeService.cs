@@ -6,6 +6,8 @@ namespace Jenga.DataAccess.Services.IKYS;
 public interface IOvertimeService
 {
     Task<Result<OvertimeWorkspace>> LoadAsync(string scope, DateTime start, DateTime end, CancellationToken cancellationToken = default);
+    Task<Result<OvertimeDelegationAdminData>> GetDelegationsAsync(CancellationToken cancellationToken = default);
+    Task<Result<bool>> SetDelegationsAsync(int delegatePersonelId, List<int> targetPersonelIds, List<int> expectedTargetPersonelIds, CancellationToken cancellationToken = default);
     Task<Result<int>> SaveEntryAsync(OvertimeEntryInput input, CancellationToken cancellationToken = default);
     Task<Result<bool>> WithdrawAsync(int entryId, byte[] version, CancellationToken cancellationToken = default);
     Task<Result<bool>> ReviewAsync(int entryId, byte[] version, OvertimeEntryStatus decision, string reason, CancellationToken cancellationToken = default);

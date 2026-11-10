@@ -97,4 +97,17 @@ IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id = OBJECT_ID(N'dbo.Overt
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id = OBJECT_ID(N'dbo.OvertimeEvent_Table') AND name = N'IX_OvertimeEvent_Period')
     CREATE INDEX IX_OvertimeEvent_Period ON dbo.OvertimeEvent_Table(PeriodId);
 
+IF OBJECT_ID(N'dbo.OvertimeDelegation_Table', N'U') IS NULL
+CREATE TABLE dbo.OvertimeDelegation_Table (
+    Id int IDENTITY PRIMARY KEY,
+    DelegatePersonelId int NOT NULL, TargetPersonelId int NOT NULL, IsActive bit NOT NULL,
+    Aciklama nvarchar(max) NULL, Olusturan nvarchar(max) NULL, OlusturmaTarihi datetime2 NULL,
+    Degistiren nvarchar(max) NULL, DegistirmeTarihi datetime2 NULL,
+    CONSTRAINT FK_OvertimeDelegation_Delegate FOREIGN KEY (DelegatePersonelId) REFERENCES dbo.Personel_Table(Id),
+    CONSTRAINT FK_OvertimeDelegation_Target FOREIGN KEY (TargetPersonelId) REFERENCES dbo.Personel_Table(Id),
+    CONSTRAINT CK_OvertimeDelegation_OtherPerson CHECK (DelegatePersonelId <> TargetPersonelId)
+);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id = OBJECT_ID(N'dbo.OvertimeDelegation_Table') AND name = N'UX_OvertimeDelegation_DelegateTarget')
+    CREATE UNIQUE INDEX UX_OvertimeDelegation_DelegateTarget ON dbo.OvertimeDelegation_Table(DelegatePersonelId, TargetPersonelId);
+
 COMMIT;

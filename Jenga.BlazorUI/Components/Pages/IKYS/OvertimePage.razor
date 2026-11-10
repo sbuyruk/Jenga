@@ -20,27 +20,34 @@
     }
     else
     {
-        @if (_workspace.IsManager)
+        @if (_workspace.IsManager || _workspace.DelegatedPeople.Count > 0)
         {
             <div class="nav nav-pills gap-2 mb-3">
                 <button class="nav-link @(_scope == "mine" ? "active" : "")" disabled="@_busy" @onclick='() => ChangeScope("mine")'>Mesailerim</button>
-                <button class="nav-link @(_scope == "team" ? "active" : "")" disabled="@_busy" @onclick='() => ChangeScope("team")'>Amir İşlemleri</button>
+                @if (_workspace.DelegatedPeople.Count > 0)
+                {
+                    <button class="nav-link @(_scope == "delegated" ? "active" : "")" disabled="@_busy" @onclick='() => ChangeScope("delegated")'>Başkası Adına Mesai</button>
+                }
+                @if (_workspace.IsManager)
+                {
+                    <button class="nav-link @(_scope == "team" ? "active" : "")" disabled="@_busy" @onclick='() => ChangeScope("team")'>Amir İşlemleri</button>
+                }
             </div>
         }
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-3 mb-3">
             <div>
-                <h5 class="mb-1">@(_scope == "mine" ? "Mesai Kayıtlarım" : "Personelin Mesai Kayıtları")</h5>
+                <h5 class="mb-1">@(_scope == "mine" ? "Mesai Kayıtlarım" : _scope == "delegated" ? "Yetkili Olduğum Personelin Mesaileri" : "Personelin Mesai Kayıtları")</h5>
                 <span class="small text-muted">@_start.ToString("dd.MM.yyyy") – @_end.ToString("dd.MM.yyyy")</span>
             </div>
             <div class="d-flex flex-wrap gap-2 ms-auto">
                 <button type="button" class="btn btn-outline-secondary" disabled="@_busy" @onclick="() => _filterOpen = true"><i class="bi bi-calendar3 me-1"></i>Tarih Aralığı</button>
-                @if (_scope == "mine")
+                @if (_scope is "mine" or "delegated")
                 {
                     <button type="button" class="btn btn-success" disabled="@_busy" @onclick="NewEntry"><i class="bi bi-plus-lg me-1"></i>Mesai Ekle</button>
                 }
             </div>
         </div>
-        @if (_scope == "mine")
+        @if (_scope is "mine" or "delegated")
         {
             <OvertimeEntryTable Entries="_workspace.Entries" IsBusy="_busy" OnEdit="EditEntry" OnWithdraw="Withdraw" OnHistory="ShowHistory" />
         }
@@ -62,7 +69,10 @@
                 <div class="card-body">
                     <p>@period.StartDate.ToString("dd.MM.yyyy") – @period.EndDate.ToString("dd.MM.yyyy") · Son teslim: @period.DueDate.ToString("dd.MM.yyyy")</p>
                     <div class="d-flex flex-wrap gap-2 mb-3">
-                        <a class="btn btn-sm btn-outline-primary" href="@($"/ikys/overtime/report/{period.Id}?personelId={_workspace.PersonelId}")">Kendi Çizelgem</a>
+                        @if (_scope != "delegated")
+                        {
+                            <a class="btn btn-sm btn-outline-primary" href="@($"/ikys/overtime/report/{period.Id}?personelId={_workspace.PersonelId}")">Kendi Çizelgem</a>
+                        }
                     </div>
                     @if (_scope == "team")
                     {
@@ -75,7 +85,8 @@
 </div>
 
 <OvertimeHistory Items="_history" Entry="_historyEntry" OnClose="() => _history = null" />
-<OvertimeEntryEditModal Model="_edit" IsOpen="@(_editing && _scope == "mine")" IsBusy="_busy" OnSave="SaveEntry" OnClose="CloseEntry" />
+<OvertimeEntryEditModal Model="_edit" IsOpen="@(_editing && (_scope is "mine" or "delegated"))" IsBusy="_busy"
+                        RequirePersonSelection="@(_scope == "delegated")" People="@(_workspace?.DelegatedPeople ?? [])" OnSave="SaveEntry" OnClose="CloseEntry" />
 <OvertimeReviewModal Entry="_reviewEntry" Decision="_decision" IsBusy="_busy" OnSave="CommitReview" OnClose="CloseReview" />
 <OvertimeDateFilterModal IsOpen="_filterOpen" StartDate="_start" EndDate="_end" OnApply="ApplyFilter" OnClose="() => _filterOpen = false" />
 
@@ -102,6 +113,13 @@
         try
         {
             var result = await Overtime.LoadAsync(_scope, _start, _end);
+            if (result.IsSuccess && _scope == "delegated" && result.Value.DelegatedPeople.Count == 0)
+            {
+                _scope = "mine";
+                _editing = false;
+                _history = null;
+                result = await Overtime.LoadAsync("mine", _start, _end);
+            }
             if (result.IsSuccess) _workspace = result.Value;
             else ToastService.ShowError(result.Error.Message, 6000);
         }
@@ -125,7 +143,7 @@
     private void NewEntry() { _edit = new(); _editing = true; }
     private void EditEntry(OvertimeEntry entry)
     {
-        _edit = new() { Id = entry.Id, Version = entry.Version.ToArray(), WorkDate = entry.WorkDate, Reason = entry.Reason,
+        _edit = new() { Id = entry.Id, PersonelId = entry.PersonelId, Version = entry.Version.ToArray(), WorkDate = entry.WorkDate, Reason = entry.Reason,
             Intervals = entry.Intervals.Select(x => new OvertimeTimeInput { Start = TimeOnly.FromTimeSpan(TimeSpan.FromMinutes(x.StartMinute)), End = TimeOnly.FromTimeSpan(TimeSpan.FromMinutes(x.EndMinute % 1440)), EndsNextDay = x.EndMinute >= 1440 }).ToList() };
         _editing = true;
     }

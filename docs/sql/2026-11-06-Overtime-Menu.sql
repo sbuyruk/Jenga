@@ -4,7 +4,7 @@
 SET NOCOUNT ON;
 SET XACT_ABORT ON;
 BEGIN TRANSACTION;
-DECLARE @IkysId int, @UserParentId int, @HrParentId int, @UserMenuId int, @HrMenuId int;
+DECLARE @IkysId int, @UserParentId int, @HrParentId int, @UserMenuId int, @HrMenuId int, @DelegationMenuId int;
 SELECT TOP (1) @IkysId = Id FROM dbo.Auth_MenuItem_Table
 WHERE Title IN (N'İKYS', N'IKYS', N'İnsan Kaynakları') ORDER BY Id;
 IF @IkysId IS NULL
@@ -51,6 +51,13 @@ BEGIN
 END
 ELSE
     UPDATE dbo.Auth_MenuItem_Table SET ParentId = @HrParentId WHERE Id = @HrMenuId;
+SELECT TOP (1) @DelegationMenuId = Id FROM dbo.Auth_MenuItem_Table WHERE Url = N'/ikys/overtime/delegations' ORDER BY Id;
+IF @DelegationMenuId IS NULL
+BEGIN
+    INSERT dbo.Auth_MenuItem_Table(Title, ParentId, Url, DisplayOrder, IsVisible, Aciklama)
+    VALUES(N'Mesai Giriş Yetkileri', @HrParentId, N'/ikys/overtime/delegations', 60, 1, N'Personel adına mesai giriş yetkilerini yönetme');
+    SET @DelegationMenuId = SCOPE_IDENTITY();
+END;
 DECLARE @UserRoles TABLE (Id int PRIMARY KEY);
 INSERT @UserRoles(Id)
 SELECT RoleId FROM dbo.Auth_RoleMenu_Table WHERE MenuId IN (@UserMenuId, @UserParentId, @IkysId)
@@ -70,6 +77,6 @@ FROM @UserRoles r CROSS JOIN (VALUES(@UserMenuId), (@UserParentId), (@IkysId)) m
 WHERE NOT EXISTS (SELECT 1 FROM dbo.Auth_RoleMenu_Table x WHERE x.RoleId = r.Id AND x.MenuId = m.Id);
 INSERT dbo.Auth_RoleMenu_Table(RoleId, MenuId, Aciklama)
 SELECT r.Id, m.Id, N'Mevcut İKYS yönetim erişimi: Dönem İşlemleri'
-FROM @HrRoles r CROSS JOIN (VALUES(@HrMenuId), (@HrParentId), (@IkysId)) m(Id)
+FROM @HrRoles r CROSS JOIN (VALUES(@HrMenuId), (@DelegationMenuId), (@HrParentId), (@IkysId)) m(Id)
 WHERE NOT EXISTS (SELECT 1 FROM dbo.Auth_RoleMenu_Table x WHERE x.RoleId = r.Id AND x.MenuId = m.Id);
 COMMIT;

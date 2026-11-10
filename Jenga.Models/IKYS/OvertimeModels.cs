@@ -96,9 +96,26 @@ public sealed class OvertimeEvent : BaseModel
     public string Details { get; set; } = "";
 }
 
+[Table("OvertimeDelegation_Table")]
+public sealed class OvertimeDelegation : BaseModel
+{
+    public int DelegatePersonelId { get; set; }
+    public int TargetPersonelId { get; set; }
+    public bool IsActive { get; set; }
+}
+
+public sealed record OvertimePersonOption(int Id, string FullName, string UserName, int SicilNo);
+public sealed record OvertimeDelegationLink(int DelegatePersonelId, int TargetPersonelId);
+public sealed class OvertimeDelegationAdminData
+{
+    public List<OvertimePersonOption> People { get; set; } = [];
+    public List<OvertimeDelegationLink> Assignments { get; set; } = [];
+}
+
 public sealed class OvertimeEntryInput
 {
     public int Id { get; set; }
+    public int? PersonelId { get; set; }
     public byte[] Version { get; set; } = [];
     public DateTime WorkDate { get; set; } = DateTime.Today;
     public DateTime? EndWorkDate { get; set; }
@@ -128,6 +145,7 @@ public sealed class OvertimeWorkspace
     public List<OvertimePeriod> Periods { get; set; } = [];
     public List<OvertimeDelivery> Deliveries { get; set; } = [];
     public List<OvertimeTitleOption> Titles { get; set; } = [];
+    public List<OvertimePersonOption> DelegatedPeople { get; set; } = [];
 }
 
 public sealed class OvertimeReport

@@ -25,7 +25,7 @@ public sealed class OvertimeDatabase : IAsyncLifetime, IDbContextFactory<Applica
             {
                 typeof(Personel), typeof(IsBilgileri), typeof(BirimTanim), typeof(UnvanTanim),
                 typeof(OvertimeEntry), typeof(OvertimeInterval), typeof(OvertimePeriod), typeof(OvertimeDelivery),
-                typeof(OvertimeSchedule), typeof(OvertimePersonResult), typeof(OvertimeEvent)
+                typeof(OvertimeSchedule), typeof(OvertimePersonResult), typeof(OvertimeEvent), typeof(OvertimeDelegation)
             };
             foreach (var type in modelBuilder.Model.GetEntityTypes().Select(x => x.ClrType).Where(x => !keep.Contains(x)).ToList())
                 modelBuilder.Ignore(type);
@@ -95,7 +95,7 @@ public sealed class OvertimeWorkflowTests(OvertimeDatabase database) : IClassFix
     {
         await using var db = database.CreateDbContext();
         await db.Database.ExecuteSqlRawAsync("""
-            DELETE FROM OvertimeEvent_Table; DELETE FROM OvertimeInterval_Table;
+            DELETE FROM OvertimeDelegation_Table; DELETE FROM OvertimeEvent_Table; DELETE FROM OvertimeInterval_Table;
             DELETE FROM OvertimeResult_Table; DELETE FROM OvertimeEntry_Table; DELETE FROM OvertimeDelivery_Table;
             DELETE FROM OvertimePeriod_Table; DELETE FROM OvertimeSchedule_Table;
             DELETE FROM IsBilgileri_Table; DELETE FROM Personel_Table; DELETE FROM BirimTanim_Table; DELETE FROM UnvanTanim_Table;
@@ -108,7 +108,7 @@ public sealed class OvertimeWorkflowTests(OvertimeDatabase database) : IClassFix
         var unit = new BirimTanim { Adi = "Test Birimi", KisaAdi = "TEST", ParentId = 0, AmirId = people[1].Id, Aktif = true, Sira = 1, BolgeId = 1 };
         db.BirimTanim_Table.Add(unit);
         await db.SaveChangesAsync();
-        db.IsBilgileri_Table.Add(new() { PersonelId = people[0].Id, BirimId = unit.Id, UnvanId = title.Id, CalismaDurumu = 0 });
+        db.IsBilgileri_Table.AddRange(people.Select(person => new IsBilgileri { PersonelId = person.Id, BirimId = unit.Id, UnvanId = title.Id, CalismaDurumu = CalismaDurumu.Calisiyor }));
         db.OvertimeSchedules.Add(new() { TitleId = title.Id, WeeklyHours = normal });
         await db.SaveChangesAsync();
         return (people[0].Id, unit.Id, title.Id);
@@ -283,7 +283,6 @@ public sealed class OvertimeWorkflowTests(OvertimeDatabase database) : IClassFix
             await db.SaveChangesAsync();
             var unit = await db.BirimTanim_Table.SingleAsync(x => x.Id == seed.Unit);
             unit.ParentId = parent.Id;
-            db.IsBilgileri_Table.Add(new() { PersonelId = manager.Id, BirimId = seed.Unit, UnvanId = seed.Title, CalismaDurumu = 0 });
             await db.SaveChangesAsync();
         }
         Success(await Service("manager").SaveEntryAsync(Input()));
@@ -472,5 +471,232 @@ public sealed class OvertimeWorkflowTests(OvertimeDatabase database) : IClassFix
         Assert.Equal(OvertimeEntryStatus.Approved, (await Entry()).Status);
         Success(await worker.SaveEntryAsync(Input(input.WorkDate.AddDays(1))));
         Assert.Equal(2, Success(await worker.LoadAsync("mine", Monday, Monday.AddDays(13))).Entries.Count);
+    }
+
+    private async Task<int> PersonId(string login)
+    {
+        await using var db = database.CreateDbContext();
+        return await db.Personel_Table.Where(x => x.KullaniciAdi == login).Select(x => x.Id).SingleAsync();
+    }
+
+    [Fact]
+    public async Task OnlyHrCanManageEntryDelegations_AndGrantRequiresAUserAccount()
+    {
+        var seed = await Reset();
+        var otherId = await PersonId("other");
+        var ordinary = Service("other");
+        Assert.False((await ordinary.GetDelegationsAsync()).IsSuccess);
+        Assert.False((await ordinary.SetDelegationsAsync(otherId, [seed.Worker], [])).IsSuccess);
+        var hr = Service("hr", true);
+        Assert.False((await hr.SetDelegationsAsync(otherId, [otherId], [])).IsSuccess);
+        Assert.False((await hr.SetDelegationsAsync(otherId, [int.MaxValue], [])).IsSuccess);
+        await using (var db = database.CreateDbContext())
+        {
+            var noAccount = new Personel { Adi = "Hesapsız", Soyadi = "Personel", SicilNo = 99 };
+            db.Personel_Table.Add(noAccount);
+            await db.SaveChangesAsync();
+            Assert.False((await hr.SetDelegationsAsync(noAccount.Id, [seed.Worker], [])).IsSuccess);
+        }
+        Assert.Empty(Success(await hr.GetDelegationsAsync()).Assignments);
+    }
+
+    [Fact]
+    public async Task DelegateCanEnterForAssignedPersonnel_WithCorrectOwnerAndAudit_ButCannotApprove()
+    {
+        var seed = await Reset(40);
+        var otherId = await PersonId("other");
+        Success(await Service("hr", true).SetDelegationsAsync(otherId, [seed.Worker], []));
+        var delegated = Service("other");
+        var input = Input(); input.PersonelId = seed.Worker; input.Submit = false;
+        Success(await delegated.SaveEntryAsync(input));
+
+        var entry = await Entry();
+        Assert.Equal(seed.Worker, entry.PersonelId);
+        Assert.Equal("worker Test", entry.FullName);
+        Assert.Equal("other", entry.Olusturan);
+        Assert.Equal(seed.Unit, entry.UnitId);
+        Assert.Equal(2400, entry.NormalWeeklyMinutes);
+        Assert.Empty(Success(await delegated.LoadAsync("mine", Monday, Monday.AddDays(6))).Entries);
+        var workspace = Success(await delegated.LoadAsync("delegated", Monday, Monday.AddDays(6)));
+        Assert.Equal(seed.Worker, Assert.Single(workspace.DelegatedPeople).Id);
+        Assert.Equal(entry.Id, Assert.Single(workspace.Entries).Id);
+        Assert.Equal("other", Assert.Single(Success(await delegated.GetEntryHistoryAsync(entry.Id))).Olusturan);
+        input.Id = entry.Id; input.Version = entry.Version; input.Submit = true;
+        Success(await delegated.SaveEntryAsync(input));
+        entry = await Entry();
+        Assert.False((await delegated.ReviewAsync(entry.Id, entry.Version, OvertimeEntryStatus.Approved, "")).IsSuccess);
+        Success(await Service("manager").ReviewAsync(entry.Id, entry.Version, OvertimeEntryStatus.Approved, ""));
+        input.Version = (await Entry()).Version;
+        Assert.False((await delegated.SaveEntryAsync(input)).IsSuccess);
+    }
+
+    [Fact]
+    public async Task RevocationImmediatelyBlocksReadsEditsWithdrawalsAndNewEntries_WithoutDeletingRecords()
+    {
+        var seed = await Reset();
+        var otherId = await PersonId("other");
+        var hr = Service("hr", true);
+        Success(await hr.SetDelegationsAsync(otherId, [seed.Worker], []));
+        var delegated = Service("other");
+        var input = Input(); input.PersonelId = seed.Worker;
+        Success(await delegated.SaveEntryAsync(input));
+        var entry = await Entry();
+        Success(await hr.SetDelegationsAsync(otherId, [], [seed.Worker]));
+
+        input.Id = entry.Id; input.Version = entry.Version;
+        Assert.False((await delegated.SaveEntryAsync(input)).IsSuccess);
+        Assert.False((await delegated.WithdrawAsync(entry.Id, entry.Version)).IsSuccess);
+        Assert.False((await delegated.GetEntryHistoryAsync(entry.Id)).IsSuccess);
+        var newInput = Input(Monday.AddDays(4)); newInput.PersonelId = seed.Worker;
+        Assert.False((await delegated.SaveEntryAsync(newInput)).IsSuccess);
+        var workspace = Success(await delegated.LoadAsync("delegated", Monday, Monday.AddDays(6)));
+        Assert.Empty(workspace.Entries);
+        Assert.Empty(workspace.DelegatedPeople);
+        Assert.Equal(entry.Id, (await Entry()).Id);
+        await using var db = database.CreateDbContext();
+        Assert.False(Assert.Single(await db.OvertimeDelegations.ToListAsync()).IsActive);
+        Assert.Equal(2, await db.OvertimeEvents.CountAsync(x => x.Action == "Mesai giriş yetkileri güncellendi"));
+    }
+
+    [Fact]
+    public async Task ReplacingDelegationsRemovesOldTargets_AndStaleChangesCannotOverwriteNewPermissions()
+    {
+        var seed = await Reset();
+        var otherId = await PersonId("other");
+        var managerId = await PersonId("manager");
+        var hr = Service("hr", true);
+        Success(await hr.SetDelegationsAsync(otherId, [seed.Worker], []));
+        Success(await hr.SetDelegationsAsync(otherId, [managerId], [seed.Worker]));
+        Assert.False((await hr.SetDelegationsAsync(otherId, [], [seed.Worker])).IsSuccess);
+        Assert.Equal(managerId, Assert.Single(Success(await hr.GetDelegationsAsync()).Assignments).TargetPersonelId);
+        var input = Input(); input.PersonelId = seed.Worker;
+        Assert.False((await Service("other").SaveEntryAsync(input)).IsSuccess);
+        Success(await hr.SetDelegationsAsync(otherId, [seed.Worker], [managerId]));
+        Success(await Service("other").SaveEntryAsync(input));
+        await using var db = database.CreateDbContext();
+        Assert.Equal(2, await db.OvertimeDelegations.CountAsync());
+        Assert.Equal(1, await db.OvertimeDelegations.CountAsync(x => x.IsActive));
+    }
+
+    [Fact]
+    public async Task DelegationScopeCannotBeExpandedByTamperingWithPersonOrEntryIds()
+    {
+        var seed = await Reset();
+        var otherId = await PersonId("other");
+        var managerId = await PersonId("manager");
+        var hr = Service("hr", true);
+        var input = Input(); input.PersonelId = seed.Worker;
+        Assert.False((await Service("other").SaveEntryAsync(input)).IsSuccess);
+        Assert.False((await hr.SaveEntryAsync(input)).IsSuccess);
+        Success(await hr.SetDelegationsAsync(otherId, [seed.Worker, managerId], []));
+        input.Submit = false;
+        Success(await Service("other").SaveEntryAsync(input));
+        var entry = await Entry();
+        input.Id = entry.Id; input.Version = entry.Version; input.PersonelId = managerId;
+        Assert.False((await Service("other").SaveEntryAsync(input)).IsSuccess);
+        Assert.Equal(seed.Worker, (await Entry()).PersonelId);
+    }
+
+    [Fact]
+    public async Task OvernightDelegatedEntryKeepsAssignedOwnerOnBothDays()
+    {
+        var seed = await Reset();
+        var otherId = await PersonId("other");
+        Success(await Service("hr", true).SetDelegationsAsync(otherId, [seed.Worker], []));
+        var input = Input(Monday.AddDays(4));
+        input.PersonelId = seed.Worker;
+        input.EndWorkDate = Monday.AddDays(5);
+        input.Intervals = [new() { Start = new(22, 0), End = new(6, 0) }];
+        Success(await Service("other").SaveEntryAsync(input));
+        var entries = Success(await Service("worker").LoadAsync("mine", Monday, Monday.AddDays(6))).Entries;
+        Assert.Equal(2, entries.Count);
+        Assert.All(entries, x => { Assert.Equal(seed.Worker, x.PersonelId); Assert.Equal("other", x.Olusturan); });
+    }
+
+    [Fact]
+    public async Task PersonnelWithoutLoginCanBeATarget_AndTheirOwnWorkScheduleIsUsed()
+    {
+        var seed = await Reset(40);
+        var otherId = await PersonId("other");
+        int targetId;
+        await using (var db = database.CreateDbContext())
+        {
+            var driver = new Personel { Adi = "Şoför", Soyadi = "Test", SicilNo = 88 };
+            var title = new UnvanTanim { Adi = "Şoför", GorTipId = 1 };
+            db.Personel_Table.Add(driver);
+            db.UnvanTanim_Table.Add(title);
+            await db.SaveChangesAsync();
+            targetId = driver.Id;
+            db.IsBilgileri_Table.Add(new() { PersonelId = driver.Id, BirimId = seed.Unit, UnvanId = title.Id, CalismaDurumu = CalismaDurumu.Calisiyor });
+            db.OvertimeSchedules.Add(new() { TitleId = title.Id, WeeklyHours = 45 });
+            await db.SaveChangesAsync();
+        }
+        Success(await Service("hr", true).SetDelegationsAsync(otherId, [targetId], []));
+        var input = Input(); input.PersonelId = targetId;
+        Success(await Service("other").SaveEntryAsync(input));
+        var workspace = Success(await Service("other").LoadAsync("delegated", Monday, Monday.AddDays(6)));
+        Assert.Equal("", Assert.Single(workspace.DelegatedPeople).UserName);
+        var entry = Assert.Single(workspace.Entries);
+        Assert.Equal(targetId, entry.PersonelId);
+        Assert.Equal(2700, entry.NormalWeeklyMinutes);
+        Assert.Equal("Şoför Test", entry.FullName);
+    }
+
+    [Fact]
+    public async Task DelegationPeopleListsExcludeDepartedPersonnelAndPeopleWithoutWorkInformation()
+    {
+        var seed = await Reset();
+        var otherId = await PersonId("other");
+        int departedId, noInfoId;
+        await using (var db = database.CreateDbContext())
+        {
+            var departed = new Personel { Adi = "Ayrılan", Soyadi = "Personel", KullaniciAdi = "departed", SicilNo = 77 };
+            var noInfo = new Personel { Adi = "Bilgisiz", Soyadi = "Personel", KullaniciAdi = "noinfo", SicilNo = 78 };
+            db.Personel_Table.AddRange(departed, noInfo);
+            await db.SaveChangesAsync();
+            departedId = departed.Id; noInfoId = noInfo.Id;
+            db.IsBilgileri_Table.Add(new() { PersonelId = departedId, BirimId = seed.Unit, UnvanId = seed.Title, CalismaDurumu = CalismaDurumu.Ayrildi });
+            await db.SaveChangesAsync();
+        }
+        var hr = Service("hr", true);
+        var people = Success(await hr.GetDelegationsAsync()).People;
+        Assert.Contains(people, x => x.Id == seed.Worker);
+        Assert.DoesNotContain(people, x => x.Id == departedId || x.Id == noInfoId);
+        Assert.False((await hr.SetDelegationsAsync(otherId, [departedId], [])).IsSuccess);
+        Assert.False((await hr.SetDelegationsAsync(otherId, [noInfoId], [])).IsSuccess);
+        Assert.False((await hr.SetDelegationsAsync(departedId, [seed.Worker], [])).IsSuccess);
+        Assert.False((await hr.SetDelegationsAsync(noInfoId, [seed.Worker], [])).IsSuccess);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ExistingDelegationStopsWhenOperatorOrTargetIsNoLongerWorking(bool operatorLeaves)
+    {
+        var seed = await Reset();
+        var otherId = await PersonId("other");
+        var hr = Service("hr", true);
+        var delegated = Service("other");
+        Success(await hr.SetDelegationsAsync(otherId, [seed.Worker], []));
+        var input = Input(); input.PersonelId = seed.Worker;
+        Success(await delegated.SaveEntryAsync(input));
+        var entry = await Entry();
+        await using (var db = database.CreateDbContext())
+        {
+            var id = operatorLeaves ? otherId : seed.Worker;
+            var info = await db.IsBilgileri_Table.SingleAsync(x => x.PersonelId == id);
+            info.CalismaDurumu = CalismaDurumu.Ayrildi;
+            await db.SaveChangesAsync();
+        }
+
+        var workspace = Success(await delegated.LoadAsync("delegated", Monday, Monday.AddDays(6)));
+        Assert.Empty(workspace.DelegatedPeople);
+        Assert.Empty(workspace.Entries);
+        Assert.False((await delegated.GetEntryHistoryAsync(entry.Id)).IsSuccess);
+        var newInput = Input(Monday.AddDays(4)); newInput.PersonelId = seed.Worker;
+        Assert.False((await delegated.SaveEntryAsync(newInput)).IsSuccess);
+        Assert.False((await hr.SetDelegationsAsync(otherId, [seed.Worker], [seed.Worker])).IsSuccess);
+        Success(await hr.SetDelegationsAsync(otherId, [], [seed.Worker]));
+        Assert.Equal(entry.Id, (await Entry()).Id);
     }
 }

@@ -88,6 +88,65 @@ public sealed class OvertimeService(IDbContextFactory<ApplicationDbContext> fact
             (actor.ManagedUnits.Contains(x.UnitId) || (actor.EscalatedUnits.Contains(x.UnitId) &&
                 db.BirimTanim_Table.Any(u => u.Id == x.UnitId && u.AmirId == x.PersonelId))));
 
+    private static IQueryable<int> WorkingPersonIds(ApplicationDbContext db)
+        => db.IsBilgileri_Table.Where(x => x.CalismaDurumu == CalismaDurumu.Calisiyor).Select(x => x.PersonelId).Distinct();
+
+    private static IQueryable<int> DelegatedPersonIds(ApplicationDbContext db, Actor actor)
+        => db.OvertimeDelegations.Where(x => x.DelegatePersonelId == actor.Id && x.IsActive
+            && WorkingPersonIds(db).Contains(x.DelegatePersonelId) && WorkingPersonIds(db).Contains(x.TargetPersonelId))
+            .Select(x => x.TargetPersonelId);
+
+    private static IQueryable<OvertimePersonOption> PersonOptions(ApplicationDbContext db, IQueryable<int>? personelIds = null)
+    {
+        var people = db.Personel_Table.AsNoTracking().Where(x => !string.IsNullOrWhiteSpace(x.Adi) && !string.IsNullOrWhiteSpace(x.Soyadi)
+            && WorkingPersonIds(db).Contains(x.Id));
+        if (personelIds is not null) people = people.Where(x => personelIds.Contains(x.Id));
+        return people.OrderBy(x => x.Adi).ThenBy(x => x.Soyadi)
+            .Select(x => new OvertimePersonOption(x.Id, x.Adi + " " + x.Soyadi, x.KullaniciAdi ?? "", x.SicilNo));
+    }
+
+    private static async Task RequireEntryAccess(ApplicationDbContext db, Actor actor, int personelId, CancellationToken ct)
+    {
+        if (personelId != actor.Id && !await DelegatedPersonIds(db, actor).ContainsAsync(personelId, ct))
+            throw new RuleException(Error.Forbidden("Bu personel adına mesai girişi yapma yetkiniz bulunmuyor. İK ile görüşün."));
+    }
+
+    public Task<Result<OvertimeDelegationAdminData>> GetDelegationsAsync(CancellationToken cancellationToken = default)
+        => Run(false, async (db, actor) =>
+        {
+            Hr(actor);
+            return new OvertimeDelegationAdminData
+            {
+                People = await PersonOptions(db).ToListAsync(cancellationToken),
+                Assignments = await db.OvertimeDelegations.AsNoTracking().Where(x => x.IsActive)
+                    .Select(x => new OvertimeDelegationLink(x.DelegatePersonelId, x.TargetPersonelId)).ToListAsync(cancellationToken)
+            };
+        }, cancellationToken);
+
+    public Task<Result<bool>> SetDelegationsAsync(int delegatePersonelId, List<int> targetPersonelIds, List<int> expectedTargetPersonelIds, CancellationToken cancellationToken = default)
+        => Run(true, async (db, actor) =>
+        {
+            Hr(actor);
+            var targets = targetPersonelIds.Distinct().OrderBy(x => x).ToList();
+            Require(!targets.Contains(delegatePersonelId), "Kullanıcı kendi mesaisini zaten girebilir. Yetki listesinde başka personelleri seçin.");
+            var user = await db.Personel_Table.AsNoTracking().Where(x => x.Id == delegatePersonelId)
+                .Select(x => new { x.Id, x.KullaniciAdi }).SingleOrDefaultAsync(cancellationToken);
+            Require(user is not null && (targets.Count == 0 || !string.IsNullOrWhiteSpace(user.KullaniciAdi)), "Mesai girişi yapacak kullanıcı için geçerli bir kullanıcı hesabı seçin.");
+            Require(targets.Count == 0 || await WorkingPersonIds(db).ContainsAsync(delegatePersonelId, cancellationToken), "Yetki verilecek kullanıcının çalışma durumu Çalışıyor (1) olmalıdır.");
+            Require(await WorkingPersonIds(db).CountAsync(id => targets.Contains(id), cancellationToken) == targets.Count,
+                "Yalnızca çalışma durumu Çalışıyor (1) olan personeller için yetki tanımlanabilir. Listeyi yenileyin.");
+            var assignments = await db.OvertimeDelegations.Where(x => x.DelegatePersonelId == delegatePersonelId).ToListAsync(cancellationToken);
+            var current = assignments.Where(x => x.IsActive).Select(x => x.TargetPersonelId).OrderBy(x => x).ToList();
+            if (!current.SequenceEqual(expectedTargetPersonelIds.Distinct().OrderBy(x => x)))
+                throw new RuleException(Error.Conflict("Bu kullanıcının yetkileri başka bir işlemde değişti. Listeyi yenileyip tekrar deneyin."));
+            if (current.SequenceEqual(targets)) return true;
+            foreach (var assignment in assignments) assignment.IsActive = targets.Contains(assignment.TargetPersonelId);
+            foreach (var target in targets.Where(id => assignments.All(x => x.TargetPersonelId != id)))
+                db.OvertimeDelegations.Add(new() { DelegatePersonelId = delegatePersonelId, TargetPersonelId = target, IsActive = true });
+            Audit(db, "Mesai giriş yetkileri güncellendi", $"Kullanıcı: {user!.KullaniciAdi} (personel {delegatePersonelId}). Önceki personel listesi: {string.Join(", ", current)}. Yeni personel listesi: {string.Join(", ", targets)}.");
+            return true;
+        }, cancellationToken);
+
     private static void Audit(ApplicationDbContext db, string action, string details, int? entryId = null, int? periodId = null)
         => db.OvertimeEvents.Add(new() { EntryId = entryId, PeriodId = periodId, Action = action, Details = details });
 
@@ -101,17 +160,19 @@ public sealed class OvertimeService(IDbContextFactory<ApplicationDbContext> fact
         => Run(false, async (db, actor) =>
         {
             Require(end.Date >= start.Date && (end - start).TotalDays <= 370, "En fazla bir yıllık tarih aralığı seçin.");
-            Require(scope is "mine" or "team" or "hr", "Geçersiz görünüm.");
+            Require(scope is "mine" or "delegated" or "team" or "hr", "Geçersiz görünüm.");
             if (scope == "hr") Hr(actor);
             var entries = db.OvertimeEntries.AsNoTracking().Include(x => x.Intervals)
                 .Where(x => x.WorkDate >= start.Date && x.WorkDate <= end.Date);
             if (scope == "mine") entries = entries.Where(x => x.PersonelId == actor.Id);
+            if (scope == "delegated") entries = entries.Where(x => DelegatedPersonIds(db, actor).Contains(x.PersonelId));
             if (scope == "team") entries = entries.Where(x => Reviewable(db, actor).Select(e => e.Id).Contains(x.Id));
             var deliveries = db.OvertimeDeliveries.AsNoTracking();
             if (scope != "hr") deliveries = deliveries.Where(x => x.ManagerId == actor.Id);
             var result = new OvertimeWorkspace
             {
                 PersonelId = actor.Id, FullName = actor.FullName, IsHr = actor.IsHr, IsManager = actor.ManagedUnits.Count > 0 || actor.EscalatedUnits.Count > 0,
+                DelegatedPeople = await PersonOptions(db, DelegatedPersonIds(db, actor)).ToListAsync(cancellationToken),
                 Entries = await entries.OrderByDescending(x => x.WorkDate).ThenBy(x => x.FullName).ToListAsync(cancellationToken),
                 Periods = await PeriodHeaders(db).Where(x => x.EndDate >= start.Date && x.StartDate <= end.Date)
                     .OrderByDescending(x => x.StartDate).ToListAsync(cancellationToken),
@@ -157,6 +218,7 @@ public sealed class OvertimeService(IDbContextFactory<ApplicationDbContext> fact
                 var until = end < start.Date.AddDays(1) ? end : start.Date.AddDays(1);
                 var day = new OvertimeEntryInput
                 {
+                    PersonelId = input.PersonelId,
                     Id = firstId == 0 ? input.Id : 0,
                     Version = firstId == 0 ? input.Version : [],
                     WorkDate = start.Date, Reason = input.Reason, Submit = input.Submit,
@@ -175,6 +237,8 @@ public sealed class OvertimeService(IDbContextFactory<ApplicationDbContext> fact
 
     private static async Task<int> SaveDayEntry(ApplicationDbContext db, Actor actor, OvertimeEntryInput input, CancellationToken cancellationToken)
     {
+        var personelId = input.PersonelId ?? actor.Id;
+        await RequireEntryAccess(db, actor, personelId, cancellationToken);
         Require(!string.IsNullOrWhiteSpace(input.Reason) && input.Reason.Trim().Length <= 2000, "Çalışma sebebi zorunludur ve en fazla 2000 karakter olabilir.");
         Require(input.Intervals.Count is > 0 and <= 12, "Bir gün için 1–12 çalışma aralığı girin.");
         var intervals = input.Intervals.OrderBy(x => x.StartMinute).ToList();
@@ -185,7 +249,7 @@ public sealed class OvertimeService(IDbContextFactory<ApplicationDbContext> fact
         }
         Require(!intervals.Zip(intervals.Skip(1)).Any(x => x.First.EndMinute > x.Second.StartMinute), "Çalışma aralıkları çakışamaz.");
         var entry = input.Id == 0 ? null : await db.OvertimeEntries.Include(x => x.Intervals)
-            .SingleOrDefaultAsync(x => x.Id == input.Id && x.PersonelId == actor.Id, cancellationToken);
+            .SingleOrDefaultAsync(x => x.Id == input.Id && x.PersonelId == personelId, cancellationToken);
         if (input.Id != 0)
         {
             Require(entry is not null, "Kayıt bulunamadı.");
@@ -195,12 +259,12 @@ public sealed class OvertimeService(IDbContextFactory<ApplicationDbContext> fact
             await EnsureOpen(db, entry.UnitId, entry.WorkDate, cancellationToken);
         }
         var info = await db.IsBilgileri_Table.AsNoTracking().Include(x => x.BirimTanim).Include(x => x.UnvanTanim)
-            .SingleOrDefaultAsync(x => x.PersonelId == actor.Id, cancellationToken);
+            .SingleOrDefaultAsync(x => x.PersonelId == personelId, cancellationToken);
         Require(info?.BirimId is not null && info.UnvanId is not null && info.BirimTanim?.Aktif == true, "Aktif birim ve unvan bilgilerinizin tamamlanması gerekiyor.");
         var hours = await db.OvertimeSchedules.Where(x => x.TitleId == info!.UnvanId).Select(x => (int?)x.WeeklyHours).SingleOrDefaultAsync(cancellationToken);
         Require(hours is 40 or 45, "Unvanınızın 40/45 saat çalışma grubu İK tarafından tanımlanmalıdır.");
         await EnsureOpen(db, info!.BirimId!.Value, input.WorkDate.Date, cancellationToken);
-        var existing = await db.OvertimeEntries.Where(x => x.PersonelId == actor.Id && x.WorkDate == input.WorkDate.Date && x.Id != input.Id)
+        var existing = await db.OvertimeEntries.Where(x => x.PersonelId == personelId && x.WorkDate == input.WorkDate.Date && x.Id != input.Id)
             .Select(x => new { x.Status, x.PeriodId }).SingleOrDefaultAsync(cancellationToken);
         if (existing is not null)
         {
@@ -215,16 +279,16 @@ public sealed class OvertimeService(IDbContextFactory<ApplicationDbContext> fact
                 };
             Require(false, message);
         }
-        var person = await db.Personel_Table.AsNoTracking().SingleAsync(x => x.Id == actor.Id, cancellationToken);
+        var person = await db.Personel_Table.AsNoTracking().SingleAsync(x => x.Id == personelId, cancellationToken);
         var isNew = entry is null;
-        entry ??= new OvertimeEntry { PersonelId = actor.Id };
+        entry ??= new OvertimeEntry { PersonelId = personelId };
         var before = isNew ? null : EntrySnapshot(entry);
         entry.WorkDate = input.WorkDate.Date;
         entry.UnitId = info.BirimId.Value;
         entry.UnitName = info.BirimTanim!.Adi ?? "";
         entry.Title = info.UnvanTanim?.Adi ?? "";
         entry.NormalWeeklyMinutes = hours!.Value * 60;
-        entry.FullName = actor.FullName;
+        entry.FullName = $"{person.Adi} {person.Soyadi}";
         entry.SicilNo = person.SicilNo;
         entry.Reason = input.Reason.Trim();
         entry.Status = input.Submit ? OvertimeEntryStatus.Pending : OvertimeEntryStatus.Draft;
@@ -240,21 +304,22 @@ public sealed class OvertimeService(IDbContextFactory<ApplicationDbContext> fact
 
     private static object EntrySnapshot(OvertimeEntry entry) => new
     {
-        entry.WorkDate, entry.Reason, entry.Status, entry.UnitId, entry.UnitName, entry.Title, entry.NormalWeeklyMinutes,
+        entry.PersonelId, entry.FullName, entry.WorkDate, entry.Reason, entry.Status, entry.UnitId, entry.UnitName, entry.Title, entry.NormalWeeklyMinutes,
         Intervals = entry.Intervals.Select(x => new { x.StartMinute, x.EndMinute }).ToArray()
     };
 
     public Task<Result<bool>> WithdrawAsync(int entryId, byte[] version, CancellationToken cancellationToken = default)
         => Run(true, async (db, actor) =>
         {
-            var entry = await db.OvertimeEntries.SingleOrDefaultAsync(x => x.Id == entryId && x.PersonelId == actor.Id, cancellationToken);
+            var entry = await db.OvertimeEntries.SingleOrDefaultAsync(x => x.Id == entryId &&
+                (x.PersonelId == actor.Id || DelegatedPersonIds(db, actor).Contains(x.PersonelId)), cancellationToken);
             Require(entry is not null, "Kayıt bulunamadı.");
             CheckVersion(entry!.Version, version);
             Require(entry.PeriodId is null && entry.Status is OvertimeEntryStatus.Draft or OvertimeEntryStatus.Correction or OvertimeEntryStatus.Pending,
                 "Bu kayıt geri çekilemez.");
             await EnsureOpen(db, entry.UnitId, entry.WorkDate, cancellationToken);
             entry.Status = OvertimeEntryStatus.Draft;
-            Audit(db, "Kayıt geri çekildi", "Personel düzenlemek için kaydı taslağa aldı.", entryId);
+            Audit(db, "Kayıt geri çekildi", "Giriş yetkisi bulunan kullanıcı düzenlemek için kaydı taslağa aldı.", entryId);
             return true;
         }, cancellationToken);
 
@@ -280,7 +345,7 @@ public sealed class OvertimeService(IDbContextFactory<ApplicationDbContext> fact
         => Run(false, async (db, actor) =>
         {
             Require(await db.OvertimeEntries.AnyAsync(x => x.Id == entryId &&
-                (actor.IsHr || x.PersonelId == actor.Id || Reviewable(db, actor).Select(e => e.Id).Contains(x.Id)), cancellationToken), "Kayıt bulunamadı veya erişim yetkiniz yok.");
+                (actor.IsHr || x.PersonelId == actor.Id || DelegatedPersonIds(db, actor).Contains(x.PersonelId) || Reviewable(db, actor).Select(e => e.Id).Contains(x.Id)), cancellationToken), "Kayıt bulunamadı veya erişim yetkiniz yok.");
             return await db.OvertimeEvents.AsNoTracking().Where(x => x.EntryId == entryId).OrderBy(x => x.Id).ToListAsync(cancellationToken);
         }, cancellationToken);
 

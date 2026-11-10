@@ -23,7 +23,7 @@ public sealed class OvertimeSchemaTests
             foreach (var property in entity.GetProperties())
             {
                 var column = property.GetColumnName(store)!;
-                Assert.Matches($@"\b{Regex.Escape(column)}\s+(?:int|date|datetime2|nvarchar|varbinary|rowversion)\b", definition.Groups[1].Value);
+                Assert.Matches($@"\b{Regex.Escape(column)}\s+(?:int|bit|date|datetime2|nvarchar|varbinary|rowversion)\b", definition.Groups[1].Value);
             }
         }
         Assert.Contains("Version rowversion NOT NULL", script);
