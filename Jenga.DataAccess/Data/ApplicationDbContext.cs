@@ -126,7 +126,6 @@ namespace Jenga.DataAccess.Data
         public DbSet<BagisciYakinlari> BagisciYakinlari_Table { get; set; }
         public DbSet<TasinmazTaahhut> TasinmazTaahhut_Table { get; set; }
         public DbSet<Vasiyetci> Vasiyetci_Table { get; set; }
-        public DbSet<TasinmazKontrolForm> TasinmazKontrolForm_Table { get; set; }
         public DbSet<TasinmazKontrol> TasinmazKontrol_Table { get; set; }
         public DbSet<TasinmazKontrolEk> TasinmazKontrolEk_Table { get; set; }
         public DbSet<TasinmazKontrolPlani> TasinmazKontrolPlani_Table { get; set; }
@@ -196,18 +195,10 @@ namespace Jenga.DataAccess.Data
 
             // TBYS Taşınmaz Kontrolü. Şema docs/sql/2025-TBYS-TasinmazKontrol.sql ile manuel uygulanır.
             // Geçmiş kayıtlar korunmalı: hiçbir ilişkide cascade delete yok.
-            modelBuilder.Entity<TasinmazKontrolForm>(e =>
-            {
-                e.HasIndex(x => new { x.Kod, x.Surum }).IsUnique().HasDatabaseName("UX_TasinmazKontrolForm_Kod_Surum");
-                e.HasIndex(x => new { x.Kapsam, x.KapsamCinsi, x.KapsamTasinmazId, x.Durum }).HasDatabaseName("IX_TasinmazKontrolForm_Kapsam");
-                e.HasOne<TasinmazKontrolForm>().WithMany().HasForeignKey(x => x.KaynakFormId).OnDelete(DeleteBehavior.NoAction);
-            });
-
             modelBuilder.Entity<TasinmazKontrol>(e =>
             {
                 e.HasIndex(x => new { x.TasinmazId, x.KontrolTarihi }).HasDatabaseName("IX_TasinmazKontrol_Tasinmaz_Tarih");
                 e.HasIndex(x => new { x.BolgeId, x.Durum }).HasDatabaseName("IX_TasinmazKontrol_Bolge_Durum");
-                e.HasOne(x => x.Form).WithMany().HasForeignKey(x => x.FormId).OnDelete(DeleteBehavior.NoAction);
                 e.HasOne<Tasinmaz>().WithMany().HasForeignKey(x => x.TasinmazId).OnDelete(DeleteBehavior.NoAction);
                 e.HasOne<TasinmazKontrol>().WithMany().HasForeignKey(x => x.RevizeEdilenKontrolId).OnDelete(DeleteBehavior.NoAction);
             });

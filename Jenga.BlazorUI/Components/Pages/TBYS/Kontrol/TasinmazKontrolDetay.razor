@@ -13,6 +13,7 @@
 @inject IToastService Toast
 @inject IModalService Modal
 @inject NavigationManager Nav
+@inject IJSRuntime JS
 
 <PermissionGuard Module="ModuleName.TBYS" Operation="Operation.View">
 @if (_loading)
@@ -26,87 +27,190 @@ else if (_kontrol is null)
 else
 {
     var taslak = _kontrol.Durum == KontrolDurumu.Taslak;
-    <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
-        <a class="btn btn-sm btn-outline-secondary" href="/tbys/tasinmaz-kontrol"><i class="bi bi-arrow-left"></i></a>
-        <h5 class="mb-0 fw-bold">
-            <i class="bi bi-clipboard-check me-2 text-primary"></i>Taşınmaz Kontrolü #@_kontrol.Id
-            <span class="badge @DurumRenk(_kontrol.Durum) ms-2">@DurumEtiket(_kontrol.Durum)</span>
-        </h5>
-        <small class="text-muted">@_kontrol.Form?.Ad (v@(_kontrol.Form?.Surum))</small>
-        <div class="ms-auto d-flex gap-2">
-            @if (taslak)
-            {
-                <button class="btn btn-sm btn-outline-primary" @onclick="TaslakKaydetAsync" disabled="@_busy"><i class="bi bi-save me-1"></i>Taslağı Kaydet</button>
-                <button class="btn btn-sm btn-success" @onclick="() => _tamamlaAcik = true" disabled="@_busy"><i class="bi bi-check2-circle me-1"></i>Tamamla</button>
-                <button class="btn btn-sm btn-outline-danger" @onclick="SilAsync" disabled="@_busy"><i class="bi bi-trash me-1"></i>Taslağı Sil</button>
-            }
-            else if (_kontrol.Durum == KontrolDurumu.Tamamlandi)
-            {
-                <button class="btn btn-sm btn-outline-warning" @onclick="() => _revizyonAcik = true" disabled="@_busy"><i class="bi bi-pencil-square me-1"></i>Revize Et</button>
-                <button class="btn btn-sm btn-outline-danger" @onclick="() => _iptalAcik = true" disabled="@_busy"><i class="bi bi-x-circle me-1"></i>İptal Et</button>
-            }
+    <NavigationLock ConfirmExternalNavigation="KaydedilmemisDegisiklikVar" OnBeforeInternalNavigation="SayfadanAyrilmadanOnceAsync" />
+    <div class="kontrol-sayfa">
+        <div class="kontrol-ust">
+            <div>
+                <div class="kontrol-eyebrow">TAŞINMAZ YÖNETİMİ</div>
+                <h1>Taşınmaz kontrol raporu <span class="badge @DurumRenk(_kontrol.Durum)">@DurumEtiket(_kontrol.Durum)</span></h1>
+                <p class="kontrol-altbaslik">Kontrol #@_kontrol.Id · Taşınmaz inceleme ve değerlendirme</p>
+            </div>
+            <div class="kontrol-islemler">
+                <a class="btn btn-sm btn-outline-secondary" href="/tbys/tasinmaz-kontrol"><i class="bi bi-arrow-left me-1"></i>Kontroller</a>
+                @if (taslak)
+                {
+                    <button class="btn btn-sm btn-outline-primary" @onclick="TaslakKaydetAsync" disabled="@_busy"><i class="bi bi-save me-1"></i>@(_sonKayit is null ? "Taslağı kaydet" : "Taslağı güncelle")</button>
+                    <button class="btn btn-sm btn-primary" @onclick="() => AdimaGitAsync(_adimlar.Count)" disabled="@_busy">Raporu gözden geçir <i class="bi bi-arrow-right ms-1"></i></button>
+                    <button class="btn btn-sm btn-outline-danger" @onclick="SilAsync" disabled="@_busy" title="Taslağı sil" aria-label="Taslağı sil"><i class="bi bi-trash"></i></button>
+                }
+                else if (_kontrol.Durum == KontrolDurumu.Tamamlandi)
+                {
+                    <button class="btn btn-sm btn-outline-warning" @onclick="() => _revizyonAcik = true" disabled="@_busy"><i class="bi bi-pencil-square me-1"></i>Revize et</button>
+                    <button class="btn btn-sm btn-outline-danger" @onclick="() => _iptalAcik = true" disabled="@_busy"><i class="bi bi-x-circle me-1"></i>İptal et</button>
+                }
+            </div>
         </div>
-    </div>
 
-    @if (!string.IsNullOrWhiteSpace(_hata))
-    {
-        <div class="alert alert-danger py-2">@_hata</div>
-    }
+        <section class="kontrol-tasinmaz" aria-label="Kontrol edilen taşınmaz">
+            <div class="kontrol-tasinmaz-ikon"><i class="bi bi-building"></i></div>
+            <div class="kontrol-adres"><strong>@KonumEtiketi · @SnapshotDegeri("Cinsi")</strong><span>@SnapshotDegeri("Adres")</span></div>
+            <dl>
+                <div><dt>Emlak sicil no</dt><dd>@SnapshotDegeri("EmlakSicilNo")</dd></div>
+                <div><dt>Ada / Parsel</dt><dd>@SnapshotDegeri("AdaNo") / @SnapshotDegeri("ParselNo")</dd></div>
+                <div><dt>Sorumlu bölge</dt><dd>@(_kontrol.BolgeAdi ?? "—")</dd></div>
+            </dl>
+        </section>
 
-    <div class="card mb-3">
-        <div class="card-body row g-3">
-            <div class="col-md-1">
-                <label class="form-label small mb-1">Rapor No</label>
-                <input type="text" class="form-control form-control-sm" disabled value="@(_kontrol.RaporNo ?? "Tamamlanınca verilir")" />
+        @if (!string.IsNullOrWhiteSpace(_hata))
+        {
+            <div class="alert alert-danger py-2" role="alert">@_hata</div>
+        }
+        <div class="kontrol-araclar">
+            <div class="kontrol-gorunum" aria-label="Gezinme görünümü">
+                <button class="@(!_sekmeli ? "secili" : "")" aria-pressed="@(!_sekmeli)" @onclick="() => _sekmeli = false">Adım adım</button>
+                <button class="@(_sekmeli ? "secili" : "")" aria-pressed="@_sekmeli" @onclick="() => _sekmeli = true">Sekmeli görünüm</button>
             </div>
-            <div class="col-md-1">
-                <label class="form-label small mb-1">Kontrol Tarihi</label>
-                <input type="date" class="form-control form-control-sm" disabled="@(!taslak)" value="@_kontrolTarihi.ToString("yyyy-MM-dd")"
-                       @onchange="e => { if (DateTime.TryParse(e.Value?.ToString(), out var d)) _kontrolTarihi = d; }" />
-            </div>
-            <div class="col-md-4">
-                <label class="form-label small mb-1">Kontrolü Yapanlar</label>
-                <KontrolEdenlerSecici @bind-Value="_kontrolEdenler" Disabled="@(!taslak)" />
-            </div>
-            <div class="col-md-2">
-                <label class="form-label small mb-1">Bölge</label>
-                <input type="text" class="form-control form-control-sm" disabled value="@_kontrol.BolgeAdi" />
-            </div>
-            <div class="col-md-3">
-                <label class="form-label small mb-1">Raporu İmzalayan Makam <span class="text-danger">*</span></label>
-                <select class="form-select form-select-sm" disabled="@(!taslak)" value="@(_imzalayanMakam ?? "")" @onchange="e => _imzalayanMakam = string.IsNullOrEmpty(e.Value?.ToString()) ? null : e.Value!.ToString()">
-                    <option value="">—</option>
-                    @if (_imzalayanMakam is not null && !_bolgePersonelleri.Any(p => p.AdSoyad == _imzalayanMakam)) { <option value="@_imzalayanMakam">@_imzalayanMakam</option> }
-                    @foreach (var p in _bolgePersonelleri)
+            <span class="kontrol-kayit @(KaydedilmemisDegisiklikVar ? "bekliyor" : "")" role="status" aria-live="polite">
+                <i class="bi @(_busy ? "bi-hourglass-split" : KaydedilmemisDegisiklikVar ? "bi-pencil" : "bi-check2")"></i>
+                @(_busy ? "İşlem yapılıyor…" : KaydedilmemisDegisiklikVar ? "Kaydedilmemiş değişiklikler" : _sonKayit is not null ? $"Kaydedildi · {_sonKayit.Value.ToString("HH:mm", Tr)}" : taslak ? "Kayıtlı taslak" : "Salt okunur rapor")
+            </span>
+        </div>
+
+        <div class="kontrol-editor @(_sekmeli ? "sekmeli" : "")">
+            <aside class="kontrol-gezgin">
+                <div class="kontrol-gezgin-baslik">RAPOR BÖLÜMLERİ</div>
+                <nav aria-label="Rapor bölümleri">
+                    @for (var i = 0; i <= _adimlar.Count; i++)
                     {
-                        <option value="@p.AdSoyad">@p.AdSoyad@(p.Unvan is null ? "" : $" – {p.Unvan}")@(p.Amir ? " (Birim Amiri)" : "")</option>
+                        var index = i;
+                        var son = index == _adimlar.Count;
+                        <button class="kontrol-adim @(_aktifAdim == index ? "aktif" : "")" aria-current="@(_aktifAdim == index ? "step" : null)" disabled="@_busy" @onclick="() => AdimaGitAsync(index)">
+                            <span class="kontrol-adim-no">@((index + 1).ToString("00"))</span>
+                            <span><strong>@(son ? "Son kontrol" : _adimlar[index].Baslik)</strong><small>@(son ? "Gözden geçir ve tamamla" : $"{_adimlar[index].Bolumler.Count} form bölümü")</small></span>
+                        </button>
                     }
-                </select>
-                @if (taslak && _bolgePersonelleri.Count == 0) { <small class="text-muted">Bu bölgede tanımlı personel bulunamadı.</small> }
-            </div>
-            @if (_kontrol.Durum != KontrolDurumu.Taslak)
-            {
-                <div class="col-12 small text-muted">
-                    @if (_kontrol.TamamlanmaTarihi is not null) { <span class="me-3">Tamamlandı: @_kontrol.TamamlanmaTarihi?.ToString("g", Tr) (@_kontrol.Tamamlayan)</span> }
-                    @if (_kontrol.SonrakiKontrolTarihi is not null) { <span class="me-3">Sonraki kontrol: <strong>@_kontrol.SonrakiKontrolTarihi?.ToString("d", Tr)</strong></span> }
-                    @if (_kontrol.SecilenPeriyotSure is not null) { <span class="me-3">Periyot: @KontrolPeriyodu.Etiket(_kontrol.SecilenPeriyotSure, _kontrol.SecilenPeriyotBirim)</span> }
-                    @if (!string.IsNullOrWhiteSpace(_kontrol.PeriyotDegisiklikGerekcesi)) { <div>Periyot gerekçesi: @_kontrol.PeriyotDegisiklikGerekcesi</div> }
-                    @if (!string.IsNullOrWhiteSpace(_kontrol.TarihDegisiklikGerekcesi)) { <div>Tarih gerekçesi: @_kontrol.TarihDegisiklikGerekcesi</div> }
-                    @if (!string.IsNullOrWhiteSpace(_kontrol.IslemGerekcesi)) { <div>İşlem: @_kontrol.IslemGerekcesi (@_kontrol.IslemYapan, @_kontrol.IslemTarihi?.ToString("g", Tr))</div> }
+                </nav>
+                <div class="kontrol-ilerleme">
+                    <div><span>Görüntülenen adımlar</span><strong>@_gorulenAdimlar.Count / @(_adimlar.Count + 1)</strong></div>
+                    <progress value="@_gorulenAdimlar.Count" max="@(_adimlar.Count + 1)" aria-label="Görüntülenen adımlar"></progress>
+                    <p>Adımlar arasında geçiş yapabilirsiniz. Bilgilerinizi kaydetmek için taslak kaydını kullanın.</p>
                 </div>
-            }
-            @if (_kontrol.RevizeEdilenKontrolId is not null)
-            {
-                <div class="col-12 small"><i class="bi bi-info-circle me-1"></i>Bu kayıt <a href="/tbys/tasinmaz-kontrol/@_kontrol.RevizeEdilenKontrolId">#@_kontrol.RevizeEdilenKontrolId</a> numaralı kontrolün revizyonudur.</div>
-            }
-        </div>
-    </div>
+            </aside>
 
-    <KontrolFormRenderer Tanim="_tanim" Cevaplar="_cevaplar" ReadOnly="@(!taslak)" Ekler="_ekler" BolgePersonelleri="_bolgePersonelleri" OnEkSil="EkSilAsync">
-        <EkYukleTemplate Context="hedef">
-            <InputFile class="form-control form-control-sm mt-1" OnChange="e => EkYukleAsync(e, hedef)" multiple />
-        </EkYukleTemplate>
-    </KontrolFormRenderer>
+            <section class="kontrol-form" aria-labelledby="kontrol-adim-baslik">
+                <header class="kontrol-form-baslik">
+                    <div>
+                        <h2 id="kontrol-adim-baslik" tabindex="-1" @ref="_adimBasligi">@(SonAdim ? "Raporu gözden geçir" : _adimlar[_aktifAdim].Baslik)</h2>
+                        <p>@(SonAdim ? "Bilgileri kontrol edin, eksikleri giderin ve raporu tamamlayın." : _adimlar[_aktifAdim].Aciklama)</p>
+                    </div>
+                    <span>ADIM @(_aktifAdim + 1) / @(_adimlar.Count + 1)</span>
+                </header>
+                <fieldset class="kontrol-form-icerik" disabled="@_busy">
+                    @if (_aktifAdim == 0)
+                    {
+                        <section class="kontrol-rapor-bilgileri">
+                            <h3><i class="bi bi-file-earmark-text me-2"></i>Rapor bilgileri</h3>
+                            <div class="row g-3">
+                                <div class="col-sm-6 col-xl-3">
+                                    <label class="form-label small" for="kontrol-tarihi">Kontrol tarihi <span class="text-danger">*</span></label>
+                                    <input id="kontrol-tarihi" type="date" class="form-control form-control-sm" disabled="@(!taslak)" max="@DateTime.Today.ToString("yyyy-MM-dd")" @bind="_kontrolTarihi" />
+                                </div>
+                                <div class="col-sm-6 col-xl-3">
+                                    <label class="form-label small" for="kontrol-rapor-no">Rapor numarası</label>
+                                    <input id="kontrol-rapor-no" class="form-control form-control-sm" readonly value="@(_kontrol.RaporNo ?? "Tamamlanınca atanır")" />
+                                </div>
+                                <div class="col-sm-6 col-xl-6">
+                                    <label class="form-label small" for="kontrol-imzalayan">Raporu imzalayan makam <span class="text-danger">*</span></label>
+                                    <select id="kontrol-imzalayan" class="form-select form-select-sm" disabled="@(!taslak)" @bind="_imzalayanMakam">
+                                        <option value="">Seçiniz</option>
+                                        @if (_imzalayanMakam is not null && !_bolgePersonelleri.Any(p => p.AdSoyad == _imzalayanMakam))
+                                        {
+                                            <option value="@_imzalayanMakam">@_imzalayanMakam</option>
+                                        }
+                                        @foreach (var p in _bolgePersonelleri)
+                                        {
+                                            <option value="@p.AdSoyad">@p.AdSoyad@(p.Unvan is null ? "" : $" – {p.Unvan}")@(p.Amir ? " (Birim Amiri)" : "")</option>
+                                        }
+                                    </select>
+                                    @if (taslak && _bolgePersonelleri.Count == 0)
+                                    {
+                                        <small class="text-body-secondary">Bu bölgede tanımlı personel bulunamadı.</small>
+                                    }
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label small">Kontrolü yapanlar</label>
+                                    <KontrolEdenlerSecici @bind-Value="_kontrolEdenler" Disabled="@(!taslak)" />
+                                </div>
+                            </div>
+                        </section>
+                    }
+
+                    @if (!SonAdim)
+                    {
+                        <KontrolFormRenderer Tanim="_tanim" Bolumler="_adimlar[_aktifAdim].Bolumler" Cevaplar="_cevaplar" ReadOnly="@(!taslak)" Ekler="_ekler" BolgePersonelleri="_bolgePersonelleri" OnEkSil="EkSilAsync" OnChanged="FormDegisti">
+                            <EkYukleTemplate Context="hedef">
+                                <div class="kontrol-ek-yukle"><i class="bi bi-cloud-arrow-up me-2"></i><span>Fotoğraf veya belge ekleyin · En fazla 10 dosya, dosya başına 20 MB</span><InputFile class="form-control form-control-sm mt-2" OnChange="e => EkYukleAsync(e, hedef)" accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx" disabled="@_busy" multiple /></div>
+                            </EkYukleTemplate>
+                        </KontrolFormRenderer>
+                    }
+                    else
+                    {
+                        @if (taslak)
+                        {
+                            var hataSayisi = Enumerable.Range(0, _adimlar.Count).Sum(i => AdimHatalari(i).Count);
+                            <div class="kontrol-denetim @(hataSayisi > 0 ? "eksik" : "hazir")" role="status"><i class="bi @(hataSayisi > 0 ? "bi-exclamation-circle" : "bi-check2-circle")"></i><div><strong>@(hataSayisi > 0 ? $"Tamamlamadan önce {hataSayisi} alanı kontrol edin" : "Rapor tamamlanmaya hazır")</strong><p>@(hataSayisi > 0 ? "İlgili bölüme dönerek bilgileri düzeltebilirsiniz." : "Kontrol periyodunu ve sonraki tarihi Tamamla ekranında belirleyebilirsiniz.")</p></div></div>
+                        }
+                        <div class="kontrol-ozet-satir"><span>Kontrol tarihi<strong>@_kontrolTarihi.ToString("d", Tr)</strong></span><span>İmzalayan makam<strong>@(_imzalayanMakam ?? "—")</strong></span><span>Ekler<strong>@_ekler.Count dosya</strong></span></div>
+                        <div class="kontrol-inceleme">
+                            @for (var i = 0; i < _adimlar.Count; i++)
+                            {
+                                var index = i;
+                                var hatalar = taslak ? AdimHatalari(index) : new List<string>();
+                                <div class="kontrol-inceleme-satir">
+                                    <i class="bi @_adimlar[index].Ikon"></i>
+                                    <div>
+                                        <strong>@_adimlar[index].Baslik</strong>
+                                        @if (hatalar.Count > 0)
+                                        {
+                                            <ul class="text-danger">@foreach (var hata in hatalar) { <li>@hata</li> }</ul>
+                                        }
+                                        else
+                                        {
+                                            <small>@_adimlar[index].Bolumler.Count bölüm · @(taslak ? "Eksik zorunlu alan bulunmuyor" : "Kayıtlı rapor bilgileri")</small>
+                                        }
+                                    </div>
+                                    <button class="btn btn-sm btn-link" @onclick="() => AdimaGitAsync(index)">@(taslak ? "Düzenle" : "Görüntüle") <i class="bi bi-arrow-up-right"></i></button>
+                                </div>
+                            }
+                        </div>
+                        @if (!taslak)
+                        {
+                            <div class="kontrol-gecmis"><h3>İşlem bilgileri</h3>@if (_kontrol.TamamlanmaTarihi is not null) { <p>Tamamlandı: @_kontrol.TamamlanmaTarihi?.ToString("g", Tr) (@_kontrol.Tamamlayan)</p> }<p>Periyot: @KontrolPeriyodu.Etiket(_kontrol.SecilenPeriyotSure, _kontrol.SecilenPeriyotBirim) · Sonraki kontrol: @(_kontrol.SonrakiKontrolTarihi?.ToString("d", Tr) ?? "—")</p>@if (!string.IsNullOrWhiteSpace(_kontrol.PeriyotDegisiklikGerekcesi)) { <p>Periyot gerekçesi: @_kontrol.PeriyotDegisiklikGerekcesi</p> }@if (!string.IsNullOrWhiteSpace(_kontrol.TarihDegisiklikGerekcesi)) { <p>Tarih gerekçesi: @_kontrol.TarihDegisiklikGerekcesi</p> }@if (!string.IsNullOrWhiteSpace(_kontrol.IslemGerekcesi)) { <p>İşlem: @_kontrol.IslemGerekcesi (@_kontrol.IslemYapan, @_kontrol.IslemTarihi?.ToString("g", Tr))</p> }</div>
+                        }
+                        <div class="kontrol-bilgi"><i class="bi bi-lock me-2"></i>Tamamlanan rapor korunur. Sonraki değişiklikler gerekçeli revizyonla yapılır.</div>
+                    }
+                </fieldset>
+                <footer class="kontrol-form-alt">
+                    <button class="btn btn-sm btn-outline-secondary" disabled="@(_busy || _aktifAdim == 0)" @onclick="() => AdimaGitAsync(_aktifAdim - 1)"><i class="bi bi-arrow-left me-1"></i>Önceki adım</button>
+                    <div>
+                        @if (!SonAdim)
+                        {
+                            <span class="kontrol-sonraki">Sonraki: @(_aktifAdim + 1 == _adimlar.Count ? "Son kontrol" : _adimlar[_aktifAdim + 1].Baslik)</span>
+                            <button class="btn btn-sm btn-primary" disabled="@_busy" @onclick="DevamEtAsync">@(taslak ? "Kaydet ve devam et" : "Sonraki adım") <i class="bi bi-arrow-right ms-1"></i></button>
+                        }
+                        else if (taslak)
+                        {
+                            <button class="btn btn-sm btn-success" disabled="@_busy" @onclick="() => _tamamlaAcik = true"><i class="bi bi-check2-circle me-1"></i>Raporu tamamla</button>
+                        }
+                    </div>
+                </footer>
+            </section>
+        </div>
+        @if (_kontrol.RevizeEdilenKontrolId is not null)
+        {
+            <p class="kontrol-revizyon"><i class="bi bi-info-circle me-1"></i>Bu kayıt <a href="/tbys/tasinmaz-kontrol/@_kontrol.RevizeEdilenKontrolId">#@_kontrol.RevizeEdilenKontrolId</a> numaralı kontrolün revizyonudur.</p>
+        }
+    </div>
 
     @if (_tamamlaAcik)
     {
@@ -188,6 +292,67 @@ else
     private bool _loading = true, _busy, _tamamlaAcik, _iptalAcik, _revizyonAcik;
     private string? _hata;
 
+    private List<KontrolFormAdimi> _adimlar = new();
+    private Dictionary<string, string?> _snapshot = new();
+    private int _aktifAdim;
+    private readonly HashSet<int> _gorulenAdimlar = new() { 0 };
+    private bool _sekmeli, _basligaOdaklan, _ayrilmayaIzinVer;
+    private ElementReference _adimBasligi;
+    private DateTime? _sonKayit;
+    private string _kayitliIcerik = string.Empty;
+
+    private bool SonAdim => _aktifAdim == _adimlar.Count;
+    private string IcerikImzasi => System.Text.Json.JsonSerializer.Serialize(new { Cevaplar = _cevaplar.ToJson(), _kontrolTarihi, _kontrolEdenler, _imzalayanMakam });
+    private bool KaydedilmemisDegisiklikVar => !_ayrilmayaIzinVer && _kontrol?.Durum == KontrolDurumu.Taslak && IcerikImzasi != _kayitliIcerik;
+    private string SnapshotDegeri(string alan) => _snapshot.TryGetValue(alan, out var deger) && !string.IsNullOrWhiteSpace(deger) ? deger : "—";
+    private string KonumEtiketi => string.Join(" / ", new[] { SnapshotDegeri("Ilcesi"), SnapshotDegeri("Ili") }.Where(x => x != "—"));
+
+    private void FormDegisti() => StateHasChanged();
+
+    private Task AdimaGitAsync(int index)
+    {
+        if (_busy || index < 0 || index > _adimlar.Count) return Task.CompletedTask;
+        _aktifAdim = index;
+        _gorulenAdimlar.Add(index);
+        _basligaOdaklan = true;
+        return Task.CompletedTask;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_basligaOdaklan && !_loading && _kontrol is not null)
+        {
+            _basligaOdaklan = false;
+            await _adimBasligi.FocusAsync();
+        }
+    }
+
+    private async Task DevamEtAsync()
+    {
+        if (_busy || _kontrol is null) return;
+        if (_kontrol.Durum == KontrolDurumu.Taslak && !await KaydetAsync()) return;
+        await AdimaGitAsync(_aktifAdim + 1);
+    }
+
+    private List<string> AdimHatalari(int index)
+    {
+        var tanim = new KontrolFormTanimi { Bolumler = _adimlar[index].Bolumler.ToList() };
+        var hatalar = KontrolFormDogrulayici.CevaplariDogrula(tanim, _cevaplar,
+            (kod, satir) => _ekler.Count(e => e.AlanKodu.Equals(kod, StringComparison.OrdinalIgnoreCase) && e.SatirNo == satir), true);
+        if (index == 0)
+        {
+            if (string.IsNullOrWhiteSpace(_imzalayanMakam)) hatalar.Insert(0, "Raporu imzalayan makam zorunludur.");
+            if (_kontrolTarihi.Date > DateTime.Today) hatalar.Insert(0, "Kontrol tarihi ileri tarihli olamaz.");
+        }
+        return hatalar;
+    }
+
+    private async Task SayfadanAyrilmadanOnceAsync(LocationChangingContext context)
+    {
+        if (_busy || (KaydedilmemisDegisiklikVar && !await JS.InvokeAsync<bool>("confirm", "Kaydedilmemiş değişiklikleriniz var. Kaydetmeden ayrılmak istiyor musunuz?")))
+            context.PreventNavigation();
+    }
+
     private int? _mevcutPeriyotSure; private PeriyotBirimi? _mevcutPeriyotBirim;
     private int? _periyotSure; private PeriyotBirimi? _periyotBirim;
     private string? _periyotGerekce; private DateTime? _elleTarih; private string? _tarihGerekce;
@@ -199,14 +364,21 @@ else
     private async Task YukleAsync()
     {
         _loading = true; _hata = null;
+        _aktifAdim = 0; _gorulenAdimlar.Clear(); _gorulenAdimlar.Add(0);
+        _sonKayit = null; _ayrilmayaIzinVer = false;
+        _tamamlaAcik = false; _iptalAcik = false; _revizyonAcik = false;
+        _periyotGerekce = null; _elleTarih = null; _tarihGerekce = null;
         var r = await KontrolService.GetByIdAsync(Id);
         if (r.IsFailure) { _kontrol = null; _hata = r.Error.Message; _loading = false; return; }
         _kontrol = r.Value;
-        _tanim = KontrolFormTanimi.FromJson(_kontrol.Form?.TanimJson);
+        _tanim = KontrolRaporu.TanimAl(_kontrol.TasinmazSnapshotJson);
+        _adimlar = KontrolFormAdimlari.Olustur(_tanim);
+        _snapshot = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string?>>(_kontrol.TasinmazSnapshotJson, KontrolFormTanimi.JsonOptions) ?? new();
         _cevaplar = KontrolCevaplari.FromJson(_kontrol.CevaplarJson);
         _kontrolTarihi = _kontrol.KontrolTarihi;
         _kontrolEdenler = _kontrol.KontrolEdenler;
         _imzalayanMakam = _kontrol.ImzalayanMakam;
+        _kayitliIcerik = IcerikImzasi;
         var ek = await KontrolService.GetEklerAsync(Id);
         _ekler = ek.IsSuccess ? ek.Value : new();
 
@@ -223,25 +395,46 @@ else
         }
 
         var plan = await KontrolService.GetPlanAsync(_kontrol.TasinmazId);
-        _mevcutPeriyotSure = plan is { IsSuccess: true, Value: not null } ? plan.Value.PeriyotSure : _kontrol.Form?.VarsayilanPeriyotSure;
-        _mevcutPeriyotBirim = plan is { IsSuccess: true, Value: not null } ? plan.Value.PeriyotBirim : _kontrol.Form?.VarsayilanPeriyotBirim;
+        var varsayilanPeriyot = KontrolRaporu.PeriyotAl(_kontrol.TasinmazSnapshotJson);
+        _mevcutPeriyotSure = plan is { IsSuccess: true, Value: not null } ? plan.Value.PeriyotSure : varsayilanPeriyot.Sure;
+        _mevcutPeriyotBirim = plan is { IsSuccess: true, Value: not null } ? plan.Value.PeriyotBirim : varsayilanPeriyot.Birim;
         _periyotSure = _mevcutPeriyotSure; _periyotBirim = _mevcutPeriyotBirim;
         _loading = false;
     }
 
     private async Task TaslakKaydetAsync()
     {
-        if (_kontrol is null) return;
+        if (await KaydetAsync()) Toast.ShowSuccess("Taslak kaydedildi.");
+    }
+
+    private async Task<bool> KaydetAsync()
+    {
+        if (_kontrol is null || _busy || _kontrol.Durum != KontrolDurumu.Taslak) return false;
         _busy = true; _hata = null;
-        var r = await KontrolService.TaslakKaydetAsync(_kontrol.Id, _kontrol.KayitSurumu, _cevaplar, _kontrolEdenler, _kontrolTarihi, _imzalayanMakam);
-        _busy = false;
-        if (r.IsSuccess) { Toast.ShowSuccess("Taslak kaydedildi."); await YukleAsync(); }
-        else _hata = r.Error.Message;
+        try
+        {
+            var r = await KontrolService.TaslakKaydetAsync(_kontrol.Id, _kontrol.KayitSurumu, _cevaplar, _kontrolEdenler, _kontrolTarihi, _imzalayanMakam);
+            if (r.IsFailure) { _hata = r.Error.Message; return false; }
+            // Servis başarılı kayıtta sürümü bir artırır. Yeniden yüklemek adımı ve girilen bilgileri sıfırlardı.
+            _kontrol.KayitSurumu++;
+            _kayitliIcerik = IcerikImzasi;
+            _sonKayit = DateTime.Now;
+            return true;
+        }
+        finally { _busy = false; }
     }
 
     private async Task TamamlaAsync()
     {
-        if (_kontrol is null) return;
+        if (_kontrol is null || _busy) return;
+        var eksikAdim = Enumerable.Range(0, _adimlar.Count).FirstOrDefault(i => AdimHatalari(i).Count > 0, -1);
+        if (eksikAdim >= 0)
+        {
+            _tamamlaAcik = false;
+            _hata = string.Join(" ", AdimHatalari(eksikAdim));
+            await AdimaGitAsync(eksikAdim);
+            return;
+        }
         _busy = true; _hata = null;
         var r = await KontrolService.TamamlaAsync(new KontrolTamamlaIstegi
         {
@@ -250,7 +443,7 @@ else
             PeriyotDegisiklikGerekcesi = _periyotGerekce, ElleBelirlenenSonrakiTarih = _elleTarih, TarihDegisiklikGerekcesi = _tarihGerekce
         });
         _busy = false; _tamamlaAcik = false;
-        if (r.IsSuccess) { Toast.ShowSuccess("Kontrol tamamlandı."); await YukleAsync(); }
+        if (r.IsSuccess) { Toast.ShowSuccess("Kontrol tamamlandı."); await YukleAsync(); await AdimaGitAsync(_adimlar.Count); }
         else _hata = r.Error.Message;
     }
 
@@ -269,7 +462,7 @@ else
         _busy = true; _revizyonAcik = false;
         var r = await KontrolService.BaslatAsync(new KontrolBaslatIstegi
         {
-            TasinmazId = _kontrol.TasinmazId, FormId = _kontrol.FormId, KontrolEdenler = _kontrol.KontrolEdenler, ImzalayanMakam = _kontrol.ImzalayanMakam,
+            TasinmazId = _kontrol.TasinmazId, KontrolEdenler = _kontrol.KontrolEdenler, ImzalayanMakam = _kontrol.ImzalayanMakam,
             RevizeEdilenKontrolId = _kontrol.Id, RevizyonGerekcesi = gerekce
         });
         _busy = false;
@@ -281,37 +474,67 @@ else
         Modal.ShowConfirmation("Taslağı Sil", "Taslak kontrol ve ekleri kalıcı olarak silinecek. Devam edilsin mi?", async ok =>
         {
             if (!ok || _kontrol is null) return;
-            var r = await KontrolService.DeleteAsync(_kontrol.Id);
-            if (r.IsSuccess) { Toast.ShowSuccess("Taslak silindi."); Nav.NavigateTo("/tbys/tasinmaz-kontrol"); }
-            else { _hata = r.Error.Message; await InvokeAsync(StateHasChanged); }
+            if (_busy) return;
+            _busy = true;
+            try
+            {
+                var r = await KontrolService.DeleteAsync(_kontrol.Id);
+                if (r.IsSuccess) { _ayrilmayaIzinVer = true; Toast.ShowSuccess("Taslak silindi."); }
+                else _hata = r.Error.Message;
+            }
+            finally { _busy = false; }
+            if (_ayrilmayaIzinVer) Nav.NavigateTo("/tbys/tasinmaz-kontrol");
+            await InvokeAsync(StateHasChanged);
         });
         return Task.CompletedTask;
     }
 
     private async Task EkYukleAsync(InputFileChangeEventArgs e, (string AlanKodu, string? GrupKodu, int? SatirNo) hedef)
     {
-        if (_kontrol is null) return;
+        if (_kontrol is null || _busy) return;
         _busy = true; _hata = null;
-        foreach (var dosya in e.GetMultipleFiles(10))
+        try
         {
-            await using var s = dosya.OpenReadStream(DosyaSistemiKontrolEkDeposu.MaksimumBoyut);
-            var r = await KontrolService.EkYukleAsync(new EkYukleIstegi
+            if (e.FileCount > 10) { _hata = "Bir defada en fazla 10 dosya seçebilirsiniz."; return; }
+            foreach (var dosya in e.GetMultipleFiles(10))
             {
-                KontrolId = _kontrol.Id, AlanKodu = hedef.AlanKodu, GrupKodu = hedef.GrupKodu, SatirNo = hedef.SatirNo,
-                DosyaAdi = dosya.Name, IcerikTipi = dosya.ContentType, Icerik = s
-            });
-            if (r.IsFailure) { _hata = r.Error.Message; break; }
+                if (dosya.Size > DosyaSistemiKontrolEkDeposu.MaksimumBoyut) { _hata = $"{dosya.Name}: Dosya 20 MB sınırını aşıyor."; break; }
+                await using var s = dosya.OpenReadStream(DosyaSistemiKontrolEkDeposu.MaksimumBoyut);
+                var r = await KontrolService.EkYukleAsync(new EkYukleIstegi
+                {
+                    KontrolId = _kontrol.Id, AlanKodu = hedef.AlanKodu, GrupKodu = hedef.GrupKodu, SatirNo = hedef.SatirNo,
+                    DosyaAdi = dosya.Name, IcerikTipi = dosya.ContentType, Icerik = s
+                });
+                if (r.IsFailure) { _hata = r.Error.Message; break; }
+            }
         }
-        _busy = false;
-        var ek = await KontrolService.GetEklerAsync(_kontrol.Id);
-        _ekler = ek.IsSuccess ? ek.Value : _ekler;
+        catch (Exception)
+        {
+            _hata = "Dosya yüklenemedi. Dosyayı yeniden seçerek tekrar deneyin.";
+        }
+        finally
+        {
+            try
+            {
+                var ek = await KontrolService.GetEklerAsync(_kontrol.Id);
+                if (ek.IsSuccess) _ekler = ek.Value;
+                else _hata ??= ek.Error.Message;
+            }
+            finally { _busy = false; }
+        }
     }
 
     private async Task EkSilAsync(TasinmazKontrolEk ek)
     {
-        var r = await KontrolService.EkSilAsync(ek.Id);
-        if (r.IsFailure) { _hata = r.Error.Message; return; }
-        _ekler.RemoveAll(x => x.Id == ek.Id);
+        if (_busy) return;
+        _busy = true;
+        try
+        {
+            var r = await KontrolService.EkSilAsync(ek.Id);
+            if (r.IsFailure) { _hata = r.Error.Message; return; }
+            _ekler.RemoveAll(x => x.Id == ek.Id);
+        }
+        finally { _busy = false; }
     }
 
     internal static string DurumEtiket(KontrolDurumu d) => d switch

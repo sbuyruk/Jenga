@@ -4,73 +4,11 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Jenga.Models.TBYS.Kontrol
 {
-    /// <summary>
-    /// Kontrol formunun bir sürümü. Aynı <see cref="Kod"/> altındaki satırlar sürüm zincirini oluşturur.
-    /// Yayımlanmış/arşivlenmiş satırların içeriği değiştirilmez; düzenleme yeni taslak sürüm üretir.
-    /// </summary>
-    [Table("TasinmazKontrolForm_Table")]
-    public class TasinmazKontrolForm : BaseModel
-    {
-        [Required, MaxLength(50)]
-        public string Kod { get; set; } = string.Empty;
-
-        [Required, MaxLength(200)]
-        public string Ad { get; set; } = string.Empty;
-
-        public int Surum { get; set; } = 1;
-
-        public KontrolFormKapsami Kapsam { get; set; } = KontrolFormKapsami.Genel;
-
-        /// <summary>Kapsam=Cins ise normalize edilmiş cins (bkz. <see cref="CinsNormalize"/>).</summary>
-        [MaxLength(100)]
-        public string? KapsamCinsi { get; set; }
-
-        /// <summary>Kapsam=Tasinmaz ise hedef taşınmaz.</summary>
-        public int? KapsamTasinmazId { get; set; }
-
-        public KontrolFormDurumu Durum { get; set; } = KontrolFormDurumu.Taslak;
-
-        /// <summary>Kopyalandığı ya da yeni sürümü olduğu form satırı. Kaynak değişiklikleri buraya yansımaz.</summary>
-        public int? KaynakFormId { get; set; }
-
-        public int? VarsayilanPeriyotSure { get; set; }
-        public PeriyotBirimi? VarsayilanPeriyotBirim { get; set; }
-
-        public string TanimJson { get; set; } = "{}";
-
-        public DateTime? YayimTarihi { get; set; }
-        public string? Yayimlayan { get; set; }
-        public DateTime? ArsivTarihi { get; set; }
-        public string? Arsivleyen { get; set; }
-
-        /// <summary>İyimser eşzamanlılık; her güncellemede servis tarafından artırılır.</summary>
-        [ConcurrencyCheck]
-        public int KayitSurumu { get; set; }
-
-        [NotMapped]
-        public string KapsamEtiketi => Kapsam switch
-        {
-            KontrolFormKapsami.Cins => $"Cins: {KapsamCinsi}",
-            KontrolFormKapsami.Tasinmaz => $"Taşınmaz #{KapsamTasinmazId}",
-            _ => "Genel"
-        };
-
-        /// <summary>Boşlukları kırpar, Türkçe kültürle büyük harfe çevirir; null/boş → null.</summary>
-        public static string? CinsNormalize(string? cins)
-        {
-            if (string.IsNullOrWhiteSpace(cins)) return null;
-            var tr = System.Globalization.CultureInfo.GetCultureInfo("tr-TR");
-            return string.Join(' ', cins.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries)).ToUpper(tr);
-        }
-    }
-
-    /// <summary>Gerçekleştirilen (ya da sürdürülen) bir kontrol. Başlangıçta seçilen kesin form sürümüne bağlıdır.</summary>
+    /// <summary>Gerçekleştirilen (ya da sürdürülen) bir kontrol. Sabit rapor formuyla yürütülür.</summary>
     [Table("TasinmazKontrol_Table")]
     public class TasinmazKontrol : BaseModel
     {
         public int TasinmazId { get; set; }
-        public int FormId { get; set; }
-        public TasinmazKontrolForm? Form { get; set; }
 
         /// <summary>Kontrol anındaki sorumlu bölge (snapshot).</summary>
         public int? BolgeId { get; set; }

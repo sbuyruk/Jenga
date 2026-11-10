@@ -1,19 +1,5 @@
 namespace Jenga.Models.TBYS.Kontrol
 {
-    public enum KontrolFormKapsami
-    {
-        Genel = 0,
-        Cins = 1,
-        Tasinmaz = 2
-    }
-
-    public enum KontrolFormDurumu
-    {
-        Taslak = 0,
-        Yayimlanmis = 1,
-        Arsivlenmis = 2
-    }
-
     public enum KontrolDurumu
     {
         Taslak = 0,

@@ -158,11 +158,6 @@ CultureInfo.DefaultThreadCurrentUICulture = defaultCulture;
 builder.Services.AddLocalization();
 var app = builder.Build();
 
-// TBYS Taşınmaz Kontrolü: Excel'den türetilen varsayılan form şablonunu idempotent ekle (şema: docs/sql/2025-TBYS-TasinmazKontrol.sql).
-await KontrolFormSeed.UygulaAsync(
-    app.Services.GetRequiredService<IDbContextFactory<ApplicationDbContext>>(),
-    app.Services.GetRequiredService<ILogService>());
-
 var supportedCultures = new[] { defaultCulture };
 var localizationOptions = new RequestLocalizationOptions
 {

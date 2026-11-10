@@ -13,8 +13,6 @@ namespace Jenga.DataAccess.Services.TBYS
         public string? Ili { get; set; }
         public string? Ilcesi { get; set; }
         public string? BolgeAdi { get; set; }
-        public string FormAd { get; set; } = string.Empty;
-        public int FormSurum { get; set; }
         public DateTime KontrolTarihi { get; set; }
         public KontrolDurumu Durum { get; set; }
         public string? KontrolEdenler { get; set; }
@@ -57,7 +55,6 @@ namespace Jenga.DataAccess.Services.TBYS
     public sealed class KontrolBaslatIstegi
     {
         public int TasinmazId { get; set; }
-        public int FormId { get; set; }
         public DateTime KontrolTarihi { get; set; } = DateTime.Today;
         public string? KontrolEdenler { get; set; }
         public string? ImzalayanMakam { get; set; }

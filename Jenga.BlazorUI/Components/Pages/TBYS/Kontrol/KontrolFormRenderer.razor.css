@@ -1,0 +1,55 @@
+.kontrol-bolum + .kontrol-bolum { border-top: 1px solid var(--bs-border-color); margin-top: 1.75rem; padding-top: 1.5rem; }
+.kontrol-bolum-baslik { margin-bottom: 1rem; color: var(--bs-body-color); font-size: .9rem; }
+.kontrol-alanlar { display: grid; grid-template-columns: repeat(20, minmax(0, 1fr)); gap: 1rem 1.25rem; }
+.kontrol-alan { min-width: 0; }
+.kontrol-alan-mini { grid-column: span 3; }
+.kontrol-alan-kisa { grid-column: span 4; }
+.kontrol-alan-normal { grid-column: span 5; }
+.kontrol-alan-genis { grid-column: span 10; }
+.kontrol-alan-tam { grid-column: 1 / -1; }
+.kontrol-alan .form-label { font-weight: 500; }
+.kontrol-alan .form-control, .kontrol-alan .form-select { min-height: 38px; border-radius: 8px; }
+.kontrol-alan .form-control:disabled, .kontrol-alan .form-select:disabled { background-color: var(--bs-tertiary-bg); }
+.kontrol-alan textarea { min-height: 90px; }
+.kontrol-alan a { overflow-wrap: anywhere; }
+@media (min-width: 1200px) {
+    /* İnşa yılı + kat sayısı + yapı tarzı + dış cephe + asansör + otopark = 20 sütun. */
+    .kontrol-bina-secim { grid-column: span 4; }
+    .kontrol-bina-evethayir { grid-column: span 3; }
+    /* Oda + salon + banyo/WC + balkon + cephe + zemin + genel durum = 2+2+3+3+3+4+3. */
+    .kontrol-bb-sayi { grid-column: span 2; }
+    .kontrol-bb-kisa { grid-column: span 3; }
+    .kontrol-bb-zemin { grid-column: span 4; }
+    /* Site içinde mi + site adı + sosyal donatılar + aidat = 3+5+9+3. */
+    .kontrol-site-kisa { grid-column: span 3; }
+    .kontrol-site-donati { grid-column: span 9; }
+    /* Ulaşım + çevre yapılaşma + gelişme eğilimi + koordinat = 6+6+4+4. */
+    .kontrol-konum-metin { grid-column: span 6; }
+    .kontrol-konum-kisa { grid-column: span 4; }
+    /* Tesis türü + adı + uzaklığı = 6+10+4. */
+    .kontrol-tesis-tur { grid-column: span 6; }
+    .kontrol-tesis-ad { grid-column: span 10; }
+    /* Tür + adres + alan + bedel + birim bedel + uzaklık + kaynak = 3+4+2+3+3+2+3. */
+    .kontrol-emsal-dar { grid-column: span 2; }
+    .kontrol-emsal-normal { grid-column: span 3; }
+    .kontrol-emsal-adres { grid-column: span 4; }
+    /* Tür + lehtar + tarih + açıklama = 3+5+4+8. */
+    .kontrol-takyidat-tur { grid-column: span 3; }
+    .kontrol-takyidat-tarih { grid-column: span 4; }
+    .kontrol-takyidat-aciklama { grid-column: span 8; }
+    /* Adı soyadı + sıfatı + telefon = 8+6+6. */
+    .kontrol-irtibat-ad { grid-column: span 8; }
+    .kontrol-irtibat-diger { grid-column: span 6; }
+}
+@media (max-width: 1199.98px) {
+    .kontrol-alan-mini, .kontrol-alan-kisa { grid-column: span 5; }
+    .kontrol-alan-normal, .kontrol-alan-genis { grid-column: span 10; }
+}
+@media (max-width: 767.98px) {
+    .kontrol-alan-mini, .kontrol-alan-kisa { grid-column: span 10; }
+    .kontrol-alan-normal, .kontrol-alan-genis { grid-column: 1 / -1; }
+}
+@media (max-width: 575.98px) {
+    .kontrol-alanlar { gap: 1rem; }
+    .kontrol-alan-mini, .kontrol-alan-kisa, .kontrol-alan-normal, .kontrol-alan-genis { grid-column: 1 / -1; }
+}

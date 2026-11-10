@@ -10,7 +10,6 @@
 @using System.Globalization
 
 @inject ITasinmazKontrolService KontrolService
-@inject ITasinmazKontrolFormService FormService
 @inject IToastService Toast
 @inject NavigationManager Nav
 
@@ -84,7 +83,7 @@ else if (_sekme == 0)
                         }
                         else
                         {
-                            <button class="btn btn-sm btn-primary me-1" title="Yeni kontrol başlat" @onclick="() => BaslatAcAsync(p)"><i class="bi bi-play-fill me-1"></i>Kontrol Başlat</button>
+                            <button class="btn btn-sm btn-primary me-1" title="Yeni kontrol başlat" @onclick="() => BaslatAc(p)"><i class="bi bi-play-fill me-1"></i>Kontrol Başlat</button>
                         }
                         <button class="btn btn-sm btn-outline-secondary me-1" title="Planı Düzenle" @onclick="() => PlanAc(p)"><i class="bi bi-calendar-event"></i></button>
                         <button class="btn btn-sm btn-outline-secondary" title="Geçmiş" @onclick="() => { _tasinmazFiltre = p.TasinmazId; _sekme = 1; _ = YenileAsync(); }"><i class="bi bi-clock-history"></i></button>
@@ -124,7 +123,7 @@ else
         <div class="card-body p-0">
             <GenericTable TItem="TasinmazKontrolOzet" Items="_kontroller" TableHeight="65vh" TableClass="table-bordered table-hover" ShowCopy="false"
                           OnRowClicked="SatirTiklandi"
-                          SearchTextSelector="@(k => $"{k.RaporNo} {k.EmlakSicilNo} {k.Cinsi} {k.Ili} {k.Ilcesi} {k.BolgeAdi} {k.FormAd} {k.KontrolEdenler}")">
+                          SearchTextSelector="@(k => $"{k.RaporNo} {k.EmlakSicilNo} {k.Cinsi} {k.Ili} {k.Ilcesi} {k.BolgeAdi} {k.KontrolEdenler}")">
                 <HeaderTemplate>
                     <th>#</th>
                     <th>Rapor No</th>
@@ -134,7 +133,6 @@ else
                     <th>Cinsi</th>
                     <th>İli / İlçesi</th>
                     <th>Bölge</th>
-                    <th>Form</th>
                     <th>Kontrol Edenler</th>
                     <th>Sonraki</th>
                 </HeaderTemplate>
@@ -147,7 +145,6 @@ else
                     <td>@k.Cinsi</td>
                     <td>@k.Ili / @k.Ilcesi</td>
                     <td>@k.BolgeAdi</td>
-                    <td>@k.FormAd <small class="text-muted">v@(k.FormSurum)</small></td>
                     <td>@k.KontrolEdenler</td>
                     <td>@(k.SonrakiKontrolTarihi?.ToString("d", Tr) ?? "—")</td>
                 </RowTemplate>
@@ -163,32 +160,19 @@ else
             <div class="modal-content">
                 <div class="modal-header py-2"><h6 class="modal-title">Kontrol Başlat — @_baslatHedef.EmlakSicilNo</h6><button type="button" class="btn-close" @onclick="() => _baslatHedef = null"></button></div>
                 <div class="modal-body">
-                    @if (_uygunFormlar.Count == 0)
-                    {
-                        <div class="alert alert-warning py-2 small">Bu taşınmaz için yayımlanmış uygun bir form bulunamadı.</div>
-                    }
-                    else
-                    {
-                        <div class="mb-2">
-                            <label class="form-label small mb-1">Form</label>
-                            <select class="form-select form-select-sm" @bind="_baslatFormId">
-                                @foreach (var f in _uygunFormlar) { <option value="@f.Id">@f.Ad (v@(f.Surum), @f.Kapsam)</option> }
-                            </select>
-                        </div>
-                        <div class="mb-2">
-                            <label class="form-label small mb-1">Kontrol Tarihi</label>
-                            <input type="date" class="form-control form-control-sm" @bind="_baslatTarih" />
-                        </div>
-                        <div class="mb-2">
-                            <label class="form-label small mb-1">Kontrolü Yapanlar</label>
-                            <KontrolEdenlerSecici @bind-Value="_baslatEdenler" />
-                        </div>
-                    }
+                    <div class="mb-2">
+                        <label class="form-label small mb-1">Kontrol Tarihi</label>
+                        <input type="date" class="form-control form-control-sm" @bind="_baslatTarih" />
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small mb-1">Kontrolü Yapanlar</label>
+                        <KontrolEdenlerSecici @bind-Value="_baslatEdenler" />
+                    </div>
                     @if (_hata is not null) { <div class="alert alert-danger py-2 small">@_hata</div> }
                 </div>
                 <div class="modal-footer py-2">
                     <button class="btn btn-sm btn-secondary" @onclick="() => _baslatHedef = null">Vazgeç</button>
-                    <button class="btn btn-sm btn-primary" @onclick="BaslatAsync" disabled="@(_busy || _uygunFormlar.Count == 0)">Başlat</button>
+                    <button class="btn btn-sm btn-primary" @onclick="BaslatAsync" disabled="@_busy">Başlat</button>
                 </div>
             </div>
         </div>
@@ -250,8 +234,6 @@ else
     private List<TasinmazPlanOzet> GosterilenPlanlar => _sadeceTaslak ? _planlar.Where(p => p.AcikTaslakId is not null).ToList() : _planlar;
 
     private TasinmazPlanOzet? _baslatHedef;
-    private List<TasinmazKontrolForm> _uygunFormlar = new();
-    private int _baslatFormId;
     private DateTime _baslatTarih = DateTime.Today;
     private string? _baslatEdenler;
 
@@ -280,12 +262,9 @@ else
         _loading = false;
     }
 
-    private async Task BaslatAcAsync(TasinmazPlanOzet p)
+    private void BaslatAc(TasinmazPlanOzet p)
     {
         _hata = null; _baslatHedef = p; _baslatTarih = DateTime.Today; _baslatEdenler = null;
-        var r = await FormService.GetUygunFormlarAsync(p.TasinmazId);
-        _uygunFormlar = r.IsSuccess ? r.Value : new();
-        _baslatFormId = _uygunFormlar.FirstOrDefault()?.Id ?? 0;
     }
 
     private async Task BaslatAsync()
@@ -294,7 +273,7 @@ else
         _busy = true; _hata = null;
         var r = await KontrolService.BaslatAsync(new KontrolBaslatIstegi
         {
-            TasinmazId = _baslatHedef.TasinmazId, FormId = _baslatFormId, KontrolTarihi = _baslatTarih, KontrolEdenler = _baslatEdenler
+            TasinmazId = _baslatHedef.TasinmazId, KontrolTarihi = _baslatTarih, KontrolEdenler = _baslatEdenler
         });
         _busy = false;
         if (r.IsSuccess) Nav.NavigateTo($"/tbys/tasinmaz-kontrol/{r.Value}");

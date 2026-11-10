@@ -50,8 +50,8 @@ namespace Jenga.Models.Tests.TBYS.Kontrol
             var t = new Tasinmaz { EmlakSicilNo = "ES-1", Cinsi = "ARSA", Ili = "ANKARA" };
             var tanim = new KontrolFormTanimi();
             var b = new KontrolBolumTanimi { Kod = "B1", Baslik = "B" };
-            b.Alanlar.Add(new KontrolAlanTanimi { Kod = "sicil", Baslik = "Sicil", Tip = KontrolAlanTipi.Metin, VeriKaynagi = KontrolVeriKaynagiTipi.TasinmazSaltOkunur, TasinmazAlani = "EmlakSicilNo" });
-            b.Alanlar.Add(new KontrolAlanTanimi { Kod = "not", Baslik = "Not", Tip = KontrolAlanTipi.Metin });
+            b.Alanlar.Add(new KontrolAlanTanimi { Kod = "sicil", Baslik = "Sicil", Tip = KontrolAlanTipi.KisaMetin, VeriKaynagi = KontrolVeriKaynagiTipi.TasinmazSaltOkunur, TasinmazAlani = "EmlakSicilNo" });
+            b.Alanlar.Add(new KontrolAlanTanimi { Kod = "not", Baslik = "Not", Tip = KontrolAlanTipi.KisaMetin });
             tanim.Bolumler.Add(b);
 
             var snap = TasinmazVeriKaynagi.Snapshot(t, tanim);

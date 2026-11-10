@@ -17,35 +17,9 @@ namespace Jenga.Models.Tests.TBYS.Kontrol
         private static int YokEk(string _, int? __) => 0;
 
         [Fact]
-        public void TanimiDogrula_BosFormHatali()
-        {
-            Assert.Contains(KontrolFormDogrulayici.TanimiDogrula(new KontrolFormTanimi()), h => h.Contains("en az bir bölüm"));
-        }
-
-        [Fact]
-        public void TanimiDogrula_TekrarEdenAlanKoduYakalanir()
-        {
-            var f = Form(
-                new KontrolAlanTanimi { Kod = "a", Baslik = "A", Tip = KontrolAlanTipi.Metin },
-                new KontrolAlanTanimi { Kod = "A", Baslik = "A2", Tip = KontrolAlanTipi.Metin });
-            Assert.Contains(KontrolFormDogrulayici.TanimiDogrula(f), h => h.Contains("tekrar ediyor"));
-        }
-
-        [Fact]
-        public void TanimiDogrula_SecimliAlanSeceneksizOlamaz_VeGecersizKaynakReddedilir()
-        {
-            var f = Form(
-                new KontrolAlanTanimi { Kod = "s", Baslik = "Seçim", Tip = KontrolAlanTipi.TekliSecim },
-                new KontrolAlanTanimi { Kod = "k", Baslik = "Kaynak", Tip = KontrolAlanTipi.Metin, VeriKaynagi = KontrolVeriKaynagiTipi.TasinmazSaltOkunur, TasinmazAlani = "Olmayan" });
-            var h = KontrolFormDogrulayici.TanimiDogrula(f);
-            Assert.Contains(h, x => x.Contains("seçeneği yok"));
-            Assert.Contains(h, x => x.Contains("Geçersiz taşınmaz veri kaynağı"));
-        }
-
-        [Fact]
         public void CevaplariDogrula_TaslakZorunluluguDenetlemez_TamamlamaDenetler()
         {
-            var f = Form(new KontrolAlanTanimi { Kod = "z", Baslik = "Zorunlu", Tip = KontrolAlanTipi.Metin, Zorunlu = true });
+            var f = Form(new KontrolAlanTanimi { Kod = "z", Baslik = "Zorunlu", Tip = KontrolAlanTipi.KisaMetin, Zorunlu = true });
             var c = new KontrolCevaplari();
             Assert.Empty(KontrolFormDogrulayici.CevaplariDogrula(f, c, YokEk, zorunluKontrol: false));
             Assert.Contains(KontrolFormDogrulayici.CevaplariDogrula(f, c, YokEk, zorunluKontrol: true), h => h.Contains("zorunludur"));
@@ -90,20 +64,21 @@ namespace Jenga.Models.Tests.TBYS.Kontrol
         }
     }
 
-    public class VarsayilanKontrolFormuTests
+    public class KontrolRaporuTests
     {
         [Fact]
-        public void VarsayilanForm_GecerliVe21Bolum()
+        public void SabitRapor_AlanKodlariBenzersizVe19Bolum()
         {
-            var f = VarsayilanKontrolFormu.Olustur();
-            Assert.Equal(21, f.Bolumler.Count);
-            Assert.Empty(KontrolFormDogrulayici.TanimiDogrula(f));
+            var f = KontrolRaporu.Olustur();
+            Assert.Equal(19, f.Bolumler.Count);
+            var kodlar = f.TumAlanlar().Select(a => a.Kod).ToList();
+            Assert.Equal(kodlar.Count, kodlar.Distinct(StringComparer.OrdinalIgnoreCase).Count());
         }
 
         [Fact]
         public void VarsayilanForm_JsonGidisDonusuKayipsiz()
         {
-            var f = VarsayilanKontrolFormu.Olustur();
+            var f = KontrolRaporu.Olustur();
             var json = f.ToJson();
             var geri = KontrolFormTanimi.FromJson(json);
             Assert.Equal(json, geri.ToJson());
@@ -113,18 +88,11 @@ namespace Jenga.Models.Tests.TBYS.Kontrol
         [Fact]
         public void VarsayilanForm_TasinmazKaynakliAlanlarWhitelistte()
         {
-            var f = VarsayilanKontrolFormu.Olustur();
+            var f = KontrolRaporu.Olustur();
             var kaynakli = f.TumAlanlar().Where(a => a.VeriKaynagi != KontrolVeriKaynagiTipi.Manuel).ToList();
             Assert.NotEmpty(kaynakli);
             Assert.All(kaynakli, a => Assert.True(TasinmazVeriKaynagi.Gecerli(a.TasinmazAlani), a.Kod));
         }
 
-        [Fact]
-        public void CinsNormalize_BosluklariKirparBuyukHarfeCevirir()
-        {
-            Assert.Equal("ARSA", TasinmazKontrolForm.CinsNormalize("  arsa "));
-            Assert.Equal("MESKEN DAİRE", TasinmazKontrolForm.CinsNormalize("mesken   daire"));
-            Assert.Null(TasinmazKontrolForm.CinsNormalize("   "));
-        }
     }
 }

@@ -121,7 +121,6 @@ namespace Jenga.DataAccess.Services.TBYS
 
                 var q = from k in db.TasinmazKontrol_Table.AsNoTracking()
                         join t in tasinmazlar on k.TasinmazId equals t.Id
-                        join f in db.TasinmazKontrolForm_Table.AsNoTracking() on k.FormId equals f.Id
                         select new TasinmazKontrolOzet
                         {
                             Id = k.Id,
@@ -131,8 +130,6 @@ namespace Jenga.DataAccess.Services.TBYS
                             Ili = t.Ili,
                             Ilcesi = t.Ilcesi,
                             BolgeAdi = k.BolgeAdi,
-                            FormAd = f.Ad,
-                            FormSurum = f.Surum,
                             KontrolTarihi = k.KontrolTarihi,
                             Durum = k.Durum,
                             KontrolEdenler = k.KontrolEdenler,
@@ -159,7 +156,7 @@ namespace Jenga.DataAccess.Services.TBYS
             try
             {
                 await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-                var k = await db.TasinmazKontrol_Table.AsNoTracking().Include(x => x.Form).FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+                var k = await db.TasinmazKontrol_Table.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
                 if (k is null) return Result<TasinmazKontrol>.Failure(Error.NotFound("Kontrol bulunamadı."));
                 if (!await KontroleErisebilirAsync(db, k.TasinmazId, cancellationToken))
                     return Result<TasinmazKontrol>.Failure(Error.Forbidden(BolgeYetkisiYok));
@@ -297,11 +294,6 @@ namespace Jenga.DataAccess.Services.TBYS
                 if (yt is null) return Result<int>.Failure(Error.Forbidden(BolgeYetkisiYok));
                 var (tasinmaz, bolgeId, bolgeAdi) = yt.Value;
 
-                var form = await db.TasinmazKontrolForm_Table.AsNoTracking().FirstOrDefaultAsync(f => f.Id == istek.FormId, cancellationToken);
-                if (form is null) return Result<int>.Failure(Error.NotFound("Form bulunamadı."));
-                if (form.Durum != KontrolFormDurumu.Yayimlanmis) return Result<int>.Failure(Error.Validation("Yalnızca yayımlanmış formlarla kontrol başlatılabilir."));
-                if (!FormUygunMu(form, tasinmaz)) return Result<int>.Failure(Error.Validation("Seçilen form bu taşınmazın kapsamına uygun değil."));
-
                 if (await db.TasinmazKontrol_Table.AnyAsync(k => k.TasinmazId == istek.TasinmazId && k.Durum == KontrolDurumu.Taslak, cancellationToken))
                     return Result<int>.Failure(Error.Conflict("Bu taşınmaz için açık bir taslak kontrol zaten var."));
 
@@ -315,8 +307,9 @@ namespace Jenga.DataAccess.Services.TBYS
                         return Result<int>.Failure(Error.Conflict("Bu kontrol için zaten bir revizyon açılmış."));
                 }
 
-                var tanim = KontrolFormTanimi.FromJson(form.TanimJson);
+                var tanim = KontrolRaporu.TanimAl(revizeEdilen?.TasinmazSnapshotJson);
                 var snapshot = TasinmazVeriKaynagi.Snapshot(tasinmaz, tanim);
+                KontrolRaporu.GecmisBilgileriniKoru(snapshot, revizeEdilen?.TasinmazSnapshotJson);
 
                 var cevaplar = revizeEdilen is not null
                     ? KontrolCevaplari.FromJson(revizeEdilen.CevaplarJson)
@@ -332,7 +325,6 @@ namespace Jenga.DataAccess.Services.TBYS
                 var kontrol = new TasinmazKontrol
                 {
                     TasinmazId = istek.TasinmazId,
-                    FormId = form.Id,
                     BolgeId = bolgeId,
                     BolgeAdi = bolgeAdi,
                     KontrolEdenler = istek.KontrolEdenler?.Trim(),
@@ -369,13 +361,13 @@ namespace Jenga.DataAccess.Services.TBYS
             try
             {
                 await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-                var k = await db.TasinmazKontrol_Table.Include(x => x.Form).FirstOrDefaultAsync(x => x.Id == kontrolId, cancellationToken);
+                var k = await db.TasinmazKontrol_Table.FirstOrDefaultAsync(x => x.Id == kontrolId, cancellationToken);
                 if (k is null) return Result.Failure(Error.NotFound("Kontrol bulunamadı."));
                 if (!await KontroleErisebilirAsync(db, k.TasinmazId, cancellationToken)) return Result.Failure(Error.Forbidden(BolgeYetkisiYok));
                 if (k.Durum != KontrolDurumu.Taslak) return Result.Failure(Error.Conflict("Yalnızca taslak kontroller düzenlenebilir."));
                 if (k.KayitSurumu != kayitSurumu) return Result.Failure(Error.Conflict(EszamanlilikMesaji));
 
-                var tanim = KontrolFormTanimi.FromJson(k.Form!.TanimJson);
+                var tanim = KontrolRaporu.TanimAl(k.TasinmazSnapshotJson);
                 var ekler = await EkSayilariAsync(db, kontrolId, cancellationToken);
                 var hatalar = KontrolFormDogrulayici.CevaplariDogrula(tanim, cevaplar, (kod, satir) => ekler.GetValueOrDefault((kod, satir)), zorunluKontrol: false);
                 if (hatalar.Count > 0) return Result.Failure(Error.Validation(string.Join(" ", hatalar)));
@@ -420,13 +412,13 @@ namespace Jenga.DataAccess.Services.TBYS
                 var kullanici = await GetUserNameAsync(cancellationToken);
                 db.SetCurrentUser(kullanici);
 
-                var k = await db.TasinmazKontrol_Table.Include(x => x.Form).FirstOrDefaultAsync(x => x.Id == istek.KontrolId, cancellationToken);
+                var k = await db.TasinmazKontrol_Table.FirstOrDefaultAsync(x => x.Id == istek.KontrolId, cancellationToken);
                 if (k is null) return Result.Failure(Error.NotFound("Kontrol bulunamadı."));
                 if (!await KontroleErisebilirAsync(db, k.TasinmazId, cancellationToken)) return Result.Failure(Error.Forbidden(BolgeYetkisiYok));
                 if (k.Durum != KontrolDurumu.Taslak) return Result.Failure(Error.Conflict("Yalnızca taslak kontroller tamamlanabilir."));
                 if (k.KayitSurumu != istek.KayitSurumu) return Result.Failure(Error.Conflict(EszamanlilikMesaji));
 
-                var tanim = KontrolFormTanimi.FromJson(k.Form!.TanimJson);
+                var tanim = KontrolRaporu.TanimAl(k.TasinmazSnapshotJson);
                 var ekler = await EkSayilariAsync(db, k.Id, cancellationToken);
                 var hatalar = KontrolFormDogrulayici.CevaplariDogrula(tanim, istek.Cevaplar, (kod, satir) => ekler.GetValueOrDefault((kod, satir)), zorunluKontrol: true);
                 if (string.IsNullOrWhiteSpace(istek.ImzalayanMakam)) hatalar.Insert(0, "'Raporu İmzalayan Makam' zorunludur.");
@@ -434,8 +426,9 @@ namespace Jenga.DataAccess.Services.TBYS
                 SaltOkunurlariKoru(tanim, istek.Cevaplar, KontrolCevaplari.FromJson(k.CevaplarJson));
 
                 var plan = await db.TasinmazKontrolPlani_Table.FirstOrDefaultAsync(p => p.TasinmazId == k.TasinmazId, cancellationToken);
-                var oncekiSure = plan?.PeriyotSure ?? k.Form.VarsayilanPeriyotSure;
-                var oncekiBirim = plan?.PeriyotBirim ?? k.Form.VarsayilanPeriyotBirim;
+                var varsayilanPeriyot = KontrolRaporu.PeriyotAl(k.TasinmazSnapshotJson);
+                var oncekiSure = plan?.PeriyotSure ?? varsayilanPeriyot.Sure;
+                var oncekiBirim = plan?.PeriyotBirim ?? varsayilanPeriyot.Birim;
 
                 var secilenSure = istek.PeriyotSure ?? oncekiSure;
                 var secilenBirim = istek.PeriyotBirim ?? oncekiBirim;
@@ -663,12 +656,12 @@ namespace Jenga.DataAccess.Services.TBYS
             try
             {
                 await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-                var k = await db.TasinmazKontrol_Table.AsNoTracking().Include(x => x.Form).FirstOrDefaultAsync(x => x.Id == istek.KontrolId, cancellationToken);
+                var k = await db.TasinmazKontrol_Table.AsNoTracking().FirstOrDefaultAsync(x => x.Id == istek.KontrolId, cancellationToken);
                 if (k is null) return Result<int>.Failure(Error.NotFound("Kontrol bulunamadı."));
                 if (!await KontroleErisebilirAsync(db, k.TasinmazId, cancellationToken)) return Result<int>.Failure(Error.Forbidden(BolgeYetkisiYok));
                 if (k.Durum != KontrolDurumu.Taslak) return Result<int>.Failure(Error.Conflict("Yalnızca taslak kontrollere ek yüklenebilir."));
 
-                var tanim = KontrolFormTanimi.FromJson(k.Form!.TanimJson);
+                var tanim = KontrolRaporu.TanimAl(k.TasinmazSnapshotJson);
                 var alan = tanim.AlanBul(istek.AlanKodu);
                 if (alan is null || alan.Tip != KontrolAlanTipi.Ek) return Result<int>.Failure(Error.Validation("Alan bir ek alanı değil."));
 
@@ -754,14 +747,6 @@ namespace Jenga.DataAccess.Services.TBYS
         }
 
         // ----------------------------------------------------------------- Yardımcılar
-
-        private static bool FormUygunMu(TasinmazKontrolForm form, Tasinmaz tasinmaz) => form.Kapsam switch
-        {
-            KontrolFormKapsami.Genel => true,
-            KontrolFormKapsami.Tasinmaz => form.KapsamTasinmazId == tasinmaz.Id,
-            KontrolFormKapsami.Cins => form.KapsamCinsi != null && form.KapsamCinsi == TasinmazKontrolForm.CinsNormalize(tasinmaz.Cinsi),
-            _ => false
-        };
 
         private static async Task<Dictionary<(string, int?), int>> EkSayilariAsync(ApplicationDbContext db, int kontrolId, CancellationToken ct)
         {

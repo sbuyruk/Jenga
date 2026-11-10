@@ -1,15 +1,180 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
 namespace Jenga.Models.TBYS.Kontrol
 {
-    /// <summary>
-    /// docs/tasinmaz-kontrol-formu.xlsx içeriğinden türetilen başlangıç şablonu (Kod: <see cref="Kod"/>).
-    /// Yalnızca ilk kez oluşturulur; sonraki değişiklikler yeni sürüm olarak uygulama içinden yapılır.
-    /// Excel'den sapmalar: "Konu taşınmaza uzaklığı (m²)" → metre; "Taks: E H Max" → TAKS/Emsal/Hmax ayrıldı;
-    /// tekrar eden "Ticari" ve ikinci "Satılık/Kiralık" tekilleştirildi; yazım hataları düzeltildi.
-    /// </summary>
-    public static class VarsayilanKontrolFormu
+    /// <summary>Sabit raporun alan metaverisi ve eski raporlardaki alanların okunması için kullanılır.</summary>
+    public sealed class KontrolFormTanimi
     {
-        public const string Kod = "TASINMAZ-KONTROL";
-        public const string Ad = "Taşınmaz Kontrol Formu";
+        public List<KontrolBolumTanimi> Bolumler { get; set; } = new();
+
+        public static readonly JsonSerializerOptions JsonOptions = new()
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            WriteIndented = false,
+            Converters = { new JsonStringEnumConverter() }
+        };
+
+        public string ToJson() => JsonSerializer.Serialize(this, JsonOptions);
+
+        public static KontrolFormTanimi FromJson(string? json)
+            => string.IsNullOrWhiteSpace(json)
+                ? new KontrolFormTanimi()
+                : JsonSerializer.Deserialize<KontrolFormTanimi>(json, JsonOptions) ?? new KontrolFormTanimi();
+
+        /// <summary>Tüm alanları (grup içindekiler dâhil) düz liste olarak döner.</summary>
+        public IEnumerable<KontrolAlanTanimi> TumAlanlar()
+        {
+            foreach (var b in Bolumler)
+            {
+                foreach (var a in b.Alanlar) yield return a;
+                foreach (var g in b.Gruplar)
+                    foreach (var a in g.Alanlar) yield return a;
+            }
+        }
+
+        public KontrolAlanTanimi? AlanBul(string kod)
+            => TumAlanlar().FirstOrDefault(a => string.Equals(a.Kod, kod, StringComparison.OrdinalIgnoreCase));
+
+    }
+
+    public sealed class KontrolBolumTanimi
+    {
+        public string Kod { get; set; } = string.Empty;
+        public string Baslik { get; set; } = string.Empty;
+        public string? Aciklama { get; set; }
+        public int Sira { get; set; }
+        public List<KontrolAlanTanimi> Alanlar { get; set; } = new();
+        public List<KontrolGrupTanimi> Gruplar { get; set; } = new();
+    }
+
+    /// <summary>
+    /// Alt alanları olan grup. <see cref="Tekrarlanabilir"/> ise kullanıcı birden fazla satır girebilir
+    /// (ör. emsaller, irtibat kişileri); değilse tek satırlık alt alan kümesidir (ör. incelenen belge).
+    /// </summary>
+    public sealed class KontrolGrupTanimi
+    {
+        public string Kod { get; set; } = string.Empty;
+        public string Baslik { get; set; } = string.Empty;
+        public string? Aciklama { get; set; }
+        public int Sira { get; set; }
+        public bool Tekrarlanabilir { get; set; }
+        public int? EnAzSatir { get; set; }
+        public List<KontrolAlanTanimi> Alanlar { get; set; } = new();
+    }
+
+    public sealed class KontrolAlanTanimi
+    {
+        /// <summary>Cevapların kalıcı alan kodu. Anlamı değişen soruya yeni kod verilir.</summary>
+        public string Kod { get; set; } = string.Empty;
+        public string Baslik { get; set; } = string.Empty;
+        public string? Aciklama { get; set; }
+        public int Sira { get; set; }
+        public KontrolAlanTipi Tip { get; set; }
+        public bool Zorunlu { get; set; }
+        public string? Birim { get; set; }
+        public List<KontrolSecenekTanimi> Secenekler { get; set; } = new();
+
+        public KontrolVeriKaynagiTipi VeriKaynagi { get; set; } = KontrolVeriKaynagiTipi.Manuel;
+
+        /// <summary><see cref="TasinmazVeriKaynagi"/> içinde izin verilen anahtarlardan biri.</summary>
+        public string? TasinmazAlani { get; set; }
+
+        public bool SecenekliMi => Tip is KontrolAlanTipi.TekliSecim or KontrolAlanTipi.CokluSecim;
+    }
+
+    public sealed class KontrolSecenekTanimi
+    {
+        public string Kod { get; set; } = string.Empty;
+        public string Etiket { get; set; } = string.Empty;
+        public int Sira { get; set; }
+    }
+
+    /// <summary>
+    /// Bir kontrol kaydının cevapları. <see cref="TasinmazKontrol.CevaplarJson"/> içinde saklanır.
+    /// Anahtar: alan kodu. Grup cevapları satır listesi olarak tutulur.
+    /// Boş cevap = anahtar yok ya da null; EvetHayır alanında Hayır ve Uygulanamaz ayrı değerlerdir.
+    /// </summary>
+    public sealed class KontrolCevaplari
+    {
+        public Dictionary<string, string?> Alanlar { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>Grup kodu → satırlar; her satır alan kodu → değer.</summary>
+        public Dictionary<string, List<Dictionary<string, string?>>> Gruplar { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+        public string ToJson() => JsonSerializer.Serialize(this, KontrolFormTanimi.JsonOptions);
+
+        public static KontrolCevaplari FromJson(string? json)
+        {
+            if (string.IsNullOrWhiteSpace(json)) return new KontrolCevaplari();
+            var c = JsonSerializer.Deserialize<KontrolCevaplari>(json, KontrolFormTanimi.JsonOptions) ?? new KontrolCevaplari();
+            c.Alanlar = new Dictionary<string, string?>(c.Alanlar, StringComparer.OrdinalIgnoreCase);
+            c.Gruplar = new Dictionary<string, List<Dictionary<string, string?>>>(c.Gruplar, StringComparer.OrdinalIgnoreCase);
+            return c;
+        }
+
+        public string? Al(string kod) => Alanlar.TryGetValue(kod, out var v) ? v : null;
+
+        public void Koy(string kod, string? deger)
+        {
+            if (string.IsNullOrWhiteSpace(deger)) Alanlar.Remove(kod);
+            else Alanlar[kod] = deger;
+        }
+
+        public List<Dictionary<string, string?>> GrupSatirlari(string grupKodu)
+        {
+            if (!Gruplar.TryGetValue(grupKodu, out var satirlar))
+            {
+                satirlar = new List<Dictionary<string, string?>>();
+                Gruplar[grupKodu] = satirlar;
+            }
+            return satirlar;
+        }
+
+        /// <summary>Çoklu seçim cevapları ';' ile ayrılmış seçenek kodlarıdır.</summary>
+        public const char CokluSecimAyirici = ';';
+    }
+}
+
+namespace Jenga.Models.TBYS.Kontrol
+{
+    /// <summary>Uygulamanın sabit taşınmaz kontrol raporu. Kullanıcı tarafından şablon tanımlanmaz.</summary>
+    public static class KontrolRaporu
+    {
+        public const int VarsayilanPeriyotSure = 1;
+        public const PeriyotBirimi VarsayilanPeriyotBirim = PeriyotBirimi.Yil;
+        public const string EskiAlanlarAnahtari = "_kontrolAlanlari";
+
+        /// <summary>Geçişten önceki raporların alanları kendi kayıtlarından, yenilerin alanları sabit formdan okunur.</summary>
+        public static KontrolFormTanimi TanimAl(string? snapshotJson)
+        {
+            var snapshot = SnapshotOku(snapshotJson);
+            return snapshot.TryGetValue(EskiAlanlarAnahtari, out var json) && !string.IsNullOrWhiteSpace(json)
+                ? KontrolFormTanimi.FromJson(json)
+                : Olustur();
+        }
+
+        public static (int? Sure, PeriyotBirimi? Birim) PeriyotAl(string? snapshotJson)
+        {
+            var snapshot = SnapshotOku(snapshotJson);
+            if (!snapshot.ContainsKey(EskiAlanlarAnahtari)) return (VarsayilanPeriyotSure, VarsayilanPeriyotBirim);
+            int? sure = int.TryParse(snapshot.GetValueOrDefault("_kontrolPeriyotSure"), out var s) ? s : null;
+            PeriyotBirimi? birim = Enum.TryParse<PeriyotBirimi>(snapshot.GetValueOrDefault("_kontrolPeriyotBirim"), out var b) && Enum.IsDefined(b) ? b : null;
+            return (sure, birim);
+        }
+
+        /// <summary>Eski raporun revizyonunda alanlar ve periyot başlangıcı korunur.</summary>
+        public static void GecmisBilgileriniKoru(Dictionary<string, string?> snapshot, string? oncekiSnapshotJson)
+        {
+            var onceki = SnapshotOku(oncekiSnapshotJson);
+            foreach (var key in new[] { EskiAlanlarAnahtari, "_kontrolPeriyotSure", "_kontrolPeriyotBirim" })
+                if (onceki.TryGetValue(key, out var value)) snapshot[key] = value;
+        }
+
+        private static Dictionary<string, string?> SnapshotOku(string? json) => string.IsNullOrWhiteSpace(json)
+            ? new()
+            : JsonSerializer.Deserialize<Dictionary<string, string?>>(json, KontrolFormTanimi.JsonOptions) ?? new();
 
         public static KontrolFormTanimi Olustur()
         {
@@ -182,8 +347,6 @@ namespace Jenga.Models.TBYS.Kontrol
             Alan(b21, "sozlesme_imza", "Kullanan Kira Sözleşmesini İmzaladı mı?", KontrolAlanTipi.EvetHayir);
             Alan(b21, "sozlesme_aciklama", "Açıklama", KontrolAlanTipi.UzunMetin);
 
-            t.Notlar.Add("Kaynak: docs/tasinmaz-kontrol-formu.xlsx (21 bölüm).");
-            t.Notlar.Add("Uzaklık alanları metre olarak yorumlandı; TAKS/Emsal/Hmax ayrı alanlara bölündü.");
             return t;
         }
 
