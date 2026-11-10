@@ -7,7 +7,9 @@
     {
         <tr><td>@delivery.UnitName @if (!delivery.ManagerId.HasValue) { <span class="text-danger small">Amir tanımsız</span> }</td><td>@delivery.Status.Label()</td><td>@delivery.ReceivedAt?.ToString("dd.MM.yyyy HH:mm")</td>
             <td><div class="d-flex flex-wrap gap-1">
-                @if (delivery.Status == OvertimeDeliveryStatus.Requested && Period.Status == OvertimePeriodStatus.Collecting && OnIssue.HasDelegate)
+                @if (delivery.Status == OvertimeDeliveryStatus.Requested && delivery.ApprovedEntryCount == 0)
+                { <span class="text-muted small">@(delivery.EntryCount == 0 ? "Mesai kaydı yok" : "Onaylı mesai kaydı yok")</span> }
+                @if (delivery.Status == OvertimeDeliveryStatus.Requested && delivery.ApprovedEntryCount > 0 && Period.Status == OvertimePeriodStatus.Collecting && OnIssue.HasDelegate)
                 { <button class="btn btn-sm btn-outline-primary" disabled="@IsBusy" @onclick="() => OnIssue.InvokeAsync(delivery)">Çizelgeyi Sabitle ve Aç</button> }
                 @if (delivery.Status != OvertimeDeliveryStatus.Requested)
                 { <a class="btn btn-sm btn-outline-secondary" href="@($"/ikys/overtime/report/{Period.Id}?unitId={delivery.UnitId}{(ReturnToHr ? "&returnTo=hr" : "")}")">Birim Çizelgesi</a> }

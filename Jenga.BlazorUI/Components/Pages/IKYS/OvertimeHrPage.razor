@@ -10,11 +10,11 @@
 
 <PageTitle>Fazla Mesai — İK Dönem İşlemleri</PageTitle>
 <div class="overtime-page">
-    <div class="d-flex flex-wrap justify-content-between gap-2 mb-3">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
         <div><h3><i class="bi bi-clock-history me-2"></i>İK Dönem İşlemleri</h3><span class="text-muted">@_workspace?.FullName</span></div>
-        <div class="d-flex flex-wrap gap-2">
-            <a class="btn btn-outline-primary" href="/ikys/overtime/delegations">Mesai Giriş Yetkileri</a>
-            <button class="btn btn-outline-secondary" disabled="@_busy" @onclick="LoadAsync">Yenile</button>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <a class="btn btn-sm btn-outline-primary text-nowrap" href="/ikys/overtime/delegations">Mesai Giriş Yetkileri</a>
+            <button class="btn btn-sm btn-outline-secondary text-nowrap" disabled="@_busy" @onclick="LoadAsync">Yenile</button>
         </div>
     </div>
     @if (_workspace is null)
@@ -24,35 +24,35 @@
     else
     {
         <div class="card card-body mb-3">
-            <div class="row g-2 align-items-end">
-                <div class="col-sm-4"><label class="form-label" for="ot-start">Başlangıç</label><input id="ot-start" type="date" class="form-control" @bind="_start" /></div>
-                <div class="col-sm-4"><label class="form-label" for="ot-end">Bitiş</label><input id="ot-end" type="date" class="form-control" @bind="_end" /></div>
-                <div class="col-sm-4"><button class="btn btn-outline-primary" disabled="@_busy" @onclick="LoadAsync">Göster</button></div>
+            <div class="d-flex flex-wrap align-items-end gap-2">
+                <div class="ot-date-filter-field"><label class="form-label" for="ot-start">Başlangıç</label><input id="ot-start" type="date" class="form-control" @bind="_start" /></div>
+                <div class="ot-date-filter-field"><label class="form-label" for="ot-end">Bitiş</label><input id="ot-end" type="date" class="form-control" @bind="_end" /></div>
+                <button class="btn btn-outline-primary" disabled="@_busy" @onclick="LoadAsync">Göster</button>
             </div>
         </div>
 
         <details class="card card-body mb-3">
             <summary>Unvanların haftalık çalışma süreleri</summary>
             <p class="small text-muted mt-2">İlk kullanımdan önce unvanları 40 veya 45 saat grubuna atayın. Değişiklik önceden girilmiş kayıtları değiştirmez.</p>
-            <div class="row g-2 align-items-end">G
-                <div class="col-md-6"><label class="form-label" for="ot-title">Unvan</label><select id="ot-title" class="form-select" @bind="_titleId">
+            <div class="d-flex flex-wrap align-items-end gap-2">
+                <div class="ot-title-field"><label class="form-label" for="ot-title">Unvan</label><select id="ot-title" class="form-select" @bind="_titleId">
                     <option value="0">Unvan seçin</option>
                     @foreach (var title in _workspace.Titles) { <option value="@title.Id">@title.Name — @(title.WeeklyHours.HasValue ? $"{title.WeeklyHours} saat" : "Tanımsız")</option> }
                 </select></div>
-                <div class="col-md-3"><label class="form-label" for="ot-hours">Haftalık süre</label><select id="ot-hours" class="form-select" @bind="_weeklyHours"><option value="40">40 saat</option><option value="45">45 saat</option></select></div>
-                <div class="col-md-3"><button class="btn btn-primary" disabled="@(_busy || _titleId == 0)" @onclick="SaveSchedule">Kaydet</button></div>
+                <div class="ot-weekly-hours-field"><label class="form-label" for="ot-hours">Haftalık süre</label><select id="ot-hours" class="form-select" @bind="_weeklyHours"><option value="40">40 saat</option><option value="45">45 saat</option></select></div>
+                <button class="btn btn-primary" disabled="@(_busy || _titleId == 0)" @onclick="SaveSchedule">Kaydet</button>
             </div>
         </details>
         <details class="card card-body mb-3">
             <summary>Yeni dönem / Birimlerden toplama çağrısı</summary>
             <p class="small text-muted mt-2">Pazartesi–Pazar tam haftaları seçin. Ay sınırını aşan haftanın hangi döneme alınacağını tarihleri seçerek belirleyin.</p>
-            <div class="row g-2 align-items-end">
+            <fieldset disabled="@_busy" class="row g-2 align-items-end">
                 <div class="col-md-3"><label class="form-label" for="ot-period-name">Dönem adı</label><input id="ot-period-name" class="form-control" maxlength="200" @bind="_periodName" /></div>
                 <div class="col-md-3"><label class="form-label" for="ot-period-start">Başlangıç (Pazartesi)</label><input id="ot-period-start" class="form-control" type="date" @bind="_periodStart" /></div>
                 <div class="col-md-3"><label class="form-label" for="ot-period-end">Bitiş (Pazar)</label><input id="ot-period-end" class="form-control" type="date" @bind="_periodEnd" /></div>
                 <div class="col-md-3"><label class="form-label" for="ot-period-due">Son teslim</label><input id="ot-period-due" class="form-control" type="date" @bind="_dueDate" /></div>
-            </div>
-            <div class="mt-3"><button class="btn btn-primary" disabled="@_busy" @onclick="CreatePeriod">Toplama Çağrısı Aç</button></div>
+            </fieldset>
+            <div class="mt-3"><button class="btn btn-primary" disabled="@(_busy || PeriodRangeExists)" @onclick="CreatePeriod">@(PeriodRangeExists ? "Bu Tarihlerde Toplama Çağrısı Mevcut" : "Toplama Çağrısı Aç")</button></div>
         </details>
 
         <h5 class="mt-3">Dönem Aralığındaki Kayıtlar</h5>
@@ -86,22 +86,64 @@
         }
         @if (_reopenPeriod is not null || _reopenDelivery is not null)
         {
-            <section class="card card-body my-3">
-                <h5>@(_reopenDelivery is null ? "İmza Listesini Geri Al" : "Birimi Yeniden Aç")</h5>
-                <p>Önceki çıktı geçersiz olacak. Birim yeniden açılırsa kayıtlar düzeltme ve yeniden onay sürecine dönecek.</p>
-                <label class="form-label" for="ot-reopen-reason">Gerekçe *</label><textarea id="ot-reopen-reason" class="form-control mb-2" maxlength="2000" @bind="_reopenReason"></textarea>
-                <div><button class="btn btn-warning me-2" disabled="@_busy" @onclick="CommitReopen">Gerekçeyle Yeniden Aç</button><button class="btn btn-outline-secondary" @onclick="CancelReopen">Vazgeç</button></div>
-            </section>
+            <div class="modal-backdrop fade show"></div>
+            <div class="modal show" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="ot-reopen-title" style="display: block;" @onkeydown="HandleReopenKeyDown">
+                <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                    <div class="modal-content">
+                        <div class="modal-header bg-warning-subtle">
+                            <h5 class="modal-title" id="ot-reopen-title">@(_reopenDelivery is null ? "İmza Listesini Geri Al" : "Birimi Yeniden Aç")</h5>
+                            <button type="button" class="btn-close" disabled="@_busy" @onclick="CloseReopen" aria-label="Kapat"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="border rounded p-3 mb-3 bg-body-tertiary">
+                                <strong>@(_reopenDelivery?.UnitName ?? _reopenPeriod?.Name)</strong>
+                            </div>
+                            <p>@(_reopenDelivery is null ? "Önceki imza listesi geçersiz olacak ve dönem yeniden toplama aşamasına alınacak." : "Önceki birim çizelgesi geçersiz olacak. Kayıtlar düzeltme ve yeniden onay sürecine dönecek.")</p>
+                            <label class="form-label" for="ot-reopen-reason">Gerekçe <span class="text-danger">*</span></label>
+                            <textarea id="ot-reopen-reason" class="form-control" rows="4" maxlength="2000" disabled="@_busy" @bind="_reopenReason" @bind:event="oninput" @ref="_reopenReasonInput"></textarea>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary me-auto" disabled="@_busy" @onclick="CloseReopen">Vazgeç</button>
+                            <button type="button" class="btn btn-warning" disabled="@_busy" @onclick="CommitReopen">
+                                @if (_busy) { <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> }
+                                @(_reopenDelivery is null ? "Gerekçeyle Geri Al" : "Gerekçeyle Yeniden Aç")
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         }
         @if (_finalizePeriod is not null)
         {
-            <section class="card card-body my-3">
-                <h5>@_finalizePeriod.Name — İmzalı Belge</h5>
-                <p>GMY'nin ıslak imzasından dönen belgeyi ekleyin. Kesinleşen dönem değiştirilemez.</p>
-                <label class="form-label">İmzalı nüsha (PDF, JPEG, PNG; en fazla 10 MB)<InputFile OnChange="SelectFile" accept=".pdf,.jpg,.jpeg,.png" class="form-control" disabled="@_busy" /></label>
-                @if (_signedName is not null) { <p>@_signedName</p> }
-                <div class="mt-2"><button class="btn btn-success me-2" disabled="@(_busy || _signedData is null)" @onclick="FinalizePeriod">İmzalı Belge Alındı — Kesinleştir</button><button class="btn btn-outline-secondary" @onclick="() => _finalizePeriod = null">Vazgeç</button></div>
-            </section>
+            <div class="modal-backdrop fade show"></div>
+            <div class="modal show" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="ot-finalize-title" style="display: block;" @onkeydown="HandleFinalizeKeyDown" @ref="_finalizeDialog">
+                <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="ot-finalize-title">İmzalı Belgeyi Kaydet ve Kesinleştir</h5>
+                            <button type="button" class="btn-close" disabled="@_busy" @onclick="CloseFinalize" aria-label="Kapat"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="border rounded p-3 mb-3 bg-body-tertiary">
+                                <strong>@_finalizePeriod.Name</strong>
+                                <div class="small text-muted mt-1">@_finalizePeriod.StartDate.ToString("dd.MM.yyyy") – @_finalizePeriod.EndDate.ToString("dd.MM.yyyy")</div>
+                            </div>
+                            <p>GMY'nin ıslak imzasından dönen belgeyi ekleyin. Kesinleşen dönem değiştirilemez.</p>
+                            <label class="form-label" for="ot-signed-file">İmzalı nüsha <span class="text-danger">*</span></label>
+                            <InputFile id="ot-signed-file" OnChange="SelectFile" accept=".pdf,.jpg,.jpeg,.png" class="form-control" disabled="@_busy" />
+                            <div class="form-text">PDF, JPEG veya PNG; en fazla 10 MB.</div>
+                            @if (_signedName is not null) { <p class="small text-break mt-2 mb-0">Seçilen belge: @_signedName</p> }
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary me-auto" disabled="@_busy" @onclick="CloseFinalize">Vazgeç</button>
+                            <button type="button" class="btn btn-success" disabled="@(_busy || _signedData is null)" @onclick="FinalizePeriod">
+                                @if (_busy) { <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> }
+                                Kaydet ve Kesinleştir
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         }
     }
 </div>
@@ -119,16 +161,34 @@
     private DateTime _periodStart = OvertimeCalculator.MondayOf(DateTime.Today);
     private DateTime _periodEnd = OvertimeCalculator.MondayOf(DateTime.Today).AddDays(6);
     private DateTime _dueDate = OvertimeCalculator.MondayOf(DateTime.Today).AddDays(10);
+    private readonly List<(DateTime Start, DateTime End)> _createdPeriodRanges = [];
+    private bool PeriodRangeExists =>
+        _createdPeriodRanges.Any(x => x.Start <= _periodEnd.Date && x.End >= _periodStart.Date) ||
+        (_workspace?.Periods.Any(x => x.StartDate <= _periodEnd.Date && x.EndDate >= _periodStart.Date) ?? false);
     private int _titleId, _weeklyHours = 40;
     private OvertimePeriod? _reopenPeriod, _finalizePeriod;
     private OvertimeDelivery? _reopenDelivery;
     private string _reopenReason = "";
+    private ElementReference _reopenReasonInput;
+    private bool _focusReopenReason;
     private string? _signedName;
     private byte[]? _signedData;
+    private ElementReference _finalizeDialog;
+    private bool _focusFinalize;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender) { await LoadAsync(); StateHasChanged(); }
+        if (_focusReopenReason && (_reopenPeriod is not null || _reopenDelivery is not null))
+        {
+            _focusReopenReason = false;
+            await _reopenReasonInput.FocusAsync();
+        }
+        if (_focusFinalize && _finalizePeriod is not null)
+        {
+            _focusFinalize = false;
+            await _finalizeDialog.FocusAsync();
+        }
     }
 
     private async Task LoadAsync()
@@ -164,20 +224,46 @@
     private async Task SaveSchedule() => await Act(() => Overtime.SetScheduleAsync(_titleId, _weeklyHours), "Unvan çalışma grubu kaydedildi.");
     private async Task CreatePeriod()
     {
-        await Act(async () => { var result = await Overtime.CreatePeriodAsync(_periodName, _periodStart, _periodEnd, _dueDate); if (result.IsSuccess) { _start = _periodStart; _end = _periodEnd; } return result; }, "Toplama çağrısı açıldı. Birimler çağrıyı uygulamada görebilir.");
+        if (_busy || PeriodRangeExists) return;
+        var name = _periodName;
+        var start = _periodStart.Date;
+        var end = _periodEnd.Date;
+        var due = _dueDate.Date;
+        await Act(async () =>
+        {
+            var result = await Overtime.CreatePeriodAsync(name, start, end, due);
+            if (result.IsSuccess)
+            {
+                _createdPeriodRanges.Add((start, end));
+                _start = start;
+                _end = end;
+            }
+            return result;
+        }, "Toplama çağrısı açıldı. Birimler çağrıyı uygulamada görebilir.");
     }
     private async Task Issue(OvertimeDelivery delivery)
     {
         await Act(async () => { var result = await Overtime.IssueUnitAsync(delivery.Id, delivery.Version); if (result.IsSuccess) Navigation.NavigateTo($"/ikys/overtime/report/{delivery.PeriodId}?unitId={delivery.UnitId}&returnTo=hr"); return result; }, "Birim çizelgesi sabitlendi.");
     }
-    private void StartReopen(OvertimePeriod period) { _reopenPeriod = period; _reopenDelivery = null; _reopenReason = ""; }
-    private void StartReopen(OvertimeDelivery delivery) { _reopenDelivery = delivery; _reopenPeriod = null; _reopenReason = ""; }
+    private void StartReopen(OvertimePeriod period) { if (_busy) return; _reopenPeriod = period; _reopenDelivery = null; _reopenReason = ""; _focusReopenReason = true; }
+    private void StartReopen(OvertimeDelivery delivery) { if (_busy) return; _reopenDelivery = delivery; _reopenPeriod = null; _reopenReason = ""; _focusReopenReason = true; }
     private void CancelReopen() { _reopenPeriod = null; _reopenDelivery = null; }
+    private void CloseReopen() { if (!_busy) CancelReopen(); }
+    private void HandleReopenKeyDown(KeyboardEventArgs args) { if (args.Key == "Escape") CloseReopen(); }
     private async Task CommitReopen()
     {
+        if (_busy || (_reopenPeriod is null && _reopenDelivery is null)) return;
+        if (string.IsNullOrWhiteSpace(_reopenReason))
+        {
+            ToastService.ShowWarning("Geri alma gerekçesini yazın.", 4000);
+            await _reopenReasonInput.FocusAsync();
+            return;
+        }
         await Act(async () => { var result = _reopenDelivery is not null ? await Overtime.ReopenUnitAsync(_reopenDelivery.Id, _reopenDelivery.Version, _reopenReason) : await Overtime.ReopenPeriodAsync(_reopenPeriod!.Id, _reopenPeriod.Version, _reopenReason); if (result.IsSuccess) CancelReopen(); return result; }, "Yeniden açıldı. Önceki çıktı geçersizdir.");
     }
-    private void StartFinalize(OvertimePeriod period) { _finalizePeriod = period; _signedName = null; _signedData = null; }
+    private void StartFinalize(OvertimePeriod period) { if (_busy) return; _finalizePeriod = period; _signedName = null; _signedData = null; _focusFinalize = true; }
+    private void CloseFinalize() { if (_busy) return; _finalizePeriod = null; _signedName = null; _signedData = null; _focusFinalize = false; }
+    private void HandleFinalizeKeyDown(KeyboardEventArgs args) { if (args.Key == "Escape") CloseFinalize(); }
     private async Task SelectFile(InputFileChangeEventArgs args)
     {
         _signedData = null; _signedName = null;
@@ -195,6 +281,7 @@
     }
     private async Task FinalizePeriod()
     {
-        await Act(async () => { var result = await Overtime.FinalizeAsync(_finalizePeriod!.Id, _finalizePeriod.Version, _signedName!, _signedData!); if (result.IsSuccess) { _finalizePeriod = null; _signedData = null; } return result; }, "İmzalı belge arşivlendi; dönem kesinleştirildi.");
+        if (_busy || _finalizePeriod is null || _signedData is null || _signedName is null) return;
+        await Act(async () => { var result = await Overtime.FinalizeAsync(_finalizePeriod.Id, _finalizePeriod.Version, _signedName, _signedData); if (result.IsSuccess) { _finalizePeriod = null; _signedData = null; _signedName = null; } return result; }, "İmzalı belge arşivlendi; dönem kesinleştirildi.");
     }
 }

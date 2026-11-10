@@ -59,6 +59,19 @@
 
 
         <h5 class="mt-4">Dönemler ve Toplama Çağrıları</h5>
+        @if (_scope == "delegated" && _workspace.Periods.Count > 0)
+        {
+            <div class="mb-3" style="max-width: 24rem;">
+                <label class="form-label" for="ot-report-person">Çizelgesi görüntülenecek personel</label>
+                <select id="ot-report-person" class="form-select" @bind="_reportPersonelId" disabled="@_busy">
+                    <option value="0">Personel seçin</option>
+                    @foreach (var person in _workspace.DelegatedPeople)
+                    {
+                        <option value="@person.Id">@person.FullName</option>
+                    }
+                </select>
+            </div>
+        }
         @if (_workspace.Periods.Count == 0) { <p class="text-muted">Seçilen tarihlerde dönem bulunmuyor.</p> }
         @foreach (var period in _workspace.Periods)
         {
@@ -72,6 +85,10 @@
                         @if (_scope != "delegated")
                         {
                             <a class="btn btn-sm btn-outline-primary" href="@($"/ikys/overtime/report/{period.Id}?personelId={_workspace.PersonelId}")">Kendi Çizelgem</a>
+                        }
+                        else
+                        {
+                            <button class="btn btn-sm btn-outline-primary" disabled="@(_busy || !_workspace.DelegatedPeople.Any(x => x.Id == _reportPersonelId))" @onclick="() => OpenDelegatedReport(period.Id)">Çizelgeyi Görüntüle / Yazdır</button>
                         }
                     </div>
                     @if (_scope == "team")
@@ -91,7 +108,9 @@
 <OvertimeDateFilterModal IsOpen="_filterOpen" StartDate="_start" EndDate="_end" OnApply="ApplyFilter" OnClose="() => _filterOpen = false" />
 
 @code {
+    [SupplyParameterFromQuery(Name = "scope")] public string? RequestedScope { get; set; }
     private OvertimeWorkspace? _workspace;
+    private int _reportPersonelId;
     private string _scope = "mine";
     private DateTime _start = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(-1);
     private DateTime _end = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(2).AddDays(-1);
@@ -104,7 +123,13 @@
     private OvertimeEntry? _historyEntry;
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender) { await LoadAsync(); StateHasChanged(); }
+        if (firstRender) { if (RequestedScope == "delegated") _scope = "delegated"; await LoadAsync(); StateHasChanged(); }
+    }
+
+    private void OpenDelegatedReport(int periodId)
+    {
+        if (_busy || _workspace?.DelegatedPeople.Any(x => x.Id == _reportPersonelId) != true) return;
+        Navigation.NavigateTo($"/ikys/overtime/report/{periodId}?personelId={_reportPersonelId}&returnTo=delegated");
     }
 
     private async Task LoadAsync()

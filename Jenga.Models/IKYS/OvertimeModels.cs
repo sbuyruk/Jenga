@@ -56,6 +56,8 @@ public sealed class OvertimePeriod : BaseModel
 [Table("OvertimeDelivery_Table")]
 public sealed class OvertimeDelivery : BaseModel
 {
+    [NotMapped] public int EntryCount { get; set; }
+    [NotMapped] public int ApprovedEntryCount { get; set; }
     public int PeriodId { get; set; }
     public int UnitId { get; set; }
     public int? ManagerId { get; set; }
@@ -157,6 +159,18 @@ public sealed class OvertimeReport
     public bool CanSeeSummary { get; set; }
     public bool IsPreview { get; set; }
     public string Reference { get; set; } = "";
+    public Dictionary<int, OvertimeUnitSignatures> UnitSignatures { get; set; } = [];
+    public string? DelegateName { get; set; }
+    public string? DelegateDuty { get; set; }
+    public string PersonnelDirectorName { get; set; } = "Personel ve İdari İşler Direktörü tanımlanmamış";
+    public string SummaryDeputyGeneralManagerName { get; set; } = "Bağlı GMY tanımlanmamış";
+}
+
+public sealed class OvertimeUnitSignatures
+{
+    public string ManagerName { get; set; } = "Birim amiri tanımlanmamış";
+    public string ManagerDuty { get; set; } = "Birim Amiri";
+    public string DeputyGeneralManagerName { get; set; } = "Bağlı GMY tanımlanmamış";
 }
 
 public static class OvertimeDisplay

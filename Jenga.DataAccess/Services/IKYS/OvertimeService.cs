@@ -169,6 +169,21 @@ public sealed class OvertimeService(IDbContextFactory<ApplicationDbContext> fact
             if (scope == "team") entries = entries.Where(x => Reviewable(db, actor).Select(e => e.Id).Contains(x.Id));
             var deliveries = db.OvertimeDeliveries.AsNoTracking();
             if (scope != "hr") deliveries = deliveries.Where(x => x.ManagerId == actor.Id);
+            var deliveryRows = await (from delivery in deliveries
+                join period in db.OvertimePeriods on delivery.PeriodId equals period.Id
+                where period.EndDate >= start.Date && period.StartDate <= end.Date
+                orderby delivery.UnitName
+                select new
+                {
+                    Delivery = delivery,
+                    EntryCount = db.OvertimeEntries.Count(e => e.UnitId == delivery.UnitId && e.WorkDate >= period.StartDate && e.WorkDate <= period.EndDate),
+                    ApprovedEntryCount = db.OvertimeEntries.Count(e => e.UnitId == delivery.UnitId && e.WorkDate >= period.StartDate && e.WorkDate <= period.EndDate && e.Status == OvertimeEntryStatus.Approved)
+                }).ToListAsync(cancellationToken);
+            foreach (var row in deliveryRows)
+            {
+                row.Delivery.EntryCount = row.EntryCount;
+                row.Delivery.ApprovedEntryCount = row.ApprovedEntryCount;
+            }
             var result = new OvertimeWorkspace
             {
                 PersonelId = actor.Id, FullName = actor.FullName, IsHr = actor.IsHr, IsManager = actor.ManagedUnits.Count > 0 || actor.EscalatedUnits.Count > 0,
@@ -176,8 +191,7 @@ public sealed class OvertimeService(IDbContextFactory<ApplicationDbContext> fact
                 Entries = await entries.OrderByDescending(x => x.WorkDate).ThenBy(x => x.FullName).ToListAsync(cancellationToken),
                 Periods = await PeriodHeaders(db).Where(x => x.EndDate >= start.Date && x.StartDate <= end.Date)
                     .OrderByDescending(x => x.StartDate).ToListAsync(cancellationToken),
-                Deliveries = await deliveries.Where(x => db.OvertimePeriods.Any(p => p.Id == x.PeriodId && p.EndDate >= start.Date && p.StartDate <= end.Date))
-                    .OrderBy(x => x.UnitName).ToListAsync(cancellationToken)
+                Deliveries = deliveryRows.Select(x => x.Delivery).ToList()
             };
             if (scope == "hr")
                 // Legacy rows can have null names despite Required; filter before materialization.
@@ -386,6 +400,7 @@ public sealed class OvertimeService(IDbContextFactory<ApplicationDbContext> fact
             var period = await CollectingPeriod(db, delivery.PeriodId, cancellationToken);
             Require(delivery.Status == OvertimeDeliveryStatus.Requested, "Birim çizelgesi zaten oluşturulmuş.");
             var entries = await db.OvertimeEntries.Where(x => x.UnitId == delivery.UnitId && x.WorkDate >= period.StartDate && x.WorkDate <= period.EndDate).ToListAsync(cancellationToken);
+            Require(entries.Any(x => x.Status == OvertimeEntryStatus.Approved), "Bu birimde dönem içinde onaylı fazla mesai kaydı bulunmuyor.");
             Require(entries.All(x => x.Status is OvertimeEntryStatus.Approved or OvertimeEntryStatus.Rejected), "Birimde taslak, onay veya düzeltme bekleyen kayıtlar var. Önce bu kayıtları sonuçlandırın.");
             Require(entries.All(x => x.PeriodId == null), "Başka bir çizelgeye alınmış kayıt var.");
             foreach (var entry in entries.Where(x => x.Status == OvertimeEntryStatus.Approved)) entry.PeriodId = period.Id;
@@ -456,7 +471,8 @@ public sealed class OvertimeService(IDbContextFactory<ApplicationDbContext> fact
             var period = await CollectingPeriod(db, periodId, cancellationToken);
             CheckVersion(period.Version, version);
             Require(await db.OvertimeDeliveries.AnyAsync(x => x.PeriodId == periodId, cancellationToken) &&
-                !await db.OvertimeDeliveries.AnyAsync(x => x.PeriodId == periodId && x.Status != OvertimeDeliveryStatus.Received, cancellationToken), "Bütün birimlerin imzalı çizelgeleri teslim alınmalıdır. Mesaisi olmayan birimler de boş çizelgeyle teslimi tamamlamalıdır.");
+                !await db.OvertimeDeliveries.AnyAsync(x => x.PeriodId == periodId && x.Status != OvertimeDeliveryStatus.Received &&
+                    db.OvertimeEntries.Any(e => e.UnitId == x.UnitId && e.WorkDate >= period.StartDate && e.WorkDate <= period.EndDate && e.Status == OvertimeEntryStatus.Approved), cancellationToken), "Onaylı mesaisi bulunan bütün birimlerin imzalı çizelgeleri teslim alınmalıdır.");
             Require(!await db.OvertimeEntries.AnyAsync(x => x.WorkDate >= period.StartDate && x.WorkDate <= period.EndDate &&
                 (x.Status != OvertimeEntryStatus.Rejected && (x.Status != OvertimeEntryStatus.Approved || x.PeriodId != periodId)), cancellationToken), "Dönem içinde çizelge dışında kalan veya sonuçlandırılmamış kayıtlar var.");
             var entries = await db.OvertimeEntries.Include(x => x.Intervals).Where(x => x.PeriodId == periodId).ToListAsync(cancellationToken);
@@ -527,7 +543,12 @@ public sealed class OvertimeService(IDbContextFactory<ApplicationDbContext> fact
             Require(!unitId.HasValue || !personelId.HasValue, "Birim ve personel filtresi birlikte kullanılamaz. Birim çizelgesi bütün onaylı kayıtları içermelidir.");
             if (unitId.HasValue)
                 Require(actor.IsHr || await db.OvertimeDeliveries.AnyAsync(x => x.PeriodId == periodId && x.UnitId == unitId && x.ManagerId == actor.Id, cancellationToken), "Birim çizelgesini görme yetkiniz yok.");
-            else if (!actor.IsHr) personelId = actor.Id;
+            else if (!actor.IsHr)
+            {
+                personelId ??= actor.Id;
+                if (personelId != actor.Id && !await DelegatedPersonIds(db, actor).ContainsAsync(personelId.Value, cancellationToken))
+                    throw new RuleException(Error.Forbidden("Bu personelin çizelgesini görme yetkiniz bulunmuyor."));
+            }
             var entries = db.OvertimeEntries.AsNoTracking().Include(x => x.Intervals)
                 .Where(x => x.WorkDate >= period!.StartDate && x.WorkDate <= period.EndDate && x.Status == OvertimeEntryStatus.Approved);
             if (unitId.HasValue) entries = entries.Where(x => x.UnitId == unitId);
@@ -542,6 +563,41 @@ public sealed class OvertimeService(IDbContextFactory<ApplicationDbContext> fact
                 IsPreview = summary ? period!.Status == OvertimePeriodStatus.Collecting : unitId.HasValue ? delivery?.Status is null or OvertimeDeliveryStatus.Requested : !frozenPersonal,
                 Reference = unitId.HasValue ? $"FM-{periodId}/B-{unitId}/R-{delivery?.Revision ?? 0}" : summary ? $"FM-{periodId}/R-{period!.SignatureRevision}" : $"FM-{periodId}/P-{personelId}"
             };
+            if (!summary)
+                result.UnitSignatures = await ReportSignaturesAsync(db, list.Select(x => x.UnitId).Distinct().ToList(), cancellationToken);
+            else
+            {
+                var directorUnits = await db.BirimTanim_Table.AsNoTracking().Where(x => x.Aktif == true && x.AmirId.HasValue)
+                    .Select(x => new { x.Id, x.Adi, x.AmirId }).ToListAsync(cancellationToken);
+                var matchingDirectorUnits = directorUnits.Where(x =>
+                {
+                    var name = NormalizeOrganizationName(x.Adi);
+                    return name.Contains("PERSONELVEIDARIISLER") || name.Contains("PERSONELIDARIISLER") || name.Contains("PERVEIDISL");
+                }).ToList();
+                var directorIds = matchingDirectorUnits.Select(x => x.AmirId!.Value).Distinct().ToList();
+                if (directorIds.Count == 1)
+                {
+                    var name = await db.Personel_Table.AsNoTracking().Where(x => x.Id == directorIds[0])
+                        .Select(x => (x.Adi ?? "") + " " + (x.Soyadi ?? "")).SingleOrDefaultAsync(cancellationToken);
+                    if (!string.IsNullOrWhiteSpace(name)) result.PersonnelDirectorName = name.Trim();
+                    var signatures = await ReportSignaturesAsync(db, matchingDirectorUnits.Select(x => x.Id).ToList(), cancellationToken);
+                    var deputyNames = signatures.Values.Select(x => x.DeputyGeneralManagerName).Distinct().ToList();
+                    if (deputyNames.Count == 1) result.SummaryDeputyGeneralManagerName = deputyNames[0];
+                }
+            }
+            if (personelId.HasValue && personelId != actor.Id &&
+                await DelegatedPersonIds(db, actor).ContainsAsync(personelId.Value, cancellationToken))
+            {
+                result.DelegateName = actor.FullName;
+                var info = await db.IsBilgileri_Table.AsNoTracking().Where(x => x.PersonelId == actor.Id)
+                    .Select(x => new
+                    {
+                        Duty = x.GorevTanim != null ? x.GorevTanim.Adi : null,
+                        Title = x.UnvanTanim != null ? x.UnvanTanim.Adi : null
+                    }).SingleOrDefaultAsync(cancellationToken);
+                result.DelegateDuty = !string.IsNullOrWhiteSpace(info?.Duty) ? info.Duty
+                    : !string.IsNullOrWhiteSpace(info?.Title) ? info.Title : "Görev tanımlanmamış";
+            }
             if (summary || personelId == actor.Id)
             {
                 if (period!.Status == OvertimePeriodStatus.Collecting)
@@ -553,6 +609,70 @@ public sealed class OvertimeService(IDbContextFactory<ApplicationDbContext> fact
                 result.Events = await db.OvertimeEvents.AsNoTracking().Where(x => x.PeriodId == periodId).OrderBy(x => x.Id).ToListAsync(cancellationToken);
             return result;
         }, cancellationToken);
+
+    private static async Task<Dictionary<int, OvertimeUnitSignatures>> ReportSignaturesAsync(
+        ApplicationDbContext db, List<int> unitIds, CancellationToken ct)
+    {
+        var result = new Dictionary<int, OvertimeUnitSignatures>();
+        if (unitIds.Count == 0) return result;
+        var units = await db.BirimTanim_Table.AsNoTracking().Where(x => x.Aktif == true).ToDictionaryAsync(x => x.Id, ct);
+        var managerIds = new HashSet<int>();
+        foreach (var unitId in unitIds)
+        {
+            var visited = new HashSet<int>();
+            var currentId = unitId;
+            while (visited.Add(currentId) && units.TryGetValue(currentId, out var unit))
+            {
+                if (unit.AmirId.HasValue) managerIds.Add(unit.AmirId.Value);
+                if (!unit.ParentId.HasValue) break;
+                currentId = unit.ParentId.Value;
+            }
+        }
+        var managers = await db.Personel_Table.AsNoTracking().Where(x => managerIds.Contains(x.Id))
+            .Select(x => new
+            {
+                x.Id,
+                Name = (x.Adi ?? "") + " " + (x.Soyadi ?? ""),
+                Duty = x.IsBilgileri.GorevTanim != null ? x.IsBilgileri.GorevTanim.Adi : null,
+                Title = x.IsBilgileri.UnvanTanim != null ? x.IsBilgileri.UnvanTanim.Adi : null
+            }).ToDictionaryAsync(x => x.Id, ct);
+        foreach (var unitId in unitIds)
+        {
+            var signatures = new OvertimeUnitSignatures();
+            result[unitId] = signatures;
+            if (!units.TryGetValue(unitId, out var unit)) continue;
+            if (unit.AmirId.HasValue && managers.TryGetValue(unit.AmirId.Value, out var manager))
+            {
+                signatures.ManagerName = manager.Name.Trim();
+                signatures.ManagerDuty = !string.IsNullOrWhiteSpace(manager.Duty) ? manager.Duty
+                    : !string.IsNullOrWhiteSpace(manager.Title) ? manager.Title : "Birim Amiri";
+            }
+            var visited = new HashSet<int> { unitId };
+            var parentId = unit.ParentId;
+            while (parentId.HasValue && visited.Add(parentId.Value) && units.TryGetValue(parentId.Value, out var parent))
+            {
+                if (parent.AmirId.HasValue && managers.TryGetValue(parent.AmirId.Value, out var superior) &&
+                    (IsDeputyGeneralManager(parent.Adi) || IsDeputyGeneralManager(superior.Duty) || IsDeputyGeneralManager(superior.Title)))
+                {
+                    signatures.DeputyGeneralManagerName = superior.Name.Trim();
+                    break;
+                }
+                parentId = parent.ParentId;
+            }
+        }
+        return result;
+    }
+
+    private static bool IsDeputyGeneralManager(string? name)
+    {
+        var normalized = NormalizeOrganizationName(name);
+        return normalized.Contains("GENELMUDURYARD") || normalized.Contains("GENELMUDURYRD") || normalized == "GMY";
+    }
+
+    private static string NormalizeOrganizationName(string? name)
+        => new((name ?? "").ToUpperInvariant().Replace('İ', 'I').Replace('Ü', 'U').Replace('Ö', 'O')
+            .Replace('Ş', 'S').Replace('Ğ', 'G').Replace('Ç', 'C')
+            .Where(char.IsLetterOrDigit).ToArray());
 
     public Task<Result<(string Name, string ContentType, byte[] Data)>> GetSignedDocumentAsync(int periodId, CancellationToken cancellationToken = default)
         => Run(false, async (db, actor) =>
