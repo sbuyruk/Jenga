@@ -1,0 +1,83 @@
+@using Jenga.Models.IKYS
+@inject IToastService ToastService
+
+@if (Entry is not null)
+{
+    <div class="modal-backdrop fade show"></div>
+    <div class="modal show" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="ot-review-title" style="display: block;" @onkeydown="HandleKeyDown">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header @(IsRejection ? "bg-danger-subtle" : "bg-warning-subtle")">
+                    <h5 class="modal-title" id="ot-review-title">@(IsRejection ? "Mesai Kaydını Reddet" : "Düzeltme İste")</h5>
+                    <button type="button" class="btn-close" disabled="@IsBusy" @onclick="Close" aria-label="Kapat"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="border rounded p-3 mb-3 bg-body-tertiary">
+                        <strong>@Entry.FullName</strong>
+                        <div class="small text-muted mt-1">@Entry.WorkDate.ToString("dd.MM.yyyy") · @string.Join(" / ", Entry.Intervals.OrderBy(x => x.StartMinute).Select(x => $"{OvertimeDisplay.Duration(x.StartMinute)}–{OvertimeDisplay.Duration(x.EndMinute)}"))</div>
+                        <div class="small mt-2 text-break">@Entry.Reason</div>
+                    </div>
+                    <label class="form-label" for="ot-review-reason">@(IsRejection ? "Ret gerekçesi" : "Düzeltme gerekçesi") <span class="text-danger">*</span></label>
+                    <textarea id="ot-review-reason" class="form-control" rows="4" maxlength="2000" disabled="@IsBusy" @bind="_reason" @bind:event="oninput" @ref="_reasonInput"></textarea>
+                    <div class="form-text">Gerekçe, kaydı giren personele gösterilecektir.</div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary me-auto" disabled="@IsBusy" @onclick="Close">Vazgeç</button>
+                    <button type="button" class="btn @(IsRejection ? "btn-danger" : "btn-warning")" disabled="@IsBusy" @onclick="Save">
+                        @if (IsBusy) { <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> }
+                        @(IsRejection ? "Reddet ve Kaydet" : "Düzeltmeye Gönder")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public OvertimeEntry? Entry { get; set; }
+    [Parameter] public OvertimeEntryStatus Decision { get; set; }
+    [Parameter] public bool IsBusy { get; set; }
+    [Parameter] public EventCallback<string> OnSave { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    private OvertimeEntry? _previousEntry;
+    private OvertimeEntryStatus _previousDecision;
+    private string _reason = "";
+    private bool _focusPending;
+    private ElementReference _reasonInput;
+    private bool IsRejection => Decision == OvertimeEntryStatus.Rejected;
+
+    protected override void OnParametersSet()
+    {
+        if (Entry is not null && (!ReferenceEquals(Entry, _previousEntry) || Decision != _previousDecision))
+        {
+            _reason = "";
+            _focusPending = true;
+        }
+        _previousEntry = Entry;
+        _previousDecision = Decision;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (Entry is not null && _focusPending)
+        {
+            _focusPending = false;
+            await _reasonInput.FocusAsync();
+        }
+    }
+
+    private async Task Save()
+    {
+        if (IsBusy || Entry is null) return;
+        if (string.IsNullOrWhiteSpace(_reason))
+        {
+            ToastService.ShowWarning(IsRejection ? "Ret gerekçesini yazın." : "Düzeltme gerekçesini yazın.", 4000);
+            await _reasonInput.FocusAsync();
+            return;
+        }
+        await OnSave.InvokeAsync(_reason.Trim());
+    }
+
+    private Task Close() => IsBusy ? Task.CompletedTask : OnClose.InvokeAsync();
+    private Task HandleKeyDown(KeyboardEventArgs args) => args.Key == "Escape" ? Close() : Task.CompletedTask;
+}

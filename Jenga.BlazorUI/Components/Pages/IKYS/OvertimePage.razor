@@ -50,14 +50,6 @@
                                 OnCorrection="entry => StartReview(entry, OvertimeEntryStatus.Correction)" OnReject="entry => StartReview(entry, OvertimeEntryStatus.Rejected)" />
         }
 
-        @if (_reviewEntry is not null)
-        {
-            <section class="card card-body my-3">
-                <h5>@_reviewEntry.FullName — @_reviewEntry.WorkDate.ToString("dd.MM.yyyy") — @_decision.Label()</h5>
-                <label class="form-label" for="ot-review-reason">Gerekçe *</label><textarea id="ot-review-reason" class="form-control mb-2" maxlength="2000" @bind="_reviewReason"></textarea>
-                <div><button class="btn btn-primary me-2" disabled="@_busy" @onclick="CommitReview">Kararı Kaydet</button><button class="btn btn-outline-secondary" @onclick="() => _reviewEntry = null">Vazgeç</button></div>
-            </section>
-        }
         <OvertimeHistory Items="_history" OnClose="() => _history = null" />
 
         <h5 class="mt-4">Dönemler ve Toplama Çağrıları</h5>
@@ -84,6 +76,7 @@
 </div>
 
 <OvertimeEntryEditModal Model="_edit" IsOpen="@(_editing && _scope == "mine")" IsBusy="_busy" OnSave="SaveEntry" OnClose="CloseEntry" />
+<OvertimeReviewModal Entry="_reviewEntry" Decision="_decision" IsBusy="_busy" OnSave="CommitReview" OnClose="CloseReview" />
 <OvertimeDateFilterModal IsOpen="_filterOpen" StartDate="_start" EndDate="_end" OnApply="ApplyFilter" OnClose="() => _filterOpen = false" />
 
 @code {
@@ -96,7 +89,6 @@
     private OvertimeEntryInput _edit = new();
     private OvertimeEntry? _reviewEntry;
     private OvertimeEntryStatus _decision;
-    private string _reviewReason = "";
     private List<OvertimeEvent>? _history;
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -172,11 +164,22 @@
         }
         finally { _busy = false; }
     }
-    private void StartReview(OvertimeEntry entry, OvertimeEntryStatus decision) { _reviewEntry = entry; _decision = decision; _reviewReason = ""; }
-    private async Task CommitReview()
+    private void StartReview(OvertimeEntry entry, OvertimeEntryStatus decision)
     {
-        var entry = _reviewEntry!;
-        await Act(async () => { var result = await Overtime.ReviewAsync(entry.Id, entry.Version, _decision, _reviewReason); if (result.IsSuccess) _reviewEntry = null; return result; }, "Karar kaydedildi.");
+        if (_busy) return;
+        _reviewEntry = entry;
+        _decision = decision;
+    }
+    private void CloseReview()
+    {
+        if (!_busy) _reviewEntry = null;
+    }
+    private async Task CommitReview(string reason)
+    {
+        if (_busy || _reviewEntry is null) return;
+        var entry = _reviewEntry;
+        var decision = _decision;
+        await Act(async () => { var result = await Overtime.ReviewAsync(entry.Id, entry.Version, decision, reason); if (result.IsSuccess) _reviewEntry = null; return result; }, "Karar kaydedildi.");
     }
     private async Task ShowHistory(OvertimeEntry entry)
     {
