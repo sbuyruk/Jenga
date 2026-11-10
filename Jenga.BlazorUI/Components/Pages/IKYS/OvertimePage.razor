@@ -50,7 +50,6 @@
                                 OnCorrection="entry => StartReview(entry, OvertimeEntryStatus.Correction)" OnReject="entry => StartReview(entry, OvertimeEntryStatus.Rejected)" />
         }
 
-        <OvertimeHistory Items="_history" OnClose="() => _history = null" />
 
         <h5 class="mt-4">Dönemler ve Toplama Çağrıları</h5>
         @if (_workspace.Periods.Count == 0) { <p class="text-muted">Seçilen tarihlerde dönem bulunmuyor.</p> }
@@ -75,6 +74,7 @@
     }
 </div>
 
+<OvertimeHistory Items="_history" Entry="_historyEntry" OnClose="() => _history = null" />
 <OvertimeEntryEditModal Model="_edit" IsOpen="@(_editing && _scope == "mine")" IsBusy="_busy" OnSave="SaveEntry" OnClose="CloseEntry" />
 <OvertimeReviewModal Entry="_reviewEntry" Decision="_decision" IsBusy="_busy" OnSave="CommitReview" OnClose="CloseReview" />
 <OvertimeDateFilterModal IsOpen="_filterOpen" StartDate="_start" EndDate="_end" OnApply="ApplyFilter" OnClose="() => _filterOpen = false" />
@@ -90,6 +90,7 @@
     private OvertimeEntry? _reviewEntry;
     private OvertimeEntryStatus _decision;
     private List<OvertimeEvent>? _history;
+    private OvertimeEntry? _historyEntry;
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender) { await LoadAsync(); StateHasChanged(); }
@@ -183,7 +184,7 @@
     }
     private async Task ShowHistory(OvertimeEntry entry)
     {
-        await Act(async () => { var result = await Overtime.GetEntryHistoryAsync(entry.Id); if (result.IsSuccess) _history = result.Value; return result; }, "İşlem geçmişi açıldı.", ToastType.Info);
+        await Act(async () => { var result = await Overtime.GetEntryHistoryAsync(entry.Id); if (result.IsSuccess) { _history = result.Value; _historyEntry = entry; } return result; }, "İşlem geçmişi açıldı.", ToastType.Info);
     }
     private Task Withdraw(OvertimeEntry entry)
         => Act(() => Overtime.WithdrawAsync(entry.Id, entry.Version), "Kayıt taslağa alındı.");

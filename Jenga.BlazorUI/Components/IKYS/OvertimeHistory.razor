@@ -2,18 +2,63 @@
 
 @if (Items is not null)
 {
-    <section class="card card-body my-3">
-        <div class="d-flex justify-content-between"><h5>Kayıt İşlem Geçmişi</h5><button class="btn-close" aria-label="Geçmişi kapat" @onclick="OnClose"></button></div>
-        @foreach (var item in Items)
-        {
-            <div class="border-bottom py-2"><strong>@item.Action</strong> — @item.Olusturan — @item.OlusturmaTarihi?.ToString("dd.MM.yyyy HH:mm")
-                <details><summary>Ayrıntı</summary><pre class="ot-history">@OvertimeDisplay.EventDetails(item.Details)</pre></details>
+    <div class="modal-backdrop fade show"></div>
+    <div class="modal show" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="ot-history-title" style="display: block;" @onkeydown="HandleKeyDown">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="ot-history-title">Kayıt İşlem Geçmişi</h5>
+                    <button type="button" class="btn-close" aria-label="Geçmişi kapat" @onclick="OnClose" @ref="_closeButton"></button>
+                </div>
+                <div class="modal-body">
+                    @if (Entry is not null)
+                    {
+                        <div class="border rounded p-3 mb-3 bg-body-tertiary">
+                            <strong>@Entry.FullName</strong>
+                            <div class="small text-muted mt-1">@Entry.WorkDate.ToString("dd.MM.yyyy")</div>
+                            <div class="small mt-2 text-break">@Entry.Reason</div>
+                        </div>
+                    }
+                    @if (Items.Count == 0)
+                    { <p class="text-muted mb-0">Bu kayıt için henüz işlem geçmişi bulunmuyor.</p> }
+                    @foreach (var item in Items)
+                    {
+                        <div class="border-bottom py-3">
+                            <strong>@item.Action</strong>
+                            <div class="small text-muted mt-1">@item.Olusturan · @item.OlusturmaTarihi?.ToString("dd.MM.yyyy HH:mm")</div>
+                            <details class="mt-2"><summary>Ayrıntıyı göster</summary><pre class="ot-history mt-2 mb-0">@OvertimeDisplay.EventDetails(item.Details)</pre></details>
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="OnClose">Kapat</button>
+                </div>
             </div>
-        }
-    </section>
+        </div>
+    </div>
 }
 
 @code {
     [Parameter] public List<OvertimeEvent>? Items { get; set; }
+    [Parameter] public OvertimeEntry? Entry { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
+    private bool _wasOpen, _focusPending;
+    private ElementReference _closeButton;
+
+    protected override void OnParametersSet()
+    {
+        if (Items is not null && !_wasOpen) _focusPending = true;
+        _wasOpen = Items is not null;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (Items is not null && _focusPending)
+        {
+            _focusPending = false;
+            await _closeButton.FocusAsync();
+        }
+    }
+
+    private Task HandleKeyDown(KeyboardEventArgs args) => args.Key == "Escape" ? OnClose.InvokeAsync() : Task.CompletedTask;
 }
