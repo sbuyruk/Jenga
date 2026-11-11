@@ -121,6 +121,7 @@ public sealed class OvertimeDelegationAdminData
 
 public sealed class OvertimeEntryInput
 {
+    public List<int> PersonelIds { get; set; } = [];
     public int Id { get; set; }
     public int? PersonelId { get; set; }
     public byte[] Version { get; set; } = [];

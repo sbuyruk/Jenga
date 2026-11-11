@@ -19,11 +19,29 @@
                         @if (RequirePersonSelection)
                         {
                             <div class="mb-3">
-                                <label class="form-label fw-semibold" for="ot-entry-person">Mesaisi girilecek personel <span class="text-danger">*</span></label>
-                                <select id="ot-entry-person" class="form-select" disabled="@(Model.Id != 0)" @bind="Model.PersonelId" @ref="_personInput">
-                                    <option value="">Personel seçin</option>
-                                    @foreach (var person in People) { <option value="@person.Id">@person.FullName · Sicil: @person.SicilNo</option> }
-                                </select>
+                                @if (Model.Id == 0)
+                                {
+                                    <label class="form-label fw-semibold" for="ot-entry-person-search">Mesaisi girilecek personeller <span class="text-danger">*</span></label>
+                                    <input id="ot-entry-person-search" type="search" class="form-control mb-2" placeholder="Ad, soyad veya sicil ile ara…" @bind="_personSearch" @bind:event="oninput" @ref="_personInput" />
+                                    <div class="ot-person-list border rounded p-2" role="group" aria-label="Mesaisi girilecek personeller">
+                                        @foreach (var person in FilteredPeople)
+                                        {
+                                            <div class="form-check" @key="person.Id">
+                                                <input id="@($"ot-entry-person-{person.Id}")" type="checkbox" class="form-check-input" checked="@Model.PersonelIds.Contains(person.Id)" @onchange="e => TogglePerson(person.Id, e)" />
+                                                <label class="form-check-label" for="@($"ot-entry-person-{person.Id}")">@person.FullName <span class="text-muted small">· Sicil: @person.SicilNo</span></label>
+                                            </div>
+                                        }
+                                        @if (!FilteredPeople.Any()) { <span class="text-muted small">Aramanıza uygun personel bulunamadı.</span> }
+                                    </div>
+                                    <div class="form-text">@Model.PersonelIds.Count personel seçildi. Tarih, saat ve çalışma sebebi seçilen her personel için ayrı kaydedilir.</div>
+                                }
+                                else
+                                {
+                                    <label class="form-label fw-semibold" for="ot-entry-person">Mesaisi girilecek personel</label>
+                                    <select id="ot-entry-person" class="form-select" disabled @bind="Model.PersonelId">
+                                        @foreach (var person in People) { <option value="@person.Id">@person.FullName · Sicil: @person.SicilNo</option> }
+                                    </select>
+                                }
                             </div>
                         }
                         <div class="row g-3">
@@ -106,6 +124,15 @@
     private DateTime _previousStart;
     private ElementReference _dateInput;
     private ElementReference _personInput;
+    private string _personSearch = "";
+    private IEnumerable<OvertimePersonOption> FilteredPeople => People.Where(x =>
+        string.IsNullOrWhiteSpace(_personSearch) || x.FullName.Contains(_personSearch.Trim(), StringComparison.CurrentCultureIgnoreCase) || x.SicilNo.ToString().Contains(_personSearch.Trim()));
+    private void TogglePerson(int personId, ChangeEventArgs args)
+    {
+        if (IsBusy) return;
+        if (args.Value is true) { if (!Model.PersonelIds.Contains(personId)) Model.PersonelIds.Add(personId); }
+        else Model.PersonelIds.Remove(personId);
+    }
     private OvertimeTimeInput First => Model.Intervals[0];
 
     protected override void OnParametersSet()
@@ -116,6 +143,7 @@
             Model.EndWorkDate ??= Model.WorkDate.Date.AddDays(First.EndsNextDay ? 1 : 0);
             _previousStart = Model.WorkDate.Date;
             _invalidTimes.Clear();
+            _personSearch = "";
             _loadedModel = Model;
             _focusPending = true;
         }
@@ -182,8 +210,8 @@
     private async Task Save(bool submit)
     {
         if (IsBusy) return;
-        if (RequirePersonSelection && !Model.PersonelId.HasValue)
-        { ToastService.ShowWarning("Mesaisi girilecek personeli seçin.", 4000); return; }
+        if (RequirePersonSelection && (Model.Id == 0 ? Model.PersonelIds.Count == 0 : !Model.PersonelId.HasValue))
+        { ToastService.ShowWarning("Mesaisi girilecek personelleri seçin.", 4000); return; }
         if (TotalMinutes is null)
         {
             var message = Model.Intervals.Count > 1 && Model.EndWorkDate?.Date != Model.WorkDate.Date

@@ -234,8 +234,34 @@ public sealed class OvertimeService(IDbContextFactory<ApplicationDbContext> fact
     }
 
     public Task<Result<int>> SaveEntryAsync(OvertimeEntryInput input, CancellationToken cancellationToken = default)
+        => Run(true, (db, actor) => SaveEntryCore(db, actor, input, cancellationToken), cancellationToken);
+
+    public Task<Result<List<int>>> SaveEntriesAsync(OvertimeEntryInput input, CancellationToken cancellationToken = default)
         => Run(true, async (db, actor) =>
         {
+            Require(input.Id == 0 && !input.PersonelId.HasValue, "Çoklu personel seçimi yalnızca yeni mesai girişinde kullanılabilir.");
+            var targets = input.PersonelIds.Distinct().ToList();
+            Require(targets.Count > 0, "Mesaisi girilecek personelleri seçin.");
+            Require(await DelegatedPersonIds(db, actor).CountAsync(x => targets.Contains(x), cancellationToken) == targets.Count,
+                "Seçilen personellerden biri için mesai giriş yetkiniz bulunmuyor veya personelin çalışma durumu uygun değil.");
+            var names = await db.Personel_Table.Where(x => targets.Contains(x.Id))
+                .Select(x => new { x.Id, Name = x.Adi + " " + x.Soyadi }).ToDictionaryAsync(x => x.Id, x => x.Name, cancellationToken);
+            var ids = new List<int>();
+            foreach (var target in targets)
+            {
+                var personInput = new OvertimeEntryInput
+                {
+                    PersonelId = target, WorkDate = input.WorkDate, EndWorkDate = input.EndWorkDate,
+                    Reason = input.Reason, Submit = input.Submit, Intervals = input.Intervals
+                };
+                try { ids.Add(await SaveEntryCore(db, actor, personInput, cancellationToken)); }
+                catch (RuleException ex) { throw new RuleException(Error.Validation($"{names[target]}: {ex.Message}")); }
+            }
+            return ids;
+        }, cancellationToken);
+
+    private static async Task<int> SaveEntryCore(ApplicationDbContext db, Actor actor, OvertimeEntryInput input, CancellationToken cancellationToken)
+    {
             if (!input.EndWorkDate.HasValue || input.EndWorkDate.Value.Date == input.WorkDate.Date)
                 return await SaveDayEntry(db, actor, input, cancellationToken);
 
@@ -266,7 +292,7 @@ public sealed class OvertimeService(IDbContextFactory<ApplicationDbContext> fact
                 start = until;
             }
             return firstId;
-        }, cancellationToken);
+    }
 
     private static async Task<int> SaveDayEntry(ApplicationDbContext db, Actor actor, OvertimeEntryInput input, CancellationToken cancellationToken)
     {
