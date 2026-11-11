@@ -156,6 +156,20 @@ public sealed class OvertimeService(IDbContextFactory<ApplicationDbContext> fact
         Status = x.Status, SignatureRevision = x.SignatureRevision, Version = x.Version, SignedFileName = x.SignedFileName, FinalizedAt = x.FinalizedAt
     });
 
+    public Task<Result<bool>> SetExternalInstitutionAsync(int personelId, string institution, CancellationToken cancellationToken = default)
+        => Run(true, async (db, actor) =>
+        {
+            Hr(actor);
+            var name = PersonnelInstitution.Normalize(institution);
+            Require(name.Length is > 0 and <= 200, "Kadro harici personel için kurum adı zorunludur ve en fazla 200 karakter olabilir.");
+            var info = await db.IsBilgileri_Table.Include(x => x.Personel).SingleOrDefaultAsync(x => x.PersonelId == personelId, cancellationToken);
+            Require(info?.Personel.Tipi == PersonelTipi.KadroHarici, "Kurum bilgisi yalnızca kadro harici personel için tanımlanabilir.");
+            var names = await db.IsBilgileri_Table.Where(x => x.KadroHariciKurum != null).Select(x => x.KadroHariciKurum).Distinct().ToListAsync(cancellationToken);
+            info!.KadroHariciKurum = names.Select(PersonnelInstitution.Normalize).FirstOrDefault(x => PersonnelInstitution.Key(x) == PersonnelInstitution.Key(name)) ?? name;
+            Audit(db, "Kadro harici personel kurumu güncellendi", $"Personel {personelId}; Kurum: {info.KadroHariciKurum}. Önceden girilmiş mesai kayıtlarının kurumu korunur.");
+            return true;
+        }, cancellationToken);
+
     public Task<Result<OvertimeWorkspace>> LoadAsync(string scope, DateTime start, DateTime end, CancellationToken cancellationToken = default)
         => Run(false, async (db, actor) =>
         {
@@ -193,6 +207,11 @@ public sealed class OvertimeService(IDbContextFactory<ApplicationDbContext> fact
                     .OrderByDescending(x => x.StartDate).ToListAsync(cancellationToken),
                 Deliveries = deliveryRows.Select(x => x.Delivery).ToList()
             };
+            if (scope == "hr")
+                result.ExternalInstitutions = await db.Personel_Table.AsNoTracking()
+                    .Where(x => x.Tipi == PersonelTipi.KadroHarici && x.IsBilgileri.CalismaDurumu == CalismaDurumu.Calisiyor)
+                    .OrderBy(x => x.Adi).ThenBy(x => x.Soyadi)
+                    .Select(x => new OvertimeExternalInstitution(x.Id, x.Adi + " " + x.Soyadi, x.IsBilgileri.KadroHariciKurum)).ToListAsync(cancellationToken);
             if (scope == "hr")
                 // Legacy rows can have null names despite Required; filter before materialization.
                 result.Titles = await (from title in db.UnvanTanim_Table.AsNoTracking().Where(x => !string.IsNullOrWhiteSpace(x.Adi))
@@ -304,6 +323,11 @@ public sealed class OvertimeService(IDbContextFactory<ApplicationDbContext> fact
         entry.NormalWeeklyMinutes = hours!.Value * 60;
         entry.FullName = $"{person.Adi} {person.Soyadi}";
         entry.SicilNo = person.SicilNo;
+        entry.PersonnelType = person.Tipi;
+        var institution = PersonnelInstitution.Normalize(info.KadroHariciKurum);
+        Require(person.Tipi != PersonelTipi.KadroHarici || institution.Length is > 0 and <= 200,
+            "Kadro harici personelin kurum bilgisi İK tarafından tanımlanmalıdır.");
+        entry.KadroHariciKurum = person.Tipi == PersonelTipi.KadroHarici ? institution : null;
         entry.Reason = input.Reason.Trim();
         entry.Status = input.Submit ? OvertimeEntryStatus.Pending : OvertimeEntryStatus.Draft;
         entry.ReviewReason = null;
@@ -318,7 +342,7 @@ public sealed class OvertimeService(IDbContextFactory<ApplicationDbContext> fact
 
     private static object EntrySnapshot(OvertimeEntry entry) => new
     {
-        entry.PersonelId, entry.FullName, entry.WorkDate, entry.Reason, entry.Status, entry.UnitId, entry.UnitName, entry.Title, entry.NormalWeeklyMinutes,
+        entry.PersonelId, entry.FullName, entry.PersonnelType, entry.KadroHariciKurum, entry.WorkDate, entry.Reason, entry.Status, entry.UnitId, entry.UnitName, entry.Title, entry.NormalWeeklyMinutes,
         Intervals = entry.Intervals.Select(x => new { x.StartMinute, x.EndMinute }).ToArray()
     };
 
@@ -453,13 +477,17 @@ public sealed class OvertimeService(IDbContextFactory<ApplicationDbContext> fact
     private static List<OvertimePersonResult> CalculateResults(int periodId, List<OvertimeEntry> entries, DateTime start, DateTime end)
         => entries.GroupBy(x => x.PersonelId).Select(person =>
         {
+            Require(person.Select(x => x.PersonnelType).Distinct().Count() == 1,
+                $"{person.First().FullName}: Dönem içinde farklı personel tipleriyle kayıt var. Kayıtları İK ile kontrol edin.");
+            Require(person.Where(x => x.PersonnelType == PersonelTipi.KadroHarici).Select(x => PersonnelInstitution.Key(x.KadroHariciKurum)).Distinct().Count() <= 1,
+                $"{person.First().FullName}: Dönem içinde farklı kurumlarla kayıt var. Kayıtları İK ile kontrol edin.");
             List<OvertimeWeek> weeks;
             try { weeks = OvertimeCalculator.Calculate(person, start, end); }
             catch (ArgumentException ex) { throw new RuleException(Error.Validation($"{person.First().FullName}: {ex.Message}")); }
             var raw = weeks.Sum(x => x.OvertimeMinutes);
             return new OvertimePersonResult
             {
-                PeriodId = periodId, PersonelId = person.Key, FullName = person.First().FullName, SicilNo = person.First().SicilNo,
+                PeriodId = periodId, PersonelId = person.Key, FullName = person.First().FullName, SicilNo = person.First().SicilNo, PersonnelType = person.First().PersonnelType, KadroHariciKurum = person.First().KadroHariciKurum,
                 RawMinutes = raw, RoundedMinutes = OvertimeCalculator.RoundTotal(raw), WeeksJson = JsonSerializer.Serialize(weeks)
             };
         }).OrderBy(x => x.FullName).ToList();
@@ -476,6 +504,11 @@ public sealed class OvertimeService(IDbContextFactory<ApplicationDbContext> fact
             Require(!await db.OvertimeEntries.AnyAsync(x => x.WorkDate >= period.StartDate && x.WorkDate <= period.EndDate &&
                 (x.Status != OvertimeEntryStatus.Rejected && (x.Status != OvertimeEntryStatus.Approved || x.PeriodId != periodId)), cancellationToken), "Dönem içinde çizelge dışında kalan veya sonuçlandırılmamış kayıtlar var.");
             var entries = await db.OvertimeEntries.Include(x => x.Intervals).Where(x => x.PeriodId == periodId).ToListAsync(cancellationToken);
+            await ResolvePersonnelTypesAsync(db, entries, cancellationToken);
+            Require(entries.All(x => x.PersonnelType is PersonelTipi.Kadrolu or PersonelTipi.KadroHarici),
+                "Personel tipi eksik veya geçersiz kayıtlar var. İmzaya hazırlamadan önce İK personel tiplerini tanımlamalıdır.");
+            Require(entries.All(x => x.PersonnelType != PersonelTipi.KadroHarici || PersonnelInstitution.Normalize(x.KadroHariciKurum).Length is > 0 and <= 200),
+                "Kadro harici personelin kurum bilgileri eksik. İmzaya hazırlamadan önce kurum bilgilerini tamamlayın.");
             var results = CalculateResults(periodId, entries, period.StartDate, period.EndDate);
             db.OvertimeResults.AddRange(results);
             period.Status = OvertimePeriodStatus.AwaitingSignature;
@@ -554,6 +587,7 @@ public sealed class OvertimeService(IDbContextFactory<ApplicationDbContext> fact
             if (unitId.HasValue) entries = entries.Where(x => x.UnitId == unitId);
             if (personelId.HasValue) entries = entries.Where(x => x.PersonelId == personelId);
             var list = await entries.OrderBy(x => x.FullName).ThenBy(x => x.WorkDate).ToListAsync(cancellationToken);
+            await ResolvePersonnelTypesAsync(db, list, cancellationToken);
             var summary = actor.IsHr && !unitId.HasValue && !personelId.HasValue;
             var delivery = unitId.HasValue ? await db.OvertimeDeliveries.AsNoTracking().SingleOrDefaultAsync(x => x.PeriodId == periodId && x.UnitId == unitId, cancellationToken) : null;
             var frozenPersonal = personelId.HasValue && list.Count > 0 && list.All(x => x.PeriodId == periodId);
@@ -604,11 +638,31 @@ public sealed class OvertimeService(IDbContextFactory<ApplicationDbContext> fact
                     result.Results = CalculateResults(periodId, list, period.StartDate, period.EndDate);
                 else
                     result.Results = await db.OvertimeResults.AsNoTracking().Where(x => x.PeriodId == periodId && (summary || x.PersonelId == actor.Id)).OrderBy(x => x.FullName).ToListAsync(cancellationToken);
+                foreach (var item in result.Results.Where(x => x.PersonnelType is null))
+                    item.PersonnelType = list.FirstOrDefault(x => x.PersonelId == item.PersonelId)?.PersonnelType;
+                foreach (var item in result.Results.Where(x => x.PersonnelType == PersonelTipi.KadroHarici && string.IsNullOrWhiteSpace(x.KadroHariciKurum)))
+                    item.KadroHariciKurum = list.FirstOrDefault(x => x.PersonelId == item.PersonelId)?.KadroHariciKurum;
             }
             if (actor.IsHr)
                 result.Events = await db.OvertimeEvents.AsNoTracking().Where(x => x.PeriodId == periodId).OrderBy(x => x.Id).ToListAsync(cancellationToken);
             return result;
         }, cancellationToken);
+
+    private static async Task ResolvePersonnelTypesAsync(ApplicationDbContext db, List<OvertimeEntry> entries, CancellationToken ct)
+    {
+        var ids = entries.Where(x => x.PersonnelType is null || (x.PersonnelType == PersonelTipi.KadroHarici && string.IsNullOrWhiteSpace(x.KadroHariciKurum)))
+            .Select(x => x.PersonelId).Distinct().ToList();
+        if (ids.Count == 0) return;
+        var types = await db.Personel_Table.AsNoTracking().Where(x => ids.Contains(x.Id))
+            .Select(x => new { x.Id, x.Tipi, x.IsBilgileri.KadroHariciKurum }).ToDictionaryAsync(x => x.Id, ct);
+        foreach (var entry in entries)
+        {
+            if (!types.TryGetValue(entry.PersonelId, out var info)) continue;
+            entry.PersonnelType ??= info.Tipi;
+            if (entry.PersonnelType == PersonelTipi.KadroHarici && string.IsNullOrWhiteSpace(entry.KadroHariciKurum))
+                entry.KadroHariciKurum = PersonnelInstitution.Normalize(info.KadroHariciKurum);
+        }
+    }
 
     private static async Task<Dictionary<int, OvertimeUnitSignatures>> ReportSignaturesAsync(
         ApplicationDbContext db, List<int> unitIds, CancellationToken ct)

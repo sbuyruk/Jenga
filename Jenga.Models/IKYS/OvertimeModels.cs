@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json;
 using Jenga.Models.Sistem;
+using Jenga.Models.Enums;
 
 namespace Jenga.Models.IKYS;
 
@@ -12,6 +13,8 @@ public enum OvertimeDeliveryStatus { Requested, Issued, Received }
 [Table("OvertimeEntry_Table")]
 public sealed class OvertimeEntry : BaseModel
 {
+    public PersonelTipi? PersonnelType { get; set; }
+    [MaxLength(200)] public string? KadroHariciKurum { get; set; }
     public int PersonelId { get; set; }
     public int UnitId { get; set; }
     [Column(TypeName = "date")] public DateTime WorkDate { get; set; }
@@ -79,6 +82,8 @@ public sealed class OvertimeSchedule : BaseModel
 [Table("OvertimeResult_Table")]
 public sealed class OvertimePersonResult : BaseModel
 {
+    public PersonelTipi? PersonnelType { get; set; }
+    [MaxLength(200)] public string? KadroHariciKurum { get; set; }
     public int PeriodId { get; set; }
     public int PersonelId { get; set; }
     [MaxLength(200)] public string FullName { get; set; } = "";
@@ -139,6 +144,7 @@ public sealed record OvertimeWeek(DateTime Monday, int NormalMinutes, int GrossM
 public sealed record OvertimeTitleOption(int Id, string Name, int? WeeklyHours);
 public sealed class OvertimeWorkspace
 {
+    public List<OvertimeExternalInstitution> ExternalInstitutions { get; set; } = [];
     public int PersonelId { get; set; }
     public string FullName { get; set; } = "";
     public bool IsHr { get; set; }
@@ -149,6 +155,8 @@ public sealed class OvertimeWorkspace
     public List<OvertimeTitleOption> Titles { get; set; } = [];
     public List<OvertimePersonOption> DelegatedPeople { get; set; } = [];
 }
+
+public sealed record OvertimeExternalInstitution(int PersonelId, string FullName, string? Institution);
 
 public sealed class OvertimeReport
 {

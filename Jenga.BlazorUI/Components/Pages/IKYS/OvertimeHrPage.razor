@@ -44,6 +44,29 @@
             </div>
         </details>
         <details class="card card-body mb-3">
+            <summary>Kadro harici personelin kurum bilgileri</summary>
+            <div class="d-flex flex-wrap align-items-end gap-2 mt-3">
+                <div class="ot-title-field">
+                    <label class="form-label" for="ot-institution-person">Personel</label>
+                    <select id="ot-institution-person" class="form-select" disabled="@_busy" @bind="_institutionPersonId" @bind:after="SelectInstitutionPerson">
+                        <option value="0">Personel seçin</option>
+                        @foreach (var person in _workspace.ExternalInstitutions)
+                        {
+                            <option value="@person.PersonelId">@person.FullName — @(string.IsNullOrWhiteSpace(person.Institution) ? "Kurum eksik" : person.Institution)</option>
+                        }
+                    </select>
+                </div>
+                <div class="ot-title-field">
+                    <label class="form-label" for="ot-institution-name">Kurumu <span class="text-danger">*</span></label>
+                    <input id="ot-institution-name" class="form-control" maxlength="200" list="ot-institution-names" disabled="@(_busy || _institutionPersonId == 0)" @bind="_institutionName" />
+                    <datalist id="ot-institution-names">
+                        @foreach (var name in _workspace.ExternalInstitutions.Select(x => x.Institution).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct()) { <option value="@name"></option> }
+                    </datalist>
+                </div>
+                <button class="btn btn-primary" disabled="@(_busy || _institutionPersonId == 0)" @onclick="SaveInstitution">Kaydet</button>
+            </div>
+        </details>
+        <details class="card card-body mb-3">
             <summary>Yeni dönem / Birimlerden toplama çağrısı</summary>
             <p class="small text-muted mt-2">Pazartesi–Pazar tam haftaları seçin. Ay sınırını aşan haftanın hangi döneme alınacağını tarihleri seçerek belirleyin.</p>
             <fieldset disabled="@_busy" class="row g-2 align-items-end">
@@ -70,6 +93,7 @@
                     <p>@period.StartDate.ToString("dd.MM.yyyy") – @period.EndDate.ToString("dd.MM.yyyy") · Son teslim: @period.DueDate.ToString("dd.MM.yyyy")</p>
                     <div class="d-flex flex-wrap gap-2 mb-3">
                         <a class="btn btn-sm btn-outline-primary" href="@($"/ikys/overtime/report/{period.Id}?returnTo=hr")">Hesaplama ve İmza Listesi</a>
+                        <a class="btn btn-sm btn-outline-secondary" href="@($"/ikys/overtime/report/{period.Id}?returnTo=hr&personnelType=2")">Kadro Harici Personel Çizelgesi</a>
                         @if (period.Status == OvertimePeriodStatus.Collecting)
                         { <button class="btn btn-sm btn-primary" disabled="@_busy" @onclick='() => Act(() => Overtime.PrepareSignatureAsync(period.Id, period.Version), "Hesaplar sabitlendi; liste GMY ıslak imzasına hazır.")'>GMY İmzasına Hazırla</button> }
                         @if (period.Status == OvertimePeriodStatus.AwaitingSignature)
@@ -166,6 +190,8 @@
         _createdPeriodRanges.Any(x => x.Start <= _periodEnd.Date && x.End >= _periodStart.Date) ||
         (_workspace?.Periods.Any(x => x.StartDate <= _periodEnd.Date && x.EndDate >= _periodStart.Date) ?? false);
     private int _titleId, _weeklyHours = 40;
+    private int _institutionPersonId;
+    private string _institutionName = "";
     private OvertimePeriod? _reopenPeriod, _finalizePeriod;
     private OvertimeDelivery? _reopenDelivery;
     private string _reopenReason = "";
@@ -222,6 +248,8 @@
     private Task Receive(OvertimeDelivery delivery)
         => Act(() => Overtime.ReceiveUnitAsync(delivery.Id, delivery.Version), "İmzalı birim çizelgesi teslim alındı.");
     private async Task SaveSchedule() => await Act(() => Overtime.SetScheduleAsync(_titleId, _weeklyHours), "Unvan çalışma grubu kaydedildi.");
+    private void SelectInstitutionPerson() => _institutionName = _workspace?.ExternalInstitutions.FirstOrDefault(x => x.PersonelId == _institutionPersonId)?.Institution ?? "";
+    private Task SaveInstitution() => Act(() => Overtime.SetExternalInstitutionAsync(_institutionPersonId, _institutionName), "Personelin kurum bilgisi kaydedildi.");
     private async Task CreatePeriod()
     {
         if (_busy || PeriodRangeExists) return;

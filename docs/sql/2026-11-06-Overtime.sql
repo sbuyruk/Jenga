@@ -2,6 +2,8 @@
 -- Uygulama bu betiği otomatik çalıştırmaz. Mevcut rol/izinler değiştirilmez.
 SET NOCOUNT ON;
 SET XACT_ABORT ON;
+IF OBJECT_ID(N'dbo.Personel_Table', N'U') IS NULL OR OBJECT_ID(N'dbo.IsBilgileri_Table', N'U') IS NULL
+    THROW 50001, N'Seçili veritabanında dbo.Personel_Table ve dbo.IsBilgileri_Table bulunmalıdır. Hedef Jenga veritabanını kontrol edin.', 1;
 BEGIN TRANSACTION;
 
 IF OBJECT_ID(N'dbo.OvertimePeriod_Table', N'U') IS NULL
@@ -22,6 +24,8 @@ CREATE TABLE dbo.OvertimePeriod_Table (
 
 IF OBJECT_ID(N'dbo.OvertimeEntry_Table', N'U') IS NULL
 CREATE TABLE dbo.OvertimeEntry_Table (
+    KadroHariciKurum nvarchar(200) NULL,
+    PersonnelType int NULL,
     Id int IDENTITY PRIMARY KEY, PersonelId int NOT NULL, UnitId int NOT NULL, WorkDate date NOT NULL,
     FullName nvarchar(200) NOT NULL, SicilNo int NOT NULL, UnitName nvarchar(200) NOT NULL, Title nvarchar(200) NOT NULL,
     NormalWeeklyMinutes int NOT NULL, Reason nvarchar(2000) NOT NULL, Status int NOT NULL,
@@ -62,6 +66,8 @@ CREATE TABLE dbo.OvertimeSchedule_Table (
 
 IF OBJECT_ID(N'dbo.OvertimeResult_Table', N'U') IS NULL
 CREATE TABLE dbo.OvertimeResult_Table (
+    KadroHariciKurum nvarchar(200) NULL,
+    PersonnelType int NULL,
     Id int IDENTITY PRIMARY KEY, PeriodId int NOT NULL, PersonelId int NOT NULL,
     FullName nvarchar(200) NOT NULL, SicilNo int NOT NULL, RawMinutes int NOT NULL, RoundedMinutes int NOT NULL,
     RuleVersion nvarchar(50) NOT NULL, WeeksJson nvarchar(max) NOT NULL,
@@ -109,5 +115,17 @@ CREATE TABLE dbo.OvertimeDelegation_Table (
 );
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id = OBJECT_ID(N'dbo.OvertimeDelegation_Table') AND name = N'UX_OvertimeDelegation_DelegateTarget')
     CREATE UNIQUE INDEX UX_OvertimeDelegation_DelegateTarget ON dbo.OvertimeDelegation_Table(DelegatePersonelId, TargetPersonelId);
+
+IF COL_LENGTH(N'dbo.OvertimeEntry_Table', N'PersonnelType') IS NULL
+    ALTER TABLE dbo.OvertimeEntry_Table ADD PersonnelType int NULL;
+IF COL_LENGTH(N'dbo.OvertimeResult_Table', N'PersonnelType') IS NULL
+    ALTER TABLE dbo.OvertimeResult_Table ADD PersonnelType int NULL;
+
+IF COL_LENGTH(N'dbo.IsBilgileri_Table', N'KadroHariciKurum') IS NULL
+    ALTER TABLE dbo.IsBilgileri_Table ADD KadroHariciKurum nvarchar(200) NULL;
+IF COL_LENGTH(N'dbo.OvertimeEntry_Table', N'KadroHariciKurum') IS NULL
+    ALTER TABLE dbo.OvertimeEntry_Table ADD KadroHariciKurum nvarchar(200) NULL;
+IF COL_LENGTH(N'dbo.OvertimeResult_Table', N'KadroHariciKurum') IS NULL
+    ALTER TABLE dbo.OvertimeResult_Table ADD KadroHariciKurum nvarchar(200) NULL;
 
 COMMIT;
