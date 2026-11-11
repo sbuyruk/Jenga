@@ -10,6 +10,7 @@ public interface IOvertimeService
     Task<Result<OvertimeDelegationAdminData>> GetDelegationsAsync(CancellationToken cancellationToken = default);
     Task<Result<bool>> SetDelegationsAsync(int delegatePersonelId, List<int> targetPersonelIds, List<int> expectedTargetPersonelIds, CancellationToken cancellationToken = default);
     Task<Result<int>> SaveEntryAsync(OvertimeEntryInput input, CancellationToken cancellationToken = default);
+    Task<Result<List<int>>> SaveEntriesAsync(OvertimeEntryInput input, CancellationToken cancellationToken = default);
     Task<Result<bool>> WithdrawAsync(int entryId, byte[] version, CancellationToken cancellationToken = default);
     Task<Result<bool>> ReviewAsync(int entryId, byte[] version, OvertimeEntryStatus decision, string reason, CancellationToken cancellationToken = default);
     Task<Result<List<OvertimeEvent>>> GetEntryHistoryAsync(int entryId, CancellationToken cancellationToken = default);

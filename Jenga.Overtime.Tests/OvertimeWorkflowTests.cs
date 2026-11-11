@@ -284,6 +284,79 @@ public sealed class OvertimeWorkflowTests(OvertimeDatabase database) : IClassFix
         Assert.Empty(Success(await external.LoadAsync("mine", Monday, Monday.AddDays(6))).ExternalInstitutions);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task SharedActivityCreatesSeparateOwnedEntriesForEverySelectedPerson(bool submit)
+    {
+        var seed = await Reset();
+        var operatorId = await PersonId("other");
+        var managerId = await PersonId("manager");
+        var hrId = await PersonId("hr");
+        var targets = new List<int> { seed.Worker, managerId, hrId };
+        var hr = Service("hr", true);
+        Success(await hr.SetDelegationsAsync(operatorId, targets, []));
+        var input = Input(); input.Submit = submit;
+        input.PersonelIds = [.. targets, seed.Worker];
+        input.Reason = "Yönetim Kurulu hazırlığı";
+        input.Intervals = [new() { Start = new(17, 0), End = new(20, 0) }];
+        var ids = Success(await Service("other").SaveEntriesAsync(input));
+        Assert.Equal(3, ids.Count);
+        await using var db = database.CreateDbContext();
+        var entries = await db.OvertimeEntries.Include(x => x.Intervals).ToListAsync();
+        Assert.Equal(targets.Order(), entries.Select(x => x.PersonelId).Order());
+        Assert.All(entries, entry =>
+        {
+            Assert.Equal(submit ? OvertimeEntryStatus.Pending : OvertimeEntryStatus.Draft, entry.Status);
+            Assert.Equal("Yönetim Kurulu hazırlığı", entry.Reason);
+            Assert.Equal("other", entry.Olusturan);
+            Assert.Equal(1020, Assert.Single(entry.Intervals).StartMinute);
+            Assert.Equal(1200, Assert.Single(entry.Intervals).EndMinute);
+        });
+        Assert.Equal(3, await db.OvertimeEvents.CountAsync(x => x.EntryId != null));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task SharedActivityRollsBackEveryPersonsEntriesAndAuditWhenALaterPersonConflicts(bool overnight)
+    {
+        var seed = await Reset();
+        var operatorId = await PersonId("other");
+        var hrId = await PersonId("hr");
+        Success(await Service("hr", true).SetDelegationsAsync(operatorId, [seed.Worker, hrId], []));
+        Success(await Service("hr").SaveEntryAsync(Input(overnight ? Monday.AddDays(6) : Monday.AddDays(5))));
+        var input = Input(); input.PersonelIds = [seed.Worker, hrId];
+        if (overnight)
+        {
+            input.EndWorkDate = input.WorkDate.AddDays(1);
+            input.Intervals = [new() { Start = new(22, 0), End = new(2, 0) }];
+        }
+        var result = await Service("other").SaveEntriesAsync(input);
+        Assert.False(result.IsSuccess);
+        Assert.Contains("hr Test", result.Error.Message);
+        await using var db = database.CreateDbContext();
+        Assert.Equal(hrId, Assert.Single(await db.OvertimeEntries.ToListAsync()).PersonelId);
+        Assert.Single(await db.OvertimeIntervals.ToListAsync());
+        Assert.Equal(1, await db.OvertimeEvents.CountAsync(x => x.EntryId != null));
+    }
+
+    [Fact]
+    public async Task SharedActivityRejectsUnauthorizedTargetsAndRevokedPermissionsWithoutSavingAnything()
+    {
+        var seed = await Reset();
+        var operatorId = await PersonId("other");
+        var hr = Service("hr", true);
+        Success(await hr.SetDelegationsAsync(operatorId, [seed.Worker], []));
+        var input = Input(); input.PersonelIds = [seed.Worker, await PersonId("manager")];
+        Assert.False((await Service("other").SaveEntriesAsync(input)).IsSuccess);
+        input.PersonelIds = [seed.Worker];
+        Success(await hr.SetDelegationsAsync(operatorId, [], [seed.Worker]));
+        Assert.False((await Service("other").SaveEntriesAsync(input)).IsSuccess);
+        await using var db = database.CreateDbContext();
+        Assert.Empty(await db.OvertimeEntries.ToListAsync());
+    }
+
     [Fact]
     public async Task MissingPersonnelTypeDoesNotBlockEntryButPreventsSignaturePreparation()
     {

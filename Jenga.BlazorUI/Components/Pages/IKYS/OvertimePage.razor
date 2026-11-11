@@ -185,12 +185,24 @@
         _edit.Submit = submit;
         try
         {
-            var result = await Overtime.SaveEntryAsync(_edit);
-            if (!result.IsSuccess) { ToastService.ShowError(result.Error.Message, 6000); return; }
+            var savedCount = 1;
+            if (_scope == "delegated" && _edit.Id == 0)
+            {
+                var result = await Overtime.SaveEntriesAsync(_edit);
+                if (!result.IsSuccess) { ToastService.ShowError(result.Error.Message, 6000); return; }
+                savedCount = result.Value.Count;
+            }
+            else
+            {
+                var result = await Overtime.SaveEntryAsync(_edit);
+                if (!result.IsSuccess) { ToastService.ShowError(result.Error.Message, 6000); return; }
+            }
             _editing = false;
             _start = _edit.WorkDate < _start ? _edit.WorkDate : _start;
             _end = (_edit.EndWorkDate ?? _edit.WorkDate) > _end ? (_edit.EndWorkDate ?? _edit.WorkDate) : _end;
-            ToastService.ShowSuccess(submit ? "Kayıt amire gönderildi." : "Taslak kaydedildi.");
+            ToastService.ShowSuccess(savedCount > 1
+                ? submit ? $"{savedCount} personelin mesai kaydı amir onayına gönderildi." : $"{savedCount} personelin mesai kaydı taslak olarak kaydedildi."
+                : submit ? "Kayıt amire gönderildi." : "Taslak kaydedildi.");
             await LoadAsync();
         }
         finally { _busy = false; }

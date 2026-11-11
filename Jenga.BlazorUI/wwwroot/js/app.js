@@ -55,15 +55,21 @@ window.scrollSpyScrollTo = (scrollElementId, sectionId) => {
     scrollEl.scrollTo({ top, behavior: 'smooth' });
 };
 
-window.printElementById = (elementId) => {
+window.printElementById = (elementId, printTitle) => {
     const el = document.getElementById(elementId);
     if (!el) return;
 
     const original = document.body.innerHTML;
-    document.body.innerHTML = el.outerHTML;
-    window.print();
-    document.body.innerHTML = original;
-    window.location.reload();
+    const originalTitle = document.title;
+    try {
+        document.body.innerHTML = el.outerHTML;
+        if (typeof printTitle === 'string' && printTitle.trim()) document.title = printTitle;
+        window.print();
+    } finally {
+        document.body.innerHTML = original;
+        document.title = originalTitle;
+        window.location.reload();
+    }
 };
 
 window.isMobileViewport = () => window.innerWidth < 768;
