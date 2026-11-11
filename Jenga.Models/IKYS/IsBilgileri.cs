@@ -7,6 +7,9 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Jenga.Models.IKYS;
 public class IsBilgileri : BaseModel
 {
+    [MaxLength(200)]
+    [DisplayName("Kadro Harici Personelin Kurumu")]
+    public string? KadroHariciKurum { get; set; }
     [Required]
     public int PersonelId { get; set; }
     [DisplayName("Personel")]
@@ -15,12 +18,12 @@ public class IsBilgileri : BaseModel
 
     //[Required]
     public int? UnvanId { get; set; }
-    [DisplayName("Ünvan")]
+    [DisplayName("Ãœnvan")]
     [ForeignKey("UnvanId")]
     public UnvanTanim? UnvanTanim { get; set; }
     //[Required]
     public int? GorevId { get; set; }
-    [DisplayName("Görev")]
+    [DisplayName("GÃ¶rev")]
     [ForeignKey("GorevId")]
     public GorevTanim? GorevTanim { get; set; }
     //[Required]
@@ -32,7 +35,7 @@ public class IsBilgileri : BaseModel
     [DisplayName("Baslama Tarihi")]
     public DateTime? BaslamaTar { get; set; }
     [Required]
-    [DisplayName("Çal??ma Durumu")]
+    [DisplayName("Ã‡al??ma Durumu")]
     public CalismaDurumu? CalismaDurumu { get; set; }
     [DisplayName("Ayrilma Tarihi")]
     public DateTime? AyrilmaTar { get; set; }
@@ -43,12 +46,12 @@ public class IsBilgileri : BaseModel
     public string? SGKSicilNo { get; set; }
     [DisplayName("SGK Baslama Tarihi")]
     public DateTime? SGKBasTar { get; set; }
-    [DisplayName("Vakif Öncesi Prim GünSayisi")]
+    [DisplayName("Vakif Ã–ncesi Prim GÃ¼nSayisi")]
     public int VakifOncesiPrimGunSayisi { get; set; }
     [DisplayName("Emeklilik Tarihi")]
     public DateTime? EmeklilikTarihi { get; set; }
     //[Required]
-    [DisplayName("Izin Dönemi Baslama Tarihi")]
+    [DisplayName("Izin DÃ¶nemi Baslama Tarihi")]
     public DateTime? IzinDonemiBasTar { get; set; }
     [DisplayName("Protokol Sira No")]
     public short? ProtokolSiraNo { get; set; }

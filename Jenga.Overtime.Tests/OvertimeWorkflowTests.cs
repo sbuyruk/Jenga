@@ -100,7 +100,7 @@ public sealed class OvertimeWorkflowTests(OvertimeDatabase database) : IClassFix
             DELETE FROM OvertimePeriod_Table; DELETE FROM OvertimeSchedule_Table;
             DELETE FROM IsBilgileri_Table; DELETE FROM GorevTanim_Table; DELETE FROM Personel_Table; DELETE FROM BirimTanim_Table; DELETE FROM UnvanTanim_Table;
             """);
-        var people = new[] { "worker", "manager", "other", "hr" }.Select((x, i) => new Personel { Adi = x, Soyadi = "Test", SicilNo = i + 1, KullaniciAdi = x }).ToList();
+        var people = new[] { "worker", "manager", "other", "hr" }.Select((x, i) => new Personel { Adi = x, Soyadi = "Test", SicilNo = i + 1, KullaniciAdi = x, Tipi = PersonelTipi.Kadrolu }).ToList();
         db.Personel_Table.AddRange(people);
         var title = new UnvanTanim { Adi = "Uzman", GorTipId = 1 };
         db.UnvanTanim_Table.Add(title);
@@ -201,6 +201,109 @@ public sealed class OvertimeWorkflowTests(OvertimeDatabase database) : IClassFix
         Success(await hr.ReceiveUnitAsync(populated.Id, populated.Version));
         Success(await hr.PrepareSignatureAsync(periodId, (await Period()).Version));
         Assert.Equal(OvertimePeriodStatus.AwaitingSignature, (await Period()).Status);
+    }
+
+    [Fact]
+    public async Task ExternalPersonnelCanEnterAndDelegateOvertime_AndTypesRemainFrozenInReports()
+    {
+        var seed = await Reset();
+        var externalId = await PersonId("other");
+        await using (var db = database.CreateDbContext())
+        {
+            (await db.Personel_Table.SingleAsync(x => x.Id == externalId)).Tipi = PersonelTipi.KadroHarici;
+            (await db.IsBilgileri_Table.SingleAsync(x => x.PersonelId == externalId)).KadroHariciKurum = "Kurum A";
+            await db.SaveChangesAsync();
+        }
+        var hr = Service("hr", true);
+        // An external operator may still enter overtime for an assigned permanent employee.
+        Success(await hr.SetDelegationsAsync(externalId, [seed.Worker], []));
+        var delegated = Input(); delegated.PersonelId = seed.Worker;
+        Success(await Service("other").SaveEntryAsync(delegated));
+        Success(await Service("other").SaveEntryAsync(Input()));
+        var manager = Service("manager");
+        foreach (var entry in Success(await manager.LoadAsync("team", Monday, Monday.AddDays(6))).Entries)
+            Success(await manager.ReviewAsync(entry.Id, entry.Version, OvertimeEntryStatus.Approved, ""));
+        var periodId = Success(await hr.CreatePeriodAsync("Karma personel", Monday, Monday.AddDays(6), Monday.AddDays(9)));
+        var preview = Success(await hr.GetReportAsync(periodId, null, null));
+        Assert.Equal(PersonelTipi.Kadrolu, Assert.Single(preview.Results, x => x.PersonelId == seed.Worker).PersonnelType);
+        Assert.Equal(PersonelTipi.KadroHarici, Assert.Single(preview.Results, x => x.PersonelId == externalId).PersonnelType);
+        Assert.Equal("Kurum A", Assert.Single(preview.Results, x => x.PersonelId == externalId).KadroHariciKurum);
+        var delivery = await Delivery();
+        Success(await manager.IssueUnitAsync(delivery.Id, delivery.Version));
+        delivery = await Delivery();
+        Success(await hr.ReceiveUnitAsync(delivery.Id, delivery.Version));
+        Success(await hr.PrepareSignatureAsync(periodId, (await Period()).Version));
+        await using (var db = database.CreateDbContext())
+        {
+            (await db.Personel_Table.SingleAsync(x => x.Id == seed.Worker)).Tipi = PersonelTipi.KadroHarici;
+            (await db.Personel_Table.SingleAsync(x => x.Id == externalId)).Tipi = PersonelTipi.Kadrolu;
+            (await db.IsBilgileri_Table.SingleAsync(x => x.PersonelId == externalId)).KadroHariciKurum = "Kurum B";
+            await db.SaveChangesAsync();
+        }
+        var frozen = Success(await hr.GetReportAsync(periodId, null, null));
+        Assert.Equal(PersonelTipi.Kadrolu, Assert.Single(frozen.Results, x => x.PersonelId == seed.Worker).PersonnelType);
+        Assert.Equal(PersonelTipi.KadroHarici, Assert.Single(frozen.Results, x => x.PersonelId == externalId).PersonnelType);
+        Assert.Equal("Kurum A", Assert.Single(frozen.Results, x => x.PersonelId == externalId).KadroHariciKurum);
+        Assert.Equal(120, Assert.Single(frozen.Results, x => x.PersonnelType == PersonelTipi.Kadrolu).RoundedMinutes);
+        Assert.Equal(120, Assert.Single(frozen.Results, x => x.PersonnelType == PersonelTipi.KadroHarici).RoundedMinutes);
+        var unitChart = Success(await manager.GetReportAsync(periodId, seed.Unit, null));
+        Assert.Equal(PersonelTipi.KadroHarici, Assert.Single(unitChart.Entries, x => x.PersonelId == externalId).PersonnelType);
+        Assert.Equal(externalId, Assert.Single(Success(await Service("other").GetReportAsync(periodId, null, null)).Entries).PersonelId);
+        Success(await hr.FinalizeAsync(periodId, (await Period()).Version, "imzali.pdf", "%PDF-1.7\nTest"u8.ToArray()));
+        Assert.Equal(PersonelTipi.KadroHarici, Assert.Single(Success(await hr.GetReportAsync(periodId, null, null)).Results, x => x.PersonelId == externalId).PersonnelType);
+    }
+
+    [Fact]
+    public async Task ExternalInstitutionIsRequired_OnlyHrCanAssignIt_AndWorkInformationPersistsIt()
+    {
+        await Reset();
+        var externalId = await PersonId("other");
+        await using (var db = database.CreateDbContext())
+        {
+            (await db.Personel_Table.SingleAsync(x => x.Id == externalId)).Tipi = PersonelTipi.KadroHarici;
+            await db.SaveChangesAsync();
+        }
+        var external = Service("other");
+        Assert.False((await external.SaveEntryAsync(Input())).IsSuccess);
+        Assert.False((await external.SetExternalInstitutionAsync(externalId, "Kurum A")).IsSuccess);
+        var hr = Service("hr", true);
+        Assert.False((await hr.SetExternalInstitutionAsync(externalId, " ")).IsSuccess);
+        Assert.False((await hr.SetExternalInstitutionAsync(externalId, new string('a', 201))).IsSuccess);
+        var workService = new IsBilgileriService(database, new NullLogService());
+        var info = Success(await workService.GetByPersonelIdAsync(externalId));
+        Assert.False((await workService.UpdateAsync(info)).IsSuccess);
+        Success(await hr.SetExternalInstitutionAsync(externalId, "  Kurum    A  "));
+        info = Success(await workService.GetByPersonelIdAsync(externalId));
+        Assert.Equal("Kurum A", info.KadroHariciKurum);
+        info.KadroHariciKurum = "  Kurum B  ";
+        Assert.True((await workService.UpdateAsync(info)).IsSuccess);
+        Assert.Equal("Kurum B", Success(await workService.GetByPersonelIdAsync(externalId)).KadroHariciKurum);
+        Success(await external.SaveEntryAsync(Input()));
+        Assert.Equal("Kurum B", (await Entry("other")).KadroHariciKurum);
+        Assert.Equal("Kurum B", Assert.Single(Success(await hr.LoadAsync("hr", Monday, Monday.AddDays(6))).ExternalInstitutions).Institution);
+        Assert.Empty(Success(await external.LoadAsync("mine", Monday, Monday.AddDays(6))).ExternalInstitutions);
+    }
+
+    [Fact]
+    public async Task MissingPersonnelTypeDoesNotBlockEntryButPreventsSignaturePreparation()
+    {
+        var seed = await Reset();
+        await using (var db = database.CreateDbContext())
+        {
+            (await db.Personel_Table.SingleAsync(x => x.Id == seed.Worker)).Tipi = null;
+            await db.SaveChangesAsync();
+        }
+        Success(await Service("worker").SaveEntryAsync(Input()));
+        var entry = await Entry();
+        Success(await Service("manager").ReviewAsync(entry.Id, entry.Version, OvertimeEntryStatus.Approved, ""));
+        var hr = Service("hr", true);
+        var periodId = Success(await hr.CreatePeriodAsync("Eksik tip", Monday, Monday.AddDays(6), Monday.AddDays(9)));
+        Assert.Null(Assert.Single(Success(await hr.GetReportAsync(periodId, null, null)).Results).PersonnelType);
+        var delivery = await Delivery();
+        Success(await hr.IssueUnitAsync(delivery.Id, delivery.Version));
+        delivery = await Delivery();
+        Success(await hr.ReceiveUnitAsync(delivery.Id, delivery.Version));
+        Assert.False((await hr.PrepareSignatureAsync(periodId, (await Period()).Version)).IsSuccess);
     }
 
     [Theory]

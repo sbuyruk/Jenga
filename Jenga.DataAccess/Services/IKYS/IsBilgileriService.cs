@@ -1,5 +1,6 @@
 using Jenga.DataAccess.Data;
 using Jenga.Models.IKYS;
+using Jenga.Models.Enums;
 using Jenga.Utility.Logging;
 using Jenga.Utility.Results;
 using Microsoft.EntityFrameworkCore;
@@ -78,6 +79,8 @@ public class IsBilgileriService : IIsBilgileriService
         {
             await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
             db.SetCurrentUser(modifiedBy);
+            var validation = await ValidateInstitutionAsync(db, entity, cancellationToken);
+            if (!validation.IsSuccess) return validation;
             await db.IsBilgileri_Table.AddAsync(entity, cancellationToken);
             await db.SaveChangesAsync(cancellationToken);
             return Result.Success();
@@ -99,6 +102,9 @@ public class IsBilgileriService : IIsBilgileriService
             var existing = await db.IsBilgileri_Table.FirstOrDefaultAsync(x => x.Id == entity.Id, cancellationToken);
             if (existing is null)
                 return Result.Failure(Error.NotFound("Kayıt bulunamadı!", "IsBilgileri.NotFound"));
+            var validation = await ValidateInstitutionAsync(db, entity, cancellationToken);
+            if (!validation.IsSuccess) return validation;
+            existing.KadroHariciKurum = entity.KadroHariciKurum;
             existing.PersonelId = entity.PersonelId;
             existing.UnvanId = entity.UnvanId;
             existing.GorevId = entity.GorevId;
@@ -121,6 +127,17 @@ public class IsBilgileriService : IIsBilgileriService
             _logService.LogException(ex, $"{Source}.UpdateAsync");
             return Result.Failure(Error.Unexpected("İş bilgisi güncellenemedi.", ex, "IsBilgileri.Update.Failed"));
         }
+    }
+
+    private static async Task<Result> ValidateInstitutionAsync(ApplicationDbContext db, IsBilgileri entity, CancellationToken ct)
+    {
+        var person = await db.Personel_Table.AsNoTracking().Where(x => x.Id == entity.PersonelId).Select(x => new { x.Tipi }).SingleOrDefaultAsync(ct);
+        if (person is null) return Result.Failure(Error.Validation("Personel kaydı bulunamadı."));
+        var name = PersonnelInstitution.Normalize(entity.KadroHariciKurum);
+        if (name.Length > 200 || (person.Tipi == PersonelTipi.KadroHarici && name.Length == 0))
+            return Result.Failure(Error.Validation("Kadro harici personel için kurum adı zorunludur ve en fazla 200 karakter olabilir."));
+        entity.KadroHariciKurum = person.Tipi == PersonelTipi.KadroHarici ? name : null;
+        return Result.Success();
     }
 
     public async Task<Result> DeleteAsync(IsBilgileri entity, CancellationToken cancellationToken = default)

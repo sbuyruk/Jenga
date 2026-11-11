@@ -3,6 +3,7 @@
 @using System.Text.Json
 @using Jenga.DataAccess.Services.IKYS
 @using Jenga.Models.IKYS
+@using Jenga.Models.Enums
 @inject IOvertimeService Overtime
 @inject IToastService ToastService
 @inject IJSRuntime JS
@@ -11,27 +12,51 @@
 <div class="d-flex flex-wrap gap-2 mb-3 no-print">
     <a class="btn btn-outline-secondary" href="@(ReturnTo == "hr" ? "/ikys/overtime/hr" : ReturnTo == "delegated" ? "/ikys/overtime?scope=delegated" : "/ikys/overtime")">@(ReturnTo == "hr" ? "İK Dönem İşlemlerine Dön" : ReturnTo == "delegated" ? "Başkası Adına Mesaiye Dön" : "Mesailerime Dön")</a>
     <button class="btn btn-outline-secondary" disabled="@_busy" @onclick="LoadAsync">Yenile</button>
-    <button class="btn btn-primary" disabled="@(_busy || _report is null)" @onclick="Print">Yazdır</button>
-    @if (_report?.CanSeeSummary == true && _report.Period.Status == OvertimePeriodStatus.Finalized)
+    <button class="btn btn-primary" disabled="@(_busy || _report is null || (_report.CanSeeSummary && (_personnelGroup == 0 || !DisplayedResults.Any() || (_personnelGroup == 2 && SelectedInstitutionKey.Length == 0))))" @onclick="Print">Yazdır</button>
+    @if (_report?.CanSeeSummary == true && _personnelGroup == 1 && _report.Period.Status == OvertimePeriodStatus.Finalized)
     { <button class="btn btn-outline-success" disabled="@_busy" @onclick="Download">İmzalı Belgeyi İndir</button> }
 </div>
 @if (_busy) { <p>Çizelge hazırlanıyor…</p> }
 @if (_report is not null)
 {
+    @if (_report.CanSeeSummary)
+    {
+        <div class="nav nav-pills gap-2 mb-3 no-print" aria-label="Personel grubu">
+            <button class="nav-link @(_personnelGroup == 1 ? "active" : "")" @onclick="() => _personnelGroup = 1">Kadrolu Personel</button>
+            <button class="nav-link @(_personnelGroup == 2 ? "active" : "")" @onclick="() => _personnelGroup = 2">Kadro Harici Personel</button>
+            @if (_report.Results.Any(x => x.PersonnelType is not (PersonelTipi.Kadrolu or PersonelTipi.KadroHarici)))
+            {
+                <button class="nav-link @(_personnelGroup == 0 ? "active" : "")" @onclick="() => _personnelGroup = 0">Personel Tipi Tanımlanmamış</button>
+            }
+        </div>
+        @if (_personnelGroup == 2 && InstitutionOptions.Count > 0)
+        {
+            <div class="mb-3 no-print" style="max-width: 28rem;">
+                <label class="form-label" for="ot-report-institution">Çizelgesi alınacak kurum</label>
+                <select id="ot-report-institution" class="form-select" value="@SelectedInstitutionKey" @onchange="e => _institutionKey = e.Value?.ToString()">
+                    @foreach (var institution in InstitutionOptions)
+                    {
+                        <option value="@PersonnelInstitution.Key(institution)">@(institution.Length == 0 ? "Kurum bilgisi eksik" : institution)</option>
+                    }
+                </select>
+            </div>
+        }
+    }
     <div id="overtime-report" class="overtime-report">
         @if (_report.IsPreview)
         { <p class="alert alert-warning">ÖNİZLEME — İmzaya esas değildir. Kayıtlar henüz sabitlenmemiştir.</p> }
         @if (_report.CanSeeSummary)
         {
             <section class="ot-sheet ot-approval-sheet">
-                <h4 class="text-center">FAZLA ÇALIŞMA ONAY LİSTESİ</h4>
+                <h4 class="text-center">@(_personnelGroup == 2 ? "KADRO HARİCİ PERSONEL FAZLA ÇALIŞMA ÇİZELGESİ" : _personnelGroup == 0 ? "PERSONEL TİPİ TANIMLANMAMIŞ KAYITLAR" : "FAZLA ÇALIŞMA ONAY LİSTESİ")</h4>
+                @if (_personnelGroup == 2) { <p class="text-center"><strong>Kurum: @(SelectedInstitutionName.Length == 0 ? "Kurum bilgisi eksik" : SelectedInstitutionName)</strong></p> }
                 <p class="text-center">@_report.Period.Name · @_report.Period.StartDate.ToString("dd.MM.yyyy") – @_report.Period.EndDate.ToString("dd.MM.yyyy")</p>
                 <table class="table table-bordered table-sm ot-approval-table">
                     <colgroup><col style="width: 5%;" /><col style="width: 18%;" /><col style="width: 15%;" /><col style="width: 12%;" /><col style="width: 12%;" /><col style="width: 12%;" /><col style="width: 26%;" /></colgroup>
                     <thead><tr><th>Sıra No</th><th>Adı Soyadı</th><th>Ünvanı</th><th>Normal Mesai Başlama Saati</th><th>Normal Mesai Bitirme Saati</th><th>Fazla Çalışma Süresi</th><th>Fazla Çalışmayı Gerektiren Sebepler</th></tr></thead>
                     <tbody>
                     @{ var index = 0; }
-                    @foreach (var person in _report.Results)
+                    @foreach (var person in DisplayedResults)
                     {
                         var entries = _report.Entries.Where(x => x.PersonelId == person.PersonelId).OrderBy(x => x.WorkDate).ToList();
                         var info = entries.FirstOrDefault();
@@ -39,26 +64,38 @@
                         <tr><td>@(++index)</td><td>@person.FullName</td><td>@info?.Title</td><td>@normalStart</td><td>17:00</td><td>@OvertimeDisplay.Duration(person.RoundedMinutes)</td><td class="ot-reason">@string.Join("; ", entries.Select(x => x.Reason).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct())</td></tr>
                     }
                     </tbody>
-                    <tfoot><tr><th colspan="5">TOPLAM</th><th>@OvertimeDisplay.Duration(_report.Results.Sum(x => x.RoundedMinutes))</th><td></td></tr></tfoot>
+                    <tfoot><tr><th colspan="5">TOPLAM</th><th>@OvertimeDisplay.Duration(DisplayedResults.Sum(x => x.RoundedMinutes))</th><td></td></tr></tfoot>
                 </table>
+                @if (!DisplayedResults.Any()) { <p class="text-center">Bu personel grubunda onaylı fazla mesai kaydı bulunmamaktadır.</p> }
+                @if (_personnelGroup != 0)
+                {
                 <div class="ot-approval-request">
-                    <p class="text-center">Yukarıda kimlikleri yazılı Vakıf personeli, @_report.Period.StartDate.ToString("dd.MM.yyyy") ve @_report.Period.EndDate.ToString("dd.MM.yyyy") tarihleri arasında, çizelgede belirtilen süre ve nedenlerle fazla mesai yapmış olup, fazla mesai ücretlerinin ödenmesini arz ederim.</p>
+                    @if (_personnelGroup == 2)
+                    {
+                        <p class="text-center">Yukarıda kimlikleri yazılı kadro harici personel, @_report.Period.StartDate.ToString("dd.MM.yyyy") ve @_report.Period.EndDate.ToString("dd.MM.yyyy") tarihleri arasında çizelgede belirtilen süre ve nedenlerle fazla mesai yapmıştır. @SelectedInstitutionName kurumuna iletilmek üzere düzenlenmiştir.</p>
+                    }
+                    else
+                    {
+                        <p class="text-center">Yukarıda kimlikleri yazılı Vakıf personeli, @_report.Period.StartDate.ToString("dd.MM.yyyy") ve @_report.Period.EndDate.ToString("dd.MM.yyyy") tarihleri arasında, çizelgede belirtilen süre ve nedenlerle fazla mesai yapmış olup, fazla mesai ücretlerinin ödenmesini arz ederim.</p>
+                    }
                     <div class="ot-director-signature"><strong>@_report.PersonnelDirectorName</strong><br />Personel ve İdari İşler Direktörü</div>
                 </div>
                 <div class="ot-signatures"><div><div class="ot-signature-date">@($"   /    /{_report.Period.EndDate.Year}")</div><strong>@_report.SummaryDeputyGeneralManagerName</strong><br />Genel Müdür Yardımcısı</div></div>
+                }
             </section>
         }
         else
         {
             @if (_report.Entries.Count == 0) { <section class="ot-sheet"><h4>@_report.Period.Name — Birim Çizelgesi</h4><p>Bu kapsamda onaylı fazla mesai kaydı bulunmamaktadır.</p><p>Belge: @_report.Reference · @_report.Period.StartDate.ToString("dd.MM.yyyy") – @_report.Period.EndDate.ToString("dd.MM.yyyy")</p><div class="ot-signatures"><div>Birim Amiri<br /><br />İmza / Tarih</div><div>İK Teslim<br /><br />İmza / Tarih</div></div></section> }
-            @foreach (var person in _report.Entries.GroupBy(x => x.PersonelId))
+            @foreach (var person in _report.Entries.OrderBy(x => x.PersonnelType).ThenBy(x => x.FullName).GroupBy(x => x.PersonelId))
             {
                 var first = person.First();
                 var signatures = _report.UnitSignatures.GetValueOrDefault(first.UnitId) ?? new OvertimeUnitSignatures();
                 <section class="ot-sheet">
-                    <h4 class="text-center ot-monthly-title">AYLIK FAZLA ÇALIŞMA ÇİZELGESİ</h4>
+                    <h4 class="text-center ot-monthly-title">@(first.PersonnelType == PersonelTipi.KadroHarici ? "KADRO HARİCİ PERSONEL AYLIK FAZLA ÇALIŞMA ÇİZELGESİ" : "AYLIK FAZLA ÇALIŞMA ÇİZELGESİ")</h4>
                     <p class="text-center">@_report.Period.Name · @_report.Period.StartDate.ToString("dd.MM.yyyy") – @_report.Period.EndDate.ToString("dd.MM.yyyy")</p>
                     <p>Adı Soyadı: <strong>@first.FullName</strong><br />Sicil No: @first.SicilNo<br />Birimi: @first.UnitName<br />Görevi / Unvanı: @first.Title</p>
+                    @if (first.PersonnelType == PersonelTipi.KadroHarici) { <p>Kurumu: @first.KadroHariciKurum</p> }
                     <table class="table table-bordered table-sm ot-daily">
                         <colgroup><col class="ot-day-column" /><col class="ot-interval-column" /><col class="ot-duration-column" /><col class="ot-sign-column" /><col class="ot-reason-column" /></colgroup>
                         <thead><tr><th>Gün</th><th>Başlama / Bitiş</th><th>Brüt Süre</th><th>İmza</th><th>Açıklama / Çalışma Sebebi</th></tr></thead>
@@ -84,11 +121,11 @@
             }
         }
     </div>
-    @if (_report.Results.Count > 0)
+    @if (DisplayedResults.Any())
     {
         <section class="card card-body my-3 no-print">
             <h5>Hesaplama Ayrıntıları</h5>
-            @foreach (var person in _report.Results)
+            @foreach (var person in DisplayedResults)
             {
                 <details class="mb-3"><summary>@person.FullName — Sonuç: @OvertimeDisplay.Duration(person.RoundedMinutes)</summary>
                     <div class="table-responsive"><table class="table table-sm"><thead><tr><th>Hafta</th><th>Normal Süre</th><th>Ek Çalışma</th><th>Dinlenme</th><th>45 Saat Üzeri</th></tr></thead><tbody>
@@ -113,9 +150,23 @@
     [SupplyParameterFromQuery] public int? UnitId { get; set; }
     [SupplyParameterFromQuery] public int? PersonelId { get; set; }
     [SupplyParameterFromQuery] public string? ReturnTo { get; set; }
+    [SupplyParameterFromQuery(Name = "personnelType")] public int? PersonnelGroup { get; set; }
+    [SupplyParameterFromQuery(Name = "institution")] public string? Institution { get; set; }
+    private int _personnelGroup = 1;
+    private string? _institutionKey;
+    private List<string> InstitutionOptions => (_report?.Results ?? []).Where(x => x.PersonnelType == PersonelTipi.KadroHarici)
+        .Select(x => PersonnelInstitution.Normalize(x.KadroHariciKurum)).GroupBy(PersonnelInstitution.Key).Select(x => x.First())
+        .OrderBy(x => x.Length == 0).ThenBy(x => x).ToList();
+    private string SelectedInstitutionKey => InstitutionOptions.Any(x => PersonnelInstitution.Key(x) == _institutionKey)
+        ? _institutionKey! : PersonnelInstitution.Key(InstitutionOptions.FirstOrDefault());
+    private string SelectedInstitutionName => InstitutionOptions.FirstOrDefault(x => PersonnelInstitution.Key(x) == SelectedInstitutionKey) ?? "";
+    private IEnumerable<OvertimePersonResult> DisplayedResults => _report is null ? [] : !_report.CanSeeSummary ? _report.Results
+        : _report.Results.Where(x => _personnelGroup == 0
+            ? x.PersonnelType is not (PersonelTipi.Kadrolu or PersonelTipi.KadroHarici)
+            : (int?)x.PersonnelType == _personnelGroup && (_personnelGroup != 2 || PersonnelInstitution.Key(x.KadroHariciKurum) == SelectedInstitutionKey));
     private OvertimeReport? _report;
     private bool _busy, _reload;
-    protected override void OnParametersSet() => _reload = true;
+    protected override void OnParametersSet() { _personnelGroup = PersonnelGroup is 0 or 1 or 2 ? PersonnelGroup.Value : 1; _institutionKey = Institution is null ? null : PersonnelInstitution.Key(Institution); _reload = true; }
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (_reload) { _reload = false; await LoadAsync(); StateHasChanged(); }
@@ -123,7 +174,19 @@
     private async Task LoadAsync()
     {
         _busy = true; _report = null;
-        try { var result = await Overtime.GetReportAsync(PeriodId, UnitId, PersonelId); if (result.IsSuccess) _report = result.Value; else ToastService.ShowError(result.Error.Message, 6000); }
+        try
+        {
+            var result = await Overtime.GetReportAsync(PeriodId, UnitId, PersonelId);
+            if (result.IsSuccess)
+            {
+                _report = result.Value;
+                if (_report.CanSeeSummary && _report.Results.Any(x => x.PersonnelType is not (PersonelTipi.Kadrolu or PersonelTipi.KadroHarici)))
+                    ToastService.ShowWarning("Personel tipi eksik kayıtlar ayrı sekmede gösteriliyor. İmzaya hazırlamadan önce İK personel tiplerini tamamlamalıdır.", 6000);
+                if (_report.CanSeeSummary && _report.Results.Any(x => x.PersonnelType == PersonelTipi.KadroHarici && string.IsNullOrWhiteSpace(x.KadroHariciKurum)))
+                    ToastService.ShowWarning("Kurum bilgisi eksik kadro harici kayıtlar var. Kurum bilgileri tamamlanmadan bu kayıtların çıktısı alınamaz.", 6000);
+            }
+            else ToastService.ShowError(result.Error.Message, 6000);
+        }
         finally { _busy = false; }
     }
     private async Task Print() => await JS.InvokeVoidAsync("printElementById", "overtime-report");
