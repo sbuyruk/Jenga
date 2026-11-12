@@ -5,13 +5,16 @@
 <div class="nav-scrollable" id="main-nav">
     <nav class="nav flex-column">
         <div class="brand">
-            <NavLink href="/">
+            <NavLink href="/" aria-describedby="jenga-brand-tooltip">
                 <img src="/images/jenga-logo-sm.png?v=2"
                      alt="Jenga logo"
                      width="144"
                      loading="lazy"
                      class="brand-logo" />
             </NavLink>
+            <span id="jenga-brand-tooltip" class="brand-tooltip" role="tooltip" lang="en">
+                <strong>J</strong>oint <strong>E</strong>nvironment for <strong>N</strong>ext-<strong>G</strong>eneration <strong>A</strong>pplications
+            </span>
         </div>
         <hr />
         @if (Items == null || !Items.Any())

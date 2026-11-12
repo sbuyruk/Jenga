@@ -1,0 +1,56 @@
+.brand-footer {
+    margin: 24px 24px 28px;
+    padding: 24px 16px 0;
+    border-top: 1px solid var(--theme-border);
+    text-align: center;
+    color: var(--theme-muted);
+}
+
+.brand-footer__heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: center;
+    gap: 4px 8px;
+    margin-bottom: 8px;
+}
+
+.brand-footer__identity {
+    white-space: nowrap;
+}
+
+.brand-footer__name {
+    color: var(--theme-text);
+    font-size: 1rem;
+    letter-spacing: 0.15em;
+}
+
+.brand-footer__name + .brand-footer__trademark {
+    margin-left: -0.15em;
+}
+
+.brand-footer__trademark {
+    font-size: 0.8125rem;
+}
+
+.brand-footer__credit {
+    font-size: 0.8125rem;
+    line-height: 1.6;
+}
+
+.brand-footer__expansion {
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.6;
+}
+
+.brand-footer__expansion strong {
+    color: var(--theme-accent);
+}
+
+.brand-footer__description {
+    margin: 4px 0 0;
+    font-size: 0.8125rem;
+    font-style: italic;
+    line-height: 1.6;
+}
