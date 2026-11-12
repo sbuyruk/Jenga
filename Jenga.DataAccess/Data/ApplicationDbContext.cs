@@ -97,6 +97,7 @@ namespace Jenga.DataAccess.Data
         public DbSet<Personel> Personel_Table { get; set; }
         public DbSet<Kimlik> Kimlik_Table { get; set; }
         public DbSet<IsBilgileri> IsBilgileri_Table { get; set; }
+        public DbSet<ResmiTatil> ResmiTatil_Table { get; set; }
         public DbSet<IletisimBilgileri> IletisimBilgileri_Table { get; set; }
         public DbSet<PersonelLocation> PersonelLocation_Table { get; set; }
         public DbSet<Aile> Aile_Table { get; set; }

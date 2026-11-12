@@ -58,6 +58,33 @@ public class OvertimeCalculatorTests
         Assert.Equal(120, week.OvertimeMinutes);
     }
 
+    [Theory]
+    [InlineData(240, 15)]
+    [InlineData(241, 30)]
+    [InlineData(450, 30)]
+    [InlineData(451, 60)]
+    public void WeekdayPublicHolidayUsesWeekendRestThresholds(int gross, int rest)
+    {
+        var week = Assert.Single(OvertimeCalculator.Calculate([Entry(3, 45, (480, 480 + gross))], Monday, Monday.AddDays(6), new HashSet<DateTime> { Monday.AddDays(3) }));
+        Assert.Equal(rest, week.RestMinutes);
+        Assert.Equal(gross - rest, week.OvertimeMinutes);
+    }
+
+    [Fact]
+    public void HolidayAndWeekendOverlapDoesNotDeductRestTwice()
+    {
+        var week = Assert.Single(OvertimeCalculator.Calculate([Entry(5, 45, (480, 600))], Monday, Monday.AddDays(6), new HashSet<DateTime> { Monday.AddDays(5) }));
+        Assert.Equal(15, week.RestMinutes);
+    }
+
+    [Fact]
+    public void SeparateIntervalsOnWeekdayHolidayAreCombinedBeforeRest()
+    {
+        var week = Assert.Single(OvertimeCalculator.Calculate([Entry(3, 45, (480, 660), (780, 960))], Monday, Monday.AddDays(6), new HashSet<DateTime> { Monday.AddDays(3) }));
+        Assert.Equal(30, week.RestMinutes);
+        Assert.Equal(330, week.OvertimeMinutes);
+    }
+
     [Fact]
     public void FortyHourGroup_FirstFiveExtraHoursDoNotEarnOvertime()
     {

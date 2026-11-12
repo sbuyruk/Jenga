@@ -68,6 +68,45 @@ public sealed class OvertimeReportTests
         Assert.Matches("<button[^>]*disabled[^>]*>Yazdır</button>", html);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task PersonalChartShowsDeputySignatureOnlyWhenHierarchyHasDeputy(bool hasDeputy)
+    {
+        var date = new DateTime(2026, 11, 23);
+        var report = new OvertimeReport { IsPreview = true, Period = new() { StartDate = date, EndDate = date.AddDays(6) } };
+        report.Entries.Add(new() { PersonelId = 127, UnitId = 1, FullName = "Personel Test", WorkDate = date });
+        report.UnitSignatures[1] = new() { ManagerName = "Direktör Test", ManagerDuty = "Direktör", DeputyGeneralManagerName = hasDeputy ? "GMY Test" : null };
+        var html = await RenderAsync(report, 1);
+        Assert.Contains("Direktör Test", html);
+        Assert.DoesNotContain("Bağlı GMY tanımlanmamış", html);
+        Assert.DoesNotContain("ÖNİZLEME", html);
+        if (hasDeputy)
+        {
+            Assert.Contains("GMY Test", html);
+            Assert.Contains("Genel Müdür Yardımcısı", html);
+        }
+        else Assert.DoesNotContain("Genel Müdür Yardımcısı", html);
+    }
+
+    [Theory]
+    [InlineData(0, false, "3:00")]
+    [InlineData(5, false, "2:45")]
+    [InlineData(0, true, "2:45")]
+    public async Task DailyChartShowsGrossAndNetWithRestOnlyOnWeekendOrPublicHoliday(int dayOffset, bool holiday, string net)
+    {
+        var monday = new DateTime(2026, 11, 23);
+        var day = monday.AddDays(dayOffset);
+        var report = new OvertimeReport { Period = new() { StartDate = monday, EndDate = monday.AddDays(6) } };
+        if (holiday) report.PublicHolidays.Add(day);
+        report.Entries.Add(new() { PersonelId = 127, UnitId = 1, WorkDate = day, FullName = "Personel Test",
+            Intervals = [new() { StartMinute = 1020, EndMinute = 1200 }] });
+        var html = await RenderAsync(report, 1);
+        Assert.Contains("Brüt Süre", html);
+        Assert.Contains("Net Süre", html);
+        Assert.Matches($"<td[^>]*>3:00</td>\\s*<td[^>]*>{net}</td>", html);
+    }
+
     private static async Task<string> RenderAsync(OvertimeReport report, int group, string? institution = null)
     {
         var services = new ServiceCollection().AddLogging();
