@@ -150,7 +150,7 @@ public sealed class OvertimeWorkflowTests(OvertimeDatabase database) : IClassFix
         var signatures = report.UnitSignatures[seed.Unit];
         Assert.Equal("manager Test", signatures.ManagerName);
         Assert.Equal("İdari İşler Müdürü", signatures.ManagerDuty);
-        Assert.Equal(hasDeputy ? "hr Test" : "Bağlı GMY tanımlanmamış", signatures.DeputyGeneralManagerName);
+        Assert.Equal(hasDeputy ? "hr Test" : null, signatures.DeputyGeneralManagerName);
         var personal = Success(await Service("worker").GetReportAsync(periodId, null, null));
         Assert.Equal(signatures.DeputyGeneralManagerName, personal.UnitSignatures[seed.Unit].DeputyGeneralManagerName);
     }

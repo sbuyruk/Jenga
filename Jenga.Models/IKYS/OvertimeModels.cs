@@ -172,14 +172,14 @@ public sealed class OvertimeReport
     public string? DelegateName { get; set; }
     public string? DelegateDuty { get; set; }
     public string PersonnelDirectorName { get; set; } = "Personel ve İdari İşler Direktörü tanımlanmamış";
-    public string SummaryDeputyGeneralManagerName { get; set; } = "Bağlı GMY tanımlanmamış";
+    public string? SummaryDeputyGeneralManagerName { get; set; }
 }
 
 public sealed class OvertimeUnitSignatures
 {
     public string ManagerName { get; set; } = "Birim amiri tanımlanmamış";
     public string ManagerDuty { get; set; } = "Birim Amiri";
-    public string DeputyGeneralManagerName { get; set; } = "Bağlı GMY tanımlanmamış";
+    public string? DeputyGeneralManagerName { get; set; }
 }
 
 public static class OvertimeDisplay

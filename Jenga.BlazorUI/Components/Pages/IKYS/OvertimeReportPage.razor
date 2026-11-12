@@ -43,7 +43,7 @@
         }
     }
     <div id="overtime-report" class="overtime-report">
-        @if (_report.IsPreview)
+        @if (_report.IsPreview && (_report.CanSeeSummary || UnitId.HasValue))
         { <p class="alert alert-warning">ÖNİZLEME — İmzaya esas değildir. Kayıtlar henüz sabitlenmemiştir.</p> }
         @if (_report.CanSeeSummary)
         {
@@ -80,7 +80,10 @@
                     }
                     <div class="ot-director-signature"><strong>@_report.PersonnelDirectorName</strong><br />Personel ve İdari İşler Direktörü</div>
                 </div>
-                <div class="ot-signatures"><div><div class="ot-signature-date">@($"   /    /{_report.Period.EndDate.Year}")</div><strong>@_report.SummaryDeputyGeneralManagerName</strong><br />Genel Müdür Yardımcısı</div></div>
+                @if (!string.IsNullOrWhiteSpace(_report.SummaryDeputyGeneralManagerName))
+                {
+                    <div class="ot-signatures"><div><div class="ot-signature-date">@($"   /    /{_report.Period.EndDate.Year}")</div><strong>@_report.SummaryDeputyGeneralManagerName</strong><br />Genel Müdür Yardımcısı</div></div>
+                }
                 }
             </section>
         }
@@ -115,7 +118,10 @@
                             <div><strong>@_report.DelegateName</strong><br />@_report.DelegateDuty</div>
                         }
                         <div><strong>@signatures.ManagerName</strong><br />@signatures.ManagerDuty</div>
-                        <div><strong>@signatures.DeputyGeneralManagerName</strong><br />Genel Müdür Yardımcısı</div>
+                        @if (!string.IsNullOrWhiteSpace(signatures.DeputyGeneralManagerName))
+                        {
+                            <div><strong>@signatures.DeputyGeneralManagerName</strong><br />Genel Müdür Yardımcısı</div>
+                        }
                     </div>
                 </section>
             }
