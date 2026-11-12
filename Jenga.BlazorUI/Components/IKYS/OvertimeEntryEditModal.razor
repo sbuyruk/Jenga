@@ -65,6 +65,7 @@
                             </div>
                         </div>
                         <p class="small text-muted mt-2 mb-3">Gece yarısını geçiyorsanız bitiş tarihini bir sonraki gün seçin.</p>
+                        <p class="small text-muted mb-3">Resmî tatil olmayan hafta içi günlerde mesai 17:00 ve sonrasında başlayabilir. Hafta sonu ve resmî tatillerde bu saat sınırı uygulanmaz.</p>
 
                         @foreach (var interval in Model.Intervals.Skip(1).ToList())
                         {
@@ -92,7 +93,7 @@
                             <div class="ot-duration d-flex justify-content-between align-items-center gap-2">
                                 <span>Girilen çalışma süresi</span><strong>@DurationText(minutes)</strong>
                             </div>
-                            <div class="form-text mt-2">Dinlenme kesintileri ve haftalık hesaplama İK değerlendirmesinde uygulanır.</div>
+                            <div class="form-text mt-2">Dinlenme kesintisi yalnızca hafta sonu ve resmî tatillerde uygulanır. Haftalık hesaplama İK değerlendirmesinde yapılır.</div>
                         }
                     </fieldset>
                 </div>

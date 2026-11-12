@@ -9,10 +9,10 @@
 .ot-signature-date { white-space: pre; margin-bottom: 1rem; }
 .ot-daily { font-size: .8rem; width: 100%; table-layout: fixed; }
 .ot-day-column { width: 12%; }
-.ot-interval-column { width: 20%; }
-.ot-duration-column { width: 9%; }
-.ot-sign-column { width: 15%; }
-.ot-reason-column { width: 44%; }
+.ot-interval-column { width: 18%; }
+.ot-duration-column { width: 8%; }
+.ot-sign-column { width: 14%; }
+.ot-reason-column { width: 40%; }
 .ot-daily td { min-height: 1.5rem; }
 .ot-reason { white-space: pre-wrap; overflow-wrap: anywhere; }
 .ot-signatures { display: flex; justify-content: space-around; gap: 2rem; margin: 3rem 0; text-align: center; break-inside: avoid; }
