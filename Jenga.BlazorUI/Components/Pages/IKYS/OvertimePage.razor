@@ -8,10 +8,10 @@
 @inject IToastService ToastService
 @inject NavigationManager Navigation
 
-<PageTitle>Mesailerim</PageTitle>
+<PageTitle>@(_scope == "hr" ? "Fazla Mesai" : "Mesailerim")</PageTitle>
 <div class="overtime-page">
     <div class="d-flex flex-wrap justify-content-between gap-2 mb-3">
-        <div><h3><i class="bi bi-clock-history me-2"></i>Mesailerim</h3><span class="text-muted">@_workspace?.FullName</span></div>
+        <div><h3><i class="bi bi-clock-history me-2"></i>@(_scope == "hr" ? "Fazla Mesai" : "Mesailerim")</h3><span class="text-muted">@_workspace?.FullName</span></div>
         <button class="btn btn-outline-secondary" disabled="@_busy" @onclick="LoadAsync">Yenile</button>
     </div>
     @if (_workspace is null)
@@ -50,6 +50,10 @@
         @if (_scope is "mine" or "delegated")
         {
             <OvertimeEntryTable Entries="_workspace.Entries" IsBusy="_busy" OnEdit="EditEntry" OnWithdraw="Withdraw" OnHistory="ShowHistory" />
+        }
+        else if (_scope == "hr")
+        {
+            <OvertimeEntryTable Entries="_workspace.Entries" IsBusy="_busy" OnHistory="ShowHistory" />
         }
         else
         {
@@ -109,6 +113,7 @@
 
 @code {
     [SupplyParameterFromQuery(Name = "scope")] public string? RequestedScope { get; set; }
+    [SupplyParameterFromQuery(Name = "date")] public DateTime? RequestedDate { get; set; }
     private OvertimeWorkspace? _workspace;
     private int _reportPersonelId;
     private string _scope = "mine";
@@ -123,7 +128,13 @@
     private OvertimeEntry? _historyEntry;
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender) { if (RequestedScope == "delegated") _scope = "delegated"; await LoadAsync(); StateHasChanged(); }
+        if (firstRender)
+        {
+            if (RequestedScope is "mine" or "delegated" or "team" or "hr") _scope = RequestedScope;
+            if (RequestedDate.HasValue) _start = _end = RequestedDate.Value.Date;
+            await LoadAsync();
+            StateHasChanged();
+        }
     }
 
     private void OpenDelegatedReport(int periodId)

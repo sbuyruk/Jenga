@@ -693,6 +693,15 @@ public class GorevOnayService : IGorevOnayService
                ManagerApprovalValue = go.AmirOnayi
            };
 
+    internal static IQueryable<GorevOnay> SearchableApprovals(ApplicationDbContext db, int personelId, bool canManage)
+    {
+        var since = DateTime.Today.AddYears(-1);
+        var managedIds = CreateManagedPersonelIdsQuery(db, personelId);
+        return db.GorevOnay_Table.AsNoTracking().Where(x => x.BitisTarihi >= since &&
+            (x.PersonelId == personelId || (canManage && managedIds.Contains(x.PersonelId) &&
+                x.AmirOnayi != (int)ApprovalStatus.Rejected)));
+    }
+
     private static IQueryable<int?> CreateManagedPersonelIdsQuery(ApplicationDbContext db, int managerPersonelId)
         => from isBilgileri in db.IsBilgileri_Table.AsNoTracking()
            join birim in db.BirimTanim_Table.AsNoTracking() on isBilgileri.BirimId equals birim.Id

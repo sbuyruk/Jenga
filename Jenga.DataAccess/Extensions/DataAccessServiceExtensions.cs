@@ -145,6 +145,7 @@ namespace Jenga.DataAccess.Extensions
             // Personnel ownership, unit management and existing IKYS Manage are checked in the service.
             services.AddScoped<IOvertimeService, OvertimeService>();
             services.AddScopedWithAuthProxy<IPersonelService, PersonelService>(ModuleName.IKYS);
+            services.AddScoped<IPersonelSummaryService, PersonelSummaryService>();
             services.AddScopedWithAuthProxy<IKimlikService, KimlikService>(ModuleName.IKYS);
             services.AddScopedWithAuthProxy<IIsBilgileriService, IsBilgileriService>(ModuleName.IKYS);
             services.AddScopedWithAuthProxy<IIletisimBilgileriService, IletisimBilgileriService>(ModuleName.IKYS);

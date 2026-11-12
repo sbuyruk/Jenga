@@ -1,0 +1,646 @@
+@using Jenga.BlazorUI.Services.Common
+@using Jenga.DataAccess.Data
+@using Jenga.DataAccess.Services.IKYS
+@using Jenga.Models.IKYS
+@using Jenga.Models.Inventory
+@using Jenga.Models.Enums
+@using Microsoft.EntityFrameworkCore
+@inject ICurrentUserService CurrentUserService
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject IGorevOnayService GorevOnayService
+@inject IPersonelSummaryService SummaryService
+@inject ILogger<PersonelHome> Logger
+
+@if (_loading)
+{
+    <p class="text-center py-5" role="status">Personel bilgileri yükleniyor…</p>
+}
+else if (_error is not null)
+{
+    <div class="alert alert-warning mt-3" role="alert">@_error</div>
+}
+else
+{
+<div class="workspace-shell">
+    <section class="workspace-hero">
+        <div class="workspace-hero__content">
+            <h3>@(PersonelId.HasValue ? DisplayName : $"Merhaba, {DisplayName}")</h3>
+            <p>@(PersonelId.HasValue ? "Personel, izin ve zimmet bilgileri." : "Personel, izin ve zimmet bilgileriniz.")</p>
+        </div>
+
+        <div class="workspace-hero__meta">
+            <div class="workspace-pill">
+                <small>Birim</small>
+                <strong>@Department</strong>
+            </div>
+            <div class="workspace-pill">
+                <small>Görev</small>
+                <strong>@Position</strong>
+            </div>
+        </div>
+    </section>
+
+    <section class="workspace-grid">
+        <article class="workspace-card">
+            <div class="workspace-card__header">
+                <h3>Personel Bilgileri</h3>
+            </div>
+
+            <div class="profile-list">
+                <div class="profile-row">
+                    <span class="label">Ad Soyad</span>
+                    <span class="value">@DisplayName</span>
+                </div>
+                <div class="profile-row">
+                    <span class="label">İşe Giriş</span>
+                    <span class="value">@EmploymentDate</span>
+                </div>
+                <div class="profile-row">
+                    <span class="label">Derece / Kademe</span>
+                    <span class="value">@DegreeStep</span>
+                </div>
+                <div class="profile-row">
+                    <span class="label">Sicil No</span>
+                    <span class="value">@EmployeeNumber</span>
+                </div>
+                <div class="profile-row">
+                    <span class="label">E-posta</span>
+                    <span class="value">@Email</span>
+                </div>
+            </div>
+        </article>
+
+        <article class="workspace-card">
+            <div class="workspace-card__header">
+                <h3>@(PersonelId.HasValue ? "İzin Talepleri" : "İzin Taleplerim")</h3>
+            </div>
+
+            <div class="task-list">
+                @if (!_canReadPrivate)
+                {
+                    <p class="empty-state">Bu bilgileri görüntüleme yetkiniz bulunmuyor.</p>
+                }
+                else if (_leaveRequests.Count == 0)
+                {
+                    <p class="empty-state">Gösterilecek izin talebi bulunmuyor.</p>
+                }
+                else
+                {
+                    @foreach (var request in _leaveRequests)
+                    {
+                        <div class="task-item">
+                            <span class="task-dot @GetTaskDotClass(request.State)"></span>
+                            <div class="task-item__body">
+                                <strong>@request.Title</strong>
+                                <small>@request.Description</small>
+                            </div>
+                            <span class="badge @GetBadgeClass(request.State)">@request.StateText</span>
+                        </div>
+                    }
+                }
+            </div>
+        </article>
+
+        <article class="workspace-card">
+            <div class="workspace-card__header">
+                <h3>İzin Bilgileri</h3>
+            </div>
+
+            @if (!_canReadPrivate)
+            {
+                <p class="empty-state">Bu bilgileri görüntüleme yetkiniz bulunmuyor.</p>
+            }
+            else
+            {
+            <div class="leave-box">
+                <div class="leave-row">
+                    <span>Bu Yıl İzin hakkı</span>
+                    <strong>@LeaveSummaryText(LeaveTotalDays, "gün")</strong>
+                </div>
+                <div class="leave-row">
+                    <span>Bu Yıl Kullanılan</span>
+                    <strong>@LeaveSummaryText(LeaveUsedDays, "gün")</strong>
+                </div>
+                <div class="leave-row">
+                    <span>Bu Yıldan Kalan</span>
+                    <strong>@LeaveSummaryText(LeaveRemainingDays, "gün")</strong>
+                </div>
+                <div class="leave-row">
+                    <span>Geçmiş yıllardan kalan</span>
+                    <strong>@LeaveSummaryText(LeavePreviousYearsRemainingDays, "gün")</strong>
+                </div>
+                <div class="leave-row">
+                    <span>Kalan Toplam İzin</span>
+                    <strong>@LeaveSummaryText(LeaveTotalRemainingDays, "gün")</strong>
+                </div>
+
+                <div class="leave-progress">
+                    <div class="leave-progress__label">
+                        <small>Kullanım oranı</small>
+                        <strong>@(LeaveUsagePercent.HasValue ? $"{LeaveUsagePercent}%" : "Veri yok")</strong>
+                    </div>
+                    <div class="progress-bar">
+                        <span style="width:@(LeaveUsagePercent ?? 0)%;"></span>
+                    </div>
+                </div>
+            </div>
+            }
+        </article>
+    </section>
+
+    <section class="workspace-grid">
+        <article class="workspace-card workspace-card--full-row">
+            <div class="workspace-card__header">
+                <h3>@(PersonelId.HasValue ? "Görev Onay İşlemleri" : "Görev Onay İşlemlerim")</h3>
+                <span class="workspace-card__link-disabled">Tümünü gör</span>
+            </div>
+
+            <div class="task-list">
+                @if (_taskApprovals.Count == 0)
+                {
+                    <p class="empty-state">Görev onay kaydı bulunmuyor.</p>
+                }
+                else
+                {
+                    @foreach (var approval in _taskApprovals)
+                    {
+                        <div class="task-item">
+                            <span class="task-dot @GetTaskDotClass(approval.State)"></span>
+                            <div class="task-item__body">
+                                <strong>@approval.Title</strong>
+                                <small>@approval.Description</small>
+                            </div>
+                            <span class="badge @GetBadgeClass(approval.State)">@approval.StateText</span>
+                        </div>
+                    }
+                }
+            </div>
+        </article>
+    </section>
+
+    <section class="workspace-bottom">
+        <article class="workspace-card workspace-card--wide">
+            <div class="workspace-card__header">
+                <h3>Malzeme Zimeti</h3>
+            </div>
+
+            @if (!_canReadInventory)
+            {
+                <p class="empty-state">Bu bilgileri görüntüleme yetkiniz bulunmuyor.</p>
+            }
+            else
+            {
+            <table class="material-table">
+                <thead>
+                    <tr>
+                        <th>Ürün</th>
+                        <th>Seri No</th>
+                        <th>Durum</th>
+                        <th>Lokasyon</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (_materials.Count == 0)
+                    {
+                        <tr><td colspan="4" class="empty-state">Kişiye zimmetli varlık bulunmuyor.</td></tr>
+                    }
+                    else
+                    {
+                        @foreach (var item in _materials)
+                        {
+                            <tr>
+                                <td>@item.Name</td>
+                                <td>@item.Serial</td>
+                                <td><span class="status @GetStatusClass(item.Status)">@item.StatusText</span></td>
+                                <td>@item.Location</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+            }
+        </article>
+
+        <article class="workspace-card">
+            <div class="workspace-card__header">
+                <h3>Son Zimmet Hareketleri</h3>
+            </div>
+
+            <div class="activity-list">
+                @if (!_canReadInventory)
+                {
+                    <p class="empty-state">Bu bilgileri görüntüleme yetkiniz bulunmuyor.</p>
+                }
+                else if (_activities.Count == 0)
+                {
+                    <p class="empty-state">Kayıtlı zimmet hareketi bulunmuyor.</p>
+                }
+                else
+                {
+                    @foreach (var activity in _activities)
+                    {
+                        <div class="activity-item">
+                            <div class="activity-icon" style="background:@activity.IconBackground;color:@activity.IconColor;">@activity.Icon</div>
+                            <div>
+                                <strong>@activity.Title</strong>
+                                <small>@activity.Time</small>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </article>
+    </section>
+</div>
+}
+
+
+@code {
+    [Parameter] public int? PersonelId { get; set; }
+    private PersonelSummary? _selectedSummary;
+    private bool _loading = true;
+    private string? _error;
+    private bool _canReadPrivate = true;
+    private bool _canReadInventory = true;
+    private bool _initialized;
+    private string DisplayName { get; set; } = "Kullanıcı";
+    private string Department { get; set; } = "Belirtilmemiş";
+    private string Position { get; set; } = "Belirtilmemiş";
+    private string EmploymentDate { get; set; } = "Belirtilmedi";
+    private string DegreeStep { get; set; } = "Belirtilmedi";
+    private string EmployeeNumber { get; set; } = "Belirtilmedi";
+    private string Email { get; set; } = "Belirtilmedi";
+    private int? LeaveTotalDays { get; set; }
+    private int? LeaveUsedDays { get; set; }
+    private int? LeaveRemainingDays { get; set; }
+    private int? LeavePreviousYearsRemainingDays { get; set; }
+    private int? LeaveTotalRemainingDays { get; set; }
+    private int? LeaveUsagePercent { get; set; }
+
+    private List<LeaveRequestItem> _leaveRequests = [];
+    private List<TaskApprovalItem> _taskApprovals = [];
+    private List<MaterialItem> _materials = [];
+    private List<ActivityItem> _activities = [];
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_initialized) return;
+        _initialized = true;
+        try
+        {
+            var current = await CurrentUserService.GetCurrentPersonelAsync();
+            var personel = current;
+            if (PersonelId.HasValue)
+            {
+                var result = await SummaryService.GetAsync(PersonelId.Value);
+                if (result.IsFailure) { _error = result.Error.Message; return; }
+                _selectedSummary = result.Value;
+                var own = current?.Id == PersonelId.Value;
+                _canReadPrivate = own || await CurrentUserService.HasPermissionAsync(ModuleName.IKYS, Operation.Manage);
+                _canReadInventory = own || await CurrentUserService.HasPermissionAsync(ModuleName.Inventory, Operation.View);
+                if (!_canReadPrivate) DegreeStep = "Yetki gerekli";
+                personel = new Personel { Id = _selectedSummary.PersonelId, Adi = _selectedSummary.FullName,
+                    Soyadi = "", SicilNo = _selectedSummary.SicilNo };
+            }
+            if (personel is not null)
+            {
+                DisplayName = $"{personel.Adi} {personel.Soyadi}".Trim();
+                EmployeeNumber = personel.SicilNo.ToString();
+            }
+
+            await LoadDashboardAsync(personel);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Personel Home yüklenemedi. PersonelId: {PersonelId}", PersonelId);
+            _error = "Personel bilgileri yüklenemedi. Sayfayı yenileyip tekrar deneyin.";
+        }
+        finally { _loading = false; }
+    }
+
+    private async Task LoadDashboardAsync(Personel? personel)
+    {
+        if (personel is null)
+        {
+            _leaveRequests = [];
+            _taskApprovals = [];
+            _materials = [];
+            _activities = [];
+            return;
+        }
+
+        await using var db = await DbFactory.CreateDbContextAsync();
+
+        if (_selectedSummary is not null)
+        {
+            _taskApprovals = _selectedSummary.TaskApprovals.Take(4).Select(x => new TaskApprovalItem(
+                GetTaskApprovalTitle(x.Description),
+                $"{x.Date:dd.MM.yyyy} – {x.EndDate:dd.MM.yyyy} · {x.Destination}",
+                (ApprovalStatus?)x.ApprovalValue switch
+                {
+                    ApprovalStatus.PendingApproval => "waiting", ApprovalStatus.Approved => "completed",
+                    ApprovalStatus.Rejected => "critical", _ => "inprogress"
+                },
+                (ApprovalStatus?)x.ApprovalValue switch
+                {
+                    ApprovalStatus.PendingApproval => "Onay Bekliyor", ApprovalStatus.Approved => "Onaylandı",
+                    ApprovalStatus.Rejected => "Reddedildi", ApprovalStatus.NotRequired => "Onay Gerekmiyor", _ => "Diğer"
+                })).ToList();
+            Department = _selectedSummary.UnitName ?? "Belirtilmemiş";
+            Position = _selectedSummary.Title ?? "Belirtilmemiş";
+            EmploymentDate = _selectedSummary.StartDate?.ToString("dd.MM.yyyy") ?? "Belirtilmedi";
+            Email = _selectedSummary.WorkEmail ?? "Belirtilmedi";
+        }
+        else
+        {
+            var taskApprovalResult = await GorevOnayService.GetTaskApprovalListAsync(
+                personel.Id,
+                authorizedUnitView: false);
+
+            if (taskApprovalResult.IsSuccess && taskApprovalResult.Value is not null)
+            {
+                _taskApprovals = taskApprovalResult.Value
+                    .Take(4)
+                    .Select(x => new TaskApprovalItem(
+                        GetTaskApprovalTitle(x.Reason),
+                        x.StartDate.HasValue
+                            ? $"{x.StartDate:dd.MM.yyyy} – {x.EndDate:dd.MM.yyyy}{(string.IsNullOrWhiteSpace(x.Destination) ? "" : $" · {x.Destination}")}"
+                            : x.Destination ?? "Tarih belirtilmedi",
+                        (ApprovalStatus)x.ManagerApprovalValue switch
+                        {
+                            ApprovalStatus.PendingApproval => "waiting",
+                            ApprovalStatus.Approved => "completed",
+                            ApprovalStatus.Rejected => "critical",
+                            _ => "inprogress"
+                        },
+                        x.ManagerApprovalDisplay))
+                    .ToList();
+            }
+
+            var jobInfo = await db.IsBilgileri_Table
+                .AsNoTracking()
+                .Include(x => x.BirimTanim)
+                .Include(x => x.UnvanTanim)
+                .FirstOrDefaultAsync(x => x.PersonelId == personel.Id);
+
+            if (jobInfo is not null)
+            {
+                Department = string.IsNullOrWhiteSpace(jobInfo.BirimTanim?.Adi) ? "Belirtilmemiş" : jobInfo.BirimTanim.Adi;
+                Position = string.IsNullOrWhiteSpace(jobInfo.UnvanTanim?.Adi) ? "Belirtilmemiş" : jobInfo.UnvanTanim.Adi;
+                EmploymentDate = jobInfo.BaslamaTar.HasValue ? jobInfo.BaslamaTar.Value.ToString("dd.MM.yyyy") : "Belirtilmedi";
+            }
+        }
+
+        if (_canReadPrivate)
+        {
+            var latestDegreeStep = await db.DereceKademeDegisim_Table
+                .AsNoTracking()
+                .Where(x => x.PersonelId == personel.Id)
+                .OrderByDescending(x => x.DegisimTarihi ?? x.OlusturmaTarihi ?? DateTime.MinValue)
+                .ThenByDescending(x => x.Id)
+                .FirstOrDefaultAsync();
+
+            if (latestDegreeStep is not null && (latestDegreeStep.Derece.HasValue || latestDegreeStep.Kademe.HasValue))
+            {
+                DegreeStep = $"{(latestDegreeStep.Derece.HasValue ? $"{latestDegreeStep.Derece.Value}. derece" : "")}" +
+                             $"{(latestDegreeStep.Derece.HasValue && latestDegreeStep.Kademe.HasValue ? ", " : "")}" +
+                             $"{(latestDegreeStep.Kademe.HasValue ? $"{latestDegreeStep.Kademe.Value}. kademe" : "")}";
+            }
+        }
+
+        if (_selectedSummary is null)
+        {
+            var contactInfo = await db.IletisimBilgileri_Table
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.PersonelId == personel.Id);
+
+            if (contactInfo is not null)
+            {
+                Email = new[] { contactInfo.IntranetEPosta, contactInfo.InternetEPosta, contactInfo.OzelEPosta }
+                    .FirstOrDefault(x => !string.IsNullOrWhiteSpace(x)) ?? "Belirtilmedi";
+
+            }
+        }
+
+        if (_canReadPrivate)
+        {
+            var leavePeriods = await db.IzinDonem_Table
+                .AsNoTracking()
+                .Where(x => x.PersonelId == personel.Id)
+                .OrderByDescending(x => x.BaslangicTarihi ?? DateTime.MinValue)
+                .ToListAsync();
+
+            var leavePeriod = leavePeriods.FirstOrDefault();
+            var currentYear = DateTime.Today.Year;
+            var previousYearBalances = leavePeriods
+                .Where(x => x.BaslangicTarihi.HasValue && x.BaslangicTarihi.Value.Year < currentYear)
+                .Select(x => TryParseDayValue(x.KalanIzin))
+                .Where(x => x.HasValue)
+                .ToList();
+            LeavePreviousYearsRemainingDays = previousYearBalances.Count > 0
+                ? previousYearBalances.Sum(x => x!.Value)
+                : null;
+
+            if (leavePeriod is not null)
+            {
+                var total = TryParseDayValue(leavePeriod.IzinHakki);
+                var used = TryParseDayValue(leavePeriod.KullanilanIzin);
+                var remaining = TryParseDayValue(leavePeriod.KalanIzin);
+                LeaveTotalDays = total ?? (remaining.HasValue && used.HasValue ? Math.Max(0, remaining.Value + used.Value) : null);
+                LeaveUsedDays = used;
+                LeaveRemainingDays = remaining ?? (LeaveTotalDays.HasValue && used.HasValue
+                    ? Math.Max(0, LeaveTotalDays.Value - used.Value)
+                    : null);
+                LeaveUsagePercent = LeaveTotalDays > 0 && LeaveUsedDays.HasValue
+                    ? Math.Clamp((LeaveUsedDays.Value * 100) / LeaveTotalDays.Value, 0, 100)
+                    : null;
+                LeaveTotalRemainingDays = LeaveRemainingDays.HasValue && LeavePreviousYearsRemainingDays.HasValue
+                    ? LeaveRemainingDays.Value + LeavePreviousYearsRemainingDays.Value
+                    : LeaveRemainingDays ?? LeavePreviousYearsRemainingDays;
+            }
+            else
+            {
+                LeaveTotalDays = 0;
+                LeaveUsedDays = 0;
+                LeaveRemainingDays = 0;
+                LeaveTotalRemainingDays = LeavePreviousYearsRemainingDays;
+                LeaveUsagePercent = 0;
+            }
+
+            var leaveRequests = await db.IzinTalep_Table
+                .AsNoTracking()
+                .Where(x => x.PersonelId == personel.Id && x.Aktif == true)
+                .OrderByDescending(x => x.BaslangicTarihi ?? DateTime.MinValue)
+                .Take(4)
+                .ToListAsync();
+
+            var leaveTypes = await db.IzinTanim_Table
+                .AsNoTracking()
+                .ToDictionaryAsync(x => x.Id, x => x.Adi);
+
+            _leaveRequests = leaveRequests
+                .Select(x => new LeaveRequestItem(
+                    x.IzinTipi.HasValue && leaveTypes.TryGetValue(x.IzinTipi.Value, out var leaveType) && !string.IsNullOrWhiteSpace(leaveType)
+                        ? leaveType
+                        : "İzin talebi",
+                    x.BaslangicTarihi.HasValue
+                        ? $"{x.BaslangicTarihi:dd.MM.yyyy} – {x.BitisTarihi:dd.MM.yyyy}"
+                        : "Tarih belirtilmedi",
+                    x.OnayDurumu switch
+                    {
+                        IzinTalep.OnayDurumuTipi.IslemBekliyor => "waiting",
+                        IzinTalep.OnayDurumuTipi.KontrolEdildi => "inprogress",
+                        IzinTalep.OnayDurumuTipi.KayitlaraIslendi => "completed",
+                        IzinTalep.OnayDurumuTipi.Reddedildi or IzinTalep.OnayDurumuTipi.IptalEdildi => "critical",
+                        IzinTalep.OnayDurumuTipi.DilekceBekleniyor => "waiting",
+                        _ => "waiting"
+                    },
+                    x.OnayDurumu switch
+                    {
+                        IzinTalep.OnayDurumuTipi.IslemBekliyor => "İşlem Bekliyor",
+                        IzinTalep.OnayDurumuTipi.KontrolEdildi => "Kontrol Edildi",
+                        IzinTalep.OnayDurumuTipi.KayitlaraIslendi => "Kayıtlara İşlendi",
+                        IzinTalep.OnayDurumuTipi.Reddedildi => "Reddedildi",
+                        IzinTalep.OnayDurumuTipi.IptalEdildi => "İptal Edildi",
+                        IzinTalep.OnayDurumuTipi.DilekceBekleniyor => "Dilekçe Bekleniyor",
+                        _ => "Durum belirtilmedi"
+                    }))
+                .ToList();
+
+        }
+        if (_canReadInventory)
+        {
+            var materialAssets = await db.MaterialAsset_Table
+                .AsNoTracking()
+                .Include(x => x.Material)
+                .Include(x => x.Location)
+                .Where(x => x.PersonelId == personel.Id)
+                .OrderByDescending(x => x.Id)
+                .Take(4)
+                .ToListAsync();
+
+            _materials = materialAssets
+                .Select(x => new MaterialItem(
+                    x.Material?.MaterialName ?? "Bilinmeyen",
+                    x.SerialNumber ?? "Belirtilmedi",
+                    x.Status switch
+                    {
+                        AssetStatus.Active => "Aktif",
+                        AssetStatus.InRepair => "Bakım",
+                        AssetStatus.Retired => "Kullanılmıyor",
+                        AssetStatus.Lost => "Kayıp",
+                        _ => "Aktif"
+                    },
+                    x.Status switch
+                    {
+                        AssetStatus.Active => "ok",
+                        AssetStatus.InRepair => "warn",
+                        AssetStatus.Retired => "danger",
+                        AssetStatus.Lost => "danger",
+                        _ => "ok"
+                    },
+                    x.Location?.LocationName ?? "Belirtilmedi"))
+                .ToList();
+
+            var assetLogs = await db.MaterialAssetLog_Table
+                .AsNoTracking()
+                .Include(x => x.MaterialAsset)
+                    .ThenInclude(x => x!.Material)
+                .Where(x => x.FromPersonelId == personel.Id || x.ToPersonelId == personel.Id)
+                .OrderByDescending(x => x.TransactionDate)
+                .Take(4)
+                .ToListAsync();
+
+            _activities = assetLogs
+                .Select(x => new ActivityItem(
+                    string.IsNullOrWhiteSpace(x.Aciklama) ? x.TransactionType : x.Aciklama,
+                    x.TransactionDate.ToString("dd.MM.yyyy HH:mm"),
+                    "↔",
+                    "#e8f0ff",
+                    "#2563eb"))
+                .ToList();
+        }
+    }
+
+    private static int? TryParseDayValue(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return null;
+
+        if (int.TryParse(value.Trim(), out var parsed))
+            return parsed;
+
+        var candidate = value.Trim().Replace(',', '.');
+        return double.TryParse(candidate, out var numeric)
+            ? (int)Math.Round(numeric)
+            : null;
+    }
+
+    private static string LeaveSummaryText(int? value, string suffix)
+        => value.HasValue ? $"{value.Value} {suffix}" : "Veri yok";
+
+    private static string ToPlainText(string value)
+    {
+        var text = System.Text.RegularExpressions.Regex.Replace(value, "<[^>]*>", " ");
+        text = System.Net.WebUtility.HtmlDecode(text);
+        return System.Text.RegularExpressions.Regex.Replace(text, @"\s+", " ").Trim();
+    }
+
+    private static string GetTaskApprovalTitle(string? reason)
+    {
+        var title = string.IsNullOrWhiteSpace(reason) ? string.Empty : ToPlainText(reason);
+        return string.IsNullOrWhiteSpace(title) ? "Görev onayı" : title;
+    }
+
+    private string GetTaskDotClass(string state) => state switch
+    {
+        "waiting" => "waiting",
+        "inprogress" => "inprogress",
+        "completed" => "completed",
+        "critical" => "critical",
+        _ => "waiting"
+    };
+
+    private string GetBadgeClass(string state) => state switch
+    {
+        "waiting" => "primary",
+        "inprogress" => "warning",
+        "completed" => "success",
+        "critical" => "danger",
+        _ => "primary"
+    };
+
+    private string GetStatusClass(string status) => status switch
+    {
+        "ok" => "ok",
+        "warn" => "warn",
+        "danger" => "danger",
+        _ => "ok"
+    };
+
+    private sealed record LeaveRequestItem(
+        string Title,
+        string Description,
+        string State,
+        string StateText);
+
+    private sealed record TaskApprovalItem(
+        string Title,
+        string Description,
+        string State,
+        string StateText);
+
+    private sealed record MaterialItem(
+        string Name,
+        string Serial,
+        string StatusText,
+        string Status,
+        string Location);
+
+    private sealed record ActivityItem(
+        string Title,
+        string Time,
+        string Icon,
+        string IconBackground,
+        string IconColor);
+}

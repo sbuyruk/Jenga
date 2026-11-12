@@ -91,6 +91,22 @@ public sealed class OvertimeService(IDbContextFactory<ApplicationDbContext> fact
     private static IQueryable<int> WorkingPersonIds(ApplicationDbContext db)
         => db.IsBilgileri_Table.Where(x => x.CalismaDurumu == CalismaDurumu.Calisiyor).Select(x => x.PersonelId).Distinct();
 
+    internal static async Task<(IQueryable<OvertimeEntry> Entries, List<int> DelegatedIds)> SearchableEntriesAsync(
+        ApplicationDbContext db, int personelId, bool isHr, CancellationToken ct)
+    {
+        if (isHr) return (db.OvertimeEntries.AsNoTracking(), []);
+
+        var organization = await db.BirimTanim_Table.AsNoTracking().Where(x => x.Aktif == true).ToListAsync(ct);
+        var managed = organization.Where(x => x.AmirId == personelId).Select(x => x.Id).ToList();
+        var escalated = organization.Where(x => x.AmirId.HasValue && x.AmirId != personelId &&
+            SuperiorManager(x, organization) == personelId).Select(x => x.Id).ToList();
+        var actor = new Actor(personelId, "", "", false, managed, escalated);
+        var delegated = await DelegatedPersonIds(db, actor).ToListAsync(ct);
+        var reviewableIds = Reviewable(db, actor).Select(x => x.Id);
+        return (db.OvertimeEntries.AsNoTracking().Where(x => x.PersonelId == personelId ||
+            delegated.Contains(x.PersonelId) || reviewableIds.Contains(x.Id)), delegated);
+    }
+
     private static IQueryable<int> DelegatedPersonIds(ApplicationDbContext db, Actor actor)
         => db.OvertimeDelegations.Where(x => x.DelegatePersonelId == actor.Id && x.IsActive
             && WorkingPersonIds(db).Contains(x.DelegatePersonelId) && WorkingPersonIds(db).Contains(x.TargetPersonelId))

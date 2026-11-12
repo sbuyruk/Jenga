@@ -1,0 +1,15 @@
+@page "/ikys/personel/{PersonelId:int}"
+@rendermode InteractiveServer
+@using Jenga.BlazorUI.Components.IKYS
+
+<PageTitle>Personel Özeti</PageTitle>
+<a class="btn btn-sm btn-outline-secondary" href="@BackUrl">
+    <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Geri
+</a>
+<PersonelHome PersonelId="@PersonelId" @key="PersonelId" />
+
+@code {
+    [Parameter] public int PersonelId { get; set; }
+    [SupplyParameterFromQuery(Name = "geri")] public string? Geri { get; set; }
+    private string BackUrl => Geri is not null && Geri.StartsWith('/') && !Geri.StartsWith("//") && !Geri.Contains('\\') ? Geri : "/arama";
+}

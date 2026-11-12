@@ -14,11 +14,13 @@ namespace Jenga.Models.Search
         // NBYS
         NakitBagisci,
 
-        // FTK  — bir sonraki adımda aktif edilecek
+        // FTK
         FtkKisi,
 
-        // IKYS — bir sonraki adımda aktif edilecek
+        // IKYS
         Personel,
+        GorevOnay,
+        FazlaMesai,
     }
 
     /// <summary>

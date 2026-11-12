@@ -63,6 +63,29 @@
     box-sizing: border-box;
 }
 
+.topbar-actions {
+    gap: 1rem;
+}
+
+.top-row ::deep .global-search-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.375rem 0.625rem;
+    border: 1px solid currentColor;
+    border-radius: 6px;
+    color: var(--theme-topbar-text, #ffffff);
+    font-size: 0.875rem;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.top-row ::deep .global-search-link:hover,
+.top-row ::deep .global-search-link:focus-visible,
+.top-row ::deep .global-search-link.active {
+    background: rgba(255, 255, 255, 0.12);
+}
+
 .site-logo,
 #logo {
     height: 48px;
@@ -197,6 +220,16 @@
     .site-logo,
     #logo {
         height: 36px;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .topbar-actions {
+        gap: 0.5rem;
+    }
+
+    .global-search-label {
+        display: none;
     }
 }
 
