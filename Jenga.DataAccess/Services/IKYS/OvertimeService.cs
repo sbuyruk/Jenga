@@ -91,6 +91,22 @@ public sealed class OvertimeService(IDbContextFactory<ApplicationDbContext> fact
     private static IQueryable<int> WorkingPersonIds(ApplicationDbContext db)
         => db.IsBilgileri_Table.Where(x => x.CalismaDurumu == CalismaDurumu.Calisiyor).Select(x => x.PersonelId).Distinct();
 
+    internal static async Task<(IQueryable<OvertimeEntry> Entries, List<int> DelegatedIds)> SearchableEntriesAsync(
+        ApplicationDbContext db, int personelId, bool isHr, CancellationToken ct)
+    {
+        if (isHr) return (db.OvertimeEntries.AsNoTracking(), []);
+
+        var organization = await db.BirimTanim_Table.AsNoTracking().Where(x => x.Aktif == true).ToListAsync(ct);
+        var managed = organization.Where(x => x.AmirId == personelId).Select(x => x.Id).ToList();
+        var escalated = organization.Where(x => x.AmirId.HasValue && x.AmirId != personelId &&
+            SuperiorManager(x, organization) == personelId).Select(x => x.Id).ToList();
+        var actor = new Actor(personelId, "", "", false, managed, escalated);
+        var delegated = await DelegatedPersonIds(db, actor).ToListAsync(ct);
+        var reviewableIds = Reviewable(db, actor).Select(x => x.Id);
+        return (db.OvertimeEntries.AsNoTracking().Where(x => x.PersonelId == personelId ||
+            delegated.Contains(x.PersonelId) || reviewableIds.Contains(x.Id)), delegated);
+    }
+
     private static IQueryable<int> DelegatedPersonIds(ApplicationDbContext db, Actor actor)
         => db.OvertimeDelegations.Where(x => x.DelegatePersonelId == actor.Id && x.IsActive
             && WorkingPersonIds(db).Contains(x.DelegatePersonelId) && WorkingPersonIds(db).Contains(x.TargetPersonelId))
@@ -307,6 +323,12 @@ public sealed class OvertimeService(IDbContextFactory<ApplicationDbContext> fact
             Require(interval.EndMinute <= 1440, "Çalışma aralığının başlangıç ve bitiş tarihlerini kontrol edin.");
         }
         Require(!intervals.Zip(intervals.Skip(1)).Any(x => x.First.EndMinute > x.Second.StartMinute), "Çalışma aralıkları çakışamaz.");
+        if (input.WorkDate.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday))
+        {
+            var holidays = await PublicHolidayDatesAsync(db, input.WorkDate.Date, input.WorkDate.Date, cancellationToken);
+            Require(holidays.Contains(input.WorkDate.Date) || intervals.All(x => x.StartMinute >= 17 * 60),
+                $"{input.WorkDate:dd.MM.yyyy}: Resmî tatil olmayan hafta içi günlerde fazla mesai 17:00 ve sonrasında başlamalıdır.");
+        }
         var entry = input.Id == 0 ? null : await db.OvertimeEntries.Include(x => x.Intervals)
             .SingleOrDefaultAsync(x => x.Id == input.Id && x.PersonelId == personelId, cancellationToken);
         if (input.Id != 0)
@@ -500,7 +522,7 @@ public sealed class OvertimeService(IDbContextFactory<ApplicationDbContext> fact
             return true;
         }, cancellationToken);
 
-    private static List<OvertimePersonResult> CalculateResults(int periodId, List<OvertimeEntry> entries, DateTime start, DateTime end)
+    private static List<OvertimePersonResult> CalculateResults(int periodId, List<OvertimeEntry> entries, DateTime start, DateTime end, IReadOnlySet<DateTime> publicHolidays)
         => entries.GroupBy(x => x.PersonelId).Select(person =>
         {
             Require(person.Select(x => x.PersonnelType).Distinct().Count() == 1,
@@ -508,13 +530,13 @@ public sealed class OvertimeService(IDbContextFactory<ApplicationDbContext> fact
             Require(person.Where(x => x.PersonnelType == PersonelTipi.KadroHarici).Select(x => PersonnelInstitution.Key(x.KadroHariciKurum)).Distinct().Count() <= 1,
                 $"{person.First().FullName}: Dönem içinde farklı kurumlarla kayıt var. Kayıtları İK ile kontrol edin.");
             List<OvertimeWeek> weeks;
-            try { weeks = OvertimeCalculator.Calculate(person, start, end); }
+            try { weeks = OvertimeCalculator.Calculate(person, start, end, publicHolidays); }
             catch (ArgumentException ex) { throw new RuleException(Error.Validation($"{person.First().FullName}: {ex.Message}")); }
             var raw = weeks.Sum(x => x.OvertimeMinutes);
             return new OvertimePersonResult
             {
                 PeriodId = periodId, PersonelId = person.Key, FullName = person.First().FullName, SicilNo = person.First().SicilNo, PersonnelType = person.First().PersonnelType, KadroHariciKurum = person.First().KadroHariciKurum,
-                RawMinutes = raw, RoundedMinutes = OvertimeCalculator.RoundTotal(raw), WeeksJson = JsonSerializer.Serialize(weeks)
+                RawMinutes = raw, RoundedMinutes = OvertimeCalculator.RoundTotal(raw), WeeksJson = JsonSerializer.Serialize(weeks), RuleVersion = "2026-11-v2"
             };
         }).OrderBy(x => x.FullName).ToList();
 
@@ -535,7 +557,8 @@ public sealed class OvertimeService(IDbContextFactory<ApplicationDbContext> fact
                 "Personel tipi eksik veya geçersiz kayıtlar var. İmzaya hazırlamadan önce İK personel tiplerini tanımlamalıdır.");
             Require(entries.All(x => x.PersonnelType != PersonelTipi.KadroHarici || PersonnelInstitution.Normalize(x.KadroHariciKurum).Length is > 0 and <= 200),
                 "Kadro harici personelin kurum bilgileri eksik. İmzaya hazırlamadan önce kurum bilgilerini tamamlayın.");
-            var results = CalculateResults(periodId, entries, period.StartDate, period.EndDate);
+            var holidays = await PublicHolidayDatesAsync(db, period.StartDate, period.EndDate, cancellationToken);
+            var results = CalculateResults(periodId, entries, period.StartDate, period.EndDate, holidays);
             db.OvertimeResults.AddRange(results);
             period.Status = OvertimePeriodStatus.AwaitingSignature;
             period.SignatureRevision++;
@@ -620,6 +643,7 @@ public sealed class OvertimeService(IDbContextFactory<ApplicationDbContext> fact
             var result = new OvertimeReport
             {
                 Period = period!, Entries = list, CanSeeSummary = summary,
+                PublicHolidays = await PublicHolidayDatesAsync(db, period!.StartDate, period.EndDate, cancellationToken),
                 IsPreview = summary ? period!.Status == OvertimePeriodStatus.Collecting : unitId.HasValue ? delivery?.Status is null or OvertimeDeliveryStatus.Requested : !frozenPersonal,
                 Reference = unitId.HasValue ? $"FM-{periodId}/B-{unitId}/R-{delivery?.Revision ?? 0}" : summary ? $"FM-{periodId}/R-{period!.SignatureRevision}" : $"FM-{periodId}/P-{personelId}"
             };
@@ -661,7 +685,9 @@ public sealed class OvertimeService(IDbContextFactory<ApplicationDbContext> fact
             if (summary || personelId == actor.Id)
             {
                 if (period!.Status == OvertimePeriodStatus.Collecting)
-                    result.Results = CalculateResults(periodId, list, period.StartDate, period.EndDate);
+                {
+                    result.Results = CalculateResults(periodId, list, period.StartDate, period.EndDate, result.PublicHolidays);
+                }
                 else
                     result.Results = await db.OvertimeResults.AsNoTracking().Where(x => x.PeriodId == periodId && (summary || x.PersonelId == actor.Id)).OrderBy(x => x.FullName).ToListAsync(cancellationToken);
                 foreach (var item in result.Results.Where(x => x.PersonnelType is null))
@@ -673,6 +699,30 @@ public sealed class OvertimeService(IDbContextFactory<ApplicationDbContext> fact
                 result.Events = await db.OvertimeEvents.AsNoTracking().Where(x => x.PeriodId == periodId).OrderBy(x => x.Id).ToListAsync(cancellationToken);
             return result;
         }, cancellationToken);
+
+    private static async Task<HashSet<DateTime>> PublicHolidayDatesAsync(ApplicationDbContext db, DateTime start, DateTime end, CancellationToken ct)
+    {
+        var rows = await db.ResmiTatil_Table.AsNoTracking().Where(x => x.IptalTarihi == null &&
+            ((x.BaslamaTarihi.Date <= end.Date && x.BitisTarihi.Date >= start.Date) || (x.Yil >= start.Year && x.Yil <= end.Year)))
+            .Select(x => new { x.BaslamaTarihi, x.BitisTarihi, x.Yil, x.Ay, x.Gun }).ToListAsync(ct);
+        var dates = new HashSet<DateTime>();
+        foreach (var row in rows)
+        {
+            if (row.BaslamaTarihi.Date > DateTime.MinValue.Date && row.BitisTarihi.Date >= row.BaslamaTarihi.Date)
+            {
+                var first = row.BaslamaTarihi.Date < start.Date ? start.Date : row.BaslamaTarihi.Date;
+                var last = row.BitisTarihi.Date > end.Date ? end.Date : row.BitisTarihi.Date;
+                for (var day = first; day <= last; day = day.AddDays(1)) dates.Add(day);
+            }
+            else if (row.Yil is >= 1 and <= 9999 && row.Ay is >= 1 and <= 12 && row.Gun >= 1 && row.Gun <= DateTime.DaysInMonth(row.Yil, row.Ay))
+            {
+                // Legacy holiday rows may have only Gun/Ay/Yil populated.
+                var day = new DateTime(row.Yil, row.Ay, row.Gun);
+                if (day >= start.Date && day <= end.Date) dates.Add(day);
+            }
+        }
+        return dates;
+    }
 
     private static async Task ResolvePersonnelTypesAsync(ApplicationDbContext db, List<OvertimeEntry> entries, CancellationToken ct)
     {

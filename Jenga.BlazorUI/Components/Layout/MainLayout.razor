@@ -45,7 +45,14 @@
                 <img id="logo" alt="Logo" src="/images/logo-light.png" class="site-logo" />
             </div>
 
-            <div class="d-flex align-items-center gap-3">
+            <div class="d-flex align-items-center topbar-actions">
+                @if (_canSearch)
+                {
+                    <NavLink href="/arama" class="global-search-link" title="Genel Arama" aria-label="Genel Arama">
+                        <i class="bi bi-search" aria-hidden="true"></i>
+                        <span class="global-search-label">Genel Arama</span>
+                    </NavLink>
+                }
                 <ThemeToggle />
                 <NavLink href="/" class="navbar-brand">
                     @(_windowsUser.Length > 0 ? _windowsUser : "Jenga.BlazorUI")
@@ -71,6 +78,7 @@
     private string _windowsUser = string.Empty;
     private Jenga.Models.IKYS.Personel? _personel;
     private bool _initialUrlLogged;
+    private bool _canSearch;
     private JengaErrorBoundary? _errorBoundary;
 
     protected override async Task OnInitializedAsync()
@@ -80,6 +88,7 @@
         _personel = await CurrentUserService.GetCurrentPersonelWithoutImpersonationAsync();
         var personelId = _personel?.Id ?? 127;
         await MenuState.EnsureLoadedAsync(personelId);
+        await RefreshSearchPermissionAsync();
 
         if (_personel != null)
             _windowsUser = $"{_personel.Adi} {_personel.Soyadi}";
@@ -105,13 +114,22 @@
                 await MenuState.ReloadAsync(personelId);
                 if (_personel != null)
                     _windowsUser = $"{_personel.Adi} {_personel.Soyadi}";
-                StateHasChanged();
             }
+
+            await RefreshSearchPermissionAsync();
+            StateHasChanged();
 
             await LogCurrentUrlAsync(source: "firstRender");
         }
 
         await base.OnAfterRenderAsync(firstRender);
+    }
+
+    private async Task RefreshSearchPermissionAsync()
+    {
+        _canSearch = await CurrentUserService.HasPermissionAsync(ModuleName.TBYS, Operation.View)
+            || await CurrentUserService.HasPermissionAsync(ModuleName.NBYS, Operation.View)
+            || await CurrentUserService.HasPermissionAsync(ModuleName.IKYS, Operation.View);
     }
 
     private void ToggleSidebar() => MenuState.ToggleOpen();

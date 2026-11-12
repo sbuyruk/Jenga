@@ -45,10 +45,10 @@
 }
 
 .brand-logo {
+    display: block;
     cursor: pointer;
     max-width: 100%;
     height: auto;
-    filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.3));
     transition: opacity 0.2s ease;
 }
 

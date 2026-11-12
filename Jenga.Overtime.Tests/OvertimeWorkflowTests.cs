@@ -23,7 +23,7 @@ public sealed class OvertimeDatabase : IAsyncLifetime, IDbContextFactory<Applica
             base.OnModelCreating(modelBuilder);
             var keep = new HashSet<Type>
             {
-                typeof(Personel), typeof(IsBilgileri), typeof(BirimTanim), typeof(UnvanTanim), typeof(GorevTanim),
+                typeof(Personel), typeof(IsBilgileri), typeof(BirimTanim), typeof(UnvanTanim), typeof(GorevTanim), typeof(ResmiTatil),
                 typeof(OvertimeEntry), typeof(OvertimeInterval), typeof(OvertimePeriod), typeof(OvertimeDelivery),
                 typeof(OvertimeSchedule), typeof(OvertimePersonResult), typeof(OvertimeEvent), typeof(OvertimeDelegation)
             };
@@ -88,7 +88,9 @@ public sealed class OvertimeWorkflowTests(OvertimeDatabase database) : IClassFix
     private static OvertimeEntryInput Input(DateTime? date = null) => new()
     {
         WorkDate = date ?? Monday.AddDays(5), Reason = "Havalimanı görevi", Submit = true,
-        Intervals = [new() { Start = new(8, 0), End = new(16, 0) }]
+        Intervals = date.HasValue && date.Value.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday)
+            ? [new() { Start = new(17, 0), End = new(23, 0) }]
+            : [new() { Start = new(8, 0), End = new(16, 0) }]
     };
 
     private async Task<(int Worker, int Unit, int Title)> Reset(int normal = 40)
@@ -98,6 +100,7 @@ public sealed class OvertimeWorkflowTests(OvertimeDatabase database) : IClassFix
             DELETE FROM OvertimeDelegation_Table; DELETE FROM OvertimeEvent_Table; DELETE FROM OvertimeInterval_Table;
             DELETE FROM OvertimeResult_Table; DELETE FROM OvertimeEntry_Table; DELETE FROM OvertimeDelivery_Table;
             DELETE FROM OvertimePeriod_Table; DELETE FROM OvertimeSchedule_Table;
+            DELETE FROM ResmiTatil_Table;
             DELETE FROM IsBilgileri_Table; DELETE FROM GorevTanim_Table; DELETE FROM Personel_Table; DELETE FROM BirimTanim_Table; DELETE FROM UnvanTanim_Table;
             """);
         var people = new[] { "worker", "manager", "other", "hr" }.Select((x, i) => new Personel { Adi = x, Soyadi = "Test", SicilNo = i + 1, KullaniciAdi = x, Tipi = PersonelTipi.Kadrolu }).ToList();
@@ -692,6 +695,80 @@ public sealed class OvertimeWorkflowTests(OvertimeDatabase database) : IClassFix
         period = await Period();
         Success(await hr.PrepareSignatureAsync(id, period.Version));
         Assert.NotEqual(first.Reference, Success(await hr.GetReportAsync(id, null, null)).Reference);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task OrdinaryWeekdayRequiresEveryIntervalToStartAtOrAfter1700(bool submit)
+    {
+        await Reset(45);
+        var input = Input(Monday); input.Submit = submit;
+        input.Intervals = [new() { Start = new(16, 59), End = new(20, 0) }];
+        Assert.False((await Service("worker").SaveEntryAsync(input)).IsSuccess);
+        input.Intervals = [new() { Start = new(17, 0), End = new(20, 0) }];
+        Success(await Service("worker").SaveEntryAsync(input));
+        if (submit)
+        {
+            var entry = await Entry();
+            Success(await Service("manager").ReviewAsync(entry.Id, entry.Version, OvertimeEntryStatus.Approved, ""));
+            var hr = Service("hr", true);
+            var periodId = Success(await hr.CreatePeriodAsync("Hafta içi", Monday, Monday.AddDays(6), Monday.AddDays(9)));
+            var result = Assert.Single(Success(await hr.GetReportAsync(periodId, null, null)).Results);
+            Assert.Equal(180, result.RawMinutes);
+        }
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public async Task ActiveHolidayCalendarEnablesDaytimeWorkAndWeekendRest(bool legacyDateFields, bool cancelled)
+    {
+        await Reset(45);
+        var holiday = Monday.AddDays(3);
+        await using (var db = database.CreateDbContext())
+        {
+            db.ResmiTatil_Table.Add(new() { Tatil = "Resmî tatil", Gun = holiday.Day, Ay = holiday.Month, Yil = holiday.Year,
+                BaslamaTarihi = legacyDateFields ? default : holiday.AddDays(-1), BitisTarihi = legacyDateFields ? default : holiday.AddDays(1),
+                IptalTarihi = cancelled ? holiday : null });
+            await db.SaveChangesAsync();
+        }
+        var input = Input(holiday); input.Intervals = [new() { Start = new(8, 0), End = new(16, 0) }];
+        var saved = await Service("worker").SaveEntryAsync(input);
+        if (cancelled) { Assert.False(saved.IsSuccess); return; }
+        Success(saved);
+        var entry = await Entry();
+        Success(await Service("manager").ReviewAsync(entry.Id, entry.Version, OvertimeEntryStatus.Approved, ""));
+        var hr = Service("hr", true);
+        var periodId = Success(await hr.CreatePeriodAsync("Tatil", Monday, Monday.AddDays(6), Monday.AddDays(9)));
+        var preview = Assert.Single(Success(await hr.GetReportAsync(periodId, null, null)).Results);
+        Assert.Equal(420, preview.RawMinutes);
+        Assert.Equal("2026-11-v2", preview.RuleVersion);
+        var delivery = await Delivery();
+        Success(await hr.IssueUnitAsync(delivery.Id, delivery.Version));
+        delivery = await Delivery();
+        Success(await hr.ReceiveUnitAsync(delivery.Id, delivery.Version));
+        Success(await hr.PrepareSignatureAsync(periodId, (await Period()).Version));
+        await using (var db = database.CreateDbContext())
+        {
+            (await db.ResmiTatil_Table.SingleAsync()).IptalTarihi = holiday;
+            await db.SaveChangesAsync();
+        }
+        Assert.Equal(420, Assert.Single(Success(await hr.GetReportAsync(periodId, null, null)).Results).RawMinutes);
+    }
+
+    [Fact]
+    public async Task OvernightToOrdinaryWeekdayRejectsEarlyMorningPartAndRollsBackWholeEntry()
+    {
+        await Reset(45);
+        var input = Input(Monday.AddDays(6));
+        input.EndWorkDate = Monday.AddDays(7);
+        input.Intervals = [new() { Start = new(22, 0), End = new(2, 0) }];
+        Assert.False((await Service("worker").SaveEntryAsync(input)).IsSuccess);
+        await using var db = database.CreateDbContext();
+        Assert.Empty(await db.OvertimeEntries.ToListAsync());
+        Assert.Empty(await db.OvertimeEvents.ToListAsync());
     }
 
     [Fact]

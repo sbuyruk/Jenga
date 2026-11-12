@@ -6,9 +6,11 @@ public static class OvertimeCalculator
 {
     public static DateTime MondayOf(DateTime date) => date.Date.AddDays(-((int)date.DayOfWeek + 6) % 7);
     public static int RestMinutes(int grossMinutes) => grossMinutes <= 0 ? 0 : grossMinutes <= 240 ? 15 : grossMinutes <= 450 ? 30 : 60;
+    public static int NetMinutes(DateTime day, int grossMinutes, IReadOnlySet<DateTime>? publicHolidays = null)
+        => grossMinutes - (day.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday || publicHolidays?.Contains(day.Date) == true ? RestMinutes(grossMinutes) : 0);
     public static int RoundTotal(int minutes) => checked((minutes + 29) / 30 * 30);
 
-    public static List<OvertimeWeek> Calculate(IEnumerable<OvertimeEntry> entries, DateTime start, DateTime end)
+    public static List<OvertimeWeek> Calculate(IEnumerable<OvertimeEntry> entries, DateTime start, DateTime end, IReadOnlySet<DateTime>? publicHolidays = null)
     {
         if (start.DayOfWeek != DayOfWeek.Monday || end.DayOfWeek != DayOfWeek.Sunday || end.Date < start.Date)
             throw new ArgumentException("Dönem, Pazartesi başlayıp Pazar biten tam haftalardan oluşmalıdır.");
@@ -46,8 +48,7 @@ public static class OvertimeCalculator
             if (groups.Count != 1)
                 throw new ArgumentException("Aynı haftada farklı çalışma grupları var; İK kontrolü gerekiyor.");
             var gross = week.Sum(x => x.Value.Gross);
-            var rest = week.Where(x => x.Key.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday)
-                .Sum(x => RestMinutes(x.Value.Gross));
+            var rest = week.Sum(x => x.Value.Gross - NetMinutes(x.Key, x.Value.Gross, publicHolidays));
             weeks.Add(new(week.Key, groups[0], gross, rest, Math.Max(0, groups[0] + gross - rest - 2700)));
         }
         return weeks;
