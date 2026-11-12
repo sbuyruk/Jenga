@@ -7,12 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Pages\**" />
-    <Content Remove="Pages\**" />
-    <EmbeddedResource Remove="Pages\**" />
-    <None Remove="Pages\**" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\Jenga.DataAccess\Jenga.DataAccess.csproj" />
     <ProjectReference Include="..\Jenga.Models\Jenga.Models.csproj" />
     <ProjectReference Include="..\Jenga.Utility\Jenga.Utility.csproj" />

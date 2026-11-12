@@ -7,18 +7,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <Compile Remove="Ortak\**" />
-	  <Compile Remove="Test\**" />
-	  <Compile Remove="ViewModels\**" />
-	  <EmbeddedResource Remove="Ortak\**" />
-	  <EmbeddedResource Remove="Test\**" />
-	  <EmbeddedResource Remove="ViewModels\**" />
-	  <None Remove="Ortak\**" />
-	  <None Remove="Test\**" />
-	  <None Remove="ViewModels\**" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.13" />
 	</ItemGroup>
 
