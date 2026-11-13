@@ -7,6 +7,7 @@ using Jenga.Utility.Logging;
 using Microsoft.AspNetCore.Components.Server.Circuits;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Jenga.BlazorUI.Extensions
 {
@@ -40,6 +41,7 @@ namespace Jenga.BlazorUI.Extensions
 
         public static IServiceCollection AddPresenceServices(this IServiceCollection services)
         {
+            services.TryAddSingleton<TimeProvider>(TimeProvider.System);
             services.AddScoped<CircuitHandler, PresenceCircuitHandler>();
             services.AddScoped<UserPresenceQueryService>();
             services.AddScoped<PresenceHeartbeatState>();

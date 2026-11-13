@@ -72,15 +72,6 @@
 
     private void Resume(Guid id) => _pausedToasts.Remove(id);
 
-    private string GetToastClass(ToastType type) => type switch
-    {
-        ToastType.Success => "toast-success",
-        ToastType.Error => "toast-error",
-        ToastType.Info => "toast-info",
-        ToastType.Warning => "toast-warning",
-        _ => ""
-    };
-
     public void Dispose()
     {
         ToastService.OnShow -= ShowToast;

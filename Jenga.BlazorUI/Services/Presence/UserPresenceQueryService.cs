@@ -7,19 +7,22 @@ namespace Jenga.BlazorUI.Services.Presence
     public sealed class UserPresenceQueryService
     {
         private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
+        private readonly TimeProvider _clock;
 
-        public UserPresenceQueryService(IDbContextFactory<ApplicationDbContext> dbFactory)
+        public UserPresenceQueryService(IDbContextFactory<ApplicationDbContext> dbFactory, TimeProvider clock)
         {
             _dbFactory = dbFactory;
+            _clock = clock;
         }
 
         public async Task<List<UserPresenceSession>> GetOpenSessionsAsync(CancellationToken cancellationToken = default)
         {
+            var cutoff = _clock.GetLocalNow().DateTime - PresenceHeartbeatService.OnlineTimeout;
             await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
 
             return await db.UserPresenceSession_Table
                 .AsNoTracking()
-                .Where(x => x.DisconnectedAt == null)
+                .Where(x => x.DisconnectedAt == null && x.LastSeen >= cutoff)
                 .OrderByDescending(x => x.ConnectedAt)
                 .ToListAsync(cancellationToken);
         }
@@ -30,11 +33,12 @@ namespace Jenga.BlazorUI.Services.Presence
 
         public async Task<List<OpenSessionView>> GetOpenSessionViewsAsync(CancellationToken cancellationToken = default)
         {
+            var cutoff = _clock.GetLocalNow().DateTime - PresenceHeartbeatService.OnlineTimeout;
             await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
 
             var result = await (
                 from s in db.UserPresenceSession_Table.AsNoTracking()
-                where s.DisconnectedAt == null
+                where s.DisconnectedAt == null && s.LastSeen >= cutoff
                 let lastUrlForSession = (
                     from e in db.UserNavigationEvent_Table.AsNoTracking()
                     where e.PresenceSessionId == s.Id && e.Url != null && e.Url != ""

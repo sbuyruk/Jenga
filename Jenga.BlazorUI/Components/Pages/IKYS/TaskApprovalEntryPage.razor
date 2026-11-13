@@ -292,8 +292,6 @@
     [SupplyParameterFromQuery(Name = "BirimTanimId")] public int? BirimTanimIdQuery { get; set; }
     [SupplyParameterFromQuery(Name = "Auth")] public string? Auth { get; set; }
 
-    private const string AuthorizedUnitCode = "IKYS";
-
     private GorevOnay _model = new();
     private readonly List<TaskApprovalOptionItem> _personOptions = [];
     private readonly List<TaskApprovalOptionItem> _perDirOptions = [];

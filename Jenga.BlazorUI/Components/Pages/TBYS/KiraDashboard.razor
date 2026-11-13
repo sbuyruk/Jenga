@@ -11,7 +11,6 @@
 @inject ITasinmazService TasinmazService
 @inject IKiraSozlesmeService KiraSozlesmeService
 @inject IKiraciService KiraciService
-@inject ISozlesmeTasinmazService SozlesmeTasinmazService
 @inject IOdemePlaniService OdemePlaniService
 @inject IIlService IlService
 @inject IBolgeService BolgeService
@@ -307,8 +306,6 @@
     private decimal BuAyToplamGelir => _buAyToplamGelir;
 
     private decimal GecenAyToplamGelir => _gecenAyToplamGelir;
-
-    private int GecikmisSozlesmeCount => gecikmisSozlesmeler.Count;
 
     private decimal OrtalamaKiraBedeli => _ortalamaKiraBedeli;
 
@@ -714,14 +711,6 @@
         if (value >= 1_000) return $"{value / 1_000:0.#}K ₺";
         return $"{value:N0} ₺";
     }
-
-    private static string GetDurumBadgeClass(string? durum) => durum switch
-    {
-        ProjectConstants.KIRASOZLESME_DURUMU_TAKIP => "bg-warning text-dark",
-        ProjectConstants.KIRASOZLESME_DURUMU_FESIH => "bg-danger",
-        ProjectConstants.KIRASOZLESME_DURUMU_BITTI => "bg-secondary",
-        _ => "bg-danger"
-    };
 
     private static readonly string[] _odemePalette = ["#00B894", "#FDCB6E", "#D63031"];
     private static readonly string[] _sekilPalette = ["#6C5CE7", "#00CEC9", "#E17055", "#74B9FF"];
