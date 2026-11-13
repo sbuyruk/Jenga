@@ -1060,14 +1060,6 @@
     private static string Percent(int parca, int toplam)
         => toplam == 0 ? "0" : ((decimal)parca / toplam * 100m).ToString("N1", CultureInfo.InvariantCulture);
 
-    private static string KalanIzinRenk(string? kalan)
-    {
-        if (string.IsNullOrEmpty(kalan)) return "";
-        if (decimal.TryParse(kalan, out var v) && v <= 0) return "text-danger fw-semibold";
-        if (decimal.TryParse(kalan, out v) && v <= 5) return "text-warning";
-        return "";
-    }
-
     // ── İç veri sınıfları ───────────────────────────────────────
     private record PieItem(string Label, decimal Value);
     private record TahsilSatir(string TahsilAdi, int PersonelSayisi);

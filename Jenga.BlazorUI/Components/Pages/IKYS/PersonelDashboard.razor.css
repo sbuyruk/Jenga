@@ -174,15 +174,9 @@
 /* Accent token tanımları */
 .personel-dashboard .pd-accent-indigo { --pd-accent: #4f46e5; --pd-accent-bg: #eef2ff; }
 .personel-dashboard .pd-accent-blue   { --pd-accent: #2563eb; --pd-accent-bg: #eff6ff; }
-.personel-dashboard .pd-accent-teal   { --pd-accent: #0d9488; --pd-accent-bg: #f0fdfa; }
 .personel-dashboard .pd-accent-green  { --pd-accent: #16a34a; --pd-accent-bg: #f0fdf4; }
 .personel-dashboard .pd-accent-rose   { --pd-accent: #e11d48; --pd-accent-bg: #fff1f2; }
-.personel-dashboard .pd-accent-amber  { --pd-accent: #d97706; --pd-accent-bg: #fffbeb; }
-.personel-dashboard .pd-accent-purple { --pd-accent: #7c3aed; --pd-accent-bg: #f5f3ff; }
-.personel-dashboard .pd-accent-sky    { --pd-accent: #0284c7; --pd-accent-bg: #f0f9ff; }
 .personel-dashboard .pd-accent-orange { --pd-accent: #ea580c; --pd-accent-bg: #fff7ed; }
-.personel-dashboard .pd-accent-lime   { --pd-accent: #65a30d; --pd-accent-bg: #f7fee7; }
-.personel-dashboard .pd-accent-cyan   { --pd-accent: #0891b2; --pd-accent-bg: #ecfeff; }
 .personel-dashboard .pd-accent-slate  { --pd-accent: #475569; --pd-accent-bg: #f8fafc; }
 .personel-dashboard .pd-accent-pink   { --pd-accent: #db2777; --pd-accent-bg: #fdf2f8; }
 

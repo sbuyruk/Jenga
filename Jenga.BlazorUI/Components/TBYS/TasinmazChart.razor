@@ -285,9 +285,4 @@
         return value.ToString("N2", CultureInfo.CurrentCulture);
     }
 
-    private async Task Close()
-    {
-        if (OnClose.HasDelegate)
-            await OnClose.InvokeAsync(null);
-    }
 }

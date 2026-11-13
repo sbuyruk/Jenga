@@ -70,12 +70,6 @@
                            @onclick='() => ScrollToAsync("durum-doviz")'>
                             <i class="bi bi-pie-chart-fill me-1"></i>Durum &amp; Döviz
                         </a>
-@*                         <a class="nav-link"
-                           href="#son5yil"
-                           @onclick:preventDefault="true"
-                           @onclick='() => ScrollToAsync("son5yil")'>
-                            <i class="bi bi-graph-up-arrow me-1"></i>Son 5 Yıl
-                        </a> *@
                         <a class="nav-link"
                            href="#son-armaganlar"
                            @onclick:preventDefault="true"
@@ -317,27 +311,6 @@
 
                     <hr class="armagan-separator" />
 
-@*                     @* ── Son 5 Yıl Trendi ── 
-                    <section id="son5yil" class="armagan-section">
-                        <div class="d-flex flex-wrap gap-3 justify-content-center">
-                            <div class="armagan-wide-container">
-                                <GenericChart TItem="YearlyAmount"
-                                              Series="_son5YilSeries"
-                                              LabelSelector="@(x => x.Label)"
-                                              ValueSelector="@(x => x.Amount)"
-                                              Title="Yıllık Armağan Sayıları — Son 5 Yıl (Adet)"
-                                              Type="GenericChart<YearlyAmount>.GenericChartType.Bar"
-                                              ShowDataLabels="false"
-                                              ShowLegend="true"
-                                              GridPaddingBottom="40"
-                                              ColorPalette="@_statusPalette"
-                                              XAxisLabelRotateDegrees="0"
-                                              XAxisLabelsAlwaysRotate="false"
-                                              Width="100%"
-                                              Height="100%" />
-                            </div>
-                        </div>
-                    </section> *@
 
                     <hr class="armagan-separator" />
 
@@ -486,19 +459,8 @@
     private List<Armagan> _armaganlar = [];
 
     // ── KPI değerleri ──────────────────────────────────
-    private int    _toplamArmaganSayisi;
     private int    _buYilArmaganSayisi;
     private int    _gecenYilArmaganSayisi;
-    private decimal _toplamTutar;
-    private decimal _buYilTutar;
-    private int    _aktifBagisciSayisi;
-    private int    _bekleyenSayisi;
-    private int    _gecersizSayisi;
-    private int _duzenliBagisKayitSayisi;
-    private decimal _duzenliBagisToplamTutar;
-    private int    _iadeSayisi;
-    private decimal _iadeToplami;
-    private int    _yabancıDovizSayisi;
 
     // ArmaganTanim bazlı sayılar (Id: 4=Altın, 3=Gümüş, 2=Bronz, 1=Teşekkür)
     private int _buYilAltinSayisi;
@@ -524,10 +486,8 @@
     private readonly List<ArmaganTurDetay> _armaganTurleriDetay = new();
     private readonly List<GenericChart<MonthlyAmount>.GenericSeries> _aylikTurSeries = new();
     private readonly List<PieItem>       _durumDagilimItems    = new();
-    private readonly List<GenericChart<YearlyAmount>.GenericSeries> _son5YilSeries = new();
 
     // ── Tablo verileri ─────────────────────────────────
-    private readonly List<TopDonorRow>    _topBagiscilar  = new();
     private readonly List<SonArmaganRow>  _sonArmaganlar  = new();
     private List<SonArmaganRow>           _sonArmaganlarFiltered = new();
     private (int Year, int Month)         _secilenAy;
@@ -537,23 +497,6 @@
     private GenericTable<SonArmaganRow>?  _sonArmaganlarTable;
 
     // ── Renk paletleri ─────────────────────────────────
-    private static readonly string[] _armaganPalette =
-    [
-        "#2563EB", "#7C3AED", "#06B6D4", "#10B981", "#F59E0B", "#EF4444", "#F97316"
-    ];
-
-    private static readonly string[] _palette2 =
-    [
-        "#9B5DE5", "#F15BB5", "#FEE440", "#00BBF9", "#00F5D4",
-        "#FF595E", "#FFCA3A", "#8AC926", "#1982C4", "#6A4C93",
-        "#FF6B6B", "#4ECDC4"
-    ];
-
-    private static readonly string[] _palette3 =
-    [
-        "#2563EB", "#7C3AED", "#06B6D4", "#10B981", "#F59E0B"
-    ];
-
     private static readonly string[] _statusPalette =
     [
 
@@ -673,20 +616,6 @@
                 })
                 .Select(g => new PieItem { Label = g.Key, Value = g.Count() })
                 .OrderByDescending(p => p.Value));
-
-        // Son 5 Yıl Trendi – gerçek veri (türe göre adet)
-        var son5Yil = Enumerable.Range(currentYear - 4, 5).ToArray();
-        foreach (var tanim in armaganTanimlar.Where(t => t.Aktif == true).OrderBy(t => t.Id))
-        {
-            var yillikSayilar = _armaganlar
-                .Where(a => a.ArmaganTanimId == tanim.Id && a.Tarih.HasValue && son5Yil.Contains(a.Tarih.Value.Year))
-                .GroupBy(a => a.Tarih!.Value.Year)
-                .ToDictionary(g => g.Key, g => (decimal)g.Count());
-            var yilItems = son5Yil
-                .Select(y => new YearlyAmount { Year = y, Label = y.ToString(), Amount = yillikSayilar.TryGetValue(y, out var cnt) ? cnt : 0m })
-                .ToList();
-            _son5YilSeries.Add(new GenericChart<YearlyAmount>.GenericSeries(tanim.Armagan ?? $"Tür #{tanim.Id}", yilItems));
-        }
 
         // Son Armağanlar – gerçek veri
         var tanimAdi = armaganTanimlar.ToDictionary(t => t.Id, t => t.Armagan ?? $"Tür #{t.Id}");
@@ -818,15 +747,6 @@
             .ToList();
     }
 
-    private static string GetDovizBadgeClass(string doviz) => doviz switch
-    {
-        "TRY" => "bg-danger",
-        "USD" => "bg-dark",
-        "EUR" => "bg-info text-dark",
-        "GBP" => "bg-secondary",
-        _     => "bg-light text-dark"
-    };
-
     // ── İç DTO sınıfları ──────────────────────────────
     private class PieItem
     {
@@ -841,27 +761,11 @@
         public decimal Amount { get; set; }
     }
 
-    private class YearlyAmount
-    {
-        public int     Year   { get; set; }
-        public string  Label  { get; set; } = "";
-        public decimal Amount { get; set; }
-    }
-
     private class ArmaganTurDetay
     {
         public string  Adi      { get; set; } = "";
         public int     Adet     { get; set; }
         public decimal OrtTutar { get; set; }
-    }
-
-    private class TopDonorRow
-    {
-        public string   BagisciAdi   { get; set; } = "";
-        public bool     TuzelKisi    { get; set; }
-        public int      ArmaganAdedi { get; set; }
-        public decimal  ToplamTutar  { get; set; }
-        public DateTime SonArmagan   { get; set; }
     }
 
     private class SonArmaganRow

@@ -11,7 +11,6 @@
 @inject IMaterialTransferService MaterialTransferService
 @inject IMaterialInventoryService MaterialInventoryService
 @inject IToastService ToastService
-@inject IModalService ModalService
 @inject ICurrentUserService CurrentUserService
 
 @if (Assets?.Any() != true)
@@ -408,26 +407,6 @@ else
         var assetLogsR = await MaterialAssetLogService.GetByAssetIdAsync(asset.Id);
         assetLogs = assetLogsR.IsSuccess ? assetLogsR.Value : new();
         StateHasChanged();
-    }
-
-    #endregion
-
-    #region Delete
-
-    private void ConfirmDelete(MaterialAsset asset)
-    {
-        ModalService.ShowConfirmation(
-            "Demirbaş Malzeme Silme",
-            $"'{asset.SerialNumber ?? $"ID:{asset.Id}"}' silinsin mi?",
-            async (confirmed) =>
-            {
-                if (confirmed)
-                {
-                    await MaterialAssetService.DeleteAsync(asset);
-                    ToastService.ShowSuccess("Demirbaş Malzeme silindi.");
-                    await OnDataChanged.InvokeAsync();
-                }
-            });
     }
 
     #endregion

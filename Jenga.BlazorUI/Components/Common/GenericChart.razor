@@ -412,27 +412,6 @@
         ];
     }
 
-    private string BuildTooltipFormatterJs(string fallbackFormatter)
-    {
-        if (_tooltipExtras.Count == 0 || _tooltipExtras.All(string.IsNullOrWhiteSpace))
-        {
-            return fallbackFormatter;
-        }
-
-        var extras = _tooltipExtras.Select(x => $"'{EscapeJsString(x)}'");
-        var extrasJsArray = $"[{string.Join(", ", extras)}]";
-
-        return "function (val, opts) {"
-               + $"var extras = {extrasJsArray};"
-               + "var idx = (opts && typeof opts.dataPointIndex === 'number') ? opts.dataPointIndex : -1;"
-               + "var extra = (idx >= 0 && idx < extras.length) ? extras[idx] : '';"
-               + "var valueText = '';"
-               + "try { valueText = (val ?? 0).toLocaleString(); } catch(e) { valueText = val; }"
-               + "if (!extra) { return valueText; }"
-               + "return valueText + '<br/>' + extra.replace(/\\n/g, '<br/>');"
-               + "}";
-    }
-
     private string? BuildTooltipCustomJs()
     {
         if (_tooltipExtras.Count == 0 || _tooltipExtras.All(string.IsNullOrWhiteSpace))

@@ -12,7 +12,6 @@
 @inject MenuStateService MenuState
 @inject ICurrentUserService CurrentUserService
 @inject NavigationManager Nav
-@inject PresenceHeartbeatService PresenceHeartbeatService
 @inject UserNavigationLogService UserNavigationLogService
 @inject IJSRuntime JS
 @inject ThemeService ThemeService
@@ -181,34 +180,9 @@
         }
     }
 
-    private PeriodicTimer? _presenceTimer;
-    private CancellationTokenSource? _presenceCts;
-
-    private void StartPresenceHeartbeat()
-    {
-        _presenceCts?.Cancel();
-        _presenceCts?.Dispose();
-
-        _presenceCts = new CancellationTokenSource();
-        _presenceTimer = new PeriodicTimer(TimeSpan.FromSeconds(30));
-
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                while (await _presenceTimer.WaitForNextTickAsync(_presenceCts.Token))
-                    await PresenceHeartbeatService.TouchAsync(_presenceCts.Token);
-            }
-            catch (OperationCanceledException) { }
-        }, _presenceCts.Token);
-    }
-
     public void Dispose()
     {
         MenuState.OnChange -= MenuStateChanged;
         Nav.LocationChanged -= OnLocationChanged;
-        _presenceCts?.Cancel();
-        _presenceTimer?.Dispose();
-        _presenceCts?.Dispose();
     }
 }

@@ -6,23 +6,26 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Jenga.BlazorUI.Services.Presence
 {
-    public sealed class PresenceCircuitHandler : CircuitHandler
+    public sealed class PresenceCircuitHandler : CircuitHandler, IAsyncDisposable
     {
         private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
         private readonly ICurrentUserService _currentUserService;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly PresenceHeartbeatState _heartbeatState;
+        private readonly PresenceHeartbeatService _heartbeat;
 
         public PresenceCircuitHandler(
             IDbContextFactory<ApplicationDbContext> dbFactory,
             ICurrentUserService currentUserService,
             IHttpContextAccessor httpContextAccessor,
-            PresenceHeartbeatState heartbeatState)
+            PresenceHeartbeatState heartbeatState,
+            PresenceHeartbeatService heartbeat)
         {
             _dbFactory = dbFactory;
             _currentUserService = currentUserService;
             _httpContextAccessor = httpContextAccessor;
             _heartbeatState = heartbeatState;
+            _heartbeat = heartbeat;
         }
 
         public override async Task OnConnectionUpAsync(Circuit circuit, CancellationToken cancellationToken)
@@ -61,6 +64,7 @@ namespace Jenga.BlazorUI.Services.Presence
                 await db.SaveChangesAsync(cancellationToken);
 
                 _heartbeatState.SessionId = session.Id;
+                await _heartbeat.StartAsync();
                 return;
             }
 
@@ -77,10 +81,12 @@ namespace Jenga.BlazorUI.Services.Presence
             await db.SaveChangesAsync(cancellationToken);
 
             _heartbeatState.SessionId = existing.Id;
+            await _heartbeat.StartAsync();
         }
 
         public override async Task OnConnectionDownAsync(Circuit circuit, CancellationToken cancellationToken)
         {
+            await _heartbeat.StopAsync();
             await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
 
             var session = await db.UserPresenceSession_Table
@@ -95,5 +101,7 @@ namespace Jenga.BlazorUI.Services.Presence
 
             await db.SaveChangesAsync(cancellationToken);
         }
+
+        public ValueTask DisposeAsync() => _heartbeat.DisposeAsync();
     }
 }

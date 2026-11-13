@@ -759,14 +759,6 @@
             : "bi bi-caret-up-fill ms-2";
     }
 
-    private static string GetUyelikBadgeClass(string? durum) => durum switch
-    {
-        "Aktif"   => "bg-success",
-        "Pasif"   => "bg-secondary",
-        "İzinli"  => "bg-warning text-dark",
-        _         => "bg-info text-dark"
-    };
-
     // ── İç DTO sınıfları ──────────────────────────────
     private class PieItem
     {

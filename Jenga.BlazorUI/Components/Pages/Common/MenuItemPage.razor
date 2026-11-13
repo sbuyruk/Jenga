@@ -65,14 +65,4 @@ else
         StateHasChanged();
     }
 
-    // Provide a simple entry point for "Yeni Menü" button: open a client-side modal by
-    // delegating to MenuItemTable's behavior ï¿½ MenuItemTable opens its own edit modal
-    // when a MenuItem with Id == 0 is passed. To keep parent simple we add the new item
-    // into the list and let the table show it immediately.
-    private void OpenNewMenuModal()
-    {
-        var newItem = new MenuItem();
-        menuItems.Add(newItem);
-        StateHasChanged();
-    }
 }

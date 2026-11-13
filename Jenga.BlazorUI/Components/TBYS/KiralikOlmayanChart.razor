@@ -168,11 +168,6 @@
         }
     }
 
-    private Task Close()
-    {
-        return OnClose.InvokeAsync(null);
-    }
-
     private class CellCounts
     {
         public int TM { get; set; }

@@ -206,19 +206,4 @@
         StateHasChanged();
     }
 
-    // Utility
-    private string GetLocationIcon(Location loc)
-    {
-        return loc.LocationType switch
-        {
-            LocationType.Building => "bi bi-buildings",
-            LocationType.Floor => "bi bi-layers",
-            LocationType.Warehouse => "bi bi-box",
-            LocationType.Room => "bi bi-door-closed",
-            LocationType.Cabinet => "bi bi-window-split",
-            LocationType.Shelf => "bi bi-table",
-            _ when loc.Children?.Any() == true => "bi bi-folder",
-            _ => "bi bi-file-earmark"
-        };
-    }
 }
