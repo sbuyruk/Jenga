@@ -59,7 +59,6 @@
 }
 
 /* Header content with icon spacing */
-.gt-table thead th .header-content,
 .gt-table thead th > span.d-inline-flex {
     display: inline-flex;
     align-items: center;
