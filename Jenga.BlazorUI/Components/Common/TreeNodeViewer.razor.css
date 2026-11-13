@@ -120,12 +120,6 @@
     z-index: 999;
     background: transparent;
 }
-.material-badge-list {
-    display: flex;
-    flex-direction: column;
-    gap: 6px; /* etiketler arası boşluk */
-    margin-top: 4px;
-}
 .expand-icon {
     display: inline-block;
     cursor: pointer;

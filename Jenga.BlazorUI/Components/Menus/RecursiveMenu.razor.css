@@ -130,15 +130,6 @@
     background-color: rgba(255, 255, 255, 0.06);
 }
 
-/* Sidebar container */
-.treeview-sidebar {
-    width: 220px;
-    background: transparent;
-    padding: 12px;
-    overflow-y: auto;
-    font-family: 'Segoe UI', sans-serif;
-}
-
 /* Title */
 .menu-title {
     width: 100%;
@@ -199,4 +190,3 @@
         animation: none !important;
     }
 }
-
