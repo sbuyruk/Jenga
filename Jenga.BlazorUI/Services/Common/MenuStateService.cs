@@ -13,7 +13,6 @@ namespace Jenga.BlazorUI.Services.Common
 
         // UI state
         private bool _isOpen = true;
-        private bool _isCollapsed;
 
         public bool IsOpen
         {
@@ -22,17 +21,6 @@ namespace Jenga.BlazorUI.Services.Common
             {
                 if (_isOpen == value) return;
                 _isOpen = value;
-                NotifyChange();
-            }
-        }
-
-        public bool IsCollapsed
-        {
-            get => _isCollapsed;
-            private set
-            {
-                if (_isCollapsed == value) return;
-                _isCollapsed = value;
                 NotifyChange();
             }
         }
@@ -78,7 +66,5 @@ namespace Jenga.BlazorUI.Services.Common
         // helpers for components to call
         public void ToggleOpen() => IsOpen = !IsOpen;
         public void SetOpen(bool open) => IsOpen = open;
-        public void ToggleCollapsed() => IsCollapsed = !IsCollapsed;
-        public void SetCollapsed(bool collapsed) => IsCollapsed = collapsed;
     }
 }
