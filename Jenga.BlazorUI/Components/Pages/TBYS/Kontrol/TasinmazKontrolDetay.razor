@@ -18,7 +18,7 @@
 <PermissionGuard Module="ModuleName.TBYS" Operation="Operation.View">
 @if (_loading)
 {
-    <div class="d-flex justify-content-center py-5"><div class="spinner-border text-primary"></div></div>
+    <JengaLoading />
 }
 else if (_kontrol is null)
 {

@@ -19,10 +19,7 @@
 
     @if (_isLoading)
     {
-        <div class="d-flex justify-content-center align-items-center py-5">
-            <div class="spinner-border text-primary me-3" role="status"></div>
-            <span class="text-muted">Veriler yükleniyor…</span>
-        </div>
+        <JengaLoading Message="Veriler yükleniyor…" />
     }
     else if (_loadFailed)
     {
@@ -152,7 +149,7 @@
                     <button class="btn btn-success" @onclick="ConfirmApproveAsync" disabled="@_isBusy">
                         @if (_isBusy)
                         {
-                            <span class="spinner-border spinner-border-sm me-1"></span>
+                            <JengaLoading Inline="true" />
                         }
                         Evet, Onayla
                     </button>
@@ -191,7 +188,7 @@
                     <button class="btn btn-danger" @onclick="ConfirmRejectAsync" disabled="@_isBusy">
                         @if (_isBusy)
                         {
-                            <span class="spinner-border spinner-border-sm me-1"></span>
+                            <JengaLoading Inline="true" />
                         }
                         Reddet
                     </button>

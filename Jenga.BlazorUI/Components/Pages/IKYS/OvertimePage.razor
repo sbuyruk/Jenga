@@ -16,7 +16,7 @@
     </div>
     @if (_workspace is null)
     {
-        @if (_busy) { <p>Fazla mesai bilgileri yükleniyor…</p> }
+        @if (_busy) { <JengaLoading Message="Fazla mesai bilgileri yükleniyor…" /> }
     }
     else
     {

@@ -12,7 +12,7 @@
         <div><h3>Mesai Giriş Yetkileri</h3><p class="text-muted mb-0">Bir kullanıcıya, seçtiğiniz personeller adına mesai girişi yapma yetkisi verin.</p></div>
         <div class="d-flex gap-2"><a class="btn btn-outline-secondary" href="/ikys/overtime/hr">İK Dönem İşlemleri</a><button class="btn btn-outline-secondary" disabled="@_busy" @onclick="LoadAsync">Yenile</button></div>
     </div>
-    @if (_busy && _data is null) { <p>Yetki bilgileri yükleniyor…</p> }
+    @if (_busy && _data is null) { <JengaLoading Message="Yetki bilgileri yükleniyor…" /> }
     @if (_data is not null)
     {
         <section class="card mb-4">

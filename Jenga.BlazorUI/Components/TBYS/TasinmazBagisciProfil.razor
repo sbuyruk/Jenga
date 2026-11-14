@@ -16,10 +16,7 @@
 
     @if (_yukleniyor)
     {
-        <div class="detay-loading">
-            <div class="spinner-border text-primary" role="status"></div>
-            <span class="ms-3">Bağışçı yükleniyor…</span>
-        </div>
+        <JengaLoading Message="Bağışçı yükleniyor…" />
     }
     else if (_hata is not null)
     {

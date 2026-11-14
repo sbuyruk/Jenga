@@ -16,7 +16,7 @@
 
 @if (!_checked)
 {
-    <p class="text-muted p-3">Yükleniyor…</p>
+    <JengaLoading Message="Yükleniyor…" />
 }
 else if (!_hasAccess)
 {
@@ -37,7 +37,7 @@ else
 
                     @if (_isLoadingRoles)
                     {
-                        <p class="text-muted">Roller yükleniyor…</p>
+                        <JengaLoading Message="Roller yükleniyor…" />
                     }
                     else if (_roles.Count == 0)
                     {
@@ -74,7 +74,7 @@ else
                         <button class="btn btn-primary" @onclick="SaveAsync" disabled="@_isSaving">
                             @if (_isSaving)
                             {
-                                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                <JengaLoading Inline="true" />
                             }
                             <span>Kaydet</span>
                         </button>

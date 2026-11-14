@@ -21,7 +21,7 @@
                 </div>
                 @if (personelList == null)
                 {
-                    <p class="p-3 text-muted">Yükleniyor…</p>
+                    <JengaLoading Message="Yükleniyor…" />
                 }
                 else
                 {
@@ -57,7 +57,7 @@
                 @if (selectedPersonel != null)
                 {
                     <button class="btn btn-sm btn-primary" @onclick="SaveAsync" disabled="@saving">
-                        @if (saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                        @if (saving) { <JengaLoading Inline="true" /> }
                         Kaydet
                     </button>
                 }

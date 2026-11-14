@@ -101,7 +101,7 @@
                     <button type="button" class="btn btn-outline-secondary me-auto" disabled="@IsBusy" @onclick="Close">Vazgeç</button>
                     <button type="button" class="btn btn-outline-primary" disabled="@IsBusy" @onclick="() => Save(false)">Taslak Kaydet</button>
                     <button type="button" class="btn btn-success" disabled="@IsBusy" @onclick="() => Save(true)">
-                        @if (IsBusy) { <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> }
+                        @if (IsBusy) { <JengaLoading Inline="true" /> }
                         Amire Gönder
                     </button>
                     @if (IsBusy) { <span class="visually-hidden" role="status">Kaydediliyor…</span> }
