@@ -118,6 +118,12 @@
     box-sizing: border-box;
 }
 
+.content-starting {
+    display: grid;
+    place-items: center;
+    min-height: 420px;
+}
+
 /* ── Sidebar toggle button ── */
 .sidebar-toggle {
     display: inline-flex;
