@@ -13,7 +13,6 @@ namespace Jenga.DataAccess.Services.Inventory
 
         private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
         private readonly ILogService _logService;
-        private List<Location>? _locationsCache;
 
         private readonly IMaterialEntryService _materialEntryService;
         private readonly IMaterialExitService _materialExitService;
@@ -74,7 +73,6 @@ namespace Jenga.DataAccess.Services.Inventory
                 await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
                 await db.Location_Table.AddAsync(location, cancellationToken);
                 await db.SaveChangesAsync(cancellationToken);
-                _locationsCache = null;
                 return Result.Success();
             }
             catch (Exception ex)
@@ -93,7 +91,6 @@ namespace Jenga.DataAccess.Services.Inventory
                 await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
                 db.Location_Table.Update(location);
                 await db.SaveChangesAsync(cancellationToken);
-                _locationsCache = null;
                 return Result.Success();
             }
             catch (Exception ex)
@@ -129,7 +126,6 @@ namespace Jenga.DataAccess.Services.Inventory
                     return Result.Failure(Error.NotFound($"Konum bulunamadi (Id={location.Id}).", "Location.NotFound"));
                 db.Location_Table.Remove(entity);
                 await db.SaveChangesAsync(cancellationToken);
-                _locationsCache = null;
                 return Result.Success();
             }
             catch (Exception ex)
@@ -170,20 +166,6 @@ namespace Jenga.DataAccess.Services.Inventory
                 _logService.LogException(ex, $"{Source}.CanDeleteAsync");
                 return Result.Failure<(bool CanDelete, string? Reason)>(Error.Unexpected("Konum silinebilirlik kontrolü yapilamadi.", ex, "Location.CanDelete.Failed"));
             }
-        }
-
-        // Yardimci Metot: Parent adini döndür
-        public async Task<string> GetParentLocationNameAsync(int? parentId, CancellationToken cancellationToken = default)
-        {
-            if (parentId == null) return "";
-            if (_locationsCache == null)
-            {
-                var allResult = await GetAllAsync(cancellationToken);
-                if (allResult.IsFailure) return "";
-                _locationsCache = allResult.Value;
-            }
-            var parent = _locationsCache.FirstOrDefault(x => x.Id == parentId);
-            return parent?.LocationName ?? "";
         }
 
         public async Task<Result<bool>> AnyAsync(Expression<Func<Location, bool>> predicate)

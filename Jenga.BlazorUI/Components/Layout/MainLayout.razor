@@ -19,7 +19,7 @@
 <div class="page @(MenuState.IsOpen ? "sidebar-open" : "sidebar-closed")">
 
     <aside class="sidebar" role="navigation" aria-label="Ana menü">
-        <NavMenu Items="MenuState.MenuItems" IsCollapsed="@(!MenuState.IsOpen)" />
+        <NavMenu Items="MenuState.MenuItems" />
     </aside>
 
     @if (MenuState.IsOpen)

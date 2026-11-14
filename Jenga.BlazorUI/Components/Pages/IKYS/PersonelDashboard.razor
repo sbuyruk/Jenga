@@ -628,7 +628,6 @@
                     <div class="section-label">Personel Listesi</div>
 
                     <GenericTable TItem="PersonelSatir"
-                                  @ref="_personelTable"
                                   Items="_personelFiltered"
                                   SearchTextSelector="@(r => $"{r.AdSoyad} {r.BirimAdi} {r.Unvan}")"
                                   TableClass="table-hover table-sm align-middle"
@@ -727,7 +726,6 @@
 
     // ── Personel listesi ──────────────────────────────────────────
     private List<PersonelSatir> _personelFiltered = [];
-    private GenericTable<PersonelSatir>? _personelTable;
 
     // Çalışma süresi KPI'ları
     private double _ortCalismaYil;
