@@ -59,13 +59,23 @@
             </div>
         </header>
 
-        <article class="content px-4">
-            <JengaErrorBoundary @ref="_errorBoundary">
-                @Body
-            </JengaErrorBoundary>
+        <article class="content px-4 @(_isStarting ? "content-starting" : null)" aria-busy="@(_isStarting ? "true" : "false")">
+            @if (_isStarting)
+            {
+                <JengaLoading IsSplash="true" />
+            }
+            else
+            {
+                <JengaErrorBoundary @ref="_errorBoundary">
+                    @Body
+                </JengaErrorBoundary>
+            }
         </article>
 
-        <BrandFooter />
+        @if (!_isStarting)
+        {
+            <BrandFooter />
+        }
     </div>
 </div>
 
@@ -79,6 +89,7 @@
     private string _windowsUser = string.Empty;
     private Jenga.Models.IKYS.Personel? _personel;
     private bool _initialUrlLogged;
+    private bool _isStarting = true;
     private bool _canSearch;
     private JengaErrorBoundary? _errorBoundary;
 
@@ -102,6 +113,7 @@
     {
         if (firstRender)
         {
+            var minimumOpeningDuration = Task.Delay(TimeSpan.FromSeconds(5));
             await ThemeService.InitializeAsync();
 
             // JS interop is now available.
@@ -118,10 +130,9 @@
             }
 
             await RefreshSearchPermissionAsync();
+            await minimumOpeningDuration;
+            _isStarting = false;
             StateHasChanged();
-
-            await using var loadingModule = await JS.InvokeAsync<IJSObjectReference>("import", "./js/jenga-loading.js");
-            await loadingModule.InvokeVoidAsync("dismissSplash");
 
             await LogCurrentUrlAsync(source: "firstRender");
         }
