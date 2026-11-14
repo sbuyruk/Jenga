@@ -14,7 +14,6 @@
 @inject IMaterialService MaterialService
 @inject IMaterialUnitService MaterialUnitService
 @inject IMaterialCategoryService MaterialCategoryService
-@inject IMaterialBrandService MaterialBrandService
 
 <PermissionGuard Module="ModuleName.Inventory" Operation="Operation.View">
 <div class="navbar navbar-expand-lg bg-body-tertiary gap-5 mb-3 shadow-sm rounded py-2 px-3" style="min-height:56px;">
@@ -70,7 +69,6 @@
 @code {
     // Fields
     private List<MaterialCategory> categories = new();
-    private List<MaterialBrand> brands = new();
     private List<Material> materials = new();
     private List<MaterialUnit> materialUnits = new();
     private List<TreeItem<MaterialCategoryNode>> categoryTree = new();
@@ -107,8 +105,6 @@
         var expandedMap = TreeHelper.CollectExpandedStates(categoryTree);
         var categoriesResult = await MaterialCategoryService.GetAllAsync();
         if (categoriesResult.IsSuccess) categories = categoriesResult.Value;
-        var brandsResult = await MaterialBrandService.GetAllAsync();
-        if (brandsResult.IsSuccess) brands = brandsResult.Value;
         var materialsResult = await MaterialService.GetAllAsync();
         if (materialsResult.IsSuccess) materials = materialsResult.Value;
         var unitsResult = await MaterialUnitService.GetAllAsync();

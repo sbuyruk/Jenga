@@ -12,7 +12,6 @@ namespace Jenga.DataAccess.Services.Inventory
 
         private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
         private readonly ILogService _logService;
-        private List<MaterialUnit>? _unitsCache;
 
         public MaterialUnitService(IDbContextFactory<ApplicationDbContext> dbFactory, ILogService logService)
         {
@@ -61,7 +60,6 @@ namespace Jenga.DataAccess.Services.Inventory
                 await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
                 await db.MaterialUnit_Table.AddAsync(unit, cancellationToken);
                 await db.SaveChangesAsync(cancellationToken);
-                _unitsCache = null;
                 return Result.Success();
             }
             catch (Exception ex)
@@ -80,7 +78,6 @@ namespace Jenga.DataAccess.Services.Inventory
                 await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
                 db.MaterialUnit_Table.Update(unit);
                 await db.SaveChangesAsync(cancellationToken);
-                _unitsCache = null;
                 return Result.Success();
             }
             catch (Exception ex)
@@ -102,7 +99,6 @@ namespace Jenga.DataAccess.Services.Inventory
                     return Result.Failure(Error.NotFound($"Birim bulunamadi (Id={unit.Id}).", "MaterialUnit.NotFound"));
                 db.MaterialUnit_Table.Remove(entity);
                 await db.SaveChangesAsync(cancellationToken);
-                _unitsCache = null;
                 return Result.Success();
             }
             catch (Exception ex)
@@ -112,17 +108,5 @@ namespace Jenga.DataAccess.Services.Inventory
             }
         }
 
-        // Yardimci Metot
-        public async Task<string> GetUnitSymbolAsync(int unitId, CancellationToken cancellationToken = default)
-        {
-            if (_unitsCache == null)
-            {
-                var allResult = await GetAllAsync(cancellationToken);
-                if (allResult.IsFailure) return "";
-                _unitsCache = allResult.Value;
-            }
-            var unit = _unitsCache.FirstOrDefault(x => x.Id == unitId);
-            return unit?.Symbol ?? "";
-        }
     }
 }

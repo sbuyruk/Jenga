@@ -927,8 +927,6 @@
     private int _toplamKirayaUygun;
     private int _toplamKirayaUygunDegil;
     private int _tasinmazBulunanIlSayisi;
-    private int _toplamKullanimda;
-    private int _toplamBos;
     private decimal _toplamMuhasebeKayitli;
     private decimal _toplamRayic;
     private decimal _toplamEmlakBeyan;
@@ -956,7 +954,6 @@
     // ── Armağan ──────────────────────────────────────────────────
     private int _toplamArmagan;
     private int _armaganTeslimEdilen;
-    private int _armaganBekleyen;
     private int _buYilArmagan;
     private List<PieItem> _armaganTurleriItems = [];
 
@@ -969,9 +966,6 @@
 
     // ── Personel ─────────────────────────────────────────────────
     private int _toplamPersonel;
-    private int _erkekPersonel;
-    private int _kadinPersonel;
-    private int _yasOrtalamasi;
     private List<PersonelSatir> _personelSatirlari = [];
 
     // ── Inner records ─────────────────────────────────────────────
@@ -1099,12 +1093,6 @@
             _toplamCiplakMulkiyet = bolgeTasinmazlar.Count(t => t.CiplakMulkiyetMi);
             _toplamKirayaUygun = bolgeTasinmazlar.Count(t => t.KirayaUygunMu);
             _toplamKirayaUygunDegil = bolgeTasinmazlar.Count(t => !t.KirayaUygunMu);
-            _toplamKullanimda = bolgeTasinmazlar.Count(t =>
-                !string.IsNullOrEmpty(t.KullanimSekli) &&
-                t.KullanimSekli.Contains("kullanım", StringComparison.OrdinalIgnoreCase));
-            _toplamBos = bolgeTasinmazlar.Count(t =>
-                !t.KirayaUygunMu &&
-                (string.IsNullOrEmpty(t.KullanimSekli) || !t.KullanimSekli.Contains("kullanım", StringComparison.OrdinalIgnoreCase)));
             _toplamMuhasebeKayitli = bolgeTasinmazlar.Sum(t => t.MuhasebeyeKayitliDeger ?? 0m);
             _toplamRayic = bolgeTasinmazlar.Sum(t => t.TahminiRayicDegeri ?? 0m);
             _toplamEmlakBeyan = bolgeTasinmazlar.Sum(t => t.EmlakBeyanDegeri ?? 0m);
@@ -1206,7 +1194,6 @@
             _toplamArmagan = bolgeArmaganlar.Count;
             _armaganTeslimEdilen = bolgeArmaganlar.Count(a =>
                 a.Durum != null && a.Durum.Contains("teslim", StringComparison.OrdinalIgnoreCase));
-            _armaganBekleyen = _toplamArmagan - _armaganTeslimEdilen;
             _buYilArmagan = bolgeArmaganlar.Count(a => a.Tarih.HasValue && a.Tarih.Value.Year == now.Year);
 
             // Armağan türleri pie (sadece bu yıl)
@@ -1250,13 +1237,6 @@
 
             // Personel
             _toplamPersonel = bolgePersoneller.Count;
-            // Cinsiyet bilgisi Kimlik tablosunda; burada IsBilgileri'ne göre değerlendiriyoruz
-            // AskerSivil alanından tahmini cinsiyet çıkarma mümkün değil, KimlikService yok
-            // Şimdilik 0 gösteriyoruz; ileride KimlikService entegrasyonu eklenebilir
-            _erkekPersonel = 0;
-            _kadinPersonel = 0;
-            _yasOrtalamasi = 0;
-
             _personelSatirlari = bolgePersoneller
                 .Select(p => (ProtokolSiraNo: p.ProtokolSiraNo ?? int.MaxValue, Satir: new PersonelSatir(
                         $"{p.Adi} {p.Soyadi}",
