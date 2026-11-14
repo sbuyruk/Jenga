@@ -22,16 +22,7 @@
 
     @if (_isLoading)
     {
-        <div class="text-center">
-            <div class="d-flex justify-content-center mt-4">
-                <img src="/images/coding.gif"
-                     alt="coding"
-                     loading="lazy"
-                     class="img-fluid rounded-4 shadow"
-                     style="max-width: 220px; height: auto;" />
-            </div>
-            <div class="text-muted mt-2">Armağan verileri yükleniyor…</div>
-        </div>
+        <JengaLoading Message="Armağan verileri yükleniyor…" />
     }
     else
     {

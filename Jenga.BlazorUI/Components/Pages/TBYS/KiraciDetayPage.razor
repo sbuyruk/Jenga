@@ -13,10 +13,7 @@
 
     @if (_loading)
     {
-        <div class="detay-loading">
-            <div class="spinner-border text-primary"></div>
-            <span class="ms-3">Yükleniyor...</span>
-        </div>
+        <JengaLoading Message="Yükleniyor..." />
     }
     else if (_hata is not null)
     {

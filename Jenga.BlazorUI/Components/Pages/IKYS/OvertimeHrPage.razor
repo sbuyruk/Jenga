@@ -19,7 +19,7 @@
     </div>
     @if (_workspace is null)
     {
-        @if (_busy) { <p>Fazla mesai bilgileri yükleniyor…</p> }
+        @if (_busy) { <JengaLoading Message="Fazla mesai bilgileri yükleniyor…" /> }
     }
     else
     {
@@ -129,7 +129,7 @@
                         <div class="modal-footer">
                             <button type="button" class="btn btn-outline-secondary me-auto" disabled="@_busy" @onclick="CloseReopen">Vazgeç</button>
                             <button type="button" class="btn btn-warning" disabled="@_busy" @onclick="CommitReopen">
-                                @if (_busy) { <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> }
+                                @if (_busy) { <JengaLoading Inline="true" /> }
                                 @(_reopenDelivery is null ? "Gerekçeyle Geri Al" : "Gerekçeyle Yeniden Aç")
                             </button>
                         </div>
@@ -161,7 +161,7 @@
                         <div class="modal-footer">
                             <button type="button" class="btn btn-outline-secondary me-auto" disabled="@_busy" @onclick="CloseFinalize">Vazgeç</button>
                             <button type="button" class="btn btn-success" disabled="@(_busy || _signedData is null)" @onclick="FinalizePeriod">
-                                @if (_busy) { <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> }
+                                @if (_busy) { <JengaLoading Inline="true" /> }
                                 Kaydet ve Kesinleştir
                             </button>
                         </div>

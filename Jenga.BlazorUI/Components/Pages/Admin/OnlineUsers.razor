@@ -18,7 +18,7 @@
 
 @if (_isLoading)
 {
-    <div class="text-muted">Yükleniyor...</div>
+    <JengaLoading Message="Yükleniyor..." />
 }
 else if (_sessions.Count == 0)
 {
@@ -82,7 +82,7 @@ else
                 <div class="modal-body">
                     @if (_isHistoryLoading)
                     {
-                        <div class="text-muted">Yükleniyor...</div>
+                        <JengaLoading Message="Yükleniyor..." />
                     }
                     else if (!string.IsNullOrWhiteSpace(_historyError))
                     {

@@ -1,0 +1,41 @@
+@if (Inline)
+{
+    <span class="jenga-loading-inline" role="status" aria-label="@Message"><JengaBrand /></span>
+}
+else
+{
+    <div class="jenga-loading @(IsSplash ? "jenga-loading--splash" : "jenga-loading--waiting")" role="status" aria-live="polite" aria-label="@Title">
+        <div class="jenga-loading__content">
+            <div class="jenga-loading__identity">
+                <JengaBrand />
+                <p class="jenga-loading__expansion" lang="en"><span><strong>J</strong>oint <strong>E</strong>nvironment for</span> <span><strong>N</strong>ext-<strong>G</strong>eneration <strong>A</strong>pplications</span></p>
+            </div>
+            <div class="jenga-loading__copy">
+                <h2 class="jenga-loading__title">
+                    @Title
+                    @if (IsSplash)
+                    {
+                        <span class="jenga-loading__dots" aria-hidden="true"><i></i><i></i><i></i></span>
+                    }
+                </h2>
+                <p class="jenga-loading__subtitle">@(IsSplash ? "Her parça, birlikte daha güçlü." : Message)</p>
+            </div>
+            @if (!IsSplash)
+            {
+                <div class="jenga-loading__status" aria-hidden="true"><span class="jenga-loading__dots"><i></i><i></i><i></i></span><span>Lütfen bekleyin</span></div>
+            }
+        </div>
+        @if (IsSplash)
+        {
+            <footer class="jenga-loading__footer"><span>TSK Güçlendirme Vakfı</span><span>Jenga™ — Bilgi Sistemleri tarafından geliştirilmiştir.</span></footer>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsSplash { get; set; }
+    [Parameter] public bool Inline { get; set; }
+    [Parameter] public string Message { get; set; } = "Veriler hazırlanıyor.";
+
+    private string Title => IsSplash ? "Çalışma alanınız hazırlanıyor" : "İşleminiz devam ediyor";
+}

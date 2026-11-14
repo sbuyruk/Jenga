@@ -39,10 +39,7 @@
 
     @if (_loading)
     {
-        <div class="g-arama-status">
-            <div class="spinner-border spinner-border-sm text-primary me-2"></div>
-            <span>Aranıyor...</span>
-        </div>
+        <JengaLoading Message="Aranıyor..." />
     }
     else if (_hata is not null)
     {

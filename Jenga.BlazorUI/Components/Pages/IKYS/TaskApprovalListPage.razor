@@ -38,10 +38,7 @@
 
     @if (_isLoading)
     {
-        <div class="d-flex justify-content-center align-items-center py-5">
-            <div class="spinner-border text-primary me-3" role="status"></div>
-            <span class="text-muted">Görev onayları yükleniyor…</span>
-        </div>
+        <JengaLoading Message="Görev onayları yükleniyor…" />
     }
     else if (!string.IsNullOrWhiteSpace(_loadError))
     {

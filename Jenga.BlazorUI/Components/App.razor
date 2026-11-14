@@ -1,8 +1,9 @@
 ﻿@using Jenga.BlazorUI.Components.Common
 @using Jenga.BlazorUI.Components.Shared
 @using Jenga.BlazorUI.Components.Toast
+@attribute [StreamRendering]
 <!DOCTYPE html>
-<html lang="en">
+<html lang="tr">
 
 <head>
     <meta charset="utf-8" />
@@ -10,6 +11,7 @@
     <base href="/" />
     <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap.min.css"]" /> 
     <link rel="stylesheet" href="@Assets["app.css"]" />
+    <link rel="stylesheet" href="@Assets["jenga-loading.css"]" />
     <link rel="stylesheet" href="@Assets["Jenga.BlazorUI.styles.css"]" />
 
     @* icon *@
@@ -21,6 +23,9 @@
 </head>
 
 <body>
+    <div id="jenga-startup-overlay">
+        <JengaLoading IsSplash="true" />
+    </div>
     <Routes @rendermode="InteractiveServer" />
     <ModalComponent />
     <Toast />

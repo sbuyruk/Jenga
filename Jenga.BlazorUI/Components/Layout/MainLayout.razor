@@ -120,6 +120,9 @@
             await RefreshSearchPermissionAsync();
             StateHasChanged();
 
+            await using var loadingModule = await JS.InvokeAsync<IJSObjectReference>("import", "./js/jenga-loading.js");
+            await loadingModule.InvokeVoidAsync("dismissSplash");
+
             await LogCurrentUrlAsync(source: "firstRender");
         }
 

@@ -16,7 +16,7 @@
     @if (_report?.CanSeeSummary == true && _personnelGroup == 1 && _report.Period.Status == OvertimePeriodStatus.Finalized)
     { <button class="btn btn-outline-success" disabled="@_busy" @onclick="Download">İmzalı Belgeyi İndir</button> }
 </div>
-@if (_busy) { <p>Çizelge hazırlanıyor…</p> }
+@if (_busy) { <JengaLoading Message="Çizelge hazırlanıyor…" /> }
 @if (_report is not null)
 {
     @if (_report.CanSeeSummary)

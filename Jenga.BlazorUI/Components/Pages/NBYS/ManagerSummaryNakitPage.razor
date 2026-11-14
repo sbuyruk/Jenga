@@ -20,21 +20,7 @@
     <div class="admin-overview p-3 manager-summary-layout">
         @if (isLoading)
         {
-            <div class="text-center">
-
-                <div class="d-flex justify-content-center mt-4">
-
-                    <img src="/images/coding.gif"
-                         alt="coding"
-                         loading="lazy"
-                         data-bs-toggle="tooltip"
-                         data-bs-placement="top"
-                         title="Mr.BUYRUK is working hard to make the charts ready.."
-                         class="img-fluid rounded-4 shadow"
-                         style="max-width: 220px; height: auto;" />
-                </div>
-                <div class="text-muted justify-content-center">@loadingMessage</div>
-            </div>
+            <JengaLoading Message="@loadingMessage" />
         }
         else if (loadFailed)
         {

@@ -16,7 +16,7 @@
 
 @if (_isLoading)
 {
-    <div class="text-muted">Yükleniyor...</div>
+    <JengaLoading Message="Yükleniyor..." />
 }
 else if (_rows.Count == 0)
 {
@@ -68,7 +68,7 @@ else
                 <div class="modal-body">
                     @if (_isUserModalLoading)
                     {
-                        <div class="text-muted">Yükleniyor...</div>
+                        <JengaLoading Message="Yükleniyor..." />
                     }
                     else if (!string.IsNullOrWhiteSpace(_userModalError))
                     {

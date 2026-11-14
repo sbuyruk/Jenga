@@ -24,7 +24,7 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary me-auto" disabled="@IsBusy" @onclick="Close">Vazgeç</button>
                     <button type="button" class="btn @(IsRejection ? "btn-danger" : "btn-warning")" disabled="@IsBusy" @onclick="Save">
-                        @if (IsBusy) { <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> }
+                        @if (IsBusy) { <JengaLoading Inline="true" /> }
                         @(IsRejection ? "Reddet ve Kaydet" : "Düzeltmeye Gönder")
                     </button>
                 </div>

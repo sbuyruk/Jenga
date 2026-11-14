@@ -16,7 +16,7 @@
             <div class="card-body p-0">
                 @if (roles == null)
                 {
-                    <p class="p-3 text-muted">Yükleniyor…</p>
+                    <JengaLoading Message="Yükleniyor…" />
                 }
                 else if (!roles.Any())
                 {
@@ -56,7 +56,7 @@
                 @if (selectedRole != null)
                 {
                     <button class="btn btn-sm btn-primary" @onclick="SaveAsync" disabled="@saving">
-                        @if (saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                        @if (saving) { <JengaLoading Inline="true" /> }
                         Kaydet
                     </button>
                 }

@@ -38,10 +38,7 @@
 
     @if (_isLoading && _bolgeler.Count == 0)
     {
-        <div class="d-flex justify-content-center align-items-center py-5">
-            <div class="spinner-border text-primary me-3" role="status"></div>
-            <span class="text-muted">Bölgeler yükleniyor…</span>
-        </div>
+        <JengaLoading Message="Bölgeler yükleniyor…" />
     }
     else
     {
@@ -83,10 +80,7 @@
         }
         else if (_isLoading)
         {
-            <div class="d-flex justify-content-center align-items-center py-5">
-                <div class="spinner-border text-primary me-3" role="status"></div>
-                <span class="text-muted">@_secilenBolge.Adi bölgesi verileri yükleniyor…</span>
-            </div>
+            <JengaLoading />
         }
         else if (_loadFailed)
         {
