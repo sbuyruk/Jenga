@@ -18,15 +18,18 @@ public class GorevOnayService : IGorevOnayService
     private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
     private readonly ILogService _logService;
     private readonly IEmailService _emailService;
+    private readonly IServiceAuthorizationContext _authorization;
 
     public GorevOnayService(
         IDbContextFactory<ApplicationDbContext> dbFactory,
         ILogService logService,
-        IEmailService emailService)
+        IEmailService emailService,
+        IServiceAuthorizationContext authorization)
     {
         _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
         _logService = logService ?? throw new ArgumentNullException(nameof(logService));
         _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
+        _authorization = authorization ?? throw new ArgumentNullException(nameof(authorization));
     }
 
     public async Task<Result<List<GorevOnay>>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -219,15 +222,19 @@ public class GorevOnayService : IGorevOnayService
     }
 
     /// <inheritdoc/>
-    public async Task<Result> ApproveAsync(int gorevOnayId, int managerPersonelId, string? approvedBy = null, CancellationToken cancellationToken = default)
+    public async Task<Result> ApproveAsync(int gorevOnayId, int managerPersonelId, string? approvedBy = null, CancellationToken cancellationToken = default, bool authorizedIkysView = false)
     {
         try
         {
             await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            if (!await _authorization.HasPermissionAsync(ModuleName.IKYS, Operation.Manage, cancellationToken))
+                return Result.Failure(Error.Forbidden("Bu işlem için yetkiniz bulunmuyor."));
             var managedPersonelIds = CreateManagedPersonelIdsQuery(db, managerPersonelId);
             var entity = await db.GorevOnay_Table
                 .Include(g => g.Personel)
-                .FirstOrDefaultAsync(x => x.Id == gorevOnayId && managedPersonelIds.Contains(x.PersonelId), cancellationToken);
+                .Where(x => x.Id == gorevOnayId && (authorizedIkysView || managedPersonelIds.Contains(x.PersonelId)))
+                .AsTracking()
+                .FirstOrDefaultAsync(cancellationToken);
             if (entity is null)
                 return Result.Failure(Error.NotFound($"Görev onayı bulunamadı (Id={gorevOnayId}).", "GorevOnay.NotFound"));
 
@@ -235,6 +242,7 @@ public class GorevOnayService : IGorevOnayService
                 return Result.Failure(Error.Validation("Sadece bekleyen görevler onaylanabilir.", "GorevOnay.Approve.InvalidState"));
 
             entity.AmirOnayi = (int)ApprovalStatus.Approved;
+            db.SetCurrentUser(approvedBy);
             entity.Degistiren = approvedBy;
             entity.DegistirmeTarihi = DateTime.Now;
             await db.SaveChangesAsync(cancellationToken);
@@ -251,7 +259,7 @@ public class GorevOnayService : IGorevOnayService
     }
 
     /// <inheritdoc/>
-    public async Task<Result> RejectAsync(int gorevOnayId, int managerPersonelId, string rejectReason, string? rejectedBy = null, CancellationToken cancellationToken = default)
+    public async Task<Result> RejectAsync(int gorevOnayId, int managerPersonelId, string rejectReason, string? rejectedBy = null, CancellationToken cancellationToken = default, bool authorizedIkysView = false)
     {
         if (string.IsNullOrWhiteSpace(rejectReason))
             return Result.Failure(Error.Validation("Red gerekçesi boş olamaz.", "GorevOnay.RejectReason.Empty"));
@@ -259,10 +267,14 @@ public class GorevOnayService : IGorevOnayService
         try
         {
             await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            if (!await _authorization.HasPermissionAsync(ModuleName.IKYS, Operation.Manage, cancellationToken))
+                return Result.Failure(Error.Forbidden("Bu işlem için yetkiniz bulunmuyor."));
             var managedPersonelIds = CreateManagedPersonelIdsQuery(db, managerPersonelId);
             var entity = await db.GorevOnay_Table
                 .Include(g => g.Personel)
-                .FirstOrDefaultAsync(x => x.Id == gorevOnayId && managedPersonelIds.Contains(x.PersonelId), cancellationToken);
+                .Where(x => x.Id == gorevOnayId && (authorizedIkysView || managedPersonelIds.Contains(x.PersonelId)))
+                .AsTracking()
+                .FirstOrDefaultAsync(cancellationToken);
             if (entity is null)
                 return Result.Failure(Error.NotFound($"Görev onayı bulunamadı (Id={gorevOnayId}).", "GorevOnay.NotFound"));
 
@@ -270,6 +282,7 @@ public class GorevOnayService : IGorevOnayService
                 return Result.Failure(Error.Validation("Sadece bekleyen görevler reddedilebilir.", "GorevOnay.Reject.InvalidState"));
 
             entity.AmirOnayi = (int)ApprovalStatus.Rejected;
+            db.SetCurrentUser(rejectedBy);
             entity.OnayRedAciklama = rejectReason;
             entity.Degistiren = rejectedBy;
             entity.DegistirmeTarihi = DateTime.Now;
@@ -285,6 +298,71 @@ public class GorevOnayService : IGorevOnayService
             return Result.Failure(Error.Unexpected("Reddetme işlemi başarısız oldu.", ex, "GorevOnay.Reject.Failed"));
         }
     }
+
+    private async Task<bool> CanReviewAsync(bool authorizedIkysView, CancellationToken cancellationToken)
+        => await _authorization.HasPermissionAsync(ModuleName.IKYS, Operation.View, cancellationToken) &&
+           (!authorizedIkysView || await _authorization.HasPermissionAsync(ModuleName.IKYS, Operation.Manage, cancellationToken));
+
+    public async Task<Result<PendingApprovalsOverview>> GetPendingApprovalsAsync(
+        int? currentPersonelId, bool authorizedIkysView, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (!await CanReviewAsync(authorizedIkysView, cancellationToken))
+                return Result.Failure<PendingApprovalsOverview>(Error.Forbidden("Bu görünüm için yetkiniz bulunmuyor."));
+            if (!authorizedIkysView && (!currentPersonelId.HasValue || currentPersonelId <= 0))
+                return Result.Failure<PendingApprovalsOverview>(Error.Validation("Mevcut kullanıcı bilgisi alınamadı."));
+
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            var query = CreatePendingApprovalQuery(db);
+            var ownTasks = authorizedIkysView ? query : query.Where(x => x.PersonelId == currentPersonelId);
+            var pending = await OrderTasks(ownTasks.Where(x => x.AmirOnayi == (int)ApprovalStatus.PendingApproval))
+                .ToListAsync(cancellationToken);
+            var approved = await OrderTasks(ownTasks.Where(x => x.AmirOnayi == (int)ApprovalStatus.Approved))
+                .Take(5).ToListAsync(cancellationToken);
+
+            var hasManagerUnits = authorizedIkysView || await db.BirimTanim_Table.AsNoTracking()
+                .AnyAsync(x => x.AmirId == currentPersonelId && x.Aktif == true, cancellationToken);
+            var managedIds = CreateManagedPersonelIdsQuery(db, currentPersonelId ?? 0);
+            var reviewTasks = authorizedIkysView ? query : query.Where(x => managedIds.Contains(x.PersonelId));
+            var reviewItems = await reviewTasks.Where(x =>
+                    x.AmirOnayi == (int)ApprovalStatus.PendingApproval ||
+                    x.AmirOnayi == (int)ApprovalStatus.Approved ||
+                    x.AmirOnayi == (int)ApprovalStatus.Rejected)
+                .OrderBy(x => x.AmirOnayi == (int)ApprovalStatus.PendingApproval ? 0 : 1)
+                .ThenByDescending(x => x.BaslangicTarihi).ThenByDescending(x => x.BitisTarihi)
+                .ThenByDescending(x => x.GorevOnayId).ToListAsync(cancellationToken);
+
+            return Result.Success(new PendingApprovalsOverview
+            {
+                HasManagerUnits = hasManagerUnits, ReviewItems = reviewItems,
+                PendingTasks = pending, RecentApprovedTasks = approved
+            });
+        }
+        catch (Exception ex)
+        {
+            _logService.LogException(ex, $"{Source}.GetPendingApprovalsAsync");
+            return Result.Failure<PendingApprovalsOverview>(Error.Unexpected(
+                "Bekleyen işlemler getirilemedi.", ex, "GorevOnay.Overview.Failed"));
+        }
+    }
+
+    private static IOrderedQueryable<PendingApprovalItem> OrderTasks(IQueryable<PendingApprovalItem> query)
+        => query.OrderByDescending(x => x.BaslangicTarihi).ThenByDescending(x => x.BitisTarihi)
+            .ThenByDescending(x => x.GorevOnayId);
+
+    private static IQueryable<PendingApprovalItem> CreatePendingApprovalQuery(ApplicationDbContext db)
+        => from go in db.GorevOnay_Table.AsNoTracking()
+           join p in db.Personel_Table.AsNoTracking() on go.PersonelId equals p.Id
+           select new PendingApprovalItem
+           {
+               GorevOnayId = go.Id, PersonelId = go.PersonelId,
+               AdiSoyadi = (p.Adi ?? "") + " " + (p.Soyadi ?? ""),
+               BaslangicTarihi = go.BaslangicTarihi, BitisTarihi = go.BitisTarihi,
+               Sure = go.Sure, GorevinSebebi = go.GorevinSebebi, GorevinYeri = go.GorevinYeri,
+               UlasimAraci = go.UlasimAraci, Transfer = go.Transfer, Konaklama = go.Konaklama,
+               Aciklama = go.Aciklama, AmirOnayi = go.AmirOnayi, OnayRedAciklama = go.OnayRedAciklama
+           };
 
     public async Task<Result<List<TaskApprovalListItem>>> GetTaskApprovalListAsync(
         int? currentPersonelId,

@@ -1,0 +1,35 @@
+@using Jenga.BlazorUI.Components.Common
+@using Jenga.Models.IKYS
+
+<GenericTable TItem="PendingApprovalItem" Items="Items" TableHeight="Auto"
+              ShowSearch="true" ShowExport="true" ExportFileName="@ExportFileName"
+              ExportHeaders="PendingApprovalExport.TaskHeaders" ExportRow="PendingApprovalExport.TaskRow"
+              KeySelector="(item => item.GorevOnayId)">
+    <HeaderTemplate>
+        <th>Adı Soyadı</th>
+        <th>Başlangıç Tarihi</th>
+        <th>Bitiş Tarihi</th>
+        <th>Görevin Sebebi</th>
+        <th>Görevin Yeri</th>
+        <th>Ulaşım Aracı</th>
+        <th>Transfer</th>
+        <th>Konaklama</th>
+        <th>Açıklama</th>
+    </HeaderTemplate>
+    <RowTemplate Context="item">
+        <td>@item.AdiSoyadi</td>
+        <td>@item.BaslangicTarihi?.ToString("dd.MM.yyyy HH:mm")</td>
+        <td>@item.BitisTarihi?.ToString("dd.MM.yyyy HH:mm")</td>
+        <td>@item.GorevinSebebi</td>
+        <td>@item.GorevinYeri</td>
+        <td>@item.UlasimAraci</td>
+        <td>@item.Transfer</td>
+        <td>@item.Konaklama</td>
+        <td>@item.Aciklama</td>
+    </RowTemplate>
+</GenericTable>
+
+@code {
+    [Parameter, EditorRequired] public List<PendingApprovalItem> Items { get; set; } = [];
+    [Parameter] public string ExportFileName { get; set; } = "gorevler.xlsx";
+}
