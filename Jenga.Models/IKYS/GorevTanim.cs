@@ -20,4 +20,5 @@ public class GorevTanim : BaseModel
     public bool? Vekil { get; set; }
     [DisplayName("Aktif")]
     public bool? Aktif { get; set; }
+    public int? HarcirahGrupId { get; set; }
 }

@@ -53,7 +53,7 @@ public class GorevOnay : BaseModel
     [DisplayName("Ödendi")]
     public bool? Odendi { get; set; }
     [DisplayName("Amir Onayı")]
-    public int AmirOnayi { get; set; }
+    public int? AmirOnayi { get; set; } = 0;
     [DisplayName("Transfer")]
     public string? Transfer { get; set; }
     [DisplayName("Konaklama")]

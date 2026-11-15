@@ -23,12 +23,15 @@ public sealed class SmtpEmailService : IEmailService
         => SendAsync(new[] { to }, subject, htmlBody, cancellationToken);
 
     public async Task SendAsync(IEnumerable<string> recipients, string subject, string htmlBody, CancellationToken cancellationToken = default)
+        => await TrySendAsync(recipients, subject, htmlBody, cancellationToken);
+
+    public async Task<bool> TrySendAsync(IEnumerable<string> recipients, string subject, string htmlBody, CancellationToken cancellationToken = default)
     {
         var validRecipients = recipients
             .Where(r => !string.IsNullOrWhiteSpace(r))
             .ToList();
 
-        if (validRecipients.Count == 0) return;
+        if (validRecipients.Count == 0) return false;
 
         var smtpHost = _configuration["Email:SmtpHost"];
         var from = _configuration["Email:From"] ?? "noreply@jenga.local";
@@ -36,13 +39,13 @@ public sealed class SmtpEmailService : IEmailService
         if (string.IsNullOrWhiteSpace(smtpHost))
         {
             _logService.Log($"[EmailService] SMTP not configured. Would send to: {string.Join(";", validRecipients)} | Subject: {subject}", Microsoft.Extensions.Logging.LogLevel.Warning);
-            return;
+            return false;
         }
 
         try
         {
             using var client = new System.Net.Mail.SmtpClient(smtpHost);
-            var message = new System.Net.Mail.MailMessage
+            using var message = new System.Net.Mail.MailMessage
             {
                 From = new System.Net.Mail.MailAddress(from),
                 Subject = subject,
@@ -53,10 +56,12 @@ public sealed class SmtpEmailService : IEmailService
                 message.To.Add(r);
 
             await client.SendMailAsync(message, cancellationToken);
+            return true;
         }
         catch (Exception ex)
         {
             _logService.LogException(ex, "SmtpEmailService.SendAsync");
+            return false;
         }
     }
 }

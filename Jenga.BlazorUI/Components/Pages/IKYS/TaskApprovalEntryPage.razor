@@ -14,7 +14,6 @@
 @using Microsoft.AspNetCore.Components.Forms
 
 @inject ITaskApprovalEntryService TaskApprovalEntryService
-@inject IGorevOnayService GorevOnayService
 @inject ICurrentUserService CurrentUserService
 @inject NavigationManager NavigationManager
 @inject ILogger<TaskApprovalEntryPage> Logger
@@ -42,7 +41,7 @@
                 <div class="card shadow-sm legacy-card">
                     <div class="card-header legacy-card-header">
                         <h3 class="mb-0">
-                            <i class="bi bi-luggage-fill me-1"></i>Yurt Dışı/Şehir Dışı Görev Girişi
+                            <i class="bi bi-luggage-fill me-1"></i>@( _model.Id > 0 ? "Yurt Dışı/Şehir Dışı Görev Düzenleme" : "Yurt Dışı/Şehir Dışı Görev Girişi")
                             @if (!string.IsNullOrWhiteSpace(_selectedPersonName))
                             {
                                 <span class="ms-2 person-name">@_selectedPersonName</span>
@@ -50,6 +49,7 @@
                             @if (_model.Id > 0)
                             {
                                 <span class="badge bg-light text-dark ms-2">#@_model.Id</span>
+                                <ApprovalStatusBadge Status="(ApprovalStatus)(_model.AmirOnayi ?? (int)ApprovalStatus.Other)" />
                             }
                             @if (_isPaid)
                             {
@@ -58,13 +58,13 @@
                         </h3>
                         <button type="button" class="btn-close btn-close-sm" aria-label="Kapat" @onclick="() => GoList()"></button>
                     </div>
-                    <div class="card-body d-flex flex-column gap-3 p-2">
+                    <fieldset class="card-body d-flex flex-column gap-3 p-2" disabled="@(_isSaving || _confirmationAction != null || (!_showSave && !_showUpdate))">
                         <div class="legacy-section">
                             <div class="legacy-section-title"><i class="bi bi-person-badge"></i> Personel Bilgileri</div>
                             <div class="row g-2 align-items-end">
                                 <div class="col-md-4">
                                     <label class="form-label">Personel</label>
-                                    <InputSelect class="form-select" @bind-Value="_model.PersonelId" @bind-Value:after="OnPersonChangedAsync">
+                                    <InputSelect class="form-select" disabled="@(_model.Id > 0)" @bind-Value="_model.PersonelId" @bind-Value:after="OnPersonChangedAsync">
                                         @foreach (var option in _personOptions)
                                         {
                                             <option value="@option.Id">@option.Label</option>
@@ -221,6 +221,8 @@
                                 </div>
                                 <div class="col-md-3">
                                     <textarea class="form-control readonly-look" rows="4" readonly>@_explanationText</textarea>
+                                    @if (!string.IsNullOrWhiteSpace(_calculationError))
+                                    { <div class="text-danger mt-1" role="alert">@_calculationError</div> }
                                 </div>
                                 <div class="col-md-2">
                                     <label class="form-label">Per.Dir.</label>
@@ -248,20 +250,20 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </fieldset>
 
                     <div class="card-footer d-flex flex-wrap align-items-center gap-2">
                         @if (_showSave)
                         {
-                            <button type="submit" class="btn btn-success" disabled="@_isSaving">Kaydet</button>
+                            <button type="submit" class="btn btn-success" disabled="@(_isSaving || !_calculationValid || _confirmationAction != null)">Kaydet</button>
                         }
                         @if (_showUpdate)
                         {
-                            <button type="button" class="btn btn-primary" disabled="@_isSaving" @onclick="UpdateAsync">Güncelle</button>
+                            <button type="button" class="btn btn-primary" disabled="@(_isSaving || !_calculationValid || _confirmationAction != null)" @onclick="UpdateAsync">Güncelle</button>
                         }
                         @if (_showDelete)
                         {
-                            <button type="button" class="btn btn-danger" disabled="@_isSaving" @onclick="DeleteAsync">Sil</button>
+                            <button type="button" class="btn btn-danger" disabled="@(_isSaving || _confirmationAction != null)" @onclick="DeleteAsync">Sil</button>
                         }
                         <span class="legacy-warning">
                             <i class="bi bi-exclamation-triangle"></i> (Yaptığınız değişikliklerin geçerli olması için lütfen Kaydet veya Güncelle düğmesine basınız.)
@@ -277,6 +279,22 @@
                     </div>
                 </div>
             </EditForm>
+        }
+        @if (_confirmationAction != null)
+        {
+            <div class="modal d-block" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="entryConfirmTitle" style="background:rgba(0,0,0,.4)">
+                <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+                    <div class="modal-header"><h5 id="entryConfirmTitle" class="modal-title">@(_confirmationAction == "delete" ? "Görev Onayı Silinecek" : "Görev Kaydedilecek")</h5></div>
+                    <div class="modal-body">
+                        <strong>@_selectedPersonName</strong> için @_model.BaslangicTarihi?.ToString("dd.MM.yyyy HH:mm") – @_model.BitisTarihi?.ToString("dd.MM.yyyy HH:mm") tarihleri arasındaki
+                        “@_model.GorevinSebebi” görevini @(_confirmationAction == "delete" ? "silmek" : "kaydetmek") istediğinize emin misiniz?
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" disabled="@_isSaving" @onclick="() => _confirmationAction = null">İptal</button>
+                        <button type="button" class="btn btn-primary" disabled="@_isSaving" @onclick="ConfirmAsync">Evet, @(_confirmationAction == "delete" ? "Sil" : "Kaydet")</button>
+                    </div>
+                </div></div>
+            </div>
         }
     </div>
 </PermissionGuard>
@@ -302,7 +320,7 @@
 
     private DateTime _startDate = DateTime.Today;
     private DateTime _endDate = DateTime.Today;
-    private string _startTime = "08:30";
+    private string _startTime = "08:00";
     private string _endTime = "17:00";
     private string _durationDayText = "0 Gün";
     private string _durationHourMinuteText = "0 Saat 0 Dakika";
@@ -338,6 +356,11 @@
     private bool KonaklamaDahilinde => string.Equals(_model.Konaklama, "Limit Dahilinde", StringComparison.OrdinalIgnoreCase);
     private bool KonaklamaAsimi => string.Equals(_model.Konaklama, "Limit Aşımı", StringComparison.OrdinalIgnoreCase);
 
+    private bool _calculationValid;
+    private string? _calculationError;
+    private string? _confirmationAction;
+    private ApprovalStatus _nextApprovalStatus;
+    private int _calculationVersion;
     private bool _interactiveReady;
     private string? _loadedUrl;
     protected override async Task OnParametersSetAsync()
@@ -385,7 +408,8 @@
             }
 
             ApplyLoadData(loadResult.Value);
-            await RecalculateAsync();
+            if (!_isPaid) await RecalculateAsync();
+            else { _dailyAllowanceText = _model.GunlukYevmiye ?? ""; _explanationText = "Ödenmiş kaydın tutarları korunmaktadır."; }
         }
         catch (Exception ex)
         {
@@ -431,8 +455,11 @@
 
         _startDate = (_model.BaslangicTarihi ?? DateTime.Today).Date;
         _endDate = (_model.BitisTarihi ?? DateTime.Today).Date;
-        _startTime = (_model.BaslangicTarihi ?? DateTime.Today.AddHours(8).AddMinutes(30)).ToString("HH:mm");
+        _startTime = (_model.BaslangicTarihi ?? DateTime.Today.AddHours(8)).ToString("HH:mm");
         _endTime = (_model.BitisTarihi ?? DateTime.Today.AddHours(17)).ToString("HH:mm");
+        foreach (var time in new[] { _startTime, _endTime })
+            if (!_timeOptions.Contains(time)) _timeOptions.Add(time);
+        _timeOptions.Sort(StringComparer.Ordinal);
     }
 
     private async Task OnPersonChangedAsync()
@@ -446,6 +473,7 @@
         if (DateTime.TryParse(args.Value?.ToString(), out var parsed))
             _startDate = parsed.Date;
 
+        if (_endDate < _startDate || (_endDate - _startDate).TotalDays > 40) _endDate = _startDate;
         await RecalculateAsync();
     }
 
@@ -454,6 +482,7 @@
         if (DateTime.TryParse(args.Value?.ToString(), out var parsed))
             _endDate = parsed.Date;
 
+        if (_endDate < _startDate || (_endDate - _startDate).TotalDays > 40) _endDate = _startDate;
         await RecalculateAsync();
     }
 
@@ -465,8 +494,13 @@
 
     private async Task RecalculateAsync()
     {
+        var version = ++_calculationVersion;
+        _calculationValid = false;
         var calc = await TaskApprovalEntryService.CalculateAsync(new TaskApprovalCalculationInput
         {
+            PersonelId = _model.PersonelId,
+            CurrentPersonelId = _currentPersonel?.Id,
+            Auth = Auth,
             StartDate = _startDate,
             StartTime = _startTime,
             EndDate = _endDate,
@@ -475,9 +509,14 @@
             HarcirahHesaplansin = _harcirahHesaplansin
         });
 
+        if (version != _calculationVersion) return;
+        _calculationValid = calc.IsValid;
+        _calculationError = calc.ErrorMessage;
+        _harcirahGroup = calc.HarcirahGroup;
+        _nextApprovalStatus = calc.ApprovalStatus;
         _durationDayText = calc.DurationDayText;
         _durationHourMinuteText = calc.DurationHourMinuteText;
-        _dailyAllowanceText = calc.DailyAllowance.ToString("N2");
+        _dailyAllowanceText = calc.HasMultipleRates ? "Birden fazla seri" : calc.DailyAllowance.ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("tr-TR"));
         _explanationText = calc.ExplanationText;
 
         if (calc.StartDateTime.HasValue) _model.BaslangicTarihi = calc.StartDateTime;
@@ -485,7 +524,7 @@
 
         _model.Sure = calc.EarnedDayText;
         _model.Yevmiye = calc.TotalAllowanceText;
-        _model.GunlukYevmiye = calc.DailyAllowance.ToString("N2");
+        _model.GunlukYevmiye = calc.HasMultipleRates ? "" : calc.DailyAllowance.ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("tr-TR"));
         _model.ParaBirimi = calc.Currency;
 
         if (calc.IsNegativeDuration)
@@ -504,71 +543,69 @@
 
     private async Task SaveAsync()
     {
-        await PersistAsync(isUpdate: false);
+        if (_isSaving || !_showSave) return;
+        await RecalculateAsync();
+        if (_calculationValid && ValidateBeforePersist()) _confirmationAction = "save";
     }
 
-    private async Task UpdateAsync()
+    private async Task ConfirmAsync()
     {
-        await PersistAsync(isUpdate: true);
+        if (_isSaving) return;
+        if (_confirmationAction == "delete") await DeleteNowAsync();
+        else if (_confirmationAction == "save") await PersistAsync(false);
     }
+
+    private Task UpdateAsync() => PersistAsync(true);
 
     private async Task PersistAsync(bool isUpdate)
     {
+        if (_isSaving || (isUpdate ? !_showUpdate : !_showSave)) return;
         _statusMessage = null;
-
-        if (!ValidateBeforePersist())
-            return;
-
-        var overlap = await TaskApprovalEntryService.HasOverlapAsync(
-            _model.PersonelId!.Value,
-            _model.BaslangicTarihi!.Value,
-            _model.BitisTarihi!.Value,
-            isUpdate ? _model.Id : null);
-
-        if (!overlap.IsSuccess)
-        {
-            _statusMessage = overlap.Error?.Message ?? "Tarih çakışma kontrolü yapılamadı.";
-            return;
-        }
-
-        if (overlap.Value)
-        {
-            _statusMessage = "Bu tarihlerde başka bir görev kaydı bulunmaktadır.";
-            return;
-        }
-
+        if (!ValidateBeforePersist()) return;
         _isSaving = true;
         try
         {
-            _model.AmirOnayi = (int)ApprovalStatus.PendingApproval;
-            _model.OnayRedAciklama = null;
-            _model.AracTahsisi = string.Equals(_model.UlasimAraci, "Uçak", StringComparison.OrdinalIgnoreCase);
-
-            var userName = await CurrentUserService.GetUserNameAsync();
-            Result result = isUpdate
-                ? await GorevOnayService.UpdateScopedAsync(_model, _currentPersonel?.Id, IsOrganizationView)
-                : await GorevOnayService.AddScopedAsync(_model, _currentPersonel?.Id, IsOrganizationView, userName);
-
-            if (!result.IsSuccess)
+            var result = await TaskApprovalEntryService.SaveAsync(new TaskApprovalEntrySaveRequest
             {
-                _statusMessage = result.Error?.Message ?? "Kaydetme işlemi başarısız.";
-                return;
+                Model = _model, CurrentPersonelId = _currentPersonel?.Id, Auth = Auth,
+                Country = _selectedCountry, CalculateAllowance = _harcirahHesaplansin
+            });
+            if (result.IsFailure) { _statusMessage = result.Error.Message; return; }
+            _model.Id = result.Value.Id;
+            _showSave = false;
+            if (result.Value.Calculation is { } calculation)
+            {
+                _nextApprovalStatus = calculation.ApprovalStatus;
+                _model.Sure = calculation.EarnedDayText;
+                _model.Yevmiye = calculation.TotalAllowanceText;
+                _model.ParaBirimi = calculation.Currency;
+                _model.GunlukYevmiye = calculation.HasMultipleRates ? "" : calculation.DailyAllowance.ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("tr-TR"));
+                _explanationText = calculation.ExplanationText;
             }
-
-            GoList(_model.Id);
+            if (!string.IsNullOrWhiteSpace(result.Value.Warning))
+            {
+                _statusMessage = result.Value.Warning;
+                _model.AmirOnayi = (int)_nextApprovalStatus;
+                _showUpdate = _canEdit && (IsOrganizationView || _model.BitisTarihi >= DateTime.Now.AddDays(-14));
+                _showDelete = _canDelete && (IsOrganizationView || _model.BitisTarihi >= DateTime.Now.AddDays(-14));
+            }
+            else GoList(_model.Id);
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "TaskApprovalEntryPage.PersistAsync");
-            _statusMessage = "Görev onayı kaydedilirken beklenmeyen bir hata oluştu.";
+            _statusMessage = "Görev onayı kaydedilemedi. Lütfen tekrar deneyin.";
         }
-        finally
-        {
-            _isSaving = false;
-        }
+        finally { _isSaving = false; _confirmationAction = null; }
     }
 
-    private async Task DeleteAsync()
+    private Task DeleteAsync()
+    {
+        if (!_isSaving && _showDelete) _confirmationAction = "delete";
+        return Task.CompletedTask;
+    }
+
+    private async Task DeleteNowAsync()
     {
         if (_model.Id <= 0)
             return;
@@ -576,7 +613,7 @@
         _isSaving = true;
         try
         {
-            var result = await GorevOnayService.DeleteScopedAsync(_model.Id, _currentPersonel?.Id, IsOrganizationView);
+            var result = await TaskApprovalEntryService.DeleteAsync(_model.Id, _currentPersonel?.Id, Auth);
             if (!result.IsSuccess)
             {
                 _statusMessage = result.Error?.Message ?? "Silme işlemi başarısız.";
@@ -593,6 +630,7 @@
         finally
         {
             _isSaving = false;
+            _confirmationAction = null;
         }
     }
 
