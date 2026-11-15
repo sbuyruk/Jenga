@@ -10,4 +10,10 @@ public interface IEmailService
 
     /// <summary>Sends an e-mail to multiple recipients.</summary>
     Task SendAsync(IEnumerable<string> recipients, string subject, string htmlBody, CancellationToken cancellationToken = default);
+
+    async Task<bool> TrySendAsync(IEnumerable<string> recipients, string subject, string htmlBody, CancellationToken cancellationToken = default)
+    {
+        try { await SendAsync(recipients, subject, htmlBody, cancellationToken); return true; }
+        catch { return false; }
+    }
 }

@@ -49,6 +49,9 @@ public sealed class TaskApprovalCountryRateOption
 
 public sealed class TaskApprovalCalculationInput
 {
+    public int? PersonelId { get; set; }
+    public int? CurrentPersonelId { get; set; }
+    public string? Auth { get; set; }
     public DateTime? StartDate { get; set; }
     public string? StartTime { get; set; }
     public DateTime? EndDate { get; set; }
@@ -59,6 +62,12 @@ public sealed class TaskApprovalCalculationInput
 
 public sealed class TaskApprovalCalculationResult
 {
+    public bool IsValid { get; set; }
+    public string? ErrorMessage { get; set; }
+    public int HarcirahGroupId { get; set; }
+    public string HarcirahGroup { get; set; } = "Tanımlanmamış";
+    public ApprovalStatus ApprovalStatus { get; set; } = ApprovalStatus.PendingApproval;
+    public bool HasMultipleRates { get; set; }
     public DateTime? StartDateTime { get; set; }
     public DateTime? EndDateTime { get; set; }
     public bool IsNegativeDuration { get; set; }
@@ -74,4 +83,20 @@ public sealed class TaskApprovalCalculationResult
     public string EarnedDayText { get; set; } = "0 gün";
     public string TotalAllowanceText { get; set; } = "0";
     public string ExplanationText { get; set; } = string.Empty;
+}
+
+public sealed class TaskApprovalEntrySaveRequest
+{
+    public GorevOnay Model { get; set; } = new();
+    public int? CurrentPersonelId { get; set; }
+    public string? Auth { get; set; }
+    public string Country { get; set; } = "Türkiye";
+    public bool CalculateAllowance { get; set; } = true;
+}
+
+public sealed class TaskApprovalEntrySaveResult
+{
+    public int Id { get; init; }
+    public string? Warning { get; init; }
+    public TaskApprovalCalculationResult? Calculation { get; init; }
 }

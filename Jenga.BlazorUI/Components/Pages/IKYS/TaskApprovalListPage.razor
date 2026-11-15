@@ -1,6 +1,8 @@
 @page "/ikys/task-approvals"
 @page "/ikys/task-approvals/personal"
+@page "/ikys/task-approvals/personel"
 @rendermode InteractiveServer
+@implements IDisposable
 
 @using Jenga.BlazorUI.Components.Common
 @using Jenga.BlazorUI.Services.Common
@@ -62,7 +64,7 @@
             }
             else
             {
-                <GenericTable TItem="TaskApprovalListItem" @ref="_table" Items="_items" TableHeight="Auto"
+                <GenericTable @key="IsPersonalView" TItem="TaskApprovalListItem" @ref="_table" Items="_items" TableHeight="Auto"
                               ExportHeaders="TableExportHeaders" ExportRow="BuildExportRow"
                               ExportFileName="@(IsPersonalView ? "kisisel-gorev-onaylari.xlsx" : "gorev-onaylari.xlsx")"
                               ShowSearch="true" ShowExport="true" RowClassSelector="GetRowClass" KeySelector="x => x.TaskApprovalId">
@@ -142,7 +144,9 @@
 
     [SupplyParameterFromQuery(Name = "Auth")] public string? Auth { get; set; }
     [SupplyParameterFromQuery(Name = "SecilenId")] public int? SelectedTaskApprovalId { get; set; }
-    private bool IsPersonalView => string.Equals(new Uri(NavigationManager.Uri).AbsolutePath.TrimEnd('/'), PersonalPath, StringComparison.OrdinalIgnoreCase);
+    private bool IsPersonalView => IsPersonalPath(new Uri(NavigationManager.Uri).AbsolutePath);
+    private static bool IsPersonalPath(string path) => path.TrimEnd('/').Equals(PersonalPath, StringComparison.OrdinalIgnoreCase)
+        || path.TrimEnd('/').Equals("/ikys/task-approvals/personel", StringComparison.OrdinalIgnoreCase);
     private readonly HashSet<int> _selectedIds = [];
     private List<TaskApprovalListItem> _items = [];
     private GenericTable<TaskApprovalListItem>? _table;
@@ -150,9 +154,23 @@
     private bool _canCreate, _canEdit, _canManage, _isBusy, _confirmPaid, _initialized;
     private bool _isLoading = true;
     private string? _loadError, _message, _loadedUrl;
+    private int _loadVersion;
     private IEnumerable<TaskApprovalListItem> SelectablePageItems => _table?.CurrentPageItems.Where(x => x.CanReport) ?? [];
     private bool AreAllSelected => SelectablePageItems.Any() && SelectablePageItems.All(x => _selectedIds.Contains(x.TaskApprovalId));
 
+    protected override void OnInitialized() => NavigationManager.LocationChanged += OnLocationChanged;
+    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs args)
+    {
+        var path = new Uri(args.Location).AbsolutePath.TrimEnd('/');
+        // Both routes share this component, so navigation may supply identical parameters.
+        if (_initialized && (IsPersonalPath(path) || path.Equals("/ikys/task-approvals", StringComparison.OrdinalIgnoreCase)))
+            _ = InvokeAsync(LoadAsync);
+    }
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
+        _loadVersion++;
+    }
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender) { _initialized = true; await LoadAsync(); }
@@ -163,34 +181,40 @@
     }
     private async Task LoadAsync()
     {
+        var version = ++_loadVersion;
+        var personal = IsPersonalView;
         _loadedUrl = NavigationManager.Uri;
         _isLoading = true;
         _loadError = null;
         _selectedIds.Clear();
         _items = [];
+        _table = null;
+        _message = null;
         _confirmPaid = false;
         StateHasChanged();
         try
         {
             _canManage = await CurrentUserService.HasPermissionAsync(ModuleName.IKYS, Operation.Manage);
-            if (!await CurrentUserService.HasPermissionAsync(ModuleName.IKYS, IsPersonalView ? Operation.View : Operation.Manage))
+            if (!await CurrentUserService.HasPermissionAsync(ModuleName.IKYS, personal ? Operation.View : Operation.Manage))
             {
+                if (version != _loadVersion) return;
                 _loadError = "Bu listeyi görüntüleme yetkiniz bulunmuyor. Kişisel Görev Onay Listem bağlantısını kullanabilirsiniz.";
                 return;
             }
             _currentPersonel = await CurrentUserService.GetCurrentPersonelAsync();
             _canCreate = await CurrentUserService.HasPermissionAsync(ModuleName.IKYS, Operation.Create);
             _canEdit = await CurrentUserService.HasPermissionAsync(ModuleName.IKYS, Operation.Edit);
-            var result = await GorevOnayService.GetTaskApprovalListAsync(_currentPersonel?.Id, !IsPersonalView);
+            var result = await GorevOnayService.GetTaskApprovalListAsync(_currentPersonel?.Id, !personal);
+            if (version != _loadVersion) return;
             if (result.IsFailure) { _loadError = result.Error.Message; return; }
             _items = result.Value;
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "TaskApprovalListPage.LoadAsync");
-            _loadError = "Görev onay listesi yüklenemedi. Lütfen tekrar deneyin.";
+            if (version == _loadVersion) _loadError = "Görev onay listesi yüklenemedi. Lütfen tekrar deneyin.";
         }
-        finally { _isLoading = false; StateHasChanged(); }
+        finally { if (version == _loadVersion) { _isLoading = false; StateHasChanged(); } }
     }
     private string GetRowClass(TaskApprovalListItem item) => string.Join(" ", new[]
     {

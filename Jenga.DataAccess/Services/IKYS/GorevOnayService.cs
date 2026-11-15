@@ -206,7 +206,7 @@ public class GorevOnayService : IGorevOnayService
                     Transfer = go.Transfer,
                     Konaklama = go.Konaklama,
                     Aciklama = go.Aciklama,
-                    AmirOnayi = go.AmirOnayi,
+                    AmirOnayi = go.AmirOnayi ?? (int)ApprovalStatus.Other,
                     OnayRedAciklama = go.OnayRedAciklama
                 }
             ).ToListAsync(cancellationToken);
@@ -361,7 +361,7 @@ public class GorevOnayService : IGorevOnayService
                BaslangicTarihi = go.BaslangicTarihi, BitisTarihi = go.BitisTarihi,
                Sure = go.Sure, GorevinSebebi = go.GorevinSebebi, GorevinYeri = go.GorevinYeri,
                UlasimAraci = go.UlasimAraci, Transfer = go.Transfer, Konaklama = go.Konaklama,
-               Aciklama = go.Aciklama, AmirOnayi = go.AmirOnayi, OnayRedAciklama = go.OnayRedAciklama
+               Aciklama = go.Aciklama, AmirOnayi = go.AmirOnayi ?? (int)ApprovalStatus.Other, OnayRedAciklama = go.OnayRedAciklama
            };
 
     public async Task<Result<List<TaskApprovalListItem>>> GetTaskApprovalListAsync(
@@ -772,7 +772,7 @@ public class GorevOnayService : IGorevOnayService
                IsSelected = go.Secildi ?? false,
                IsPaid = go.Odendi ?? false,
                PaymentStatus = go.Odendi,
-               ManagerApprovalValue = go.AmirOnayi
+               ManagerApprovalValue = go.AmirOnayi ?? (int)ApprovalStatus.Other
            };
 
     internal static IQueryable<GorevOnay> SearchableApprovals(ApplicationDbContext db, int personelId, bool canManage)

@@ -14,6 +14,34 @@ namespace Jenga.Overtime.Tests;
 public sealed class PendingApprovalsTests
 {
     [Fact]
+    public async Task NullManagerApprovalLoadsAsOtherWithoutGrantingActions()
+    {
+        await using var data = await TestData.CreateAsync();
+        await using var db = data.CreateDbContext();
+        var task = new GorevOnay
+        {
+            PersonelId = 2, AmirOnayi = null, Odendi = false,
+            BaslangicTarihi = DateTime.Today.AddHours(8), BitisTarihi = DateTime.Today.AddHours(17)
+        };
+        db.GorevOnay_Table.Add(task);
+        await db.SaveChangesAsync();
+        var service = data.Service();
+        foreach (var general in new[] { true, false })
+        {
+            var item = Success(await service.GetTaskApprovalListAsync(2, general)).Single(x => x.TaskApprovalId == task.Id);
+            Assert.Equal(ApprovalStatus.Other, item.ManagerApprovalStatus);
+            Assert.False(item.CanReport);
+            Assert.False(item.CanEditGeneral);
+            Assert.False(item.CanEditPersonal(DateTime.Now));
+        }
+        Assert.True((await service.GetTaskApprovalReportItemsAsync([task.Id], null, true)).IsFailure);
+        Assert.True((await service.SetTaskApprovalsPaidAsync([task.Id])).IsFailure);
+        Assert.True((await service.GetScopedByIdAsync(task.Id, 2, false)).IsFailure);
+        Assert.True((await service.ApproveAsync(task.Id, 1)).IsFailure);
+        Assert.Null((await db.GorevOnay_Table.AsNoTracking().SingleAsync(x => x.Id == task.Id)).AmirOnayi);
+    }
+
+    [Fact]
     public async Task EmployeeWithoutManagedUnitsSeesOnlyOwnPendingAndFiveLatestApprovedTasks()
     {
         await using var data = await TestData.CreateAsync();
@@ -183,7 +211,7 @@ public sealed class PendingApprovalsTests
         await using var data = await TestData.CreateAsync();
         await SeedListsAsync(data);
         var service = data.Service(manage: false);
-        var entry = new TaskApprovalEntryService(data, NullLogService.Instance, service);
+        var entry = new TaskApprovalEntryService(data, NullLogService.Instance, service, new Authorization(false, true));
         Assert.True((await entry.LoadAsync(new() { GorevOnayId = 101, CurrentPersonelId = 2 })).IsSuccess);
         Assert.True((await entry.LoadAsync(new() { GorevOnayId = 104, CurrentPersonelId = 2 })).IsFailure);
         Assert.True((await entry.LoadAsync(new() { GorevOnayId = 104, CurrentPersonelId = 2, CanManage = true, Auth = "IKYS" })).IsFailure);
@@ -311,7 +339,7 @@ public sealed class PendingApprovalsTests
                 var keep = new HashSet<Type>
                 {
                     typeof(Personel), typeof(IsBilgileri), typeof(BirimTanim), typeof(UnvanTanim),
-                    typeof(GorevTanim), typeof(GorevOnay), typeof(IletisimBilgileri)
+                    typeof(GorevTanim), typeof(GorevOnay), typeof(IletisimBilgileri), typeof(Harcirah)
                 };
                 foreach (var type in modelBuilder.Model.GetEntityTypes().Select(x => x.ClrType).Where(x => !keep.Contains(x)).ToList())
                     modelBuilder.Ignore(type);
