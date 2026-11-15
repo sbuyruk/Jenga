@@ -23,6 +23,8 @@ else if (movementRows == null || movementRows.Count == 0)
 else
 {
     <GenericTable TItem="MovementRow"
+                  ExportHeaders="TableExportHeaders"
+                  ExportRow="BuildExportRow"
                   Items="movementRows"
                   TableHeight="@TableHeight"
                   ShowSearch="true"
@@ -44,6 +46,10 @@ else
 }
 
 @code {
+    private static readonly string[] TableExportHeaders = ["Hareket", "Nereden", "Kimden", "Nereye", "Kime", "Miktar", "Marka", "Model", "İşlem", "Tarih"];
+    private IReadOnlyList<object?> BuildExportRow(MovementRow r) =>
+        [r.ActionType, r.FromLocation, r.FromPerson, r.ToLocation, r.ToPerson, $"{r.Quantity:0.##} {r.UnitSymbol}", r.Brand, r.Model, r.Operation, r.Date.ToString("dd.MM.yyyy HH:mm")];
+
     [Parameter] public int MaterialId { get; set; }
     [Parameter] public List<Material>? Materials { get; set; }
     [Parameter] public List<MaterialCategory>? Categories { get; set; }

@@ -59,6 +59,7 @@ else if (_sekme == 0)
         </div>
         <div class="card-body p-0">
             <GenericTable TItem="TasinmazPlanOzet" Items="GosterilenPlanlar" TableHeight="65vh" TableClass="table-bordered table-hover" ShowCopy="false"
+                          ExportHeaders="PlanExportHeaders" ExportRow="BuildPlanExportRow"
                           RowClassSelector="@(p => p.AcikTaslakId is not null ? "table-warning" : p.Gecikmis ? "table-danger" : null)"
                           SearchTextSelector="@(p => $"{p.EmlakSicilNo} {p.Adres} {p.AdaNo} {p.ParselNo} {p.Cinsi} {p.Ili} {p.Ilcesi} {p.BolgeAdi}")">
                 <HeaderTemplate>
@@ -122,6 +123,7 @@ else
         </div>
         <div class="card-body p-0">
             <GenericTable TItem="TasinmazKontrolOzet" Items="_kontroller" TableHeight="65vh" TableClass="table-bordered table-hover" ShowCopy="false"
+                          ExportHeaders="KontrolExportHeaders" ExportRow="BuildKontrolExportRow"
                           OnRowClicked="SatirTiklandi"
                           SearchTextSelector="@(k => $"{k.RaporNo} {k.EmlakSicilNo} {k.Cinsi} {k.Ili} {k.Ilcesi} {k.BolgeAdi} {k.KontrolEdenler}")">
                 <HeaderTemplate>
@@ -221,6 +223,27 @@ else
 
 @code {
     private static readonly CultureInfo Tr = new("tr-TR");
+    private static readonly string[] PlanExportHeaders =
+        ["Durum", "Adres", "Ada", "Parsel", "Cinsi", "İli", "İlçesi", "Bölge", "Periyot", "Son Kontrol", "Sonraki Kontrol"];
+    private static readonly string[] KontrolExportHeaders =
+        ["#", "Rapor No", "Durum", "Tarih", "Sicil No", "Cinsi", "İli / İlçesi", "Bölge", "Kontrol Edenler", "Sonraki"];
+
+    private static IReadOnlyList<object?> BuildPlanExportRow(TasinmazPlanOzet p) =>
+    [
+        p.AcikTaslakId is not null ? "Taslak açık" : p.Gecikmis ? "Gecikmiş" : p.SonrakiKontrolTarihi is null ? "Plansız" : "Planlı",
+        p.Adres, p.AdaNo, p.ParselNo, p.Cinsi, p.Ili, p.Ilcesi, p.BolgeAdi,
+        KontrolPeriyodu.Etiket(p.PeriyotSure, p.PeriyotBirim),
+        p.SonKontrolId is null ? "—" : p.SonKontrolTarihi?.ToString("d", Tr),
+        p.SonrakiKontrolTarihi?.ToString("d", Tr) ?? "—"
+    ];
+
+    private static IReadOnlyList<object?> BuildKontrolExportRow(TasinmazKontrolOzet k) =>
+    [
+        $"#{k.Id}" + (k.RevizeEdilenKontrolId is null ? "" : $" (rev. #{k.RevizeEdilenKontrolId})"),
+        k.RaporNo ?? "—", TasinmazKontrolDetay.DurumEtiket(k.Durum), k.KontrolTarihi.ToString("d", Tr),
+        k.EmlakSicilNo, k.Cinsi, $"{k.Ili} / {k.Ilcesi}", k.BolgeAdi, k.KontrolEdenler,
+        k.SonrakiKontrolTarihi?.ToString("d", Tr) ?? "—"
+    ];
 
     private int _sekme;
     private bool _loading = true, _busy, _sadeceGecikmis, _sadeceTaslak;

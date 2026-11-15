@@ -30,6 +30,8 @@
 else
 {
     <GenericTable TItem="RoleRow"
+                  ExportHeaders="TableExportHeaders"
+                  ExportRow="BuildExportRow"
                   Items="roleRows"
                   PageSize="10"
                   TableHeight="Auto"
@@ -65,6 +67,10 @@ else
 }
 
 @code {
+    private static readonly string[] TableExportHeaders = ["Ad", "A\u00e7\u0131klama"];
+    private IReadOnlyList<object?> BuildExportRow(RoleRow r) =>
+        [r.Name, r.Aciklama];
+
     [Parameter] public List<Role> Roles { get; set; } = new();
 
     // Mutasyon oldugunda parent yeniden yüklesin/karar versin diye event tabanli bildirim.

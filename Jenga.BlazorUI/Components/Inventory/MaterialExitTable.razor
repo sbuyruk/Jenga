@@ -22,6 +22,8 @@
 else
 {
     <GenericTable TItem="ExitRow"
+                  ExportHeaders="TableExportHeaders"
+                  ExportRow="BuildExportRow"
                   Items="exitRows"
                   PageSize="10"
                   PageSizeOptions="new[] { 10, 20, 50, 100 }"
@@ -80,6 +82,10 @@ else
 }
 
 @code {
+    private static readonly string[] TableExportHeaders = ["Tarih", "Malzeme", "Miktar", "Birim", "Lokasyon", "Çıkış Tipi", "Açıklama"];
+    private IReadOnlyList<object?> BuildExportRow(ExitRow r) =>
+        [r.ExitDateText, r.MaterialName, r.Quantity, r.UnitName, r.LocationName, r.ExitTypeText, r.Description];
+
     [Parameter] public List<MaterialExit> MaterialExits { get; set; } = new();
     [Parameter] public List<Material> Materials { get; set; } = new();
     [Parameter] public List<MaterialUnit> MaterialUnits { get; set; } = new();

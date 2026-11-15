@@ -195,6 +195,8 @@
                                     <h5 class="mb-3">@DateTime.Now.Year Yılı İl Bazlı Bağışçı Çizelgesi</h5>
                                     <GenericTable @ref="_ilAyTable"
                                                   TItem="ProvinceMonthlyDonorRow"
+                                                  ExportHeaders="TableExportHeaders"
+                                                  ExportRow="BuildExportRow"
                                                   Items="currentYearProvinceMonthlyRows"
                                                   PageSize="10"
                                                   PageSizeOptions="new[] { 10, 20, 50, 100 }"
@@ -326,6 +328,10 @@
 </PermissionGuard>
 
 @code {
+    private static readonly string[] TableExportHeaders = ["İl", "Ay", "Bağışçı", "Yeni Bağışçı"];
+    private IReadOnlyList<object?> BuildExportRow(ProvinceMonthlyDonorRow r) =>
+        [r.ProvinceName, r.MonthLabel, r.DonorCount.ToString("N0", _trCulture), r.NewDonorCount.ToString("N0", _trCulture)];
+
     private GenericTable<ProvinceMonthlyDonorRow>? _ilAyTable;
     private bool _scrollSpyInitialized;
 

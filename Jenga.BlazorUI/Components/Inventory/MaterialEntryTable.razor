@@ -25,6 +25,8 @@
 else
 {
     <GenericTable TItem="EntryRow"
+                  ExportHeaders="TableExportHeaders"
+                  ExportRow="BuildExportRow"
                   @ref="tableRef"
                   Items="entryRows"
                   TableHeight="Auto"
@@ -146,6 +148,10 @@ else
 }
 
 @code {
+    private static readonly string[] TableExportHeaders = ["Tarih", "Malzeme", "Marka", "Model", "Miktar", "Lokasyon", "Personel"];
+    private IReadOnlyList<object?> BuildExportRow(EntryRow r) =>
+        [r.EntryDate.ToString("yyyy-MM-dd"), r.MaterialName, r.BrandName, r.ModelName, r.QuantityText, r.LocationPath, r.PersonName];
+
     private GenericTable<EntryRow>? tableRef;
 
     [Parameter] public List<MaterialEntry> MaterialEntries { get; set; } = new();

@@ -23,6 +23,8 @@
 else
 {
     <GenericTable TItem="MenuRow"
+                  ExportHeaders="TableExportHeaders"
+                  ExportRow="BuildExportRow"
                   Items="menuRows"
                   PageSize="10"
                   TableHeight="Auto"
@@ -60,6 +62,10 @@ else
 }
 
 @code {
+    private static readonly string[] TableExportHeaders = ["Id", "Ba\u015fl\u0131k", "Url", "\u00dcst Men\u00fcs\u00fc", "G\u00f6r\u00fcn\u00fcr"];
+    private IReadOnlyList<object?> BuildExportRow(MenuRow r) =>
+        [r.Id, r.Title, r.Url, r.ParentTitle, r.IsVisible ? "Evet" : "Hay\u0131r"];
+
     [Parameter] public List<MenuItem> Menus { get; set; } = new();
     [Parameter] public bool CanCreate { get; set; }
     [Parameter] public bool CanEdit { get; set; }
