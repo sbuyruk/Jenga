@@ -28,14 +28,21 @@ public sealed class JengaLoadingTests
     }
 
     [Fact]
-    public async Task WaitingUsesOperationMessageWithoutSplashCredit()
+    public async Task WaitingShowsOnlyAnimatedSymbolAndDotsWithAccessibleOperationMessage()
     {
         var html = await RenderAsync(new() { [nameof(JengaLoading.Message)] = "Bağış kayıtları getiriliyor." });
 
         Assert.Contains("jenga-loading--waiting", html);
-        Assert.Contains("İşleminiz devam ediyor", html);
-        Assert.Contains("Bağış kayıtları getiriliyor.", html);
+        Assert.Contains("aria-label=\"Bağış kayıtları getiriliyor.\"", html);
+        Assert.Contains("jenga-brand__symbol", html);
         Assert.Contains("jenga-loading__dots", html);
+        Assert.DoesNotContain("jenga-brand__wordmark", html);
+        Assert.DoesNotContain("<img", html);
+        Assert.DoesNotContain("jenga-loading__expansion", html);
+        Assert.DoesNotContain("jenga-loading__title", html);
+        Assert.DoesNotContain("jenga-loading__subtitle", html);
+        Assert.DoesNotContain("İşleminiz devam ediyor", html);
+        Assert.DoesNotContain("Lütfen bekleyin", html);
         Assert.DoesNotContain("jenga-loading__footer", html);
         Assert.DoesNotContain("Bilgi Sistemleri", html);
         Assert.DoesNotContain("Çalışma alanınız hazırlanıyor", html);
