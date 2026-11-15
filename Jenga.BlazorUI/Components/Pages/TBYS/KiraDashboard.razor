@@ -268,7 +268,7 @@
     private List<YasalFaiz>? yasalFaizler;
     private bool isLoading;
     private bool loadFailed;
-    private string loadingMessage = "Yükleniyor...";
+    private string loadingMessage = "Kiralar yükleniyor...";
     private CancellationTokenSource? _cts;
 
     // Chart data
@@ -403,12 +403,12 @@
     {
         isLoading = true;
         loadFailed = false;
-        loadingMessage = "Yükleniyor...";
+        loadingMessage = "Kiralar yükleniyor...";
         await InvokeAsync(StateHasChanged);
 
         try
         {
-            loadingMessage = "Veriler yükleniyor...";
+            loadingMessage = "Kira sözleşmeleri ve kiracılar yükleniyor...";
             await InvokeAsync(StateHasChanged);
 
             // Birbirine bağımlı olmayan servis çağrılarını paralelleştir
@@ -431,6 +431,9 @@
 
             var tumSozlesmeIds = kiraSozlesmeler.Where(s => s.Id > 0).Select(s => s.Id).ToList();
 
+            loadingMessage = "Kira ödemeleri ve ödeme planları yükleniyor...";
+            await InvokeAsync(StateHasChanged);
+
             var odemeTask = OdemeService.GetLastYearsForDashboardKiralarAsync(10, cancellationToken);
             var odemePlaniTask = tumSozlesmeIds.Count > 0
                 ? OdemePlaniService.GetAllForDashboardBySozlesmeIdsAsync(tumSozlesmeIds, cancellationToken)
@@ -444,7 +447,7 @@
             odemePlanlari = odemePlaniTask?.Result is { IsSuccess: true } opRes ? opRes.Value : new();
             odemeler = odemeTask.Result is { IsSuccess: true } odRes ? odRes.Value : new();
 
-            loadingMessage = "KPI'lar ve grafikler hazırlanıyor...";
+            loadingMessage = "Kira özeti ve grafikler hazırlanıyor...";
             await InvokeAsync(StateHasChanged);
 
             await Task.Run(BuildAllViews, cancellationToken);
