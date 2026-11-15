@@ -22,6 +22,8 @@
 else
 {
     <GenericTable TItem="InventoryRow"
+                  ExportHeaders="TableExportHeaders"
+                  ExportRow="BuildExportRow"
                   @ref="tableRef"
                   Items="inventoryRows"
                   TableHeight="Auto"
@@ -158,6 +160,10 @@ else
                         OnClose="CloseLocationsModal" />
 
 @code {
+    private static readonly string[] TableExportHeaders = ["Malzeme", "Kategori", "Toplam Miktar", "Birim", "Kritik"];
+    private IReadOnlyList<object?> BuildExportRow(InventoryRow r) =>
+        [r.MaterialName, r.CategoryName, r.TotalQuantity, r.UnitSymbol, r.HasCriticalStock ? (r.IsCritical ? $"Kritik: {r.CriticalStock}" : $"OK ({r.CriticalStock})") : "—"];
+
     private List<InventoryRow> inventoryRows = new();
 
     [Parameter] public List<MaterialInventory> MaterialInventories { get; set; } = new();

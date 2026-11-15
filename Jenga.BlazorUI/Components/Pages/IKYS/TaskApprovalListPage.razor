@@ -73,6 +73,8 @@
                 else
                 {
                     <GenericTable TItem="TaskApprovalListItem"
+                                  ExportHeaders="TableExportHeaders"
+                                  ExportRow="BuildExportRow"
                                   Items="_items"
                                   TableHeight="Auto"
                                   ShowSearch="true"
@@ -136,6 +138,10 @@
 </PermissionGuard>
 
 @code {
+    private static readonly string[] TableExportHeaders = ["Adı Soyadı", "Görevin Sebebi", "Gidiş Tarihi", "Dönüş Tarihi", "Görevin Yeri", "Amir Onayı", "Ret Gerekçesi"];
+    private IReadOnlyList<object?> BuildExportRow(TaskApprovalListItem r) =>
+        [r.FullName, r.Reason, r.StartDate?.ToString("dd.MM.yyyy HH:mm"), r.EndDate?.ToString("dd.MM.yyyy HH:mm"), r.Destination, r.ManagerApprovalDisplay, r.IsRejected ? r.RejectionNote : null];
+
     private const string AuthorizedUnitCode = "IKYS";
 
     [SupplyParameterFromQuery(Name = "Auth")]

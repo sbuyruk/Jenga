@@ -23,6 +23,8 @@
 else
 {
     <GenericTable TItem="MaterialBrand"
+                  ExportHeaders="TableExportHeaders"
+                  ExportRow="BuildExportRow"
                   @ref="brandTable"
                   Items="Brands"
                   PageSize="10"
@@ -85,6 +87,10 @@ else
 
 @code
 {
+    private static readonly string[] TableExportHeaders = ["Ad", "Kategori", "A\u00e7\u0131klama"];
+    private IReadOnlyList<object?> BuildExportRow(MaterialBrand r) =>
+        [r.BrandName, GetCategoryName(r.CategoryId), r.Aciklama];
+
     [Parameter] public List<MaterialBrand> Brands { get; set; } = new();
     [Parameter] public List<MaterialCategory> Categories { get; set; } = new();
     [Parameter] public bool CanCreate { get; set; }

@@ -628,6 +628,8 @@
                     <div class="section-label">Personel Listesi</div>
 
                     <GenericTable TItem="PersonelSatir"
+                                  ExportHeaders="TableExportHeaders"
+                                  ExportRow="BuildExportRow"
                                   Items="_personelFiltered"
                                   SearchTextSelector="@(r => $"{r.AdSoyad} {r.BirimAdi} {r.Unvan}")"
                                   TableClass="table-hover table-sm align-middle"
@@ -660,6 +662,10 @@
 </PermissionGuard>
 
 @code {
+    private static readonly string[] TableExportHeaders = ["Ad Soyad", "Birim", "Ünvan", "Başlama Tarihi"];
+    private IReadOnlyList<object?> BuildExportRow(PersonelSatir r) =>
+        [r.AdSoyad, r.BirimAdi, r.Unvan, r.BaslamaTarihi?.ToString("dd.MM.yyyy") ?? "–"];
+
     // ── Yükleme durumu ───────────────────────────────────────────
     private bool _isLoading = true;
     private bool _loadFailed = false;

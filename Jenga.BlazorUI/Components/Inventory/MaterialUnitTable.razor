@@ -26,6 +26,8 @@
 else
 {
     <GenericTable TItem="MaterialUnit"
+                  ExportHeaders="TableExportHeaders"
+                  ExportRow="BuildExportRow"
                   Items="MaterialUnits"
                   PageSize="10"
                   PageSizeOptions="new[] { 10, 20, 50, 100 }"
@@ -70,6 +72,10 @@ else
 }
 
 @code {
+    private static readonly string[] TableExportHeaders = ["Birim Ad\u0131", "Sembol", "A\u00e7\u0131klama"];
+    private IReadOnlyList<object?> BuildExportRow(MaterialUnit r) =>
+        [r.Name, r.Symbol, r.Aciklama];
+
     [Parameter] public List<MaterialUnit> MaterialUnits { get; set; } = new();
     [Parameter] public EventCallback OnRefresh { get; set; }
     [Parameter] public bool CanCreate { get; set; }

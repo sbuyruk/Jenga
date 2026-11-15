@@ -26,6 +26,8 @@
 else
 {
     <GenericTable TItem="InventoryRow"
+                  ExportHeaders="TableExportHeaders"
+                  ExportRow="BuildExportRow"
                   Items="rows"
                   TableHeight="Auto"
                   ShowSearch="true"
@@ -45,6 +47,10 @@ else
 }
 
 @code {
+    private static readonly string[] TableExportHeaders = ["Malzeme", "Marka", "Model", "Konum", "Miktar", "Birim"];
+    private IReadOnlyList<object?> BuildExportRow(InventoryRow r) =>
+        [r.MaterialName, r.BrandName, r.ModelName, r.LocationName, r.Quantity, r.UnitSymbol];
+
     [Parameter] public List<MaterialInventory> Inventories { get; set; } = new();
     [Parameter] public List<Material> Materials { get; set; } = new();
     [Parameter] public List<MaterialUnit> MaterialUnits { get; set; } = new();

@@ -83,6 +83,13 @@ Model property'lerinden otomatik sütun ve satır oluşturur. [DisplayName] veya
 
 Sütun başlıkları ve satır içeriği tamamen tüketiciye bırakılır.
 
+Excel aktarımı açıksa `ExportHeaders` ve `ExportRow` birlikte tanımlanmalıdır. Başlıkların sırası,
+`ExportRow` tarafından döndürülen değerlerin sırasıyla aynı olmalıdır. Şablonun sütun sırası model
+özelliklerinin sırasından farklı olabilir; modelden otomatik alınan değerler özel başlıklarla eşleştirilmemelidir.
+İlişkili kayıtlar için ekranda kullanılan adları, durumlar için kullanıcıya gösterilen etiketleri döndürün.
+İşlem düğmelerini ve seçim kutularını aktarım sütunlarına eklemeyin. Tarihlerin saat bilgisi gerekiyorsa
+`ExportRow` içinde tarih ve saati birlikte biçimlendirin. Bu eşleştirme, filtrelenmiş listenin tüm sayfalarına uygulanır.
+
     <GenericTable TItem="MyModel"
                   Items="myList"
                   KeySelector="x => x.Id"
