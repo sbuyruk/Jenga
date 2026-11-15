@@ -28,12 +28,13 @@ public sealed class JengaLoadingTests
     }
 
     [Fact]
-    public async Task WaitingShowsOnlyAnimatedSymbolAndDotsWithAccessibleOperationMessage()
+    public async Task WaitingShowsAnimatedSymbolWithVisibleOperationMessageAndDots()
     {
         var html = await RenderAsync(new() { [nameof(JengaLoading.Message)] = "Bağış kayıtları getiriliyor." });
 
         Assert.Contains("jenga-loading--waiting", html);
         Assert.Contains("aria-label=\"Bağış kayıtları getiriliyor.\"", html);
+        Assert.Contains("<p class=\"jenga-loading__message\">Bağış kayıtları getiriliyor.", html);
         Assert.Contains("jenga-brand__symbol", html);
         Assert.Contains("jenga-loading__dots", html);
         Assert.DoesNotContain("jenga-brand__wordmark", html);
