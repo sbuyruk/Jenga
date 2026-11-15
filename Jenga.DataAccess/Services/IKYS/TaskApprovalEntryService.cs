@@ -44,11 +44,28 @@ public sealed class TaskApprovalEntryService : ITaskApprovalEntryService
         {
             await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
 
+            GorevOnay? existing = null;
+            var organizationView = request.CanManage && IsAuth(request.Auth, "IKYS");
+            if (request.GorevOnayId.HasValue)
+            {
+                var scoped = await _gorevOnayService.GetScopedByIdAsync(request.GorevOnayId.Value,
+                    request.CurrentPersonelId, organizationView, cancellationToken);
+                if (scoped.IsFailure)
+                    return Result.Failure<TaskApprovalEntryLoadResult>(scoped.Error);
+                existing = scoped.Value;
+            }
+
             var personOptions = await LoadPersonOptionsAsync(db, request, cancellationToken);
+            if (existing?.PersonelId is int existingPersonelId && personOptions.All(x => x.Id != existingPersonelId))
+            {
+                var owner = await db.Personel_Table.AsNoTracking().Where(x => x.Id == existingPersonelId)
+                    .Select(x => new TaskApprovalOptionItem { Id = x.Id, Label = x.Adi + " " + x.Soyadi }).FirstOrDefaultAsync(cancellationToken);
+                if (owner is not null) personOptions.Add(owner);
+            }
             var perDirOptions = await LoadSignatureOptionsAsync(db, request, forDirector: true, cancellationToken);
             var perUzmOptions = await LoadSignatureOptionsAsync(db, request, forDirector: false, cancellationToken);
 
-            var model = await LoadModelAsync(db, request, personOptions, cancellationToken);
+            var model = existing ?? CreateModel(request, personOptions);
             var selectedPersonName = personOptions.FirstOrDefault(x => x.Id == model.PersonelId)?.Label;
             var harcirahGroup = await LoadHarcirahGroupAsync(db, model.PersonelId, cancellationToken);
 
@@ -59,7 +76,8 @@ public sealed class TaskApprovalEntryService : ITaskApprovalEntryService
                 ShowSave = model.Id <= 0,
                 ShowUpdate = model.Id > 0 && model.Odendi != true,
                 ShowDelete = model.Id > 0 && model.Odendi != true,
-                ShowReport = model.Id > 0,
+                ShowReport = organizationView && model.Id > 0 && model.Odendi != true &&
+                    (model.AmirOnayi == (int)ApprovalStatus.Approved || model.AmirOnayi == (int)ApprovalStatus.NotRequired),
                 IsPaid = model.Odendi == true,
                 SelectedPersonDisplayName = selectedPersonName,
                 HarcirahGroup = harcirahGroup,
@@ -231,9 +249,6 @@ public sealed class TaskApprovalEntryService : ITaskApprovalEntryService
         TaskApprovalEntryLoadRequest request,
         CancellationToken cancellationToken)
     {
-        if (!request.CurrentPersonelId.HasValue)
-            return [];
-
         if (request.CanManage && IsAuth(request.Auth, "IKYS"))
         {
             return await db.Personel_Table.AsNoTracking()
@@ -246,6 +261,9 @@ public sealed class TaskApprovalEntryService : ITaskApprovalEntryService
                 .OrderBy(x => x.Label)
                 .ToListAsync(cancellationToken);
         }
+
+        if (!request.CurrentPersonelId.HasValue)
+            return [];
 
         if (IsAuth(request.Auth, "BIRIM"))
         {
@@ -320,23 +338,11 @@ public sealed class TaskApprovalEntryService : ITaskApprovalEntryService
             .ToList();
     }
 
-    private async Task<GorevOnay> LoadModelAsync(
-        ApplicationDbContext db,
-        TaskApprovalEntryLoadRequest request,
-        IReadOnlyCollection<TaskApprovalOptionItem> personOptions,
-        CancellationToken cancellationToken)
+    private static GorevOnay CreateModel(TaskApprovalEntryLoadRequest request, IReadOnlyCollection<TaskApprovalOptionItem> personOptions)
     {
-        if (request.GorevOnayId.HasValue)
-        {
-            var model = await db.GorevOnay_Table.AsNoTracking()
-                .FirstOrDefaultAsync(x => x.Id == request.GorevOnayId.Value, cancellationToken);
-            if (model is not null)
-                return model;
-        }
-
-        var selectedPersonId = request.QueryPersonelId
-            ?? personOptions.FirstOrDefault()?.Id
-            ?? request.CurrentPersonelId;
+        var selectedPersonId = request.CanManage && IsAuth(request.Auth, "IKYS")
+            ? request.QueryPersonelId ?? personOptions.FirstOrDefault()?.Id
+            : request.CurrentPersonelId;
 
         var now = DateTime.Now;
         return new GorevOnay
@@ -348,6 +354,7 @@ public sealed class TaskApprovalEntryService : ITaskApprovalEntryService
             Transfer = TransferSecenekleri[0],
             UlasimAraci = UlasimAraclari[0],
             Konaklama = KonaklamaSecenekleri[0],
+            Odendi = false,
             AmirOnayi = (int)ApprovalStatus.PendingApproval
         };
     }

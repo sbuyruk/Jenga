@@ -371,34 +371,24 @@ public class GorevOnayService : IGorevOnayService
     {
         try
         {
+            if (!await HasTaskPermissionAsync(authorizedUnitView, Operation.View, cancellationToken))
+                return Result.Failure<List<TaskApprovalListItem>>(Error.Forbidden("Bu listeyi görüntüleme yetkiniz bulunmuyor."));
+            if (!authorizedUnitView && (!currentPersonelId.HasValue || currentPersonelId <= 0))
+                return Result.Failure<List<TaskApprovalListItem>>(Error.Validation("Mevcut kullanıcı personel kaydıyla eşleşmedi."));
+
             await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-            var sinceDate = DateTime.Today.AddYears(-1);
-
-            var query = CreateTaskApprovalQuery(db)
-                .Where(x => x.EndDate.HasValue && x.EndDate.Value.Date >= sinceDate.Date);
-
+            var query = CreateTaskApprovalQuery(db);
             if (authorizedUnitView)
-            {
-                if (!currentPersonelId.HasValue)
-                    return Result.Success(new List<TaskApprovalListItem>());
-
-                var managedPersonelIds = CreateManagedPersonelIdsQuery(db, currentPersonelId.Value);
-                query = query.Where(x =>
-                    managedPersonelIds.Contains(x.PersonelId) &&
-                    x.ManagerApprovalValue != (int)ApprovalStatus.Rejected);
-            }
+                query = query.Where(x => x.EndDate >= DateTime.Today.AddYears(-1));
             else
-            {
-                if (!currentPersonelId.HasValue)
-                    return Result.Success(new List<TaskApprovalListItem>());
+                query = query.Where(x => x.PersonelId == currentPersonelId);
 
-                query = query.Where(x => x.PersonelId == currentPersonelId.Value);
-            }
-
-            var items = await query
-                .OrderByDescending(x => x.StartDate)
-                .ThenBy(x => x.ManagerApprovalValue == (int)ApprovalStatus.PendingApproval ? 0 : 3)
-                .ToListAsync(cancellationToken);
+            var items = authorizedUnitView
+                ? await query.OrderByDescending(x => x.StartDate)
+                    .ThenBy(x => x.ManagerApprovalValue == (int)ApprovalStatus.PendingApproval ? 0 : 1)
+                    .ThenByDescending(x => x.EndDate).ThenByDescending(x => x.TaskApprovalId).ToListAsync(cancellationToken)
+                : await query.OrderByDescending(x => x.EndDate).ThenByDescending(x => x.StartDate)
+                    .ThenByDescending(x => x.TaskApprovalId).ToListAsync(cancellationToken);
 
             ApplyCalculationFlags(items);
             return Result.Success(items);
@@ -422,36 +412,16 @@ public class GorevOnayService : IGorevOnayService
 
         try
         {
+            if (!authorizedUnitView || !await HasTaskPermissionAsync(true, Operation.View, cancellationToken))
+                return Result.Failure<List<TaskApprovalListItem>>(Error.Forbidden("Görev raporu almak için İKYS yönetim yetkisi gereklidir."));
+            var requestedIds = gorevOnayIds.Distinct().ToArray();
             await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-            var query = CreateTaskApprovalQuery(db)
-                .Where(x => gorevOnayIds.Contains(x.TaskApprovalId));
-
-            if (authorizedUnitView)
-            {
-                if (!currentPersonelId.HasValue)
-                    return Result.Success(new List<TaskApprovalListItem>());
-
-                var managedPersonelIds = CreateManagedPersonelIdsQuery(db, currentPersonelId.Value);
-                query = query.Where(x =>
-                    managedPersonelIds.Contains(x.PersonelId) &&
-                    x.ManagerApprovalValue != (int)ApprovalStatus.Rejected);
-            }
-            else
-            {
-                if (!currentPersonelId.HasValue)
-                    return Result.Success(new List<TaskApprovalListItem>());
-
-                var reportThreshold = DateTime.Today.AddDays(-4);
-                query = query.Where(x =>
-                    x.PersonelId == currentPersonelId.Value &&
-                    x.ManagerApprovalValue != (int)ApprovalStatus.Rejected &&
-                    x.StartDate.HasValue &&
-                    x.StartDate.Value > reportThreshold);
-            }
-
-            var items = await query
-                .OrderBy(x => x.StartDate)
-                .ToListAsync(cancellationToken);
+            var items = await CreateTaskApprovalQuery(db)
+                .Where(x => requestedIds.Contains(x.TaskApprovalId) && !x.IsPaid &&
+                    (x.ManagerApprovalValue == (int)ApprovalStatus.Approved || x.ManagerApprovalValue == (int)ApprovalStatus.NotRequired))
+                .OrderBy(x => x.StartDate).ToListAsync(cancellationToken);
+            if (items.Count != requestedIds.Length)
+                return Result.Failure<List<TaskApprovalListItem>>(Error.Validation("Seçilen görevlerden biri rapor almaya uygun değil. Listeyi yenileyip tekrar seçin."));
 
             ApplyCalculationFlags(items);
             return Result.Success(items);
@@ -472,32 +442,11 @@ public class GorevOnayService : IGorevOnayService
     {
         try
         {
+            if (!await HasTaskPermissionAsync(authorizedUnitView, Operation.Edit, cancellationToken))
+                return Result.Failure<GorevOnay>(Error.Forbidden("Bu görevi düzenleme yetkiniz bulunmuyor."));
             await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-            var query = db.GorevOnay_Table.AsNoTracking().Where(x => x.Id == id);
-            if (authorizedUnitView)
-            {
-                if (!currentPersonelId.HasValue)
-                    return Result.Failure<GorevOnay>(Error.NotFound("Görev onayı bulunamadı.", "GorevOnay.NotFound"));
-
-                var managedPersonelIds = CreateManagedPersonelIdsQuery(db, currentPersonelId.Value);
-                query = query.Where(x =>
-                    managedPersonelIds.Contains(x.PersonelId) &&
-                    x.AmirOnayi != (int)ApprovalStatus.Rejected);
-            }
-            else
-            {
-                if (!currentPersonelId.HasValue)
-                    return Result.Failure<GorevOnay>(Error.NotFound("Görev onayı bulunamadı.", "GorevOnay.NotFound"));
-
-                var editableThreshold = DateTime.Today.AddDays(-4);
-                query = query.Where(x =>
-                    x.PersonelId == currentPersonelId.Value &&
-                    x.AmirOnayi != (int)ApprovalStatus.Rejected &&
-                    x.BaslangicTarihi.HasValue &&
-                    x.BaslangicTarihi.Value > editableThreshold);
-            }
-
-            var entity = await query.FirstOrDefaultAsync(cancellationToken);
+            var entity = await EditableTaskApprovals(db, currentPersonelId, authorizedUnitView)
+                .AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
             if (entity is null)
                 return Result.Failure<GorevOnay>(Error.NotFound("Görev onayı bulunamadı.", "GorevOnay.NotFound"));
 
@@ -547,12 +496,18 @@ public class GorevOnayService : IGorevOnayService
 
         try
         {
+            if (!await HasTaskPermissionAsync(authorizedUnitView, Operation.Create, cancellationToken))
+                return Result.Failure(Error.Forbidden("Görev oluşturma yetkiniz bulunmuyor."));
             await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
             var validationError = await ValidateScopedWriteAsync(db, entity.PersonelId, currentPersonelId, authorizedUnitView, cancellationToken);
             if (validationError is not null)
                 return Result.Failure(validationError);
 
             db.SetCurrentUser(modifiedBy);
+            entity.Odendi = false;
+            entity.Secildi = false;
+            entity.AmirOnayi = (int)ApprovalStatus.PendingApproval;
+            entity.OnayRedAciklama = null;
             await db.GorevOnay_Table.AddAsync(entity, cancellationToken);
             await db.SaveChangesAsync(cancellationToken);
             return Result.Success();
@@ -575,32 +530,12 @@ public class GorevOnayService : IGorevOnayService
 
         try
         {
+            if (!await HasTaskPermissionAsync(authorizedUnitView, Operation.Edit, cancellationToken))
+                return Result.Failure(Error.Forbidden("Bu görevi düzenleme yetkiniz bulunmuyor."));
             await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-            var existingQuery = db.GorevOnay_Table.Where(x => x.Id == entity.Id);
-            if (authorizedUnitView)
-            {
-                if (!currentPersonelId.HasValue)
-                    return Result.Failure(Error.NotFound("Kayıt bulunamadı!", "GorevOnay.NotFound"));
-
-                var managedPersonelIds = CreateManagedPersonelIdsQuery(db, currentPersonelId.Value);
-                existingQuery = existingQuery.Where(x =>
-                    managedPersonelIds.Contains(x.PersonelId) &&
-                    x.AmirOnayi != (int)ApprovalStatus.Rejected);
-            }
-            else
-            {
-                if (!currentPersonelId.HasValue)
-                    return Result.Failure(Error.NotFound("Kayıt bulunamadı!", "GorevOnay.NotFound"));
-
-                var editableThreshold = DateTime.Today.AddDays(-4);
-                existingQuery = existingQuery.Where(x =>
-                    x.PersonelId == currentPersonelId.Value &&
-                    x.AmirOnayi != (int)ApprovalStatus.Rejected &&
-                    x.BaslangicTarihi.HasValue &&
-                    x.BaslangicTarihi.Value > editableThreshold);
-            }
-
-            var existing = await existingQuery.FirstOrDefaultAsync(cancellationToken);
+            await using var transaction = await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, cancellationToken);
+            var existing = await EditableTaskApprovals(db, currentPersonelId, authorizedUnitView)
+                .Where(x => x.Id == entity.Id).AsTracking().FirstOrDefaultAsync(cancellationToken);
             if (existing is null)
                 return Result.Failure(Error.NotFound("Kayıt bulunamadı!", "GorevOnay.NotFound"));
 
@@ -627,21 +562,89 @@ public class GorevOnayService : IGorevOnayService
             existing.GMImza = entity.GMImza;
             existing.GMVekil = entity.GMVekil;
             existing.UlasimAraci = entity.UlasimAraci;
-            existing.Secildi = entity.Secildi;
             existing.GunlukYevmiye = entity.GunlukYevmiye;
-            existing.Odendi = entity.Odendi;
             existing.Aciklama = entity.Aciklama;
-            existing.AmirOnayi = entity.AmirOnayi;
+            existing.AmirOnayi = authorizedUnitView ? entity.AmirOnayi : (int)ApprovalStatus.PendingApproval;
             existing.Transfer = entity.Transfer;
             existing.Konaklama = entity.Konaklama;
             existing.OnayRedAciklama = entity.OnayRedAciklama;
+            db.SetCurrentUser(await _authorization.GetUserNameAsync(cancellationToken));
             await db.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
             return Result.Success();
         }
         catch (Exception ex)
         {
             _logService.LogException(ex, $"{Source}.UpdateScopedAsync");
             return Result.Failure(Error.Unexpected("Görev onayı güncellenemedi.", ex, "GorevOnay.UpdateScoped.Failed"));
+        }
+    }
+
+    private Task<bool> HasTaskPermissionAsync(bool organizationView, Operation personalOperation, CancellationToken cancellationToken)
+        => _authorization.HasPermissionAsync(ModuleName.IKYS, organizationView ? Operation.Manage : personalOperation, cancellationToken);
+
+    private static IQueryable<GorevOnay> EditableTaskApprovals(ApplicationDbContext db, int? personelId, bool organizationView)
+    {
+        var query = db.GorevOnay_Table.Where(x => x.Odendi != true);
+        if (organizationView)
+            return query.Where(x => x.AmirOnayi == (int)ApprovalStatus.PendingApproval ||
+                x.AmirOnayi == (int)ApprovalStatus.Approved || x.AmirOnayi == (int)ApprovalStatus.NotRequired);
+        var threshold = DateTime.Now.AddDays(-14);
+        return query.Where(x => x.PersonelId == personelId && personelId.HasValue && x.Odendi == false &&
+            (x.AmirOnayi == (int)ApprovalStatus.PendingApproval || x.AmirOnayi == (int)ApprovalStatus.NotRequired) &&
+            x.BitisTarihi.HasValue && x.BitisTarihi >= threshold);
+    }
+
+    public async Task<Result> DeleteScopedAsync(int id, int? currentPersonelId, bool authorizedUnitView, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (!await HasTaskPermissionAsync(authorizedUnitView, Operation.Delete, cancellationToken))
+                return Result.Failure(Error.Forbidden("Görev silme yetkiniz bulunmuyor."));
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            await using var transaction = await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, cancellationToken);
+            var entity = await EditableTaskApprovals(db, currentPersonelId, authorizedUnitView)
+                .Where(x => x.Id == id).AsTracking().FirstOrDefaultAsync(cancellationToken);
+            if (entity is null)
+                return Result.Failure(Error.Validation("Görev silinmeye uygun değil veya erişim yetkiniz bulunmuyor."));
+            db.SetCurrentUser(await _authorization.GetUserNameAsync(cancellationToken));
+            db.GorevOnay_Table.Remove(entity);
+            await db.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            return Result.Success();
+        }
+        catch (Exception ex)
+        {
+            _logService.LogException(ex, $"{Source}.DeleteScopedAsync");
+            return Result.Failure(Error.Unexpected("Görev silinemedi.", ex));
+        }
+    }
+
+    public async Task<Result> SetTaskApprovalsPaidAsync(IReadOnlyCollection<int> ids, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (!await HasTaskPermissionAsync(true, Operation.Manage, cancellationToken))
+                return Result.Failure(Error.Forbidden("Ödendi işlemi için İKYS yönetim yetkisi gereklidir."));
+            var selectedIds = ids.Distinct().ToArray();
+            if (selectedIds.Length == 0)
+                return Result.Failure(Error.Validation("Ödendi yapmak için en az bir görev seçin."));
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            await using var transaction = await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, cancellationToken);
+            var entities = await db.GorevOnay_Table.Where(x => selectedIds.Contains(x.Id)).ToListAsync(cancellationToken);
+            if (entities.Count != selectedIds.Length || entities.Any(x => x.Odendi == true ||
+                (x.AmirOnayi != (int)ApprovalStatus.Approved && x.AmirOnayi != (int)ApprovalStatus.NotRequired)))
+                return Result.Failure(Error.Validation("Seçilen görevlerden biri ödendi işlemine uygun değil. Listeyi yenileyip tekrar seçin."));
+            db.SetCurrentUser(await _authorization.GetUserNameAsync(cancellationToken));
+            foreach (var entity in entities) entity.Odendi = true;
+            await db.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            return Result.Success();
+        }
+        catch (Exception ex)
+        {
+            _logService.LogException(ex, $"{Source}.SetTaskApprovalsPaidAsync");
+            return Result.Failure(Error.Unexpected("Ödendi işlemi tamamlanamadı.", ex));
         }
     }
 
@@ -768,6 +771,7 @@ public class GorevOnayService : IGorevOnayService
                RejectionNote = go.OnayRedAciklama,
                IsSelected = go.Secildi ?? false,
                IsPaid = go.Odendi ?? false,
+               PaymentStatus = go.Odendi,
                ManagerApprovalValue = go.AmirOnayi
            };
 
@@ -793,21 +797,12 @@ public class GorevOnayService : IGorevOnayService
         bool authorizedUnitView,
         CancellationToken cancellationToken)
     {
-        if (!entityPersonelId.HasValue || !currentPersonelId.HasValue)
+        if (!entityPersonelId.HasValue)
             return Error.Validation("Personel bilgisi zorunludur.", "GorevOnay.Personel.Required");
-
-        if (!authorizedUnitView)
-        {
-            return entityPersonelId == currentPersonelId.Value
-                ? null
-                : Error.Validation("Bu personel için işlem yetkiniz yok.", "GorevOnay.Scope.Invalid");
-        }
-
-        var managedPersonelIds = CreateManagedPersonelIdsQuery(db, currentPersonelId.Value);
-        var inScope = await managedPersonelIds.AnyAsync(x => x == entityPersonelId.Value, cancellationToken);
-        return inScope
-            ? null
-            : Error.Validation("Seçilen personel yönetim kapsamınızda değil.", "GorevOnay.Scope.Managed.Invalid");
+        if (!authorizedUnitView && entityPersonelId != currentPersonelId)
+            return Error.Forbidden("Bu personel için işlem yetkiniz yok.");
+        return await db.Personel_Table.AnyAsync(x => x.Id == entityPersonelId, cancellationToken)
+            ? null : Error.Validation("Personel bulunamadı.");
     }
 
     private async Task SendApprovalEmailAsync(

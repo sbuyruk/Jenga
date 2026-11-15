@@ -152,7 +152,10 @@ else
         <article class="workspace-card workspace-card--full-row">
             <div class="workspace-card__header">
                 <h3>@(PersonelId.HasValue ? "Görev Onay İşlemleri" : "Görev Onay İşlemlerim")</h3>
-                <span class="workspace-card__link-disabled">Tümünü gör</span>
+                @if (!PersonelId.HasValue)
+                {
+                    <a href="/ikys/task-approvals/personal">Tümünü gör</a>
+                }
             </div>
 
             <div class="task-list">

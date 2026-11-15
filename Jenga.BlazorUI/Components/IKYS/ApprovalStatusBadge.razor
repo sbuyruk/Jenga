@@ -6,7 +6,8 @@
         ApprovalStatus.Approved    => ("success", "bi-check-circle-fill", "Onaylandı"),
         ApprovalStatus.Rejected    => ("danger",  "bi-x-circle-fill",     "Reddedildi"),
         ApprovalStatus.NotRequired => ("secondary","bi-dash-circle",       "Onay Gerekmiyor"),
-        _                          => ("warning",  "bi-hourglass-split",   "Onay Bekliyor")
+        ApprovalStatus.PendingApproval => ("warning", "bi-hourglass-split", "Onay Bekliyor"),
+        _                          => ("secondary", "bi-question-circle", "Diğer")
     };
 }
 

@@ -63,11 +63,23 @@
     private bool _isAuthorizedUnitView;
     private Personel? _currentPersonel;
 
+    private bool _interactiveReady;
+    private string? _loadedUrl;
     protected override async Task OnParametersSetAsync()
-        => await LoadAsync();
+    {
+        if (_interactiveReady && _loadedUrl != NavigationManager.Uri) await LoadAsync();
+    }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        _interactiveReady = true;
+        await LoadAsync();
+        StateHasChanged();
+    }
 
     private async Task LoadAsync()
     {
+        _loadedUrl = NavigationManager.Uri;
         _isLoading = true;
         _loadError = null;
 

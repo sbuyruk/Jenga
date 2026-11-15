@@ -325,7 +325,7 @@ namespace Jenga.DataAccess.Services.Search
                         Id = g.Id, Tipi = SearchResultTipi.GorevOnay, Modul = SearchModul.IKYS,
                         Baslik = $"{g.Adi} {g.Soyadi} — Görev Onayı #{g.Id}",
                         AltBaslik = $"{g.BaslangicTarihi:dd.MM.yyyy} · {g.GorevinYeri}", EkBilgi = g.GorevinSebebi,
-                        HedefUrl = $"/ikys/task-approvals?SecilenId={g.Id}" + (g.PersonelId == actorId ? "" : "&Auth=IKYS")
+                        HedefUrl = g.PersonelId == actorId ? $"/ikys/task-approvals/personal?SecilenId={g.Id}" : $"/ikys/task-approvals?SecilenId={g.Id}&Auth=IKYS"
                     }).ToList()
                 },
                 new SearchGrubu

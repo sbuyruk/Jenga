@@ -65,7 +65,7 @@ public sealed class PersonelSummaryService(
                 .ToListAsync(cancellationToken);
             summary.TaskApprovals = tasks.Select(g => new PersonelSummaryActivity(g.Id,
                 $"Görev Onayı #{g.Id}", g.BaslangicTarihi, g.GorevinSebebi,
-                $"/ikys/task-approvals?SecilenId={g.Id}" + (g.PersonelId == actorId ? "" : "&Auth=IKYS"),
+                g.PersonelId == actorId ? $"/ikys/task-approvals/personal?SecilenId={g.Id}" : $"/ikys/task-approvals?SecilenId={g.Id}&Auth=IKYS",
                 g.AmirOnayi, g.BitisTarihi, g.GorevinYeri)).ToList();
 
             var access = await OvertimeService.SearchableEntriesAsync(db, actorId.Value, canManage, cancellationToken);

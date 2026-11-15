@@ -70,6 +70,7 @@ Sayfalama, arama, sıralama, panoya kopyalama ve Excel export özelliklerini iç
 | CurrentSortField | string | Aktif sıralama alanı |
 | CurrentSortDescending | bool | Sıralama yönü |
 | CurrentSearchText | string | Mevcut arama metni |
+| CurrentPageItems | IReadOnlyList\<TItem\> | Arama ve sıralama sonrası mevcut sayfada gösterilen kayıtlar; sayfa bazlı toplu işlemler için |
 
 ## Kullanım Modları
 

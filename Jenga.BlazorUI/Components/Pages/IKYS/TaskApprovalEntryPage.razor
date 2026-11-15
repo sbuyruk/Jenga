@@ -288,6 +288,7 @@
     [SupplyParameterFromQuery(Name = "PersonelId")] public int? PersonelIdQuery { get; set; }
     [SupplyParameterFromQuery(Name = "BirimTanimId")] public int? BirimTanimIdQuery { get; set; }
     [SupplyParameterFromQuery(Name = "Auth")] public string? Auth { get; set; }
+    private bool IsOrganizationView => _canManage && string.Equals(Auth, "IKYS", StringComparison.OrdinalIgnoreCase);
 
     private GorevOnay _model = new();
     private readonly List<TaskApprovalOptionItem> _personOptions = [];
@@ -337,11 +338,23 @@
     private bool KonaklamaDahilinde => string.Equals(_model.Konaklama, "Limit Dahilinde", StringComparison.OrdinalIgnoreCase);
     private bool KonaklamaAsimi => string.Equals(_model.Konaklama, "Limit Aşımı", StringComparison.OrdinalIgnoreCase);
 
+    private bool _interactiveReady;
+    private string? _loadedUrl;
     protected override async Task OnParametersSetAsync()
-        => await LoadAsync();
+    {
+        if (_interactiveReady && _loadedUrl != NavigationManager.Uri) await LoadAsync();
+    }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        _interactiveReady = true;
+        await LoadAsync();
+        StateHasChanged();
+    }
 
     private async Task LoadAsync()
     {
+        _loadedUrl = NavigationManager.Uri;
         _isLoading = true;
         _loadFailed = false;
         _statusMessage = null;
@@ -533,8 +546,8 @@
 
             var userName = await CurrentUserService.GetUserNameAsync();
             Result result = isUpdate
-                ? await GorevOnayService.UpdateAsync(_model)
-                : await GorevOnayService.AddAsync(_model, userName);
+                ? await GorevOnayService.UpdateScopedAsync(_model, _currentPersonel?.Id, IsOrganizationView)
+                : await GorevOnayService.AddScopedAsync(_model, _currentPersonel?.Id, IsOrganizationView, userName);
 
             if (!result.IsSuccess)
             {
@@ -563,7 +576,7 @@
         _isSaving = true;
         try
         {
-            var result = await GorevOnayService.DeleteAsync(_model);
+            var result = await GorevOnayService.DeleteScopedAsync(_model.Id, _currentPersonel?.Id, IsOrganizationView);
             if (!result.IsSuccess)
             {
                 _statusMessage = result.Error?.Message ?? "Silme işlemi başarısız.";
@@ -643,7 +656,8 @@
         if (!string.IsNullOrWhiteSpace(Auth))
             query.Add($"Auth={Uri.EscapeDataString(Auth)}");
 
-        var url = query.Count == 0 ? "/ikys/task-approvals" : $"/ikys/task-approvals?{string.Join("&", query)}";
+        var path = IsOrganizationView ? "/ikys/task-approvals" : "/ikys/task-approvals/personal";
+        var url = query.Count == 0 ? path : $"{path}?{string.Join("&", query)}";
         NavigationManager.NavigateTo(url);
     }
 

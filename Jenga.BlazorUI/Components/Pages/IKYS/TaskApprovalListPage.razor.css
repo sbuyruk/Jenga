@@ -1,6 +1,27 @@
-.task-approval-error-row td,
-.task-approval-error-row td a,
-.task-approval-error-row td button,
-.task-approval-error-row td span {
+.task-approval-page {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.task-approval-page ::deep .gt-table th,
+.task-approval-page ::deep .gt-table td {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    vertical-align: top;
+}
+
+.selection-column { width: 3rem; }
+.actions-column { width: 7rem; }
+.task-approval-page ::deep .badge { white-space: normal; }
+
+.task-approval-page ::deep .task-approval-error-row td,
+.task-approval-page ::deep .task-approval-error-row td a,
+.task-approval-page ::deep .task-approval-error-row td button,
+.task-approval-page ::deep .task-approval-error-row td span {
     color: var(--bs-danger) !important;
+}
+
+@media (max-width: 1100px) {
+    .task-approval-page ::deep .gt-table { min-width: 48rem; }
 }

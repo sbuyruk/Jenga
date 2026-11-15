@@ -88,7 +88,9 @@ public sealed class IkysSearchTests
         Assert.All(items.Where(i => i.Tipi == SearchResultTipi.FazlaMesai), i =>
             Assert.StartsWith($"/ikys/overtime?date={DateTime.Today:yyyy-MM-dd}&scope=", i.HedefUrl));
         Assert.All(items.Where(i => i.Tipi == SearchResultTipi.GorevOnay), i =>
-            Assert.StartsWith($"/ikys/task-approvals?SecilenId={i.Id}", i.HedefUrl));
+            Assert.Equal(login == $"user{i.Id}"
+                ? $"/ikys/task-approvals/personal?SecilenId={i.Id}"
+                : $"/ikys/task-approvals?SecilenId={i.Id}&Auth=IKYS", i.HedefUrl));
         Assert.All(items.Where(i => i.Tipi == SearchResultTipi.Personel), i =>
             Assert.Equal($"/ikys/personel/{i.Id}", i.HedefUrl));
 
