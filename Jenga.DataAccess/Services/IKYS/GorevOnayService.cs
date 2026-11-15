@@ -423,6 +423,7 @@ public class GorevOnayService : IGorevOnayService
             if (items.Count != requestedIds.Length)
                 return Result.Failure<List<TaskApprovalListItem>>(Error.Validation("Seçilen görevlerden biri rapor almaya uygun değil. Listeyi yenileyip tekrar seçin."));
 
+            await PopulateReportDetailsAsync(db, items, cancellationToken);
             ApplyCalculationFlags(items);
             return Result.Success(items);
         }
@@ -432,6 +433,61 @@ public class GorevOnayService : IGorevOnayService
             return Result.Failure<List<TaskApprovalListItem>>(Error.Unexpected(
                 "Görev onay raporu verileri getirilemedi.", ex, "GorevOnay.TaskApprovalReport.Failed"));
         }
+    }
+
+    private static async Task PopulateReportDetailsAsync(ApplicationDbContext db, List<TaskApprovalListItem> items, CancellationToken ct)
+    {
+        var ids = items.Select(x => x.TaskApprovalId).ToArray();
+        var records = await db.GorevOnay_Table.AsNoTracking().Where(x => ids.Contains(x.Id))
+            .Select(x => new { x.Id, x.PersonelId, x.Avans, x.AracPlakasi, x.AracTahsisi, x.OnayImza, x.PerSubeImza, x.PerSubeVekil })
+            .ToDictionaryAsync(x => x.Id, ct);
+        var units = await db.BirimTanim_Table.AsNoTracking().Where(x => x.Aktif == true && x.AmirId.HasValue)
+            .Select(x => new { x.Adi, x.KisaAdi, x.AmirId }).ToListAsync(ct);
+        var financeManagerIds = units.Where(x => IsFinanceDirectorate(x.Adi) || IsFinanceDirectorate(x.KisaAdi))
+            .Select(x => x.AmirId!.Value).Distinct().ToArray();
+        var activeManagers = await db.IsBilgileri_Table.AsNoTracking()
+            .Where(x => financeManagerIds.Contains(x.PersonelId) && x.CalismaDurumu == CalismaDurumu.Calisiyor)
+            .Select(x => x.PersonelId).Distinct().ToListAsync(ct);
+        int? financeId = activeManagers.Count == 1 ? activeManagers[0] : null;
+        var peopleIds = records.Values.SelectMany(x => new[] { x.PersonelId, x.OnayImza, x.PerSubeImza }).Append(financeId)
+            .Where(x => x.HasValue).Select(x => x!.Value).Distinct().ToArray();
+        var names = await db.Personel_Table.AsNoTracking().Where(x => peopleIds.Contains(x.Id))
+            .Select(x => new { x.Id, Name = (x.Adi ?? "") + " " + (x.Soyadi ?? "") }).ToDictionaryAsync(x => x.Id, x => x.Name.Trim(), ct);
+        var jobs = await (from job in db.IsBilgileri_Table.AsNoTracking()
+                          join duty in db.GorevTanim_Table.AsNoTracking() on job.GorevId equals duty.Id into duties
+                          from duty in duties.DefaultIfEmpty()
+                          join title in db.UnvanTanim_Table.AsNoTracking() on job.UnvanId equals title.Id into titles
+                          from title in titles.DefaultIfEmpty()
+                          where peopleIds.Contains(job.PersonelId)
+                          select new { job.Id, job.PersonelId, job.CalismaDurumu, DutyShort = duty.KisaAdi, Duty = duty.Adi, TitleShort = title.KisaAdi, Title = title.Adi }).ToListAsync(ct);
+        var dutyNames = jobs.GroupBy(x => x.PersonelId).ToDictionary(x => x.Key, x =>
+        {
+            var job = x.OrderByDescending(j => j.CalismaDurumu == CalismaDurumu.Calisiyor).ThenByDescending(j => j.Id).First();
+            return new[] { job.DutyShort, job.Duty, job.TitleShort, job.Title }.FirstOrDefault(n => !string.IsNullOrWhiteSpace(n)) ?? "";
+        });
+        TaskApprovalReportSignature Signature(int? id, bool deputy = false) => new(id,
+            id.HasValue ? names.GetValueOrDefault(id.Value, "") : "",
+            id.HasValue ? dutyNames.GetValueOrDefault(id.Value, "") : "", deputy);
+        foreach (var item in items)
+        {
+            var record = records[item.TaskApprovalId];
+            item.DutyTitle = record.PersonelId.HasValue ? dutyNames.GetValueOrDefault(record.PersonelId.Value, "") : "";
+            item.AdvanceText = record.Avans;
+            item.VehiclePlate = record.AracPlakasi;
+            item.VehicleRequested = record.AracTahsisi;
+            item.SpecialistSignature = Signature(record.OnayImza);
+            item.PersonnelDirectorSignature = Signature(record.PerSubeImza, record.PerSubeVekil == true);
+            var finance = Signature(financeId);
+            item.FinanceDirectorSignature = finance with { Title = "Muh. ve Fin. Dir." };
+        }
+    }
+
+    private static bool IsFinanceDirectorate(string? name)
+    {
+        var upper = (name ?? "").ToUpperInvariant().Replace('İ', 'I').Replace('Ü', 'U').Replace('Ö', 'O').Replace('Ş', 'S').Replace('Ğ', 'G').Replace('Ç', 'C');
+        var normalized = new string(upper.Where(char.IsLetterOrDigit).ToArray());
+        return normalized.Contains("MUHASEBE") && normalized.Contains("FINANS") && normalized.Contains("DIREKTOR")
+            || normalized is "MUHVEFINDIR" or "MUHVEFINDIREKTORLUGU";
     }
 
     public async Task<Result<GorevOnay>> GetScopedByIdAsync(

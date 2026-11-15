@@ -14,6 +14,63 @@ namespace Jenga.Overtime.Tests;
 public sealed class PendingApprovalsTests
 {
     [Fact]
+    public async Task ReportLoadsDutyAdvanceVehicleAndRecordedSignatories()
+    {
+        await using var data = await TestData.CreateAsync();
+        await SeedListsAsync(data);
+        await using var db = data.CreateDbContext();
+        var task = await db.GorevOnay_Table.SingleAsync(x => x.Id == 102);
+        task.Avans = "500,00 TL"; task.AracPlakasi = "06 TEST 01";
+        task.AracTahsisi = false; task.UlasimAraci = "Vakıf Aracı";
+        task.OnayImza = 2; task.PerSubeImza = 1; task.PerSubeVekil = true; task.OnayMakam = 1;
+        db.BirimTanim_Table.Add(new() { Id = 2, Adi = "Muhasebe ve Finans Direktörlüğü", KisaAdi = "Muh.ve Fin.Dir.", ParentId = 0, AmirId = 3, Aktif = true, Sira = 2, BolgeId = 1 });
+        db.IsBilgileri_Table.Add(new() { PersonelId = 3, BirimId = 2, UnvanId = 1, CalismaDurumu = CalismaDurumu.Calisiyor });
+        var duty = new GorevTanim { BirimId = 1, Adi = "Kıdemli Uzman", KisaAdi = "Kd.Uzm.", Aktif = true };
+        db.GorevTanim_Table.Add(duty);
+        await db.SaveChangesAsync();
+        var job = await db.IsBilgileri_Table.FirstAsync(x => x.PersonelId == 2);
+        job.GorevId = duty.Id;
+        await db.SaveChangesAsync();
+        var row = Assert.Single(Success(await data.Service().GetTaskApprovalReportItemsAsync([102], null, true)));
+        Assert.Equal("Kd.Uzm.", row.DutyTitle);
+        Assert.Equal("500,00 TL", row.AdvanceText);
+        Assert.Equal("06 TEST 01", row.VehiclePlate);
+        Assert.False(row.VehicleRequested);
+        Assert.Equal(2, row.SpecialistSignature.PersonelId);
+        Assert.NotEmpty(row.SpecialistSignature.Name);
+        Assert.Equal("Kd.Uzm.", row.SpecialistSignature.Title);
+        Assert.Equal(1, row.PersonnelDirectorSignature.PersonelId);
+        Assert.True(row.PersonnelDirectorSignature.IsDeputy);
+        Assert.Equal(3, row.FinanceDirectorSignature.PersonelId);
+        Assert.Equal("Personel 3", row.FinanceDirectorSignature.Name);
+        Assert.Equal("Muh. ve Fin. Dir.", row.FinanceDirectorSignature.Title);
+    }
+
+    [Theory]
+    [InlineData(false, true, false)]
+    [InlineData(true, false, false)]
+    [InlineData(true, true, true)]
+    public async Task FinanceSignatureDoesNotUseInactiveOrAmbiguousManagers(bool activeUnit, bool activePerson, bool ambiguous)
+    {
+        await using var data = await TestData.CreateAsync();
+        await SeedListsAsync(data);
+        await using var db = data.CreateDbContext();
+        db.BirimTanim_Table.Add(new() { Id = 2, Adi = "Muhasebe ve Finans Direktörlüğü", KisaAdi = "MFD", ParentId = 0, AmirId = 3, Aktif = activeUnit, Sira = 2, BolgeId = 1 });
+        db.IsBilgileri_Table.Add(new() { PersonelId = 3, BirimId = 2, UnvanId = 1, CalismaDurumu = activePerson ? CalismaDurumu.Calisiyor : CalismaDurumu.Ayrildi });
+        if (ambiguous)
+        {
+            db.BirimTanim_Table.Add(new() { Id = 3, Adi = "Muhasebe ve Finans Direktörlüğü", KisaAdi = "MFD2", ParentId = 0, AmirId = 1, Aktif = true, Sira = 3, BolgeId = 1 });
+            db.IsBilgileri_Table.Add(new() { PersonelId = 1, BirimId = 3, UnvanId = 1, CalismaDurumu = CalismaDurumu.Calisiyor });
+        }
+        (await db.GorevOnay_Table.SingleAsync(x => x.Id == 102)).OnayMakam = 2;
+        await db.SaveChangesAsync();
+        var row = Assert.Single(Success(await data.Service().GetTaskApprovalReportItemsAsync([102], null, true)));
+        Assert.Null(row.FinanceDirectorSignature.PersonelId);
+        Assert.Empty(row.FinanceDirectorSignature.Name);
+        Assert.Equal("Muh. ve Fin. Dir.", row.FinanceDirectorSignature.Title);
+    }
+
+    [Fact]
     public async Task NullManagerApprovalLoadsAsOtherWithoutGrantingActions()
     {
         await using var data = await TestData.CreateAsync();

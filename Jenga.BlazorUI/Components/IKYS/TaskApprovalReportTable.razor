@@ -1,90 +1,93 @@
+@using System.Globalization
 @using Jenga.Models.IKYS
+@using Jenga.DataAccess.Services.IKYS
 @inject IJSRuntime JS
 
-<div id="@ReportRootId" class="print-area">
-    @foreach (var item in Items)
+<div id="@ReportRootId" class="task-approval-report print-area">
+    @if (Sections.Sum(x => x.Rows.Count) == 1)
     {
-        <div class="card mb-4">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <span class="fw-semibold">Görev Onay Belgesi</span>
-                <span class="text-muted small">#@item.TaskApprovalId</span>
-            </div>
-            <div class="card-body">
-                <table class="table table-sm table-bordered align-middle mb-0">
-                    <tbody>
-                        <tr>
-                            <th style="width: 220px;">Adı Soyadı</th>
-                            <td>@item.FullName</td>
-                        </tr>
-                        <tr>
-                            <th>Görevin Sebebi</th>
-                            <td>@item.Reason</td>
-                        </tr>
-                        <tr>
-                            <th>Gidiş Tarihi</th>
-                            <td>@item.StartDate?.ToString("dd.MM.yyyy HH:mm")</td>
-                        </tr>
-                        <tr>
-                            <th>Dönüş Tarihi</th>
-                            <td>@item.EndDate?.ToString("dd.MM.yyyy HH:mm")</td>
-                        </tr>
-                        <tr>
-                            <th>Görevin Yeri</th>
-                            <td>@item.Destination</td>
-                        </tr>
-                        <tr>
-                            <th>Amir Onayı</th>
-                            <td>@item.ManagerApprovalDisplay</td>
-                        </tr>
-                        <tr>
-                            <th>Ulaşım Aracı</th>
-                            <td>@item.Transportation</td>
-                        </tr>
-                        <tr>
-                            <th>Transfer</th>
-                            <td>@item.Transfer</td>
-                        </tr>
-                        <tr>
-                            <th>Konaklama</th>
-                            <td>@item.Accommodation</td>
-                        </tr>
-                        <tr>
-                            <th>Süre</th>
-                            <td>@item.DurationText</td>
-                        </tr>
-                        <tr>
-                            <th>Günlük Yevmiye</th>
-                            <td>@item.DailyAllowanceText @item.Currency</td>
-                        </tr>
-                        <tr>
-                            <th>Yevmiye</th>
-                            <td>@item.AllowanceText</td>
-                        </tr>
-                        @if (!string.IsNullOrWhiteSpace(item.Description))
+        <TaskApprovalSingleReportForm Row="Sections.SelectMany(x => x.Rows).Single()" ReportDate="ReportDate" />
+    }
+    else
+    {
+    @foreach (var section in Sections)
+    {
+        <section class="approval-sheet">
+            <header class="approval-heading">
+                <div class="approval-crest"><img src="/images/logo-light.png" alt="TSKGV amblemi" /></div>
+                <time datetime="@ReportDate.ToString("yyyy-MM-dd")">@ReportDate.ToString("dd.MM.yyyy")</time>
+            </header>
+            <h1>TSKGV GÖREV ONAYI</h1>
+            <table class="approval-table">
+                <colgroup>
+                    <col style="width:9%" /><col style="width:9%" /><col style="width:18%" />
+                    <col style="width:6.5%" /><col style="width:6.5%" /><col style="width:4.5%" />
+                    <col style="width:7.5%" /><col style="width:8%" /><col style="width:4%" />
+                    <col style="width:5%" /><col style="width:10%" /><col style="width:6%" /><col style="width:6%" />
+                </colgroup>
+                <thead><tr>
+                    <th>Adı Soyadı</th><th>Görev</th><th>Görevin Sebebi</th><th>Net Yevmiye</th><th>Brüt Yevmiye</th>
+                    <th>İş Avansı</th><th>Gidiş Tarihi / Saati</th><th>Dönüş Tarihi / Saati</th><th>Süre</th>
+                    <th>Günlük Yevmiye</th><th>Görevin Yeri</th><th>Ulaşım Aracı</th><th>Araç Plakası</th>
+                </tr></thead>
+                @foreach (var person in section.Rows.GroupBy(x => new { x.Task.PersonelId, x.Task.FullName, x.Task.DutyTitle }))
+                {
+                    <tbody class="person-tasks">
+                        @{ var first = true; var totals = TaskApprovalReportBuilder.Totals(person); }
+                        @foreach (var row in person)
                         {
                             <tr>
-                                <th>Açıklama</th>
-                                <td>@item.Description</td>
+                                @if (first)
+                                {
+                                    <td rowspan="@(person.Count() + totals.Count)">@person.Key.FullName</td>
+                                    <td rowspan="@(person.Count() + totals.Count)">@person.Key.DutyTitle</td>
+                                }
+                                <td class="reason">@row.Task.Reason</td><td class="money">@Money(row.NetAmount, row.Currency)</td>
+                                <td class="money">@Money(row.GrossAmount, row.Currency)</td><td>@row.Task.AdvanceText</td>
+                                <td>@row.Task.StartDate?.ToString("dd.MM.yyyy HH:mm")</td><td>@row.Task.EndDate?.ToString("dd.MM.yyyy HH:mm")</td>
+                                <td>@row.Task.DurationText</td><td class="money">@Daily(row.Task)</td>
+                                <td>@row.Task.Destination</td><td>@row.Task.Transportation</td><td>@row.Task.VehiclePlate</td>
                             </tr>
+                            first = false;
                         }
-                        @if (!string.IsNullOrWhiteSpace(item.RejectionNote))
+                        @foreach (var total in totals)
                         {
-                            <tr>
-                                <th>Red Açıklaması</th>
-                                <td class="text-danger">@item.RejectionNote</td>
-                            </tr>
+                            <tr class="person-total"><td>@total.Currency Toplamı</td><td class="money">@Money(total.NetAmount, total.Currency)</td>
+                                <td class="money">@Money(total.GrossAmount, total.Currency)</td><td colspan="8"></td></tr>
                         }
                     </tbody>
-                </table>
-            </div>
-        </div>
+                }
+                <tbody class="general-totals">
+                    @foreach (var total in section.Totals)
+                    {
+                        <tr><th colspan="3">Genel Toplam (@total.Currency)</th><td class="money">@Money(total.NetAmount, total.Currency)</td>
+                            <td class="money">@Money(total.GrossAmount, total.Currency)</td><td colspan="8"></td></tr>
+                    }
+                </tbody>
+            </table>
+            <section class="approval-request">
+                <h2>GENEL MÜDÜRLÜK MAKAMINA</h2>
+                <p>Yukarıda adı ve soyadı yazılı personelin seyahatine müsaadelerini arz ederim.</p>
+                <div class="approval-signatures">
+                    @foreach (var signature in new[] { section.Specialist, section.PersonnelDirector, section.FinanceDirector })
+                    {
+                        <div><div class="signature-name">@signature.Name</div><div>@signature.Title@(signature.IsDeputy ? " V." : "")</div></div>
+                    }
+                </div>
+            </section>
+        </section>
+    }
     }
 </div>
 
 @code {
-    [Parameter] public IReadOnlyList<TaskApprovalListItem> Items { get; set; } = Array.Empty<TaskApprovalListItem>();
+    [Parameter] public IReadOnlyList<TaskApprovalReportSection> Sections { get; set; } = [];
+    [Parameter] public DateTime ReportDate { get; set; } = DateTime.Today;
     [Parameter] public string ReportRootId { get; set; } = "taskApprovalReportRoot";
-
-    public async Task PrintAsync()
-        => await JS.InvokeVoidAsync("printElementById", ReportRootId);
+    private static readonly CultureInfo Tr = new("tr-TR");
+    private static string Money(decimal amount, string currency) => $"{amount.ToString("N2", Tr)} {currency}";
+    private static string Daily(TaskApprovalListItem item) => string.IsNullOrWhiteSpace(item.DailyAllowanceText) ? ""
+        : TaskApprovalReportBuilder.TryParseAmount(item.DailyAllowanceText, item.Currency, out var amount)
+            ? Money(amount, item.Currency ?? "") : item.DailyAllowanceText;
+    public async Task PrintAsync() => await JS.InvokeVoidAsync("taskApprovalReport.print", ReportRootId, "TSKGV Görev Onayı");
 }

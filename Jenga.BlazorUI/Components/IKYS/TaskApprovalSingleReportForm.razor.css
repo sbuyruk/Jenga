@@ -1,0 +1,35 @@
+.single-approval-sheet { width: 480px; max-width: 100%; margin: 0 auto; background: #fff; color: #000; font: 13px/1.5 Arial, sans-serif; padding: 4px; box-sizing: border-box; }
+.single-heading { position: relative; min-height: 65px; }
+.single-heading time { position: absolute; right: 6px; top: 0; }
+.single-crest { position: absolute; width: 49px; height: 60px; overflow: hidden; }
+.single-crest img { position: absolute; width: 325px; max-width: none; height: auto; left: -22px; top: -7px; }
+h1 { font-size: 14px; font-weight: bold; text-align: center; margin: 0; padding: 31px 50px 8px; }
+.single-form { border: 1px solid #000; }
+.person-info { width: 100%; border-collapse: collapse; table-layout: fixed; font: inherit; }
+.person-info th, .person-info td { border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 3px 5px; overflow-wrap: anywhere; }
+.person-info th:last-child, .person-info td:last-child { border-right: 0; }
+.person-info th { text-align: center; }
+.person-info th:first-child { text-align: left; }
+.amount { text-align: right; }
+.currency { text-align: center; }
+.single-duration, .single-reason, .travel-details, .other-details { padding: 4px 5px; border-bottom: 1px solid #000; overflow-wrap: anywhere; }
+.single-duration strong { margin-right: 8px; }
+.single-reason p, .other-details p { margin: 9px 0 0; white-space: pre-wrap; }
+.travel-details { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 3px 6px; }
+.travel-details > div { min-width: 0; }
+.travel-details strong { margin-right: 7px; }
+.other-details { min-height: 120px; }
+.single-request { padding: 3px 5px 10px; break-inside: avoid; }
+h2 { font: inherit; text-align: center; margin: 0 0 5px; }
+.single-request p { margin: 0; text-indent: 12px; }
+.single-signatures { display: flex; gap: 24px; margin-top: 45px; }
+.single-signatures > div { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+@page task-approval-single { size: portrait; margin: 10mm; }
+@media print {
+    .single-approval-sheet { page: task-approval-single; width: 100%; max-width: none; padding: 0; margin: 0; font-size: 10pt; }
+    .person-info { font-size: inherit !important; }
+    .person-info th, .person-info td { border: 0 !important; border-right: 1px solid #000 !important; border-bottom: 1px solid #000 !important; padding: 3px 5px !important; }
+    .person-info th:last-child, .person-info td:last-child { border-right: 0 !important; }
+    .person-info thead { display: table-row-group; }
+    .person-info tr, .single-duration, .single-reason, .travel-details { break-inside: avoid; }
+}

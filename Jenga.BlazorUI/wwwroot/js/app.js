@@ -72,6 +72,38 @@ window.printElementById = (elementId, printTitle) => {
     }
 };
 
+window.taskApprovalReport = {
+    print: (elementId, title) => new Promise((resolve, reject) => {
+        const element = document.getElementById(elementId);
+        if (!element) { reject(new Error("Rapor bulunamadı.")); return; }
+        const frame = document.createElement("iframe");
+        frame.setAttribute("aria-hidden", "true");
+        frame.style.cssText = "position:fixed;left:-10000px;top:0;width:1123px;height:794px;border:0;";
+        frame.onload = async () => {
+            try {
+                const target = frame.contentWindow;
+                await frame.contentDocument.fonts.ready;
+                await Promise.all(Array.from(frame.contentDocument.images).map(img => img.complete ? Promise.resolve() :
+                    new Promise(done => { img.onload = done; img.onerror = done; })));
+                target.addEventListener("afterprint", () => frame.remove(), { once: true });
+                target.focus();
+                target.print();
+                resolve();
+            } catch (error) { frame.remove(); reject(error); }
+        };
+        const head = document.createElement("head");
+        const base = document.createElement("base");
+        base.href = document.baseURI;
+        head.appendChild(base);
+        const caption = document.createElement("title");
+        caption.textContent = title || "TSKGV Görev Onayı";
+        head.appendChild(caption);
+        document.querySelectorAll('link[rel="stylesheet"], style').forEach(style => head.appendChild(style.cloneNode(true)));
+        frame.srcdoc = "<!doctype html><html lang=\"tr\">" + head.outerHTML + "<body>" + element.outerHTML + "</body></html>";
+        document.body.appendChild(frame);
+    })
+};
+
 window.isMobileViewport = () => window.innerWidth < 768;
 
 window.taskApprovalEditor = {
