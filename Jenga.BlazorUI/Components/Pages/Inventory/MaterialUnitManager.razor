@@ -18,14 +18,13 @@
 
 @code {
     private List<MaterialUnit> materialUnits = new();
-    private bool _dataLoaded;
     private bool _canCreate;
     private bool _canEdit;
     private bool _canDelete;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && !_dataLoaded)
+        if (firstRender)
         {
             _canCreate = await CurrentUserService.HasPermissionAsync(ModuleName.Inventory, Operation.Create);
             _canEdit   = await CurrentUserService.HasPermissionAsync(ModuleName.Inventory, Operation.Edit);

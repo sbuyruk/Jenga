@@ -20,9 +20,6 @@ namespace Jenga.BlazorUI.Services.Common
         private IReadOnlySet<(ModuleName Module, Operation Operation)>? _cachedPermissions;
         private IReadOnlyList<int>? _cachedRegionIds;
         private readonly SemaphoreSlim _cacheLock = new(1, 1);
-        // Development: impersonation JS interop'u başarıyla çalıştırıldı mı?
-        // Prerender sırasında false kalır; interactive aşamada true olunca cache geçerli sayılır.
-        private bool _impersonationChecked;
 
         public CurrentUserService(
             IDbContextFactory<ApplicationDbContext> dbFactory,
@@ -72,7 +69,6 @@ namespace Jenga.BlazorUI.Services.Common
                 {
                     var overrideUser = await _impersonationService.GetOverrideAsync();
                     impersonationJsAvailable = true; // JS interop başarıyla çalıştı
-                    _impersonationChecked = true;
                     if (!string.IsNullOrWhiteSpace(overrideUser))
                     {
                         await using var overrideDb = await _dbFactory.CreateDbContextAsync();
@@ -204,7 +200,6 @@ namespace Jenga.BlazorUI.Services.Common
             Volatile.Write(ref _cachedPersonel, null);
             Volatile.Write(ref _cachedPermissions, null);
             Volatile.Write(ref _cachedRegionIds, null);
-            _impersonationChecked = false;
         }
 
         public async Task<IReadOnlySet<(ModuleName Module, Operation Operation)>> GetModulePermissionsAsync()
@@ -329,7 +324,6 @@ namespace Jenga.BlazorUI.Services.Common
                     _cachedPersonel      = found;
                     _cachedPermissions   = null;
                     _cachedRegionIds     = null;
-                    _impersonationChecked = true;
                 }
                 finally
                 {

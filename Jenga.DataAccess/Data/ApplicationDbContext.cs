@@ -1,6 +1,5 @@
 using Jenga.Models.Common;
 using Jenga.Models.Enums;
-using Jenga.Models.Enums;
 using Jenga.Models.FTK;
 using Jenga.Models.IKYS;
 using Jenga.Models.Inventory;

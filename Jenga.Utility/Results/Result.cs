@@ -50,7 +50,7 @@ public sealed class Result<T> : Result
         ? _value!
         : throw new InvalidOperationException("Failure sonucundan Value okunamaz. Önce IsSuccess kontrol edin.");
 
-    public new static Result<T> Success(T value) => new(true, value, Error.None);
+    public static Result<T> Success(T value) => new(true, value, Error.None);
     public new static Result<T> Failure(Error error) => new(false, default, error);
 
     // Implicit dönüşüm: dönüş satırlarında "return value;" yazılabilir.
