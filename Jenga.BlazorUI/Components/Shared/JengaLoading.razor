@@ -18,7 +18,10 @@ else
                         <span class="jenga-loading__dots" aria-hidden="true"><i></i><i></i><i></i></span>
                     }
                 </h2>
-                <p class="jenga-loading__subtitle">@(IsSplash ? "Her parça, birlikte daha güçlü." : Message)</p>
+                @if (!IsSplash)
+                {
+                    <p class="jenga-loading__subtitle">@Message</p>
+                }
             </div>
             @if (!IsSplash)
             {
