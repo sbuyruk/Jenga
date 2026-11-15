@@ -23,10 +23,16 @@ public sealed class TaskApprovalListItem
     public string? RejectionNote { get; set; }
     public bool IsSelected { get; set; }
     public bool IsPaid { get; set; }
+    public bool? PaymentStatus { get; set; }
     public bool HasCalculationError { get; set; }
     public int ManagerApprovalValue { get; set; }
 
     public ApprovalStatus ManagerApprovalStatus => (ApprovalStatus)ManagerApprovalValue;
     public string ManagerApprovalDisplay => EnumHelper.GetEnumDescription(ManagerApprovalStatus);
     public bool IsRejected => ManagerApprovalStatus == ApprovalStatus.Rejected;
+    public bool CanReport => !IsPaid && ManagerApprovalStatus is ApprovalStatus.Approved or ApprovalStatus.NotRequired;
+    public bool CanEditGeneral => !IsPaid && ManagerApprovalStatus is ApprovalStatus.PendingApproval or ApprovalStatus.Approved or ApprovalStatus.NotRequired;
+    public bool CanEditPersonal(DateTime now) => PaymentStatus == false &&
+        ManagerApprovalStatus is ApprovalStatus.PendingApproval or ApprovalStatus.NotRequired &&
+        EndDate.HasValue && EndDate.Value >= now.AddDays(-14);
 }

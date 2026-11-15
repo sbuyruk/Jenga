@@ -164,6 +164,7 @@
     private int boundPageSize;
 
     public string CurrentSearchText => searchText;
+    public IReadOnlyList<TItem> CurrentPageItems => PagedItems.AsReadOnly();
 
     private string TableCssClass
     {

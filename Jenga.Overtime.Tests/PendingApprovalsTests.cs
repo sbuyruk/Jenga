@@ -98,6 +98,145 @@ public sealed class PendingApprovalsTests
             x => x.GorevOnayId == 40);
     }
 
+    [Fact]
+    public async Task PersonalListIncludesEntireOwnHistoryWhileOrganizationIncludesAllUnitsForOneYear()
+    {
+        await using var data = await TestData.CreateAsync();
+        await SeedListsAsync(data);
+        var personal = Success(await data.Service(manage: false).GetTaskApprovalListAsync(2, false));
+        Assert.All(personal, x => Assert.Equal(2, x.PersonelId));
+        Assert.Contains(personal, x => x.TaskApprovalId == 110);
+        Assert.Equal(personal.OrderByDescending(x => x.EndDate).Select(x => x.TaskApprovalId), personal.Select(x => x.TaskApprovalId));
+        var general = Success(await data.Service().GetTaskApprovalListAsync(null, true));
+        Assert.Contains(general, x => x.PersonelId == 3);
+        Assert.Contains(general, x => x.IsRejected);
+        Assert.Contains(general, x => x.IsPaid);
+        Assert.DoesNotContain(general, x => x.TaskApprovalId == 110);
+        Assert.True((await data.Service(manage: false).GetTaskApprovalListAsync(2, true)).IsFailure);
+        Assert.True((await data.Service().GetTaskApprovalListAsync(null, false)).IsFailure);
+    }
+
+    [Theory]
+    [InlineData(101, true)]
+    [InlineData(102, false)]
+    [InlineData(103, false)]
+    [InlineData(104, false)]
+    [InlineData(105, false)]
+    [InlineData(106, false)]
+    [InlineData(107, true)]
+    [InlineData(108, false)]
+    [InlineData(109, false)]
+    [InlineData(110, false)]
+    [InlineData(112, true)]
+    [InlineData(113, false)]
+    public async Task PersonalEditChecksOwnerPaymentApprovalAndFourteenDayEndDate(int id, bool allowed)
+    {
+        await using var data = await TestData.CreateAsync();
+        await SeedListsAsync(data);
+        var service = data.Service(manage: false);
+        var loaded = await service.GetScopedByIdAsync(id, 2, false);
+        Assert.Equal(allowed, loaded.IsSuccess);
+        var listItem = Success(await service.GetTaskApprovalListAsync(2, false)).SingleOrDefault(x => x.TaskApprovalId == id);
+        if (id == 104) Assert.Null(listItem);
+        else Assert.Equal(allowed, listItem!.CanEditPersonal(DateTime.Now));
+        await using var db = data.CreateDbContext();
+        var update = await db.GorevOnay_Table.AsNoTracking().SingleAsync(x => x.Id == id);
+        update.GorevinSebebi = "Düzenlendi";
+        update.Odendi = true;
+        update.AmirOnayi = (int)ApprovalStatus.Approved;
+        var result = await service.UpdateScopedAsync(update, 2, false);
+        Assert.Equal(allowed, result.IsSuccess);
+        if (allowed)
+        {
+            var saved = await db.GorevOnay_Table.AsNoTracking().SingleAsync(x => x.Id == id);
+            Assert.Equal("Düzenlendi", saved.GorevinSebebi);
+            Assert.False(saved.Odendi);
+            Assert.Equal((int)ApprovalStatus.PendingApproval, saved.AmirOnayi);
+        }
+    }
+
+    [Fact]
+    public async Task ReportsAndPaymentsExcludePendingRejectedPaidAndUnknownStatuses()
+    {
+        await using var data = await TestData.CreateAsync();
+        await SeedListsAsync(data);
+        var service = data.Service();
+        Assert.Equal(2, Success(await service.GetTaskApprovalReportItemsAsync([102, 112], null, true)).Count);
+        foreach (var id in new[] { 101, 105, 106, 113 })
+        {
+            Assert.True((await service.GetTaskApprovalReportItemsAsync([102, id], 1, true)).IsFailure);
+            Assert.True((await service.SetTaskApprovalsPaidAsync([104, id])).IsFailure);
+        }
+        await using var db = data.CreateDbContext();
+        Assert.False((await db.GorevOnay_Table.AsNoTracking().SingleAsync(x => x.Id == 104)).Odendi);
+        Assert.True((await data.Service(manage: false).SetTaskApprovalsPaidAsync([104])).IsFailure);
+        Assert.True((await service.GetTaskApprovalReportItemsAsync([102], 2, false)).IsFailure);
+        Assert.True((await service.SetTaskApprovalsPaidAsync([102, 104, 104])).IsSuccess);
+        Assert.All(await db.GorevOnay_Table.AsNoTracking().Where(x => x.Id == 102 || x.Id == 104).ToListAsync(), x => Assert.True(x.Odendi));
+        Assert.True((await service.GetTaskApprovalReportItemsAsync([102], null, true)).IsFailure);
+        Assert.True((await service.GetScopedByIdAsync(104, null, true)).IsFailure);
+    }
+
+    [Fact]
+    public async Task DirectEntryAndDeleteCannotBypassPersonalRestrictions()
+    {
+        await using var data = await TestData.CreateAsync();
+        await SeedListsAsync(data);
+        var service = data.Service(manage: false);
+        var entry = new TaskApprovalEntryService(data, NullLogService.Instance, service);
+        Assert.True((await entry.LoadAsync(new() { GorevOnayId = 101, CurrentPersonelId = 2 })).IsSuccess);
+        Assert.True((await entry.LoadAsync(new() { GorevOnayId = 104, CurrentPersonelId = 2 })).IsFailure);
+        Assert.True((await entry.LoadAsync(new() { GorevOnayId = 104, CurrentPersonelId = 2, CanManage = true, Auth = "IKYS" })).IsFailure);
+        Assert.True((await service.DeleteScopedAsync(104, 2, false)).IsFailure);
+        Assert.True((await service.DeleteScopedAsync(108, 2, false)).IsFailure);
+        Assert.True((await service.DeleteScopedAsync(101, 2, false)).IsSuccess);
+        Assert.True((await data.Service().GetScopedByIdAsync(104, null, true)).IsSuccess);
+    }
+
+    [Fact]
+    public async Task PersonalCreationCannotAssignAnotherOwnerOrForgePaidAndApprovedState()
+    {
+        await using var data = await TestData.CreateAsync();
+        var service = data.Service(manage: false);
+        Assert.True((await service.AddScopedAsync(new() { PersonelId = 3 }, 2, false)).IsFailure);
+        var entity = new GorevOnay
+        {
+            PersonelId = 2, Odendi = true, Secildi = true, AmirOnayi = 1,
+            BaslangicTarihi = DateTime.Now, BitisTarihi = DateTime.Now.AddDays(1)
+        };
+        Assert.True((await service.AddScopedAsync(entity, 2, false)).IsSuccess);
+        await using var db = data.CreateDbContext();
+        var saved = await db.GorevOnay_Table.AsNoTracking().SingleAsync(x => x.Id == entity.Id);
+        Assert.False(saved.Odendi);
+        Assert.False(saved.Secildi);
+        Assert.Equal(0, saved.AmirOnayi);
+        Assert.True((await service.GetScopedByIdAsync(entity.Id, 2, false)).IsSuccess);
+    }
+
+    private static async Task SeedListsAsync(TestData data)
+    {
+        await using var db = data.CreateDbContext();
+        await db.GorevOnay_Table.ExecuteDeleteAsync();
+        var now = DateTime.Now;
+        var rows = new (int Id, int Owner, int Status, bool? Paid, DateTime End)[]
+        {
+            (101, 2, 0, false, now.AddDays(-1)), (102, 2, 1, false, now.AddDays(-5)),
+            (103, 2, 3, false, now.AddDays(-15)), (104, 3, 1, false, now),
+            (105, 2, 3, true, now), (106, 2, 2, false, now),
+            (107, 2, 0, false, now.AddDays(-14).AddMinutes(5)),
+            (108, 2, 0, false, now.AddDays(-14).AddMinutes(-5)),
+            (109, 2, 0, null, now), (110, 2, 0, false, now.AddYears(-2)),
+            (111, 3, 0, false, now), (112, 2, 3, false, now.AddDays(1)), (113, 2, 4, false, now)
+        };
+        db.GorevOnay_Table.AddRange(rows.Select(x => new GorevOnay
+        {
+            Id = x.Id, PersonelId = x.Owner, AmirOnayi = x.Status, Odendi = x.Paid,
+            BaslangicTarihi = x.Id == 101 ? now.AddDays(-30) : x.End.AddDays(-1), BitisTarihi = x.End,
+            GorevinSebebi = "Görev", GorevinYeri = "Ankara"
+        }));
+        await db.SaveChangesAsync();
+    }
+
     private static T Success<T>(Result<T> result)
     {
         Assert.True(result.IsSuccess, $"{result.Error.Message} {result.Error.Exception}");
@@ -107,7 +246,7 @@ public sealed class PendingApprovalsTests
     private sealed class Authorization(bool manage, bool view) : IServiceAuthorizationContext
     {
         public Task<bool> HasPermissionAsync(ModuleName module, Operation operation, CancellationToken cancellationToken = default)
-            => Task.FromResult(module == ModuleName.IKYS && (operation == Operation.View ? view : manage));
+            => Task.FromResult(module == ModuleName.IKYS && (operation == Operation.Manage ? manage : view));
         public Task<string?> GetUserNameAsync(CancellationToken cancellationToken = default) => Task.FromResult<string?>("manager");
         public Task<IReadOnlyList<int>> GetAuthorizedRegionIdsAsync(CancellationToken cancellationToken = default)
             => Task.FromResult<IReadOnlyList<int>>([]);

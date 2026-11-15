@@ -58,6 +58,9 @@ public interface IGorevOnayService
         bool authorizedUnitView,
         CancellationToken cancellationToken = default);
 
+    Task<Result> DeleteScopedAsync(int id, int? currentPersonelId, bool authorizedUnitView, CancellationToken cancellationToken = default);
+    Task<Result> SetTaskApprovalsPaidAsync(IReadOnlyCollection<int> ids, CancellationToken cancellationToken = default);
+
     Task<Result<bool>> HasOverlappingTaskApprovalAsync(
         int personelId,
         DateTime startDate,
