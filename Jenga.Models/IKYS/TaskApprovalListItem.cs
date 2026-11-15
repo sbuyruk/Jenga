@@ -26,6 +26,13 @@ public sealed class TaskApprovalListItem
     public bool? PaymentStatus { get; set; }
     public bool HasCalculationError { get; set; }
     public int ManagerApprovalValue { get; set; }
+    public string? DutyTitle { get; set; }
+    public string? AdvanceText { get; set; }
+    public string? VehiclePlate { get; set; }
+    public bool? VehicleRequested { get; set; }
+    public TaskApprovalReportSignature SpecialistSignature { get; set; } = new();
+    public TaskApprovalReportSignature PersonnelDirectorSignature { get; set; } = new();
+    public TaskApprovalReportSignature FinanceDirectorSignature { get; set; } = new();
 
     public ApprovalStatus ManagerApprovalStatus => (ApprovalStatus)ManagerApprovalValue;
     public string ManagerApprovalDisplay => EnumHelper.GetEnumDescription(ManagerApprovalStatus);

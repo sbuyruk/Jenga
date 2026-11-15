@@ -1,0 +1,48 @@
+@using System.Globalization
+@using Jenga.Models.IKYS
+
+<section class="single-approval-sheet">
+    <header class="single-heading">
+        <div class="single-crest"><img src="/images/logo-light.png" alt="TSKGV amblemi" /></div>
+        <time datetime="@ReportDate.ToString("yyyy-MM-dd")">@ReportDate.ToString("dd.MM.yyyy")</time>
+        <h1>TSKGV GÖREV ONAYI</h1>
+    </header>
+    <div class="single-form">
+        <table class="person-info">
+            <colgroup><col style="width:34%" /><col style="width:22%" /><col style="width:22%" /><col style="width:22%" /></colgroup>
+            <thead>
+                <tr><th colspan="4" class="person-heading">Göreve Giden Personel</th></tr>
+                <tr><th>Adı Soyadı</th><th>İş Avansı</th><th>Yevmiyesi</th><th>Para Birimi</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>@Row.Task.FullName</td><td>@Row.Task.AdvanceText</td><td class="amount">@Row.NetAmount.ToString("N2", Tr)</td><td class="currency">@Row.Currency</td></tr>
+                <tr><td colspan="4">@Row.Task.DutyTitle</td></tr>
+            </tbody>
+        </table>
+        <div class="single-duration"><strong>Görevin Süresi :</strong> @Row.Task.DurationText (@Row.Task.StartDate?.ToString("dd.MM.yyyy HH:mm") - @Row.Task.EndDate?.ToString("dd.MM.yyyy HH:mm"))</div>
+        <div class="single-reason"><strong>Görevin Sebebi :</strong><p>@Row.Task.Reason</p></div>
+        <div class="travel-details">
+            <div><strong>Gideceği Yer :</strong> <span>@Row.Task.Destination</span></div>
+            <div><strong>Araç Talebi :</strong> <span>@(Row.Task.VehicleRequested switch { true => "Var", false => "Yok", _ => "—" })</span></div>
+            <div><strong>Başlangıç Tarihi :</strong> <span>@Row.Task.StartDate?.ToString("dd.MM.yyyy")</span></div>
+            <div><strong>Araç Plakası :</strong> <span>@Row.Task.VehiclePlate</span></div>
+        </div>
+        <div class="other-details"><strong>Diğer Hususlar</strong><p>@Row.Task.Description</p></div>
+        <section class="single-request">
+            <h2>GENEL MÜDÜRLÜK MAKAMINA</h2>
+            <p>Yukarıda adı ve soyadı yazılı personelin seyahatine müsaadelerini arz ederim.</p>
+            <div class="single-signatures">
+                @foreach (var signature in new[] { Row.Task.SpecialistSignature, Row.Task.PersonnelDirectorSignature })
+                {
+                    <div><div>@signature.Name</div><div>@signature.Title@(signature.IsDeputy ? " V." : "")</div></div>
+                }
+            </div>
+        </section>
+    </div>
+</section>
+
+@code {
+    [Parameter, EditorRequired] public TaskApprovalReportRow Row { get; set; } = null!;
+    [Parameter] public DateTime ReportDate { get; set; } = DateTime.Today;
+    private static readonly CultureInfo Tr = new("tr-TR");
+}

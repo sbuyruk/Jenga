@@ -1,4 +1,6 @@
 @page "/ikys/task-approvals/report"
+@page "/IKYS/GorevOnayBelgesiViewer.aspx"
+@page "/IKYS/GorevOnayBelgesiTopluViewer.aspx"
 @rendermode InteractiveServer
 
 @using Jenga.BlazorUI.Components.IKYS
@@ -13,12 +15,13 @@
 @inject NavigationManager NavigationManager
 @inject ILogger<TaskApprovalReportPage> Logger
 
-<PermissionGuard Module="ModuleName.IKYS" Operation="Operation.View">
+<PageTitle>TSKGV Görev Onayı</PageTitle>
+<PermissionGuard Module="ModuleName.IKYS" Operation="Operation.Manage">
     <div class="no-print d-flex flex-wrap align-items-center gap-2 mb-3">
         <button class="btn btn-outline-secondary" @onclick="GoBack">
             <i class="bi bi-arrow-left me-1"></i>Listeye Dön
         </button>
-        <button class="btn btn-primary" @onclick="PrintAsync" disabled="@(_items.Count == 0)">
+        <button class="btn btn-primary" @onclick="PrintAsync" disabled="@(_isLoading || _sections.Count == 0 || !string.IsNullOrWhiteSpace(_loadError))">
             <i class="bi bi-printer me-1"></i>Yazdır
         </button>
     </div>
@@ -31,13 +34,17 @@
     {
         <div class="alert alert-danger">@_loadError</div>
     }
-    else if (_items.Count == 0)
+    else if (_sections.Count == 0)
     {
         <div class="alert alert-info">Raporlanacak görev bulunamadı.</div>
     }
     else
     {
-        <TaskApprovalReportTable @ref="_reportTable" Items="_items" />
+        @if (_sections.Sum(x => x.Rows.Count) > 1 && _sections.Any(x => string.IsNullOrWhiteSpace(x.FinanceDirector.Name)))
+        {
+            <div class="alert alert-warning no-print" role="alert">Muhasebe ve Finans Direktörü tek bir aktif birim amiri olarak bulunamadı. Birim ve personel tanımlarını kontrol edin.</div>
+        }
+        <TaskApprovalReportTable @ref="_reportTable" Sections="_sections" ReportDate="_reportDate" />
     }
 </PermissionGuard>
 
@@ -57,7 +64,9 @@
     public string? Auth { get; set; }
 
     private TaskApprovalReportTable? _reportTable;
-    private List<TaskApprovalListItem> _items = new();
+    private List<TaskApprovalReportSection> _sections = [];
+    private DateTime _reportDate = DateTime.Today;
+    private int _loadVersion;
     private bool _isLoading = true;
     private string? _loadError;
     private bool _isAuthorizedUnitView;
@@ -79,15 +88,17 @@
 
     private async Task LoadAsync()
     {
+        var version = ++_loadVersion;
         _loadedUrl = NavigationManager.Uri;
         _isLoading = true;
         _loadError = null;
+        _sections = [];
+        _reportTable = null;
 
         try
         {
             _currentPersonel = await CurrentUserService.GetCurrentPersonelAsync();
-            _isAuthorizedUnitView = string.Equals(Auth, AuthorizedUnitCode, StringComparison.OrdinalIgnoreCase)
-                && await CurrentUserService.HasPermissionAsync(ModuleName.IKYS, Operation.Manage);
+            _isAuthorizedUnitView = await CurrentUserService.HasPermissionAsync(ModuleName.IKYS, Operation.Manage);
 
             var effectiveTaskApprovalId = TaskApprovalId ?? LegacyTaskApprovalId;
             var ids = ParseIds();
@@ -95,32 +106,42 @@
                 ids.Insert(0, effectiveTaskApprovalId.Value);
 
             var result = await GorevOnayService.GetTaskApprovalReportItemsAsync(ids, _currentPersonel?.Id, _isAuthorizedUnitView);
+            if (version != _loadVersion) return;
 
             if (!result.IsSuccess)
             {
                 _loadError = result.Error?.Message ?? "Rapor verileri alınamadı.";
-                _items = new();
                 return;
             }
 
-            _items = result.Value ?? new();
+            var report = TaskApprovalReportBuilder.Build(result.Value ?? []);
+            if (report.IsFailure) { _loadError = report.Error.Message; return; }
+            _sections = report.Value;
+            _reportDate = DateTime.Today;
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "TaskApprovalReportPage.LoadAsync");
-            _loadError = "Beklenmeyen bir hata oluştu.";
-            _items = new();
+            if (version == _loadVersion) _loadError = "Rapor hazırlanamadı. Lütfen tekrar deneyin.";
         }
         finally
         {
-            _isLoading = false;
+            if (version == _loadVersion) _isLoading = false;
         }
     }
 
     private async Task PrintAsync()
     {
-        if (_reportTable is not null)
-            await _reportTable.PrintAsync();
+        if (_isLoading || _sections.Count == 0 || !string.IsNullOrWhiteSpace(_loadError)) return;
+        try
+        {
+            if (_reportTable is not null) await _reportTable.PrintAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "TaskApprovalReportPage.PrintAsync");
+            _loadError = "Yazdırma penceresi açılamadı. Sayfayı yenileyip tekrar deneyin.";
+        }
     }
 
     private void GoBack()
