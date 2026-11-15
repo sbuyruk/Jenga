@@ -16,10 +16,13 @@ public interface IGorevOnayService
     Task<Result<List<PendingApprovalItem>>> GetPendingByManagerAsync(int managerPersonelId, CancellationToken cancellationToken = default);
 
     /// <summary>Approves a GorevOnay record and sends notification email.</summary>
-    Task<Result> ApproveAsync(int gorevOnayId, int managerPersonelId, string? approvedBy = null, CancellationToken cancellationToken = default);
+    Task<Result> ApproveAsync(int gorevOnayId, int managerPersonelId, string? approvedBy = null, CancellationToken cancellationToken = default, bool authorizedIkysView = false);
 
     /// <summary>Rejects a GorevOnay record with a reason and sends notification email.</summary>
-    Task<Result> RejectAsync(int gorevOnayId, int managerPersonelId, string rejectReason, string? rejectedBy = null, CancellationToken cancellationToken = default);
+    Task<Result> RejectAsync(int gorevOnayId, int managerPersonelId, string rejectReason, string? rejectedBy = null, CancellationToken cancellationToken = default, bool authorizedIkysView = false);
+
+    Task<Result<PendingApprovalsOverview>> GetPendingApprovalsAsync(
+        int? currentPersonelId, bool authorizedIkysView, CancellationToken cancellationToken = default);
 
     Task<Result<List<TaskApprovalListItem>>> GetTaskApprovalListAsync(
         int? currentPersonelId,

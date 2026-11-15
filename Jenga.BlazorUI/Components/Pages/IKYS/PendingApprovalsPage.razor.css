@@ -1,0 +1,31 @@
+.pending-approvals-page {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+}
+
+.pending-approvals-page ::deep .gt-table th,
+.pending-approvals-page ::deep .gt-table td {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    vertical-align: top;
+}
+
+.pending-approvals-page ::deep .gt-table .badge {
+    white-space: normal;
+}
+
+.pending-approval-actions-column {
+    width: 7rem;
+}
+
+.pending-approval-actions .btn {
+    width: 100%;
+    white-space: nowrap;
+}
+
+@media (max-width: 1100px) {
+    .pending-approvals-page ::deep .gt-table {
+        min-width: 52rem;
+    }
+}
