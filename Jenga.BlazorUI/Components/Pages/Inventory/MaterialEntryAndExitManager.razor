@@ -326,7 +326,7 @@
 
     #region Handlers (Tree & Selection)
 
-    private void HandleNodeSelect(TreeItem<MaterialCategoryNode>? item)
+    private async Task HandleNodeSelect(TreeItem<MaterialCategoryNode>? item)
     {
         if (item == null) return;
 
@@ -337,7 +337,7 @@
 
         if (item.Data?.Material != null)
         {
-            SelectMaterialFromCard(item.Data.Material);
+            await SelectMaterialFromCard(item.Data.Material);
         }
         else if (item.Data?.Category != null)
         {
@@ -350,10 +350,10 @@
         StateHasChanged();
     }
 
-    private void SelectCategoryCard(MaterialCategory cat)
+    private async Task SelectCategoryCard(MaterialCategory cat)
     {
         var node = FindNodeById(categoryTree, cat.Id.ToString());
-        if (node != null) HandleNodeSelect(node);
+        if (node != null) await HandleNodeSelect(node);
     }
 
     private async Task SelectMaterialFromCard(Material mat)

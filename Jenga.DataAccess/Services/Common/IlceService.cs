@@ -10,7 +10,7 @@ namespace Jenga.DataAccess.Services.Common
     {
         private const string Source = nameof(IlceService);
         private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
-        private readonly ILogService? _logService;
+        private readonly ILogService _logService;
         private List<Ilce>? _cache;
 
         public IlceService(IDbContextFactory<ApplicationDbContext> dbFactory, ILogService? logService = null)

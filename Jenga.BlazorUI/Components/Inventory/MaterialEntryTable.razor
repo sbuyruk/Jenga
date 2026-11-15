@@ -33,7 +33,7 @@ else
                   PageSizeOptions="new[] { 5, 10, 20, 50 }"
                   KeySelector="(r => r.Id)">
         <HeaderTemplate>
-            <th @onclick="() => tableRef.SortBy(nameof(EntryRow.EntryDate))" role="button" aria-label="Sirala: Tarih">
+            <th @onclick="() => tableRef?.SortBy(nameof(EntryRow.EntryDate))" role="button" aria-label="Sirala: Tarih">
                 <span class="d-inline-flex align-items-center">
                     <span>Tarih</span>
                     @if (tableRef?.CurrentSortField == nameof(EntryRow.EntryDate))
@@ -43,7 +43,7 @@ else
                 </span>
             </th>
 
-            <th @onclick="() => tableRef.SortBy(nameof(EntryRow.MaterialName))" role="button" aria-label="Sirala: Malzeme">
+            <th @onclick="() => tableRef?.SortBy(nameof(EntryRow.MaterialName))" role="button" aria-label="Sirala: Malzeme">
                 <span class="d-inline-flex align-items-center">
                     <span>Malzeme</span>
                     @if (tableRef?.CurrentSortField == nameof(EntryRow.MaterialName))
@@ -53,7 +53,7 @@ else
                 </span>
             </th>
 
-            <th @onclick="() => tableRef.SortBy(nameof(EntryRow.BrandName))" role="button" aria-label="Sirala: Marka">
+            <th @onclick="() => tableRef?.SortBy(nameof(EntryRow.BrandName))" role="button" aria-label="Sirala: Marka">
                 <span class="d-inline-flex align-items-center">
                     <span>Marka</span>
                     @if (tableRef?.CurrentSortField == nameof(EntryRow.BrandName))
@@ -63,7 +63,7 @@ else
                 </span>
             </th>
 
-            <th @onclick="() => tableRef.SortBy(nameof(EntryRow.ModelName))" role="button" aria-label="Sirala: Model">
+            <th @onclick="() => tableRef?.SortBy(nameof(EntryRow.ModelName))" role="button" aria-label="Sirala: Model">
                 <span class="d-inline-flex align-items-center">
                     <span>Model</span>
                     @if (tableRef?.CurrentSortField == nameof(EntryRow.ModelName))
@@ -73,7 +73,7 @@ else
                 </span>
             </th>
 
-            <th class="text-end" @onclick="() => tableRef.SortBy(nameof(EntryRow.Quantity))" role="button" aria-label="Sirala: Miktar">
+            <th class="text-end" @onclick="() => tableRef?.SortBy(nameof(EntryRow.Quantity))" role="button" aria-label="Sirala: Miktar">
                 <span class="d-inline-flex align-items-center justify-content-end w-100">
                     <span>Miktar</span>
                     @if (tableRef?.CurrentSortField == nameof(EntryRow.Quantity))
@@ -83,7 +83,7 @@ else
                 </span>
             </th>
 
-            <th @onclick="() => tableRef.SortBy(nameof(EntryRow.LocationPath))" role="button" aria-label="Sirala: Lokasyon">
+            <th @onclick="() => tableRef?.SortBy(nameof(EntryRow.LocationPath))" role="button" aria-label="Sirala: Lokasyon">
                 <span class="d-inline-flex align-items-center">
                     <span>Lokasyon</span>
                     @if (tableRef?.CurrentSortField == nameof(EntryRow.LocationPath))
@@ -93,7 +93,7 @@ else
                 </span>
             </th>
 
-            <th @onclick="() => tableRef.SortBy(nameof(EntryRow.PersonName))" role="button" aria-label="Sirala: Personel">
+            <th @onclick="() => tableRef?.SortBy(nameof(EntryRow.PersonName))" role="button" aria-label="Sirala: Personel">
                 <span class="d-inline-flex align-items-center">
                     <span>Personel</span>
                     @if (tableRef?.CurrentSortField == nameof(EntryRow.PersonName))

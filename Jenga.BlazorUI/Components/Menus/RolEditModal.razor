@@ -107,6 +107,8 @@
 
     private void AddRolMenu(int? menuId)
     {
+        if (!menuId.HasValue) return;
+
         var menu = MenuList.FirstOrDefault(p => p.Id == menuId.Value);
         if (menu != null && (Role.RoleMenus?.All(x => x.MenuId != menu.Id) ?? true))
         {
