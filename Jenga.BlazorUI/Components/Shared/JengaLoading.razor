@@ -2,9 +2,18 @@
 {
     <span class="jenga-loading-inline" role="status" aria-label="@Message"><JengaBrand /></span>
 }
+else if (!IsSplash)
+{
+    <div class="jenga-loading jenga-loading--waiting" role="status" aria-live="polite" aria-label="@Message">
+        <div class="jenga-loading__content">
+            <JengaBrand SymbolOnly="true" />
+            <span class="jenga-loading__dots" aria-hidden="true"><i></i><i></i><i></i></span>
+        </div>
+    </div>
+}
 else
 {
-    <div class="jenga-loading @(IsSplash ? "jenga-loading--splash" : "jenga-loading--waiting")" role="status" aria-live="polite" aria-label="@Title">
+    <div class="jenga-loading jenga-loading--splash" role="status" aria-live="polite" aria-label="Çalışma alanınız hazırlanıyor">
         <div class="jenga-loading__content">
             <div class="jenga-loading__identity">
                 <JengaBrand />
@@ -12,26 +21,12 @@ else
             </div>
             <div class="jenga-loading__copy">
                 <h2 class="jenga-loading__title">
-                    @Title
-                    @if (IsSplash)
-                    {
-                        <span class="jenga-loading__dots" aria-hidden="true"><i></i><i></i><i></i></span>
-                    }
+                    Çalışma alanınız hazırlanıyor
+                    <span class="jenga-loading__dots" aria-hidden="true"><i></i><i></i><i></i></span>
                 </h2>
-                @if (!IsSplash)
-                {
-                    <p class="jenga-loading__subtitle">@Message</p>
-                }
             </div>
-            @if (!IsSplash)
-            {
-                <div class="jenga-loading__status" aria-hidden="true"><span class="jenga-loading__dots"><i></i><i></i><i></i></span><span>Lütfen bekleyin</span></div>
-            }
         </div>
-        @if (IsSplash)
-        {
-            <footer class="jenga-loading__footer"><span>TSK Güçlendirme Vakfı</span><span>Jenga™ — Bilgi Sistemleri tarafından geliştirilmiştir.</span></footer>
-        }
+        <footer class="jenga-loading__footer"><span>TSK Güçlendirme Vakfı</span><span>Jenga™ — Bilgi Sistemleri tarafından geliştirilmiştir.</span></footer>
     </div>
 }
 
@@ -39,6 +34,4 @@ else
     [Parameter] public bool IsSplash { get; set; }
     [Parameter] public bool Inline { get; set; }
     [Parameter] public string Message { get; set; } = "Veriler hazırlanıyor.";
-
-    private string Title => IsSplash ? "Çalışma alanınız hazırlanıyor" : "İşleminiz devam ediyor";
 }
