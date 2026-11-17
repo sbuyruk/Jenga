@@ -379,7 +379,7 @@ public async Task&lt;bool&gt; HasPermissionAsync(ModuleName module, Operation op
     // Cache temizleme
     void Invalidate();
 
-    // Dev-only impersonation
+    // Yetkili test oturumunda impersonation
     Task&lt;bool&gt; SetImpersonationOverrideAsync(string? overrideUser);
 
     // HashSet&lt;(ModuleName, Operation)&gt; döner — önbelleklenir
@@ -569,14 +569,14 @@ Sol panel → Personel listesi (arama destekli, max-height:500px scroll)
 </div>
 
 <!-- ─────────────────────────────────────── -->
-<h2 id="s10">10. Impersonation (Sadece Development)</h2>
+<h2 id="s10">10. Impersonation (Yetkili test erişimi)</h2>
 
 <pre><code>// SwitchUser.razor üzerinden
 await CurrentUserService.SetImpersonationOverrideAsync("testkullanici");
 </code></pre>
 
 <ul>
-  <li>Production'da <code>IHostEnvironment.IsDevelopment()</code> kontrolü ile <strong>kesin engellenir</strong>.</li>
+  <li>Gerçek oturum sahibinin <code>Admin / Manage</code> izni gerekir. Production'da ayrıca <code>Auth:Impersonation:Enabled=true</code> ve gelecekte bir <code>ExpiresAtUtc</code> zorunludur. Kurulum: <a href="Production-Switch-User.md">Canlı test erişimi</a>.</li>
   <li>Override değeri <code>ImpersonationService</code> aracılığıyla browser <em>sessionStorage</em>'a yazılır (JS interop).</li>
   <li>Cache ataması <code>_cacheLock</code> içinde <strong>atomik</strong> yapılır: DB sorgusu ile atama arasındaki pencerede gerçek kullanıcının cache'e yazılması önlenir.</li>
   <li><code>Invalidate()</code> çağrıldığında tüm cache temizlenir.</li>
@@ -588,7 +588,7 @@ try {
     _cachedPersonel    = found;
     _cachedPermissions = null;   // yeni personelin izinleri yeniden yüklensin
     _cachedRegionIds   = null;
-    _impersonationChecked = true;
+    _usingOverride = true;
 }
 finally { _cacheLock.Release(); }</code></pre>
 
@@ -610,7 +610,7 @@ options.FallbackPolicy = new AuthorizationPolicyBuilder(PolicyScheme)
   <tr><th>Tehdit / Risk</th><th>Mitigasyon</th></tr>
   <tr><td>Auth-bypass (host user fallback)</td><td><code>Environment.UserName</code> fallback kaldırıldı; başarısız auth → <code>null</code></td></tr>
   <tr><td>Paralel DB round-trip (cache race)</td><td><code>SemaphoreSlim(1,1)</code> double-check lock</td></tr>
-  <tr><td>Production impersonation</td><td><code>IsDevelopment()</code> hard guard</td></tr>
+  <tr><td>Production impersonation</td><td>Varsayılan kapalı; açık test ayarı + zorunlu UTC bitiş tarihi + gerçek hesabın Admin / Manage izni</td></tr>
   <tr><td>Cookie session hijack</td><td>HttpOnly + SameSite=Lax + 30 gün sliding expiry</td></tr>
   <tr><td>Cookie kayıp (iOS Safari)</td><td><code>Cookie.MaxAge = 30 gün</code> (kalıcı cookie)</td></tr>
   <tr><td>HSTS intranet kırılması</td><td><code>UseHsts</code> kasıtlı kaldırıldı; HTTP→HTTPS IIS URL Rewrite ile</td></tr>

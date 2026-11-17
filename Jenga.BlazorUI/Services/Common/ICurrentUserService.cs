@@ -28,7 +28,12 @@ namespace Jenga.BlazorUI.Services.Common
         void Invalidate();
 
         /// <summary>
-        /// Development-only: belirtilen kullanıcıyı aktif circuit için impersonate eder.
+        /// Gerçek oturum sahibinin kullanıcı değiştirme yetkisini denetler.
+        /// </summary>
+        Task<bool> CanImpersonateAsync() => Task.FromResult(false);
+
+        /// <summary>
+        /// Yetkili test oturumunda kullanıcı değiştirir; null verilirse gerçek kullanıcıya döner.
         /// </summary>
         Task<bool> SetImpersonationOverrideAsync(string? overrideUser);
 

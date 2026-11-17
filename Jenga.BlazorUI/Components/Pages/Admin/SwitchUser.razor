@@ -1,24 +1,26 @@
 @page "/admin/switch-user"
 @rendermode InteractiveServer
 @using Jenga.BlazorUI.Services.Common
-@inject ImpersonationService ImpersonationService
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @inject ICurrentUserService CurrentUserService
 @inject NavigationManager NavigationManager
-@inject IHostEnvironment HostEnvironment
 
-<PermissionGuard Module="ModuleName.Admin" Operation="Operation.View">
 <div class="container" style="max-width:480px; margin-top:2rem;">
     <div class="card shadow-sm">
         <div class="card-header bg-warning-subtle">
-            <h5 class="mb-0"><i class="bi bi-person-fill-gear me-2"></i>Kullanici Degistir (Dev Only)</h5>
+            <h5 class="mb-0"><i class="bi bi-person-fill-gear me-2"></i>Kullanıcı Değiştir (Test)</h5>
         </div>
         <div class="card-body">
-            @if (!HostEnvironment.IsDevelopment())
+            @if (!_ready)
             {
-                <div class="alert alert-danger">Bu sayfa yalnizca gelistirme ortaminda calisir.</div>
+                <p>Test erişimi denetleniyor...</p>
             }
             else
             {
+                @if (!_canSwitch)
+                {
+                    <div class="alert alert-warning">Kullanıcı değiştirmek için test erişiminin açık, süresinin geçerli ve gerçek hesabınızın yönetici yetkisine sahip olması gerekir.</div>
+                }
                 @if (!string.IsNullOrEmpty(_message))
                 {
                     <div class="alert alert-info">@_message</div>
@@ -31,14 +33,14 @@
 
                 <div class="mb-3">
                     <label class="form-label fw-semibold">Yeni Kullanici Adi</label>
-                    <input class="form-control" @bind="_username" placeholder="Kullanici adi girin..." />
+                    <input class="form-control" @bind="_username" disabled="@(!_canSwitch || _busy)" placeholder="Kullanici adi girin..." />
                 </div>
 
                 <div class="d-flex gap-2">
-                    <button class="btn btn-primary" @onclick="SwitchAsync">
+                    <button class="btn btn-primary" @onclick="SwitchAsync" disabled="@(!_canSwitch || _busy)">
                         <i class="bi bi-arrow-left-right me-1"></i>Degistir
                     </button>
-                    <button class="btn btn-outline-secondary" @onclick="ClearAsync">
+                    <button class="btn btn-outline-secondary" @onclick="ClearAsync" disabled="@_busy">
                         <i class="bi bi-x-circle me-1"></i>Sifirla (Gercek Kullanici)
                     </button>
                 </div>
@@ -46,42 +48,48 @@
         </div>
     </div>
 </div>
-</PermissionGuard>
 
 @code {
     private string? _username;
     private string? _activeUser;
     private string? _message;
+    private bool _ready;
+    private bool _canSwitch;
+    private bool _busy;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
-        var overrideUser = await ImpersonationService.GetOverrideAsync();
+        _canSwitch = await CurrentUserService.CanImpersonateAsync();
         var personel = await CurrentUserService.GetCurrentPersonelAsync();
-        _activeUser = !string.IsNullOrWhiteSpace(overrideUser)
-            ? $"{overrideUser} (impersonation)"
-            : personel?.KullaniciAdi ?? "---";
+        _activeUser = personel?.KullaniciAdi ?? "---";
+        _ready = true;
         StateHasChanged();
     }
 
     private async Task SwitchAsync()
     {
-        if (string.IsNullOrWhiteSpace(_username)) return;
-        await ImpersonationService.SetOverrideAsync(_username.Trim());
-        CurrentUserService.Invalidate();
-        _message = $"Kullanıcıya geçildi. Sayfa yenileniyor...";
-        StateHasChanged();
-        await Task.Delay(800);
-        NavigationManager.NavigateTo("/", forceLoad: true);
+        if (_busy || string.IsNullOrWhiteSpace(_username)) return;
+        _busy = true;
+        try
+        {
+            if (await CurrentUserService.SetImpersonationOverrideAsync(_username.Trim()))
+                NavigationManager.NavigateTo("/", forceLoad: true);
+            else
+                _message = "Kullanıcı değiştirilemedi. Kullanıcı adını, gerçek hesabınızın yetkisini ve test erişiminin süresini kontrol edin.";
+        }
+        finally { _busy = false; }
     }
 
     private async Task ClearAsync()
     {
-        await ImpersonationService.ClearOverrideAsync();
-        CurrentUserService.Invalidate();
-        _message = "Impersonation temizlendi. Sayfa yenileniyor...";
-        StateHasChanged();
-        await Task.Delay(800);
-        NavigationManager.NavigateTo("/", forceLoad: true);
+        if (_busy) return;
+        _busy = true;
+        try
+        {
+            await CurrentUserService.SetImpersonationOverrideAsync(null);
+            NavigationManager.NavigateTo("/", forceLoad: true);
+        }
+        finally { _busy = false; }
     }
 }

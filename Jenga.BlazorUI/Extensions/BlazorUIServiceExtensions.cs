@@ -34,6 +34,7 @@ namespace Jenga.BlazorUI.Extensions
             services.AddScoped<ICurrentUserService, CurrentUserService>();
             services.AddScoped<IServiceAuthorizationContext, BlazorServiceAuthorizationContext>();
             services.AddScoped<ImpersonationService>();
+            services.AddScoped<ImpersonationPolicy>();
             services.AddScoped<ThemeService>();
 
             return services;
