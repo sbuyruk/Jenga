@@ -71,6 +71,10 @@ public class KontrolDetayTests
         await test.CagirAsync("TamamlaAsync");
         Assert.Equal(6, test.AktifAdim);
         test.Cevaplar.Koy("kanaat_ozet", "Taşınmaz iyi durumdadır.");
+        test.Cevaplar.Koy("kanaat_oneri", "Mevcut kullanımın sürdürülmesi önerilir.");
+        test.Cevaplar.Koy("siklik_oneri", "3Yil");
+        Assert.Equal(3, test.Al<int?>("SecilenPeriyotSure"));
+        Assert.Equal(DateTime.Today.AddYears(3), test.Al<DateTime?>("HesaplananSonrakiTarih"));
         await test.CagirAsync("TamamlaAsync");
         Assert.Equal(1, test.Servis.TamamlamaSayisi);
         Assert.Equal(KontrolDurumu.Tamamlandi, test.Servis.Kayit.Durum);
@@ -163,7 +167,8 @@ public class KontrolDetayTests
             return ekran;
         }
 
-        public T Al<T>(string ad) => (T)typeof(TasinmazKontrolDetay).GetField(ad, BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(Sayfa)!;
+        public T Al<T>(string ad) => (T)(typeof(TasinmazKontrolDetay).GetField(ad, BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(Sayfa)
+            ?? typeof(TasinmazKontrolDetay).GetProperty(ad, BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(Sayfa))!;
         public void Yaz(string ad, object? deger) => typeof(TasinmazKontrolDetay).GetField(ad, BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(Sayfa, deger);
         public Task GitAsync(int adim) => CagirAsync("AdimaGitAsync", adim);
         public Task CagirAsync(string ad, params object[] args) => _renderer.Dispatcher.InvokeAsync(async () =>
@@ -244,6 +249,7 @@ public class KontrolDetayTests
                 case "TamamlaAsync":
                     var istek = (KontrolTamamlaIstegi)args![0]!;
                     Assert.Equal(Kayit.KayitSurumu, istek.KayitSurumu);
+                    Assert.Equal("3Yil", istek.Cevaplar.Al("siklik_oneri"));
                     TamamlamaSayisi++;
                     Kayit.Durum = KontrolDurumu.Tamamlandi; Kayit.CevaplarJson = istek.Cevaplar.ToJson(); Kayit.ImzalayanMakam = istek.ImzalayanMakam;
                     return Task.FromResult(Result.Success());

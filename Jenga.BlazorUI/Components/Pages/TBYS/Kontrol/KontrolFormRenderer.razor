@@ -9,6 +9,21 @@
             @if (!string.IsNullOrWhiteSpace(bolum.Aciklama)) { <small class="text-muted ms-2">@bolum.Aciklama</small> }
         </div>
         <div class="kontrol-bolum-icerik">
+            @if (bolum.Kod == "kanaat" && !ReadOnly)
+            {
+                <div class="alert alert-info small mb-3" role="note">
+                    <div class="fw-semibold mb-2"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Genel Değerlendirme ve Öneriler alanları mutlaka doldurulmalıdır.</div>
+                    <p class="mb-2">Taşınmaza uygun olan konularda değerlendirmenizi ve önerilerinizi belirtin. Uygulanamayan konuları gerekçesiyle açıklayın.</p>
+                    <ul class="mb-0">
+                        <li>Taşınmazın tadilata ihtiyacı var mı?</li>
+                        <li>Kira bedeli rayice uygun mu?</li>
+                        <li>DASK yapılması gerekli mi?</li>
+                        <li>Taşınmazın kiraya verilebilirliği ve satış niteliği nasıl değerlendiriliyor?</li>
+                        <li>Bilinmesi gereken çevresel faktörler var mı?</li>
+                        <li>Tarla ve arsaların değerlendirilmesine ilişkin öneriler nelerdir?</li>
+                    </ul>
+                </div>
+            }
             @if (bolum.Alanlar.Count > 0)
             {
                 <div class="kontrol-alanlar">

@@ -158,7 +158,7 @@ else
                         @if (taslak)
                         {
                             var hataSayisi = Enumerable.Range(0, _adimlar.Count).Sum(i => AdimHatalari(i).Count);
-                            <div class="kontrol-denetim @(hataSayisi > 0 ? "eksik" : "hazir")" role="status"><i class="bi @(hataSayisi > 0 ? "bi-exclamation-circle" : "bi-check2-circle")"></i><div><strong>@(hataSayisi > 0 ? $"Tamamlamadan önce {hataSayisi} alanı kontrol edin" : "Rapor tamamlanmaya hazır")</strong><p>@(hataSayisi > 0 ? "İlgili bölüme dönerek bilgileri düzeltebilirsiniz." : "Kontrol periyodunu ve sonraki tarihi Tamamla ekranında belirleyebilirsiniz.")</p></div></div>
+                            <div class="kontrol-denetim @(hataSayisi > 0 ? "eksik" : "hazir")" role="status"><i class="bi @(hataSayisi > 0 ? "bi-exclamation-circle" : "bi-check2-circle")"></i><div><strong>@(hataSayisi > 0 ? $"Tamamlamadan önce {hataSayisi} alanı kontrol edin" : "Rapor tamamlanmaya hazır")</strong><p>@(hataSayisi > 0 ? "İlgili bölüme dönerek bilgileri düzeltebilirsiniz." : "Raporda seçtiğiniz kontrol sıklığına göre sonraki kontrol tarihi hesaplanır.")</p></div></div>
                         }
                         <div class="kontrol-ozet-satir"><span>Kontrol tarihi<strong>@_kontrolTarihi.ToString("d", Tr)</strong></span><span>İmzalayan makam<strong>@(_imzalayanMakam ?? "—")</strong></span><span>Ekler<strong>@_ekler.Count dosya</strong></span></div>
                         <div class="kontrol-inceleme">
@@ -222,18 +222,9 @@ else
                         <div class="small text-muted mb-2">
                             Mevcut periyot: <strong>@KontrolPeriyodu.Etiket(_mevcutPeriyotSure, _mevcutPeriyotBirim)</strong>
                         </div>
-                        <div class="row g-2 mb-2">
-                            <div class="col-6">
-                                <label class="form-label small mb-1">Periyot Süresi</label>
-                                <input type="number" min="1" class="form-control form-control-sm" @bind="_periyotSure" />
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label small mb-1">Birim</label>
-                                <select class="form-select form-select-sm" @bind="_periyotBirim">
-                                    <option value="">—</option>
-                                    @foreach (var b in Enum.GetValues<PeriyotBirimi>()) { <option value="@b">@b</option> }
-                                </select>
-                            </div>
+                        <div class="small mb-2">
+                            Kontrol sıklığı: <strong>@KontrolPeriyodu.Etiket(SecilenPeriyotSure, PeriyotBirimi.Yil)</strong><br />
+                            Hesaplanan sonraki kontrol: <strong>@(HesaplananSonrakiTarih?.ToString("d", Tr) ?? "—")</strong>
                         </div>
                         @if (PeriyotDegisti)
                         {
@@ -354,10 +345,12 @@ else
     }
 
     private int? _mevcutPeriyotSure; private PeriyotBirimi? _mevcutPeriyotBirim;
-    private int? _periyotSure; private PeriyotBirimi? _periyotBirim;
+    private int? SecilenPeriyotSure => KontrolPeriyodu.RaporSikligi(_cevaplar.Al("siklik_oneri"));
+    private DateTime? HesaplananSonrakiTarih => SecilenPeriyotSure is int sure
+        ? KontrolPeriyodu.Ekle(_kontrolTarihi, sure, PeriyotBirimi.Yil) : null;
     private string? _periyotGerekce; private DateTime? _elleTarih; private string? _tarihGerekce;
 
-    private bool PeriyotDegisti => _mevcutPeriyotSure is not null && !KontrolPeriyodu.Ayni(_mevcutPeriyotSure, _mevcutPeriyotBirim, _periyotSure, _periyotBirim);
+    private bool PeriyotDegisti => _mevcutPeriyotSure is not null && !KontrolPeriyodu.Ayni(_mevcutPeriyotSure, _mevcutPeriyotBirim, SecilenPeriyotSure, PeriyotBirimi.Yil);
 
     protected override async Task OnParametersSetAsync() => await YukleAsync();
 
@@ -398,7 +391,6 @@ else
         var varsayilanPeriyot = KontrolRaporu.PeriyotAl(_kontrol.TasinmazSnapshotJson);
         _mevcutPeriyotSure = plan is { IsSuccess: true, Value: not null } ? plan.Value.PeriyotSure : varsayilanPeriyot.Sure;
         _mevcutPeriyotBirim = plan is { IsSuccess: true, Value: not null } ? plan.Value.PeriyotBirim : varsayilanPeriyot.Birim;
-        _periyotSure = _mevcutPeriyotSure; _periyotBirim = _mevcutPeriyotBirim;
         _loading = false;
     }
 
@@ -439,7 +431,7 @@ else
         var r = await KontrolService.TamamlaAsync(new KontrolTamamlaIstegi
         {
             KontrolId = _kontrol.Id, KayitSurumu = _kontrol.KayitSurumu, KontrolTarihi = _kontrolTarihi, KontrolEdenler = _kontrolEdenler, ImzalayanMakam = _imzalayanMakam,
-            Cevaplar = _cevaplar, PeriyotSure = _periyotSure, PeriyotBirim = _periyotBirim,
+            Cevaplar = _cevaplar,
             PeriyotDegisiklikGerekcesi = _periyotGerekce, ElleBelirlenenSonrakiTarih = _elleTarih, TarihDegisiklikGerekcesi = _tarihGerekce
         });
         _busy = false; _tamamlaAcik = false;

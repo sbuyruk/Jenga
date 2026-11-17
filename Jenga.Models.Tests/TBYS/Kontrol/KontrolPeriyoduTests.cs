@@ -7,6 +7,28 @@ namespace Jenga.Models.Tests.TBYS.Kontrol
     public class KontrolPeriyoduTests
     {
         [Theory]
+        [InlineData("1Yil", 1)]
+        [InlineData("3Yil", 3)]
+        [InlineData("5Yil", 5)]
+        [InlineData("10Yil", 10)]
+        public void RaporSikligi_SonrakiKontrolTarihiniBelirler(string kod, int yil)
+        {
+            var sure = KontrolPeriyodu.RaporSikligi(kod);
+            Assert.Equal(yil, sure);
+            Assert.Equal(new DateTime(2026 + yil, 11, 17),
+                KontrolPeriyodu.Ekle(new DateTime(2026, 11, 17), sure!.Value, PeriyotBirimi.Yil));
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("3Ay")]
+        [InlineData("2Yil")]
+        [InlineData("10YilVeUzeri")]
+        public void RaporSikligi_BelirsizVeyaEskiSecimYeniPlanOlusturmaz(string? kod)
+            => Assert.Null(KontrolPeriyodu.RaporSikligi(kod));
+
+        [Theory]
         [InlineData("2025-01-31", 1, PeriyotBirimi.Ay, "2025-02-28")]   // ay sonu kısaltma
         [InlineData("2024-02-29", 1, PeriyotBirimi.Yil, "2025-02-28")]  // artık yıl
         [InlineData("2025-01-01", 2, PeriyotBirimi.Hafta, "2025-01-15")]

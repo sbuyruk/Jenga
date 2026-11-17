@@ -3,6 +3,16 @@ namespace Jenga.Models.TBYS.Kontrol
     /// <summary>Kontrol periyodu hesapları. Ay/yıl eklemede takvim kuralları (ay sonu, artık yıl) .NET tarafından uygulanır.</summary>
     public static class KontrolPeriyodu
     {
+        /// <summary>Rapordaki tek kontrol sıklığı seçimini yıl sayısına çevirir.</summary>
+        public static int? RaporSikligi(string? kod) => kod switch
+        {
+            "1Yil" => 1,
+            "3Yil" => 3,
+            "5Yil" => 5,
+            "10Yil" => 10,
+            _ => null
+        };
+
         public static bool Gecerli(int? sure, PeriyotBirimi? birim) => sure is > 0 && birim.HasValue;
 
         public static DateTime Ekle(DateTime baslangic, int sure, PeriyotBirimi birim)

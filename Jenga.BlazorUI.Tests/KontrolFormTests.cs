@@ -109,6 +109,28 @@ public class KontrolFormTests
         Assert.DoesNotContain("Satır Ekle", System.Net.WebUtility.HtmlDecode(html));
     }
 
+    [Fact]
+    public async Task Kanaat_ZorunluAlanlariVeDegerlendirmeRehberiniGosterir()
+    {
+        var tanim = KontrolRaporu.Olustur();
+        var bolumler = tanim.Bolumler.Where(b => b.Kod == "kanaat").ToList();
+        var cevaplar = new KontrolCevaplari();
+        var html = System.Net.WebUtility.HtmlDecode(await RenderAsync(tanim, cevaplar, bolumler));
+        Assert.Contains("alanları mutlaka doldurulmalıdır", html);
+        foreach (var konu in new[] { "tadilata", "rayice", "DASK", "kiraya verilebilirliği", "çevresel faktörler", "Tarla ve arsaların" })
+            Assert.Contains(konu, html);
+
+        Assert.Empty(KontrolFormDogrulayici.CevaplariDogrula(tanim, cevaplar, (_, _) => 0, zorunluKontrol: false));
+        var hatalar = KontrolFormDogrulayici.CevaplariDogrula(tanim, cevaplar, (_, _) => 0, zorunluKontrol: true);
+        Assert.Contains("'Genel Değerlendirme' zorunludur.", hatalar);
+        Assert.Contains("'Öneriler' zorunludur.", hatalar);
+        cevaplar.Koy("kanaat_ozet", "Taşınmaz iyi durumdadır.");
+        Assert.Contains("'Öneriler' zorunludur.", KontrolFormDogrulayici.CevaplariDogrula(tanim, cevaplar, (_, _) => 0, zorunluKontrol: true));
+        cevaplar.Koy("kanaat_oneri", "Mevcut kullanım sürdürülebilir.");
+        cevaplar.Koy("siklik_oneri", "1Yil");
+        Assert.Empty(KontrolFormDogrulayici.CevaplariDogrula(tanim, cevaplar, (_, _) => 0, zorunluKontrol: true));
+    }
+
     private static async Task<string> RenderAsync(KontrolFormTanimi tanim, KontrolCevaplari cevaplar,
         IReadOnlyList<KontrolBolumTanimi>? bolumler, bool readOnly = false, IReadOnlyList<TasinmazKontrolEk>? ekler = null)
     {

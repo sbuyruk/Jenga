@@ -346,7 +346,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
             catch (Exception ex)
             {
-                _logService.LogError($"{Source}.BaslatAsync hata.", ex);
+                _logService.LogException(ex, Source, "Kontrol başlatılamadı.");
                 return Result<int>.Failure(Error.Unexpected("Kontrol başlatılamadı.", ex));
             }
         }
@@ -397,8 +397,11 @@ namespace Jenga.DataAccess.Services.TBYS
             if (yetki is not null) return yetki;
             if (istek is null) return Result.Failure(Error.Validation("İstek boş olamaz."));
             if (istek.KontrolTarihi.Date > DateTime.Today) return Result.Failure(Error.Validation("Kontrol tarihi ileri tarihli olamaz."));
-            if (istek.PeriyotSure.HasValue != istek.PeriyotBirim.HasValue || istek.PeriyotSure is <= 0)
-                return Result.Failure(Error.Validation("Periyot için süre ve birim birlikte, pozitif olarak girilmelidir."));
+            if (istek.Cevaplar is null) return Result.Failure(Error.Validation("Cevaplar boş olamaz."));
+            var secilenSure = KontrolPeriyodu.RaporSikligi(istek.Cevaplar.Al("siklik_oneri"));
+            if (secilenSure is null)
+                return Result.Failure(Error.Validation("Kontrol Sıklığı için 1, 3, 5 veya 10 yıl seçilmelidir."));
+            var secilenBirim = PeriyotBirimi.Yil;
             if (istek.ElleBelirlenenSonrakiTarih.HasValue)
             {
                 if (string.IsNullOrWhiteSpace(istek.TarihDegisiklikGerekcesi)) return Result.Failure(Error.Validation("Elle belirlenen tarih için gerekçe zorunludur."));
@@ -430,8 +433,6 @@ namespace Jenga.DataAccess.Services.TBYS
                 var oncekiSure = plan?.PeriyotSure ?? varsayilanPeriyot.Sure;
                 var oncekiBirim = plan?.PeriyotBirim ?? varsayilanPeriyot.Birim;
 
-                var secilenSure = istek.PeriyotSure ?? oncekiSure;
-                var secilenBirim = istek.PeriyotBirim ?? oncekiBirim;
                 var periyotDegisti = plan is not null && plan.PeriyotTanimli && !KontrolPeriyodu.Ayni(plan.PeriyotSure, plan.PeriyotBirim, secilenSure, secilenBirim);
                 if (periyotDegisti && string.IsNullOrWhiteSpace(istek.PeriyotDegisiklikGerekcesi))
                     return Result.Failure(Error.Validation("Periyot değişikliği için gerekçe zorunludur."));
@@ -451,7 +452,7 @@ namespace Jenga.DataAccess.Services.TBYS
                 k.SecilenPeriyotBirim = secilenBirim;
                 k.PeriyotDegisiklikGerekcesi = periyotDegisti ? istek.PeriyotDegisiklikGerekcesi!.Trim() : null;
                 k.HesaplananSonrakiTarih = KontrolPeriyodu.Gecerli(secilenSure, secilenBirim)
-                    ? KontrolPeriyodu.Ekle(k.KontrolTarihi, secilenSure!.Value, secilenBirim!.Value)
+                    ? KontrolPeriyodu.Ekle(k.KontrolTarihi, secilenSure.Value, secilenBirim)
                     : null;
                 k.ElleBelirlenenSonrakiTarih = istek.ElleBelirlenenSonrakiTarih?.Date;
                 k.TarihDegisiklikGerekcesi = istek.ElleBelirlenenSonrakiTarih.HasValue ? istek.TarihDegisiklikGerekcesi!.Trim() : null;
@@ -583,63 +584,6 @@ namespace Jenga.DataAccess.Services.TBYS
                 return Result.Failure(Error.Unexpected("Kontrol silinemedi.", ex));
             }
         }
-
-        public async Task<Result> PlanGuncelleAsync(PlanGuncelleIstegi istek, CancellationToken cancellationToken = default)
-        {
-            var yetki = await CheckAsync(ModuleName.TBYS, Operation.Edit, cancellationToken);
-            if (yetki is not null) return yetki;
-            if (istek is null) return Result.Failure(Error.Validation("İstek boş olamaz."));
-            if (string.IsNullOrWhiteSpace(istek.Gerekce)) return Result.Failure(Error.Validation("Plan değişikliği için gerekçe zorunludur."));
-            if (istek.PeriyotSure.HasValue != istek.PeriyotBirim.HasValue || istek.PeriyotSure is <= 0)
-                return Result.Failure(Error.Validation("Periyot için süre ve birim birlikte, pozitif olarak girilmelidir."));
-            if (istek.SonrakiKontrolTarihi is null && istek.PeriyotSure is null)
-                return Result.Failure(Error.Validation("Periyot veya sonraki kontrol tarihinden en az biri girilmelidir."));
-
-            try
-            {
-                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-                if (!await KontroleErisebilirAsync(db, istek.TasinmazId, cancellationToken)) return Result.Failure(Error.Forbidden(BolgeYetkisiYok));
-
-                var plan = await db.TasinmazKontrolPlani_Table.FirstOrDefaultAsync(p => p.TasinmazId == istek.TasinmazId, cancellationToken);
-                if (plan is null)
-                {
-                    plan = new TasinmazKontrolPlani { TasinmazId = istek.TasinmazId };
-                    db.TasinmazKontrolPlani_Table.Add(plan);
-                }
-
-                if (istek.PeriyotSure.HasValue)
-                {
-                    plan.PeriyotSure = istek.PeriyotSure;
-                    plan.PeriyotBirim = istek.PeriyotBirim;
-                }
-                if (istek.SonrakiKontrolTarihi.HasValue)
-                    plan.SonrakiKontrolTarihi = istek.SonrakiKontrolTarihi.Value.Date;
-                else if (plan.PeriyotTanimli)
-                {
-                    var sonKontrol = await db.TasinmazKontrol_Table.AsNoTracking()
-                        .Where(k => k.TasinmazId == istek.TasinmazId && k.Durum == KontrolDurumu.Tamamlandi)
-                        .OrderByDescending(k => k.KontrolTarihi).Select(k => (DateTime?)k.KontrolTarihi).FirstOrDefaultAsync(cancellationToken);
-                    plan.SonrakiKontrolTarihi = KontrolPeriyodu.Ekle(sonKontrol ?? DateTime.Today, plan.PeriyotSure!.Value, plan.PeriyotBirim!.Value);
-                }
-
-                plan.KaynakKontrolId = null;
-                plan.DegisiklikGerekcesi = istek.Gerekce.Trim();
-                plan.KayitSurumu++;
-
-                db.SetCurrentUser(await GetUserNameAsync(cancellationToken));
-                await db.SaveChangesAsync(cancellationToken);
-                return Result.Success();
-            }
-            catch (DbUpdateConcurrencyException) { return Result.Failure(Error.Conflict(EszamanlilikMesaji)); }
-            catch (DbUpdateException ex) when (IsUniqueViolation(ex)) { return Result.Failure(Error.Conflict(EszamanlilikMesaji)); }
-            catch (Exception ex)
-            {
-                _logService.LogError($"{Source}.PlanGuncelleAsync hata.", ex);
-                return Result.Failure(Error.Unexpected("Plan güncellenemedi.", ex));
-            }
-        }
-
-        // ----------------------------------------------------------------- Ekler
 
         public async Task<Result<int>> EkYukleAsync(EkYukleIstegi istek, CancellationToken cancellationToken = default)
         {

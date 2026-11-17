@@ -71,22 +71,10 @@ namespace Jenga.DataAccess.Services.TBYS
         public string? KontrolEdenler { get; set; }
         public string? ImzalayanMakam { get; set; }
         public KontrolCevaplari Cevaplar { get; set; } = new();
-        /// <summary>Kalıcı periyot; mevcut plandan farklıysa gerekçe zorunlu.</summary>
-        public int? PeriyotSure { get; set; }
-        public PeriyotBirimi? PeriyotBirim { get; set; }
         public string? PeriyotDegisiklikGerekcesi { get; set; }
         /// <summary>Tek seferlik elle tarih; doluysa gerekçe zorunlu.</summary>
         public DateTime? ElleBelirlenenSonrakiTarih { get; set; }
         public string? TarihDegisiklikGerekcesi { get; set; }
-    }
-
-    public sealed class PlanGuncelleIstegi
-    {
-        public int TasinmazId { get; set; }
-        public int? PeriyotSure { get; set; }
-        public PeriyotBirimi? PeriyotBirim { get; set; }
-        public DateTime? SonrakiKontrolTarihi { get; set; }
-        public string Gerekce { get; set; } = string.Empty;
     }
 
     public sealed class EkYukleIstegi
@@ -128,9 +116,6 @@ namespace Jenga.DataAccess.Services.TBYS
 
         /// <summary>Taslak kontrolü kalıcı siler (ekleriyle birlikte).</summary>
         Task<Result> DeleteAsync(int kontrolId, CancellationToken cancellationToken = default);
-
-        /// <summary>Kontrolden bağımsız gerekçeli plan düzenlemesi.</summary>
-        Task<Result> PlanGuncelleAsync(PlanGuncelleIstegi istek, CancellationToken cancellationToken = default);
 
         Task<Result<int>> EkYukleAsync(EkYukleIstegi istek, CancellationToken cancellationToken = default);
         Task<Result> EkSilAsync(int ekId, CancellationToken cancellationToken = default);

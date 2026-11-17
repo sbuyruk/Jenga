@@ -242,7 +242,9 @@ namespace Jenga.Models.TBYS.Kontrol
             Secim(b7, "bina_yapi_tarzi", "Yapı Tarzı", false, "BAK|Betonarme Karkas", "Yigma|Yığma", "Celik|Çelik", "Prefabrik|Prefabrik", "Diger|Diğer");
             Secim(b7, "bina_dis_cephe", "Dış Cephe", false, "Siva|Sıva/Boya", "Mantolama|Mantolama", "Kaplama|Kaplama", "Diger|Diğer");
             Alan(b7, "bina_asansor", "Asansör", KontrolAlanTipi.EvetHayir);
-            Alan(b7, "bina_otopark", "Otopark", KontrolAlanTipi.EvetHayir);
+            Secim(b7, "bina_otopark", "Otopark", false,
+                "Acik|Açık Otopark Var", "Kapali|Kapalı Otopark Var", "AcikVeKapali|Açık ve Kapalı Otopark Var",
+                "Hayir|Yok", "Uygulanamaz|Uygulanamaz");
             Alan(b7, "bina_isitma", "Isıtma Sistemi", KontrolAlanTipi.KisaMetin);
             Alan(b7, "bina_aciklama", "Bina Açıklaması", KontrolAlanTipi.UzunMetin);
 
@@ -310,10 +312,11 @@ namespace Jenga.Models.TBYS.Kontrol
             Alan(g15, "takyidat_aciklama", "Açıklama", KontrolAlanTipi.UzunMetin);
 
             // 16. Kontrol sıklığı / taşınmaz nitelikleri
-            var b16 = Bolum("siklik", "Kontrol Sıklığı ve Taşınmaz Nitelikleri");
+            var b16 = Bolum("siklik", "Taşınmaz Nitelikleri ve Kontrol Sıklığı");
             Kaynak(b16, "siklik_kullanim", "Kullanım Şekli", "KullanimSekli", KontrolVeriKaynagiTipi.TasinmazBaslangic);
             Kaynak(b16, "siklik_kira", "Kira Durumu", "KiraDurumu", KontrolVeriKaynagiTipi.TasinmazBaslangic);
-            Secim(b16, "siklik_oneri", "Önerilen Kontrol Sıklığı", false, "3Ay|3 Ay", "6Ay|6 Ay", "1Yil|1 Yıl", "2Yil|2 Yıl");
+            Secim(b16, "siklik_oneri", "Kontrol Sıklığı", false, "1Yil|1 Yıl", "3Yil|3 Yıl", "5Yil|5 Yıl", "10Yil|10 Yıl");
+            b16.Alanlar.Last().Zorunlu = true;
             Alan(b16, "siklik_gerekce", "Gerekçe", KontrolAlanTipi.UzunMetin);
 
             // 17. İrtibat / kira
@@ -334,7 +337,7 @@ namespace Jenga.Models.TBYS.Kontrol
             // 19. Kanaat / özet
             var b19 = Bolum("kanaat", "Kanaat ve Özet");
             Alan(b19, "kanaat_ozet", "Genel Değerlendirme", KontrolAlanTipi.UzunMetin, zorunlu: true);
-            Alan(b19, "kanaat_oneri", "Öneriler", KontrolAlanTipi.UzunMetin);
+            Alan(b19, "kanaat_oneri", "Öneriler", KontrolAlanTipi.UzunMetin, zorunlu: true);
             Alan(b19, "kanaat_rayic", "Tahmini Rayiç Değer (TL)", KontrolAlanTipi.OndalikSayi, birim: "TL");
 
             // 20. Bağışçı verileri
