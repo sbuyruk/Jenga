@@ -36,6 +36,17 @@ public sealed class ImpersonationTests
     public void DevelopmentDoesNotRequireProductionOptIn()
         => Assert.True(new ImpersonationPolicy(Config(false, null), new EnvironmentStub { EnvironmentName = Environments.Development }).IsEnabled);
 
+    [Theory]
+    [InlineData(false, null, "erişimi kapalı")]
+    [InlineData(true, null, "eksik veya geçersiz")]
+    [InlineData(true, "invalid", "eksik veya geçersiz")]
+    [InlineData(true, "2026-11-17T12:00:00Z", "test süresi dolmuş")]
+    public void AccessMessageExplainsTheActualConfigurationBlock(bool enabled, string? expiry, string expected)
+    {
+        var policy = new ImpersonationPolicy(Config(enabled, expiry), new EnvironmentStub());
+        Assert.Contains(expected, policy.GetDisabledReasonAt(DateTimeOffset.Parse("2026-11-17T12:00:00Z")));
+    }
+
     [Fact]
     public async Task RealAdministratorCanSwitchToNonAdminAndReset()
     {

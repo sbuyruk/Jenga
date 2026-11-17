@@ -4,6 +4,7 @@
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @inject ICurrentUserService CurrentUserService
 @inject NavigationManager NavigationManager
+@inject ImpersonationPolicy ImpersonationPolicy
 
 <div class="container" style="max-width:480px; margin-top:2rem;">
     <div class="card shadow-sm">
@@ -19,7 +20,7 @@
             {
                 @if (!_canSwitch)
                 {
-                    <div class="alert alert-warning">Kullanıcı değiştirmek için test erişiminin açık, süresinin geçerli ve gerçek hesabınızın yönetici yetkisine sahip olması gerekir.</div>
+                    <div class="alert alert-warning" role="alert">@_accessMessage</div>
                 }
                 @if (!string.IsNullOrEmpty(_message))
                 {
@@ -56,11 +57,13 @@
     private bool _ready;
     private bool _canSwitch;
     private bool _busy;
+    private string? _accessMessage;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
         _canSwitch = await CurrentUserService.CanImpersonateAsync();
+        UpdateAccessMessage();
         var personel = await CurrentUserService.GetCurrentPersonelAsync();
         _activeUser = personel?.KullaniciAdi ?? "---";
         _ready = true;
@@ -76,7 +79,11 @@
             if (await CurrentUserService.SetImpersonationOverrideAsync(_username.Trim()))
                 NavigationManager.NavigateTo("/", forceLoad: true);
             else
+            {
+                _canSwitch = await CurrentUserService.CanImpersonateAsync();
+                UpdateAccessMessage();
                 _message = "Kullanıcı değiştirilemedi. Kullanıcı adını, gerçek hesabınızın yetkisini ve test erişiminin süresini kontrol edin.";
+            }
         }
         finally { _busy = false; }
     }
@@ -92,4 +99,8 @@
         }
         finally { _busy = false; }
     }
+
+    private void UpdateAccessMessage()
+        => _accessMessage = ImpersonationPolicy.GetDisabledReasonAt(DateTimeOffset.UtcNow)
+            ?? "Gerçek oturum hesabınızın Admin / Manage yetkisi yok. Sistem yöneticisi rolünüzde bu iznin tanımlı olduğunu kontrol edin.";
 }
