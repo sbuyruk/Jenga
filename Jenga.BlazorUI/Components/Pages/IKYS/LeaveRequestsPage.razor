@@ -1,6 +1,7 @@
 @page "/ikys/leave-requests"
 @page "/ikys/leave-requests/{Scope}"
 @rendermode InteractiveServer
+@using System.Globalization
 @using Jenga.BlazorUI.Components.Common
 @using Jenga.BlazorUI.Services.Common
 @using Jenga.DataAccess.Services.IKYS
@@ -8,6 +9,7 @@
 @using Status = Jenga.Models.IKYS.IzinTalep.OnayDurumuTipi
 @inject ILeaveRequestWorkflow Workflow
 @inject ICurrentUserService CurrentUser
+@inject NavigationManager Navigation
 
 <PageTitle>@Title</PageTitle>
 
@@ -16,11 +18,18 @@
         <header class="leave-heading">
             <h1>@Title</h1>
             <div class="leave-heading-actions">
-                @if (PersonnelOffice || _canManage)
+                @if (PersonnelOffice)
                 {
-                    <a class="btn btn-outline-secondary" href="@(PersonnelOffice ? "/ikys/leave-requests" : "/ikys/leave-requests/manage")">
-                        @(PersonnelOffice ? "İzin Taleplerim" : "İKYS İşlem Listesi") <i class="bi bi-arrow-up-right ms-1" aria-hidden="true"></i>
+                    <a class="btn btn-outline-secondary" href="/ikys/leave-requests">
+                        İzin Taleplerim <i class="bi bi-arrow-up-right ms-1" aria-hidden="true"></i>
                     </a>
+                }
+                @if (_canEnterForPersonnel)
+                {
+                    <button type="button" class="btn btn-outline-primary" aria-controls="leave-personnel-picker"
+                            aria-expanded="@(_showPersonnelPicker ? "true" : "false")" @onclick="TogglePersonnelPickerAsync">
+                        <i class="bi bi-person-plus me-1" aria-hidden="true"></i> Personel Adına Talep
+                    </button>
                 }
                 @if (_canCreate)
                 {
@@ -30,6 +39,41 @@
                 }
             </div>
         </header>
+
+        @if (_canEnterForPersonnel)
+        {
+            <section id="leave-personnel-picker" class="leave-surface leave-personnel-picker" aria-label="Personel adına izin talebi"
+                     hidden="@(!_showPersonnelPicker)">
+                @if (_loadingPersonnel)
+                {
+                    <JengaLoading Message="Personel listesi yükleniyor…" />
+                }
+                else if (_personnelLookupError is { } lookupError)
+                {
+                    <span role="alert">@lookupError</span>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="LoadPersonnelAsync">Tekrar Dene</button>
+                }
+                else if (_personnelOptions is { Count: > 0 } options)
+                {
+                    <div class="leave-personnel-choice">
+                        <label for="leave-entry-personnel" class="form-label">İzin talebi açılacak personel</label>
+                        <InputSelect id="leave-entry-personnel" class="form-select" @bind-Value="_selectedPersonelId">
+                            <option value="">Personel seçiniz</option>
+                            @foreach (var person in options)
+                            {
+                                <option value="@person.Id">@person.Name</option>
+                            }
+                        </InputSelect>
+                    </div>
+                    <button type="button" class="btn btn-primary" disabled="@(!_selectedPersonelId.HasValue)"
+                            @onclick="OpenPersonnelEntry">Talep Formunu Aç</button>
+                }
+                else
+                {
+                    <span>Seçilebilecek çalışan personel bulunamadı.</span>
+                }
+            </section>
+        }
 
         @if (_feedback is not null)
         {
@@ -64,7 +108,7 @@
             {
                 <div class="leave-list-state"><JengaLoading Message="İzin talepleri yükleniyor…" /></div>
             }
-            else if (_list?.Items.Count == 0)
+            else if (_rows?.Count == 0)
             {
                 <div class="leave-list-state">
                     <i class="bi bi-calendar2-x leave-empty-icon" aria-hidden="true"></i>
@@ -79,22 +123,29 @@
                     }
                 </div>
             }
-            else if (_list is { } list)
+            else if (_rows is { } rows)
             {
-                <GenericTable TItem="LeaveRequestRow" Items="list.Items" KeySelector="row => row.Id"
+                <GenericTable TItem="LeaveTableRow" Items="rows" KeySelector="item => item.Request.Id" @ref="_table"
                               RowClassSelector="RequestRowClass" TableClass="leave-request-table" TableHeight="Auto"
                               SearchTextSelector="SearchText" PlaceholderSearch="İzin taleplerinde ara…"
                               ExportHeaders="TableExportHeaders" ExportRow="BuildExportRow"
                               ExportFileName="@(PersonnelOffice ? "izin-talepleri.xlsx" : "izin-taleplerim.xlsx")">
                     <HeaderTemplate>
-                        @if (PersonnelOffice) { <th scope="col">Personel</th> }
-                        <th scope="col">İzin türü</th>
-                        <th scope="col">İzin tarihleri</th>
-                        <th scope="col">Süre</th>
-                        <th scope="col">Durum</th>
+                        @foreach (var (field, label) in SortColumns)
+                        {
+                            @if (PersonnelOffice || field != nameof(LeaveTableRow.Person))
+                            {
+                                <th scope="col" aria-sort="@SortDirection(field)">
+                                    <button type="button" class="leave-sort-button" @onclick="() => _table?.SortBy(field)">
+                                        @label <i class="@SortIcon(field)" aria-hidden="true"></i>
+                                    </button>
+                                </th>
+                            }
+                        }
                         <th scope="col" class="text-end">İşlemler</th>
                     </HeaderTemplate>
-                    <RowTemplate Context="row">
+                    <RowTemplate Context="item">
+                        @{ var row = item.Request; }
                         @if (PersonnelOffice) { <td class="leave-person">@row.Person</td> }
                         <td><strong>@row.TypeName</strong></td>
                         <td>
@@ -105,7 +156,7 @@
                             }
                         </td>
                         <td><span class="leave-duration">@DurationText(row.Duration, row.Unit)</span></td>
-                        <td><span class="leave-status @StatusClass(row.Status)">@StatusText(row.Status)</span></td>
+                        <td><span class="leave-status @StatusClass(row.Status)">@item.StatusLabel</span></td>
                         <td>
                             <div class="leave-row-actions">
                                 @if (_canEdit && IsPending(row.Status))
@@ -285,21 +336,34 @@
     [
         (LeaveListFilter.All, "Tümü"), (LeaveListFilter.General, "Genel İzinler"), (LeaveListFilter.Personal, "Mazeret İzinleri")
     ];
-    private static readonly string[] PersonalExportHeaders = ["İzin türü", "İzin tarihleri", "Süre", "Durum"];
-    private static readonly string[] OfficeExportHeaders = ["Personel", .. PersonalExportHeaders];
+    private static readonly (string Field, string Label)[] SortColumns =
+    [
+        (nameof(LeaveTableRow.Person), "Personel"),
+        (nameof(LeaveTableRow.TypeName), "İzin türü"),
+        (nameof(LeaveTableRow.Dates), "İzin tarihleri"),
+        (nameof(LeaveTableRow.Duration), "Süre"),
+        (nameof(LeaveTableRow.StatusLabel), "Durum")
+    ];
+    private static readonly string[] OfficeExportHeaders = SortColumns.Select(column => column.Label).ToArray();
+    private static readonly string[] PersonalExportHeaders = OfficeExportHeaders[1..];
     private IReadOnlyList<string> TableExportHeaders => PersonnelOffice ? OfficeExportHeaders : PersonalExportHeaders;
 
     [Parameter] public string? Scope { get; set; }
     private bool PersonnelOffice => string.Equals(Scope, "manage", StringComparison.OrdinalIgnoreCase);
     private string Title => PersonnelOffice ? "İzin Talepleri" : "İzin Taleplerim";
-    private bool _ready, _loading = true, _busy, _canManage, _canCreate, _canEdit, _canDelete;
+    private bool _ready, _loading = true, _busy, _canCreate, _canEdit, _canDelete;
+    private bool _canEnterForPersonnel, _showPersonnelPicker, _loadingPersonnel;
+    private int? _selectedPersonelId;
+    private List<LeaveOption>? _personnelOptions;
+    private string? _personnelLookupError;
     private bool _documentReceived, _confirmDelete, _focusDetail;
     private string? _note, _feedback;
     private string _feedbackClass = "alert-success";
     private LeaveListFilter _filter;
     private Status? _status;
     private bool HasFilters => _filter != LeaveListFilter.All || _status.HasValue;
-    private LeaveRequestList? _list;
+    private List<LeaveTableRow>? _rows;
+    private GenericTable<LeaveTableRow>? _table;
     private LeaveRequestDetail? _detail;
     private ElementReference _detailHeading;
 
@@ -325,15 +389,53 @@
 
     private async Task InitializeAsync()
     {
-        _canManage = await CurrentUser.HasPermissionAsync(ModuleName.IKYS, Operation.Manage);
-        _canCreate = PersonnelOffice ? _canManage : await CurrentUser.HasPermissionAsync(ModuleName.IKYS, Operation.Create);
-        _canEdit = PersonnelOffice ? _canManage : await CurrentUser.HasPermissionAsync(ModuleName.IKYS, Operation.Edit);
-        _canDelete = PersonnelOffice ? _canManage : await CurrentUser.HasPermissionAsync(ModuleName.IKYS, Operation.Delete);
+        var canManage = await CurrentUser.HasPermissionAsync(ModuleName.IKYS, Operation.Manage);
+        _canEnterForPersonnel = !PersonnelOffice && canManage;
+        _showPersonnelPicker = false;
+        _selectedPersonelId = null;
+        _personnelOptions = null;
+        _personnelLookupError = null;
+        if (PersonnelOffice)
+        {
+            _canCreate = _canEdit = _canDelete = canManage;
+        }
+        else
+        {
+            _canCreate = await CurrentUser.HasPermissionAsync(ModuleName.IKYS, Operation.Create);
+            _canEdit = await CurrentUser.HasPermissionAsync(ModuleName.IKYS, Operation.Edit);
+            _canDelete = await CurrentUser.HasPermissionAsync(ModuleName.IKYS, Operation.Delete);
+        }
         _filter = LeaveListFilter.All;
         _status = null;
         _feedback = null;
         CloseDetail();
         await LoadListAsync();
+    }
+
+    private async Task TogglePersonnelPickerAsync()
+    {
+        _showPersonnelPicker = !_showPersonnelPicker;
+        if (_showPersonnelPicker && _personnelOptions is null)
+            await LoadPersonnelAsync();
+    }
+
+    private async Task LoadPersonnelAsync()
+    {
+        if (!_canEnterForPersonnel || _loadingPersonnel) return;
+        _loadingPersonnel = true;
+        _personnelLookupError = null;
+        var result = await Workflow.ListPersonnelForEntryAsync();
+        if (result.IsSuccess) _personnelOptions = result.Value;
+        else _personnelLookupError = result.Error.Message;
+        _loadingPersonnel = false;
+    }
+
+    private void OpenPersonnelEntry()
+    {
+        if (!_canEnterForPersonnel || _selectedPersonelId is not { } id ||
+            _personnelOptions?.Any(person => person.Id == id) != true) return;
+
+        Navigation.NavigateTo($"/ikys/leave-request-entry?office=true&personelId={id}&returnToPersonal=true");
     }
 
     private Task SetGroupAsync(LeaveListFilter filter)
@@ -355,8 +457,8 @@
         _loading = true;
         var result = await Workflow.ListAsync(PersonnelOffice, _filter, _status);
         _loading = false;
-        if (result.IsFailure) { _list = null; Feedback(result.Error.Message, "alert-danger"); return; }
-        _list = result.Value;
+        if (result.IsFailure) { _rows = null; Feedback(result.Error.Message, "alert-danger"); return; }
+        _rows = result.Value.Items.Select(request => new LeaveTableRow(request)).ToList();
     }
 
     private async Task OpenDetailAsync(int id)
@@ -423,18 +525,54 @@
     }
 
     private string EntryUrl(int? id = null) => "/ikys/leave-request-entry" + (id is { } value ? $"/{value}" : "") + (PersonnelOffice ? "?office=true" : "");
-    private string? RequestRowClass(LeaveRequestRow row) => _detail?.Row.Id == row.Id ? "leave-row-active" : null;
+    private string? RequestRowClass(LeaveTableRow item) => _detail?.Row.Id == item.Request.Id ? "leave-row-active" : null;
 
-    private IReadOnlyList<object?> BuildExportRow(LeaveRequestRow row)
+    private string? SortDirection(string field) => _table?.CurrentSortField == field
+        ? (_table.CurrentSortDescending ? "descending" : "ascending") : null;
+
+    private string SortIcon(string field) => SortDirection(field) switch
     {
+        "ascending" => "bi bi-caret-up-fill",
+        "descending" => "bi bi-caret-down-fill",
+        _ => "bi bi-arrow-down-up text-body-secondary"
+    };
+
+    private IReadOnlyList<object?> BuildExportRow(LeaveTableRow item)
+    {
+        var row = item.Request;
         var dates = DateRange(row.Start, row.End);
         if (TimeRange(row) is { } times) dates = $"{dates} {times}";
 
-        IReadOnlyList<object?> values = [row.TypeName, dates, DurationText(row.Duration, row.Unit), StatusText(row.Status)];
+        IReadOnlyList<object?> values = [row.TypeName, dates, DurationText(row.Duration, row.Unit), item.StatusLabel];
         return PersonnelOffice ? [row.Person, .. values] : values;
     }
 
-    private string SearchText(LeaveRequestRow row) => string.Join(" ", BuildExportRow(row));
+    private string SearchText(LeaveTableRow item) => string.Join(" ", BuildExportRow(item));
+
+    private sealed class LeaveTableRow(LeaveRequestRow request)
+    {
+        public LeaveRequestRow Request { get; } = request;
+        public string Person => Request.Person;
+        public string TypeName => Request.TypeName;
+        public (DateTime? Start, DateTime? End) Dates => (Request.Start, Request.End);
+        public string StatusLabel => StatusText(Request.Status);
+        public (int UnitOrder, decimal Amount) Duration { get; } = DurationSortKey(request);
+
+        private static (int UnitOrder, decimal Amount) DurationSortKey(LeaveRequestRow row)
+        {
+            if (string.Equals(row.Unit, "Saat", StringComparison.OrdinalIgnoreCase) &&
+                TimeSpan.TryParse(row.Duration, CultureInfo.InvariantCulture, out var hours))
+                return (0, hours.Ticks);
+
+            const NumberStyles decimalNumber = NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint;
+            if (string.Equals(row.Unit, "Gün", StringComparison.OrdinalIgnoreCase) &&
+                (decimal.TryParse(row.Duration?.Trim(), decimalNumber, CultureInfo.InvariantCulture, out var days) ||
+                 decimal.TryParse(row.Duration?.Trim(), decimalNumber, CultureInfo.GetCultureInfo("tr-TR"), out days)))
+                return (1, days);
+
+            return (2, 0);
+        }
+    }
 
     private static bool IsPending(Status? status) => status is Status.IslemBekliyor or Status.DilekceBekleniyor;
 
@@ -451,7 +589,7 @@
     {
         if (string.IsNullOrWhiteSpace(duration)) return "—";
         if (string.Equals(unit, "Saat", StringComparison.OrdinalIgnoreCase) &&
-            TimeSpan.TryParse(duration, System.Globalization.CultureInfo.InvariantCulture, out var hours))
+            TimeSpan.TryParse(duration, CultureInfo.InvariantCulture, out var hours))
             duration = duration == "0" ? "00:00" : $"{(hours < TimeSpan.Zero ? "-" : "")}{Math.Abs((int)hours.TotalHours):00}:{hours.Duration().Minutes:00}";
         return $"{duration} {unit}";
     }

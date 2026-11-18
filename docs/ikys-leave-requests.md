@@ -2,6 +2,8 @@
 
 Personel, kişisel sayfasındaki **İzin Taleplerim** kartından taleplerini açar. İKYS yetkilileri **Bekleyen İşlemler** sayfasındaki **İzin Talepleri** bağlantısından tüm açık ve sonuçlanmış talepleri inceleyebilir. Kişisel ekran, kullanıcının kendi kayıtlarını getirir. Kişisel işlemlerde ilgili `IKYS/View`, `Create`, `Edit` ve `Delete` izinleri, İKYS işlem ekranında `IKYS/Manage` denetlenir.
 
+`IKYS/Manage` yetkisi olan kullanıcı, **İzin Taleplerim → Personel Adına Talep** ile çalışan kadrolu veya kadro harici personeli seçip onun adına yeni talep açabilir. Seçilen personel giriş formunda hazır gelir.
+
 - **İşlem Bekliyor** veya **Dilekçe Bekleniyor** durumundaki mevcut talep düzenlenebilir, silinebilir, kontrol edilebilir veya reddedilebilir.
 - **Kontrol Edildi** durumunda personel imzalı belgeyi Personel Kısmına teslim eder. İKYS yetkilisi teslimi doğrulayıp talebi kayıtlara işler veya reddeder.
 - Nihai onay aynı işlemde izin hareketini oluşturur. Yıllık ve mazeret izinlerinde bakiye, asker statüsü dışındaki personelin ücretsiz izninde ise izin dönemi başlangıcı güncellenir. Yeni mahsup dilekçesi ve mahsup yönetimi sonraki etabın kapsamındadır.

@@ -21,9 +21,12 @@ public sealed partial class LeaveRequestWorkflow
         IzinDonem? Period = null, DateTime? PeriodStart = null, DateTime? PeriodEnd = null,
         string? Allowance = null, string? PeriodBalance = null);
 
-    private static IQueryable<Personel> ActiveStaff(ApplicationDbContext db) => db.Personel_Table
-        .Where(person => person.Tipi == PersonelTipi.Kadrolu && db.IsBilgileri_Table.Any(
+    private static IQueryable<Personel> WorkingPersonnel(ApplicationDbContext db) => db.Personel_Table
+        .Where(person => db.IsBilgileri_Table.Any(
             job => job.PersonelId == person.Id && job.CalismaDurumu == CalismaDurumu.Calisiyor));
+
+    private static IQueryable<Personel> ActiveStaff(ApplicationDbContext db) =>
+        WorkingPersonnel(db).Where(person => person.Tipi == PersonelTipi.Kadrolu);
 
     private static Task<IsBilgileri?> FindJobAsync(ApplicationDbContext db, int personId, CancellationToken ct) =>
         db.IsBilgileri_Table.Where(x => x.PersonelId == personId)

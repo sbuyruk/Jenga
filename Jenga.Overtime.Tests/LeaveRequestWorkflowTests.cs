@@ -149,6 +149,44 @@ public sealed class LeaveRequestWorkflowTests
     }
 
     [Fact]
+    public async Task OfficeCanEnterLeaveForWorkingPersonnelAcrossStaffTypes()
+    {
+        await using var data = await TestData.CreateAsync();
+        await using (var db = data.CreateDbContext())
+        {
+            (await db.Personel_Table.FindAsync(2))!.Tipi = PersonelTipi.KadroHarici;
+            db.Personel_Table.Add(new Personel
+            {
+                Id = 4, Adi = "Eski", Soyadi = "Personel", KullaniciAdi = "former", SicilNo = 4, Tipi = PersonelTipi.Kadrolu
+            });
+            db.IsBilgileri_Table.Add(new IsBilgileri
+            {
+                PersonelId = 4, BirimId = 1, UnvanId = 1, CalismaDurumu = CalismaDurumu.Ayrildi,
+                BaslamaTar = EntitlementStart, IzinDonemiBasTar = EntitlementStart
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var office = data.Service("office", manage: true);
+        var employee = data.Service("employee");
+        var available = Success(await office.ListPersonnelForEntryAsync());
+        Assert.Equal(new[] { 1, 2, 3 }, available.Select(person => person.Id).Order());
+        Assert.True((await employee.ListPersonnelForEntryAsync()).IsFailure);
+        var form = Success(await office.LoadFormAsync(null, true));
+        Assert.Equal(available, form.People);
+        Assert.DoesNotContain(form.Signers, person => person.Id == 2);
+
+        var input = Request(LeaveType.Paternity, Friday, Friday);
+        Assert.True((await employee.SaveAsync(input, true)).IsFailure);
+        var requestId = Success(await office.SaveAsync(input, true)).Id;
+        Assert.Equal(requestId, Assert.Single(Success(await employee.ListAsync(false, LeaveListFilter.All, null)).Items).Id);
+        Assert.Empty(Success(await office.ListAsync(false, LeaveListFilter.All, null)).Items);
+
+        input.PersonelId = 4;
+        Assert.True((await office.SaveAsync(input, true)).IsFailure);
+    }
+
+    [Fact]
     public async Task ScopedCrudAndLegacyPetitionUseTheSameWorkflow()
     {
         await using var data = await TestData.CreateAsync();

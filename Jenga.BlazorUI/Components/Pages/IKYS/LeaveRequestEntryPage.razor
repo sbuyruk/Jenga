@@ -10,7 +10,7 @@
 <PermissionGuard Module="ModuleName.IKYS" Operation="@(Office ? Operation.Manage : RequestId.HasValue ? Operation.Edit : Operation.Create)">
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
         <h3 class="mb-0">@Title</h3>
-        <a class="btn btn-outline-secondary" href="@ListUrl">@(Office ? "İKYS İşlem Listesi" : "İzin Taleplerim")</a>
+        <a class="btn btn-outline-secondary" href="@ListUrl">@(ReturnsToOffice ? "İKYS İşlem Listesi" : "İzin Taleplerim")</a>
     </div>
 
     @if (_feedback is not null)
@@ -155,8 +155,11 @@
 @code {
     [Parameter] public int? RequestId { get; set; }
     [SupplyParameterFromQuery(Name = "office")] public bool Office { get; set; }
+    [SupplyParameterFromQuery(Name = "personelId")] public int? SelectedPersonelId { get; set; }
+    [SupplyParameterFromQuery(Name = "returnToPersonal")] public bool ReturnToPersonal { get; set; }
     private string Title => RequestId.HasValue ? "İzin Talebini Düzenle" : "Yeni İzin Talebi";
-    private string ListUrl => Office ? "/ikys/leave-requests/manage" : "/ikys/leave-requests";
+    private bool ReturnsToOffice => Office && !ReturnToPersonal;
+    private string ListUrl => ReturnsToOffice ? "/ikys/leave-requests/manage" : "/ikys/leave-requests";
     private bool IsPersonal => _form?.Input.Type == LeaveType.Personal;
     private bool IsNursing => _form?.Input.Type == LeaveType.Nursing;
     private bool _ready, _loading = true, _busy, _saved;
@@ -185,7 +188,17 @@
         _form = null;
         ClearCalculation();
         var result = await Workflow.LoadFormAsync(RequestId, Office);
-        if (result.IsSuccess) _form = result.Value;
+        if (result.IsSuccess)
+        {
+            _form = result.Value;
+            if (Office && !RequestId.HasValue && SelectedPersonelId is { } id)
+            {
+                if (_form.People.Any(person => person.Id == id))
+                    _form.Input.PersonelId = id;
+                else
+                    Feedback("Seçilen personel izin girişi için kullanılamıyor. Listeden çalışan bir personel seçiniz.", "alert-warning");
+            }
+        }
         else Feedback(result.Error.Message, "alert-danger");
         _loading = false;
     }
