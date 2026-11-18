@@ -162,6 +162,7 @@ namespace Jenga.DataAccess.Extensions
             services.AddScopedWithAuthProxy<IYabanciDilService, YabanciDilService>(ModuleName.IKYS);
             services.AddScopedWithAuthProxy<ITahsilTanimService, TahsilTanimService>(ModuleName.IKYS);
             services.AddScopedWithAuthProxy<ITaskApprovalEntryService, TaskApprovalEntryService>(ModuleName.IKYS);
+            services.AddScopedWithAuthProxy<IHarcirahService, HarcirahService>(ModuleName.IKYS);
 
             return services;
         }

@@ -1,0 +1,17 @@
+.travel-allowances-page { min-width: 0; max-width: 100%; }
+fieldset { min-width: 0; }
+.country-filter { width: 14rem; max-width: 100%; }
+.date-range-filter { width: 19rem; max-width: 100%; }
+.new-start-field { width: 12rem; max-width: 100%; }
+.usage-guide { border: 1px solid var(--bs-border-color, #dee2e6); border-radius: .5rem; padding: .75rem 1rem; background: var(--bs-tertiary-bg, #f8f9fa); }
+.usage-guide summary { cursor: pointer; font-weight: 600; }
+.usage-guide ol { margin: .75rem 0; padding-left: 1.25rem; font-size: .875rem; }
+.usage-guide li + li { margin-top: .35rem; }
+.usage-guide p { margin: 0; font-size: .875rem; color: var(--bs-secondary-color, #6c757d); }
+.amount-input { min-width: 110px; }
+.description-input { min-width: 170px; }
+.travel-allowances-page ::deep .generic-table { max-width: 100%; }
+.travel-allowances-page ::deep .gt-table { min-width: 1100px; table-layout: auto; }
+.travel-allowances-page ::deep th, .travel-allowances-page ::deep td { overflow-wrap: anywhere; white-space: normal; }
+.travel-allowances-page ::deep .date-column { width: 8.5rem; white-space: nowrap; }
+.travel-allowances-page ::deep .action-column { width: 6rem; min-width: 6rem; white-space: nowrap; }

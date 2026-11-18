@@ -146,7 +146,8 @@ namespace Jenga.DataAccess.Data
         
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<Harcirah>().Property(x => x.Miktar).HasPrecision(18, 2);
+            modelBuilder.Entity<Harcirah>().Property(x => x.Miktar).HasPrecision(18, 2).IsConcurrencyToken();
+            modelBuilder.Entity<Harcirah>().Property(x => x.Aciklama).IsConcurrencyToken();
             modelBuilder.Entity<OvertimeDelegation>().HasIndex(x => new { x.DelegatePersonelId, x.TargetPersonelId }).IsUnique();
             modelBuilder.Entity<OvertimeDelegation>().HasOne<Personel>().WithMany()
                 .HasForeignKey(x => x.DelegatePersonelId).OnDelete(DeleteBehavior.Restrict);
