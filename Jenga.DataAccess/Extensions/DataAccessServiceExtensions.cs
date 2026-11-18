@@ -117,7 +117,6 @@ namespace Jenga.DataAccess.Extensions
             services.AddScopedWithAuthProxy<ITasinmazBagisciService, TasinmazBagisciService>(ModuleName.TBYS);
             services.AddScopedWithAuthProxy<IKiraciService, KiraciService>(ModuleName.TBYS);
             services.AddScopedWithAuthProxy<IKiraSozlesmeService, KiraSozlesmeService>(ModuleName.TBYS);
-            services.AddScopedWithAuthProxy<ISozlesmeTasinmazService, SozlesmeTasinmazService>(ModuleName.TBYS);
             services.AddScopedWithAuthProxy<IOdemePlaniService, OdemePlaniService>(ModuleName.TBYS);
             services.AddScopedWithAuthProxy<IOdemeService, OdemeService>(ModuleName.TBYS);
             services.AddScopedWithAuthProxy<IBagisciTalepleriService, BagisciTalepleriService>(ModuleName.TBYS);
@@ -148,18 +147,13 @@ namespace Jenga.DataAccess.Extensions
             services.AddScoped<IPersonelSummaryService, PersonelSummaryService>();
             services.AddScopedWithAuthProxy<IKimlikService, KimlikService>(ModuleName.IKYS);
             services.AddScopedWithAuthProxy<IIsBilgileriService, IsBilgileriService>(ModuleName.IKYS);
-            services.AddScopedWithAuthProxy<IIletisimBilgileriService, IletisimBilgileriService>(ModuleName.IKYS);
-            services.AddScopedWithAuthProxy<IAileService, AileService>(ModuleName.IKYS);
             services.AddScopedWithAuthProxy<IDereceKademeDegisimService, DereceKademeDegisimService>(ModuleName.IKYS);
-            services.AddScopedWithAuthProxy<IEgitimSeviyesiService, EgitimSeviyesiService>(ModuleName.IKYS);
             services.AddScopedWithAuthProxy<IGorevOnayService, GorevOnayService>(ModuleName.IKYS);
             services.AddScopedWithAuthProxy<IBirimTanimService, BirimTanimService>(ModuleName.IKYS);
-            services.AddScopedWithAuthProxy<IGorevTanimService, GorevTanimService>(ModuleName.IKYS);
             services.AddScopedWithAuthProxy<IIzinTanimService, IzinTanimService>(ModuleName.IKYS);
             services.AddScopedWithAuthProxy<IIzinDonemService, IzinDonemService>(ModuleName.IKYS);
             services.AddScopedWithAuthProxy<IIzinTalepService, IzinTalepService>(ModuleName.IKYS);
             services.AddScopedWithAuthProxy<IIzinHareketService, IzinHareketService>(ModuleName.IKYS);
-            services.AddScopedWithAuthProxy<IYabanciDilService, YabanciDilService>(ModuleName.IKYS);
             services.AddScopedWithAuthProxy<ITahsilTanimService, TahsilTanimService>(ModuleName.IKYS);
             services.AddScopedWithAuthProxy<ITaskApprovalEntryService, TaskApprovalEntryService>(ModuleName.IKYS);
             services.AddScopedWithAuthProxy<IHarcirahService, HarcirahService>(ModuleName.IKYS);
@@ -174,7 +168,6 @@ namespace Jenga.DataAccess.Extensions
             services.AddScopedWithAuthProxy<IBankaTanimService, BankaTanimService>(ModuleName.NBYS);
             services.AddScopedWithAuthProxy<IArmaganService, ArmaganService>(ModuleName.NBYS);
             services.AddScopedWithAuthProxy<IArmaganTanimService, ArmaganTanimService>(ModuleName.NBYS);
-            services.AddScopedWithAuthProxy<IDuzenliNakitBagisciService, DuzenliNakitBagisciService>(ModuleName.NBYS);
             services.AddScopedWithAuthProxy<IYasalFaizService, YasalFaizService>(ModuleName.NBYS);
 
             return services;
@@ -183,7 +176,6 @@ namespace Jenga.DataAccess.Extensions
         {
             services.AddScoped<IFtkService, FtkService>();
             services.AddScoped<IFtkIslemService, FtkIslemService>();
-            services.AddScoped<IFtkKisiService, FtkKisiService>();
 
             return services;
         }

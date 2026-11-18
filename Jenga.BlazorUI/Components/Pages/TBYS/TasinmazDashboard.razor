@@ -201,7 +201,6 @@
                                                         <th class="text-end">Emlak Beyan Değeri</th>
                                                         <th class="text-end">Tah.Ray.Değeri</th>
                                                         <th class="text-end">Muh.Kay.Değeri</th>
-                                                        @* <th class="text-end">Yak.Piy.Değeri</th> *@
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -215,7 +214,6 @@
                                                             <td class="text-end">@(b.EmlakBeyan == 0 ? "–" : b.EmlakBeyan.ToString("N0", TrCulture))</td>
                                                             <td class="text-end">@(b.TahminiRayic == 0 ? "–" : b.TahminiRayic.ToString("N0", TrCulture))</td>
                                                             <td class="text-end">@(b.MuhasebeyeKayitli == 0 ? "–" : b.MuhasebeyeKayitli.ToString("N0", TrCulture))</td>
-                                                            @* <td class="text-end">@(b.YaklasikPiyasa == 0 ? "–" : b.YaklasikPiyasa.ToString("N0", TrCulture))</td> *@
                                                         </tr>
                                                     }
                                                     @if (_bolgeSummariesYil.Count == 0)
@@ -234,7 +232,6 @@
                                                         <td class="text-end">@(ToplamEmlakBeyanYil == 0 ? "–" : ToplamEmlakBeyanYil.ToString("N0", TrCulture))</td>
                                                         <td class="text-end">@(ToplamTahminiRayicYil == 0 ? "–" : ToplamTahminiRayicYil.ToString("N0", TrCulture))</td>
                                                         <td class="text-end">@(ToplamMuhasebeyeKayitliYil == 0 ? "–" : ToplamMuhasebeyeKayitliYil.ToString("N0", TrCulture))</td>
-                                                        @* <td class="text-end">@(ToplamYaklasikPiyasaYil == 0 ? "–" : ToplamYaklasikPiyasaYil.ToString("N0", TrCulture))</td> *@
                                                     </tr>
                                                 </tfoot>
                                             </table>
@@ -261,16 +258,6 @@
                                 </div>
                             </div>
                         </div>
-
-@*                         <div class="col-6 col-sm-4 col-md-3 col-xl-2">
-                            <div class="card db-stat-card db-accent-purple h-100">
-                                <div class="card-body db-stat-body text-center">
-                                    <div class="db-stat-icon"><i class="bi bi-clipboard-check"></i></div>
-                                    <div class="db-stat-label">Değerlemesi Yapılan</div>
-                                    <div class="db-stat-value">@FormatCount(DegerlemesiYapilanAdet)</div>
-                                </div>
-                            </div>
-                        </div> *@
 
                         <div class="col-6 col-sm-4 col-md-3 col-xl-2">
                             <div class="card db-stat-card db-accent-blue h-100">
@@ -774,7 +761,6 @@
     private decimal ToplamEmlakBeyanYil;
     private decimal ToplamTahminiRayicYil;
     private decimal ToplamMuhasebeyeKayitliYil;
-    private decimal ToplamYaklasikPiyasaYil;
     private List<(string IlAdi, int Count)> _topIller = new();
     private List<(string IlAdi, int Count)> _bottomIller = new();
     private List<string> _noTasinmazIller = new();
@@ -921,7 +907,6 @@
         ToplamEmlakBeyanYil = yilList.Sum(x => x.EmlakBeyanDegeri ?? 0m);
         ToplamTahminiRayicYil = yilList.Sum(x => x.TahminiRayicDegeri ?? 0m);
         ToplamMuhasebeyeKayitliYil = yilList.Sum(x => x.MuhasebeyeKayitliDeger ?? 0m);
-        ToplamYaklasikPiyasaYil = yilList.Sum(x => x.YaklasikPiyasaDegeri ?? 0m);
 
         // ── Grafik: Bölge Bar ─
         _bolgeChartItems = _bolgeSummaries

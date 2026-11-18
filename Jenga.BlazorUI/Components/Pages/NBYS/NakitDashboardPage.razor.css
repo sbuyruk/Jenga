@@ -187,11 +187,6 @@
     flex: 0 0 auto;
 }
 
-.nakit-dashboard .nd-rank-gold    { background: #fbbf24; color: #78350f; }
-.nakit-dashboard .nd-rank-silver  { background: #9ca3af; color: #fff; }
-.nakit-dashboard .nd-rank-bronze  { background: #d97706; color: #fff; }
-.nakit-dashboard .nd-rank-default { background: #e5e7eb; color: #374151; }
-
 /* ── Scrollspy Layout ─────────────────────────────────────── */
 .nd-scrollspy-layout {
     display: grid;
