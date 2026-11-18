@@ -8,36 +8,44 @@
 
 @typeparam TItem
 <div class="generic-table p-1">
-    <div class="gt-controls bg-body-tertiary">
-        @if (ShowSearch)
-        {
-            <input class="gt-search small" placeholder="@PlaceholderSearch" @bind="SearchText" @bind:event="oninput" />
-        }
-        <div class="gt-page-controls">
-            <label class="fw-bold me-3">
-
-                <select @bind="BoundPageSize" @bind:event="onchange" class="form-select-sm">
-                    @foreach (var opt in PageSizeOptions)
-                    {
-                        <option value="@opt">@opt</option>
-                    }
-                </select>
-                Satır Göster
-            </label>
-            @if (ShowCopy)
+    @if (ShowSearch || ShowPagination || ShowCopy || ShowExport)
+    {
+        <div class="gt-controls bg-body-tertiary">
+            @if (ShowSearch)
             {
-                <button type="button" class="btn btn-sm btn-outline-secondary ms-2" @onclick="CopyToClipboard" title="Kopyala" aria-label="Kopyala">
-                    <i class="bi bi-clipboard me-1" aria-hidden="true"></i> Kopyala
-                </button>
+                <input class="gt-search small" placeholder="@PlaceholderSearch" @bind="SearchText" @bind:event="oninput" />
             }
-            @if (ShowExport)
+            @if (ShowPagination || ShowCopy || ShowExport)
             {
-                <button type="button" class="btn btn-sm btn-secondary ms-2" @onclick="ExportToExcel" title="Excel'e Aktar" aria-label="Excel'e Aktar">
-                    <i class="bi bi-download me-1" aria-hidden="true"></i> Excel'e Aktar
-                </button>
+                <div class="gt-page-controls">
+                    @if (ShowPagination)
+                    {
+                        <label class="fw-bold me-3">
+                            <select @bind="BoundPageSize" @bind:event="onchange" class="form-select-sm">
+                                @foreach (var opt in PageSizeOptions)
+                                {
+                                    <option value="@opt">@opt</option>
+                                }
+                            </select>
+                            Satır Göster
+                        </label>
+                    }
+                    @if (ShowCopy)
+                    {
+                        <button type="button" class="btn btn-sm btn-outline-secondary ms-2" @onclick="CopyToClipboard" title="Kopyala" aria-label="Kopyala">
+                            <i class="bi bi-clipboard me-1" aria-hidden="true"></i> Kopyala
+                        </button>
+                    }
+                    @if (ShowExport)
+                    {
+                        <button type="button" class="btn btn-sm btn-secondary ms-2" @onclick="ExportToExcel" title="Excel'e Aktar" aria-label="Excel'e Aktar">
+                            <i class="bi bi-download me-1" aria-hidden="true"></i> Excel'e Aktar
+                        </button>
+                    }
+                </div>
             }
         </div>
-    </div>
+    }
 
     <div class="gt-table-wrapper" style="height:@TableHeight">
         <table id="@_tableId" class="@TableCssClass">
@@ -98,21 +106,24 @@
         </table>
     </div>
 
-    <div class="gt-pagination">
-        <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="FirstPage" disabled="@(currentPage == 1)" title="İlk Sayfa" aria-label="İlk Sayfa">
-            <i class="bi bi-skip-backward-fill" aria-hidden="true"></i>
-        </button>
-        <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="PrevPage" disabled="@(currentPage == 1)" title="Önceki" aria-label="Önceki">
-            <i class="bi bi-chevron-left" aria-hidden="true"></i>
-        </button>
-        <span class="mx-2 align-middle">Sayfa @currentPage / @totalPages</span>
-        <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="NextPage" disabled="@(currentPage == totalPages)" title="Sonraki" aria-label="Sonraki">
-            <i class="bi bi-chevron-right" aria-hidden="true"></i>
-        </button>
-        <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="LastPage" disabled="@(currentPage == totalPages)" title="Son Sayfa" aria-label="Son Sayfa">
-            <i class="bi bi-skip-forward-fill" aria-hidden="true"></i>
-        </button>
-    </div>
+    @if (ShowPagination)
+    {
+        <div class="gt-pagination">
+            <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="FirstPage" disabled="@(currentPage == 1)" title="İlk Sayfa" aria-label="İlk Sayfa">
+                <i class="bi bi-skip-backward-fill" aria-hidden="true"></i>
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="PrevPage" disabled="@(currentPage == 1)" title="Önceki" aria-label="Önceki">
+                <i class="bi bi-chevron-left" aria-hidden="true"></i>
+            </button>
+            <span class="mx-2 align-middle">Sayfa @currentPage / @totalPages</span>
+            <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="NextPage" disabled="@(currentPage == totalPages)" title="Sonraki" aria-label="Sonraki">
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="LastPage" disabled="@(currentPage == totalPages)" title="Son Sayfa" aria-label="Son Sayfa">
+                <i class="bi bi-skip-forward-fill" aria-hidden="true"></i>
+            </button>
+        </div>
+    }
 </div>
 
 @code {
@@ -131,6 +142,7 @@
 
     [Parameter] public int PageSize { get; set; } = 10;
     [Parameter] public int[] PageSizeOptions { get; set; } = new[] { 5, 10, 20, 50 };
+    [Parameter] public bool ShowPagination { get; set; } = true;
     [Parameter] public string TableHeight { get; set; } = "400px";
     [Parameter] public bool ShowSearch { get; set; } = true;
     [Parameter] public string PlaceholderSearch { get; set; } = "Ara...";
@@ -355,6 +367,13 @@
                 if (sortDescending)
                     filtered.Reverse();
             }
+        }
+
+        if (!ShowPagination)
+        {
+            currentPage = totalPages = 1;
+            PagedItems = filtered;
+            return;
         }
 
         if (PageSize <= 0) PageSize = 10;

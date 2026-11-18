@@ -1,0 +1,352 @@
+.leave-page {
+    display: grid;
+    gap: 1rem;
+    min-width: 0;
+    color: var(--theme-text);
+}
+
+.leave-heading,
+.leave-heading-actions,
+.leave-toolbar,
+.leave-row-actions,
+.leave-detail-header,
+.leave-detail-actions,
+.leave-document {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+}
+
+.leave-heading,
+.leave-heading-actions,
+.leave-toolbar,
+.leave-detail-header,
+.leave-detail-actions,
+.leave-document {
+    flex-wrap: wrap;
+}
+
+.leave-heading,
+.leave-toolbar,
+.leave-document {
+    justify-content: space-between;
+}
+
+.leave-heading {
+    padding-block: .5rem;
+}
+
+.leave-heading h1 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 650;
+}
+
+.leave-empty-icon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: .75rem;
+    background: var(--theme-surface);
+    color: var(--theme-accent);
+    font-size: 1.2rem;
+}
+
+.leave-surface {
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid var(--theme-border);
+    border-radius: .85rem;
+    background: var(--theme-card-bg);
+    box-shadow: 0 4px 16px var(--theme-shadow);
+}
+
+.leave-toolbar {
+    align-items: end;
+    padding: .25rem .25rem .65rem;
+}
+
+.leave-list {
+    min-width: 0;
+}
+
+.leave-filter-group {
+    min-width: 0;
+    margin: 0;
+}
+
+.leave-filter-group legend,
+.leave-status-filter label,
+.leave-detail-grid dt {
+    display: block;
+    margin: 0 0 .3rem;
+    font-size: .8rem;
+    font-weight: 600;
+    color: var(--theme-muted);
+}
+
+.leave-filter-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .2rem;
+    padding: .2rem;
+    border: 1px solid var(--theme-border);
+    border-radius: .6rem;
+    background: var(--theme-bg);
+}
+
+.leave-filter {
+    padding: .34rem .65rem;
+    border: 1px solid transparent;
+    border-radius: .42rem;
+    background: transparent;
+    color: var(--theme-text);
+    font-size: .86rem;
+}
+
+.leave-filter:not(:disabled):hover {
+    background: var(--theme-surface);
+}
+
+.leave-filter[aria-pressed="true"] {
+    border-color: var(--theme-border);
+    background: var(--theme-card-bg);
+    color: var(--theme-accent);
+    font-weight: 650;
+    box-shadow: 0 1px 2px var(--theme-shadow);
+}
+
+.leave-filter:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 1px;
+}
+
+.leave-filter:disabled {
+    opacity: .65;
+}
+
+.leave-status-filter {
+    width: min(100%, 13rem);
+}
+
+.leave-detail ::deep .generic-table {
+    padding: 0 !important;
+    font-family: inherit;
+    background: transparent;
+}
+
+.leave-detail ::deep .gt-table-wrapper {
+    border: 0;
+    border-radius: 0;
+}
+
+.leave-detail ::deep .gt-table {
+    margin: 0;
+    table-layout: auto;
+}
+
+.leave-detail ::deep .gt-table th {
+    padding: .6rem 1.05rem;
+    border-bottom: 1px solid var(--theme-border);
+    background: var(--theme-bg);
+    color: var(--theme-text);
+    cursor: default;
+    font-size: .79rem;
+    font-weight: 650;
+}
+
+.leave-detail ::deep .gt-table td {
+    padding: .78rem 1.05rem;
+    border-bottom: 1px solid var(--theme-border);
+    vertical-align: middle;
+}
+
+.leave-detail ::deep .gt-row:last-child td {
+    border-bottom: 0;
+}
+
+.leave-detail ::deep .gt-row:hover > td,
+.leave-list ::deep .leave-row-active > td {
+    background: var(--theme-surface);
+}
+
+.leave-page ::deep .leave-request-table th,
+.leave-page ::deep .gt-row:hover {
+    cursor: default;
+}
+
+.leave-page ::deep .leave-request-table {
+    min-width: 40rem;
+    table-layout: auto;
+}
+
+.leave-page ::deep .leave-history-table {
+    min-width: 29rem;
+}
+
+.leave-page ::deep .leave-person {
+    min-width: 8rem;
+    max-width: 16rem;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.leave-dates,
+.leave-duration {
+    font-variant-numeric: tabular-nums;
+}
+
+.leave-times {
+    display: block;
+    margin-top: .12rem;
+    color: var(--theme-muted);
+    font-size: .78rem;
+}
+
+.leave-row-actions {
+    justify-content: end;
+    gap: .4rem;
+}
+
+.leave-status {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .3rem .58rem;
+    border-radius: 999px;
+    background: var(--theme-surface);
+    color: var(--theme-text);
+    font-size: .76rem;
+    line-height: 1.25;
+    font-weight: 650;
+    white-space: nowrap;
+}
+
+.leave-status::before {
+    content: "";
+    width: .36rem;
+    height: .36rem;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.leave-status-info {
+    background: var(--bs-info-bg-subtle);
+    color: var(--bs-info-text-emphasis);
+}
+
+.leave-status-success {
+    background: var(--bs-success-bg-subtle);
+    color: var(--bs-success-text-emphasis);
+}
+
+.leave-status-danger {
+    background: var(--bs-danger-bg-subtle);
+    color: var(--bs-danger-text-emphasis);
+}
+
+.leave-status-warning {
+    background: var(--bs-warning-bg-subtle);
+    color: var(--bs-warning-text-emphasis);
+}
+
+.leave-list-state {
+    display: grid;
+    justify-items: center;
+    gap: .75rem;
+    padding: 2rem 1rem;
+    text-align: center;
+}
+
+.leave-list-state h2,
+.leave-detail-header h2 {
+    margin: 0;
+    font-size: 1.13rem;
+    font-weight: 650;
+}
+
+.leave-detail {
+    display: grid;
+    gap: 1rem;
+    padding: 1.25rem;
+    scroll-margin-top: 1rem;
+}
+
+.leave-detail-header > div {
+    margin-inline-end: auto;
+}
+
+.leave-detail-header p {
+    margin: .25rem 0 0;
+    color: var(--theme-muted);
+}
+
+.leave-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+    gap: .75rem;
+    margin: 0;
+}
+
+.leave-detail-grid > div {
+    min-width: 0;
+    padding: .7rem .85rem;
+    border-radius: .55rem;
+    background: var(--theme-bg);
+}
+
+.leave-detail-grid dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+    white-space: pre-line;
+}
+
+.leave-detail-wide {
+    grid-column: 1 / -1;
+}
+
+.leave-document,
+.leave-history {
+    min-width: 0;
+    padding: .75rem .9rem;
+    border: 1px solid var(--theme-border);
+    border-radius: .6rem;
+}
+
+.leave-document {
+    background: var(--theme-bg);
+}
+
+.leave-history summary {
+    cursor: pointer;
+    font-weight: 650;
+}
+
+.leave-history h3 {
+    margin: 1rem 0 .5rem;
+    font-size: .9rem;
+    font-weight: 650;
+}
+
+.leave-muted {
+    margin: 0;
+    color: var(--theme-muted);
+}
+
+.leave-decision,
+.leave-delete {
+    padding-top: .9rem;
+    border-top: 1px solid var(--theme-border);
+}
+
+@media (max-width: 575px) {
+    .leave-detail {
+        padding-inline: .8rem;
+    }
+
+    .leave-heading-actions {
+        width: 100%;
+    }
+}

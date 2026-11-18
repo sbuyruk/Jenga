@@ -1,6 +1,7 @@
 @page "/ikys/leave-requests"
 @page "/ikys/leave-requests/{Scope}"
 @rendermode InteractiveServer
+@using Jenga.BlazorUI.Components.Common
 @using Jenga.BlazorUI.Services.Common
 @using Jenga.DataAccess.Services.IKYS
 @using Jenga.Models.IKYS
@@ -11,209 +12,293 @@
 <PageTitle>@Title</PageTitle>
 
 <PermissionGuard Module="ModuleName.IKYS" Operation="@(PersonnelOffice ? Operation.Manage : Operation.View)">
-    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-        <h3 class="mb-0">@Title</h3>
-        <div class="d-flex flex-wrap gap-2">
-            @if (PersonnelOffice || _canManage)
-            {
-                <a class="btn btn-outline-secondary" href="@(PersonnelOffice ? "/ikys/leave-requests" : "/ikys/leave-requests/manage")">
-                    @(PersonnelOffice ? "İzin Taleplerim" : "İKYS İşlem Listesi")
-                </a>
-            }
-            @if (_canCreate)
-            {
-                <a class="btn btn-primary" href="@EntryUrl()">Yeni İzin Talebi</a>
-            }
-        </div>
-    </div>
-
-    @if (_feedback is not null)
-    {
-        <div class="alert @_feedbackClass" role="status">@_feedback</div>
-    }
-
-    <div class="row g-2 mb-3">
-        <div class="col-sm-auto">
-            <label class="form-label" for="leave-kind">İzin grubu</label>
-            <select class="form-select" id="leave-kind" @bind="_filter" @bind:after="ResetPageAsync" disabled="@_busy">
-                <option value="@LeaveListFilter.All">Tümü</option>
-                <option value="@LeaveListFilter.General">Genel İzinler</option>
-                <option value="@LeaveListFilter.Personal">Mazeret İzinleri</option>
-            </select>
-        </div>
-        <div class="col-sm-auto">
-            <label class="form-label" for="leave-status">Durum</label>
-            <InputSelect class="form-select" id="leave-status" @bind-Value="_status" @bind-Value:after="ResetPageAsync" disabled="@_busy">
-                <option value="">Tümü</option>
-                @foreach (var status in Enum.GetValues<Status>())
+    <div class="leave-page">
+        <header class="leave-heading">
+            <h1>@Title</h1>
+            <div class="leave-heading-actions">
+                @if (PersonnelOffice || _canManage)
                 {
-                    <option value="@status">@StatusText(status)</option>
+                    <a class="btn btn-outline-secondary" href="@(PersonnelOffice ? "/ikys/leave-requests" : "/ikys/leave-requests/manage")">
+                        @(PersonnelOffice ? "İzin Taleplerim" : "İKYS İşlem Listesi") <i class="bi bi-arrow-up-right ms-1" aria-hidden="true"></i>
+                    </a>
                 }
-            </InputSelect>
-        </div>
-    </div>
+                @if (_canCreate)
+                {
+                    <a class="btn btn-success" href="@EntryUrl()">
+                        <i class="bi bi-plus-lg me-1" aria-hidden="true"></i> Yeni İzin Talebi
+                    </a>
+                }
+            </div>
+        </header>
 
-    @if (_loading)
-    {
-        <JengaLoading Message="İzin talepleri yükleniyor…" />
-    }
-    else if (_list?.Items.Count == 0)
-    {
-        <p class="text-muted">Bu filtrelere uygun izin talebi bulunmuyor.</p>
-    }
-    else if (_list is { } list)
-    {
-        <div class="table-responsive">
-            <table class="table table-hover align-middle">
-                <thead><tr>
-                    @if (PersonnelOffice) { <th scope="col">Personel</th> }
-                    <th scope="col">İzin türü</th><th scope="col">Başlangıç</th><th scope="col">Bitiş</th>
-                    <th scope="col">Süre</th><th scope="col">Durum</th><th scope="col">İşlemler</th>
-                </tr></thead>
-                <tbody>
-                    @foreach (var row in list.Items)
+        @if (_feedback is not null)
+        {
+            <div class="alert @_feedbackClass mb-0" role="status">@_feedback</div>
+        }
+
+        <section class="leave-list" aria-label="@Title" aria-busy="@(_loading ? "true" : "false")">
+            <div class="leave-toolbar">
+                <fieldset class="leave-filter-group" disabled="@(_loading || _busy)">
+                    <legend>İzin grubu</legend>
+                    <div class="leave-filter-options">
+                        @foreach (var filter in GroupFilters)
+                        {
+                            <button type="button" class="leave-filter" aria-pressed="@(_filter == filter.Value ? "true" : "false")"
+                                    @onclick="() => SetGroupAsync(filter.Value)">@filter.Label</button>
+                        }
+                    </div>
+                </fieldset>
+                <div class="leave-status-filter">
+                    <label for="leave-status">Durum</label>
+                    <InputSelect class="form-select" id="leave-status" @bind-Value="_status" @bind-Value:after="LoadListAsync" disabled="@(_loading || _busy)">
+                        <option value="">Tüm durumlar</option>
+                        @foreach (var status in Enum.GetValues<Status>())
+                        {
+                            <option value="@status">@StatusText(status)</option>
+                        }
+                    </InputSelect>
+                </div>
+            </div>
+
+            @if (_loading)
+            {
+                <div class="leave-list-state"><JengaLoading Message="İzin talepleri yükleniyor…" /></div>
+            }
+            else if (_list?.Items.Count == 0)
+            {
+                <div class="leave-list-state">
+                    <i class="bi bi-calendar2-x leave-empty-icon" aria-hidden="true"></i>
+                    <h2>@(HasFilters ? "Filtrelerle eşleşen talep yok" : "Henüz izin talebi yok")</h2>
+                    @if (HasFilters)
                     {
-                        <tr class="@(_detail?.Row.Id == row.Id ? "table-active" : null)" @key="row.Id">
-                            @if (PersonnelOffice) { <td>@row.Person</td> }
-                            <td>@row.TypeName</td>
-                            <td>@FormatDate(row.Start, row.Type)</td>
-                            <td>@FormatDate(row.End, row.Type)</td>
-                            <td>@DurationText(row.Duration, row.Unit)</td>
-                            <td><span class="badge @StatusClass(row.Status)">@StatusText(row.Status)</span></td>
-                            <td>
-                                <button type="button" class="btn btn-sm btn-outline-primary" disabled="@_busy" @onclick="() => OpenDetailAsync(row.Id)">İncele</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="ClearFiltersAsync">Filtreleri Temizle</button>
+                    }
+                    else if (_canCreate)
+                    {
+                        <a class="btn btn-sm btn-outline-primary" href="@EntryUrl()">Talep Oluştur</a>
+                    }
+                </div>
+            }
+            else if (_list is { } list)
+            {
+                <GenericTable TItem="LeaveRequestRow" Items="list.Items" KeySelector="row => row.Id"
+                              RowClassSelector="RequestRowClass" TableClass="leave-request-table" TableHeight="Auto"
+                              SearchTextSelector="SearchText" PlaceholderSearch="İzin taleplerinde ara…"
+                              ExportHeaders="TableExportHeaders" ExportRow="BuildExportRow"
+                              ExportFileName="@(PersonnelOffice ? "izin-talepleri.xlsx" : "izin-taleplerim.xlsx")">
+                    <HeaderTemplate>
+                        @if (PersonnelOffice) { <th scope="col">Personel</th> }
+                        <th scope="col">İzin türü</th>
+                        <th scope="col">İzin tarihleri</th>
+                        <th scope="col">Süre</th>
+                        <th scope="col">Durum</th>
+                        <th scope="col" class="text-end">İşlemler</th>
+                    </HeaderTemplate>
+                    <RowTemplate Context="row">
+                        @if (PersonnelOffice) { <td class="leave-person">@row.Person</td> }
+                        <td><strong>@row.TypeName</strong></td>
+                        <td>
+                            <span class="leave-dates">@DateRange(row.Start, row.End)</span>
+                            @if (TimeRange(row) is { } times)
+                            {
+                                <span class="leave-times">@times</span>
+                            }
+                        </td>
+                        <td><span class="leave-duration">@DurationText(row.Duration, row.Unit)</span></td>
+                        <td><span class="leave-status @StatusClass(row.Status)">@StatusText(row.Status)</span></td>
+                        <td>
+                            <div class="leave-row-actions">
                                 @if (_canEdit && IsPending(row.Status))
                                 {
-                                    <a class="btn btn-sm btn-outline-secondary" href="@EntryUrl(row.Id)">Düzenle</a>
+                                    <a class="btn btn-sm btn-outline-secondary" href="@EntryUrl(row.Id)"
+                                       aria-label="@($"{row.TypeName} talebini düzenle")">Düzenle</a>
                                 }
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-        @if (list.Total > ILeaveRequestWorkflow.PageSize)
-        {
-            <div class="d-flex align-items-center gap-2 mb-3">
-                <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(_busy || _page == 0)" @onclick="() => ChangePageAsync(-1)">Önceki</button>
-                <span>@(_page + 1) / @PageCount</span>
-                <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(_busy || _page + 1 >= PageCount)" @onclick="() => ChangePageAsync(1)">Sonraki</button>
-            </div>
-        }
-    }
+                                <button type="button" class="btn btn-sm btn-outline-primary" disabled="@_busy"
+                                        aria-expanded="@(_detail?.Row.Id == row.Id ? "true" : "false")"
+                                        aria-controls="@(_detail?.Row.Id == row.Id ? "leave-detail-panel" : null)"
+                                        @onclick="() => OpenDetailAsync(row.Id)">
+                                    İncele <i class="bi bi-chevron-right ms-1" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </RowTemplate>
+                </GenericTable>
 
-    @if (_detail is { } detail)
-    {
-        <section class="card mb-3" aria-labelledby="leave-detail">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h4 class="h5 mb-0" id="leave-detail" tabindex="-1" @ref="_detailHeading">@detail.Row.TypeName <span class="text-body-secondary">· @detail.Row.Person</span></h4>
-                <button type="button" class="btn btn-close" aria-label="Ayrıntıyı kapat" disabled="@_busy" @onclick="CloseDetail"></button>
-            </div>
-            <div class="card-body">
-                <p><span class="badge @StatusClass(detail.Row.Status)">@StatusText(detail.Row.Status)</span>
-                    @FormatDate(detail.Row.Start, detail.Row.Type) – @FormatDate(detail.Row.End, detail.Row.Type)
-                    · @DurationText(detail.Row.Duration, detail.Row.Unit)</p>
-                <dl class="row mb-2">
-                    <dt class="col-sm-3">@(detail.Row.Type == (int)LeaveType.Personal ? "Mazeret" : "Adres")</dt><dd class="col-sm-9">@(detail.Address ?? "—")</dd>
-                    <dt class="col-sm-3">Açıklama</dt><dd class="col-sm-9">@(detail.Description ?? "—")</dd>
-                    <dt class="col-sm-3">Vekil</dt><dd class="col-sm-9">@(detail.Substitute ?? "—")</dd>
-                    <dt class="col-sm-3">Amir</dt><dd class="col-sm-9">@(detail.Manager ?? "—")</dd>
+            }
+            else
+            {
+                <div class="leave-list-state">
+                    <button type="button" class="btn btn-outline-secondary" @onclick="LoadListAsync">Tekrar Dene</button>
+                </div>
+            }
+        </section>
+
+        @if (_detail is { } detail)
+        {
+            <section class="leave-surface leave-detail" id="leave-detail-panel" aria-labelledby="leave-detail">
+                <header class="leave-detail-header">
+                    <div>
+                        <h2 id="leave-detail" tabindex="-1" @ref="_detailHeading">@detail.Row.TypeName</h2>
+                        @if (PersonnelOffice) { <p>@detail.Row.Person</p> }
+                    </div>
+                    <span class="leave-status @StatusClass(detail.Row.Status)">@StatusText(detail.Row.Status)</span>
+                    <button type="button" class="btn-close" aria-label="Ayrıntıyı kapat" disabled="@_busy" @onclick="CloseDetail"></button>
+                </header>
+                <dl class="leave-detail-grid">
+                    <div>
+                        <dt>Başlangıç</dt><dd>@FormatDate(detail.Row.Start, detail.Row.Type)</dd>
+                    </div>
+                    <div>
+                        <dt>Bitiş</dt><dd>@FormatDate(detail.Row.End, detail.Row.Type)</dd>
+                    </div>
+                    <div>
+                        <dt>Süre</dt><dd>@DurationText(detail.Row.Duration, detail.Row.Unit)</dd>
+                    </div>
+                    <div>
+                        <dt>Vekil</dt><dd>@(detail.Substitute ?? "—")</dd>
+                    </div>
+                    <div>
+                        <dt>Amir</dt><dd>@(detail.Manager ?? "—")</dd>
+                    </div>
+                    <div class="leave-detail-wide">
+                        <dt>@(detail.Row.Type == (int)LeaveType.Personal ? "Mazeret" : "Adres")</dt><dd>@(detail.Address ?? "—")</dd>
+                    </div>
+                    <div class="leave-detail-wide">
+                        <dt>Açıklama</dt><dd>@(detail.Description ?? "—")</dd>
+                    </div>
                 </dl>
 
                 @if (detail.Row.Status == Status.KontrolEdildi)
                 {
-                    <p>İmzalı izin belgesi Personel Kısmına teslim edilmelidir.</p>
-                    @if (detail.DocumentUrl is { } document)
-                    {
-                        <a class="btn btn-outline-primary mb-3" href="@document" target="_blank" rel="noopener noreferrer">İzin Belgesini Aç</a>
-                    }
+                    <div class="leave-document">
+                        <div><i class="bi bi-file-earmark-check me-2" aria-hidden="true"></i>İmzalı izin belgesi Personel Kısmına teslim edilmelidir.</div>
+                        @if (detail.DocumentUrl is { } document)
+                        {
+                            <a class="btn btn-sm btn-outline-primary" href="@document" target="_blank" rel="noopener noreferrer">
+                                İzin Belgesini Aç <i class="bi bi-box-arrow-up-right ms-1" aria-hidden="true"></i>
+                            </a>
+                        }
+                    </div>
                 }
 
-                <details class="mb-3" open="@PersonnelOffice">
-                    <summary class="fw-semibold">İzin dönemleri ve son izin hareketleri</summary>
-                    <div class="table-responsive mt-2">
-                        <table class="table table-sm">
-                            <thead><tr><th scope="col">Dönem</th><th scope="col">İzin türü</th><th scope="col">Hak</th><th scope="col">Kullanılan</th><th scope="col">Kalan</th></tr></thead>
-                            <tbody>
-                                @foreach (var period in detail.Periods)
-                                {
-                                    <tr><td>@FormatDate(period.BaslangicTarihi, null) – @FormatDate(period.BitisTarihi, null)</td>
-                                        <td>@(period.IzinTipi == (int)LeaveType.Paid ? "Yıllık Ücretli" : "Mazeret")</td>
-                                        <td>@DurationText(period.IzinHakki, period.Birim)</td><td>@DurationText(period.KullanilanIzin, period.Birim)</td>
-                                        <td>@DurationText(period.KalanIzin, period.Birim)</td></tr>
-                                }
-                                @if (detail.Periods.Count == 0) { <tr><td colspan="5">İzin dönemi bulunmuyor.</td></tr> }
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table table-sm">
-                            <thead><tr><th scope="col">İzin türü</th><th scope="col">Başlangıç</th><th scope="col">Bitiş</th><th scope="col">Süre</th></tr></thead>
-                            <tbody>
-                                @foreach (var movement in detail.Movements)
-                                {
-                                    <tr><td>@movement.TypeName</td><td>@FormatDate(movement.Start, movement.Type)</td>
-                                        <td>@FormatDate(movement.End, movement.Type)</td><td>@DurationText(movement.Duration, movement.Unit)</td></tr>
-                                }
-                                @if (detail.Movements.Count == 0) { <tr><td colspan="4">İzin hareketi bulunmuyor.</td></tr> }
-                            </tbody>
-                        </table>
-                    </div>
+                <details class="leave-history" open="@PersonnelOffice">
+                    <summary>İzin dönemleri ve son izin hareketleri</summary>
+                    <h3>İzin Dönemleri</h3>
+                    @if (detail.Periods.Count == 0)
+                    {
+                        <p class="leave-muted">İzin dönemi bulunmuyor.</p>
+                    }
+                    else
+                    {
+                        <GenericTable TItem="IzinDonem" Items="detail.Periods" KeySelector="period => period.Id" TableHeight="auto"
+                                      TableClass="leave-history-table" ShowPagination="false" ShowSearch="false" ShowCopy="false" ShowExport="false">
+                            <HeaderTemplate>
+                                <th scope="col">Dönem</th><th scope="col">İzin türü</th><th scope="col">Hak</th>
+                                <th scope="col">Kullanılan</th><th scope="col">Kalan</th>
+                            </HeaderTemplate>
+                            <RowTemplate Context="period">
+                                <td>@DateRange(period.BaslangicTarihi, period.BitisTarihi)</td>
+                                <td>@(period.IzinTipi == (int)LeaveType.Paid ? "Yıllık Ücretli" : "Mazeret")</td>
+                                <td>@DurationText(period.IzinHakki, period.Birim)</td>
+                                <td>@DurationText(period.KullanilanIzin, period.Birim)</td>
+                                <td>@DurationText(period.KalanIzin, period.Birim)</td>
+                            </RowTemplate>
+                        </GenericTable>
+                    }
+
+                    <h3>Son İzin Hareketleri</h3>
+                    @if (detail.Movements.Count == 0)
+                    {
+                        <p class="leave-muted">İzin hareketi bulunmuyor.</p>
+                    }
+                    else
+                    {
+                        <GenericTable TItem="LeaveMovementRow" Items="detail.Movements" KeySelector="movement => movement.Id"
+                                      TableHeight="auto" TableClass="leave-history-table"
+                                      ShowPagination="false" ShowSearch="false" ShowCopy="false" ShowExport="false">
+                            <HeaderTemplate>
+                                <th scope="col">İzin türü</th><th scope="col">Başlangıç</th><th scope="col">Bitiş</th><th scope="col">Süre</th>
+                            </HeaderTemplate>
+                            <RowTemplate Context="movement">
+                                <td>@movement.TypeName</td><td>@FormatDate(movement.Start, movement.Type)</td>
+                                <td>@FormatDate(movement.End, movement.Type)</td><td>@DurationText(movement.Duration, movement.Unit)</td>
+                            </RowTemplate>
+                        </GenericTable>
+                    }
                 </details>
 
                 @if (PersonnelOffice && (IsPending(detail.Row.Status) || detail.Row.Status == Status.KontrolEdildi))
                 {
-                    <div class="mb-3">
+                    <div class="leave-decision">
                         <label class="form-label" for="leave-note">Karar açıklaması</label>
-                        <textarea id="leave-note" class="form-control" rows="2" @bind="_note" disabled="@_busy"></textarea>
-                    </div>
-                    @if (detail.Row.Status == Status.KontrolEdildi)
-                    {
-                        <div class="form-check mb-3">
-                            <input type="checkbox" class="form-check-input" id="leave-document-received" @bind="_documentReceived" disabled="@_busy" />
-                            <label class="form-check-label" for="leave-document-received">İmzalı izin belgesi teslim alındı.</label>
+                        <textarea id="leave-note" class="form-control mb-3" rows="2" @bind="_note" disabled="@_busy"></textarea>
+                        @if (detail.Row.Status == Status.KontrolEdildi)
+                        {
+                            <div class="form-check mb-3">
+                                <input type="checkbox" class="form-check-input" id="leave-document-received" @bind="_documentReceived" disabled="@_busy" />
+                                <label class="form-check-label" for="leave-document-received">İmzalı izin belgesi teslim alındı.</label>
+                            </div>
+                        }
+                        <div class="leave-detail-actions">
+                            @if (detail.Row.Status == Status.KontrolEdildi)
+                            {
+                                <button type="button" class="btn btn-success" disabled="@(_busy || !_documentReceived)"
+                                        @onclick="() => DecideAsync(LeaveDecision.Approve)">Onayla ve Kayıtlara İşle</button>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn btn-primary" disabled="@_busy"
+                                        @onclick="() => DecideAsync(LeaveDecision.Check)">Kontrol Edildi Olarak İşaretle</button>
+                            }
+                            <button type="button" class="btn btn-outline-danger" disabled="@_busy"
+                                    @onclick="() => DecideAsync(LeaveDecision.Reject)">Reddet</button>
                         </div>
-                        <button type="button" class="btn btn-success" disabled="@(_busy || !_documentReceived)" @onclick="() => DecideAsync(LeaveDecision.Approve)">Onayla ve Kayıtlara İşle</button>
-                    }
-                    else
-                    {
-                        <button type="button" class="btn btn-primary" disabled="@_busy" @onclick="() => DecideAsync(LeaveDecision.Check)">Kontrol Edildi Olarak İşaretle</button>
-                    }
-                    <button type="button" class="btn btn-outline-danger" disabled="@_busy" @onclick="() => DecideAsync(LeaveDecision.Reject)">Reddet</button>
+                    </div>
                 }
 
                 @if (_canDelete && IsPending(detail.Row.Status))
                 {
-                    @if (_confirmDelete)
-                    {
-                        <div class="alert alert-warning mt-3 mb-0" role="status">
-                            Bu talebi silmek istiyor musunuz?
-                            <button type="button" class="btn btn-sm btn-danger ms-2" disabled="@_busy" @onclick="DeleteAsync">Talebi Sil</button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="() => _confirmDelete = false">Vazgeç</button>
-                        </div>
-                    }
-                    else
-                    {
-                        <button type="button" class="btn btn-outline-danger" disabled="@_busy" @onclick="() => _confirmDelete = true">Sil</button>
-                    }
+                    <div class="leave-delete">
+                        @if (_confirmDelete)
+                        {
+                            <div class="leave-detail-actions" role="status">
+                                <span>Bu talebi silmek istiyor musunuz?</span>
+                                <button type="button" class="btn btn-sm btn-danger" disabled="@_busy" @onclick="DeleteAsync">Talebi Sil</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@_busy"
+                                        @onclick="() => _confirmDelete = false">Vazgeç</button>
+                            </div>
+                        }
+                        else
+                        {
+                            <button type="button" class="btn btn-sm btn-outline-danger" disabled="@_busy"
+                                    @onclick="() => _confirmDelete = true">Talebi Sil</button>
+                        }
+                    </div>
                 }
-            </div>
-        </section>
-    }
+            </section>
+        }
+    </div>
 </PermissionGuard>
 
 @code {
+    private static readonly (LeaveListFilter Value, string Label)[] GroupFilters =
+    [
+        (LeaveListFilter.All, "Tümü"), (LeaveListFilter.General, "Genel İzinler"), (LeaveListFilter.Personal, "Mazeret İzinleri")
+    ];
+    private static readonly string[] PersonalExportHeaders = ["İzin türü", "İzin tarihleri", "Süre", "Durum"];
+    private static readonly string[] OfficeExportHeaders = ["Personel", .. PersonalExportHeaders];
+    private IReadOnlyList<string> TableExportHeaders => PersonnelOffice ? OfficeExportHeaders : PersonalExportHeaders;
+
     [Parameter] public string? Scope { get; set; }
     private bool PersonnelOffice => string.Equals(Scope, "manage", StringComparison.OrdinalIgnoreCase);
     private string Title => PersonnelOffice ? "İzin Talepleri" : "İzin Taleplerim";
     private bool _ready, _loading = true, _busy, _canManage, _canCreate, _canEdit, _canDelete;
     private bool _documentReceived, _confirmDelete, _focusDetail;
-    private int _page;
-    private int PageCount => ((_list?.Total ?? 0) + ILeaveRequestWorkflow.PageSize - 1) / ILeaveRequestWorkflow.PageSize;
     private string? _note, _feedback;
     private string _feedbackClass = "alert-success";
     private LeaveListFilter _filter;
     private Status? _status;
+    private bool HasFilters => _filter != LeaveListFilter.All || _status.HasValue;
     private LeaveRequestList? _list;
     private LeaveRequestDetail? _detail;
     private ElementReference _detailHeading;
@@ -248,29 +333,30 @@
         _status = null;
         _feedback = null;
         CloseDetail();
-        await ResetPageAsync();
-    }
-
-    private async Task ResetPageAsync()
-    {
-        _page = 0;
         await LoadListAsync();
     }
 
-    private async Task ChangePageAsync(int direction)
+    private Task SetGroupAsync(LeaveListFilter filter)
     {
-        _page += direction;
-        await LoadListAsync();
+        if (_filter == filter || _busy || _loading) return Task.CompletedTask;
+        _filter = filter;
+        return LoadListAsync();
+    }
+
+    private Task ClearFiltersAsync()
+    {
+        _filter = LeaveListFilter.All;
+        _status = null;
+        return LoadListAsync();
     }
 
     private async Task LoadListAsync()
     {
         _loading = true;
-        var result = await Workflow.ListAsync(PersonnelOffice, _filter, _status, _page);
+        var result = await Workflow.ListAsync(PersonnelOffice, _filter, _status);
         _loading = false;
         if (result.IsFailure) { _list = null; Feedback(result.Error.Message, "alert-danger"); return; }
         _list = result.Value;
-        _page = Math.Clamp(_page, 0, Math.Max(0, PageCount - 1));
     }
 
     private async Task OpenDetailAsync(int id)
@@ -337,7 +423,28 @@
     }
 
     private string EntryUrl(int? id = null) => "/ikys/leave-request-entry" + (id is { } value ? $"/{value}" : "") + (PersonnelOffice ? "?office=true" : "");
+    private string? RequestRowClass(LeaveRequestRow row) => _detail?.Row.Id == row.Id ? "leave-row-active" : null;
+
+    private IReadOnlyList<object?> BuildExportRow(LeaveRequestRow row)
+    {
+        var dates = DateRange(row.Start, row.End);
+        if (TimeRange(row) is { } times) dates = $"{dates} {times}";
+
+        IReadOnlyList<object?> values = [row.TypeName, dates, DurationText(row.Duration, row.Unit), StatusText(row.Status)];
+        return PersonnelOffice ? [row.Person, .. values] : values;
+    }
+
+    private string SearchText(LeaveRequestRow row) => string.Join(" ", BuildExportRow(row));
+
     private static bool IsPending(Status? status) => status is Status.IslemBekliyor or Status.DilekceBekleniyor;
+
+    private static string DateRange(DateTime? start, DateTime? end) =>
+        start?.Date == end?.Date ? FormatDate(start, null) : $"{FormatDate(start, null)} – {FormatDate(end, null)}";
+
+    private static string? TimeRange(LeaveRequestRow row) =>
+        row.Type is (int)LeaveType.Personal or (int)LeaveType.Nursing && row.Start.HasValue && row.End.HasValue
+            ? $"{row.Start:HH:mm}–{row.End:HH:mm}" : null;
+
     private static string FormatDate(DateTime? date, int? type) =>
         date?.ToString(type is (int)LeaveType.Personal or (int)LeaveType.Nursing ? "dd.MM.yyyy HH:mm" : "dd.MM.yyyy") ?? "—";
     private static string DurationText(string? duration, string? unit)
@@ -360,10 +467,10 @@
     };
     private static string StatusClass(Status? status) => status switch
     {
-        Status.KontrolEdildi => "text-bg-info",
-        Status.KayitlaraIslendi => "text-bg-success",
-        Status.Reddedildi or Status.IptalEdildi => "text-bg-danger",
-        Status.IslemBekliyor or Status.DilekceBekleniyor => "text-bg-warning",
-        _ => "text-bg-secondary"
+        Status.KontrolEdildi => "leave-status-info",
+        Status.KayitlaraIslendi => "leave-status-success",
+        Status.Reddedildi or Status.IptalEdildi => "leave-status-danger",
+        Status.IslemBekliyor or Status.DilekceBekleniyor => "leave-status-warning",
+        _ => ""
     };
 }

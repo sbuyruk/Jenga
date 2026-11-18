@@ -42,7 +42,7 @@ public sealed record LeaveRequestRow(
 
 public sealed record LeaveRequestList(List<LeaveRequestRow> Items, int Total);
 
-public sealed record LeaveMovementRow(string TypeName, int? Type, DateTime? Start, DateTime? End, string? Duration, string? Unit);
+public sealed record LeaveMovementRow(int Id, string TypeName, int? Type, DateTime? Start, DateTime? End, string? Duration, string? Unit);
 
 public sealed record LeaveRequestDetail(
     LeaveRequestRow Row, string? Address, string? Description, string? Substitute, string? Manager,

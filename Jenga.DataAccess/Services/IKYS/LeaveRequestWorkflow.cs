@@ -22,7 +22,7 @@ public sealed partial class LeaveRequestWorkflow(
     private static readonly Error MissingRequest = Error.NotFound("İzin talebi bulunamadı.");
     private static readonly Error ChangedRequest = Error.Conflict("Talebin durumu değişmiş veya talep kayıtlara işlenmiş. Listeyi yenileyiniz.");
 
-    public Task<Result<LeaveRequestList>> ListAsync(bool personnelOffice, LeaveListFilter filter, Status? status, int page,
+    public Task<Result<LeaveRequestList>> ListAsync(bool personnelOffice, LeaveListFilter filter, Status? status, int? page = null,
         CancellationToken cancellationToken = default) => RunAsync<LeaveRequestList>("List", async db =>
     {
         var ct = cancellationToken;
@@ -35,11 +35,18 @@ public sealed partial class LeaveRequestWorkflow(
         if (filter == LeaveListFilter.Personal) requests = requests.Where(x => x.IzinTipi == (int)LeaveType.Personal);
         if (status.HasValue) requests = requests.Where(x => x.OnayDurumu == status);
 
-        var total = await requests.CountAsync(ct);
-        var offset = Math.Clamp(page, 0, Math.Max(0, (total - 1) / ILeaveRequestWorkflow.PageSize));
         var ordered = requests
             .OrderBy(x => x.OnayDurumu == Status.IslemBekliyor || x.OnayDurumu == Status.DilekceBekleniyor ? 0 : x.OnayDurumu == Status.KontrolEdildi ? 1 : 2)
             .ThenByDescending(x => x.BaslangicTarihi).ThenByDescending(x => x.Id);
+
+        if (page is null)
+        {
+            var allItems = await Rows(db, ordered).ToListAsync(ct);
+            return new LeaveRequestList(allItems, allItems.Count);
+        }
+
+        var total = await requests.CountAsync(ct);
+        var offset = Math.Clamp(page.Value, 0, Math.Max(0, (total - 1) / ILeaveRequestWorkflow.PageSize));
         var items = await Rows(db, ordered.Skip(offset * ILeaveRequestWorkflow.PageSize).Take(ILeaveRequestWorkflow.PageSize))
             .ToListAsync(ct);
         return new LeaveRequestList(items, total);
@@ -65,7 +72,7 @@ public sealed partial class LeaveRequestWorkflow(
                                    from type in types.DefaultIfEmpty()
                                    where movement.PersonelId == request.PersonelId
                                    orderby movement.BaslangicTarihi descending, movement.Id descending
-                                   select new LeaveMovementRow(type.Adi ?? "İzin", movement.IzinTipi, movement.BaslangicTarihi,
+                                   select new LeaveMovementRow(movement.Id, type.Adi ?? "İzin", movement.IzinTipi, movement.BaslangicTarihi,
                                        movement.BitisTarihi, movement.Sure, movement.Birim)).Take(10).ToListAsync(ct);
             var period = periods.Find(x => x.Id == request.IzinDonemId);
             return new LeaveRequestDetail(row, request.Adres, request.Aciklama,
