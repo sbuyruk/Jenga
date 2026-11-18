@@ -80,6 +80,14 @@ public sealed partial class LeaveRequestWorkflow(
                 periods, movements, DocumentUrl(request, period));
         }, cancellationToken);
 
+    public Task<Result<List<LeaveOption>>> ListPersonnelForEntryAsync(CancellationToken cancellationToken = default) =>
+        RunAsync<List<LeaveOption>>("ListPersonnelForEntry", async db =>
+        {
+            var actor = await FindActorAsync(db, true, Operation.Manage, cancellationToken);
+            if (actor.IsFailure) return actor.Error;
+            return await PersonnelOptionsAsync(WorkingPersonnel(db), cancellationToken);
+        }, cancellationToken);
+
     public Task<Result<LeaveRequestForm>> LoadFormAsync(int? id, bool personnelOffice, CancellationToken cancellationToken = default) =>
         RunAsync<LeaveRequestForm>("LoadForm", async db =>
         {
@@ -91,13 +99,14 @@ public sealed partial class LeaveRequestWorkflow(
             if (id.HasValue && request is null) return MissingRequest;
             if (request is not null && (!CanEdit(request) || await HasMovementAsync(db, request.Id, ct))) return ChangedRequest;
 
-            var staff = await ActiveStaff(db).OrderBy(x => x.Adi).ThenBy(x => x.Soyadi)
-                .Select(x => new LeaveOption(x.Id, x.Adi + " " + x.Soyadi)).ToListAsync(ct);
+            var staff = await PersonnelOptionsAsync(ActiveStaff(db), ct);
             var knownTypes = Enum.GetValues<LeaveType>().Select(x => (int)x).ToArray();
             var types = await db.IzinTanim_Table.Where(x => knownTypes.Contains(x.Id))
                 .OrderBy(x => x.Id).Select(x => new LeaveOption(x.Id, x.Adi ?? "")).ToListAsync(ct);
             var substitutes = staff.Where(x => x.Id != GeneralManagerId).ToList();
-            List<LeaveOption> people = personnelOffice ? [.. staff] : [new(actor.Value.Id, $"{actor.Value.Adi} {actor.Value.Soyadi}")];
+            List<LeaveOption> people = personnelOffice
+                ? await PersonnelOptionsAsync(WorkingPersonnel(db), ct)
+                : [new(actor.Value.Id, $"{actor.Value.Adi} {actor.Value.Soyadi}")];
             var input = new LeaveRequestInput { PersonelId = personnelOffice ? null : actor.Value.Id, StartDate = DateTime.Today, EndDate = DateTime.Today };
             if (request is { } row)
             {
@@ -224,9 +233,13 @@ public sealed partial class LeaveRequestWorkflow(
         }
         if (!personnelOffice && input.PersonelId == actor.Value.Id) return (actor.Value, null);
         if (!personnelOffice) return AccessDenied;
-        var person = await ActiveStaff(db).FirstOrDefaultAsync(x => x.Id == input.PersonelId, ct);
-        return person is null ? Result.Failure<(Personel, IzinTalep?)>(Error.Validation("Çalışan kadrolu personel seçiniz.")) : (person, null);
+        var person = await WorkingPersonnel(db).FirstOrDefaultAsync(x => x.Id == input.PersonelId, ct);
+        return person is null ? Result.Failure<(Personel, IzinTalep?)>(Error.Validation("Çalışan personel seçiniz.")) : (person, null);
     }
+
+    private static Task<List<LeaveOption>> PersonnelOptionsAsync(IQueryable<Personel> personnel, CancellationToken ct) =>
+        personnel.OrderBy(x => x.Adi).ThenBy(x => x.Soyadi).ThenBy(x => x.Id)
+            .Select(x => new LeaveOption(x.Id, x.Adi + " " + x.Soyadi)).ToListAsync(ct);
 
     private async Task<Result<Personel>> FindActorAsync(ApplicationDbContext db, bool personnelOffice, Operation operation, CancellationToken ct)
     {

@@ -10,6 +10,7 @@ public interface ILeaveRequestWorkflow
     Task<Result<LeaveRequestList>> ListAsync(bool personnelOffice, LeaveListFilter filter,
         IzinTalep.OnayDurumuTipi? status, int? page = null, CancellationToken cancellationToken = default);
     Task<Result<LeaveRequestDetail>> DetailAsync(int id, bool personnelOffice, CancellationToken cancellationToken = default);
+    Task<Result<List<LeaveOption>>> ListPersonnelForEntryAsync(CancellationToken cancellationToken = default);
     Task<Result<LeaveRequestForm>> LoadFormAsync(int? id, bool personnelOffice, CancellationToken cancellationToken = default);
     Task<Result<LeaveCalculation>> CalculateAsync(LeaveRequestInput input, bool personnelOffice, CancellationToken cancellationToken = default);
     Task<Result<LeaveWriteResult>> SaveAsync(LeaveRequestInput input, bool personnelOffice, CancellationToken cancellationToken = default);
