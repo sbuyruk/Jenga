@@ -1,0 +1,230 @@
+@page "/ikys/travel-allowances"
+@page "/IKYS/HarcirahGirisWP.aspx"
+@page "/IKYS/HarcirahGiris.aspx"
+@rendermode InteractiveServer
+@using Jenga.DataAccess.Services.IKYS
+@using Jenga.Models.IKYS
+@using Jenga.Models.Enums
+@using Jenga.BlazorUI.Services.Common
+@using Jenga.BlazorUI.Components.Common
+@inject IHarcirahService HarcirahService
+@inject ICurrentUserService CurrentUserService
+@inject ILogger<TravelAllowancesPage> Logger
+
+<PageTitle>Harcırah Tanımları</PageTitle>
+<PermissionGuard Module="ModuleName.IKYS" Operation="Operation.Manage">
+    <div class="travel-allowances-page">
+        <h3 class="mb-3">Harcırah Tanımları</h3>
+        <details class="usage-guide mb-3" open>
+            <summary>Nasıl kullanılır?</summary>
+            <ol>
+                <li><strong>Tanımları görüntüleyin:</strong> Ülkeyi ve tarih aralığını seçin. Bitiş tarihi olmayan satırlar <strong>Halen Geçerli</strong> olarak gösterilir.</li>
+                <li><strong>Tutarları düzenleyin:</strong> Miktar ve açıklamayı değiştirip ilgili satırın <strong>Güncelle</strong> düğmesine basın.</li>
+                <li><strong>Yeni dönem açın:</strong> Yeni başlangıç tarihini seçip <strong>Yeni Tarih Aralığı Ekle</strong> düğmesine basın. Onayladığınızda önceki son dönem bir gün önce kapanır. Yeni satırlar sıfır tutarla açılır; her satırın yeni tutarını girip güncelleyin.</li>
+                <li><strong>Hatalı dönemi geri alın:</strong> Yalnızca gelecekte başlayacak son dönem, ilgili tarihlerde görev kaydı yoksa <strong>Dönemi Geri Al</strong> ile kaldırılabilir. Onaylandığında dönemin bütün satırları kaldırılır ve önceki dönem yeniden geçerli olur. Satır bazında silme yapılmaz.</li>
+            </ol>
+            <p>Ülke/tarih aralığı değiştirildiğinde veya Yenile'ye basıldığında kaydedilmemiş değişiklikler bırakılır. Excel'e yalnızca kayıtlı değerler aktarılır.</p>
+        </details>
+        @if (!string.IsNullOrWhiteSpace(_message))
+        {
+            <div class="alert @(_isError ? "alert-warning" : "alert-success")" role="status">@_message</div>
+        }
+        <fieldset disabled="@(_busy || _isLoading || Confirming)">
+            <div class="d-flex flex-wrap gap-3 align-items-end mb-3">
+                <div class="country-filter">
+                    <label class="form-label" for="allowance-country">Ülke Filtresi</label>
+                    <select id="allowance-country" class="form-select" @bind="_country" @bind:after="CountryChangedAsync">
+                        @foreach (var country in _data.Countries) { <option value="@country">@country</option> }
+                    </select>
+                </div>
+                <div class="date-range-filter">
+                    <label class="form-label" for="allowance-series">Tarih Aralığı</label>
+                    <select id="allowance-series" class="form-select" @bind="_seriesId" @bind:after="SeriesChangedAsync">
+                        @foreach (var series in _data.Series) { <option value="@series.Id">@series.Label</option> }
+                    </select>
+                </div>
+                <div><button type="button" class="btn btn-outline-secondary" @onclick="RefreshAsync">Yenile</button></div>
+                <div><button type="button" class="btn btn-outline-danger" disabled="@(_loadFailed || !_data.Undo.CanUndo)" @onclick="RequestUndo">Dönemi Geri Al</button></div>
+            </div>
+            @if (!_isLoading && !_loadFailed && _data.Rows.Count > 0)
+            {
+                <p class="small text-muted">@_data.Undo.Message</p>
+            }
+            @if (_isLoading)
+            {
+                <JengaLoading Message="Harcırah tanımları yükleniyor…" />
+            }
+            else if (_loadFailed)
+            {
+                <div class="alert alert-danger">Harcırah tanımları yüklenemedi. Yenile düğmesiyle tekrar deneyebilirsiniz.</div>
+            }
+            else if (_rows.Count == 0)
+            {
+                <div class="alert alert-info">Gösterilecek harcırah tanımı bulunamadı.</div>
+            }
+            else
+            {
+                <GenericTable @key="(_country, _seriesId)" TItem="EditRow" Items="_rows" TableHeight="Auto" ShowSearch="true" ShowExport="true"
+                              SearchTextSelector="SearchRow" ExportHeaders="ExportHeaders" ExportRow="ExportRow" ExportFileName="harcirah-tanimlari.xlsx" KeySelector="x => x.Original.Id">
+                    <HeaderTemplate>
+                        <th>Sıra</th><th>Kadro Grubu</th><th>Ülke</th><th>Para Birimi</th><th>Miktar</th>
+                        <th class="date-column">Başlangıç Tarihi</th><th class="date-column">Bitiş Tarihi</th><th>Açıklama</th>
+                        <th class="action-column">Güncelle</th>
+                    </HeaderTemplate>
+                    <RowTemplate Context="row">
+                        <td>@row.Original.Sira</td><td>@row.Original.KadroGrubu</td><td>@row.Original.Ulke</td><td>@row.Original.ParaBirimi</td>
+                        <td><input type="number" class="form-control amount-input" min="0" step="0.01" @bind="row.Amount" aria-label="@(row.Original.KadroGrubu + " miktarı")" /></td>
+                        <td class="date-column">@row.Original.BaslangicTarihi.ToString("dd.MM.yyyy")</td>
+                        <td class="date-column">
+                            @if (row.Original.BitisTarihi is { } endDate) { @endDate.ToString("dd.MM.yyyy") }
+                            else { <span class="badge bg-success-subtle text-success">Halen Geçerli</span> }
+                        </td>
+                        <td><textarea class="form-control description-input" rows="2" @bind="row.Description" aria-label="@(row.Original.KadroGrubu + " açıklaması")"></textarea></td>
+                        <td class="action-column"><button type="button" class="btn btn-sm btn-outline-primary w-100" @onclick="() => UpdateRowAsync(row)">Güncelle</button></td>
+                    </RowTemplate>
+                </GenericTable>
+            }
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h5>Yeni Tarih Aralığı</h5>
+                    <p class="text-muted small">Yeni başlangıç tarihi, seçilen ülkenin mevcut dönem başlangıçlarından sonra olmalıdır.</p>
+                    <div class="d-flex flex-wrap gap-3 align-items-end">
+                        <div class="new-start-field"><label class="form-label" for="allowance-start">Yeni Başlangıç Tarihi</label>
+                            <input id="allowance-start" type="date" class="form-control" @bind="_newStart" /></div>
+                        <div><button type="button" class="btn btn-success" disabled="@(_loadFailed || _data.Countries.Count == 0)" @onclick="RequestCreate">Yeni Tarih Aralığı Ekle</button></div>
+                    </div>
+                </div>
+            </div>
+        </fieldset>
+        @if (Confirming)
+        {
+            <div class="modal d-block" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="allowance-confirm-title" style="background:rgba(0,0,0,.4)">
+                <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+                    <div class="modal-header"><h5 id="allowance-confirm-title" class="modal-title">@(_confirmCreate ? "Yeni Tarih Aralığı Oluştur" : "Dönemi Geri Al")</h5></div>
+                    <div class="modal-body">
+                        @if (_confirmCreate)
+                        {
+                            <p>@_country için @_newStart.ToString("dd.MM.yyyy") başlangıçlı yeni dönem oluşturulsun mu? Önceki son dönemin bitiş tarihi @_newStart.AddDays(-1).ToString("dd.MM.yyyy") olarak kaydedilecek.</p>
+                        }
+                        else if (_confirmUndo)
+                        {
+                            <p>@_country için @_data.Series.First(x => x.Id == _seriesId).StartDate.ToString("dd.MM.yyyy") başlangıçlı dönem geri alınsın mı?</p>
+                            <p>Bu dönemin @_data.Rows.Count satırı kaldırılacak. Önceki dönemin bitiş tarihi kaldırılarak yeniden geçerli olması sağlanacak. İşlem sırasında görev kaydı kontrolü tekrar yapılır.</p>
+                        }
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" disabled="@_busy" @onclick="CancelConfirmation">İptal</button>
+                        <button type="button" class="btn @(_confirmCreate ? "btn-success" : "btn-danger")" disabled="@_busy" @onclick="ConfirmAsync">@(_confirmCreate ? "Evet, Oluştur" : "Evet, Geri Al")</button>
+                    </div>
+                </div></div>
+            </div>
+        }
+    </div>
+</PermissionGuard>
+
+@code {
+    public sealed class EditRow(Harcirah original)
+    {
+        public Harcirah Original { get; } = original;
+        public decimal Amount { get; set; } = original.Miktar;
+        public string? Description { get; set; } = original.Aciklama;
+    }
+    private HarcirahPageData _data = new();
+    private List<EditRow> _rows = [];
+    private string? _country;
+    private int? _seriesId;
+    private DateTime _newStart = new(DateTime.Today.Year, 1, 1);
+    private bool _isLoading = true, _loadFailed, _busy, _isError, _confirmCreate, _confirmUndo;
+    private string? _message;
+    private int _loadVersion;
+    private bool Confirming => _confirmCreate || _confirmUndo;
+    private static readonly string[] ExportHeaders = ["Sıra", "Kadro Grubu", "Ülke", "Para Birimi", "Miktar", "Başlangıç Tarihi", "Bitiş Tarihi", "Açıklama"];
+    private static IReadOnlyList<object?> ExportRow(EditRow row) => [row.Original.Sira, row.Original.KadroGrubu, row.Original.Ulke, row.Original.ParaBirimi,
+        row.Original.Miktar, row.Original.BaslangicTarihi.ToString("dd.MM.yyyy"), row.Original.BitisTarihi?.ToString("dd.MM.yyyy"), row.Original.Aciklama];
+    private static string SearchRow(EditRow row) => string.Join(" ", ExportRow(row));
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        if (await CurrentUserService.HasPermissionAsync(ModuleName.IKYS, Operation.Manage)) await LoadAsync();
+        else _isLoading = false;
+        StateHasChanged();
+    }
+    private async Task LoadAsync()
+    {
+        var version = ++_loadVersion;
+        _isLoading = true; _loadFailed = false;
+        try
+        {
+            var result = await HarcirahService.GetAsync(_country, _seriesId);
+            if (version != _loadVersion) return;
+            if (result.IsFailure) { _loadFailed = true; Show(result.Error.Message, true); return; }
+            _data = result.Value; _country = _data.Country; _seriesId = _data.SelectedSeriesId;
+            _rows = _data.Rows.Select(x => new EditRow(x)).ToList();
+        }
+        catch (Exception ex) { Logger.LogError(ex, "TravelAllowances.LoadAsync"); if (version == _loadVersion) { _loadFailed = true; Show("Harcırah tanımları yüklenemedi.", true); } }
+        finally { if (version == _loadVersion) _isLoading = false; }
+    }
+    private async Task RefreshAsync() { _message = null; await LoadAsync(); }
+    private async Task CountryChangedAsync() { _seriesId = null; await RefreshAsync(); }
+    private Task SeriesChangedAsync() => RefreshAsync();
+    private void Show(string message, bool error = false) { _message = message; _isError = error; }
+    private void CancelConfirmation() { _confirmCreate = false; _confirmUndo = false; }
+    private void RequestUndo()
+    {
+        if (_busy || _isLoading || _loadFailed) return;
+        if (!_data.Undo.CanUndo) { Show(_data.Undo.Message, true); return; }
+        _confirmCreate = false;
+        _confirmUndo = true;
+    }
+    private void RequestCreate()
+    {
+        if (_busy || _loadFailed || _data.Countries.Count == 0) return;
+        if (_newStart.Date <= new DateTime(1753, 1, 1) || _data.Series.Any(x => x.StartDate.Date >= _newStart.Date))
+        { Show("Yeni başlangıç tarihi mevcut dönemlerin başlangıcından sonra olmalıdır.", true); return; }
+        _confirmUndo = false;
+        _confirmCreate = true;
+    }
+
+    private async Task UpdateRowAsync(EditRow row)
+    {
+        if (_busy || Confirming) return;
+        _busy = true;
+        try
+        {
+            var result = await HarcirahService.UpdateAsync(new(row.Original.Id, row.Amount, row.Description, row.Original.Miktar, row.Original.Aciklama));
+            if (result.IsFailure) { Show(result.Error.Message, true); return; }
+            await LoadAsync();
+            if (!_loadFailed) Show("Harcırah tanımı güncellendi.");
+        }
+        catch (Exception ex) { Logger.LogError(ex, "TravelAllowances.UpdateAsync"); Show("Harcırah tanımı güncellenemedi.", true); }
+        finally { _busy = false; }
+    }
+
+    private async Task ConfirmAsync()
+    {
+        if (_busy || !Confirming) return;
+        _busy = true;
+        try
+        {
+            if (_confirmCreate)
+            {
+                var result = await HarcirahService.CreateSeriesAsync(new(_country ?? "", _newStart, _data.Series.Select(x => x.Id).DefaultIfEmpty(0).Max()));
+                if (result.IsFailure) { Show(result.Error.Message, true); return; }
+                _seriesId = result.Value.SeriesId;
+                await LoadAsync();
+                if (!_loadFailed) Show($"{result.Value.Count} kayıt eklendi. Yeni dönem tutarlarını güncelleyin.");
+            }
+            else if (_confirmUndo)
+            {
+                var result = await HarcirahService.UndoSeriesAsync(new(_data.Country, _data.SelectedSeriesId ?? 0, _data.Undo.Version));
+                if (result.IsFailure) { Show(result.Error.Message, true); return; }
+                _seriesId = result.Value.PreviousSeriesId;
+                await LoadAsync();
+                if (!_loadFailed) Show($"{result.Value.RemovedCount} satırlı dönem geri alındı. Önceki dönem yeniden geçerli.");
+            }
+        }
+        catch (Exception ex) { Logger.LogError(ex, "TravelAllowances.ConfirmAsync"); Show("İşlem tamamlanamadı. Listeyi yenileyip kontrol edin.", true); }
+        finally { _busy = false; CancelConfirmation(); }
+    }
+}

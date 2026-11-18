@@ -1,11 +1,11 @@
 using System.ComponentModel.DataAnnotations.Schema;
+using Jenga.Models.Sistem;
 
 namespace Jenga.Models.IKYS;
 
 [Table("Harcirah_Table")]
-public sealed class Harcirah
+public sealed class Harcirah : BaseModel
 {
-    public int Id { get; set; }
     public int KadroGrupId { get; set; }
     public int SeriId { get; set; }
     public int Sira { get; set; }
