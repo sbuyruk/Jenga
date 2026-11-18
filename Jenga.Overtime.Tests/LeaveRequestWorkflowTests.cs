@@ -38,6 +38,34 @@ public sealed class LeaveRequestWorkflowTests
     }
 
     [Fact]
+    public async Task CompleteTableListKeepsPersonnelAndStatusScopeAcrossPages()
+    {
+        await using var data = await TestData.CreateAsync();
+        var size = ILeaveRequestWorkflow.PageSize;
+        await using (var db = data.CreateDbContext())
+        {
+            db.IzinTalep_Table.AddRange(Enumerable.Range(0, size + 2).Select(day => new IzinTalep
+            {
+                PersonelId = 2, Aktif = true, IzinTipi = (int)LeaveType.Paternity,
+                BaslangicTarihi = Friday.AddDays(day), OnayDurumu = Status.IslemBekliyor
+            }));
+            db.IzinTalep_Table.AddRange(
+                new IzinTalep { PersonelId = 3, Aktif = true, IzinTipi = (int)LeaveType.Paternity, OnayDurumu = Status.IslemBekliyor },
+                new IzinTalep { PersonelId = 2, Aktif = true, IzinTipi = (int)LeaveType.Personal, OnayDurumu = Status.KontrolEdildi });
+            await db.SaveChangesAsync();
+        }
+
+        var employee = data.Service("employee");
+        var complete = Success(await employee.ListAsync(false, LeaveListFilter.General, Status.IslemBekliyor));
+        var firstPage = Success(await employee.ListAsync(false, LeaveListFilter.General, Status.IslemBekliyor, 0));
+        Assert.Equal(size + 2, complete.Total);
+        Assert.Equal(size + 2, complete.Items.Count);
+        Assert.Equal(complete.Items.Take(size).Select(x => x.Id), firstPage.Items.Select(x => x.Id));
+        Assert.All(complete.Items, row => Assert.Equal("Personel employee", row.Person));
+        Assert.True((await employee.ListAsync(true, LeaveListFilter.All, null)).IsFailure);
+    }
+
+    [Fact]
     public async Task PaidApprovalWritesOneMovementAndUsesTheSharedBalance()
     {
         await using var data = await TestData.CreateAsync();

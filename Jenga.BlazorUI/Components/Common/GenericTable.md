@@ -36,6 +36,7 @@ Sayfalama, arama, sıralama, panoya kopyalama ve Excel export özelliklerini iç
 |---|---|---|---|
 | PageSize | int | 10 | Sayfa başına satır sayısı |
 | PageSizeOptions | int[] | [5,10,20,50] | Sayfa boyutu seçenekleri |
+| ShowPagination | bool | true | Kapalıyken `Items` içindeki filtrelenmiş kayıtların tamamı gösterilir ve sayfalama kontrolleri gizlenir |
 
 ### Görünüm
 

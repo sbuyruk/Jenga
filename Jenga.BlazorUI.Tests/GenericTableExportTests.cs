@@ -11,6 +11,9 @@ using Jenga.Models.Common;
 using Jenga.Models.Inventory;
 using Jenga.Models.TBYS.Kontrol;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
 using Xunit;
 
@@ -18,6 +21,30 @@ namespace Jenga.BlazorUI.Tests;
 
 public sealed class GenericTableExportTests
 {
+    [Theory]
+    [InlineData(true, 10)]
+    [InlineData(false, 25)]
+    public async Task ServerPageCanRenderAllRowsWithoutASecondPager(bool showPagination, int visibleRows)
+    {
+        var services = new ServiceCollection().AddLogging().AddSingleton<IJSRuntime>(new ExportRuntime());
+        await using var provider = services.BuildServiceProvider();
+        await using var renderer = new HtmlRenderer(provider, provider.GetRequiredService<ILoggerFactory>());
+        var parameters = ParameterView.FromDictionary(new Dictionary<string, object?>
+        {
+            ["Items"] = Enumerable.Range(1, 25).Select(number => new PagingRow(number)).ToArray(),
+            ["ShowPagination"] = showPagination, ["ShowSearch"] = false, ["ShowCopy"] = false, ["ShowExport"] = false
+        });
+
+        var html = await renderer.Dispatcher.InvokeAsync(async () =>
+            (await renderer.RenderComponentAsync<GenericTable<PagingRow>>(parameters)).ToHtmlString());
+
+        Assert.Equal(visibleRows, Regex.Matches(html, "class=\"gt-row\"").Count);
+        Assert.Equal(showPagination, html.Contains("class=\"gt-pagination\"", StringComparison.Ordinal));
+        Assert.Equal(showPagination, html.Contains("gt-page-controls", StringComparison.Ordinal));
+    }
+
+    private sealed record PagingRow(int Number);
+
     [Fact]
     public void EveryExportEnabledTemplateHasAnExplicitHeaderAndRowMapping()
     {
