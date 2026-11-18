@@ -55,26 +55,6 @@ namespace Jenga.DataAccess.Services.Common
             }
         }
 
-        public async Task<Result<Bolge>> GetByNameAsync(string name, CancellationToken cancellationToken = default)
-        {
-            if (string.IsNullOrWhiteSpace(name))
-                return Result.Failure<Bolge>(Error.Validation("Isim bos olamaz.", "Bolge.Name.Empty"));
-            try
-            {
-                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-                var trimmed = name.Trim();
-                var entity = await db.Bolge_Table.AsNoTracking().FirstOrDefaultAsync(b => b.Adi == trimmed, cancellationToken);
-                if (entity is null)
-                    return Result.Failure<Bolge>(Error.NotFound($"Bölge bulunamadi (Adi={trimmed}).", "Bolge.NotFound"));
-                return Result.Success(entity);
-            }
-            catch (Exception ex)
-            {
-                _logService.LogException(ex, $"{Source}.GetByNameAsync");
-                return Result.Failure<Bolge>(Error.Unexpected("Bölge getirilemedi.", ex, "Bolge.GetByName.Failed"));
-            }
-        }
-
         public async Task<Result> AddAsync(Bolge bolge, CancellationToken cancellationToken = default)
         {
             if (bolge == null)

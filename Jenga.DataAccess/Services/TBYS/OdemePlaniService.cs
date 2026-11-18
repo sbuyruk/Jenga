@@ -35,25 +35,6 @@ namespace Jenga.DataAccess.Services.TBYS
             }
         }
 
-        public async Task<Result<List<OdemePlani>>> GetAllBySozlesmeIdsAsync(IEnumerable<int> sozlesmeIds, CancellationToken cancellationToken = default)
-        {
-            try
-            {
-                var idList = sozlesmeIds.ToList();
-                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-                var list = await db.OdemePlani_Table
-                    .AsNoTracking()
-                    .Where(p => p.SozlesmeId.HasValue && idList.Contains(p.SozlesmeId.Value))
-                    .ToListAsync(cancellationToken);
-                return Result<List<OdemePlani>>.Success(list);
-            }
-            catch (Exception ex)
-            {
-                _logService.LogError($"{Source}.GetAllBySozlesmeIdsAsync hata.", ex);
-                return Result<List<OdemePlani>>.Failure(Error.Unexpected("Ödeme planı listesi alınamadı.", ex));
-            }
-        }
-
         public async Task<Result<List<OdemePlaniDashboardItem>>> GetAllForDashboardBySozlesmeIdsAsync(IEnumerable<int> sozlesmeIds, CancellationToken cancellationToken = default)
         {
             try

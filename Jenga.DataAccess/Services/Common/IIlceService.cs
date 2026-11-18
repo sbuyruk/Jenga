@@ -7,7 +7,6 @@ namespace Jenga.DataAccess.Services.Common
     {
         Task<Result<List<Ilce>>> GetAllAsync(CancellationToken cancellationToken = default);
         Task<Result<Ilce>> GetByIdAsync(int id, CancellationToken cancellationToken = default);
-        Task<Result<List<Ilce>>> GetByIlIdAsync(int ilId, CancellationToken cancellationToken = default);
         Task<Result<List<Ilce>>> GetAktifIlcelerAsync(CancellationToken cancellationToken = default);
     }
 }

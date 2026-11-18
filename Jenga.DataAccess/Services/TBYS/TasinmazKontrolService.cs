@@ -189,7 +189,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
         }
 
-        public async Task<Result<TasinmazKontrolEk>> GetEkAsync(int ekId, CancellationToken cancellationToken = default)
+        private async Task<Result<TasinmazKontrolEk>> GetEkAsync(int ekId, CancellationToken cancellationToken = default)
         {
             try
             {

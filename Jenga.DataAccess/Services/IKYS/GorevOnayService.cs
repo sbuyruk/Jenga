@@ -165,63 +165,6 @@ public class GorevOnayService : IGorevOnayService
     }
 
     /// <inheritdoc/>
-    public async Task<Result<List<PendingApprovalItem>>> GetPendingByManagerAsync(
-        int managerPersonelId, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-
-            // Find all units where the current user is the manager
-            var managerUnitIds = await db.BirimTanim_Table
-                .AsNoTracking()
-                .Where(b => b.AmirId == managerPersonelId && b.Aktif == true)
-                .Select(b => b.Id)
-                .ToListAsync(cancellationToken);
-
-            if (managerUnitIds.Count == 0)
-                return Result.Success(new List<PendingApprovalItem>());
-
-            // Fetch GorevOnay records for personnel assigned to those units
-            var items = await (
-                from go in db.GorevOnay_Table.AsNoTracking()
-                join p in db.Personel_Table.AsNoTracking() on go.PersonelId equals p.Id
-                join ib in db.IsBilgileri_Table.AsNoTracking() on p.Id equals ib.PersonelId
-                where managerUnitIds.Contains(ib.BirimId ?? 0)
-                    && (go.AmirOnayi == (int)ApprovalStatus.PendingApproval
-                        || go.AmirOnayi == (int)ApprovalStatus.Approved
-                        || go.AmirOnayi == (int)ApprovalStatus.Rejected)
-                orderby go.BaslangicTarihi descending
-                select new PendingApprovalItem
-                {
-                    GorevOnayId = go.Id,
-                    PersonelId = go.PersonelId,
-                    AdiSoyadi = p.Adi + " " + p.Soyadi,
-                    BaslangicTarihi = go.BaslangicTarihi,
-                    BitisTarihi = go.BitisTarihi,
-                    Sure = go.Sure,
-                    GorevinSebebi = go.GorevinSebebi,
-                    GorevinYeri = go.GorevinYeri,
-                    UlasimAraci = go.UlasimAraci,
-                    Transfer = go.Transfer,
-                    Konaklama = go.Konaklama,
-                    Aciklama = go.Aciklama,
-                    AmirOnayi = go.AmirOnayi ?? (int)ApprovalStatus.Other,
-                    OnayRedAciklama = go.OnayRedAciklama
-                }
-            ).ToListAsync(cancellationToken);
-
-            return Result.Success(items);
-        }
-        catch (Exception ex)
-        {
-            _logService.LogException(ex, $"{Source}.GetPendingByManagerAsync");
-            return Result.Failure<List<PendingApprovalItem>>(Error.Unexpected(
-                "Bekleyen onaylar getirilemedi.", ex, "GorevOnay.GetPending.Failed"));
-        }
-    }
-
-    /// <inheritdoc/>
     public async Task<Result> ApproveAsync(int gorevOnayId, int managerPersonelId, string? approvedBy = null, CancellationToken cancellationToken = default, bool authorizedIkysView = false)
     {
         try
@@ -513,30 +456,6 @@ public class GorevOnayService : IGorevOnayService
             _logService.LogException(ex, $"{Source}.GetScopedByIdAsync");
             return Result.Failure<GorevOnay>(Error.Unexpected(
                 "Görev onayı getirilemedi.", ex, "GorevOnay.GetScopedById.Failed"));
-        }
-    }
-
-    public async Task<Result<List<Personel>>> GetManagedPersonnelAsync(
-        int managerPersonelId,
-        CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-            var managedPersonelIds = CreateManagedPersonelIdsQuery(db, managerPersonelId);
-            var personnel = await db.Personel_Table.AsNoTracking()
-                .Where(x => managedPersonelIds.Contains(x.Id))
-                .OrderBy(x => x.Adi)
-                .ThenBy(x => x.Soyadi)
-                .ToListAsync(cancellationToken);
-
-            return Result.Success(personnel);
-        }
-        catch (Exception ex)
-        {
-            _logService.LogException(ex, $"{Source}.GetManagedPersonnelAsync");
-            return Result.Failure<List<Personel>>(Error.Unexpected(
-                "Yönetilen personel listesi getirilemedi.", ex, "GorevOnay.GetManagedPersonnel.Failed"));
         }
     }
 

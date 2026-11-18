@@ -11,13 +11,6 @@ namespace Jenga.DataAccess.Services.Common
         Task<Result> DeleteAsync(int roleId, int modulePermissionId, CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Rolün TÜM modül izinlerini siler ve yenileriyle değiştirir.
-        /// Kapsam koruması yoktur; delegated admin senaryolarında kapsam dışı izinler silinebilir.
-        /// </summary>
-        [Obsolete("Kapsam koruması olmadığından ReplaceForRoleInScopeAsync kullanın.")]
-        Task<Result> ReplaceForRoleAsync(int roleId, IEnumerable<int> modulePermissionIds, string currentUser, CancellationToken cancellationToken = default);
-
-        /// <summary>
         /// Belirtilen role ait izinleri yalnızca <paramref name="allowedModules"/> kapsamında
         /// değiştirir. Kapsam dışı modüllere ait mevcut izinlere dokunulmaz.
         /// Delegated admin senaryosunda kullanılır: her yönetici yalnızca kendi modülünü değiştirebilir.

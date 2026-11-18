@@ -35,28 +35,6 @@ namespace Jenga.DataAccess.Services.TBYS
             }
         }
 
-        public async Task<Result<List<Odeme>>> GetAllAsyncKiralar(CancellationToken cancellationToken = default)
-        {
-            try
-            {
-                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-                var list = await db.Odeme_Table
-                    .Where(o => o.OdemePlaniId != null)
-                    .Join(db.OdemePlani_Table,
-                          o => o.OdemePlaniId,
-                          p => p.Id,
-                          (o, p) => o)
-                    .AsNoTracking()
-                    .ToListAsync(cancellationToken);
-                return Result<List<Odeme>>.Success(list);
-            }
-            catch (Exception ex)
-            {
-                _logService.LogError($"{Source}.GetAllAsyncKiralar hata.", ex);
-                return Result<List<Odeme>>.Failure(Error.Unexpected("Kira ödemeleri alınamadı.", ex));
-            }
-        }
-
         public async Task<Result<List<OdemeDashboardItem>>> GetLastYearsForDashboardKiralarAsync(int years, CancellationToken cancellationToken = default)
         {
             try
@@ -144,51 +122,6 @@ namespace Jenga.DataAccess.Services.TBYS
             {
                 _logService.LogError($"{Source}.GetByIdWithRelationsAsync hata.", ex);
                 return Result<Odeme>.Failure(Error.Unexpected("Ödeme alınamadı.", ex));
-            }
-        }
-
-        public async Task<Result<List<Odeme>>> GetBySozlesmeIdAsync(int sozlesmeId, CancellationToken cancellationToken = default)
-        {
-            try
-            {
-                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-                var list = await db.Odeme_Table.AsNoTracking().Where(o => o.SozlesmeId == sozlesmeId).ToListAsync(cancellationToken);
-                return Result<List<Odeme>>.Success(list);
-            }
-            catch (Exception ex)
-            {
-                _logService.LogError($"{Source}.GetBySozlesmeIdAsync hata.", ex);
-                return Result<List<Odeme>>.Failure(Error.Unexpected("Sözleşmeye ait ödemeler alınamadı.", ex));
-            }
-        }
-
-        public async Task<Result<List<Odeme>>> GetByKiraciIdAsync(int kiraciId, CancellationToken cancellationToken = default)
-        {
-            try
-            {
-                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-                var list = await db.Odeme_Table.AsNoTracking().Where(o => o.KiraciId == kiraciId).ToListAsync(cancellationToken);
-                return Result<List<Odeme>>.Success(list);
-            }
-            catch (Exception ex)
-            {
-                _logService.LogError($"{Source}.GetByKiraciIdAsync hata.", ex);
-                return Result<List<Odeme>>.Failure(Error.Unexpected("Kiracıya ait ödemeler alınamadı.", ex));
-            }
-        }
-
-        public async Task<Result<List<Odeme>>> GetByOdemePlaniIdAsync(int odemePlaniId, CancellationToken cancellationToken = default)
-        {
-            try
-            {
-                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-                var list = await db.Odeme_Table.AsNoTracking().Where(o => o.OdemePlaniId == odemePlaniId).ToListAsync(cancellationToken);
-                return Result<List<Odeme>>.Success(list);
-            }
-            catch (Exception ex)
-            {
-                _logService.LogError($"{Source}.GetByOdemePlaniIdAsync hata.", ex);
-                return Result<List<Odeme>>.Failure(Error.Unexpected("Ödeme planına ait ödemeler alınamadı.", ex));
             }
         }
 

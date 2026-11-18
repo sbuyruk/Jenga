@@ -42,25 +42,6 @@ namespace Jenga.DataAccess.Services.Common
             }
         }
 
-        public async Task<Result<List<PersonnelRegionPermission>>> GetByRegionIdAsync(int regionId, CancellationToken cancellationToken = default)
-        {
-            try
-            {
-                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-                var list = await db.PersonnelRegionPermission_Table
-                    .AsNoTracking()
-                    .Include(x => x.Personnel)
-                    .Where(x => x.RegionId == regionId)
-                    .ToListAsync(cancellationToken);
-                return Result.Success(list);
-            }
-            catch (Exception ex)
-            {
-                _logService.LogException(ex, $"{Source}.GetByRegionIdAsync");
-                return Result.Failure<List<PersonnelRegionPermission>>(Error.Unexpected("Bölge personel yetkileri getirilemedi.", ex, "PersonnelRegionPermission.GetByRegion.Failed"));
-            }
-        }
-
         public async Task<Result> AddAsync(PersonnelRegionPermission entity, CancellationToken cancellationToken = default)
         {
             if (entity is null)

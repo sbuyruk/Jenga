@@ -97,7 +97,6 @@ namespace Jenga.DataAccess.Services.TBYS
         Task<Result<List<TasinmazKontrolOzet>>> GetListeAsync(int? tasinmazId = null, KontrolDurumu? durum = null, CancellationToken cancellationToken = default);
         Task<Result<TasinmazKontrol>> GetByIdAsync(int id, CancellationToken cancellationToken = default);
         Task<Result<List<TasinmazKontrolEk>>> GetEklerAsync(int kontrolId, CancellationToken cancellationToken = default);
-        Task<Result<TasinmazKontrolEk>> GetEkAsync(int ekId, CancellationToken cancellationToken = default);
         Task<Result<List<TasinmazPlanOzet>>> GetPlanListesiAsync(bool sadeceGecikmis = false, CancellationToken cancellationToken = default);
         Task<Result<TasinmazKontrolPlani?>> GetPlanAsync(int tasinmazId, CancellationToken cancellationToken = default);
         /// <summary>Taşınmazın bölgesindeki çalışan personel; bölge birimlerinin amirleri başta gelir.</summary>

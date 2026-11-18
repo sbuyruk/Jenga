@@ -35,7 +35,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
         }
 
-        public async Task<Result<List<Tasinmaz>>> GetByEnvanterDurumuAsync(int envanterdeMi, CancellationToken cancellationToken = default)
+        private async Task<Result<List<Tasinmaz>>> GetByEnvanterDurumuAsync(int envanterdeMi, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -211,28 +211,10 @@ namespace Jenga.DataAccess.Services.TBYS
             }
         }
 
-        public async Task<Result<string>> GetEmlakSicilNoAsync(int id, CancellationToken cancellationToken = default)
-        {
-            try
-            {
-                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-                var sicilNo = await db.Tasinmaz_Table.AsNoTracking()
-                    .Where(x => x.Id == id)
-                    .Select(x => x.EmlakSicilNo)
-                    .FirstOrDefaultAsync(cancellationToken);
-                return Result.Success(sicilNo ?? string.Empty);
-            }
-            catch (Exception ex)
-            {
-                _logService.LogException(ex, $"{Source}.GetEmlakSicilNoAsync");
-                return Result.Failure<string>(Error.Unexpected("EmlakSicilNo getirilemedi.", ex, "Tasinmaz.GetEmlakSicilNo.Failed"));
-            }
-        }
-
         public Task<Result<(bool CanDelete, string? Reason)>> CanDeleteAsync(int id, CancellationToken cancellationToken = default)
             => Task.FromResult(Result.Success<(bool CanDelete, string? Reason)>((true, null)));
 
-        public async Task<Result<bool>> ExistsByEmlakSicilNoAsync(string emlakSicilNo, int? excludeId = null, CancellationToken cancellationToken = default)
+        private async Task<Result<bool>> ExistsByEmlakSicilNoAsync(string emlakSicilNo, int? excludeId = null, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(emlakSicilNo))
                 return Result.Success(false);

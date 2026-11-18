@@ -12,9 +12,6 @@ public interface IGorevOnayService
     Task<Result> UpdateAsync(GorevOnay entity, CancellationToken cancellationToken = default);
     Task<Result> DeleteAsync(GorevOnay entity, CancellationToken cancellationToken = default);
 
-    /// <summary>Returns pending approval items scoped to units where the given personel is the manager.</summary>
-    Task<Result<List<PendingApprovalItem>>> GetPendingByManagerAsync(int managerPersonelId, CancellationToken cancellationToken = default);
-
     /// <summary>Approves a GorevOnay record and sends notification email.</summary>
     Task<Result> ApproveAsync(int gorevOnayId, int managerPersonelId, string? approvedBy = null, CancellationToken cancellationToken = default, bool authorizedIkysView = false);
 
@@ -39,10 +36,6 @@ public interface IGorevOnayService
         int id,
         int? currentPersonelId,
         bool authorizedUnitView,
-        CancellationToken cancellationToken = default);
-
-    Task<Result<List<Personel>>> GetManagedPersonnelAsync(
-        int managerPersonelId,
         CancellationToken cancellationToken = default);
 
     Task<Result> AddScopedAsync(

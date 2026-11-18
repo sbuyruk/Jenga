@@ -15,7 +15,6 @@ namespace Jenga.DataAccess.Services.TBYS
         Task<Result> DeleteAsync(int bagisciId, CancellationToken cancellationToken = default);
         Task<Result<bool>> AnyAsync(Expression<Func<TasinmazBagisci, bool>> predicate, CancellationToken cancellationToken = default);
         Task<Result<(bool CanDelete, string? Reason)>> CanDeleteAsync(int id, CancellationToken cancellationToken = default);
-        Task<Result<bool>> ExistsByTCKimlikAsync(long? tckimlik, int? excludeId = null, CancellationToken cancellationToken = default);
         Task<Result<int>> CountByIlIdsAsync(IEnumerable<int> ilIds, CancellationToken cancellationToken = default);
     }
 }

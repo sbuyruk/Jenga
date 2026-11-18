@@ -5,7 +5,6 @@ namespace Jenga.DataAccess.Services.IKYS
 {
     public interface IPersonelLocationService
     {
-        Task<Result<List<PersonelLocation>>> GetLocationsForPersonelAsync(int personelId, bool onlyActive = true, CancellationToken cancellationToken = default);
         Task<Result<List<PersonelLocation>>> GetPersonelsForLocationAsync(int locationId, bool onlyActive = true, CancellationToken cancellationToken = default);
 
         Task<Result<PersonelLocation>> GetByIdAsync(int id, CancellationToken cancellationToken = default);

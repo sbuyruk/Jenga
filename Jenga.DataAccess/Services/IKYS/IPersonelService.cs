@@ -17,8 +17,6 @@ namespace Jenga.DataAccess.Services.IKYS
         Task<Result> UpdateAsync(Personel personel, string? modifiedBy = null, CancellationToken cancellationToken = default);
         Task<Result> DeleteAsync(Personel personel, CancellationToken cancellationToken = default);
         Task<Result<bool>> AnyAsync(Expression<Func<Personel, bool>> predicate, CancellationToken cancellationToken = default);
-        Task<Result> UpdatePersonelAndSaveAsync(Personel personel, string? currentUserName, CancellationToken cancellationToken = default);
-        Task<Result> DeletePersonelAndSaveAsync(Personel personel, string? currentUserName, CancellationToken cancellationToken = default);
         Task<Result<List<Personel>>> GetCalisanPersonelAsync(CancellationToken cancellationToken = default);
         Task<Result<List<Personel>>> GetKadroluPersonelAsync(CancellationToken cancellationToken = default);
     }
