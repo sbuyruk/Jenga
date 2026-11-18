@@ -1,0 +1,369 @@
+@page "/ikys/leave-requests"
+@page "/ikys/leave-requests/{Scope}"
+@rendermode InteractiveServer
+@using Jenga.BlazorUI.Services.Common
+@using Jenga.DataAccess.Services.IKYS
+@using Jenga.Models.IKYS
+@using Status = Jenga.Models.IKYS.IzinTalep.OnayDurumuTipi
+@inject ILeaveRequestWorkflow Workflow
+@inject ICurrentUserService CurrentUser
+
+<PageTitle>@Title</PageTitle>
+
+<PermissionGuard Module="ModuleName.IKYS" Operation="@(PersonnelOffice ? Operation.Manage : Operation.View)">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <h3 class="mb-0">@Title</h3>
+        <div class="d-flex flex-wrap gap-2">
+            @if (PersonnelOffice || _canManage)
+            {
+                <a class="btn btn-outline-secondary" href="@(PersonnelOffice ? "/ikys/leave-requests" : "/ikys/leave-requests/manage")">
+                    @(PersonnelOffice ? "İzin Taleplerim" : "İKYS İşlem Listesi")
+                </a>
+            }
+            @if (_canCreate)
+            {
+                <a class="btn btn-primary" href="@EntryUrl()">Yeni İzin Talebi</a>
+            }
+        </div>
+    </div>
+
+    @if (_feedback is not null)
+    {
+        <div class="alert @_feedbackClass" role="status">@_feedback</div>
+    }
+
+    <div class="row g-2 mb-3">
+        <div class="col-sm-auto">
+            <label class="form-label" for="leave-kind">İzin grubu</label>
+            <select class="form-select" id="leave-kind" @bind="_filter" @bind:after="ResetPageAsync" disabled="@_busy">
+                <option value="@LeaveListFilter.All">Tümü</option>
+                <option value="@LeaveListFilter.General">Genel İzinler</option>
+                <option value="@LeaveListFilter.Personal">Mazeret İzinleri</option>
+            </select>
+        </div>
+        <div class="col-sm-auto">
+            <label class="form-label" for="leave-status">Durum</label>
+            <InputSelect class="form-select" id="leave-status" @bind-Value="_status" @bind-Value:after="ResetPageAsync" disabled="@_busy">
+                <option value="">Tümü</option>
+                @foreach (var status in Enum.GetValues<Status>())
+                {
+                    <option value="@status">@StatusText(status)</option>
+                }
+            </InputSelect>
+        </div>
+    </div>
+
+    @if (_loading)
+    {
+        <JengaLoading Message="İzin talepleri yükleniyor…" />
+    }
+    else if (_list?.Items.Count == 0)
+    {
+        <p class="text-muted">Bu filtrelere uygun izin talebi bulunmuyor.</p>
+    }
+    else if (_list is { } list)
+    {
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead><tr>
+                    @if (PersonnelOffice) { <th scope="col">Personel</th> }
+                    <th scope="col">İzin türü</th><th scope="col">Başlangıç</th><th scope="col">Bitiş</th>
+                    <th scope="col">Süre</th><th scope="col">Durum</th><th scope="col">İşlemler</th>
+                </tr></thead>
+                <tbody>
+                    @foreach (var row in list.Items)
+                    {
+                        <tr class="@(_detail?.Row.Id == row.Id ? "table-active" : null)" @key="row.Id">
+                            @if (PersonnelOffice) { <td>@row.Person</td> }
+                            <td>@row.TypeName</td>
+                            <td>@FormatDate(row.Start, row.Type)</td>
+                            <td>@FormatDate(row.End, row.Type)</td>
+                            <td>@DurationText(row.Duration, row.Unit)</td>
+                            <td><span class="badge @StatusClass(row.Status)">@StatusText(row.Status)</span></td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-outline-primary" disabled="@_busy" @onclick="() => OpenDetailAsync(row.Id)">İncele</button>
+                                @if (_canEdit && IsPending(row.Status))
+                                {
+                                    <a class="btn btn-sm btn-outline-secondary" href="@EntryUrl(row.Id)">Düzenle</a>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        @if (list.Total > ILeaveRequestWorkflow.PageSize)
+        {
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(_busy || _page == 0)" @onclick="() => ChangePageAsync(-1)">Önceki</button>
+                <span>@(_page + 1) / @PageCount</span>
+                <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(_busy || _page + 1 >= PageCount)" @onclick="() => ChangePageAsync(1)">Sonraki</button>
+            </div>
+        }
+    }
+
+    @if (_detail is { } detail)
+    {
+        <section class="card mb-3" aria-labelledby="leave-detail">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="h5 mb-0" id="leave-detail" tabindex="-1" @ref="_detailHeading">@detail.Row.TypeName <span class="text-body-secondary">· @detail.Row.Person</span></h4>
+                <button type="button" class="btn btn-close" aria-label="Ayrıntıyı kapat" disabled="@_busy" @onclick="CloseDetail"></button>
+            </div>
+            <div class="card-body">
+                <p><span class="badge @StatusClass(detail.Row.Status)">@StatusText(detail.Row.Status)</span>
+                    @FormatDate(detail.Row.Start, detail.Row.Type) – @FormatDate(detail.Row.End, detail.Row.Type)
+                    · @DurationText(detail.Row.Duration, detail.Row.Unit)</p>
+                <dl class="row mb-2">
+                    <dt class="col-sm-3">@(detail.Row.Type == (int)LeaveType.Personal ? "Mazeret" : "Adres")</dt><dd class="col-sm-9">@(detail.Address ?? "—")</dd>
+                    <dt class="col-sm-3">Açıklama</dt><dd class="col-sm-9">@(detail.Description ?? "—")</dd>
+                    <dt class="col-sm-3">Vekil</dt><dd class="col-sm-9">@(detail.Substitute ?? "—")</dd>
+                    <dt class="col-sm-3">Amir</dt><dd class="col-sm-9">@(detail.Manager ?? "—")</dd>
+                </dl>
+
+                @if (detail.Row.Status == Status.KontrolEdildi)
+                {
+                    <p>İmzalı izin belgesi Personel Kısmına teslim edilmelidir.</p>
+                    @if (detail.DocumentUrl is { } document)
+                    {
+                        <a class="btn btn-outline-primary mb-3" href="@document" target="_blank" rel="noopener noreferrer">İzin Belgesini Aç</a>
+                    }
+                }
+
+                <details class="mb-3" open="@PersonnelOffice">
+                    <summary class="fw-semibold">İzin dönemleri ve son izin hareketleri</summary>
+                    <div class="table-responsive mt-2">
+                        <table class="table table-sm">
+                            <thead><tr><th scope="col">Dönem</th><th scope="col">İzin türü</th><th scope="col">Hak</th><th scope="col">Kullanılan</th><th scope="col">Kalan</th></tr></thead>
+                            <tbody>
+                                @foreach (var period in detail.Periods)
+                                {
+                                    <tr><td>@FormatDate(period.BaslangicTarihi, null) – @FormatDate(period.BitisTarihi, null)</td>
+                                        <td>@(period.IzinTipi == (int)LeaveType.Paid ? "Yıllık Ücretli" : "Mazeret")</td>
+                                        <td>@DurationText(period.IzinHakki, period.Birim)</td><td>@DurationText(period.KullanilanIzin, period.Birim)</td>
+                                        <td>@DurationText(period.KalanIzin, period.Birim)</td></tr>
+                                }
+                                @if (detail.Periods.Count == 0) { <tr><td colspan="5">İzin dönemi bulunmuyor.</td></tr> }
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead><tr><th scope="col">İzin türü</th><th scope="col">Başlangıç</th><th scope="col">Bitiş</th><th scope="col">Süre</th></tr></thead>
+                            <tbody>
+                                @foreach (var movement in detail.Movements)
+                                {
+                                    <tr><td>@movement.TypeName</td><td>@FormatDate(movement.Start, movement.Type)</td>
+                                        <td>@FormatDate(movement.End, movement.Type)</td><td>@DurationText(movement.Duration, movement.Unit)</td></tr>
+                                }
+                                @if (detail.Movements.Count == 0) { <tr><td colspan="4">İzin hareketi bulunmuyor.</td></tr> }
+                            </tbody>
+                        </table>
+                    </div>
+                </details>
+
+                @if (PersonnelOffice && (IsPending(detail.Row.Status) || detail.Row.Status == Status.KontrolEdildi))
+                {
+                    <div class="mb-3">
+                        <label class="form-label" for="leave-note">Karar açıklaması</label>
+                        <textarea id="leave-note" class="form-control" rows="2" @bind="_note" disabled="@_busy"></textarea>
+                    </div>
+                    @if (detail.Row.Status == Status.KontrolEdildi)
+                    {
+                        <div class="form-check mb-3">
+                            <input type="checkbox" class="form-check-input" id="leave-document-received" @bind="_documentReceived" disabled="@_busy" />
+                            <label class="form-check-label" for="leave-document-received">İmzalı izin belgesi teslim alındı.</label>
+                        </div>
+                        <button type="button" class="btn btn-success" disabled="@(_busy || !_documentReceived)" @onclick="() => DecideAsync(LeaveDecision.Approve)">Onayla ve Kayıtlara İşle</button>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btn-primary" disabled="@_busy" @onclick="() => DecideAsync(LeaveDecision.Check)">Kontrol Edildi Olarak İşaretle</button>
+                    }
+                    <button type="button" class="btn btn-outline-danger" disabled="@_busy" @onclick="() => DecideAsync(LeaveDecision.Reject)">Reddet</button>
+                }
+
+                @if (_canDelete && IsPending(detail.Row.Status))
+                {
+                    @if (_confirmDelete)
+                    {
+                        <div class="alert alert-warning mt-3 mb-0" role="status">
+                            Bu talebi silmek istiyor musunuz?
+                            <button type="button" class="btn btn-sm btn-danger ms-2" disabled="@_busy" @onclick="DeleteAsync">Talebi Sil</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="() => _confirmDelete = false">Vazgeç</button>
+                        </div>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btn-outline-danger" disabled="@_busy" @onclick="() => _confirmDelete = true">Sil</button>
+                    }
+                }
+            </div>
+        </section>
+    }
+</PermissionGuard>
+
+@code {
+    [Parameter] public string? Scope { get; set; }
+    private bool PersonnelOffice => string.Equals(Scope, "manage", StringComparison.OrdinalIgnoreCase);
+    private string Title => PersonnelOffice ? "İzin Talepleri" : "İzin Taleplerim";
+    private bool _ready, _loading = true, _busy, _canManage, _canCreate, _canEdit, _canDelete;
+    private bool _documentReceived, _confirmDelete, _focusDetail;
+    private int _page;
+    private int PageCount => ((_list?.Total ?? 0) + ILeaveRequestWorkflow.PageSize - 1) / ILeaveRequestWorkflow.PageSize;
+    private string? _note, _feedback;
+    private string _feedbackClass = "alert-success";
+    private LeaveListFilter _filter;
+    private Status? _status;
+    private LeaveRequestList? _list;
+    private LeaveRequestDetail? _detail;
+    private ElementReference _detailHeading;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_ready) await InitializeAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _ready = true;
+            await InitializeAsync();
+            StateHasChanged();
+        }
+        if (_focusDetail && _detail is not null)
+        {
+            _focusDetail = false;
+            await _detailHeading.FocusAsync();
+        }
+    }
+
+    private async Task InitializeAsync()
+    {
+        _canManage = await CurrentUser.HasPermissionAsync(ModuleName.IKYS, Operation.Manage);
+        _canCreate = PersonnelOffice ? _canManage : await CurrentUser.HasPermissionAsync(ModuleName.IKYS, Operation.Create);
+        _canEdit = PersonnelOffice ? _canManage : await CurrentUser.HasPermissionAsync(ModuleName.IKYS, Operation.Edit);
+        _canDelete = PersonnelOffice ? _canManage : await CurrentUser.HasPermissionAsync(ModuleName.IKYS, Operation.Delete);
+        _filter = LeaveListFilter.All;
+        _status = null;
+        _feedback = null;
+        CloseDetail();
+        await ResetPageAsync();
+    }
+
+    private async Task ResetPageAsync()
+    {
+        _page = 0;
+        await LoadListAsync();
+    }
+
+    private async Task ChangePageAsync(int direction)
+    {
+        _page += direction;
+        await LoadListAsync();
+    }
+
+    private async Task LoadListAsync()
+    {
+        _loading = true;
+        var result = await Workflow.ListAsync(PersonnelOffice, _filter, _status, _page);
+        _loading = false;
+        if (result.IsFailure) { _list = null; Feedback(result.Error.Message, "alert-danger"); return; }
+        _list = result.Value;
+        _page = Math.Clamp(_page, 0, Math.Max(0, PageCount - 1));
+    }
+
+    private async Task OpenDetailAsync(int id)
+    {
+        _busy = true;
+        CloseDetail();
+        var result = await Workflow.DetailAsync(id, PersonnelOffice);
+        _busy = false;
+        if (result.IsFailure) { Feedback(result.Error.Message, "alert-danger"); return; }
+        _detail = result.Value;
+        _focusDetail = true;
+    }
+
+    private void CloseDetail()
+    {
+        _detail = null;
+        _note = null;
+        _documentReceived = _confirmDelete = _focusDetail = false;
+    }
+
+    private async Task DecideAsync(LeaveDecision decision)
+    {
+        if (_busy || _detail is null) return;
+        _busy = true;
+        var id = _detail.Row.Id;
+        var result = await Workflow.DecideAsync(id, decision, _note, _documentReceived);
+        if (result.IsFailure)
+        {
+            Feedback(result.Error.Message, "alert-danger");
+            _busy = false;
+            return;
+        }
+        var message = decision switch
+        {
+            LeaveDecision.Check => "İzin talebi kontrol edildi.",
+            LeaveDecision.Approve => "İzin talebi kayıtlara işlendi.",
+            _ => "İzin talebi reddedildi."
+        };
+        Feedback(result.Value.NotificationFailed ? message + " E-posta bildirimi gönderilemedi." : message,
+            result.Value.NotificationFailed ? "alert-warning" : "alert-success");
+        await LoadListAsync();
+        await OpenDetailAsync(id);
+    }
+
+    private async Task DeleteAsync()
+    {
+        if (_busy || _detail is null || !_confirmDelete) return;
+        _busy = true;
+        var result = await Workflow.DeleteAsync(_detail.Row.Id, PersonnelOffice);
+        if (result.IsSuccess)
+        {
+            CloseDetail();
+            Feedback("İzin talebi silindi.", "alert-success");
+            await LoadListAsync();
+        }
+        else Feedback(result.Error.Message, "alert-danger");
+        _busy = false;
+    }
+
+    private void Feedback(string message, string css)
+    {
+        _feedback = message;
+        _feedbackClass = css;
+    }
+
+    private string EntryUrl(int? id = null) => "/ikys/leave-request-entry" + (id is { } value ? $"/{value}" : "") + (PersonnelOffice ? "?office=true" : "");
+    private static bool IsPending(Status? status) => status is Status.IslemBekliyor or Status.DilekceBekleniyor;
+    private static string FormatDate(DateTime? date, int? type) =>
+        date?.ToString(type is (int)LeaveType.Personal or (int)LeaveType.Nursing ? "dd.MM.yyyy HH:mm" : "dd.MM.yyyy") ?? "—";
+    private static string DurationText(string? duration, string? unit)
+    {
+        if (string.IsNullOrWhiteSpace(duration)) return "—";
+        if (string.Equals(unit, "Saat", StringComparison.OrdinalIgnoreCase) &&
+            TimeSpan.TryParse(duration, System.Globalization.CultureInfo.InvariantCulture, out var hours))
+            duration = duration == "0" ? "00:00" : $"{(hours < TimeSpan.Zero ? "-" : "")}{Math.Abs((int)hours.TotalHours):00}:{hours.Duration().Minutes:00}";
+        return $"{duration} {unit}";
+    }
+    private static string StatusText(Status? status) => status switch
+    {
+        Status.IslemBekliyor => "İşlem Bekliyor",
+        Status.KontrolEdildi => "Kontrol Edildi",
+        Status.KayitlaraIslendi => "Kayıtlara İşlendi",
+        Status.Reddedildi => "Reddedildi",
+        Status.IptalEdildi => "İptal Edildi",
+        Status.DilekceBekleniyor => "Dilekçe Bekleniyor",
+        _ => "Durum Belirsiz"
+    };
+    private static string StatusClass(Status? status) => status switch
+    {
+        Status.KontrolEdildi => "text-bg-info",
+        Status.KayitlaraIslendi => "text-bg-success",
+        Status.Reddedildi or Status.IptalEdildi => "text-bg-danger",
+        Status.IslemBekliyor or Status.DilekceBekleniyor => "text-bg-warning",
+        _ => "text-bg-secondary"
+    };
+}

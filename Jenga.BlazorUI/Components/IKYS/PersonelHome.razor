@@ -73,6 +73,10 @@ else
         <article class="workspace-card">
             <div class="workspace-card__header">
                 <h3>@(PersonelId.HasValue ? "İzin Talepleri" : "İzin Taleplerim")</h3>
+                @if (!PersonelId.HasValue && _canReadPrivate)
+                {
+                    <a href="/ikys/leave-requests">Tümünü gör</a>
+                }
             </div>
 
             <div class="task-list">

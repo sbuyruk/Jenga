@@ -18,6 +18,10 @@
         <i class="bi bi-clock-history me-2"></i>Bekleyen İşlemler
     </h3>
 
+    <PermissionGuard Module="ModuleName.IKYS" Operation="Operation.Manage" HideWhenUnauthorized="true">
+        <a class="btn btn-outline-secondary mb-3" href="/ikys/leave-requests/manage">İzin Talepleri</a>
+    </PermissionGuard>
+
     @if (_isLoading)
     {
         <JengaLoading Message="Veriler yükleniyor…" />

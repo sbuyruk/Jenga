@@ -153,6 +153,7 @@ namespace Jenga.DataAccess.Extensions
             services.AddScopedWithAuthProxy<IIzinTanimService, IzinTanimService>(ModuleName.IKYS);
             services.AddScopedWithAuthProxy<IIzinDonemService, IzinDonemService>(ModuleName.IKYS);
             services.AddScopedWithAuthProxy<IIzinTalepService, IzinTalepService>(ModuleName.IKYS);
+            services.AddScoped<ILeaveRequestWorkflow, LeaveRequestWorkflow>();
             services.AddScopedWithAuthProxy<IIzinHareketService, IzinHareketService>(ModuleName.IKYS);
             services.AddScopedWithAuthProxy<ITahsilTanimService, TahsilTanimService>(ModuleName.IKYS);
             services.AddScopedWithAuthProxy<ITaskApprovalEntryService, TaskApprovalEntryService>(ModuleName.IKYS);
