@@ -108,8 +108,6 @@
                             && t.KirayaUygunluk.Equals(ProjectConstants.KIRAYA_UYGUN_DEGIL)));
             builder.AddAttribute(2, "Iller", Iller);
             builder.AddAttribute(3, "Bolgeler", Bolgeler);
-            builder.AddAttribute(4, "Title", Title);
-            builder.AddAttribute(5, "OnClose", EventCallback.Factory.Create(this, () => req.Close?.Invoke()));
             builder.CloseComponent();
         };
 
@@ -126,7 +124,6 @@
             DialogClass = "modal-xl modal-xxl-custom modal-fullscreen-sm-down"
         };
 
-        // render TasinmazChart inside modal; wire chart OnClose to request.Close
         req.Content = builder =>
         {
             builder.OpenComponent(0, typeof(Jenga.BlazorUI.Components.TBYS.TasinmazChart));
@@ -135,7 +132,6 @@
             builder.AddAttribute(2, "Iller", Iller);
             builder.AddAttribute(3, "Bolgeler", Bolgeler);
             builder.AddAttribute(4, "Title", Title);
-            builder.AddAttribute(5, "OnClose", EventCallback.Factory.Create(this, () => req.Close?.Invoke()));
             builder.AddAttribute(6, "ShowMonetaryValues", false);
             builder.CloseComponent();
         };

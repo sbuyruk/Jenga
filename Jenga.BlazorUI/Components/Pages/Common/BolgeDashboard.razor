@@ -946,8 +946,6 @@
     private List<YearAmount> _nakitYillikItems = [];
 
     // ── Armağan ──────────────────────────────────────────────────
-    private int _toplamArmagan;
-    private int _armaganTeslimEdilen;
     private int _buYilArmagan;
     private List<PieItem> _armaganTurleriItems = [];
 
@@ -1185,9 +1183,6 @@
                 .ToList();
 
             // Armağan
-            _toplamArmagan = bolgeArmaganlar.Count;
-            _armaganTeslimEdilen = bolgeArmaganlar.Count(a =>
-                a.Durum != null && a.Durum.Contains("teslim", StringComparison.OrdinalIgnoreCase));
             _buYilArmagan = bolgeArmaganlar.Count(a => a.Tarih.HasValue && a.Tarih.Value.Year == now.Year);
 
             // Armağan türleri pie (sadece bu yıl)

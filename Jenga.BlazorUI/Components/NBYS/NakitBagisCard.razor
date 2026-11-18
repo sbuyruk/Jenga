@@ -42,7 +42,6 @@
     [Parameter] public int FirstTimeDonorCount { get; set; }
     [Parameter] public List<NakitBagisHareket>? NakitBagislar { get; set; }
 
-    [Parameter] public EventCallback<(int Year, int Month)> OnOpenDetails { get; set; }
 
     private static readonly CultureInfo _trCulture = new("tr-TR");
 
@@ -95,7 +94,6 @@
             builder.AddAttribute(2, "Year", selectedYear);
             builder.AddAttribute(3, "Month", selectedMonth);
             builder.AddAttribute(4, "Items", tableRows);
-            builder.AddAttribute(5, "OnClose", EventCallback.Factory.Create(this, () => req.Close?.Invoke()));
             builder.CloseComponent();
         };
 
