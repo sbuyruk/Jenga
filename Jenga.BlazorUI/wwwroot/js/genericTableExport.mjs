@@ -1,6 +1,6 @@
 ﻿// ES module version � export functions so Blazor can import safely
 
-export async function copyTextToClipboard(text) {
+async function copyTextToClipboard(text) {
     try {
         if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
             await navigator.clipboard.writeText(text ?? '');
@@ -80,7 +80,7 @@ function cellText(cell) {
     return s;
 }
 
-export function downloadFromBase64(filename, base64, contentType) {
+function downloadFromBase64(filename, base64, contentType) {
     const link = document.createElement('a');
     link.href = "data:" + contentType + ";base64," + base64;
     link.download = filename;
@@ -193,20 +193,6 @@ export async function downloadXlsx(filename, headers, rows) {
     }
 }
 
-export async function exportTableToExcel(tableId, filename) {
-    const table = document.getElementById(tableId);
-    if (!table) throw new Error(`Table not found: ${tableId}`);
-
-    const safeName = (filename && String(filename).trim().length > 0)
-        ? String(filename).trim()
-        : `export-${new Date().toISOString().replace(/[-:]/g, '').replace('T', '').slice(0, 14)}.xlsx`;
-
-    const headers = readHeaderTexts(table);
-    const rows = readBodyRows(table);
-
-    await downloadXlsx(safeName, headers, rows);
-}
-
 function readHeaderTexts(table) {
     const headerRow = table.querySelector('thead tr');
     if (!headerRow) return [];
@@ -215,20 +201,6 @@ function readHeaderTexts(table) {
         .filter(cell => !!(cell.offsetParent || cell.getClientRects().length));
 
     return headerCells.map(cell => cellText(cell));
-}
-
-function readBodyRows(table) {
-    const bodyRows = Array.from(table.querySelectorAll('tbody tr'));
-    const rows = [];
-
-    for (const tr of bodyRows) {
-        const cells = Array.from(tr.querySelectorAll('td,th'))
-            .filter(cell => !!(cell.offsetParent || cell.getClientRects().length));
-
-        rows.push(cells.map(cell => cellText(cell)));
-    }
-
-    return rows;
 }
 
 export function getTableHeaderTexts(tableId) {

@@ -674,27 +674,6 @@
                     </div>
 
                     <div class="row g-3 mb-3">
-                        <!-- Vasiyet Tipi Dağılımı -->
-@*                         <div class="col-12 col-lg-6">
-                            <div class="card shadow-sm h-100">
-                                <div class="card-header"><strong><i class="bi bi-pie-chart me-1"></i>Vasiyet Tipi</strong></div>
-                                <div class="card-body p-0" style="height:320px;">
-                                    <GenericChart TItem="ChartItem"
-                                                  Items="_vasiyetTipiItems"
-                                                  LabelSelector="@(x => x.Label)"
-                                                  ValueSelector="@(x => x.Value)"
-                                                  Title="Vasiyet Tipi Dağılımı"
-                                                  SeriesName="Vasiyetçi"
-                                                  Type="GenericChart<ChartItem>.GenericChartType.Pie"
-                                                  Height="100%"
-                                                  Width="100%"
-                                                  ShowLegend="true"
-                                                  ShowDataLabels="true"
-                                                  ColorPalette="@_vasiyetTipiPalette" />
-                                </div>
-                            </div>
-                        </div> *@
-
                         <!-- Vasiyet Durumu Dağılımı -->
                         <div class="justify-content-center">
                             <div class="card shadow-sm h-100">
@@ -1110,7 +1089,6 @@
     private readonly List<ChartItem> _topBagisciItems  = [];
     private readonly List<ChartItem> _yilBazindaItems  = [];
     private readonly List<ChartItem> _bolgeDagilimItems = [];
-    private readonly List<ChartItem> _vasiyetTipiItems   = [];
     private readonly List<ChartItem> _vasiyetDurumuItems = [];
     private readonly List<ChartItem> _yakinlikItems      = [];
 
@@ -1133,9 +1111,6 @@
         ["#16a34a","#4ade80","#15803d","#86efac","#166534","#bbf7d0","#14532d","#6ee7b7"];
     private static readonly string[] _bluePalette =
         ["#2563eb","#60a5fa","#1d4ed8","#93c5fd","#1e40af","#bfdbfe","#1e3a8a","#dbeafe"];
-    // Vasiyet Tipi: birbirinden ayrık tonlar (turuncu, mavi, mor, yeşil, kırmızı, teal)
-    private static readonly string[] _vasiyetTipiPalette =
-        ["#f97316","#3b82f6","#8b5cf6","#22c55e","#ef4444","#14b8a6","#f59e0b","#ec4899"];
     // Vasiyet Durumu: anlamlı renkler (geçerli=yeşil, iptal=kırmızı, işlem=mavi, gerçekleşti=mor, diğer=gri)
     private static readonly string[] _vasiyetDurumuPalette =
         ["#16a34a","#dc2626","#2563eb","#7c3aed","#ea580c","#0891b2","#64748b","#d97706"];
@@ -1240,7 +1215,6 @@
         PrepareTopBagisciChart();
         PrepareYilBazindaChart();
         PrepareBolgeDagilimChart();
-        PrepareVasiyetTipiChart();
         PrepareVasiyetDurumuChart();
         PrepareYakinlikChart();
         PrepareYasGruplari();
@@ -1306,17 +1280,6 @@
             .OrderByDescending(x => x.Value);
 
         _bolgeDagilimItems.AddRange(groups);
-    }
-
-    private void PrepareVasiyetTipiChart()
-    {
-        _vasiyetTipiItems.Clear();
-        var groups = _vasiyetciler
-            .GroupBy(x => string.IsNullOrWhiteSpace(x.VasiyetTipi) ? "Belirtilmemiş" : x.VasiyetTipi!.Trim())
-            .Select(g => new ChartItem { Label = g.Key, Value = g.Count() })
-            .OrderByDescending(x => x.Value);
-
-        _vasiyetTipiItems.AddRange(groups);
     }
 
     private void PrepareVasiyetDurumuChart()

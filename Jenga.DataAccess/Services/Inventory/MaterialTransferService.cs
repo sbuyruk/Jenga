@@ -10,13 +10,11 @@ namespace Jenga.DataAccess.Services.Inventory
     {
         private const string Source = nameof(MaterialTransferService);
 
-        private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
         private readonly IDbContextScopeFactory _scopeFactory;
         private readonly ILogService _logService;
 
-        public MaterialTransferService(IDbContextFactory<ApplicationDbContext> dbFactory, IDbContextScopeFactory scopeFactory, ILogService logService)
+        public MaterialTransferService(IDbContextScopeFactory scopeFactory, ILogService logService)
         {
-            _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
             _scopeFactory = scopeFactory ?? throw new ArgumentNullException(nameof(scopeFactory));
             _logService = logService ?? throw new ArgumentNullException(nameof(logService));
         }
