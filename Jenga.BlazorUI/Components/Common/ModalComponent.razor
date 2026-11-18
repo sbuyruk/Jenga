@@ -52,9 +52,6 @@
 
     private Task ShowModal(ModalRequest request)
     {
-        // allow content to request modal close via request.Close
-        request.Close = Close;
-
         Request = request;
         IsVisible = true;
         StateHasChanged();

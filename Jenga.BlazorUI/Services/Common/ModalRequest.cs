@@ -10,7 +10,6 @@ namespace Jenga.BlazorUI.Services.Common
         public Action<bool>? OnResult { get; set; }
         public RenderFragment? Content { get; set; }
         public bool ShowConfirmationButtons { get; set; } = false;
-        public Action? Close { get; set; }
 
         public string DialogClass { get; set; } = "modal-xl modal-xxl-custom";
     }

@@ -102,8 +102,6 @@
     [Parameter] public IEnumerable<Tasinmaz>? Tasinmazlar { get; set; }
     [Parameter] public List<Bolge>? Bolgeler { get; set; }
     [Parameter] public List<Il>? Iller { get; set; }
-    [Parameter] public string? Title { get; set; }
-    [Parameter] public EventCallback OnClose { get; set; }
 
     // active regions to display as columns (preserve provided order)
     private List<Bolge> RegionList { get; set; } = new();

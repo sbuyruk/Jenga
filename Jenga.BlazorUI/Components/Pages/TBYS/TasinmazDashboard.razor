@@ -725,7 +725,6 @@
     private int KirayaUygunAdet;
     private int KirayaUygunDegilAdet;
     private int ToplamIlAdet;
-    private int ToplamBolgeAdet;
     private int DegerlemesiYapilanAdet;
     private int EmlakBeyanGuncelenenAdet;
 
@@ -893,8 +892,6 @@
 
         // ── Bölge Özeti ───────────────────────────────────────────
         _bolgeSummaries = BuildBolgeSummaries(list);
-
-        ToplamBolgeAdet = _bolgeSummaries.Count;
 
         // ── Bölge Özeti (Yıl bazlı - EnvantereGirisTarihi) ──────────────
         var yilList = list.Where(x => x.EnvantereGirisTarihi.HasValue && x.EnvantereGirisTarihi.Value.Year == _bolgeYilSecili).ToList();

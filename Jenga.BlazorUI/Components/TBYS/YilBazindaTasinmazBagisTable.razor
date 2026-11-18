@@ -162,13 +162,8 @@
     [Parameter] public string TableId { get; set; } = "yilBazindaTasinmazBagisTable";
     [Parameter] public string ReportRootId { get; set; } = "yilBazindaTasinmazBagisReportRoot";
 
-    // Parameters requested
     [Parameter] public List<Tasinmaz> Tasinmazlar { get; set; } = new();
-    [Parameter] public List<int> Years { get; set; } = new();
-
-    // keep two-way binding possibility
     [Parameter] public int SelectedYear { get; set; }
-    [Parameter] public EventCallback<int> SelectedYearChanged { get; set; }
 
     private List<RegionBlock> RegionBlocks { get; set; } = new();
     private Totals GrandTotal { get; set; } = new();

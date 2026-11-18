@@ -68,14 +68,6 @@
     private bool _canEdit;
     private bool _canDelete;
 
-    private Func<TreeItem<MaterialCategory>, object?> sortSelector = item =>
-        item.Data?.CategoryName ;
-
-    private Func<TreeItem<MaterialCategory>, string, bool> filter = (item, term) =>
-        (item.Data != null && item.Data.CategoryName.Contains(term, StringComparison.OrdinalIgnoreCase)) ;
-
-    [Parameter] public EventCallback OnRefresh { get; set; }
-
     // Lifecycle
     protected override async Task OnInitializedAsync()
     {

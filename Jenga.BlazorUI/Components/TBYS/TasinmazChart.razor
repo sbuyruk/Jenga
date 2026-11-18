@@ -9,7 +9,6 @@
   TasinmazChart component
   - Parameter: Tasinmazlar (IEnumerable<Tasinmaz>) : source list of records
   - Parameter: Title (string) : optional title
-  - Parameter: OnClose (EventCallback) : optional close callback (e.g., modal)
   - Parameter: ShowMonetaryValues (bool) : whether to show Emlak/Tahmini values
   Behavior:
   - Filters items where EnvanterdeMi == 1
@@ -140,9 +139,6 @@
     public IEnumerable<Bolge>? Bolgeler { get; set; }
     [Parameter]
     public string? Title { get; set; }
-
-    [Parameter]
-    public EventCallback OnClose { get; set; }
 
     // New parameter to control visibility of monetary summary fields (default: true)
     [Parameter]

@@ -81,9 +81,6 @@
     private bool isMaterialEditOpen = false;
     private bool sortAscending = true;
 
-    private Func<TreeItem<MaterialCategoryNode>, object?> sortSelector = item =>
-        item.Data.Category?.CategoryName ?? item.Data.Material?.MaterialName ?? "";
-
     private Func<TreeItem<MaterialCategoryNode>, string, bool> filter = (item, term) =>
         (item.Data.Category != null && item.Data.Category.CategoryName.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
         (item.Data.Material != null && item.Data.Material.MaterialName.Contains(term, StringComparison.OrdinalIgnoreCase));
