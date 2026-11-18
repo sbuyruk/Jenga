@@ -133,9 +133,6 @@ public sealed class TaskApprovalEntryService(
         return result;
     }
 
-    public Task<Result<bool>> HasOverlapAsync(int personelId, DateTime startDate, DateTime endDate, int? excludeTaskApprovalId = null, CancellationToken cancellationToken = default)
-        => gorevOnayService.HasOverlappingTaskApprovalAsync(personelId, startDate, endDate, excludeTaskApprovalId, cancellationToken);
-
     public async Task<Result> DeleteAsync(int id, int? currentPersonelId, string? auth, CancellationToken cancellationToken = default)
     {
         try

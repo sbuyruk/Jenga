@@ -81,41 +81,6 @@ namespace Jenga.DataAccess.Services.Common
             }
         }
 
-        /// <summary>
-        /// Belirtilen role ait tüm modül izinlerini siler, yenileriyle değiştirir.
-        /// Tek transaction içinde çalışır.
-        /// </summary>
-        [Obsolete("Kapsam koruması olmadığından ReplaceForRoleInScopeAsync kullanın.")]
-        public async Task<Result> ReplaceForRoleAsync(int roleId, IEnumerable<int> modulePermissionIds, string currentUser, CancellationToken cancellationToken = default)
-        {
-            try
-            {
-                await using var scope = await _scopeFactory.CreateAsync(cancellationToken);
-                var db = scope.Context;
-                db.SetCurrentUser(currentUser);
-
-                var existing = await db.RoleModulePermission_Table
-                    .Where(x => x.RoleId == roleId)
-                    .ToListAsync(cancellationToken);
-                db.RoleModulePermission_Table.RemoveRange(existing);
-
-                var newEntities = modulePermissionIds.Select(mpId => new RoleModulePermission
-                {
-                    RoleId = roleId,
-                    ModulePermissionId = mpId
-                });
-                await db.RoleModulePermission_Table.AddRangeAsync(newEntities, cancellationToken);
-
-                await scope.CommitAsync(cancellationToken);
-                return Result.Success();
-            }
-            catch (Exception ex)
-            {
-                _logService.LogException(ex, $"{Source}.ReplaceForRoleAsync");
-                return Result.Failure(Error.Unexpected("Rol izinleri güncellenemedi.", ex, "RoleModulePermission.Replace.Failed"));
-            }
-        }
-
         /// <inheritdoc/>
         public async Task<Result> ReplaceForRoleInScopeAsync(
             int roleId,

@@ -52,21 +52,6 @@ namespace Jenga.DataAccess.Services.TBYS
             }
         }
 
-        public async Task<Result<List<Vasiyetci>>> GetByTCKimlikAsync(long tcKimlik, CancellationToken cancellationToken = default)
-        {
-            try
-            {
-                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-                var list = await db.Vasiyetci_Table.AsNoTracking().Where(x => x.TCKimlikNo == tcKimlik).ToListAsync(cancellationToken);
-                return Result<List<Vasiyetci>>.Success(list);
-            }
-            catch (Exception ex)
-            {
-                _logService.LogError($"{Source}.GetByTCKimlikAsync hata.", ex);
-                return Result<List<Vasiyetci>>.Failure(Error.Unexpected("TC kimliğe göre vasiyetçi alınamadı.", ex));
-            }
-        }
-
         public async Task<Result> AddAsync(Vasiyetci entity, CancellationToken cancellationToken = default)
         {
             if (entity is null)

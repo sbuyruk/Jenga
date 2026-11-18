@@ -51,22 +51,5 @@ namespace Jenga.DataAccess.Services.Common
                 return Result.Failure<ModulePermission>(Error.Unexpected("Modül izni getirilemedi.", ex, "ModulePermission.GetById.Failed"));
             }
         }
-
-        public async Task<Result<List<ModulePermission>>> GetByModuleAsync(ModuleName module, CancellationToken cancellationToken = default)
-        {
-            try
-            {
-                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-                var list = await db.ModulePermission_Table.AsNoTracking()
-                    .Where(x => x.Module == module)
-                    .ToListAsync(cancellationToken);
-                return Result.Success(list);
-            }
-            catch (Exception ex)
-            {
-                _logService.LogException(ex, $"{Source}.GetByModuleAsync");
-                return Result.Failure<List<ModulePermission>>(Error.Unexpected("Modül izinleri getirilemedi.", ex, "ModulePermission.GetByModule.Failed"));
-            }
-        }
     }
 }

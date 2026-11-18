@@ -18,23 +18,6 @@ public class PersonelLocationService : IPersonelLocationService
         _logService = logService ?? throw new ArgumentNullException(nameof(logService));
     }
 
-    public async Task<Result<List<PersonelLocation>>> GetLocationsForPersonelAsync(int personelId, bool onlyActive = true, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-            IQueryable<PersonelLocation> query = db.PersonelLocation_Table.Include(pl => pl.Location).Where(pl => pl.PersonelId == personelId);
-            if (onlyActive) query = query.Where(pl => pl.IsActive);
-            var list = await query.AsNoTracking().ToListAsync(cancellationToken);
-            return Result.Success(list);
-        }
-        catch (Exception ex)
-        {
-            _logService.LogException(ex, $"{Source}.GetLocationsForPersonelAsync");
-            return Result.Failure<List<PersonelLocation>>(Error.Unexpected("Personel lokasyonları getirilemedi.", ex, "PersonelLocation.GetLocationsForPersonel.Failed"));
-        }
-    }
-
     public async Task<Result<List<PersonelLocation>>> GetPersonelsForLocationAsync(int locationId, bool onlyActive = true, CancellationToken cancellationToken = default)
     {
         try

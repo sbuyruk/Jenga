@@ -54,24 +54,6 @@ namespace Jenga.DataAccess.Services.Common
             }
         }
 
-        public async Task<Result<List<Ilce>>> GetByIlIdAsync(int ilId, CancellationToken cancellationToken = default)
-        {
-            try
-            {
-                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-                var list = await db.Ilce_Table
-                    .AsNoTracking()
-                    .Where(x => x.IlId == ilId)
-                    .ToListAsync(cancellationToken);
-                return Result.Success(list);
-            }
-            catch (Exception ex)
-            {
-                _logService.LogException(ex, $"{Source}.GetByIlIdAsync");
-                return Result.Failure<List<Ilce>>(Error.Unexpected("İlçeler getirilemedi.", ex, "Ilce.GetByIlId.Failed"));
-            }
-        }
-
         public async Task<Result<List<Ilce>>> GetAktifIlcelerAsync(CancellationToken cancellationToken = default)
         {
             try

@@ -141,12 +141,6 @@ public class PersonelService : IPersonelService
         }
     }
 
-    public Task<Result> UpdatePersonelAndSaveAsync(Personel personel, string? currentUserName, CancellationToken cancellationToken = default)
-        => UpdateAsync(personel, currentUserName, cancellationToken);
-
-    public Task<Result> DeletePersonelAndSaveAsync(Personel personel, string? currentUserName, CancellationToken cancellationToken = default)
-        => DeleteAsync(personel, cancellationToken);
-
     public async Task<Result<List<Personel>>> GetKadroluPersonelAsync(CancellationToken cancellationToken = default)
     {
         try

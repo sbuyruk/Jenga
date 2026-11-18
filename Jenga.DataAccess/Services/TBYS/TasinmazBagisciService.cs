@@ -165,7 +165,7 @@ namespace Jenga.DataAccess.Services.TBYS
             }
         }
 
-        public async Task<Result<bool>> ExistsByTCKimlikAsync(long? tckimlik, int? excludeId = null, CancellationToken cancellationToken = default)
+        private async Task<Result<bool>> ExistsByTCKimlikAsync(long? tckimlik, int? excludeId = null, CancellationToken cancellationToken = default)
         {
             if (!tckimlik.HasValue || tckimlik.Value == 0)
                 return Result.Success(false);
