@@ -16,8 +16,9 @@ namespace Jenga.BlazorUI.Tests;
 public class KontrolPlanTests
 {
     [Fact]
-    public async Task Harita_YetkiliTasinmazlarinSonGecerliKoordinatiniVeTemelBilgileriniGetirir()
+    public async Task Harita_YetkiliTasinmazlarinSonGecerliKoordinatiniVeParselSiniriniGetirir()
     {
+        const string geometri = """{"type":"Polygon","coordinates":[[[32,39],[33,39],[33,40],[32,39]]]}""";
         await using var factory = await Database.AcAsync();
         await using (var db = factory.CreateDbContext())
         {
@@ -25,7 +26,12 @@ public class KontrolPlanTests
             db.Il_Table.AddRange(new Il { Id = 1, BolgeId = 1, IlAdi = "Ankara" }, new Il { Id = 2, BolgeId = 2, IlAdi = "İzmir" });
             var t = await db.Tasinmaz_Table.SingleAsync();
             t.IlId = 1; t.EmlakSicilNo = "S-1"; t.Adres = "Test adresi"; t.Cinsi = "Mesken"; t.Ili = "Ankara"; t.Ilcesi = "Çankaya";
-            db.Tasinmaz_Table.AddRange(new Tasinmaz { Id = 2, IlId = 1 }, new Tasinmaz { Id = 3, IlId = 2 }, new Tasinmaz { Id = 4, IlId = 1 });
+            t.ParselGeometrisiGeoJson = geometri;
+            db.Tasinmaz_Table.AddRange(
+                new Tasinmaz { Id = 2, IlId = 1 },
+                new Tasinmaz { Id = 3, IlId = 2, ParselGeometrisiGeoJson = geometri },
+                new Tasinmaz { Id = 4, IlId = 1 },
+                new Tasinmaz { Id = 5, IlId = 1, ParselGeometrisiGeoJson = geometri });
             var ilk = await db.TasinmazKontrol_Table.SingleAsync();
             ilk.KontrolTarihi = new(2020, 1, 1); ilk.CevaplarJson = KoordinatJson("38, 31");
             db.TasinmazKontrol_Table.AddRange(
@@ -44,13 +50,19 @@ public class KontrolPlanTests
         var servis = Servis(factory, new HaritaYetkisi(true, [1]));
         var sonuc = await servis.GetHaritaNoktalariAsync();
         Assert.True(sonuc.IsSuccess, sonuc.IsFailure ? sonuc.Error.Message : "");
-        Assert.Equal(new[] { 1, 2 }, sonuc.Value.Select(n => n.TasinmazId).OrderBy(id => id));
+        Assert.Equal(new[] { 1, 2, 5 }, sonuc.Value.Select(n => n.TasinmazId).OrderBy(id => id));
         var nokta = Assert.Single(sonuc.Value, n => n.TasinmazId == 1);
         Assert.Equal(3, nokta.KontrolId);
         Assert.Equal(40m, nokta.Enlem); Assert.Equal(33m, nokta.Boylam);
         Assert.Equal("S-1", nokta.EmlakSicilNo); Assert.Equal("Test adresi", nokta.Adres);
         Assert.Equal("Mesken", nokta.Cinsi); Assert.Equal("Ankara", nokta.Ili); Assert.Equal("Çankaya", nokta.Ilcesi);
         Assert.True(nokta.Taslak);
+        Assert.Equal(geometri, nokta.ParselGeometrisiGeoJson);
+        var sadeceParsel = Assert.Single(sonuc.Value, n => n.TasinmazId == 5);
+        Assert.Equal(geometri, sadeceParsel.ParselGeometrisiGeoJson);
+        Assert.Null(sadeceParsel.KontrolId);
+        Assert.Null(sadeceParsel.Enlem);
+        Assert.Null(sadeceParsel.Boylam);
         Assert.Empty((await Servis(factory, new HaritaYetkisi(true, [])).GetHaritaNoktalariAsync()).Value);
         Assert.True((await Servis(factory, new HaritaYetkisi(false, [1, 2])).GetHaritaNoktalariAsync()).IsFailure);
     }

@@ -76,7 +76,7 @@ namespace Jenga.DataAccess.Services.TBYS
 
         // ----------------------------------------------------------------- Sorgular
 
-        /// <summary>Her yetkili taşınmazın iptal/revizyon dışındaki en güncel geçerli koordinatı.</summary>
+        /// <summary>Yetkili taşınmazların parsel sınırları ve iptal/revizyon dışındaki en güncel geçerli kontrol koordinatları.</summary>
         public async Task<Result<List<TasinmazHaritaNoktasi>>> GetHaritaNoktalariAsync(CancellationToken cancellationToken = default)
         {
             var yetki = await CheckAsync(ModuleName.TBYS, Operation.View, cancellationToken);
@@ -91,17 +91,15 @@ namespace Jenga.DataAccess.Services.TBYS
                             orderby k.KontrolTarihi descending, k.Id descending
                             select new { k.Id, k.TasinmazId, k.CevaplarJson, k.Durum,
                                 t.EmlakSicilNo, t.Adres, t.Cinsi, t.Ili, t.Ilcesi };
-                var noktalar = new List<TasinmazHaritaNoktasi>();
-                var eklenenler = new HashSet<int>();
+                var noktalar = new Dictionary<int, TasinmazHaritaNoktasi>();
                 await foreach (var satir in sorgu.AsAsyncEnumerable().WithCancellation(cancellationToken))
                 {
-                    if (eklenenler.Contains(satir.TasinmazId)) continue;
+                    if (noktalar.ContainsKey(satir.TasinmazId)) continue;
                     string? koordinat;
                     try { koordinat = KontrolCevaplari.FromJson(satir.CevaplarJson).Al("konum_koordinat"); }
                     catch (Exception ex) when (ex is System.Text.Json.JsonException or ArgumentNullException) { continue; }
                     if (!KontrolKoordinat.TryParse(koordinat, out var enlem, out var boylam)) continue;
-                    eklenenler.Add(satir.TasinmazId);
-                    noktalar.Add(new()
+                    noktalar.Add(satir.TasinmazId, new()
                     {
                         TasinmazId = satir.TasinmazId, KontrolId = satir.Id,
                         EmlakSicilNo = satir.EmlakSicilNo, Adres = satir.Adres, Cinsi = satir.Cinsi,
@@ -109,7 +107,24 @@ namespace Jenga.DataAccess.Services.TBYS
                         Taslak = satir.Durum == KontrolDurumu.Taslak
                     });
                 }
-                return Result<List<TasinmazHaritaNoktasi>>.Success(noktalar);
+
+                var parseller = tasinmazlar
+                    .Where(t => t.ParselGeometrisiGeoJson != null && t.ParselGeometrisiGeoJson != "")
+                    .Select(t => new TasinmazHaritaNoktasi
+                    {
+                        TasinmazId = t.Id, EmlakSicilNo = t.EmlakSicilNo, Adres = t.Adres,
+                        Cinsi = t.Cinsi, Ili = t.Ili, Ilcesi = t.Ilcesi,
+                        ParselGeometrisiGeoJson = t.ParselGeometrisiGeoJson
+                    });
+                await foreach (var parsel in parseller.AsAsyncEnumerable().WithCancellation(cancellationToken))
+                {
+                    if (noktalar.TryGetValue(parsel.TasinmazId, out var nokta))
+                        nokta.ParselGeometrisiGeoJson = parsel.ParselGeometrisiGeoJson;
+                    else
+                        noktalar.Add(parsel.TasinmazId, parsel);
+                }
+
+                return Result<List<TasinmazHaritaNoktasi>>.Success(noktalar.Values.ToList());
             }
             catch (Exception ex)
             {

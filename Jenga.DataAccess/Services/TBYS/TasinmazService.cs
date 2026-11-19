@@ -165,7 +165,8 @@ namespace Jenga.DataAccess.Services.TBYS
             try
             {
                 await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-                db.Tasinmaz_Table.Update(tasinmaz);
+                var entry = db.Tasinmaz_Table.Update(tasinmaz);
+                entry.Property(t => t.ParselGeometrisiGeoJson).IsModified = false;
                 await db.SaveChangesAsync(cancellationToken);
                 return Result.Success();
             }

@@ -6,14 +6,15 @@ namespace Jenga.DataAccess.Services.TBYS
     public sealed class TasinmazHaritaNoktasi
     {
         public int TasinmazId { get; set; }
-        public int KontrolId { get; set; }
+        public int? KontrolId { get; set; }
         public string? EmlakSicilNo { get; set; }
         public string? Adres { get; set; }
         public string? Cinsi { get; set; }
         public string? Ili { get; set; }
         public string? Ilcesi { get; set; }
-        public decimal Enlem { get; set; }
-        public decimal Boylam { get; set; }
+        public decimal? Enlem { get; set; }
+        public decimal? Boylam { get; set; }
+        public string? ParselGeometrisiGeoJson { get; set; }
         public bool Taslak { get; set; }
     }
 

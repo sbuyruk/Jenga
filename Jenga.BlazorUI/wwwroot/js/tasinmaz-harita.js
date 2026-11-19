@@ -20,7 +20,7 @@ function leafletYukle() {
     return leafletReady;
 }
 
-function bilgiKartlari(noktalar) {
+function bilgiKartlari(noktalar, parsel = false) {
     const root = document.createElement('div');
     for (const nokta of noktalar) {
         const kart = document.createElement('section');
@@ -37,6 +37,14 @@ function bilgiKartlari(noktalar) {
             label.textContent = `${etiket}: `;
             satir.append(label, document.createTextNode(deger || '—'));
             kart.appendChild(satir);
+        }
+        if (parsel) {
+            const detay = document.createElement('a');
+            detay.href = `/tbys/tasinmaz/${nokta.tasinmazId}?geri=%2Ftbys%2Ftasinmaz-kontrol%2Fharita`;
+            detay.textContent = 'Taşınmaz Detayını Aç';
+            kart.appendChild(detay);
+            root.appendChild(kart);
+            continue;
         }
         if (nokta.taslak) {
             const not = document.createElement('p');
@@ -77,24 +85,43 @@ export async function olustur(element) {
     let uyariAcik = false;
     tiles.on('tileerror', () => { if (!uyariAcik) { uyari.addTo(map); uyariAcik = true; } });
     tiles.on('tileload', () => { if (uyariAcik) { uyari.remove(); uyariAcik = false; } });
-    const layer = L.featureGroup().addTo(map);
+    const kontrolKatmani = L.featureGroup().addTo(map);
+    const parselKatmani = L.featureGroup().addTo(map);
+    L.control.layers({}, {
+        'Kontrol konumları': kontrolKatmani,
+        'Parsel sınırları': parselKatmani
+    }, { collapsed: false }).addTo(map);
+
     const sigdir = () => {
-        if (layer.getLayers().length) map.fitBounds(layer.getBounds(), { padding: [35, 35], maxZoom: 16, animate: false });
+        const sinirlar = L.latLngBounds([]);
+        for (const katman of [kontrolKatmani, parselKatmani]) {
+            const katmanSinirlari = katman.getBounds();
+            if (map.hasLayer(katman) && katmanSinirlari.isValid()) sinirlar.extend(katmanSinirlari);
+        }
+        if (sinirlar.isValid()) map.fitBounds(sinirlar, { padding: [35, 35], maxZoom: 16, animate: false });
         else map.setView([39, 35], 6);
     };
     const observer = new ResizeObserver(() => {
         map.invalidateSize();
         sigdir();
-        layer.eachLayer(marker => { if (marker.isPopupOpen()) marker.getPopup().update(); });
+        kontrolKatmani.eachLayer(marker => { if (marker.isPopupOpen()) marker.getPopup().update(); });
+        parselKatmani.eachLayer(parsel => { if (parsel.isPopupOpen()) parsel.getPopup().update(); });
     });
     observer.observe(element);
     let kapali = false;
     return {
         guncelle(noktalar) {
             if (kapali) return;
-            layer.clearLayers();
+            kontrolKatmani.clearLayers();
+            parselKatmani.clearLayers();
             const konumlar = new Map();
+            const parseller = new Map();
             for (const nokta of noktalar) {
+                const geometri = nokta.parselGeometrisiGeoJson;
+                if (geometri) {
+                    if (!parseller.has(geometri)) parseller.set(geometri, []);
+                    parseller.get(geometri).push(nokta);
+                }
                 if (!Number.isFinite(nokta.enlem) || !Number.isFinite(nokta.boylam)) continue;
                 const key = `${nokta.enlem},${nokta.boylam}`;
                 if (!konumlar.has(key)) konumlar.set(key, []);
@@ -105,7 +132,18 @@ export async function olustur(element) {
                 const icon = L.divIcon({ className: 'tasinmaz-isaret', html: grup.length > 1 ? String(grup.length) : '<i class="bi bi-building" aria-hidden="true"></i>', iconSize: [34, 34], iconAnchor: [17, 17] });
                 const title = grup.length > 1 ? `${grup.length} taşınmaz` : `Sicil No: ${nokta.emlakSicilNo || '—'}`;
                 L.marker([nokta.enlem, nokta.boylam], { icon, title, alt: title, keyboard: true })
-                    .bindPopup(bilgiKartlari(grup), { maxWidth: 320, autoPanPadding: [16, 16] }).addTo(layer);
+                    .bindPopup(bilgiKartlari(grup), { maxWidth: 320, autoPanPadding: [16, 16] }).addTo(kontrolKatmani);
+            }
+            for (const [geoJson, grup] of parseller) {
+                try {
+                    const geometri = JSON.parse(geoJson);
+                    if (!['Polygon', 'MultiPolygon'].includes(geometri?.type)) continue;
+                    L.geoJSON(geometri, { style: { color: '#0f766e', weight: 2, fillOpacity: 0.22 } })
+                        .bindPopup(() => bilgiKartlari(grup, true), { maxWidth: 320, autoPanPadding: [16, 16] })
+                        .addTo(parselKatmani);
+                } catch (error) {
+                    console.warn('Parsel sınırı çizilemedi.', grup.map(nokta => nokta.tasinmazId), error);
+                }
             }
             sigdir();
         },

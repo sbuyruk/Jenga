@@ -8,6 +8,9 @@ namespace Jenga.Models.TBYS
     [Table("Tasinmaz_Table")]
     public class Tasinmaz : BaseModel
     {
+        [Column("ParselGeometrisiGeoJson")]
+        public string? ParselGeometrisiGeoJson { get; set; }
+
         [Column("Cinsi")]
         public string? Cinsi { get; set; }
 
