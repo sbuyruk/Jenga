@@ -32,9 +32,10 @@
     /* Site içinde mi + site adı + sosyal donatılar + aidat = 3+5+9+3. */
     .kontrol-site-kisa { grid-column: span 3; }
     .kontrol-site-donati { grid-column: span 9; }
-    /* Ulaşım + çevre yapılaşma + gelişme eğilimi + koordinat = 6+6+4+4. */
-    .kontrol-konum-metin { grid-column: span 6; }
-    .kontrol-konum-kisa { grid-column: span 4; }
+    /* İlk satır: ulaşım ve çevre; ikinci satır: gelişme, koordinat ve deprem bölgesi. */
+    .kontrol-konum-metin { grid-column: span 10; }
+    .kontrol-konum-kisa { grid-column: span 6; }
+    .kontrol-konum-koordinat { grid-column: span 8; }
     /* Tesis türü + adı + uzaklığı = 6+10+4. */
     .kontrol-tesis-tur { grid-column: span 6; }
     .kontrol-tesis-ad { grid-column: span 10; }
