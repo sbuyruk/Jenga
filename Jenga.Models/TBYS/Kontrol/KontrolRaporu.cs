@@ -179,6 +179,7 @@ namespace Jenga.Models.TBYS.Kontrol
             AlaniSonrasinaEkle(tanim, "t_yevmiye", ZeminTipi(0));
             AlaniSonrasinaEkle(tanim, "bbo_salon", Mutfak(0));
             AlaniSonrasinaEkle(tanim, "bbo_zemin", Esya(0));
+            AlaniSonrasinaEkle(tanim, "konum_koordinat", DepremBolgesi(0));
             var bagimsizBolum = tanim.Bolumler.FirstOrDefault(b => b.Kod == "bb_ozellik");
             if (bagimsizBolum is not null && !bagimsizBolum.Gruplar.Any(g => g.Kod == "bb_olculer"))
                 bagimsizBolum.Gruplar.Add(Olculer(bagimsizBolum.Gruplar.Select(g => g.Sira).DefaultIfEmpty(0).Max() + 1));
@@ -340,6 +341,7 @@ namespace Jenga.Models.TBYS.Kontrol
             Alan(b10, "konum_cevre", "Çevre Yapılaşma", KontrolAlanTipi.UzunMetin);
             Secim(b10, "konum_gelisme", "Bölgenin Gelişme Eğilimi", false, "Gelisen|Gelişen", "Durgun|Durgun", "Gerileyen|Gerileyen");
             Alan(b10, "konum_koordinat", "Koordinat", KontrolAlanTipi.KisaMetin);
+            b10.Alanlar.Add(DepremBolgesi(b10.Alanlar.Count + 1));
 
             // 11. Yakın çevre tesisleri
             var b11 = Bolum("yakin_cevre", "Yakın Çevre Tesisleri");
@@ -483,6 +485,16 @@ namespace Jenga.Models.TBYS.Kontrol
             VeriKaynagi = KontrolVeriKaynagiTipi.TasinmazSaltOkunur,
             TasinmazAlani = "ZeminTipi",
             Sira = sira
+        };
+
+        private static KontrolAlanTanimi DepremBolgesi(int sira) => new()
+        {
+            Kod = "konum_deprem_bolgesi",
+            Baslik = "Deprem Bölgesi",
+            Tip = KontrolAlanTipi.TekliSecim,
+            Sira = sira,
+            Secenekler = new[] { "1", "2", "3", "4" }
+                .Select((s, i) => new KontrolSecenekTanimi { Kod = s, Etiket = s, Sira = i + 1 }).ToList()
         };
 
         private static KontrolAlanTanimi EnerjiKimlikBelgesi(int sira) => new()

@@ -15,6 +15,42 @@ namespace Jenga.BlazorUI.Tests;
 public class KontrolFormTests
 {
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task DepremBolgesi_YeniVeEskiRaporlardaSecilebilir(bool eskiRapor)
+    {
+        var tanim = KontrolRaporu.Olustur();
+        if (eskiRapor)
+        {
+            tanim.Bolumler.Single(b => b.Kod == "konum").Alanlar.RemoveAll(a => a.Kod == "konum_deprem_bolgesi");
+            var snapshot = JsonSerializer.Serialize(new Dictionary<string, string?> { [KontrolRaporu.EskiAlanlarAnahtari] = tanim.ToJson() });
+            tanim = KontrolRaporu.TanimAl(snapshot);
+        }
+        var bolum = tanim.Bolumler.Single(b => b.Kod == "konum");
+        var alan = Assert.Single(bolum.Alanlar, a => a.Kod == "konum_deprem_bolgesi");
+        Assert.Equal(KontrolAlanTipi.TekliSecim, alan.Tip);
+        Assert.Equal(new[] { "1", "2", "3", "4" }, alan.Secenekler.Select(s => s.Kod));
+        Assert.Equal(tanim.AlanBul("konum_koordinat")!.Sira + 1, alan.Sira);
+        var cevaplar = new KontrolCevaplari();
+        var sadeceKonum = new KontrolFormTanimi { Bolumler = [bolum] };
+        Assert.Empty(KontrolFormDogrulayici.CevaplariDogrula(sadeceKonum, cevaplar, (_, _) => 0, true));
+        foreach (var secim in new[] { "1", "2", "3", "4" })
+        {
+            cevaplar.Koy(alan.Kod, secim);
+            Assert.Empty(KontrolFormDogrulayici.CevaplariDogrula(sadeceKonum, cevaplar, (_, _) => 0, true));
+            Assert.Equal(secim, KontrolCevaplari.FromJson(cevaplar.ToJson()).Al(alan.Kod));
+        }
+        var html = System.Net.WebUtility.HtmlDecode(await RenderAsync(tanim, cevaplar, [bolum]));
+        Assert.Contains("Deprem Bölgesi", html);
+        Assert.Matches("<select[^>]*id=\"f_konum_deprem_bolgesi_x\"", html);
+        Assert.Contains(KontrolFormAdimlari.AlanAra(KontrolFormAdimlari.Olustur(tanim), "Deprem Bölgesi"), a => a.AlanKodu == alan.Kod);
+        cevaplar.Koy(alan.Kod, "5");
+        Assert.NotEmpty(KontrolFormDogrulayici.CevaplariDogrula(sadeceKonum, cevaplar, (_, _) => 0, true));
+        var tekrarSnapshot = JsonSerializer.Serialize(new Dictionary<string, string?> { [KontrolRaporu.EskiAlanlarAnahtari] = tanim.ToJson() });
+        Assert.Single(KontrolRaporu.TanimAl(tekrarSnapshot).TumAlanlar(), a => a.Kod == alan.Kod);
+    }
+
+    [Theory]
     [InlineData("39.925533, 32.866287", "39.925533%2C32.866287")]
     [InlineData("-33.8688; 151.2093", "-33.8688%2C151.2093")]
     [InlineData(" 0 0 ", "0%2C0")]
