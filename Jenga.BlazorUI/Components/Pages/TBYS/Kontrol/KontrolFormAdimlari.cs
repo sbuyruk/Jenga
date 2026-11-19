@@ -36,7 +36,7 @@ public static class KontrolFormAdimlari
             .ToList();
     }
 
-    private static string AramaMetni(string metin) => new string(metin.Normalize(NormalizationForm.FormD)
+    internal static string AramaMetni(string metin) => new string(metin.Normalize(NormalizationForm.FormD)
         .Where(c => CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
         .Select(char.ToLowerInvariant).ToArray()).Replace('ı', 'i');
 

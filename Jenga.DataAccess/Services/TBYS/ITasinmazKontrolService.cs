@@ -3,6 +3,20 @@ using Jenga.Utility.Results;
 
 namespace Jenga.DataAccess.Services.TBYS
 {
+    public sealed class TasinmazHaritaNoktasi
+    {
+        public int TasinmazId { get; set; }
+        public int KontrolId { get; set; }
+        public string? EmlakSicilNo { get; set; }
+        public string? Adres { get; set; }
+        public string? Cinsi { get; set; }
+        public string? Ili { get; set; }
+        public string? Ilcesi { get; set; }
+        public decimal Enlem { get; set; }
+        public decimal Boylam { get; set; }
+        public bool Taslak { get; set; }
+    }
+
     /// <summary>Liste satırı: kontrol + taşınmaz özet bilgisi.</summary>
     public sealed class TasinmazKontrolOzet
     {
@@ -94,6 +108,7 @@ namespace Jenga.DataAccess.Services.TBYS
     /// </summary>
     public interface ITasinmazKontrolService
     {
+        Task<Result<List<TasinmazHaritaNoktasi>>> GetHaritaNoktalariAsync(CancellationToken cancellationToken = default);
         Task<Result<List<TasinmazKontrolOzet>>> GetListeAsync(int? tasinmazId = null, KontrolDurumu? durum = null, CancellationToken cancellationToken = default);
         Task<Result<TasinmazKontrol>> GetByIdAsync(int id, CancellationToken cancellationToken = default);
         Task<Result<List<TasinmazKontrolEk>>> GetEklerAsync(int kontrolId, CancellationToken cancellationToken = default);
