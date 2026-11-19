@@ -17,6 +17,17 @@
 .kontrol-tasinmaz dt { font-size: .65rem; font-weight: 400; color: var(--kontrol-soluk); margin-bottom: .2rem; }
 .kontrol-tasinmaz dd { font-size: .8rem; font-weight: 600; margin: 0; }
 .kontrol-araclar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
+.kontrol-alan-arama { flex: 1 1 250px; max-width: 480px; min-width: 0; }
+.kontrol-alan-arama .input-group-text { background: var(--bs-body-bg); color: var(--kontrol-soluk); }
+.kontrol-arama-sonuclari { margin-bottom: 1.25rem; border: 1px solid var(--bs-border-color); border-radius: 10px; padding: 1rem; background: var(--bs-body-bg); }
+.kontrol-arama-ozet { color: var(--kontrol-soluk); font-size: .75rem; margin-bottom: .5rem; }
+.kontrol-arama-sonuclari ul { list-style: none; padding: 0; margin: 0; max-height: 22rem; overflow-y: auto; }
+.kontrol-arama-sonuclari li + li { border-top: 1px solid var(--bs-border-color); }
+.kontrol-arama-sonuclari button { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: .75rem; border: 0; border-radius: 6px; background: transparent; color: var(--bs-body-color); padding: .65rem; text-align: left; }
+.kontrol-arama-sonuclari button:hover { background: var(--bs-tertiary-bg); }
+.kontrol-arama-sonuclari strong { display: block; font-size: .85rem; }
+.kontrol-arama-sonuclari small { display: block; font-size: .7rem; color: var(--kontrol-soluk); overflow-wrap: anywhere; margin-top: .15rem; }
+.kontrol-arama-vurgu { outline: 2px solid var(--bs-info); outline-offset: 4px; border-radius: 6px; background: var(--bs-info-bg-subtle); scroll-margin-block: 6rem; }
 .kontrol-gorunum { display: inline-flex; background: var(--bs-tertiary-bg); padding: 4px; border-radius: 9px; }
 .kontrol-gorunum button { border: 0; background: transparent; padding: .45rem .85rem; border-radius: 6px; color: var(--kontrol-soluk); font-size: .75rem; }
 .kontrol-gorunum button.secili { background: var(--bs-body-bg); color: var(--bs-body-color); box-shadow: 0 1px 4px #173b4b12; font-weight: 600; }
@@ -84,6 +95,7 @@
     .kontrol-sonraki { display: none; }
 }
 @media (max-width: 767.98px) {
+    .kontrol-alan-arama { max-width: none; flex-basis: 100%; order: 1; }
     .kontrol-editor { grid-template-columns: minmax(0, 1fr); }
     .kontrol-gezgin nav { flex-direction: row; flex-wrap: wrap; }
     .kontrol-adim { width: auto; flex: 1 1 44%; padding: .6rem; gap: .5rem; }

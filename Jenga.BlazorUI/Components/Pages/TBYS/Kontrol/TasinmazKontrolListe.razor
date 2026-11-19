@@ -64,6 +64,7 @@ else if (_sekme == 0)
                           RowClassSelector="@(p => p.AcikTaslakId is not null ? "table-warning" : p.Gecikmis ? "table-danger" : null)"
                           SearchTextSelector="@(p => $"{p.EmlakSicilNo} {p.Adres} {p.AdaNo} {p.ParselNo} {p.Cinsi} {p.Ili} {p.Ilcesi} {p.BolgeAdi}")">
                 <HeaderTemplate>
+                    <th>Bölge</th>
                     <th style="min-width:230px">İşlem</th>
                     <th>Durum</th>
                     <th style="min-width:220px">Adres</th>
@@ -72,12 +73,12 @@ else if (_sekme == 0)
                     <th>Cinsi</th>
                     <th>İli</th>
                     <th>İlçesi</th>
-                    <th>Bölge</th>
                     <th>Kontrol Sıklığı</th>
                     <th>Son Kontrol</th>
                     <th>Sonraki Kontrol</th>
                 </HeaderTemplate>
                 <RowTemplate Context="p">
+                    <td>@p.BolgeAdi</td>
                     <td>
                         @if (p.AcikTaslakId is not null)
                         {
@@ -101,7 +102,6 @@ else if (_sekme == 0)
                     <td>@p.Cinsi</td>
                     <td>@p.Ili</td>
                     <td>@p.Ilcesi</td>
-                    <td>@p.BolgeAdi</td>
                     <td>@KontrolPeriyodu.Etiket(p.PeriyotSure, p.PeriyotBirim)</td>
                     <td>@(p.SonKontrolId is null ? "—" : "")@if (p.SonKontrolId is not null) { <a href="/tbys/tasinmaz-kontrol/@p.SonKontrolId">@p.SonKontrolTarihi?.ToString("d", Tr)</a> }</td>
                     <td class="@(p.Gecikmis ? "fw-bold text-danger" : "")">@(p.SonrakiKontrolTarihi?.ToString("d", Tr) ?? "—")</td>
@@ -127,6 +127,7 @@ else
                           OnRowClicked="SatirTiklandi"
                           SearchTextSelector="@(k => $"{k.RaporNo} {k.EmlakSicilNo} {k.Cinsi} {k.Ili} {k.Ilcesi} {k.BolgeAdi} {k.KontrolEdenler}")">
                 <HeaderTemplate>
+                    <th>Bölge</th>
                     <th>#</th>
                     <th>Rapor No</th>
                     <th>Durum</th>
@@ -134,11 +135,11 @@ else
                     <th>Sicil No</th>
                     <th>Cinsi</th>
                     <th>İli / İlçesi</th>
-                    <th>Bölge</th>
                     <th>Kontrol Edenler</th>
                     <th>Sonraki</th>
                 </HeaderTemplate>
                 <RowTemplate Context="k">
+                    <td>@k.BolgeAdi</td>
                     <td><a href="/tbys/tasinmaz-kontrol/@k.Id">#@k.Id</a>@if (k.RevizeEdilenKontrolId is not null) { <small class="text-muted"> (rev. #@k.RevizeEdilenKontrolId)</small> }</td>
                     <td>@(k.RaporNo ?? "—")</td>
                     <td><span class="badge @TasinmazKontrolDetay.DurumRenk(k.Durum)">@TasinmazKontrolDetay.DurumEtiket(k.Durum)</span></td>
@@ -146,7 +147,6 @@ else
                     <td>@k.EmlakSicilNo</td>
                     <td>@k.Cinsi</td>
                     <td>@k.Ili / @k.Ilcesi</td>
-                    <td>@k.BolgeAdi</td>
                     <td>@k.KontrolEdenler</td>
                     <td>@(k.SonrakiKontrolTarihi?.ToString("d", Tr) ?? "—")</td>
                 </RowTemplate>
@@ -186,14 +186,15 @@ else
 @code {
     private static readonly CultureInfo Tr = new("tr-TR");
     private static readonly string[] PlanExportHeaders =
-        ["Durum", "Adres", "Ada", "Parsel", "Cinsi", "İli", "İlçesi", "Bölge", "Kontrol Sıklığı", "Son Kontrol", "Sonraki Kontrol"];
+        ["Bölge", "Durum", "Adres", "Ada", "Parsel", "Cinsi", "İli", "İlçesi", "Kontrol Sıklığı", "Son Kontrol", "Sonraki Kontrol"];
     private static readonly string[] KontrolExportHeaders =
-        ["#", "Rapor No", "Durum", "Tarih", "Sicil No", "Cinsi", "İli / İlçesi", "Bölge", "Kontrol Edenler", "Sonraki"];
+        ["Bölge", "#", "Rapor No", "Durum", "Tarih", "Sicil No", "Cinsi", "İli / İlçesi", "Kontrol Edenler", "Sonraki"];
 
     private static IReadOnlyList<object?> BuildPlanExportRow(TasinmazPlanOzet p) =>
     [
+        p.BolgeAdi,
         p.AcikTaslakId is not null ? "Taslak açık" : p.Gecikmis ? "Gecikmiş" : p.SonrakiKontrolTarihi is null ? "Plansız" : "Planlı",
-        p.Adres, p.AdaNo, p.ParselNo, p.Cinsi, p.Ili, p.Ilcesi, p.BolgeAdi,
+        p.Adres, p.AdaNo, p.ParselNo, p.Cinsi, p.Ili, p.Ilcesi,
         KontrolPeriyodu.Etiket(p.PeriyotSure, p.PeriyotBirim),
         p.SonKontrolId is null ? "—" : p.SonKontrolTarihi?.ToString("d", Tr),
         p.SonrakiKontrolTarihi?.ToString("d", Tr) ?? "—"
@@ -201,9 +202,10 @@ else
 
     private static IReadOnlyList<object?> BuildKontrolExportRow(TasinmazKontrolOzet k) =>
     [
+        k.BolgeAdi,
         $"#{k.Id}" + (k.RevizeEdilenKontrolId is null ? "" : $" (rev. #{k.RevizeEdilenKontrolId})"),
         k.RaporNo ?? "—", TasinmazKontrolDetay.DurumEtiket(k.Durum), k.KontrolTarihi.ToString("d", Tr),
-        k.EmlakSicilNo, k.Cinsi, $"{k.Ili} / {k.Ilcesi}", k.BolgeAdi, k.KontrolEdenler,
+        k.EmlakSicilNo, k.Cinsi, $"{k.Ili} / {k.Ilcesi}", k.KontrolEdenler,
         k.SonrakiKontrolTarihi?.ToString("d", Tr) ?? "—"
     ];
 

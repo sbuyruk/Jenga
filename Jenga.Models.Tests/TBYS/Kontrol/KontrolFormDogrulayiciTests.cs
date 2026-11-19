@@ -67,10 +67,10 @@ namespace Jenga.Models.Tests.TBYS.Kontrol
     public class KontrolRaporuTests
     {
         [Fact]
-        public void SabitRapor_AlanKodlariBenzersizVe19Bolum()
+        public void SabitRapor_AlanKodlariBenzersizVe20Bolum()
         {
             var f = KontrolRaporu.Olustur();
-            Assert.Equal(19, f.Bolumler.Count);
+            Assert.Equal(20, f.Bolumler.Count);
             var kodlar = f.TumAlanlar().Select(a => a.Kod).ToList();
             Assert.Equal(kodlar.Count, kodlar.Distinct(StringComparer.OrdinalIgnoreCase).Count());
         }

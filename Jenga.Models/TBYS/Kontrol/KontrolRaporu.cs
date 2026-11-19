@@ -146,13 +146,76 @@ namespace Jenga.Models.TBYS.Kontrol
         public const PeriyotBirimi VarsayilanPeriyotBirim = PeriyotBirimi.Yil;
         public const string EskiAlanlarAnahtari = "_kontrolAlanlari";
 
+        private static readonly string[] IsitmaSecenekleri =
+        [
+            "Yok", "Soba", "Doğalgaz Sobası", "Kat Kaloriferi", "Merkezi", "Merkezi (Pay Ölçer)",
+            "Kombi Doğalgaz", "Kombi Elektrik", "Yerden Isıtma", "Klima", "Fancoil Ünitesi",
+            "Güneş Enerjisi", "Elektrikli Radyatör", "Jeotermal", "Şömine", "VRV", "Isı Pompası"
+        ];
+
+        private static readonly string[] DisCepheSecenekleri =
+        [
+            "Dış Sıva ve Boyalar",
+            "Yapıştırıcıyla tespit edilen plaka halindeki kaplamalar",
+            "Konstrüksiyon sistemiyle uygulanan plaka halindeki kaplamalar",
+            "Prefabrik duvar panelleri",
+            "Giydirme Cepheler"
+        ];
+
         /// <summary>Geçişten önceki raporların alanları kendi kayıtlarından, yenilerin alanları sabit formdan okunur.</summary>
-        public static KontrolFormTanimi TanimAl(string? snapshotJson)
+        public static KontrolFormTanimi TanimAl(string? snapshotJson, string? cevaplarJson = null)
         {
             var snapshot = SnapshotOku(snapshotJson);
-            return snapshot.TryGetValue(EskiAlanlarAnahtari, out var json) && !string.IsNullOrWhiteSpace(json)
+            var tanim = snapshot.TryGetValue(EskiAlanlarAnahtari, out var json) && !string.IsNullOrWhiteSpace(json)
                 ? KontrolFormTanimi.FromJson(json)
                 : Olustur();
+            var cevaplar = KontrolCevaplari.FromJson(cevaplarJson);
+            var isitma = SecimAlaniniGuncelle(tanim, "bina_isitma", "Isıtma Sistemi", IsitmaSecenekleri, cevaplar);
+            if (isitma is not null)
+            {
+                AlaniSonrasinaEkle(tanim, "bina_isitma", EnerjiKimlikBelgesi(0));
+            }
+            SecimAlaniniGuncelle(tanim, "bbo_cephe", "Dış Cephe", DisCepheSecenekleri, cevaplar);
+            AlaniSonrasinaEkle(tanim, "t_yevmiye", ZeminTipi(0));
+            AlaniSonrasinaEkle(tanim, "bbo_salon", Mutfak(0));
+            AlaniSonrasinaEkle(tanim, "bbo_zemin", Esya(0));
+            var bagimsizBolum = tanim.Bolumler.FirstOrDefault(b => b.Kod == "bb_ozellik");
+            if (bagimsizBolum is not null && !bagimsizBolum.Gruplar.Any(g => g.Kod == "bb_olculer"))
+                bagimsizBolum.Gruplar.Add(Olculer(bagimsizBolum.Gruplar.Select(g => g.Sira).DefaultIfEmpty(0).Max() + 1));
+            if (!tanim.Bolumler.Any(b => b.Kod == "tasinmaz_belgeleri"))
+            {
+                var sira = tanim.Bolumler.FirstOrDefault(b => b.Kod == "kroki")?.Sira
+                    ?? tanim.Bolumler.Select(b => b.Sira).DefaultIfEmpty(0).Max() + 1;
+                foreach (var bolum in tanim.Bolumler.Where(b => b.Sira >= sira)) bolum.Sira++;
+                tanim.Bolumler.Add(TasinmazBelgeleri(sira));
+            }
+            return tanim;
+        }
+
+        private static KontrolAlanTanimi? SecimAlaniniGuncelle(KontrolFormTanimi tanim, string kod, string baslik,
+            string[] secenekler, KontrolCevaplari cevaplar)
+        {
+            var alan = tanim.AlanBul(kod);
+            if (alan is null) return null;
+            alan.Baslik = baslik;
+            alan.Tip = KontrolAlanTipi.TekliSecim;
+            alan.Secenekler = secenekler.Select((s, i) => new KontrolSecenekTanimi { Kod = s, Etiket = s, Sira = i + 1 }).ToList();
+            // Önceden serbest metinle girilen değer, seçimi değiştirilmeden de görüntülenip kaydedilebilir.
+            var kayitli = cevaplar.Al(kod);
+            if (!string.IsNullOrWhiteSpace(kayitli) && !alan.Secenekler.Any(s => s.Kod == kayitli))
+                alan.Secenekler.Add(new() { Kod = kayitli, Etiket = $"{kayitli} (Kayıtlı değer)", Sira = secenekler.Length + 1 });
+            return alan;
+        }
+
+        private static void AlaniSonrasinaEkle(KontrolFormTanimi tanim, string oncekiKod, KontrolAlanTanimi yeni)
+        {
+            if (tanim.AlanBul(yeni.Kod) is not null) return;
+            var bolum = tanim.Bolumler.FirstOrDefault(b => b.Alanlar.Any(a => a.Kod == oncekiKod));
+            if (bolum is null) return;
+            var index = bolum.Alanlar.FindIndex(a => a.Kod == oncekiKod);
+            yeni.Sira = bolum.Alanlar[index].Sira + 1;
+            foreach (var alan in bolum.Alanlar.Where(a => a.Sira >= yeni.Sira)) alan.Sira++;
+            bolum.Alanlar.Insert(index + 1, yeni);
         }
 
         public static (int? Sure, PeriyotBirimi? Birim) PeriyotAl(string? snapshotJson)
@@ -208,6 +271,7 @@ namespace Jenga.Models.TBYS.Kontrol
             Kaynak(b3, "t_kat_irtifaki", "Kat İrtifakı", "KatIrtifaki");
             Kaynak(b3, "t_tapu_tarihi", "Tapu Tarihi", "TapuTarihi");
             Kaynak(b3, "t_yevmiye", "Yevmiye No", "YevmiyeNo");
+            b3.Alanlar.Add(ZeminTipi(b3.Alanlar.Count + 1));
 
             // 4. Bağımsız bölüm (taşınmazdan)
             var b4 = Bolum("bagimsiz_bolum", "Bağımsız Bölüm Bilgileri");
@@ -245,19 +309,23 @@ namespace Jenga.Models.TBYS.Kontrol
             Secim(b7, "bina_otopark", "Otopark", false,
                 "Acik|Açık Otopark Var", "Kapali|Kapalı Otopark Var", "AcikVeKapali|Açık ve Kapalı Otopark Var",
                 "Hayir|Yok", "Uygulanamaz|Uygulanamaz");
-            Alan(b7, "bina_isitma", "Isıtma Sistemi", KontrolAlanTipi.KisaMetin);
+            Secim(b7, "bina_isitma", "Isıtma Sistemi", false, IsitmaSecenekleri);
+            b7.Alanlar.Add(EnerjiKimlikBelgesi(b7.Alanlar.Count + 1));
             Alan(b7, "bina_aciklama", "Bina Açıklaması", KontrolAlanTipi.UzunMetin);
 
             // 8. Bağımsız bölüm özellikleri
             var b8 = Bolum("bb_ozellik", "Bağımsız Bölüm Özellikleri");
             Alan(b8, "bbo_oda", "Oda Sayısı", KontrolAlanTipi.KisaMetin);
             Alan(b8, "bbo_salon", "Salon Sayısı", KontrolAlanTipi.TamSayi);
+            b8.Alanlar.Add(Mutfak(b8.Alanlar.Count + 1));
             Alan(b8, "bbo_banyo", "Banyo/WC Sayısı", KontrolAlanTipi.TamSayi);
             Alan(b8, "bbo_balkon", "Balkon", KontrolAlanTipi.EvetHayir);
-            Alan(b8, "bbo_cephe", "Cephe", KontrolAlanTipi.KisaMetin);
+            Secim(b8, "bbo_cephe", "Dış Cephe", false, DisCepheSecenekleri);
             Alan(b8, "bbo_zemin", "Zemin Kaplaması", KontrolAlanTipi.KisaMetin);
+            b8.Alanlar.Add(Esya(b8.Alanlar.Count + 1));
             Secim(b8, "bbo_durum", "Genel Durum", false, "Iyi|İyi", "Orta|Orta", "Kotu|Kötü");
             Alan(b8, "bbo_aciklama", "Açıklama", KontrolAlanTipi.UzunMetin);
+            b8.Gruplar.Add(Olculer(b8.Gruplar.Count + 1));
 
             // 9. Site / sosyal donatı
             var b9 = Bolum("site", "Site ve Sosyal Donatılar");
@@ -291,6 +359,8 @@ namespace Jenga.Models.TBYS.Kontrol
             Alan(g12, "emsal_uzaklik", "Konu Taşınmaza Uzaklığı (m)", KontrolAlanTipi.OndalikSayi, birim: "m");
             Alan(g12, "emsal_kaynak", "Kaynak / İrtibat", KontrolAlanTipi.KisaMetin);
             Alan(g12, "emsal_aciklama", "Açıklama", KontrolAlanTipi.UzunMetin);
+
+            t.Bolumler.Add(TasinmazBelgeleri(++bs));
 
             // 13. Kroki
             var b13 = Bolum("kroki", "Kroki");
@@ -352,6 +422,78 @@ namespace Jenga.Models.TBYS.Kontrol
 
             return t;
         }
+
+        private static KontrolBolumTanimi TasinmazBelgeleri(int sira) => new()
+        {
+            Kod = "tasinmaz_belgeleri",
+            Baslik = "Taşınmaza İlişkin Belgeler",
+            Sira = sira,
+            Gruplar =
+            [
+                new()
+                {
+                    Kod = "tasinmaz_belge_satirlari", Baslik = "Belgeler", Tekrarlanabilir = true, Sira = 1,
+                    Alanlar =
+                    [
+                        new() { Kod = "tasinmaz_belge_ad", Baslik = "Belge Adı", Tip = KontrolAlanTipi.KisaMetin, Zorunlu = true, Sira = 1 },
+                        new() { Kod = "tasinmaz_belge_ek", Baslik = "Belge Dosyası", Tip = KontrolAlanTipi.Ek, Zorunlu = true, Sira = 2 }
+                    ]
+                }
+            ]
+        };
+
+        private static KontrolGrupTanimi Olculer(int sira) => new()
+        {
+            Kod = "bb_olculer",
+            Baslik = "Ölçüler (Metrekare)",
+            Tekrarlanabilir = true,
+            Sira = sira,
+            Alanlar =
+            [
+                new() { Kod = "bbo_olcu_ad", Baslik = "Bölüm / Oda", Tip = KontrolAlanTipi.KisaMetin, Zorunlu = true, Sira = 1 },
+                new() { Kod = "bbo_olcu_alan", Baslik = "Alan", Birim = "m²", Tip = KontrolAlanTipi.OndalikSayi, Zorunlu = true, Sira = 2 }
+            ]
+        };
+
+        private static KontrolAlanTanimi Esya(int sira) => new()
+        {
+            Kod = "bbo_esya",
+            Baslik = "Eşya",
+            Tip = KontrolAlanTipi.TekliSecim,
+            Sira = sira,
+            Secenekler = new[] { "Var", "Yok" }
+                .Select((s, i) => new KontrolSecenekTanimi { Kod = s, Etiket = s, Sira = i + 1 }).ToList()
+        };
+
+        private static KontrolAlanTanimi Mutfak(int sira) => new()
+        {
+            Kod = "bbo_mutfak",
+            Baslik = "Mutfak",
+            Tip = KontrolAlanTipi.TekliSecim,
+            Sira = sira,
+            Secenekler = new[] { "Açık (Amerikan)", "Kapalı", "Diğer" }
+                .Select((s, i) => new KontrolSecenekTanimi { Kod = s, Etiket = s, Sira = i + 1 }).ToList()
+        };
+
+        private static KontrolAlanTanimi ZeminTipi(int sira) => new()
+        {
+            Kod = "t_zemin_tipi",
+            Baslik = "Zemin Tipi",
+            Tip = KontrolAlanTipi.KisaMetin,
+            VeriKaynagi = KontrolVeriKaynagiTipi.TasinmazSaltOkunur,
+            TasinmazAlani = "ZeminTipi",
+            Sira = sira
+        };
+
+        private static KontrolAlanTanimi EnerjiKimlikBelgesi(int sira) => new()
+        {
+            Kod = "bina_enerji_kimlik",
+            Baslik = "Enerji Kimlik Belgesi",
+            Tip = KontrolAlanTipi.TekliSecim,
+            Sira = sira,
+            Secenekler = new[] { "YOK", "A", "B", "C", "D", "E", "F", "G" }
+                .Select((s, i) => new KontrolSecenekTanimi { Kod = s, Etiket = s, Sira = i + 1 }).ToList()
+        };
 
         private static KontrolAlanTanimi Alan(KontrolBolumTanimi b, string kod, string baslik, KontrolAlanTipi tip, bool zorunlu = false, string? birim = null)
         {

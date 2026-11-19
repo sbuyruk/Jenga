@@ -1,6 +1,7 @@
 @using Jenga.Models.TBYS.Kontrol
 @using Jenga.DataAccess.Services.TBYS
 @using System.Globalization
+@inject IJSRuntime JS
 
 @foreach (var bolum in (Bolumler ?? Tanim.Bolumler).OrderBy(b => b.Sira))
 {
@@ -18,6 +19,7 @@
                         <li>Taşınmazın tadilata ihtiyacı var mı?</li>
                         <li>Kira bedeli rayice uygun mu?</li>
                         <li>DASK yapılması gerekli mi?</li>
+                        <li>Taşınmaza İlişkin Hukuki İşlem Var mı?</li>
                         <li>Taşınmazın kiraya verilebilirliği ve satış niteliği nasıl değerlendiriliyor?</li>
                         <li>Bilinmesi gereken çevresel faktörler var mı?</li>
                         <li>Tarla ve arsaların değerlendirilmesine ilişkin öneriler nelerdir?</li>
@@ -29,7 +31,8 @@
                 <div class="kontrol-alanlar">
                     @foreach (var alan in bolum.Alanlar.OrderBy(a => a.Sira))
                     {
-                        <div class="kontrol-alan @KontrolFormAdimlari.AlanGenisligi(alan)">
+                        <div @key="alan.Kod" class="kontrol-alan @KontrolFormAdimlari.AlanGenisligi(alan) @(SeciliAlanKodu == alan.Kod ? "kontrol-alan-secili" : "")"
+                             tabindex="-1" @ref="_alanReferanslari[alan.Kod]">
                             @RenderAlan(alan, () => Cevaplar.Al(alan.Kod), v => Cevaplar.Alanlar[alan.Kod] = v, null, null)
                         </div>
                     }
@@ -39,7 +42,8 @@
             @foreach (var grup in bolum.Gruplar.OrderBy(g => g.Sira))
             {
                 var satirlar = Satirlar(grup);
-                <div class="mt-3">
+                <div @key="grup.Kod" class="mt-3 @(SeciliGrupKodu == grup.Kod && satirlar.Count == 0 ? "kontrol-alan-secili" : "")"
+                     tabindex="-1" @ref="_grupReferanslari[grup.Kod]">
                     <div class="d-flex align-items-center mb-2">
                         <strong class="me-auto">@grup.Baslik</strong>
                         @if (!ReadOnly && grup.Tekrarlanabilir)
@@ -52,27 +56,46 @@
                     @if (satirlar.Count == 0)
                     {
                         <div class="text-muted small fst-italic">Kayıt yok.</div>
+                        @if (SeciliGrupKodu == grup.Kod && !ReadOnly)
+                        {
+                            <div class="small mt-1">Aradığınız “@grup.Alanlar.FirstOrDefault(a => a.Kod == SeciliAlanKodu)?.Baslik” alanını doldurmak için Satır Ekle düğmesini kullanabilirsiniz.</div>
+                        }
                     }
                     @for (int i = 0; i < satirlar.Count; i++)
                     {
                         var idx = i;
                         var satir = satirlar[idx];
-                        <div class="border rounded p-2 mb-2 bg-light-subtle">
-                            <div class="d-flex align-items-center mb-1">
-                                <small class="text-muted me-auto">#@(idx + 1)</small>
-                                @if (!ReadOnly && grup.Tekrarlanabilir)
-                                {
-                                    <button type="button" class="btn btn-sm btn-link text-danger p-0" @onclick="async () => { satirlar.RemoveAt(idx); await OnChanged.InvokeAsync(); }" title="Satırı sil"><i class="bi bi-trash"></i></button>
-                                }
-                            </div>
+                        <div class="border rounded p-2 mb-2 bg-light-subtle @(grup.Kod == "bb_olculer" ? "kontrol-olcu-satiri" : "")">
+                            @if (grup.Kod != "bb_olculer")
+                            {
+                                <div class="d-flex align-items-center mb-1">
+                                    <small class="text-muted me-auto">#@(idx + 1)</small>
+                                    @if (!ReadOnly && grup.Tekrarlanabilir)
+                                    {
+                                        var belgeEkleriVar = grup.Kod == "tasinmaz_belge_satirlari" && Ekler.Any(e => e.GrupKodu == grup.Kod && e.SatirNo >= idx);
+                                        <button type="button" class="btn btn-sm btn-link text-danger p-0" disabled="@belgeEkleriVar" @onclick="async () => { satirlar.RemoveAt(idx); await OnChanged.InvokeAsync(); }" title="@(belgeEkleriVar ? "Bu ve sonraki satırların dosyalarını kaldırdıktan sonra satırı silebilirsiniz." : "Satırı sil")"><i class="bi bi-trash"></i></button>
+                                    }
+                                </div>
+                            }
                             <div class="kontrol-alanlar">
                                 @foreach (var alan in grup.Alanlar.OrderBy(a => a.Sira))
                                 {
-                                    <div class="kontrol-alan @KontrolFormAdimlari.AlanGenisligi(alan)">
+                                    <div class="kontrol-alan @KontrolFormAdimlari.AlanGenisligi(alan) @(SeciliAlanKodu == alan.Kod ? "kontrol-alan-secili" : "")" tabindex="-1">
                                         @RenderAlan(alan, () => satir.TryGetValue(alan.Kod, out var v) ? v : null, v => { satir[alan.Kod] = v; Cevaplar.Gruplar[grup.Kod] = satirlar; }, grup.Kod, idx)
                                     </div>
                                 }
                             </div>
+                            @if (grup.Kod == "bb_olculer" && !ReadOnly && grup.Tekrarlanabilir)
+                            {
+                                <button type="button" class="btn btn-sm btn-outline-danger kontrol-olcu-sil" @onclick="async () => { satirlar.RemoveAt(idx); await OnChanged.InvokeAsync(); }" title="Ölçü satırını sil" aria-label="Ölçü satırını sil"><i class="bi bi-trash" aria-hidden="true"></i></button>
+                            }
+                        </div>
+                    }
+                    @if (grup.Kod == "bb_olculer")
+                    {
+                        <div class="kontrol-olcu-toplam" role="status" aria-live="polite">
+                            <span>Toplam Alan (m²)</span>
+                            <output aria-label="Toplam Alan (m²)">@(ToplamAlan(satirlar)?.ToString("N2", CultureInfo.GetCultureInfo("tr-TR")) ?? "Hesaplanamadı")</output>
                         </div>
                     }
                 </div>
@@ -87,12 +110,27 @@
     [Parameter] public bool ReadOnly { get; set; }
     [Parameter] public IReadOnlyList<KontrolBolumTanimi>? Bolumler { get; set; }
     [Parameter] public EventCallback OnChanged { get; set; }
+    [Parameter] public string? SeciliAlanKodu { get; set; }
+    [Parameter] public string? SeciliGrupKodu { get; set; }
     [Parameter] public IReadOnlyList<TasinmazKontrolEk> Ekler { get; set; } = Array.Empty<TasinmazKontrolEk>();
     /// <summary>BölgePersoneli tipli alanlar için seçenekler (amir başta).</summary>
     [Parameter] public IReadOnlyList<BolgePersoneli> BolgePersonelleri { get; set; } = Array.Empty<BolgePersoneli>();
     /// <summary>Ek alanı için yükleme UI'ı (alanKodu, grupKodu, satirNo).</summary>
     [Parameter] public RenderFragment<(string AlanKodu, string? GrupKodu, int? SatirNo)>? EkYukleTemplate { get; set; }
     [Parameter] public EventCallback<TasinmazKontrolEk> OnEkSil { get; set; }
+
+    private readonly Dictionary<string, ElementReference> _alanReferanslari = new();
+    private readonly Dictionary<string, ElementReference> _grupReferanslari = new();
+
+    public async Task<bool> AlanaOdaklanAsync(string alanKodu, string? grupKodu)
+    {
+        if ((grupKodu is null ? _alanReferanslari : _grupReferanslari).TryGetValue(grupKodu ?? alanKodu, out var hedef))
+        {
+            await hedef.FocusAsync();
+            return true;
+        }
+        return false;
+    }
 
     private List<Dictionary<string, string?>> Satirlar(KontrolGrupTanimi grup)
     {
@@ -197,7 +235,95 @@
                 <input id="@id" type="text" class="form-control form-control-sm" disabled="@saltOkunur" value="@deger" @oninput="e => YazAsync(e.Value?.ToString())" />
                 break;
         }
+        @if (alan.Kod == "konum_koordinat")
+        {
+            var haritaAdresi = HaritaAdresi(deger);
+            <div class="d-flex flex-wrap gap-2 mt-2">
+                @if (!saltOkunur)
+                {
+                    <button type="button" class="btn btn-sm btn-outline-primary" disabled="@_konumAliniyor" @onclick="KonumAlAsync">
+                        <i class="bi bi-geo-alt me-1" aria-hidden="true"></i>@(_konumAliniyor ? "Konum alınıyor…" : "Bulunduğum Konumu Al")
+                    </button>
+                }
+                @if (haritaAdresi is not null)
+                {
+                    <a class="btn btn-sm btn-outline-secondary" href="@haritaAdresi" target="_blank" rel="noopener noreferrer"><i class="bi bi-map me-1" aria-hidden="true"></i>Haritada Göster</a>
+                }
+                else
+                {
+                    <button type="button" class="btn btn-sm btn-outline-secondary" @onclick='() => _haritaHatasi = "Geçerli bir enlem, boylam girin. Örnek: 39.925533, 32.866287"'><i class="bi bi-map me-1" aria-hidden="true"></i>Haritada Göster</button>
+                }
+            </div>
+            @if (_haritaHatasi is not null && haritaAdresi is null)
+            {
+                <div class="text-danger small mt-1" role="alert">@_haritaHatasi</div>
+            }
+            @if (_konumHatasi is not null)
+            {
+                <div class="text-danger small mt-1" role="alert">@_konumHatasi</div>
+            }
+        }
     };
+
+    private bool _konumAliniyor;
+    private string? _konumHatasi;
+    private string? _haritaHatasi;
+
+    private static string? HaritaAdresi(string? koordinat)
+    {
+        if (string.IsNullOrWhiteSpace(koordinat)) return null;
+        var eslesme = System.Text.RegularExpressions.Regex.Match(koordinat,
+            @"^\s*([+-]?\d+(?:\.\d+)?)(?:\s*[,;]\s*|\s+)([+-]?\d+(?:\.\d+)?)\s*$");
+        if (!eslesme.Success
+            || !decimal.TryParse(eslesme.Groups[1].Value, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var enlem)
+            || !decimal.TryParse(eslesme.Groups[2].Value, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var boylam)
+            || enlem is < -90 or > 90 || boylam is < -180 or > 180) return null;
+        var sorgu = $"{enlem.ToString(CultureInfo.InvariantCulture)},{boylam.ToString(CultureInfo.InvariantCulture)}";
+        return $"https://www.google.com/maps/search/?api=1&query={Uri.EscapeDataString(sorgu)}";
+    }
+
+    public sealed class KonumSonucu
+    {
+        public string? Koordinat { get; set; }
+        public string? Hata { get; set; }
+    }
+
+    private async Task KonumAlAsync()
+    {
+        var alan = Tanim.AlanBul("konum_koordinat");
+        if (_konumAliniyor || ReadOnly || alan is null || alan.VeriKaynagi == KontrolVeriKaynagiTipi.TasinmazSaltOkunur) return;
+        var cevaplar = Cevaplar;
+        _konumAliniyor = true;
+        _konumHatasi = null;
+        try
+        {
+            var sonuc = await JS.InvokeAsync<KonumSonucu>("kontrolKonum.al");
+            if (ReadOnly || !ReferenceEquals(cevaplar, Cevaplar)) return;
+            if (string.IsNullOrWhiteSpace(sonuc?.Koordinat))
+                _konumHatasi = sonuc?.Hata ?? "Konum alınamadı. Yeniden deneyin.";
+            else
+            {
+                Cevaplar.Koy("konum_koordinat", sonuc.Koordinat);
+                await OnChanged.InvokeAsync();
+            }
+        }
+        catch (JSException) { _konumHatasi = "Konum alınamadı. Yeniden deneyin."; }
+        catch (OperationCanceledException) { _konumHatasi = "Konum isteği zaman aşımına uğradı. Yeniden deneyin."; }
+        finally { _konumAliniyor = false; }
+    }
+
+    private static decimal? ToplamAlan(IEnumerable<Dictionary<string, string?>> satirlar)
+    {
+        decimal toplam = 0;
+        foreach (var satir in satirlar)
+        {
+            var deger = SayiNormalize(satir.GetValueOrDefault("bbo_olcu_alan"));
+            if (!decimal.TryParse(deger, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var alan)) continue;
+            try { toplam += alan; }
+            catch (OverflowException) { return null; }
+        }
+        return toplam;
+    }
 
     private static string? SayiNormalize(string? s)
     {
