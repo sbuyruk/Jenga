@@ -64,15 +64,15 @@ else if (_sekme == 0)
                           RowClassSelector="@(p => p.AcikTaslakId is not null ? "table-warning" : p.Gecikmis ? "table-danger" : null)"
                           SearchTextSelector="@(p => $"{p.EmlakSicilNo} {p.Adres} {p.AdaNo} {p.ParselNo} {p.Cinsi} {p.Ili} {p.Ilcesi} {p.BolgeAdi}")">
                 <HeaderTemplate>
-                    <th>Bölge</th>
-                    <th style="min-width:230px">İşlem</th>
-                    <th>Durum</th>
-                    <th style="min-width:220px">Adres</th>
-                    <th>Cinsi</th>
-                    <th>İli / İlçesi</th>
-                    <th>Kontrol Sıklığı</th>
-                    <th>Son Kontrol</th>
-                    <th>Sonraki Kontrol</th>
+                    <th style="width:12%">Bölge</th>
+                    <th style="width:14%">İşlem</th>
+                    <th style="width:6%">Durum</th>
+                    <th style="width:30%">Adres</th>
+                    <th style="width:7%">Cinsi</th>
+                    <th style="width:10%">İli / İlçesi</th>
+                    <th style="width:7%">Kontrol Sıklığı</th>
+                    <th style="width:7%">Son Kontrol</th>
+                    <th style="width:7%">Sonraki Kontrol</th>
                 </HeaderTemplate>
                 <RowTemplate Context="p">
                     <td>@p.BolgeAdi</td>
