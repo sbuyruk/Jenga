@@ -237,7 +237,7 @@
         }
         @if (alan.Kod == "konum_koordinat")
         {
-            var haritaAdresi = HaritaAdresi(deger);
+            var haritaAdresi = KontrolKoordinat.GoogleHaritaAdresi(deger);
             <div class="d-flex flex-wrap gap-2 mt-2">
                 @if (!saltOkunur)
                 {
@@ -253,6 +253,7 @@
                 {
                     <button type="button" class="btn btn-sm btn-outline-secondary" @onclick='() => _haritaHatasi = "Geçerli bir enlem, boylam girin. Örnek: 39.925533, 32.866287"'><i class="bi bi-map me-1" aria-hidden="true"></i>Haritada Göster</button>
                 }
+                <a class="btn btn-sm btn-outline-secondary" href="/tbys/tasinmaz-kontrol/harita" target="_blank" rel="noopener noreferrer">Tüm Taşınmazlar</a>
             </div>
             @if (_haritaHatasi is not null && haritaAdresi is null)
             {
@@ -268,19 +269,6 @@
     private bool _konumAliniyor;
     private string? _konumHatasi;
     private string? _haritaHatasi;
-
-    private static string? HaritaAdresi(string? koordinat)
-    {
-        if (string.IsNullOrWhiteSpace(koordinat)) return null;
-        var eslesme = System.Text.RegularExpressions.Regex.Match(koordinat,
-            @"^\s*([+-]?\d+(?:\.\d+)?)(?:\s*[,;]\s*|\s+)([+-]?\d+(?:\.\d+)?)\s*$");
-        if (!eslesme.Success
-            || !decimal.TryParse(eslesme.Groups[1].Value, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var enlem)
-            || !decimal.TryParse(eslesme.Groups[2].Value, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var boylam)
-            || enlem is < -90 or > 90 || boylam is < -180 or > 180) return null;
-        var sorgu = $"{enlem.ToString(CultureInfo.InvariantCulture)},{boylam.ToString(CultureInfo.InvariantCulture)}";
-        return $"https://www.google.com/maps/search/?api=1&query={Uri.EscapeDataString(sorgu)}";
-    }
 
     public sealed class KonumSonucu
     {

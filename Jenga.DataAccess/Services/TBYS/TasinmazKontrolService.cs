@@ -76,6 +76,48 @@ namespace Jenga.DataAccess.Services.TBYS
 
         // ----------------------------------------------------------------- Sorgular
 
+        /// <summary>Her yetkili taşınmazın iptal/revizyon dışındaki en güncel geçerli koordinatı.</summary>
+        public async Task<Result<List<TasinmazHaritaNoktasi>>> GetHaritaNoktalariAsync(CancellationToken cancellationToken = default)
+        {
+            var yetki = await CheckAsync(ModuleName.TBYS, Operation.View, cancellationToken);
+            if (yetki is not null) return Result<List<TasinmazHaritaNoktasi>>.Failure(yetki.Error);
+            try
+            {
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+                var tasinmazlar = BolgeyeGoreFiltrele(db, await YetkiliBolgelerAsync(cancellationToken));
+                var sorgu = from k in db.TasinmazKontrol_Table.AsNoTracking()
+                            join t in tasinmazlar on k.TasinmazId equals t.Id
+                            where k.Durum == KontrolDurumu.Taslak || k.Durum == KontrolDurumu.Tamamlandi
+                            orderby k.KontrolTarihi descending, k.Id descending
+                            select new { k.Id, k.TasinmazId, k.CevaplarJson, k.Durum,
+                                t.EmlakSicilNo, t.Adres, t.Cinsi, t.Ili, t.Ilcesi };
+                var noktalar = new List<TasinmazHaritaNoktasi>();
+                var eklenenler = new HashSet<int>();
+                await foreach (var satir in sorgu.AsAsyncEnumerable().WithCancellation(cancellationToken))
+                {
+                    if (eklenenler.Contains(satir.TasinmazId)) continue;
+                    string? koordinat;
+                    try { koordinat = KontrolCevaplari.FromJson(satir.CevaplarJson).Al("konum_koordinat"); }
+                    catch (Exception ex) when (ex is System.Text.Json.JsonException or ArgumentNullException) { continue; }
+                    if (!KontrolKoordinat.TryParse(koordinat, out var enlem, out var boylam)) continue;
+                    eklenenler.Add(satir.TasinmazId);
+                    noktalar.Add(new()
+                    {
+                        TasinmazId = satir.TasinmazId, KontrolId = satir.Id,
+                        EmlakSicilNo = satir.EmlakSicilNo, Adres = satir.Adres, Cinsi = satir.Cinsi,
+                        Ili = satir.Ili, Ilcesi = satir.Ilcesi, Enlem = enlem, Boylam = boylam,
+                        Taslak = satir.Durum == KontrolDurumu.Taslak
+                    });
+                }
+                return Result<List<TasinmazHaritaNoktasi>>.Success(noktalar);
+            }
+            catch (Exception ex)
+            {
+                _logService.LogError($"{Source}.GetHaritaNoktalariAsync hata.", ex);
+                return Result<List<TasinmazHaritaNoktasi>>.Failure(Error.Unexpected("Taşınmaz haritası bilgileri alınamadı.", ex));
+            }
+        }
+
         public async Task<Result<List<BolgePersoneli>>> GetBolgePersoneliAsync(int tasinmazId, CancellationToken cancellationToken = default)
         {
             try

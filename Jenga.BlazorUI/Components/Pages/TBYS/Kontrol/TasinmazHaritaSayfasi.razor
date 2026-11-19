@@ -1,0 +1,9 @@
+@page "/tbys/tasinmaz-kontrol/harita"
+@rendermode InteractiveServer
+@using Jenga.BlazorUI.Components.Common
+@using Jenga.Models.Enums
+
+<PageTitle>Taşınmaz Haritası</PageTitle>
+<PermissionGuard Module="ModuleName.TBYS" Operation="Operation.View">
+    <TasinmazHarita />
+</PermissionGuard>

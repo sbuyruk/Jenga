@@ -8,11 +8,66 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Xunit;
+using Jenga.DataAccess.Services.Common;
+using Jenga.Models.Enums;
 
 namespace Jenga.BlazorUI.Tests;
 
 public class KontrolPlanTests
 {
+    [Fact]
+    public async Task Harita_YetkiliTasinmazlarinSonGecerliKoordinatiniVeTemelBilgileriniGetirir()
+    {
+        await using var factory = await Database.AcAsync();
+        await using (var db = factory.CreateDbContext())
+        {
+            db.Bolge_Table.AddRange(new Bolge { Id = 1, Adi = "Yetkili", KisaAdi = "YT" }, new Bolge { Id = 2, Adi = "Diğer", KisaAdi = "DG" });
+            db.Il_Table.AddRange(new Il { Id = 1, BolgeId = 1, IlAdi = "Ankara" }, new Il { Id = 2, BolgeId = 2, IlAdi = "İzmir" });
+            var t = await db.Tasinmaz_Table.SingleAsync();
+            t.IlId = 1; t.EmlakSicilNo = "S-1"; t.Adres = "Test adresi"; t.Cinsi = "Mesken"; t.Ili = "Ankara"; t.Ilcesi = "Çankaya";
+            db.Tasinmaz_Table.AddRange(new Tasinmaz { Id = 2, IlId = 1 }, new Tasinmaz { Id = 3, IlId = 2 }, new Tasinmaz { Id = 4, IlId = 1 });
+            var ilk = await db.TasinmazKontrol_Table.SingleAsync();
+            ilk.KontrolTarihi = new(2020, 1, 1); ilk.CevaplarJson = KoordinatJson("38, 31");
+            db.TasinmazKontrol_Table.AddRange(
+                Rapor(2, 1, "39, 32", KontrolDurumu.Tamamlandi),
+                Rapor(3, 1, "40, 33"),
+                Rapor(4, 1, "91, 34"),
+                Rapor(5, 1, "41, 34", KontrolDurumu.IptalEdildi),
+                Rapor(6, 1, "42, 35", KontrolDurumu.RevizeEdildi),
+                Rapor(7, 2, "40, 33"),
+                Rapor(8, 3, "38, 27"),
+                Rapor(9, 4, "koordinat yok"));
+            var bozuk = Rapor(10, 1, ""); bozuk.CevaplarJson = "bozuk JSON";
+            db.TasinmazKontrol_Table.Add(bozuk);
+            await db.SaveChangesAsync();
+        }
+        var servis = Servis(factory, new HaritaYetkisi(true, [1]));
+        var sonuc = await servis.GetHaritaNoktalariAsync();
+        Assert.True(sonuc.IsSuccess, sonuc.IsFailure ? sonuc.Error.Message : "");
+        Assert.Equal(new[] { 1, 2 }, sonuc.Value.Select(n => n.TasinmazId).OrderBy(id => id));
+        var nokta = Assert.Single(sonuc.Value, n => n.TasinmazId == 1);
+        Assert.Equal(3, nokta.KontrolId);
+        Assert.Equal(40m, nokta.Enlem); Assert.Equal(33m, nokta.Boylam);
+        Assert.Equal("S-1", nokta.EmlakSicilNo); Assert.Equal("Test adresi", nokta.Adres);
+        Assert.Equal("Mesken", nokta.Cinsi); Assert.Equal("Ankara", nokta.Ili); Assert.Equal("Çankaya", nokta.Ilcesi);
+        Assert.True(nokta.Taslak);
+        Assert.Empty((await Servis(factory, new HaritaYetkisi(true, [])).GetHaritaNoktalariAsync()).Value);
+        Assert.True((await Servis(factory, new HaritaYetkisi(false, [1, 2])).GetHaritaNoktalariAsync()).IsFailure);
+    }
+
+    private static string KoordinatJson(string deger)
+    {
+        var cevaplar = new KontrolCevaplari(); cevaplar.Koy("konum_koordinat", deger); return cevaplar.ToJson();
+    }
+    private static TasinmazKontrol Rapor(int id, int tasinmazId, string koordinat, KontrolDurumu durum = KontrolDurumu.Taslak)
+        => new() { Id = id, TasinmazId = tasinmazId, KontrolTarihi = new(2026, 1, 1), Durum = durum, CevaplarJson = KoordinatJson(koordinat) };
+    private sealed class HaritaYetkisi(bool izin, IReadOnlyList<int> bolgeler) : IServiceAuthorizationContext
+    {
+        public Task<bool> HasPermissionAsync(ModuleName module, Operation operation, CancellationToken cancellationToken = default) => Task.FromResult(izin);
+        public Task<string?> GetUserNameAsync(CancellationToken cancellationToken = default) => Task.FromResult<string?>("Test");
+        public Task<IReadOnlyList<int>> GetAuthorizedRegionIdsAsync(CancellationToken cancellationToken = default) => Task.FromResult(bolgeler);
+    }
+
     [Theory]
     [InlineData("1Yil", 1)]
     [InlineData("3Yil", 3)]
@@ -59,8 +114,8 @@ public class KontrolPlanTests
         Assert.True((await servis.TamamlaAsync(istek)).IsSuccess);
     }
 
-    private static TasinmazKontrolService Servis(Database factory) => new(factory, new DbContextScopeFactory(factory),
-        new DosyaSistemiKontrolEkDeposu(new ConfigurationBuilder().Build()), new NullLogService());
+    private static TasinmazKontrolService Servis(Database factory, IServiceAuthorizationContext? auth = null) => new(factory, new DbContextScopeFactory(factory),
+        new DosyaSistemiKontrolEkDeposu(new ConfigurationBuilder().Build()), new NullLogService(), auth);
 
     private static KontrolTamamlaIstegi Istek(string kod)
     {

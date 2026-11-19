@@ -22,6 +22,7 @@
         <li class="nav-item"><button class="nav-link py-1 @(_sekme == 1 ? "active" : "")" @onclick="() => SekmeDegistirAsync(1)" disabled="@_loading">Kontrol Geçmişi</button></li>
     </ul>
     <div class="ms-auto d-flex gap-2 align-items-center">
+        <a class="btn btn-sm btn-outline-primary" href="/tbys/tasinmaz-kontrol/harita"><i class="bi bi-map me-1"></i>Taşınmaz Haritası</a>
         @if (_sekme == 0)
         {
             <div class="form-check form-check-sm mb-0">
