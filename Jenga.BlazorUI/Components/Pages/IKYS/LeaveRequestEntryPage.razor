@@ -1,170 +1,287 @@
 @page "/ikys/leave-request-entry"
 @page "/ikys/leave-request-entry/{RequestId:int}"
 @rendermode InteractiveServer
+@using Jenga.BlazorUI.Services.Common
 @using Jenga.DataAccess.Services.IKYS
 @using Jenga.Models.IKYS
+@using static Jenga.BlazorUI.Components.IKYS.LeaveRequestDisplay
 @inject ILeaveRequestWorkflow Workflow
+@inject ICurrentUserService CurrentUser
+@inject IToastService ToastService
+@inject NavigationManager Navigation
 
 <PageTitle>@Title</PageTitle>
 
-<PermissionGuard Module="ModuleName.IKYS" Operation="@(Office ? Operation.Manage : RequestId.HasValue ? Operation.Edit : Operation.Create)">
-    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-        <h3 class="mb-0">@Title</h3>
-        <a class="btn btn-outline-secondary" href="@ListUrl">@(ReturnsToOffice ? "İKYS İşlem Listesi" : "İzin Taleplerim")</a>
-    </div>
+<PermissionGuard Module="ModuleName.IKYS" Operation="@(RequestId.HasValue ? Operation.Edit : Operation.Create)">
+    <div class="leave-entry-page">
+        <header class="leave-entry-header">
+            <div class="leave-entry-title">
+                <span class="leave-entry-title-icon" aria-hidden="true"><i class="bi bi-calendar2-check"></i></span>
+                <h1>@Title</h1>
+            </div>
+            <a class="btn btn-outline-secondary leave-entry-back" href="@ListUrl">
+                <i class="bi bi-arrow-left" aria-hidden="true"></i>
+                @(ReturnsToOffice ? "İKYS İşlem Listesi" : "İzin Taleplerim")
+            </a>
+        </header>
 
-    @if (_feedback is not null)
-    {
-        <div class="alert @_feedbackClass" role="status">@_feedback</div>
-    }
-    @if (_loading)
-    {
-        <JengaLoading Message="İzin talebi formu yükleniyor…" />
-    }
-    else if (_form is { } form && !_saved)
-    {
-        <EditForm Model="form.Input" OnValidSubmit="SaveAsync">
-            <ValidationSummary class="text-danger" />
-            <fieldset class="card card-body" disabled="@_busy">
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label" for="leave-person">Personel</label>
-                        <InputSelect id="leave-person" class="form-select" @bind-Value="form.Input.PersonelId" @bind-Value:after="ClearCalculation"
-                                     disabled="@(!Office || RequestId.HasValue)">
-                            <option value="">Personel seçiniz</option>
-                            @foreach (var person in form.People)
-                            {
-                                <option value="@person.Id">@person.Name</option>
-                            }
-                        </InputSelect>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label" for="leave-type">İzin türü</label>
-                        <InputSelect id="leave-type" class="form-select" @bind-Value="form.Input.Type" @bind-Value:after="ClearCalculation"
-                                     disabled="@RequestId.HasValue">
-                            <option value="">İzin türü seçiniz</option>
-                            @foreach (var type in form.Types)
-                            {
-                                <option value="@((LeaveType)type.Id)">@type.Name</option>
-                            }
-                        </InputSelect>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label" for="leave-start">@(IsPersonal ? "İzin tarihi" : "Başlangıç tarihi")</label>
-                        <InputDate id="leave-start" class="form-control" @bind-Value="form.Input.StartDate" @bind-Value:after="ClearCalculation" />
-                    </div>
-                    @if (!IsPersonal)
-                    {
-                        <div class="col-md-6">
-                            <label class="form-label" for="leave-end">Bitiş tarihi</label>
-                            <InputDate id="leave-end" class="form-control" @bind-Value="form.Input.EndDate" @bind-Value:after="ClearCalculation" />
-                        </div>
-                    }
-                    @if (IsPersonal || IsNursing)
-                    {
-                        <div class="col-md-6">
-                            <label class="form-label" for="leave-start-time">Başlangıç saati</label>
-                            <InputDate id="leave-start-time" class="form-control" Type="InputDateType.Time" step="300" min="08:00" max="17:00"
-                                       @bind-Value="form.Input.StartTime" @bind-Value:after="ClearCalculation" />
-                        </div>
-                        @if (IsPersonal)
+        @if (_feedback is not null)
+        {
+            <div class="alert @_feedbackClass mb-0" role="status">@_feedback</div>
+        }
+        @if (_loading)
+        {
+            <JengaLoading Message="İzin talebi formu yükleniyor…" />
+        }
+        else if (_form is { } form && !_saved)
+        {
+            var pendingRequests = form.Input.Type is { } selectedType
+                ? _pendingRequests.Where(request => request.Type == (int)selectedType).ToList()
+                : [];
+
+            @if (_pendingLoadFailed && form.Input.Type.HasValue)
+            {
+                <div class="alert alert-warning mb-0" role="status">İşlemi devam eden izin talepleri getirilemedi.</div>
+            }
+            @if (pendingRequests.Count > 0)
+            {
+                <section class="leave-entry-existing" aria-labelledby="leave-existing-heading">
+                    <h2 id="leave-existing-heading">
+                        <i class="bi bi-clock-history" aria-hidden="true"></i> İşlemi devam eden izin talepleri
+                    </h2>
+                    <ul class="leave-entry-existing-list">
+                        @foreach (var request in pendingRequests)
                         {
-                            <div class="col-md-6">
-                                <label class="form-label" for="leave-end-time">Bitiş saati</label>
-                                <InputDate id="leave-end-time" class="form-control" Type="InputDateType.Time" step="300" min="08:00" max="17:00"
-                                           @bind-Value="form.Input.EndTime" @bind-Value:after="ClearCalculation" />
+                            <li @key="request.Id">
+                                <strong>@request.TypeName</strong>
+                                <span>@FormatDate(request.Start, request.Type) – @FormatDate(request.End, request.Type)</span>
+                                <span>@DurationText(request.Duration, request.Unit)</span>
+                                <span class="leave-entry-existing-status">@StatusText(request.Status)</span>
+                                <a class="leave-entry-existing-link" href="@PendingRequestUrl(request.Id)">Talebi Aç</a>
+                            </li>
+                        }
+                    </ul>
+                </section>
+            }
+
+            <EditForm Model="form.Input" OnValidSubmit="SaveAsync">
+                <ValidationSummary class="leave-entry-validation text-danger" />
+                <fieldset class="leave-entry-layout" disabled="@_busy" aria-busy="@(_busy ? "true" : "false")">
+                    <div class="leave-entry-fields">
+                        <section class="leave-entry-section" aria-labelledby="leave-basics-heading">
+                            <h2 id="leave-basics-heading">Talep bilgileri</h2>
+                            <div class="leave-entry-grid">
+                                <div>
+                                    <label class="form-label" for="leave-person">Personel</label>
+                                    <InputSelect id="leave-person" class="form-select" @bind-Value="form.Input.PersonelId" @bind-Value:after="OnPersonnelChangedAsync"
+                                                 disabled="@(!_canManage || RequestId.HasValue)">
+                                        <option value="">Personel seçiniz</option>
+                                        @foreach (var person in form.People)
+                                        {
+                                            <option value="@person.Id">@person.Name</option>
+                                        }
+                                    </InputSelect>
+                                </div>
+                                <div>
+                                    <label class="form-label" for="leave-type">İzin türü</label>
+                                    <InputSelect id="leave-type" class="form-select" @bind-Value="form.Input.Type" @bind-Value:after="ClearCalculation"
+                                                 disabled="@RequestId.HasValue">
+                                        <option value="">İzin türü seçiniz</option>
+                                        @foreach (var type in form.Types)
+                                        {
+                                            <option value="@((LeaveType)type.Id)">@type.Name</option>
+                                        }
+                                    </InputSelect>
+                                </div>
                             </div>
-                        }
-                        else
-                        {
-                            <p class="col-md-6 text-body-secondary align-self-end mb-2">Süt izni seçilen saatte başlar ve günde 90 dakika uygulanır.</p>
-                        }
-                    }
-                    @if (form.Input.Type.HasValue)
-                    {
-                        @if (!IsPersonal && !IsNursing)
-                        {
-                            <div class="col-md-6">
-                                <label class="form-label" for="leave-substitute">Vekil</label>
-                                <InputSelect id="leave-substitute" class="form-select" @bind-Value="form.Input.SubstituteId">
-                                    <option value="">Vekil seçiniz</option>
-                                    @foreach (var signer in form.Substitutes)
+                        </section>
+
+                        <section class="leave-entry-section" aria-labelledby="leave-dates-heading">
+                            <h2 id="leave-dates-heading">İzin tarihleri</h2>
+                            <div class="leave-entry-grid">
+                                <div>
+                                    <label class="form-label" for="leave-start">@(IsPersonal ? "İzin tarihi" : "Başlangıç tarihi")</label>
+                                    <InputDate id="leave-start" class="form-control" @bind-Value="form.Input.StartDate" @bind-Value:after="ClearCalculation" />
+                                </div>
+                                @if (!IsPersonal)
+                                {
+                                    <div>
+                                        <label class="form-label" for="leave-end">Bitiş tarihi</label>
+                                        <InputDate id="leave-end" class="form-control" @bind-Value="form.Input.EndDate" @bind-Value:after="ClearCalculation" />
+                                    </div>
+                                }
+                                @if (IsPersonal || IsNursing)
+                                {
+                                    <div>
+                                        <label class="form-label" for="leave-start-time">Başlangıç saati</label>
+                                        <InputDate id="leave-start-time" class="form-control" Type="InputDateType.Time" step="300" min="08:00" max="17:00"
+                                                   @bind-Value="form.Input.StartTime" @bind-Value:after="ClearCalculation" />
+                                    </div>
+                                    @if (IsPersonal)
                                     {
-                                        <option value="@signer.Id">@signer.Name</option>
+                                        <div>
+                                            <label class="form-label" for="leave-end-time">Bitiş saati</label>
+                                            <InputDate id="leave-end-time" class="form-control" Type="InputDateType.Time" step="300" min="08:00" max="17:00"
+                                                       @bind-Value="form.Input.EndTime" @bind-Value:after="ClearCalculation" />
+                                        </div>
                                     }
-                                </InputSelect>
-                            </div>
-                        }
-                        @if (!IsNursing)
-                        {
-                            <div class="col-md-6">
-                                <label class="form-label" for="leave-manager">Amir</label>
-                                <InputSelect id="leave-manager" class="form-select" @bind-Value="form.Input.ManagerId">
-                                    <option value="">Amir seçiniz</option>
-                                    @foreach (var signer in form.Signers)
+                                    else
                                     {
-                                        <option value="@signer.Id">@signer.Name</option>
+                                        <p class="leave-entry-helper leave-entry-wide">Süt izni seçilen saatte başlar ve günde 90 dakika uygulanır.</p>
                                     }
-                                </InputSelect>
+                                }
                             </div>
-                        }
-                        <div class="col-12">
-                            <label class="form-label" for="leave-address">@(IsPersonal ? "Mazeret" : "İzin adresi")</label>
-                            <InputTextArea id="leave-address" class="form-control" rows="2" @bind-Value="form.Input.Address" />
-                        </div>
-                        @if (!IsPersonal)
+                        </section>
+
+                        @if (form.Input.Type.HasValue)
                         {
-                            <div class="col-12">
-                                <label class="form-label" for="leave-description">Açıklama</label>
-                                <InputTextArea id="leave-description" class="form-control" rows="2" @bind-Value="form.Input.Description" />
-                            </div>
+                            <section class="leave-entry-section" aria-labelledby="leave-detail-heading">
+                                <h2 id="leave-detail-heading">İzin ayrıntıları</h2>
+                                <div class="leave-entry-grid">
+                                    @if (!IsPersonal && !IsNursing)
+                                    {
+                                        <div>
+                                            <label class="form-label" for="leave-substitute">Vekil</label>
+                                            <InputSelect id="leave-substitute" class="form-select" @bind-Value="form.Input.SubstituteId">
+                                                <option value="">Vekil seçiniz</option>
+                                                @foreach (var signer in form.Substitutes)
+                                                {
+                                                    <option value="@signer.Id">@signer.Name</option>
+                                                }
+                                            </InputSelect>
+                                        </div>
+                                    }
+                                    @if (!IsNursing)
+                                    {
+                                        <div>
+                                            <label class="form-label" for="leave-manager">Amir</label>
+                                            <InputSelect id="leave-manager" class="form-select" @bind-Value="form.Input.ManagerId">
+                                                <option value="">Amir seçiniz</option>
+                                                @foreach (var signer in form.Signers)
+                                                {
+                                                    <option value="@signer.Id">@signer.Name</option>
+                                                }
+                                            </InputSelect>
+                                        </div>
+                                    }
+                                    <div class="leave-entry-wide">
+                                        <label class="form-label" for="leave-address">@(IsPersonal ? "Mazeret" : "İzin adresi")</label>
+                                        <InputTextArea id="leave-address" class="form-control" rows="2" @bind-Value="form.Input.Address" />
+                                    </div>
+                                    @if (!IsPersonal)
+                                    {
+                                        <div class="leave-entry-wide">
+                                            <label class="form-label" for="leave-description">Açıklama</label>
+                                            <InputTextArea id="leave-description" class="form-control" rows="2" @bind-Value="form.Input.Description" />
+                                        </div>
+                                    }
+                                </div>
+                            </section>
                         }
-                    }
-                    @if (Office)
-                    {
-                        <div class="col-12">
-                            <div class="form-check">
+                    </div>
+
+                    <aside class="leave-entry-summary" aria-labelledby="leave-summary-heading">
+                        <h2 id="leave-summary-heading"><i class="bi bi-calculator" aria-hidden="true"></i> Süre ve bakiye</h2>
+                        <div aria-live="polite">
+                            @if (_calculation is { } calculation)
+                            {
+                                <dl class="leave-entry-calculation">
+                                    <div class="leave-entry-duration">
+                                        <dt>Talep edilen süre</dt>
+                                        <dd>@DurationText(calculation.Duration, calculation.Unit)</dd>
+                                    </div>
+                                    @if (calculation.Available is not null)
+                                    {
+                                        <div>
+                                            <dt>@(calculation.AvailableAfterPending is null ? "Kullanılabilir bakiye" : "Güncel bakiye")</dt>
+                                            <dd>@calculation.Available @calculation.Unit</dd>
+                                        </div>
+                                    }
+                                    @if (calculation.PendingDuration is { } pendingDuration)
+                                    {
+                                        <div>
+                                            <dt>İşlemi devam eden süre</dt>
+                                            <dd>@pendingDuration @calculation.Unit</dd>
+                                        </div>
+                                    }
+                                    @if (calculation.AvailableAfterPending is { } availableAfterPending)
+                                    {
+                                        <div>
+                                            <dt>Bekleyen talepler düşüldükten sonra</dt>
+                                            <dd>@availableAfterPending @calculation.Unit</dd>
+                                        </div>
+                                    }
+                                    @if (calculation.Remaining is { } remaining)
+                                    {
+                                        <div>
+                                            <dt>Bu talepten sonra kalan</dt>
+                                            <dd>@remaining @calculation.Unit</dd>
+                                        </div>
+                                    }
+                                    @if (calculation.CombinedDuration is { } combinedDuration)
+                                    {
+                                        <div>
+                                            <dt>Bekleyen ve yeni talep toplamı</dt>
+                                            <dd>@combinedDuration @calculation.Unit</dd>
+                                        </div>
+                                    }
+                                </dl>
+                                @if (calculation.BalanceWarning is { } balanceWarning)
+                                {
+                                    <p class="leave-entry-balance-warning">@balanceWarning</p>
+                                }
+                                else if (calculation.PendingDuration is null && pendingRequests.Count > 0)
+                                {
+                                    <p class="leave-entry-helper mt-2">Bu hesapta bekleyen taleplerden düşülecek süre bulunmuyor.</p>
+                                }
+                            }
+                            else
+                            {
+                                <p class="leave-entry-helper">İzin türünü ve tarihleri seçtikten sonra süreyi hesaplayabilirsiniz.</p>
+                            }
+                        </div>
+                        <button type="button" class="btn btn-outline-primary leave-entry-calculate" @onclick="CalculateAsync">
+                            Süreyi Hesapla
+                        </button>
+                    </aside>
+
+                    <footer class="leave-entry-actions">
+                        @if (_canManage)
+                        {
+                            <div class="form-check form-switch leave-entry-notify">
                                 <InputCheckbox id="leave-notify" class="form-check-input" @bind-Value="form.Input.Notify" />
                                 <label class="form-check-label" for="leave-notify">E-posta bildirimi gönder</label>
                             </div>
-                        </div>
-                    }
-                </div>
-
-                @if (_calculation is { } calculation)
-                {
-                    <dl class="row mt-3 mb-0" aria-live="polite">
-                        <dt class="col-sm-4">Talep edilen süre</dt><dd class="col-sm-8">@DisplayDuration(calculation)</dd>
-                        @if (calculation.Available is not null)
-                        {
-                            <dt class="col-sm-4">Kullanılabilir bakiye</dt><dd class="col-sm-8">@calculation.Available @calculation.Unit</dd>
-                            <dt class="col-sm-4">Talepten sonra kalan</dt><dd class="col-sm-8">@calculation.Remaining @calculation.Unit</dd>
                         }
-                    </dl>
-                }
-
-                <div class="d-flex flex-wrap gap-2 mt-3">
-                    <button type="button" class="btn btn-outline-primary" @onclick="CalculateAsync">Süreyi Hesapla</button>
-                    <button type="submit" class="btn btn-primary">@(RequestId.HasValue ? "Değişiklikleri Kaydet" : "Talebi Gönder")</button>
-                </div>
-            </fieldset>
-        </EditForm>
-    }
+                        <button type="submit" class="btn btn-primary leave-entry-submit">
+                            @(RequestId.HasValue ? "Değişiklikleri Kaydet" : "Talebi Gönder")
+                            <i class="bi @(RequestId.HasValue ? "bi-check-lg" : "bi-arrow-right")" aria-hidden="true"></i>
+                        </button>
+                    </footer>
+                </fieldset>
+            </EditForm>
+        }
+    </div>
 </PermissionGuard>
 
 @code {
+    private const string PersonalListUrl = "/ikys/leave-requests";
+
     [Parameter] public int? RequestId { get; set; }
-    [SupplyParameterFromQuery(Name = "office")] public bool Office { get; set; }
     [SupplyParameterFromQuery(Name = "personelId")] public int? SelectedPersonelId { get; set; }
-    [SupplyParameterFromQuery(Name = "returnToPersonal")] public bool ReturnToPersonal { get; set; }
+    [SupplyParameterFromQuery(Name = "returnTo")] public string? ReturnTo { get; set; }
     private string Title => RequestId.HasValue ? "İzin Talebini Düzenle" : "Yeni İzin Talebi";
-    private bool ReturnsToOffice => Office && !ReturnToPersonal;
-    private string ListUrl => ReturnsToOffice ? "/ikys/leave-requests/manage" : "/ikys/leave-requests";
+    private bool ReturnsToOffice => _canManage && string.Equals(ReturnTo, "manage", StringComparison.OrdinalIgnoreCase);
+    private string ListUrl => ReturnsToOffice ? "/ikys/leave-requests/manage" : PersonalListUrl;
+    private string PendingRequestUrl(int id) => $"{PersonalListUrl}{(_canManage ? "/manage" : "")}?requestId={id}";
     private bool IsPersonal => _form?.Input.Type == LeaveType.Personal;
     private bool IsNursing => _form?.Input.Type == LeaveType.Nursing;
-    private bool _ready, _loading = true, _busy, _saved;
+    private bool _ready, _loading = true, _busy, _saved, _canManage;
     private LeaveRequestForm? _form;
     private LeaveCalculation? _calculation;
+    private List<LeaveRequestRow> _pendingRequests = [];
+    private bool _pendingLoadFailed;
+    private int _pendingLoadVersion;
     private string? _feedback;
     private string _feedbackClass = "alert-danger";
 
@@ -186,21 +303,45 @@
         _loading = true;
         _saved = false;
         _form = null;
+        _pendingLoadVersion++;
         ClearCalculation();
-        var result = await Workflow.LoadFormAsync(RequestId, Office);
+        _canManage = await CurrentUser.HasPermissionAsync(ModuleName.IKYS, Operation.Manage);
+        var result = await Workflow.LoadFormAsync(RequestId, _canManage);
         if (result.IsSuccess)
         {
             _form = result.Value;
-            if (Office && !RequestId.HasValue && SelectedPersonelId is { } id)
+            if (_canManage && !RequestId.HasValue && SelectedPersonelId is { } id)
             {
                 if (_form.People.Any(person => person.Id == id))
                     _form.Input.PersonelId = id;
                 else
                     Feedback("Seçilen personel izin girişi için kullanılamıyor. Listeden çalışan bir personel seçiniz.", "alert-warning");
             }
+            await LoadPendingRequestsAsync();
         }
         else Feedback(result.Error.Message, "alert-danger");
         _loading = false;
+    }
+
+    private Task OnPersonnelChangedAsync()
+    {
+        ClearCalculation();
+        return LoadPendingRequestsAsync();
+    }
+
+    private async Task LoadPendingRequestsAsync()
+    {
+        var version = ++_pendingLoadVersion;
+        _pendingRequests = [];
+        _pendingLoadFailed = false;
+        if (_form?.Input is not { PersonelId: > 0 } input) return;
+
+        var lookup = new LeaveRequestInput { Id = input.Id, PersonelId = input.PersonelId, Type = input.Type };
+        var result = await Workflow.ListPendingForEntryAsync(lookup, _canManage);
+        if (version != _pendingLoadVersion) return;
+
+        if (result.IsSuccess) _pendingRequests = result.Value;
+        else _pendingLoadFailed = true;
     }
 
     private async Task CalculateAsync()
@@ -208,7 +349,7 @@
         if (_busy || _form is null) return;
         _busy = true;
         ClearCalculation();
-        var result = await Workflow.CalculateAsync(_form.Input, Office);
+        var result = await Workflow.CalculateAsync(_form.Input, _canManage);
         if (result.IsSuccess) _calculation = result.Value;
         else Feedback(result.Error.Message, "alert-danger");
         _busy = false;
@@ -218,15 +359,19 @@
     {
         if (_busy || _saved || _form is null) return;
         _busy = true;
-        var result = await Workflow.SaveAsync(_form.Input, Office);
+        _feedback = null;
+        var result = await Workflow.SaveAsync(_form.Input, _canManage);
         if (result.IsSuccess)
         {
             _saved = true;
+            Navigation.NavigateTo(PersonalListUrl);
             var message = RequestId.HasValue ? "İzin talebi güncellendi." : "İzin talebi gönderildi.";
-            Feedback(result.Value.NotificationFailed ? message + " E-posta bildirimi gönderilemedi." : message,
-                result.Value.NotificationFailed ? "alert-warning" : "alert-success");
+            if (result.Value.NotificationFailed)
+                ToastService.ShowWarning(message + " E-posta bildirimi gönderilemedi.", 6000);
+            else
+                ToastService.ShowSuccess(message);
         }
-        else Feedback(result.Error.Message, "alert-danger");
+        else ToastService.ShowError(result.Error.Message, 6000);
         _busy = false;
     }
 
@@ -242,7 +387,4 @@
         _feedbackClass = css;
     }
 
-    private static string DisplayDuration(LeaveCalculation calculation) =>
-        calculation.Unit == "Saat" && TimeSpan.TryParse(calculation.Duration, out var time)
-            ? $"{time:hh\\:mm} Saat" : $"{calculation.Duration} {calculation.Unit}";
 }

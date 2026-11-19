@@ -30,7 +30,15 @@ public sealed partial class LeaveRequestWorkflow(
         if (actor.IsFailure) return actor.Error;
 
         var requests = db.IzinTalep_Table.AsNoTracking().Where(x => x.Aktif == true);
-        if (!personnelOffice) requests = requests.Where(x => x.PersonelId == actor.Value.Id);
+        if (personnelOffice)
+        {
+            var workingPersonnelIds = WorkingPersonnel(db).Select(person => (int?)person.Id);
+            requests = requests.Where(request => workingPersonnelIds.Contains(request.PersonelId));
+        }
+        else
+        {
+            requests = requests.Where(x => x.PersonelId == actor.Value.Id);
+        }
         if (filter == LeaveListFilter.General) requests = requests.Where(x => x.IzinTipi != (int)LeaveType.Personal);
         if (filter == LeaveListFilter.Personal) requests = requests.Where(x => x.IzinTipi == (int)LeaveType.Personal);
         if (status.HasValue) requests = requests.Where(x => x.OnayDurumu == status);
@@ -132,13 +140,31 @@ public sealed partial class LeaveRequestWorkflow(
             return new LeaveRequestForm(input, people, types, staff, substitutes);
         }, cancellationToken);
 
+    public Task<Result<List<LeaveRequestRow>>> ListPendingForEntryAsync(LeaveRequestInput input, bool personnelOffice,
+        CancellationToken cancellationToken = default) => RunAsync<List<LeaveRequestRow>>("ListPendingForEntry", async db =>
+    {
+        var target = await ResolveTargetAsync(db, input, personnelOffice, cancellationToken);
+        if (target.IsFailure) return target.Error;
+
+        var requests = PendingRequests(db, target.Value.Person.Id, input.Id)
+            .OrderByDescending(x => x.BaslangicTarihi).ThenByDescending(x => x.Id);
+        return await Rows(db, requests).ToListAsync(cancellationToken);
+    }, cancellationToken);
+
+    private static IQueryable<IzinTalep> PendingRequests(ApplicationDbContext db, int personelId, int excludedId) =>
+        db.IzinTalep_Table.AsNoTracking().Where(x => x.PersonelId == personelId && x.Aktif == true &&
+            x.Id != excludedId &&
+            (x.OnayDurumu == Status.IslemBekliyor || x.OnayDurumu == Status.KontrolEdildi || x.OnayDurumu == Status.DilekceBekleniyor) &&
+            !db.IzinHareket_Table.Any(movement => movement.IzinTalepId == x.Id));
+
     public Task<Result<LeaveCalculation>> CalculateAsync(LeaveRequestInput input, bool personnelOffice,
         CancellationToken cancellationToken = default) => RunAsync<LeaveCalculation>("Calculate", async db =>
     {
         var ct = cancellationToken;
         var target = await ResolveTargetAsync(db, input, personnelOffice, ct);
         if (target.IsFailure) return target.Error;
-        var prepared = await PrepareAsync(db, target.Value.Person, input, target.Value.Request?.OnayDurumu == Status.DilekceBekleniyor, ct);
+        var prepared = await PrepareAsync(db, target.Value.Person, input, target.Value.Request?.OnayDurumu == Status.DilekceBekleniyor,
+            ct, includePending: true);
         return prepared.IsSuccess ? Result.Success(prepared.Value.Calculation) : Result.Failure<LeaveCalculation>(prepared.Error);
     }, cancellationToken);
 

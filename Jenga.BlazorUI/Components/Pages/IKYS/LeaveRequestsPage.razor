@@ -6,6 +6,7 @@
 @using Jenga.BlazorUI.Services.Common
 @using Jenga.DataAccess.Services.IKYS
 @using Jenga.Models.IKYS
+@using static Jenga.BlazorUI.Components.IKYS.LeaveRequestDisplay
 @using Status = Jenga.Models.IKYS.IzinTalep.OnayDurumuTipi
 @inject ILeaveRequestWorkflow Workflow
 @inject ICurrentUserService CurrentUser
@@ -193,6 +194,10 @@
                         @if (PersonnelOffice) { <p>@detail.Row.Person</p> }
                     </div>
                     <span class="leave-status @StatusClass(detail.Row.Status)">@StatusText(detail.Row.Status)</span>
+                    @if (_canEdit && IsPending(detail.Row.Status))
+                    {
+                        <a class="btn btn-sm btn-outline-primary" href="@EntryUrl(detail.Row.Id)">Talebi Düzenle</a>
+                    }
                     <button type="button" class="btn-close" aria-label="Ayrıntıyı kapat" disabled="@_busy" @onclick="CloseDetail"></button>
                 </header>
                 <dl class="leave-detail-grid">
@@ -349,6 +354,7 @@
     private IReadOnlyList<string> TableExportHeaders => PersonnelOffice ? OfficeExportHeaders : PersonalExportHeaders;
 
     [Parameter] public string? Scope { get; set; }
+    [SupplyParameterFromQuery(Name = "requestId")] public int? RequestedDetailId { get; set; }
     private bool PersonnelOffice => string.Equals(Scope, "manage", StringComparison.OrdinalIgnoreCase);
     private string Title => PersonnelOffice ? "İzin Talepleri" : "İzin Taleplerim";
     private bool _ready, _loading = true, _busy, _canCreate, _canEdit, _canDelete;
@@ -379,6 +385,7 @@
             _ready = true;
             await InitializeAsync();
             StateHasChanged();
+            return;
         }
         if (_focusDetail && _detail is not null)
         {
@@ -410,6 +417,8 @@
         _feedback = null;
         CloseDetail();
         await LoadListAsync();
+        if (RequestedDetailId is > 0)
+            await OpenDetailAsync(RequestedDetailId.Value);
     }
 
     private async Task TogglePersonnelPickerAsync()
@@ -435,7 +444,7 @@
         if (!_canEnterForPersonnel || _selectedPersonelId is not { } id ||
             _personnelOptions?.Any(person => person.Id == id) != true) return;
 
-        Navigation.NavigateTo($"/ikys/leave-request-entry?office=true&personelId={id}&returnToPersonal=true");
+        Navigation.NavigateTo($"/ikys/leave-request-entry?personelId={id}");
     }
 
     private Task SetGroupAsync(LeaveListFilter filter)
@@ -524,7 +533,7 @@
         _feedbackClass = css;
     }
 
-    private string EntryUrl(int? id = null) => "/ikys/leave-request-entry" + (id is { } value ? $"/{value}" : "") + (PersonnelOffice ? "?office=true" : "");
+    private string EntryUrl(int? id = null) => "/ikys/leave-request-entry" + (id is { } value ? $"/{value}" : "") + (PersonnelOffice ? "?returnTo=manage" : "");
     private string? RequestRowClass(LeaveTableRow item) => _detail?.Row.Id == item.Request.Id ? "leave-row-active" : null;
 
     private string? SortDirection(string field) => _table?.CurrentSortField == field
@@ -583,26 +592,6 @@
         row.Type is (int)LeaveType.Personal or (int)LeaveType.Nursing && row.Start.HasValue && row.End.HasValue
             ? $"{row.Start:HH:mm}–{row.End:HH:mm}" : null;
 
-    private static string FormatDate(DateTime? date, int? type) =>
-        date?.ToString(type is (int)LeaveType.Personal or (int)LeaveType.Nursing ? "dd.MM.yyyy HH:mm" : "dd.MM.yyyy") ?? "—";
-    private static string DurationText(string? duration, string? unit)
-    {
-        if (string.IsNullOrWhiteSpace(duration)) return "—";
-        if (string.Equals(unit, "Saat", StringComparison.OrdinalIgnoreCase) &&
-            TimeSpan.TryParse(duration, CultureInfo.InvariantCulture, out var hours))
-            duration = duration == "0" ? "00:00" : $"{(hours < TimeSpan.Zero ? "-" : "")}{Math.Abs((int)hours.TotalHours):00}:{hours.Duration().Minutes:00}";
-        return $"{duration} {unit}";
-    }
-    private static string StatusText(Status? status) => status switch
-    {
-        Status.IslemBekliyor => "İşlem Bekliyor",
-        Status.KontrolEdildi => "Kontrol Edildi",
-        Status.KayitlaraIslendi => "Kayıtlara İşlendi",
-        Status.Reddedildi => "Reddedildi",
-        Status.IptalEdildi => "İptal Edildi",
-        Status.DilekceBekleniyor => "Dilekçe Bekleniyor",
-        _ => "Durum Belirsiz"
-    };
     private static string StatusClass(Status? status) => status switch
     {
         Status.KontrolEdildi => "leave-status-info",

@@ -66,6 +66,110 @@ public sealed class LeaveRequestWorkflowTests
     }
 
     [Fact]
+    public async Task OfficeListIncludesOnlyPersonnelWithWorkingStatus()
+    {
+        await using var data = await TestData.CreateAsync();
+        await using (var db = data.CreateDbContext())
+        {
+            (await db.Personel_Table.FindAsync(2))!.Tipi = PersonelTipi.KadroHarici;
+            (await db.IsBilgileri_Table.SingleAsync(x => x.PersonelId == 3)).CalismaDurumu = CalismaDurumu.Ayrildi;
+            db.Personel_Table.Add(new Personel { Id = 4, Adi = "İş Bilgisi", Soyadi = "Yok", SicilNo = 4 });
+            db.IzinTalep_Table.AddRange(
+                StoredRequest(302, LeaveType.Paid, Status.IslemBekliyor, "1", Friday, owner: 2),
+                StoredRequest(303, LeaveType.Paid, Status.IslemBekliyor, "1", Friday, owner: 3),
+                StoredRequest(304, LeaveType.Paid, Status.IslemBekliyor, "1", Friday, owner: 4),
+                StoredRequest(305, LeaveType.Personal, Status.KayitlaraIslendi, "01:00:00", Friday, owner: 2));
+            await db.SaveChangesAsync();
+        }
+
+        var office = data.Service("office", manage: true);
+        var all = Success(await office.ListAsync(true, LeaveListFilter.All, null));
+        Assert.Equal(2, all.Total);
+        Assert.Equal(new[] { 302, 305 }, all.Items.Select(request => request.Id));
+
+        var page = Success(await office.ListAsync(true, LeaveListFilter.General, Status.IslemBekliyor, 0));
+        Assert.Equal(1, page.Total);
+        Assert.Equal(302, Assert.Single(page.Items).Id);
+
+        var personal = Success(await data.Service("stranger").ListAsync(false, LeaveListFilter.All, null));
+        Assert.Equal(303, Assert.Single(personal.Items).Id);
+    }
+
+    [Fact]
+    public async Task PendingOverviewAndPaidCalculationExcludeClosedInactiveAndAlreadyAppliedRequests()
+    {
+        await using var data = await TestData.CreateAsync();
+        var input = Request(LeaveType.Paid, Friday, Friday.AddDays(12));
+        await using (var db = data.CreateDbContext())
+        {
+            db.IzinTalep_Table.AddRange(
+                StoredRequest(100, LeaveType.Paid, Status.IslemBekliyor, "3", Friday),
+                StoredRequest(101, LeaveType.Paid, Status.KontrolEdildi, "4", Friday),
+                StoredRequest(102, LeaveType.Paid, Status.DilekceBekleniyor, "5", Friday),
+                StoredRequest(103, LeaveType.Paid, Status.Reddedildi, "10", Friday),
+                StoredRequest(104, LeaveType.Paid, Status.IptalEdildi, "10", Friday),
+                StoredRequest(105, LeaveType.Paid, Status.KayitlaraIslendi, "10", Friday),
+                StoredRequest(106, LeaveType.Paid, Status.IslemBekliyor, "10", Friday, active: false),
+                StoredRequest(107, LeaveType.Paid, Status.IslemBekliyor, "10", Friday, owner: 3),
+                StoredRequest(108, LeaveType.Paid, Status.KontrolEdildi, "10", Friday),
+                StoredRequest(109, LeaveType.Marriage, Status.IslemBekliyor, "3", Friday));
+            db.IzinHareket_Table.Add(new IzinHareket { PersonelId = 2, IzinTalepId = 108 });
+            await db.SaveChangesAsync();
+        }
+
+        var employee = data.Service("employee");
+        var pending = Success(await employee.ListPendingForEntryAsync(input, false));
+        Assert.Equal(new[] { 100, 101, 102, 109 }, pending.Select(x => x.Id).Order());
+        Assert.True((await data.Service("stranger").ListPendingForEntryAsync(input, false)).IsFailure);
+
+        var calculation = Success(await employee.CalculateAsync(input, false));
+        Assert.Equal("9", calculation.Duration);
+        Assert.Equal("20", calculation.Available);
+        Assert.Equal("12", calculation.PendingDuration);
+        Assert.Equal("8", calculation.AvailableAfterPending);
+        Assert.Equal("-1", calculation.Remaining);
+        Assert.NotNull(calculation.BalanceWarning);
+
+        var edit = Success(await employee.LoadFormAsync(100, false)).Input;
+        Assert.DoesNotContain(Success(await employee.ListPendingForEntryAsync(edit, false)), row => row.Id == 100);
+        var editedCalculation = Success(await employee.CalculateAsync(edit, false));
+        Assert.Equal("9", editedCalculation.PendingDuration);
+        Assert.Equal("10", editedCalculation.Remaining);
+        Assert.Null(editedCalculation.BalanceWarning);
+        await using var persisted = data.CreateDbContext();
+        Assert.Empty(await persisted.IzinDonem_Table.ToListAsync());
+    }
+
+    [Fact]
+    public async Task PendingPersonalLeaveUsesTheSamePeriodAndCalendarLeaveReportsCombinedDays()
+    {
+        await using var data = await TestData.CreateAsync();
+        var employee = data.Service("employee");
+        var personal = Request(LeaveType.Personal, Friday, Friday);
+        personal.StartTime = new TimeOnly(11, 30);
+        personal.EndTime = new TimeOnly(13, 30);
+        Assert.True((await employee.SaveAsync(personal, false)).IsSuccess);
+        await using (var db = data.CreateDbContext())
+        {
+            db.IzinTalep_Table.AddRange(
+                StoredRequest(201, LeaveType.Personal, Status.KontrolEdildi, "04:00:00", Friday.AddYears(-1)),
+                StoredRequest(202, LeaveType.Personal, Status.KontrolEdildi, "02:00:00", Friday),
+                StoredRequest(203, LeaveType.Marriage, Status.IslemBekliyor, "2", Friday));
+            await db.SaveChangesAsync();
+        }
+
+        var personalCalculation = Success(await employee.CalculateAsync(personal, false));
+        Assert.Equal("03:00", personalCalculation.PendingDuration);
+        Assert.Equal("24:00", personalCalculation.AvailableAfterPending);
+        Assert.Equal("23:00", personalCalculation.Remaining);
+
+        var marriage = Success(await employee.CalculateAsync(Request(LeaveType.Marriage, Friday, Friday), false));
+        Assert.Equal("2", marriage.PendingDuration);
+        Assert.Equal("3", marriage.CombinedDuration);
+        Assert.Null(marriage.AvailableAfterPending);
+    }
+
+    [Fact]
     public async Task PaidApprovalWritesOneMovementAndUsesTheSharedBalance()
     {
         await using var data = await TestData.CreateAsync();
@@ -242,6 +346,13 @@ public sealed class LeaveRequestWorkflowTests
     {
         Type = type, StartDate = start, EndDate = end, PersonelId = 2, ManagerId = 1, SubstituteId = 3,
         Address = "Ankara", Notify = false
+    };
+
+    private static IzinTalep StoredRequest(int id, LeaveType type, Status status, string duration, DateTime start,
+        int owner = 2, bool active = true) => new()
+    {
+        Id = id, PersonelId = owner, IzinTipi = (int)type, Aktif = active, OnayDurumu = status, Sure = duration,
+        Birim = type == LeaveType.Personal ? "Saat" : "Gün", BaslangicTarihi = start, BitisTarihi = start.AddHours(17)
     };
 
     private static T Success<T>(Result<T> result)
