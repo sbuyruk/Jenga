@@ -23,6 +23,77 @@ namespace Jenga.BlazorUI.Tests;
 public class KontrolDetayTests
 {
     [Fact]
+    public async Task OlcuSatirlari_KaydetGuncelleVeYenidenAcAkisindaKorunur()
+    {
+        var servis = new KontrolTestServisi();
+        await using (var test = await Ekran.AcAsync(servis))
+        {
+            await test.GitAsync(2);
+            test.Cevaplar.GrupSatirlari("bb_olculer").Add(new() { ["bbo_olcu_ad"] = "Salon", ["bbo_olcu_alan"] = "45" });
+            await test.CagirAsync("TaslakKaydetAsync");
+            Assert.Equal(2, test.AktifAdim);
+            test.Cevaplar.Gruplar["bb_olculer"][0]["bbo_olcu_alan"] = "46.5";
+            test.Cevaplar.Gruplar["bb_olculer"].Add(new() { ["bbo_olcu_ad"] = "Mutfak", ["bbo_olcu_alan"] = "12" });
+            await test.CagirAsync("TaslakKaydetAsync");
+        }
+        await using var tekrar = await Ekran.AcAsync(servis);
+        var satirlar = tekrar.Cevaplar.Gruplar["bb_olculer"];
+        Assert.Equal(2, satirlar.Count);
+        Assert.Equal("Salon", satirlar[0]["bbo_olcu_ad"]);
+        Assert.Equal("46.5", satirlar[0]["bbo_olcu_alan"]);
+        Assert.Equal("Mutfak", satirlar[1]["bbo_olcu_ad"]);
+        Assert.False(tekrar.Kaydedilmemis);
+    }
+
+    [Fact]
+    public async Task AlanArama_AdimiAcarVurgularVeKaydedilmemisGirdileriKorur()
+    {
+        await using var test = await Ekran.AcAsync();
+        await test.GitAsync(6);
+        test.Cevaplar.Koy("kanaat_ozet", "Henüz kaydedilmemiş not");
+        test.Yaz("_alanArama", "Zemin Tipi");
+        await test.CagirAsync("AramaTusAsync", new KeyboardEventArgs { Key = "Enter" });
+        Assert.Equal(0, test.AktifAdim);
+        Assert.Equal("t_zemin_tipi", test.Al<string>("_seciliAlanKodu"));
+        Assert.Equal("Henüz kaydedilmemiş not", test.Cevaplar.Al("kanaat_ozet"));
+        Assert.True(test.Kaydedilmemis);
+        Assert.Empty(test.Servis.KullanilanSurumler);
+        Assert.Contains("kontrol-alan-secili", await test.HtmlAsync());
+    }
+
+    [Fact]
+    public async Task AlanArama_BosGruptaSatirOlusturmadanIlgiliBolumuGosterir()
+    {
+        await using var test = await Ekran.AcAsync();
+        test.Yaz("_alanArama", "emsal bedel");
+        await test.CagirAsync("AramaTusAsync", new KeyboardEventArgs { Key = "Enter" });
+        Assert.Equal(3, test.AktifAdim);
+        Assert.Equal("emsaller", test.Al<string>("_seciliGrupKodu"));
+        Assert.False(test.Cevaplar.Gruplar.ContainsKey("emsaller"));
+        Assert.False(test.Kaydedilmemis);
+        Assert.Contains("Satır Ekle düğmesini", await test.HtmlAsync());
+    }
+
+    [Fact]
+    public async Task AlanArama_RaporBilgileriniVeSaltOkunurRaporlariDaBulur()
+    {
+        var servis = new KontrolTestServisi();
+        servis.Kayit.Durum = KontrolDurumu.Tamamlandi;
+        await using var test = await Ekran.AcAsync(servis);
+        await test.GitAsync(7);
+        test.Yaz("_alanArama", "imzalayan makam");
+        await test.CagirAsync("AramaTusAsync", new KeyboardEventArgs { Key = "Enter" });
+        Assert.Equal(0, test.AktifAdim);
+        Assert.Contains("kontrol-arama-vurgu", await test.HtmlAsync());
+        Assert.False(test.Kaydedilmemis);
+        test.Yaz("_alanArama", "bulunamayan-xyz");
+        await test.CagirAsync("AramaTusAsync", new KeyboardEventArgs { Key = "Enter" });
+        Assert.Contains("Eşleşen alan bulunamadı", await test.HtmlAsync());
+        await test.CagirAsync("AramaTusAsync", new KeyboardEventArgs { Key = "Escape" });
+        Assert.Equal(string.Empty, test.Al<string>("_alanArama"));
+    }
+
+    [Fact]
     public async Task IleriGeri_CevaplariKorur_KayitMevcutAdimiSifirlamaz()
     {
         await using var test = await Ekran.AcAsync();

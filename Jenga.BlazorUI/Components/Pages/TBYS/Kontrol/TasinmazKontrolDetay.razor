@@ -70,11 +70,44 @@ else
                 <button class="@(!_sekmeli ? "secili" : "")" aria-pressed="@(!_sekmeli)" @onclick="() => _sekmeli = false">Adım adım</button>
                 <button class="@(_sekmeli ? "secili" : "")" aria-pressed="@_sekmeli" @onclick="() => _sekmeli = true">Sekmeli görünüm</button>
             </div>
+            <div class="kontrol-alan-arama">
+                <label class="visually-hidden" for="kontrol-alan-ara">Raporda alan ara</label>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
+                    <input id="kontrol-alan-ara" type="search" class="form-control" placeholder="Alan ara… örn. Zemin Tipi"
+                           @bind="_alanArama" @bind:event="oninput" @onkeydown="AramaTusAsync" disabled="@_busy" aria-controls="kontrol-arama-sonuclari" />
+                    @if (!string.IsNullOrEmpty(_alanArama))
+                    {
+                        <button class="btn btn-outline-secondary" @onclick="AramayiTemizle" aria-label="Alan aramasını temizle" disabled="@_busy"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+                    }
+                </div>
+            </div>
             <span class="kontrol-kayit @(KaydedilmemisDegisiklikVar ? "bekliyor" : "")" role="status" aria-live="polite">
                 <i class="bi @(_busy ? "bi-hourglass-split" : KaydedilmemisDegisiklikVar ? "bi-pencil" : "bi-check2")"></i>
                 @(_busy ? "İşlem yapılıyor…" : KaydedilmemisDegisiklikVar ? "Kaydedilmemiş değişiklikler" : _sonKayit is not null ? $"Kaydedildi · {_sonKayit.Value.ToString("HH:mm", Tr)}" : taslak ? "Kayıtlı taslak" : "Salt okunur rapor")
             </span>
         </div>
+
+        @if (!string.IsNullOrWhiteSpace(_alanArama))
+        {
+            var sonuclar = KontrolFormAdimlari.AlanAra(_adimlar, _alanArama);
+            <section id="kontrol-arama-sonuclari" class="kontrol-arama-sonuclari" aria-label="Alan arama sonuçları">
+                <div class="kontrol-arama-ozet" role="status" aria-live="polite">@sonuclar.Count alan bulundu</div>
+                @if (sonuclar.Count == 0)
+                {
+                    <p class="mb-0 small">Eşleşen alan bulunamadı. Alan adının bir kısmını veya bölüm adını deneyin.</p>
+                }
+                else
+                {
+                    <ul>
+                        @foreach (var sonuc in sonuclar)
+                        {
+                            <li @key="sonuc"><button type="button" disabled="@_busy" @onclick="() => AramaSonucunaGitAsync(sonuc)"><span><strong>@sonuc.Baslik</strong><small>@sonuc.Yol</small></span><i class="bi bi-arrow-right" aria-hidden="true"></i></button></li>
+                        }
+                    </ul>
+                }
+            </section>
+        }
 
         <div class="kontrol-editor @(_sekmeli ? "sekmeli" : "")">
             <aside class="kontrol-gezgin">
@@ -111,15 +144,15 @@ else
                         <section class="kontrol-rapor-bilgileri">
                             <h3><i class="bi bi-file-earmark-text me-2"></i>Rapor bilgileri</h3>
                             <div class="row g-3">
-                                <div class="col-sm-6 col-xl-3">
+                                <div class="col-sm-6 col-xl-3 @AramaVurgusu("rapor_tarihi")" tabindex="-1" @ref='_raporAlanlari["rapor_tarihi"]'>
                                     <label class="form-label small" for="kontrol-tarihi">Kontrol tarihi <span class="text-danger">*</span></label>
                                     <input id="kontrol-tarihi" type="date" class="form-control form-control-sm" disabled="@(!taslak)" max="@DateTime.Today.ToString("yyyy-MM-dd")" @bind="_kontrolTarihi" />
                                 </div>
-                                <div class="col-sm-6 col-xl-3">
+                                <div class="col-sm-6 col-xl-3 @AramaVurgusu("rapor_numarasi")" tabindex="-1" @ref='_raporAlanlari["rapor_numarasi"]'>
                                     <label class="form-label small" for="kontrol-rapor-no">Rapor numarası</label>
                                     <input id="kontrol-rapor-no" class="form-control form-control-sm" readonly value="@(_kontrol.RaporNo ?? "Tamamlanınca atanır")" />
                                 </div>
-                                <div class="col-sm-6 col-xl-6">
+                                <div class="col-sm-6 col-xl-6 @AramaVurgusu("rapor_imzalayan")" tabindex="-1" @ref='_raporAlanlari["rapor_imzalayan"]'>
                                     <label class="form-label small" for="kontrol-imzalayan">Raporu imzalayan makam <span class="text-danger">*</span></label>
                                     <select id="kontrol-imzalayan" class="form-select form-select-sm" disabled="@(!taslak)" @bind="_imzalayanMakam">
                                         <option value="">Seçiniz</option>
@@ -137,7 +170,7 @@ else
                                         <small class="text-body-secondary">Bu bölgede tanımlı personel bulunamadı.</small>
                                     }
                                 </div>
-                                <div class="col-12">
+                                <div class="col-12 @AramaVurgusu("rapor_edenler")" tabindex="-1" @ref='_raporAlanlari["rapor_edenler"]'>
                                     <label class="form-label small">Kontrolü yapanlar</label>
                                     <KontrolEdenlerSecici @bind-Value="_kontrolEdenler" Disabled="@(!taslak)" />
                                 </div>
@@ -147,7 +180,8 @@ else
 
                     @if (!SonAdim)
                     {
-                        <KontrolFormRenderer Tanim="_tanim" Bolumler="_adimlar[_aktifAdim].Bolumler" Cevaplar="_cevaplar" ReadOnly="@(!taslak)" Ekler="_ekler" BolgePersonelleri="_bolgePersonelleri" OnEkSil="EkSilAsync" OnChanged="FormDegisti">
+                        <KontrolFormRenderer @ref="_formRenderer" Tanim="_tanim" Bolumler="_adimlar[_aktifAdim].Bolumler" Cevaplar="_cevaplar" ReadOnly="@(!taslak)" Ekler="_ekler" BolgePersonelleri="_bolgePersonelleri" OnEkSil="EkSilAsync" OnChanged="FormDegisti"
+                                             SeciliAlanKodu="@_seciliAlanKodu" SeciliGrupKodu="@_seciliGrupKodu">
                             <EkYukleTemplate Context="hedef">
                                 <div class="kontrol-ek-yukle"><i class="bi bi-cloud-arrow-up me-2"></i><span>Fotoğraf veya belge ekleyin · En fazla 10 dosya, dosya başına 20 MB</span><InputFile class="form-control form-control-sm mt-2" OnChange="e => EkYukleAsync(e, hedef)" accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx" disabled="@_busy" multiple /></div>
                             </EkYukleTemplate>
@@ -291,6 +325,40 @@ else
     private ElementReference _adimBasligi;
     private DateTime? _sonKayit;
     private string _kayitliIcerik = string.Empty;
+    private string _alanArama = string.Empty;
+    private string? _seciliAlanKodu, _seciliGrupKodu;
+    private KontrolAlanKonumu? _aramaHedefi;
+    private KontrolFormRenderer? _formRenderer;
+    private readonly Dictionary<string, ElementReference> _raporAlanlari = new();
+
+    private string AramaVurgusu(string kod) => _seciliAlanKodu == kod ? "kontrol-arama-vurgu" : "";
+
+    private void AramayiTemizle()
+    {
+        _alanArama = string.Empty;
+        _seciliAlanKodu = null;
+        _seciliGrupKodu = null;
+        _aramaHedefi = null;
+    }
+
+    private async Task AramaSonucunaGitAsync(KontrolAlanKonumu sonuc)
+    {
+        if (_busy) return;
+        await AdimaGitAsync(sonuc.Adim);
+        _alanArama = string.Empty;
+        _seciliAlanKodu = sonuc.AlanKodu;
+        _seciliGrupKodu = sonuc.GrupKodu;
+        _aramaHedefi = sonuc;
+        _basligaOdaklan = false;
+    }
+
+    private Task AramaTusAsync(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape") AramayiTemizle();
+        if (e.Key == "Enter" && KontrolFormAdimlari.AlanAra(_adimlar, _alanArama).FirstOrDefault() is { } sonuc)
+            return AramaSonucunaGitAsync(sonuc);
+        return Task.CompletedTask;
+    }
 
     private bool SonAdim => _aktifAdim == _adimlar.Count;
     private string IcerikImzasi => System.Text.Json.JsonSerializer.Serialize(new { Cevaplar = _cevaplar.ToJson(), _kontrolTarihi, _kontrolEdenler, _imzalayanMakam });
@@ -303,6 +371,7 @@ else
     private Task AdimaGitAsync(int index)
     {
         if (_busy || index < 0 || index > _adimlar.Count) return Task.CompletedTask;
+        _seciliAlanKodu = null; _seciliGrupKodu = null; _aramaHedefi = null;
         _aktifAdim = index;
         _gorulenAdimlar.Add(index);
         _basligaOdaklan = true;
@@ -311,6 +380,15 @@ else
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (_aramaHedefi is { } hedef && !_loading && _kontrol is not null)
+        {
+            _aramaHedefi = null;
+            if (hedef.RaporAlani && _raporAlanlari.TryGetValue(hedef.AlanKodu, out var alan))
+                await alan.FocusAsync();
+            else if (_formRenderer is null || !await _formRenderer.AlanaOdaklanAsync(hedef.AlanKodu, hedef.GrupKodu))
+                await _adimBasligi.FocusAsync();
+            return;
+        }
         if (_basligaOdaklan && !_loading && _kontrol is not null)
         {
             _basligaOdaklan = false;
@@ -359,12 +437,13 @@ else
         _loading = true; _hata = null;
         _aktifAdim = 0; _gorulenAdimlar.Clear(); _gorulenAdimlar.Add(0);
         _sonKayit = null; _ayrilmayaIzinVer = false;
+        AramayiTemizle(); _formRenderer = null;
         _tamamlaAcik = false; _iptalAcik = false; _revizyonAcik = false;
         _periyotGerekce = null; _elleTarih = null; _tarihGerekce = null;
         var r = await KontrolService.GetByIdAsync(Id);
         if (r.IsFailure) { _kontrol = null; _hata = r.Error.Message; _loading = false; return; }
         _kontrol = r.Value;
-        _tanim = KontrolRaporu.TanimAl(_kontrol.TasinmazSnapshotJson);
+        _tanim = KontrolRaporu.TanimAl(_kontrol.TasinmazSnapshotJson, _kontrol.CevaplarJson);
         _adimlar = KontrolFormAdimlari.Olustur(_tanim);
         _snapshot = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string?>>(_kontrol.TasinmazSnapshotJson, KontrolFormTanimi.JsonOptions) ?? new();
         _cevaplar = KontrolCevaplari.FromJson(_kontrol.CevaplarJson);

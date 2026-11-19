@@ -2,6 +2,7 @@
 .kontrol-bolum-baslik { margin-bottom: 1rem; color: var(--bs-body-color); font-size: .9rem; }
 .kontrol-alanlar { display: grid; grid-template-columns: repeat(20, minmax(0, 1fr)); gap: 1rem 1.25rem; }
 .kontrol-alan { min-width: 0; }
+.kontrol-alan-secili { outline: 2px solid var(--bs-info); outline-offset: 4px; border-radius: 6px; background: var(--bs-info-bg-subtle); scroll-margin-block: 6rem; }
 .kontrol-alan-mini { grid-column: span 3; }
 .kontrol-alan-kisa { grid-column: span 4; }
 .kontrol-alan-normal { grid-column: span 5; }
@@ -12,14 +13,22 @@
 .kontrol-alan .form-control:disabled, .kontrol-alan .form-select:disabled { background-color: var(--bs-tertiary-bg); }
 .kontrol-alan textarea { min-height: 90px; }
 .kontrol-alan a { overflow-wrap: anywhere; }
+.kontrol-olcu-toplam { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: .5rem 1rem; margin-top: 1rem; padding: .85rem 1rem; background: var(--bs-tertiary-bg); border-radius: 8px; }
+.kontrol-olcu-toplam output { font-weight: 600; font-variant-numeric: tabular-nums; }
+.kontrol-olcu-satiri { display: flex; align-items: center; gap: .75rem; width: 100%; max-width: 32rem; }
+.kontrol-olcu-satiri > .kontrol-alanlar { flex: 1; min-width: 0; }
+.kontrol-olcu-satiri .kontrol-alan:first-child { grid-column: span 13; }
+.kontrol-olcu-satiri .kontrol-alan:last-child { grid-column: span 7; }
+.kontrol-olcu-sil { flex-shrink: 0; }
 @media (min-width: 1200px) {
-    /* İnşa yılı + kat sayısı + yapı tarzı + dış cephe + asansör + otopark = 20 sütun. */
-    .kontrol-bina-secim { grid-column: span 4; }
-    .kontrol-bina-evethayir { grid-column: span 3; }
-    /* Oda + salon + banyo/WC + balkon + cephe + zemin + genel durum = 2+2+3+3+3+4+3. */
-    .kontrol-bb-sayi { grid-column: span 2; }
-    .kontrol-bb-kisa { grid-column: span 3; }
-    .kontrol-bb-zemin { grid-column: span 4; }
+    .kontrol-belge-ad { grid-column: span 6; }
+    .kontrol-belge-dosya { grid-column: span 14; }
+    /* Bina özellikleri: her satırda dört eşit alan (4 × 5 sütun). */
+    .kontrol-bina-sayi, .kontrol-bina-secim, .kontrol-bina-evethayir { grid-column: span 5; }
+    /* İlk satır: oda, salon, mutfak, banyo/WC ve balkon (5 × 4 sütun). */
+    .kontrol-bb-sayi, .kontrol-bb-dar, .kontrol-bb-mutfak { grid-column: span 4; }
+    /* İkinci satır: dış cephe, zemin, eşya ve genel durum (4 × 5 sütun). */
+    .kontrol-bb-cephe, .kontrol-bb-zemin, .kontrol-bb-esya, .kontrol-bb-kisa { grid-column: span 5; }
     /* Site içinde mi + site adı + sosyal donatılar + aidat = 3+5+9+3. */
     .kontrol-site-kisa { grid-column: span 3; }
     .kontrol-site-donati { grid-column: span 9; }
@@ -52,4 +61,5 @@
 @media (max-width: 575.98px) {
     .kontrol-alanlar { gap: 1rem; }
     .kontrol-alan-mini, .kontrol-alan-kisa, .kontrol-alan-normal, .kontrol-alan-genis { grid-column: 1 / -1; }
+    .kontrol-olcu-satiri .kontrol-alan:first-child, .kontrol-olcu-satiri .kontrol-alan:last-child { grid-column: 1 / -1; }
 }

@@ -307,7 +307,7 @@ namespace Jenga.DataAccess.Services.TBYS
                         return Result<int>.Failure(Error.Conflict("Bu kontrol için zaten bir revizyon açılmış."));
                 }
 
-                var tanim = KontrolRaporu.TanimAl(revizeEdilen?.TasinmazSnapshotJson);
+                var tanim = KontrolRaporu.TanimAl(revizeEdilen?.TasinmazSnapshotJson, revizeEdilen?.CevaplarJson);
                 var snapshot = TasinmazVeriKaynagi.Snapshot(tasinmaz, tanim);
                 KontrolRaporu.GecmisBilgileriniKoru(snapshot, revizeEdilen?.TasinmazSnapshotJson);
 
@@ -367,7 +367,7 @@ namespace Jenga.DataAccess.Services.TBYS
                 if (k.Durum != KontrolDurumu.Taslak) return Result.Failure(Error.Conflict("Yalnızca taslak kontroller düzenlenebilir."));
                 if (k.KayitSurumu != kayitSurumu) return Result.Failure(Error.Conflict(EszamanlilikMesaji));
 
-                var tanim = KontrolRaporu.TanimAl(k.TasinmazSnapshotJson);
+                var tanim = KontrolRaporu.TanimAl(k.TasinmazSnapshotJson, k.CevaplarJson);
                 var ekler = await EkSayilariAsync(db, kontrolId, cancellationToken);
                 var hatalar = KontrolFormDogrulayici.CevaplariDogrula(tanim, cevaplar, (kod, satir) => ekler.GetValueOrDefault((kod, satir)), zorunluKontrol: false);
                 if (hatalar.Count > 0) return Result.Failure(Error.Validation(string.Join(" ", hatalar)));
@@ -421,7 +421,7 @@ namespace Jenga.DataAccess.Services.TBYS
                 if (k.Durum != KontrolDurumu.Taslak) return Result.Failure(Error.Conflict("Yalnızca taslak kontroller tamamlanabilir."));
                 if (k.KayitSurumu != istek.KayitSurumu) return Result.Failure(Error.Conflict(EszamanlilikMesaji));
 
-                var tanim = KontrolRaporu.TanimAl(k.TasinmazSnapshotJson);
+                var tanim = KontrolRaporu.TanimAl(k.TasinmazSnapshotJson, k.CevaplarJson);
                 var ekler = await EkSayilariAsync(db, k.Id, cancellationToken);
                 var hatalar = KontrolFormDogrulayici.CevaplariDogrula(tanim, istek.Cevaplar, (kod, satir) => ekler.GetValueOrDefault((kod, satir)), zorunluKontrol: true);
                 if (string.IsNullOrWhiteSpace(istek.ImzalayanMakam)) hatalar.Insert(0, "'Raporu İmzalayan Makam' zorunludur.");
@@ -605,7 +605,7 @@ namespace Jenga.DataAccess.Services.TBYS
                 if (!await KontroleErisebilirAsync(db, k.TasinmazId, cancellationToken)) return Result<int>.Failure(Error.Forbidden(BolgeYetkisiYok));
                 if (k.Durum != KontrolDurumu.Taslak) return Result<int>.Failure(Error.Conflict("Yalnızca taslak kontrollere ek yüklenebilir."));
 
-                var tanim = KontrolRaporu.TanimAl(k.TasinmazSnapshotJson);
+                var tanim = KontrolRaporu.TanimAl(k.TasinmazSnapshotJson, k.CevaplarJson);
                 var alan = tanim.AlanBul(istek.AlanKodu);
                 if (alan is null || alan.Tip != KontrolAlanTipi.Ek) return Result<int>.Failure(Error.Validation("Alan bir ek alanı değil."));
 

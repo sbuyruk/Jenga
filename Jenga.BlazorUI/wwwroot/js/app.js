@@ -105,3 +105,25 @@ window.taskApprovalReport = {
 };
 
 window.isMobileViewport = () => window.innerWidth < 768;
+
+window.kontrolKonum = {
+    al: () => new Promise(resolve => {
+        if (!window.isSecureContext) {
+            resolve({ hata: "Konum almak için uygulamayı HTTPS bağlantısı üzerinden açın." });
+            return;
+        }
+        if (!navigator.geolocation) {
+            resolve({ hata: "Tarayıcınız konum özelliğini desteklemiyor." });
+            return;
+        }
+        navigator.geolocation.getCurrentPosition(
+            position => resolve({ koordinat: `${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}` }),
+            error => resolve({ hata: ({
+                1: "Konum izni verilmedi. Tarayıcının site izinlerinden konum erişimini açıp yeniden deneyin.",
+                2: "Konum belirlenemedi. Cihazınızın konum ayarlarını kontrol edip yeniden deneyin.",
+                3: "Konum isteği zaman aşımına uğradı. Yeniden deneyin."
+            })[error.code] || "Konum alınamadı. Yeniden deneyin." }),
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+        );
+    })
+};

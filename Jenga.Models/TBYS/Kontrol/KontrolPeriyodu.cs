@@ -93,6 +93,7 @@ namespace Jenga.Models.TBYS.Kontrol
             new("KatIrtifaki", "Kat İrtifakı", t => B(t.KatIrtifaki)),
             new("TapuTarihi", "Tapu Tarihi", t => T(t.TapuTarihi)),
             new("YevmiyeNo", "Yevmiye No", t => t.YevmiyeNo),
+            new("ZeminTipi", "Zemin Tipi", t => t.ZeminTipi),
             new("CiltNo", "Cilt No", t => t.CiltNo),
             new("SahifeNo", "Sahife No", t => t.SahifeNo),
             new("InsaYili", "İnşa Yılı", t => t.InsaYili),
