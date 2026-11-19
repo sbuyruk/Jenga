@@ -68,9 +68,6 @@ public sealed class LeaveRequestEntryPageTests
         }));
 
         await CallAsync("LoadAsync");
-        var pendingLink = typeof(LeaveRequestEntryPage).GetMethod("PendingRequestUrl", BindingFlags.Instance | BindingFlags.NonPublic)!
-            .Invoke(page, [71]);
-        Assert.Equal(canManage ? "/ikys/leave-requests/manage?requestId=71" : "/ikys/leave-requests?requestId=71", pendingLink);
         await CallAsync("CalculateAsync");
         await CallAsync("SaveAsync");
 
@@ -97,7 +94,7 @@ public sealed class LeaveRequestEntryPageTests
     [InlineData(false, true)]
     [InlineData(true, true)]
     [InlineData(false, false)]
-    public async Task PendingRequestLinkOpensOnlyTheRequestedAuthorizedDetail(bool office, bool canViewRequest)
+    public async Task DetailQueryOpensOnlyTheRequestedAuthorizedDetail(bool office, bool canViewRequest)
     {
         var page = new LeaveRequestsPage();
         var pageType = typeof(LeaveRequestsPage);

@@ -91,13 +91,6 @@
     font-size: .78rem;
 }
 
-.leave-entry-existing-link {
-    color: inherit;
-    font-weight: 650;
-    text-decoration: underline;
-    text-underline-offset: .15em;
-}
-
 .leave-entry-layout {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(15rem, 21rem);
@@ -138,6 +131,11 @@
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: .85rem 1rem;
+}
+
+.leave-entry-personal-dates {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr));
+    max-width: 34.5rem;
 }
 
 .leave-entry-grid > div {

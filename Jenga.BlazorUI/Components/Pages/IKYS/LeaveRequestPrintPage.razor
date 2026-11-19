@@ -1,0 +1,214 @@
+@page "/ikys/leave-requests/print/{RequestId:int}"
+@rendermode InteractiveServer
+@using System.Globalization
+@using Jenga.DataAccess.Services.IKYS
+@using Jenga.Models.IKYS
+@using static Jenga.BlazorUI.Components.IKYS.LeaveRequestDisplay
+@inject ILeaveRequestWorkflow Workflow
+@inject IJSRuntime JS
+@inject ILogger<LeaveRequestPrintPage> Logger
+
+<PageTitle>İzin Belgesi</PageTitle>
+
+<PermissionGuard Module="ModuleName.IKYS" Operation="@(PersonnelOffice ? Operation.Manage : Operation.View)">
+    <div class="d-flex flex-wrap gap-2 mb-3 no-print">
+        <a class="btn btn-outline-secondary" href="@ListUrl">Talebe Dön</a>
+        <button type="button" class="btn btn-primary" disabled="@(_detail is null || _printing)" @onclick="PrintAsync">
+            <i class="bi bi-printer me-1" aria-hidden="true"></i> Yazdır
+        </button>
+    </div>
+    @if (_error is not null)
+    {
+        <div class="alert alert-warning no-print" role="alert">@_error</div>
+    }
+    @if (_loading)
+    {
+        <JengaLoading Message="İzin belgesi hazırlanıyor…" />
+    }
+    else if (_detail is { } detail)
+    {
+        var info = detail.DocumentInfo;
+        var date = DateText(info?.SubmittedAt ?? detail.Row.Start);
+        @if (detail.Row.Type == (int)LeaveType.Personal)
+        {
+            var introduction = string.IsNullOrWhiteSpace(info?.Department)
+                ? "Aşağıda" : $"{info.Department} bünyesinde görev yapan aşağıda";
+            <article id="@PrintId" class="leave-sheet" aria-labelledby="leave-sheet-title">
+                <div class="leave-personal-form">
+                    <div class="leave-date">@date</div>
+                    <h1 id="leave-sheet-title">Mazeret (Saatlik) İzin Belgesi</h1>
+                    <p class="leave-personal-statement">
+                        @introduction kimlik bilgileri yazılı personele @DateText(detail.Row.Start) tarihinde @detail.Row.Duration saat izin verilmiştir.
+                    </p>
+                    <div class="leave-personal-manager">
+                        <div>@detail.Manager</div>
+                        <div>@info?.ManagerTitle</div>
+                    </div>
+                    <h2 class="leave-personal-heading">Personelin</h2>
+                    <dl class="leave-fields">
+                        <div><dt>Adı Soyadı</dt><dd>@detail.Row.Person</dd></div>
+                        <div><dt>Görevi</dt><dd>@info?.Title</dd></div>
+                        <div><dt>Mevcut İzin Süresi</dt><dd>@HourlyBalance(detail.DocumentBalance?.Before)</dd></div>
+                        <div><dt>Kullanacağı İzin Süresi</dt><dd>@detail.Row.Duration</dd></div>
+                        <div><dt>Kalan İzin Süresi</dt><dd>@HourlyBalance(detail.DocumentBalance?.After)</dd></div>
+                        <div><dt>Mazereti</dt><dd>@detail.Address</dd></div>
+                        <div><dt>İzine Çıkış Saati</dt><dd>@(detail.Row.Start?.ToString("HH:mm"))</dd></div>
+                        <div><dt>Personelin İmzası</dt><dd class="leave-signature"></dd></div>
+                    </dl>
+                </div>
+                <p class="leave-print-note">Not: İzin belgenizi yetkili amirinize onaylatarak Personel Kısmına teslim ediniz.</p>
+            </article>
+        }
+        else
+        {
+            <article id="@PrintId" class="leave-sheet" aria-labelledby="leave-sheet-title">
+                <header class="leave-general-header">
+                    <div class="leave-crest"><img src="/images/logo-light.png" alt="TSKGV amblemi" /></div>
+                    <h1 id="leave-sheet-title">Türk Silahlı Kuvvetlerini Güçlendirme Vakfı<br />Genel Müdürlüğü Personel İzin Belgesi</h1>
+                </header>
+                <div class="leave-general-form">
+                    <section>
+                        <h2>İzin Talebinde Bulunan Personelin <span class="leave-date">@date</span></h2>
+                        <dl class="leave-fields">
+                            <div><dt>Adı Soyadı</dt><dd>@detail.Row.Person</dd></div>
+                            <div><dt>Sicil No</dt><dd>@info?.PersonnelNumber</dd></div>
+                            <div><dt>Görevi</dt><dd>@info?.Title</dd></div>
+                            <div><dt>İzin Hakkı (İş Günü)</dt><dd>@DurationText(info?.Entitlement, "Gün")</dd></div>
+                            <div><dt>İzin Dönemi</dt><dd>@PeriodText(info)</dd></div>
+                        </dl>
+                    </section>
+                    <section>
+                        <h2>İzin Dönemi İçinde Kullandığı İzinler ve Süreleri</h2>
+                        <table class="leave-used-days">
+                            <thead><tr>
+                                @foreach (var (_, label) in GeneralLeaveTypes)
+                                {
+                                    <th scope="col">@label</th>
+                                }
+                            </tr></thead>
+                            <tbody><tr>
+                                @foreach (var (type, _) in GeneralLeaveTypes)
+                                {
+                                    <td>@(info?.UsedDays.TryGetValue(type, out var used) == true ? used : (int?)null)</td>
+                                }
+                            </tr></tbody>
+                        </table>
+                    </section>
+                    <section>
+                        <h2>İstenen İzin ve Nevi</h2>
+                        <dl class="leave-fields leave-request-fields">
+                            <div><dt>İzin Tipi</dt><dd>@detail.Row.TypeName</dd></div>
+                            <div><dt>İzin Süresi</dt><dd>@DurationText(detail.Row.Duration, detail.Row.Unit)</dd></div>
+                            <div><dt>İzin Başlangıcı</dt><dd>@DateText(detail.Row.Start)</dd></div>
+                            <div><dt>İzin Bitişi</dt><dd>@DateText(detail.Row.End)</dd></div>
+                            <div class="leave-wide"><dt>İzinde Bulunacağı Adres</dt><dd>@detail.Address</dd></div>
+                            <div class="leave-wide"><dt>İzin Açıklaması</dt><dd>@detail.Description</dd></div>
+                            <div class="leave-wide"><dt>İzinli Personelin İmzası</dt><dd class="leave-signature"></dd></div>
+                        </dl>
+                    </section>
+                    <section>
+                        <h2>İzinli Personele Vekâlet Edecek Personelin</h2>
+                        <dl class="leave-fields">
+                            <div><dt>Adı Soyadı</dt><dd>@detail.Substitute</dd></div>
+                            <div><dt>Görevi</dt><dd>@info?.SubstituteTitle</dd></div>
+                            <div><dt>İmzası</dt><dd class="leave-signature"></dd></div>
+                        </dl>
+                    </section>
+                    <section>
+                        <h2>İzni Onaylayan Amirin</h2>
+                        <dl class="leave-fields">
+                            <div><dt>Adı Soyadı</dt><dd>@detail.Manager</dd></div>
+                            <div><dt>Görevi</dt><dd>@info?.ManagerTitle</dd></div>
+                            <div><dt>İmzası</dt><dd class="leave-signature"></dd></div>
+                        </dl>
+                    </section>
+                </div>
+            </article>
+        }
+    }
+</PermissionGuard>
+
+@code {
+    private const string PrintId = "leave-request-print-sheet";
+    private static readonly (LeaveType Type, string Label)[] GeneralLeaveTypes =
+    [
+        (LeaveType.Paid, "Ücretli"), (LeaveType.Marriage, "Evlenme"), (LeaveType.Maternity, "Doğum"),
+        (LeaveType.Paternity, "Babalık"), (LeaveType.Bereavement, "Ölüm"), (LeaveType.Unpaid, "Ücretsiz")
+    ];
+    [Parameter] public int RequestId { get; set; }
+    [SupplyParameterFromQuery] public string? Scope { get; set; }
+
+    private bool PersonnelOffice => string.Equals(Scope, "manage", StringComparison.OrdinalIgnoreCase);
+    private string ListUrl => $"/ikys/leave-requests{(PersonnelOffice ? "/manage" : "")}?requestId={RequestId}";
+    private bool _ready;
+    private bool _loading = true;
+    private bool _printing;
+    private int _loadVersion;
+    private LeaveRequestDetail? _detail;
+    private string? _error;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        _ready = true;
+        await LoadAsync();
+        StateHasChanged();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_ready) await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        var version = ++_loadVersion;
+        _loading = true;
+        _error = null;
+        _detail = null;
+        var result = await Workflow.DetailAsync(RequestId, PersonnelOffice);
+        if (version != _loadVersion) return;
+
+        _loading = false;
+        if (result.IsFailure)
+            _error = result.Error.Message;
+        else if (result.Value.Row.Type == (int)LeaveType.Nursing)
+            _error = "Süt izni için izin belgesi düzenlenmez.";
+        else if (CanPrint(result.Value.Row))
+            _detail = result.Value;
+        else
+            _error = "İzin belgesi talep kontrol edildikten sonra yazdırılabilir.";
+    }
+
+    private static string DateText(DateTime? value) => value?.ToString("dd.MM.yyyy") ?? "";
+
+    private static string HourlyBalance(string? value)
+    {
+        if (!TimeSpan.TryParse(value, CultureInfo.InvariantCulture, out var duration)) return value ?? "—";
+        var sign = duration < TimeSpan.Zero ? "-" : "";
+        return $"{sign}{Math.Abs((int)duration.TotalHours)} Saat {Math.Abs(duration.Minutes)} Dk.";
+    }
+
+    private static string PeriodText(LeaveDocumentInfo? info) =>
+        info is { PeriodStart: { } start, PeriodEnd: { } end } ? $"{DateText(start)} – {DateText(end)}" : "—";
+
+    private async Task PrintAsync()
+    {
+        if (_detail is null || _printing) return;
+        _printing = true;
+        _error = null;
+        try
+        {
+            await JS.InvokeVoidAsync("taskApprovalReport.print", PrintId, "İzin Belgesi");
+        }
+        catch (JSException ex)
+        {
+            Logger.LogWarning(ex, "İzin belgesinin yazdırma penceresi açılamadı.");
+            _error = "Yazdırma penceresi açılamadı. Tekrar deneyin.";
+        }
+        finally
+        {
+            _printing = false;
+        }
+    }
+}

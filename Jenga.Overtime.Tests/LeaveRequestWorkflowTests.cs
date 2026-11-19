@@ -189,6 +189,7 @@ public sealed class LeaveRequestWorkflowTests
         var id = save.Id;
         Assert.False(save.NotificationFailed);
         Assert.Equal(2, data.Email.Messages.Count);
+        Assert.Null(Success(await employee.DetailAsync(id, false)).DocumentUrl);
         Assert.True((await office.DecideAsync(id, LeaveDecision.Approve, null, true)).IsFailure);
         Assert.True((await employee.DecideAsync(id, LeaveDecision.Check, null, false)).IsFailure);
         Assert.True((await office.DecideAsync(id, LeaveDecision.Check, null, false)).IsSuccess);
@@ -214,7 +215,68 @@ public sealed class LeaveRequestWorkflowTests
             Assert.Equal("1", period.KullanilanIzin);
             Assert.Equal("19", period.KalanIzin);
             Assert.Equal("office", movement.Olusturan);
+            period.KalanIzin = "14";
+            await db.SaveChangesAsync();
         }
+        var approvedDocument = Success(await employee.DetailAsync(id, false)).DocumentUrl;
+        Assert.NotNull(approvedDocument);
+        Assert.Contains("UcretlIzinBelgesiViewer.aspx", approvedDocument);
+        Assert.Contains("SonIzin=19%20G%C3%BCn", approvedDocument);
+    }
+
+    [Fact]
+    public async Task CheckedLeaveProvidesPrintDataAndJengaEmailLinkWithoutPortalConfiguration()
+    {
+        await using var data = await TestData.CreateAsync();
+        data.Configuration["LeaveRequests:PortalDocumentBaseUrl"] = null;
+        data.Configuration["LeaveRequests:BaseUrl"] = "https://jenga.example.test";
+        var employee = data.Service("employee");
+        var office = data.Service("office", manage: true);
+        var id = Success(await employee.SaveAsync(Request(LeaveType.Paid, Friday, Friday), false)).Id;
+        await using (var db = data.CreateDbContext())
+        {
+            db.IzinHareket_Table.AddRange(
+                new IzinHareket { PersonelId = 2, IzinTipi = (int)LeaveType.Marriage, BaslangicTarihi = Friday.AddDays(-10), Sure = "3" },
+                new IzinHareket { PersonelId = 2, IzinTipi = (int)LeaveType.Paid, BaslangicTarihi = Friday.AddYears(-1), Sure = "14" });
+            await db.SaveChangesAsync();
+        }
+
+        Assert.True((await office.DecideAsync(id, LeaveDecision.Check, null, false)).IsSuccess);
+        var detail = Success(await employee.DetailAsync(id, false));
+        Assert.Null(detail.DocumentUrl);
+        Assert.Equal(new LeaveDocumentBalance("20", "19"), detail.DocumentBalance);
+        Assert.NotNull(detail.DocumentInfo);
+        Assert.Equal("Uzman", detail.DocumentInfo.Title);
+        Assert.Equal(new DateTime(2026, 3, 1), detail.DocumentInfo.PeriodStart);
+        Assert.Equal("20", detail.DocumentInfo.Entitlement);
+        Assert.Equal(3, detail.DocumentInfo.UsedDays[LeaveType.Marriage]);
+        Assert.DoesNotContain(LeaveType.Paid, detail.DocumentInfo.UsedDays.Keys);
+        Assert.Contains($"https://jenga.example.test/ikys/leave-requests/print/{id}", data.Email.Messages.Last());
+        Assert.True((await data.Service("stranger").DetailAsync(id, false)).IsFailure);
+        Assert.True((await data.Service("stranger").DetailAsync(id, true)).IsFailure);
+    }
+
+    [Fact]
+    public async Task NursingLeaveCanBeApprovedWithoutAPrintedDocument()
+    {
+        await using var data = await TestData.CreateAsync();
+        data.Configuration["LeaveRequests:BaseUrl"] = "https://jenga.example.test";
+        await using (var db = data.CreateDbContext())
+        {
+            var request = StoredRequest(303, LeaveType.Nursing, Status.IslemBekliyor, "1", Friday);
+            request.EPostaGonder = true;
+            db.IzinTalep_Table.Add(request);
+            await db.SaveChangesAsync();
+        }
+
+        var office = data.Service("office", manage: true);
+        Assert.True((await office.DecideAsync(303, LeaveDecision.Check, null, false)).IsSuccess);
+        var detail = Success(await office.DetailAsync(303, true));
+        Assert.Null(detail.DocumentInfo);
+        Assert.Null(detail.DocumentUrl);
+        Assert.DoesNotContain("Yazdır", Assert.Single(data.Email.Messages));
+        Assert.True((await office.DecideAsync(303, LeaveDecision.Approve, null, false)).IsSuccess);
+        Assert.Equal(Status.KayitlaraIslendi, Success(await office.DetailAsync(303, true)).Row.Status);
     }
 
     [Fact]
@@ -233,6 +295,7 @@ public sealed class LeaveRequestWorkflowTests
         Assert.Empty(Success(await office.ListAsync(true, LeaveListFilter.General, null, 0)).Items);
         Assert.Single(Success(await office.ListAsync(true, LeaveListFilter.Personal, null, 0)).Items);
         Assert.True((await office.DecideAsync(id, LeaveDecision.Check, null, false)).IsSuccess);
+        Assert.Contains("MazeretIzinBelgesiViewer.aspx", Success(await employee.DetailAsync(id, false)).DocumentUrl);
         await using (var db = data.CreateDbContext())
         {
             var period = await db.IzinDonem_Table.SingleAsync();
@@ -249,6 +312,7 @@ public sealed class LeaveRequestWorkflowTests
         var detail = Success(await employee.DetailAsync(id, false));
         Assert.Equal(Status.Reddedildi, detail.Row.Status);
         Assert.Equal("Tarih uygun değil.", detail.Description);
+        Assert.Null(detail.DocumentUrl);
         Assert.Empty(detail.Movements);
     }
 
@@ -387,14 +451,14 @@ public sealed class LeaveRequestWorkflowTests
     private sealed class TestData : IDbContextFactory<ApplicationDbContext>, IAsyncDisposable
     {
         private readonly SqliteConnection _connection = new("Data Source=:memory:");
-        private readonly IConfiguration _configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        public IConfiguration Configuration { get; } = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
         {
             ["LeaveRequests:PortalDocumentBaseUrl"] = "https://portal.example.test"
         }).Build();
         public TestEmail Email { get; } = new();
 
         public LeaveRequestWorkflow Service(string name, bool manage = false) =>
-            new(this, new Authorization(name, manage), NullLogService.Instance, Email, _configuration);
+            new(this, new Authorization(name, manage), NullLogService.Instance, Email, Configuration);
 
         public ApplicationDbContext CreateDbContext() =>
             new TestContext(new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(_connection).Options);

@@ -83,9 +83,21 @@ public sealed partial class LeaveRequestWorkflow(
                                    select new LeaveMovementRow(movement.Id, type.Adi ?? "İzin", movement.IzinTipi, movement.BaslangicTarihi,
                                        movement.BitisTarihi, movement.Sure, movement.Birim)).Take(10).ToListAsync(ct);
             var period = periods.Find(x => x.Id == request.IzinDonemId);
+            IzinHareket? approvedMovement = null;
+            if (request.OnayDurumu == Status.KayitlaraIslendi && period is not null)
+            {
+                approvedMovement = await db.IzinHareket_Table.AsNoTracking()
+                    .Where(x => x.IzinTalepId == id && x.PersonelId == request.PersonelId &&
+                        x.IzinDonemId == period.Id && x.IzinTipi == request.IzinTipi && x.Mahsup != true)
+                    .OrderByDescending(x => x.Id).FirstOrDefaultAsync(ct);
+            }
+            var balance = GetDocumentBalance(request, period, approvedMovement);
+            var documentInfo = request.IzinTipi != (int)LeaveType.Nursing &&
+                request.OnayDurumu is Status.KontrolEdildi or Status.KayitlaraIslendi
+                ? await GetDocumentInfoAsync(db, request, periods, ct) : null;
             return new LeaveRequestDetail(row, request.Adres, request.Aciklama,
                 signers.Find(x => x.Id == request.VekilImza)?.Name, signers.Find(x => x.Id == request.AmirImza)?.Name,
-                periods, movements, DocumentUrl(request, period));
+                periods, movements, DocumentUrl(request, period, balance), balance, documentInfo);
         }, cancellationToken);
 
     public Task<Result<List<LeaveOption>>> ListPersonnelForEntryAsync(CancellationToken cancellationToken = default) =>

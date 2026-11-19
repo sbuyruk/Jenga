@@ -30,7 +30,7 @@ public sealed partial class LeaveRequestWorkflow
             _ => (Status?)null
         };
         if (!next.HasValue || await HasMovementAsync(db, id, ct)) return ChangedRequest;
-        if (decision == LeaveDecision.Approve && !documentReceived)
+        if (decision == LeaveDecision.Approve && request.IzinTipi != (int)LeaveType.Nursing && !documentReceived)
             return Error.Validation("İmzalı izin belgesinin teslim alındığını doğrulayınız.");
 
         IzinDonem? period = null;
@@ -122,25 +122,44 @@ public sealed partial class LeaveRequestWorkflow
         return Result.Success();
     }
 
-    private string? DocumentUrl(IzinTalep request, IzinDonem? period)
+    private static LeaveDocumentBalance? GetDocumentBalance(IzinTalep request, IzinDonem? period, IzinHareket? approvedMovement = null)
     {
-        if (request.OnayDurumu != Status.KontrolEdildi || SiteUrl("PortalDocumentBaseUrl") is not { } root) return null;
+        if (request.OnayDurumu == Status.KayitlaraIslendi && approvedMovement is not null)
+            return new LeaveDocumentBalance(approvedMovement.OncekiIzinStr, approvedMovement.KalanIzinStr);
+        if (request.OnayDurumu != Status.KontrolEdildi || period?.KalanIzin is not { } before) return null;
+
+        var after = request.IzinTipi == (int)LeaveType.Personal
+            ? (Hours(before) - Hours(request.Sure)).ToString("c", CultureInfo.InvariantCulture)
+            : Number(Days(before) - Days(request.Sure));
+        return new LeaveDocumentBalance(before, after);
+    }
+
+    private string? DocumentUrl(IzinTalep request, IzinDonem? period, LeaveDocumentBalance? balance)
+    {
+        if (request.IzinTipi == (int)LeaveType.Nursing || request.OnayDurumu is not (Status.KontrolEdildi or Status.KayitlaraIslendi) ||
+            SiteUrl("PortalDocumentBaseUrl") is not { } root) return null;
         var isPersonal = request.IzinTipi == (int)LeaveType.Personal;
         var isPaid = request.IzinTipi == (int)LeaveType.Paid;
+        var approved = request.OnayDurumu == Status.KayitlaraIslendi;
+        if (approved && (isPaid || isPersonal) &&
+            (period is null || string.IsNullOrWhiteSpace(balance?.After) ||
+                (isPersonal && string.IsNullOrWhiteSpace(balance?.Before)))) return null;
+
         var viewer = isPersonal ? "MazeretIzinBelgesiViewer.aspx" : "UcretlIzinBelgesiViewer.aspx";
         var parameters = $"IzinTalepId={request.Id}";
 
         if (isPaid && period is not null)
         {
-            var after = Number(Days(period.KalanIzin) - Days(request.Sure));
+            var after = balance?.After ?? Number(Days(period.KalanIzin) - Days(request.Sure));
             parameters += $"&IzinDonemId={period.Id}&SonIzin={Uri.EscapeDataString(after + " Gün")}";
         }
         else if (isPersonal && period is not null)
         {
             var requested = Hours(request.Sure);
-            var balance = Hours(period.KalanIzin);
-            parameters += $"&SureStr={Uri.EscapeDataString(DisplayHours(requested))}&KalanIzinStr={Uri.EscapeDataString(DisplayHours(balance))}" +
-                $"&SonIzin={Uri.EscapeDataString(DisplayHours(balance - requested))}";
+            var before = Hours(balance?.Before ?? period.KalanIzin);
+            var after = balance?.After is { } storedBalance ? Hours(storedBalance) : before - requested;
+            parameters += $"&SureStr={Uri.EscapeDataString(DisplayHours(requested))}&KalanIzinStr={Uri.EscapeDataString(DisplayHours(before))}" +
+                $"&SonIzin={Uri.EscapeDataString(DisplayHours(after))}";
         }
         else
         {
@@ -171,14 +190,23 @@ public sealed partial class LeaveRequestWorkflow
             var subject = $"{dates} {type ?? "İzin"} talebiniz";
             var body = request.OnayDurumu switch
             {
-                Status.KontrolEdildi => "İzin talebiniz kontrol edildi. İmzalı izin belgenizi Personel Kısmına teslim ediniz.",
+                Status.KontrolEdildi when request.IzinTipi != (int)LeaveType.Nursing =>
+                    "İzin talebiniz kontrol edildi. İzin belgenizi yazdırın, imzalatın ve Personel Kısmına teslim edin.",
+                Status.KontrolEdildi => "İzin talebiniz kontrol edildi.",
                 Status.Reddedildi => $"İzin talebiniz reddedildi. {WebUtility.HtmlEncode(request.Aciklama)}",
                 Status.KayitlaraIslendi => "İzin talebiniz kayıtlara işlendi.",
                 _ => "İzin talebiniz oluşturuldu."
             };
-            if (DocumentUrl(request, period) is { } document)
-                body += $" <a href=\"{WebUtility.HtmlEncode(document)}\">İzin belgesi</a>";
-            if (SiteUrl("BaseUrl") is { } site)
+            var site = SiteUrl("BaseUrl");
+            if (request.OnayDurumu == Status.KontrolEdildi && request.IzinTipi != (int)LeaveType.Nursing)
+            {
+                var document = site is not null
+                    ? $"{site}/ikys/leave-requests/print/{request.Id}"
+                    : DocumentUrl(request, period, GetDocumentBalance(request, period));
+                if (document is not null)
+                    body += $" <a href=\"{WebUtility.HtmlEncode(document)}\">İzin Belgesini Yazdır</a>";
+            }
+            if (site is not null)
                 body += $" <a href=\"{WebUtility.HtmlEncode(site)}/ikys/leave-requests\">İzin Taleplerim</a>";
 
             var personNotified = !string.IsNullOrWhiteSpace(address) && await email.TrySendAsync([address], subject, body);

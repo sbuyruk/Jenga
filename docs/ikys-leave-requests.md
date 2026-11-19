@@ -7,14 +7,14 @@ Personel, kişisel sayfasındaki **İzin Taleplerim** kartından taleplerini aç
 Formun başında, seçilen personelin seçili izin türündeki işlemi devam eden talepleri görünür. Süre hesabında bu taleplerin süresi ayrı gösterilir. Yıllık izin hesabında bu süre toplam bakiyeden, mazeret izninde ilgili dönem bakiyesinden düşülerek tahmini kalan süre hesaplanır.
 
 - **İşlem Bekliyor** veya **Dilekçe Bekleniyor** durumundaki mevcut talep düzenlenebilir, silinebilir, kontrol edilebilir veya reddedilebilir.
-- **Kontrol Edildi** durumunda personel imzalı belgeyi Personel Kısmına teslim eder. İKYS yetkilisi teslimi doğrulayıp talebi kayıtlara işler veya reddeder.
+- **Kontrol Edildi** durumunda personel **Belge ve Detay → İzin Belgesini Yazdır** adımından A5 çıktıyı alır ve imzalı belgeyi Personel Kısmına teslim eder. Saatlik mazeret izni ayrı şablonla yazdırılır. Süt izni için belge düzenlenmez ve İKYS nihai onayı belge teslimi olmadan verir. **Kayıtlara İşlendi** durumunda aynı ekrandan yeniden çıktı alınabilir. Mazeret izninin yeniden çıktısı için talebe bağlı izin hareketindeki bakiye bilgisi kullanılır.
 - Nihai onay aynı işlemde izin hareketini oluşturur. Yıllık ve mazeret izinlerinde bakiye, asker statüsü dışındaki personelin ücretsiz izninde ise izin dönemi başlangıcı güncellenir. Yeni mahsup dilekçesi ve mahsup yönetimi sonraki etabın kapsamındadır.
 
 ## Yapılandırma
 
 | Ayar | Kullanım |
 |---|---|
-| `LeaveRequests:PortalDocumentBaseUrl` | Test ortamında erişimi ve kayıt uyumu doğrulanan PortalApps kök adresi. Ayar boşken kontrol edilmiş talepte belge teslimi bilgisi gösterilir. |
+| `LeaveRequests:PortalDocumentBaseUrl` | İsteğe bağlı eski belge adresi. Jenga ekranı kendi A5 belgelerini açar. Jenga kök adresi tanımsızsa e-postadaki belge bağlantısı için PortalApps adresi kullanılabilir. |
 | `LeaveRequests:BaseUrl` | E-postalarda kullanılacak Jenga kök adresi. |
 | `LeaveRequests:NotificationGroup` | Yeni talep alıcıları. Varsayılan değer PortalApps’teki `izinonaymailgrubu@tskgv.local`. Boş değer grup bildirimini kapatır. Birden fazla adres noktalı virgülle ayrılır. |
 | `LeaveRequests:PersonnelEmailDomain` | Personelin iletişim kaydında e-posta bulunmadığında kullanılan alan adı. Varsayılan değer `tskgv.local`. |

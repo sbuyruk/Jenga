@@ -169,7 +169,8 @@
                                         aria-expanded="@(_detail?.Row.Id == row.Id ? "true" : "false")"
                                         aria-controls="@(_detail?.Row.Id == row.Id ? "leave-detail-panel" : null)"
                                         @onclick="() => OpenDetailAsync(row.Id)">
-                                    İncele <i class="bi bi-chevron-right ms-1" aria-hidden="true"></i>
+                                    @(CanPrint(row) ? "Belge ve Detay" : "İncele")
+                                    <i class="bi bi-chevron-right ms-1" aria-hidden="true"></i>
                                 </button>
                             </div>
                         </td>
@@ -224,16 +225,18 @@
                     </div>
                 </dl>
 
-                @if (detail.Row.Status == Status.KontrolEdildi)
+                @if (CanPrint(detail.Row))
                 {
                     <div class="leave-document">
-                        <div><i class="bi bi-file-earmark-check me-2" aria-hidden="true"></i>İmzalı izin belgesi Personel Kısmına teslim edilmelidir.</div>
-                        @if (detail.DocumentUrl is { } document)
+                        @if (detail.Row.Status == Status.KontrolEdildi)
                         {
-                            <a class="btn btn-sm btn-outline-primary" href="@document" target="_blank" rel="noopener noreferrer">
-                                İzin Belgesini Aç <i class="bi bi-box-arrow-up-right ms-1" aria-hidden="true"></i>
-                            </a>
+                            <div>İzin belgesini yazdırın, imzalatın ve Personel Kısmına teslim edin.</div>
                         }
+                        <a class="btn btn-sm btn-primary"
+                           href="@($"/ikys/leave-requests/print/{detail.Row.Id}{(PersonnelOffice ? "?scope=manage" : "")}")"
+                           target="_blank" rel="noopener noreferrer">
+                            <i class="bi bi-printer me-1" aria-hidden="true"></i> İzin Belgesini Yazdır
+                        </a>
                     </div>
                 }
 
@@ -288,7 +291,7 @@
                     <div class="leave-decision">
                         <label class="form-label" for="leave-note">Karar açıklaması</label>
                         <textarea id="leave-note" class="form-control mb-3" rows="2" @bind="_note" disabled="@_busy"></textarea>
-                        @if (detail.Row.Status == Status.KontrolEdildi)
+                        @if (detail.Row.Status == Status.KontrolEdildi && detail.Row.Type != (int)LeaveType.Nursing)
                         {
                             <div class="form-check mb-3">
                                 <input type="checkbox" class="form-check-input" id="leave-document-received" @bind="_documentReceived" disabled="@_busy" />
@@ -298,7 +301,8 @@
                         <div class="leave-detail-actions">
                             @if (detail.Row.Status == Status.KontrolEdildi)
                             {
-                                <button type="button" class="btn btn-success" disabled="@(_busy || !_documentReceived)"
+                                <button type="button" class="btn btn-success"
+                                        disabled="@(_busy || (detail.Row.Type != (int)LeaveType.Nursing && !_documentReceived))"
                                         @onclick="() => DecideAsync(LeaveDecision.Approve)">Onayla ve Kayıtlara İşle</button>
                             }
                             else

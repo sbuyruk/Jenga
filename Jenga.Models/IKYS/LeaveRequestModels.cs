@@ -44,9 +44,17 @@ public sealed record LeaveRequestList(List<LeaveRequestRow> Items, int Total);
 
 public sealed record LeaveMovementRow(int Id, string TypeName, int? Type, DateTime? Start, DateTime? End, string? Duration, string? Unit);
 
+public sealed record LeaveDocumentBalance(string? Before, string? After);
+
+public sealed record LeaveDocumentInfo(
+    DateTime? SubmittedAt, int? PersonnelNumber, string? Title, string? Department, string? SubstituteTitle,
+    string? ManagerTitle, DateTime? PeriodStart, DateTime? PeriodEnd, string? Entitlement,
+    IReadOnlyDictionary<LeaveType, int> UsedDays);
+
 public sealed record LeaveRequestDetail(
     LeaveRequestRow Row, string? Address, string? Description, string? Substitute, string? Manager,
-    List<IzinDonem> Periods, List<LeaveMovementRow> Movements, string? DocumentUrl);
+    List<IzinDonem> Periods, List<LeaveMovementRow> Movements, string? DocumentUrl,
+    LeaveDocumentBalance? DocumentBalance = null, LeaveDocumentInfo? DocumentInfo = null);
 
 public sealed record LeaveCalculation(string Duration, string Unit, string? Available, string? Remaining,
     string? PendingDuration = null, string? AvailableAfterPending = null,

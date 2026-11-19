@@ -57,7 +57,6 @@
                                 <span>@FormatDate(request.Start, request.Type) – @FormatDate(request.End, request.Type)</span>
                                 <span>@DurationText(request.Duration, request.Unit)</span>
                                 <span class="leave-entry-existing-status">@StatusText(request.Status)</span>
-                                <a class="leave-entry-existing-link" href="@PendingRequestUrl(request.Id)">Talebi Aç</a>
                             </li>
                         }
                     </ul>
@@ -98,7 +97,7 @@
 
                         <section class="leave-entry-section" aria-labelledby="leave-dates-heading">
                             <h2 id="leave-dates-heading">İzin tarihleri</h2>
-                            <div class="leave-entry-grid">
+                            <div class="leave-entry-grid @(IsPersonal ? "leave-entry-personal-dates" : "")">
                                 <div>
                                     <label class="form-label" for="leave-start">@(IsPersonal ? "İzin tarihi" : "Başlangıç tarihi")</label>
                                     <InputDate id="leave-start" class="form-control" @bind-Value="form.Input.StartDate" @bind-Value:after="ClearCalculation" />
@@ -273,7 +272,6 @@
     private string Title => RequestId.HasValue ? "İzin Talebini Düzenle" : "Yeni İzin Talebi";
     private bool ReturnsToOffice => _canManage && string.Equals(ReturnTo, "manage", StringComparison.OrdinalIgnoreCase);
     private string ListUrl => ReturnsToOffice ? "/ikys/leave-requests/manage" : PersonalListUrl;
-    private string PendingRequestUrl(int id) => $"{PersonalListUrl}{(_canManage ? "/manage" : "")}?requestId={id}";
     private bool IsPersonal => _form?.Input.Type == LeaveType.Personal;
     private bool IsNursing => _form?.Input.Type == LeaveType.Nursing;
     private bool _ready, _loading = true, _busy, _saved, _canManage;

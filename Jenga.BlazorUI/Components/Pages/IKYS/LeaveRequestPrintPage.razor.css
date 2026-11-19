@@ -1,0 +1,127 @@
+.leave-sheet {
+    box-sizing: border-box;
+    width: 148mm;
+    max-width: 100%;
+    min-height: 210mm;
+    margin: 0 auto;
+    padding: 7mm;
+    background: #fff;
+    color: #000;
+    font: 9pt/1.3 Arial, sans-serif;
+}
+
+h1, h2 { margin: 0; }
+h1 { font-size: 11pt; font-weight: 700; text-transform: uppercase; }
+h2 { font-size: 9pt; text-transform: uppercase; }
+
+.leave-general-header {
+    position: relative;
+    display: grid;
+    align-items: center;
+    min-height: 13mm;
+    padding-inline: 13mm;
+    margin-bottom: 3mm;
+    text-align: center;
+}
+
+.leave-crest {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 11mm;
+    height: 13mm;
+    overflow: hidden;
+}
+
+.leave-crest img {
+    position: absolute;
+    width: 69mm;
+    max-width: none;
+    left: -4.7mm;
+    top: -1.5mm;
+}
+
+.leave-general-form, .leave-personal-form { border: 1px solid #000; }
+.leave-general-form section { break-inside: avoid; }
+.leave-general-form h2 {
+    padding: 1.25mm 1mm;
+    border-block: 1px solid #000;
+}
+.leave-general-form section:first-child h2 { border-top: 0; }
+.leave-date { float: right; font-weight: normal; }
+
+.leave-fields {
+    --label-width: 42%;
+    margin: 0;
+    padding: .5mm 1mm 1mm;
+}
+
+.leave-fields > div {
+    display: grid;
+    grid-template-columns: minmax(0, var(--label-width)) minmax(0, 1fr);
+    min-height: 6mm;
+    padding: .8mm 0;
+}
+
+dt { position: relative; padding-right: 3mm; font-weight: normal; }
+dt::after { content: ":"; position: absolute; right: 1mm; }
+dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.leave-signature { min-height: 4mm; }
+
+.leave-request-fields { display: grid; grid-template-columns: 58% 42%; }
+.leave-request-fields > div { --label-width: 72.4%; }
+.leave-request-fields > div:nth-child(even) { --label-width: 52%; }
+.leave-request-fields > div.leave-wide { --label-width: 42%; grid-column: 1 / -1; }
+
+.leave-used-days {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    text-align: center;
+}
+.leave-used-days th, .leave-used-days td {
+    height: 6.5mm;
+    border: 1px solid #000;
+    padding: .5mm 0;
+    font-weight: normal;
+}
+.leave-used-days th { border-top: 0; }
+.leave-used-days :is(th, td):first-child { border-left: 0; }
+.leave-used-days :is(th, td):last-child { border-right: 0; }
+.leave-used-days td { border-bottom: 0; }
+
+.leave-personal-form { padding: 3mm 4mm; }
+.leave-personal-form h1 {
+    clear: both;
+    padding-top: 4mm;
+    text-align: center;
+    text-decoration: underline;
+}
+.leave-personal-statement { margin: 10mm 0 9mm; }
+.leave-personal-manager {
+    width: 40%;
+    min-height: 14mm;
+    margin-left: auto;
+    line-height: 1.65;
+}
+.leave-personal-heading { margin: 6mm 0 1mm; text-decoration: underline; }
+.leave-personal-form .leave-fields { padding-inline: 0; }
+.leave-print-note { margin: 5mm 4mm 0; font-size: 8.5pt; }
+
+@page leave-request { size: A5 portrait; margin: 7mm; }
+
+@media print {
+    .leave-sheet {
+        page: leave-request;
+        width: auto;
+        max-width: none;
+        min-height: 0;
+        margin: 0;
+        padding: 0;
+    }
+    .leave-used-days { font-size: inherit !important; }
+    .leave-used-days th, .leave-used-days td { padding: .5mm 0 !important; }
+    .leave-used-days th { border-top: 0 !important; }
+    .leave-used-days :is(th, td):first-child { border-left: 0 !important; }
+    .leave-used-days :is(th, td):last-child { border-right: 0 !important; }
+    .leave-used-days td { border-bottom: 0 !important; }
+}
