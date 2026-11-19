@@ -68,11 +68,8 @@ else if (_sekme == 0)
                     <th style="min-width:230px">İşlem</th>
                     <th>Durum</th>
                     <th style="min-width:220px">Adres</th>
-                    <th>Ada</th>
-                    <th>Parsel</th>
                     <th>Cinsi</th>
-                    <th>İli</th>
-                    <th>İlçesi</th>
+                    <th>İli / İlçesi</th>
                     <th>Kontrol Sıklığı</th>
                     <th>Son Kontrol</th>
                     <th>Sonraki Kontrol</th>
@@ -97,11 +94,8 @@ else if (_sekme == 0)
                         else { <span class="badge bg-success">Planlı</span> }
                     </td>
                     <td title="Sicil No: @p.EmlakSicilNo">@p.Adres</td>
-                    <td>@p.AdaNo</td>
-                    <td>@p.ParselNo</td>
                     <td>@p.Cinsi</td>
-                    <td>@p.Ili</td>
-                    <td>@p.Ilcesi</td>
+                    <td>@p.Ili / @p.Ilcesi</td>
                     <td>@KontrolPeriyodu.Etiket(p.PeriyotSure, p.PeriyotBirim)</td>
                     <td>@(p.SonKontrolId is null ? "—" : "")@if (p.SonKontrolId is not null) { <a href="/tbys/tasinmaz-kontrol/@p.SonKontrolId">@p.SonKontrolTarihi?.ToString("d", Tr)</a> }</td>
                     <td class="@(p.Gecikmis ? "fw-bold text-danger" : "")">@(p.SonrakiKontrolTarihi?.ToString("d", Tr) ?? "—")</td>
@@ -186,7 +180,7 @@ else
 @code {
     private static readonly CultureInfo Tr = new("tr-TR");
     private static readonly string[] PlanExportHeaders =
-        ["Bölge", "Durum", "Adres", "Ada", "Parsel", "Cinsi", "İli", "İlçesi", "Kontrol Sıklığı", "Son Kontrol", "Sonraki Kontrol"];
+        ["Bölge", "Durum", "Adres", "Cinsi", "İli / İlçesi", "Kontrol Sıklığı", "Son Kontrol", "Sonraki Kontrol"];
     private static readonly string[] KontrolExportHeaders =
         ["Bölge", "#", "Rapor No", "Durum", "Tarih", "Sicil No", "Cinsi", "İli / İlçesi", "Kontrol Edenler", "Sonraki"];
 
@@ -194,7 +188,7 @@ else
     [
         p.BolgeAdi,
         p.AcikTaslakId is not null ? "Taslak açık" : p.Gecikmis ? "Gecikmiş" : p.SonrakiKontrolTarihi is null ? "Plansız" : "Planlı",
-        p.Adres, p.AdaNo, p.ParselNo, p.Cinsi, p.Ili, p.Ilcesi,
+        p.Adres, p.Cinsi, $"{p.Ili} / {p.Ilcesi}",
         KontrolPeriyodu.Etiket(p.PeriyotSure, p.PeriyotBirim),
         p.SonKontrolId is null ? "—" : p.SonKontrolTarihi?.ToString("d", Tr),
         p.SonrakiKontrolTarihi?.ToString("d", Tr) ?? "—"
