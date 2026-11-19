@@ -21,6 +21,8 @@ public sealed partial class LeaveRequestWorkflow
         IzinDonem? Period = null, DateTime? PeriodStart = null, DateTime? PeriodEnd = null,
         string? Allowance = null, string? PeriodBalance = null);
 
+    private sealed record PendingLeave(string? Duration, int? PeriodId, DateTime? Start);
+
     private static IQueryable<Personel> WorkingPersonnel(ApplicationDbContext db) => db.Personel_Table
         .Where(person => db.IsBilgileri_Table.Any(
             job => job.PersonelId == person.Id && job.CalismaDurumu == CalismaDurumu.Calisiyor));
@@ -59,7 +61,7 @@ public sealed partial class LeaveRequestWorkflow
     }
 
     private static async Task<Result<PreparedLeave>> PrepareAsync(ApplicationDbContext db, Personel person,
-        LeaveRequestInput input, bool allowPendingPetition, CancellationToken ct)
+        LeaveRequestInput input, bool allowPendingPetition, CancellationToken ct, bool includePending = false)
     {
         if (input.Type is not { } type || !Enum.IsDefined(type) ||
             !await db.IzinTanim_Table.AnyAsync(x => x.Id == (int)type, ct))
@@ -114,7 +116,19 @@ public sealed partial class LeaveRequestWorkflow
             end = end.AddHours(17);
         }
 
-        if (!HasBalance(type)) return new PreparedLeave(start, end, new(duration, unit, null, null));
+        var pending = includePending ? await PendingRequests(db, person.Id, input.Id)
+            .Where(x => x.IzinTipi == (int)type)
+            .Select(x => new PendingLeave(x.Sure, x.IzinDonemId, x.BaslangicTarihi)).ToListAsync(ct) : [];
+
+        if (!HasBalance(type))
+        {
+            var pendingDays = pending.Sum(x => Math.Max(0, Days(x.Duration)));
+            var calculation = pendingDays > 0
+                ? new LeaveCalculation(duration, unit, null, null, PendingDuration: Number(pendingDays),
+                    CombinedDuration: Number(Days(duration) + pendingDays))
+                : new LeaveCalculation(duration, unit, null, null);
+            return new PreparedLeave(start, end, calculation);
+        }
 
         var periods = await db.IzinDonem_Table.Where(x => x.PersonelId == person.Id && x.IzinTipi == (int)type)
             .OrderBy(x => x.BaslangicTarihi).ThenBy(x => x.Id).ToListAsync(ct);
@@ -128,24 +142,37 @@ public sealed partial class LeaveRequestWorkflow
         {
             var allowance = period.Id > 0 ? Hours(period.IzinHakki) : TimeSpan.FromHours(27);
             var balance = allowance - Hours(period.KullanilanIzin);
-            var remaining = balance - Hours(duration);
-            if (remaining < TimeSpan.Zero)
+            var pendingHours = TimeSpan.FromTicks(pending
+                .Where(x => (period.Id > 0 && x.PeriodId == period.Id) ||
+                    (x.PeriodId.GetValueOrDefault() <= 0 && x.Start?.Date >= periodStart && x.Start?.Date <= periodEnd))
+                .Sum(x => Math.Max(0, Hours(x.Duration).Ticks)));
+            var availableAfterPending = balance - pendingHours;
+            var remaining = availableAfterPending - Hours(duration);
+            if (remaining < TimeSpan.Zero && pendingHours == TimeSpan.Zero)
                 return Error.Validation($"Mazeret izni bakiyesi yetersiz. Kullanılabilir süre: {DisplayHours(balance)} saat.");
 
-            return new PreparedLeave(start, end, new(duration, unit, DisplayHours(balance), DisplayHours(remaining)),
-                period, periodStart, periodEnd, allowance.ToString("c"), balance.ToString("c"));
+            var calculation = new LeaveCalculation(duration, unit, DisplayHours(balance), DisplayHours(remaining),
+                PendingDuration: pendingHours > TimeSpan.Zero ? DisplayHours(pendingHours) : null,
+                AvailableAfterPending: pendingHours > TimeSpan.Zero ? DisplayHours(availableAfterPending) : null,
+                BalanceWarning: remaining < TimeSpan.Zero ? "Bekleyen talepler hesaba katıldığında mazeret izni bakiyesi yetersiz." : null);
+            return new PreparedLeave(start, end, calculation, period, periodStart, periodEnd, allowance.ToString("c"), balance.ToString("c"));
         }
 
         var serviceYears = periodStart.Year - entitlementStart.Year;
         var annualAllowance = PaidAllowance(person, serviceYears, job.VakifOncesiPrimGunSayisi);
         var periodBalance = annualAllowance - Days(period.KullanilanIzin);
         var available = periodBalance + periods.Where(x => x.Id != period.Id).Sum(x => Days(x.KalanIzin));
-        var afterRequest = available - Days(duration);
-        if (afterRequest < 0 && !allowPendingPetition)
+        var reservedDays = pending.Sum(x => Math.Max(0, Days(x.Duration)));
+        var availableDaysAfterPending = available - reservedDays;
+        var afterRequest = availableDaysAfterPending - Days(duration);
+        if (afterRequest < 0 && reservedDays == 0 && !allowPendingPetition)
             return Error.Validation($"Yıllık izin bakiyesi yetersiz. Kullanılabilir süre: {available} gün.");
 
-        return new PreparedLeave(start, end, new(duration, unit, Number(available), Number(afterRequest)),
-            period, periodStart, periodEnd, Number(annualAllowance), Number(periodBalance));
+        var paidCalculation = new LeaveCalculation(duration, unit, Number(available), Number(afterRequest),
+            PendingDuration: reservedDays > 0 ? Number(reservedDays) : null,
+            AvailableAfterPending: reservedDays > 0 ? Number(availableDaysAfterPending) : null,
+            BalanceWarning: afterRequest < 0 && reservedDays > 0 ? "Bekleyen talepler hesaba katıldığında yıllık izin bakiyesi yetersiz." : null);
+        return new PreparedLeave(start, end, paidCalculation, period, periodStart, periodEnd, Number(annualAllowance), Number(periodBalance));
     }
 
     private static DateTime Anniversary(int year, DateTime entitlementStart) =>

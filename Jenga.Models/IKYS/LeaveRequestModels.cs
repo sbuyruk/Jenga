@@ -48,6 +48,8 @@ public sealed record LeaveRequestDetail(
     LeaveRequestRow Row, string? Address, string? Description, string? Substitute, string? Manager,
     List<IzinDonem> Periods, List<LeaveMovementRow> Movements, string? DocumentUrl);
 
-public sealed record LeaveCalculation(string Duration, string Unit, string? Available, string? Remaining);
+public sealed record LeaveCalculation(string Duration, string Unit, string? Available, string? Remaining,
+    string? PendingDuration = null, string? AvailableAfterPending = null,
+    string? CombinedDuration = null, string? BalanceWarning = null);
 
 public sealed record LeaveWriteResult(int Id, bool NotificationFailed = false);

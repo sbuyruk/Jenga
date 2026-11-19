@@ -1,8 +1,10 @@
 # İKYS izin talepleri
 
-Personel, kişisel sayfasındaki **İzin Taleplerim** kartından taleplerini açar. İKYS yetkilileri **Bekleyen İşlemler** sayfasındaki **İzin Talepleri** bağlantısından tüm açık ve sonuçlanmış talepleri inceleyebilir. Kişisel ekran, kullanıcının kendi kayıtlarını getirir. Kişisel işlemlerde ilgili `IKYS/View`, `Create`, `Edit` ve `Delete` izinleri, İKYS işlem ekranında `IKYS/Manage` denetlenir.
+Personel, kişisel sayfasındaki **İzin Taleplerim** kartından taleplerini açar. İKYS yetkilileri **Bekleyen İşlemler** sayfasındaki **İzin Talepleri** bağlantısından çalışma durumu **Çalışıyor** olan personelin açık ve sonuçlanmış taleplerini listeleyebilir. Kişisel ekran, kullanıcının kendi kayıtlarını getirir. Kişisel işlemlerde ilgili `IKYS/View`, `Create`, `Edit` ve `Delete` izinleri, İKYS işlem ekranında `IKYS/Manage` denetlenir.
 
-`IKYS/Manage` yetkisi olan kullanıcı, **İzin Taleplerim → Personel Adına Talep** ile çalışan kadrolu veya kadro harici personeli seçip onun adına yeni talep açabilir. Seçilen personel giriş formunda hazır gelir.
+İzin giriş formunda personel seçimi `IKYS/Manage` yetkisiyle açılır. Yetkili kullanıcı çalışan kadrolu veya kadro harici personel adına, diğer kullanıcılar kendi adlarına izin talebi oluşturabilir. **İzin Taleplerim → Personel Adına Talep** üzerinden seçilen personel giriş formunda hazır gelir.
+
+Formun başında, seçilen personelin seçili izin türündeki işlemi devam eden talepleri görünür. Süre hesabında bu taleplerin süresi ayrı gösterilir. Yıllık izin hesabında bu süre toplam bakiyeden, mazeret izninde ilgili dönem bakiyesinden düşülerek tahmini kalan süre hesaplanır.
 
 - **İşlem Bekliyor** veya **Dilekçe Bekleniyor** durumundaki mevcut talep düzenlenebilir, silinebilir, kontrol edilebilir veya reddedilebilir.
 - **Kontrol Edildi** durumunda personel imzalı belgeyi Personel Kısmına teslim eder. İKYS yetkilisi teslimi doğrulayıp talebi kayıtlara işler veya reddeder.
