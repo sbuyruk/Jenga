@@ -772,17 +772,19 @@ namespace Jenga.DataAccess.Services.TBYS
         private static async Task KiraBilgileriniDoldurAsync(ApplicationDbContext db, TasinmazKontrol kontrol, CancellationToken ct)
         {
             var cevaplar = KontrolCevaplari.FromJson(kontrol.CevaplarJson);
-            string[] alanlar = ["kira_kiraci_adi", "kira_baslangic", "kira_sozlesme_baslangic", "kira_bitis", "kira_odeme_duzeni"];
+            string[] alanlar = ["kira_bedel", "kira_kiraci_adi", "kira_baslangic", "kira_sozlesme_baslangic", "kira_bitis", "kira_odeme_duzeni"];
             if (alanlar.All(kod => !string.IsNullOrWhiteSpace(cevaplar.Al(kod)))) return;
             var bugun = DateTime.Today;
             var kira = await (from bag in db.SozlesmeTasinmaz_Table.AsNoTracking()
                               join soz in db.KiraSozlesme_Table.AsNoTracking() on bag.SozlesmeId equals soz.Id
                               join kiraci in db.Kiraci_Table.AsNoTracking() on soz.KiraciId equals kiraci.Id into kiracilar
                               from kiraci in kiracilar.DefaultIfEmpty()
-                              where bag.TasinmazId == kontrol.TasinmazId && soz.Aktif == true
-                                  && (soz.SozBasTar == null || soz.SozBasTar <= bugun)
-                              orderby soz.SozBasTar descending, soz.Id descending
-                              select new { soz.IlkSozlesmeTar, soz.SozBasTar, soz.SozBitTar, soz.OdemeSekli,
+                              where bag.TasinmazId == kontrol.TasinmazId
+                              // Önce başlamış aktif sözleşme; yoksa en son başlamış kayıt, en sonda gelecek sözleşme.
+                              orderby (soz.Aktif == true && (soz.SozBasTar == null || soz.SozBasTar <= bugun)) descending,
+                                  (soz.SozBasTar == null || soz.SozBasTar <= bugun) descending,
+                                  soz.SozBasTar descending, soz.Id descending
+                              select new { soz.KiraBedeli, soz.IlkSozlesmeTar, soz.SozBasTar, soz.SozBitTar, soz.OdemeSekli,
                                   Adi = kiraci != null ? kiraci.Adi : null, Soyadi = kiraci != null ? kiraci.Soyadi : null })
                 .FirstOrDefaultAsync(ct);
             if (kira is null) return;
@@ -791,6 +793,7 @@ namespace Jenga.DataAccess.Services.TBYS
                 if (string.IsNullOrWhiteSpace(cevaplar.Al(kod)) && !string.IsNullOrWhiteSpace(deger)) cevaplar.Koy(kod, deger);
             }
             string? Tarih(DateTime? tarih) => tarih?.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+            Doldur("kira_bedel", kira.KiraBedeli?.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture));
             Doldur("kira_kiraci_adi", string.Join(" ", new[] { kira.Adi?.Trim(), kira.Soyadi?.Trim() }.Where(s => !string.IsNullOrWhiteSpace(s))));
             Doldur("kira_baslangic", Tarih(kira.IlkSozlesmeTar));
             Doldur("kira_sozlesme_baslangic", Tarih(kira.SozBasTar));

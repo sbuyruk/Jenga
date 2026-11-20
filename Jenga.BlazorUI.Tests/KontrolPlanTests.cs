@@ -16,6 +16,62 @@ namespace Jenga.BlazorUI.Tests;
 public class KontrolPlanTests
 {
     [Theory]
+    [InlineData(null, false)]
+    [InlineData(false, false)]
+    [InlineData(true, true)]
+    public async Task KiraBilgileri_AktifIsaretiOlmayanVeyaGelecekSozlesmeVarsaDaDolar(bool? aktif, bool gelecek)
+    {
+        await using var factory = await Database.AcAsync();
+        var baslangic = DateTime.Today.AddMonths(gelecek ? 1 : -1);
+        await using (var db = factory.CreateDbContext())
+        {
+            db.Kiraci_Table.Add(new() { Id = 1, Adi = "Ali", Soyadi = "Demir" });
+            db.KiraSozlesme_Table.Add(new() { Id = 1, KiraciId = 1, Aktif = aktif, KiraBedeli = 9876.54m,
+                IlkSozlesmeTar = baslangic.AddYears(-2), SozBasTar = baslangic, SozBitTar = baslangic.AddYears(1), OdemeSekli = "Peşin" });
+            db.SozlesmeTasinmaz_Table.Add(new() { TasinmazId = 1, SozlesmeId = 1 });
+            // Aynı tablodaki başka sözleşme bu taşınmaza bağlı değildir.
+            db.KiraSozlesme_Table.Add(new() { Id = 2, KiraciId = 1, Aktif = true, SozBasTar = DateTime.Today, KiraBedeli = 99999m });
+            await db.SaveChangesAsync();
+        }
+        var servis = Servis(factory);
+        var sonuc = await servis.GetByIdAsync(1);
+        Assert.True(sonuc.IsSuccess, sonuc.IsFailure ? sonuc.Error.Message : "");
+        var cevaplar = KontrolCevaplari.FromJson(sonuc.Value.CevaplarJson);
+        Assert.Equal("9876.54", cevaplar.Al("kira_bedel"));
+        Assert.Equal("Ali Demir", cevaplar.Al("kira_kiraci_adi"));
+        Assert.Equal(baslangic.AddYears(-2).ToString("yyyy-MM-dd"), cevaplar.Al("kira_baslangic"));
+        Assert.Equal(baslangic.ToString("yyyy-MM-dd"), cevaplar.Al("kira_sozlesme_baslangic"));
+        Assert.Equal(baslangic.AddYears(1).ToString("yyyy-MM-dd"), cevaplar.Al("kira_bitis"));
+        Assert.Equal("Peşin", cevaplar.Al("kira_odeme_duzeni"));
+        // Okuma işlemi veritabanına yazmaz; kullanıcı taslağı kaydettiğinde kalıcılaşır.
+        await using var tekrar = factory.CreateDbContext();
+        Assert.Equal("{}", (await tekrar.TasinmazKontrol_Table.SingleAsync()).CevaplarJson);
+    }
+
+    [Fact]
+    public async Task KiraBilgileri_SadeceBedelBossaDoldurur_DigerCevaplariKorur()
+    {
+        await using var factory = await Database.AcAsync();
+        await KiraKayitlariniEkleAsync(factory);
+        var cevaplar = new KontrolCevaplari();
+        cevaplar.Koy("kira_kiraci_adi", "Kayıtlı Kiracı");
+        cevaplar.Koy("kira_baslangic", "2020-01-01");
+        cevaplar.Koy("kira_sozlesme_baslangic", "2026-01-01");
+        cevaplar.Koy("kira_bitis", "2027-01-01");
+        cevaplar.Koy("kira_odeme_duzeni", "Kayıtlı ödeme şekli");
+        await using (var db = factory.CreateDbContext())
+        {
+            (await db.TasinmazKontrol_Table.SingleAsync()).CevaplarJson = cevaplar.ToJson();
+            await db.SaveChangesAsync();
+        }
+        var sonuc = await Servis(factory).GetByIdAsync(1);
+        Assert.True(sonuc.IsSuccess, sonuc.IsFailure ? sonuc.Error.Message : "");
+        var dolu = KontrolCevaplari.FromJson(sonuc.Value.CevaplarJson);
+        Assert.Equal("12345.67", dolu.Al("kira_bedel"));
+        foreach (var alan in cevaplar.Alanlar) Assert.Equal(alan.Value, dolu.Al(alan.Key));
+    }
+
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public async Task KiraBilgileri_GuncelSozlesmedenDolar_KaydetVeYenidenAcmadaKorunur(bool yeniKontrol)
@@ -38,6 +94,7 @@ public class KontrolPlanTests
         var sonuc = await servis.GetByIdAsync(id);
         Assert.True(sonuc.IsSuccess, sonuc.IsFailure ? sonuc.Error.Message : "");
         var cevaplar = KontrolCevaplari.FromJson(sonuc.Value.CevaplarJson);
+        Assert.Equal("12345.67", cevaplar.Al("kira_bedel"));
         Assert.Equal("Ayşe Yılmaz", cevaplar.Al("kira_kiraci_adi"));
         Assert.Equal(DateTime.Today.AddYears(-3).ToString("yyyy-MM-dd"), cevaplar.Al("kira_baslangic"));
         Assert.Equal(DateTime.Today.AddMonths(-1).ToString("yyyy-MM-dd"), cevaplar.Al("kira_sozlesme_baslangic"));
@@ -74,7 +131,7 @@ public class KontrolPlanTests
         db.Kiraci_Table.Add(new() { Id = 1, Adi = "Ayşe", Soyadi = "Yılmaz" });
         db.KiraSozlesme_Table.AddRange(
             new KiraSozlesme { Id = 1, KiraciId = 1, Aktif = true, SozBasTar = DateTime.Today.AddYears(-2), OdemeSekli = "Eski" },
-            new KiraSozlesme { Id = 2, KiraciId = 1, Aktif = true, SozBasTar = DateTime.Today.AddMonths(-1), IlkSozlesmeTar = DateTime.Today.AddYears(-3), SozBitTar = DateTime.Today.AddYears(1), OdemeSekli = "Aylık" },
+            new KiraSozlesme { Id = 2, KiraciId = 1, Aktif = true, KiraBedeli = 12345.67m, SozBasTar = DateTime.Today.AddMonths(-1), IlkSozlesmeTar = DateTime.Today.AddYears(-3), SozBitTar = DateTime.Today.AddYears(1), OdemeSekli = "Aylık" },
             new KiraSozlesme { Id = 3, KiraciId = 1, Aktif = true, SozBasTar = DateTime.Today.AddMonths(1), OdemeSekli = "Gelecek" },
             new KiraSozlesme { Id = 4, KiraciId = 1, Aktif = false, SozBasTar = DateTime.Today, OdemeSekli = "Pasif" });
         for (int i = 1; i <= 4; i++) db.SozlesmeTasinmaz_Table.Add(new() { SozlesmeId = i, TasinmazId = 1 });
