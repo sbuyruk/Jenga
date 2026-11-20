@@ -87,6 +87,9 @@ export async function olustur(element) {
     tiles.on('tileload', () => { if (uyariAcik) { uyari.remove(); uyariAcik = false; } });
     const kontrolKatmani = L.featureGroup().addTo(map);
     const parselKatmani = L.featureGroup().addTo(map);
+    const parselSinirlari = L.featureGroup().addTo(parselKatmani);
+    const parselIsaretleri = L.layerGroup().addTo(parselKatmani);
+    const parselGorunumleri = [];
     L.control.layers({}, {
         'Kontrol konumları': kontrolKatmani,
         'Parsel sınırları': parselKatmani
@@ -94,18 +97,33 @@ export async function olustur(element) {
 
     const sigdir = () => {
         const sinirlar = L.latLngBounds([]);
-        for (const katman of [kontrolKatmani, parselKatmani]) {
-            const katmanSinirlari = katman.getBounds();
-            if (map.hasLayer(katman) && katmanSinirlari.isValid()) sinirlar.extend(katmanSinirlari);
-        }
-        if (sinirlar.isValid()) map.fitBounds(sinirlar, { padding: [35, 35], maxZoom: 16, animate: false });
+        const kontrolSiniri = kontrolKatmani.getBounds();
+        const parselSiniri = parselSinirlari.getBounds();
+        const parselGorunur = map.hasLayer(parselKatmani) && parselSiniri.isValid();
+        if (map.hasLayer(kontrolKatmani) && kontrolSiniri.isValid()) sinirlar.extend(kontrolSiniri);
+        if (parselGorunur) sinirlar.extend(parselSiniri);
+        if (sinirlar.isValid()) map.fitBounds(sinirlar, { padding: [35, 35], maxZoom: parselGorunur ? 19 : 16, animate: false });
         else map.setView([39, 35], 6);
     };
+    const parselIsaretleriniGuncelle = () => {
+        for (const { sinir, isaret } of parselGorunumleri) {
+            const kuzeyDogu = map.project(sinir.getNorthEast());
+            const guneyBati = map.project(sinir.getSouthWest());
+            const boyut = kuzeyDogu.subtract(guneyBati);
+            if (Math.max(Math.abs(boyut.x), Math.abs(boyut.y)) < 12) {
+                parselIsaretleri.addLayer(isaret);
+            } else {
+                parselIsaretleri.removeLayer(isaret);
+            }
+        }
+    };
+    map.on('zoomend', parselIsaretleriniGuncelle);
+
     const observer = new ResizeObserver(() => {
         map.invalidateSize();
         sigdir();
         kontrolKatmani.eachLayer(marker => { if (marker.isPopupOpen()) marker.getPopup().update(); });
-        parselKatmani.eachLayer(parsel => { if (parsel.isPopupOpen()) parsel.getPopup().update(); });
+        parselSinirlari.eachLayer(parsel => { if (parsel.isPopupOpen()) parsel.getPopup().update(); });
     });
     observer.observe(element);
     let kapali = false;
@@ -113,7 +131,9 @@ export async function olustur(element) {
         guncelle(noktalar) {
             if (kapali) return;
             kontrolKatmani.clearLayers();
-            parselKatmani.clearLayers();
+            parselSinirlari.clearLayers();
+            parselIsaretleri.clearLayers();
+            parselGorunumleri.length = 0;
             const konumlar = new Map();
             const parseller = new Map();
             for (const nokta of noktalar) {
@@ -138,14 +158,28 @@ export async function olustur(element) {
                 try {
                     const geometri = JSON.parse(geoJson);
                     if (!['Polygon', 'MultiPolygon'].includes(geometri?.type)) continue;
-                    L.geoJSON(geometri, { style: { color: '#0f766e', weight: 2, fillOpacity: 0.22 } })
+                    const parsel = L.geoJSON(geometri, { style: { color: '#0f766e', weight: 2, fillOpacity: 0.22 } });
+                    const sinir = parsel.getBounds();
+                    if (!sinir.isValid()) continue;
+                    parsel
                         .bindPopup(() => bilgiKartlari(grup, true), { maxWidth: 320, autoPanPadding: [16, 16] })
-                        .addTo(parselKatmani);
+                        .addTo(parselSinirlari);
+
+                    const merkez = sinir.getCenter();
+                    const isaret = L.circleMarker(merkez, {
+                        radius: 5, color: '#fff', weight: 1.5, fillColor: '#0f766e', fillOpacity: 1,
+                        bubblingMouseEvents: false
+                    }).on('click', () => {
+                        map.fitBounds(sinir, { padding: [50, 50], maxZoom: 19, animate: false });
+                        parsel.openPopup(merkez);
+                    });
+                    parselGorunumleri.push({ sinir, isaret });
                 } catch (error) {
                     console.warn('Parsel sınırı çizilemedi.', grup.map(nokta => nokta.tasinmazId), error);
                 }
             }
             sigdir();
+            parselIsaretleriniGuncelle();
         },
         kapat() {
             if (kapali) return;
