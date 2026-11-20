@@ -15,6 +15,106 @@ namespace Jenga.BlazorUI.Tests;
 
 public class KontrolPlanTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task KiraBilgileri_GuncelSozlesmedenDolar_KaydetVeYenidenAcmadaKorunur(bool yeniKontrol)
+    {
+        await using var factory = await Database.AcAsync();
+        await KiraKayitlariniEkleAsync(factory);
+        var servis = Servis(factory);
+        var id = 1;
+        if (yeniKontrol)
+        {
+            await using (var db = factory.CreateDbContext())
+            {
+                (await db.TasinmazKontrol_Table.SingleAsync()).Durum = KontrolDurumu.Tamamlandi;
+                await db.SaveChangesAsync();
+            }
+            var baslat = await servis.BaslatAsync(new() { TasinmazId = 1, KontrolTarihi = DateTime.Today });
+            Assert.True(baslat.IsSuccess, baslat.IsFailure ? baslat.Error.Message : "");
+            id = baslat.Value;
+        }
+        var sonuc = await servis.GetByIdAsync(id);
+        Assert.True(sonuc.IsSuccess, sonuc.IsFailure ? sonuc.Error.Message : "");
+        var cevaplar = KontrolCevaplari.FromJson(sonuc.Value.CevaplarJson);
+        Assert.Equal("Ayşe Yılmaz", cevaplar.Al("kira_kiraci_adi"));
+        Assert.Equal(DateTime.Today.AddYears(-3).ToString("yyyy-MM-dd"), cevaplar.Al("kira_baslangic"));
+        Assert.Equal(DateTime.Today.AddMonths(-1).ToString("yyyy-MM-dd"), cevaplar.Al("kira_sozlesme_baslangic"));
+        Assert.Equal(DateTime.Today.AddYears(1).ToString("yyyy-MM-dd"), cevaplar.Al("kira_bitis"));
+        Assert.Equal("Aylık", cevaplar.Al("kira_odeme_duzeni"));
+        cevaplar.Koy("kira_kiraci_adi", "Elle güncellenen isim");
+        var kaydet = await servis.TaslakKaydetAsync(id, sonuc.Value.KayitSurumu, cevaplar, null, DateTime.Today);
+        Assert.True(kaydet.IsSuccess, kaydet.IsFailure ? kaydet.Error.Message : "");
+        Assert.Equal("Elle güncellenen isim", KontrolCevaplari.FromJson((await servis.GetByIdAsync(id)).Value.CevaplarJson).Al("kira_kiraci_adi"));
+    }
+
+    [Fact]
+    public async Task KiraBilgileri_SozlesmeYokkenBosKalir_TamamlanmisRaporuDegistirmez()
+    {
+        await using var factory = await Database.AcAsync();
+        var servis = Servis(factory);
+        var bos = await servis.GetByIdAsync(1);
+        Assert.True(bos.IsSuccess);
+        Assert.Null(KontrolCevaplari.FromJson(bos.Value.CevaplarJson).Al("kira_kiraci_adi"));
+        await KiraKayitlariniEkleAsync(factory);
+        await using (var db = factory.CreateDbContext())
+        {
+            var kontrol = await db.TasinmazKontrol_Table.SingleAsync();
+            kontrol.Durum = KontrolDurumu.Tamamlandi;
+            kontrol.CevaplarJson = "{}";
+            await db.SaveChangesAsync();
+        }
+        Assert.Equal("{}", (await servis.GetByIdAsync(1)).Value.CevaplarJson);
+    }
+
+    private static async Task KiraKayitlariniEkleAsync(Database factory)
+    {
+        await using var db = factory.CreateDbContext();
+        db.Kiraci_Table.Add(new() { Id = 1, Adi = "Ayşe", Soyadi = "Yılmaz" });
+        db.KiraSozlesme_Table.AddRange(
+            new KiraSozlesme { Id = 1, KiraciId = 1, Aktif = true, SozBasTar = DateTime.Today.AddYears(-2), OdemeSekli = "Eski" },
+            new KiraSozlesme { Id = 2, KiraciId = 1, Aktif = true, SozBasTar = DateTime.Today.AddMonths(-1), IlkSozlesmeTar = DateTime.Today.AddYears(-3), SozBitTar = DateTime.Today.AddYears(1), OdemeSekli = "Aylık" },
+            new KiraSozlesme { Id = 3, KiraciId = 1, Aktif = true, SozBasTar = DateTime.Today.AddMonths(1), OdemeSekli = "Gelecek" },
+            new KiraSozlesme { Id = 4, KiraciId = 1, Aktif = false, SozBasTar = DateTime.Today, OdemeSekli = "Pasif" });
+        for (int i = 1; i <= 4; i++) db.SozlesmeTasinmaz_Table.Add(new() { SozlesmeId = i, TasinmazId = 1 });
+        await db.SaveChangesAsync();
+    }
+
+    [Theory]
+    [InlineData("TM")]
+    [InlineData("ÇM")]
+    public async Task ListeVePlan_BolgeKisaAdiMulkiyetVeBagisciyiGetirir(string mulkiyet)
+    {
+        await using var factory = await Database.AcAsync();
+        await using (var db = factory.CreateDbContext())
+        {
+            db.Bolge_Table.Add(new() { Id = 1, Adi = "Merkez Bölge", KisaAdi = "MRK" });
+            db.Il_Table.Add(new() { Id = 1, IlAdi = "Ankara", BolgeId = 1 });
+            var tasinmaz = await db.Tasinmaz_Table.SingleAsync();
+            tasinmaz.IlId = 1; tasinmaz.EnvanterdeMi = 1;
+            tasinmaz.MulkiyetSekli = mulkiyet; tasinmaz.Bagisci = "Ayşe Yılmaz";
+            var kontrol = await db.TasinmazKontrol_Table.SingleAsync();
+            kontrol.BolgeId = 1; kontrol.BolgeAdi = "Merkez Bölge";
+            await db.SaveChangesAsync();
+        }
+        var servis = Servis(factory, new HaritaYetkisi(true, [1]));
+        var planSonucu = await servis.GetPlanListesiAsync();
+        Assert.True(planSonucu.IsSuccess, planSonucu.IsFailure ? planSonucu.Error.Message : "");
+        var plan = Assert.Single(planSonucu.Value);
+        Assert.Equal("MRK", plan.BolgeKisaAdi);
+        Assert.Equal("Merkez Bölge", plan.BolgeAdi);
+        Assert.Equal(mulkiyet, plan.MulkiyetSekli);
+        Assert.Equal("Ayşe Yılmaz", plan.Bagisci);
+        var listeSonucu = await servis.GetListeAsync();
+        Assert.True(listeSonucu.IsSuccess, listeSonucu.IsFailure ? listeSonucu.Error.Message : "");
+        var kayit = Assert.Single(listeSonucu.Value);
+        Assert.Equal("MRK", kayit.BolgeKisaAdi);
+        Assert.Equal("Merkez Bölge", kayit.BolgeAdi);
+        Assert.Equal(mulkiyet, kayit.MulkiyetSekli);
+        Assert.Equal("Ayşe Yılmaz", kayit.Bagisci);
+    }
+
     [Fact]
     public async Task Harita_YetkiliTasinmazlarinSonGecerliKoordinatiniVeParselSiniriniGetirir()
     {
@@ -161,9 +261,10 @@ public class KontrolPlanTests
     {
         protected override void OnModelCreating(ModelBuilder builder)
         {
-            var types = new[] { typeof(Tasinmaz), typeof(TasinmazKontrol), typeof(TasinmazKontrolPlani), typeof(TasinmazKontrolEk), typeof(Il), typeof(Bolge) };
+            var types = new[] { typeof(Tasinmaz), typeof(TasinmazKontrol), typeof(TasinmazKontrolPlani), typeof(TasinmazKontrolEk), typeof(Il), typeof(Bolge), typeof(KiraSozlesme), typeof(Kiraci), typeof(SozlesmeTasinmaz) };
             foreach (var type in builder.Model.GetEntityTypes().Select(x => x.ClrType).Where(t => !types.Contains(t)).ToArray())
                 builder.Ignore(type);
+            builder.Entity<KiraSozlesme>().Property(s => s.TeminatAciklama).HasColumnType("TEXT");
         }
     }
 }

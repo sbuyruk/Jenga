@@ -17,6 +17,37 @@ public class KontrolFormTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task KiraAlanlari_YeniVeEskiRaporlardaYeniBasliklarlaGosterilir(bool eskiRapor)
+    {
+        var tanim = KontrolRaporu.Olustur();
+        if (eskiRapor)
+        {
+            tanim.Bolumler.Single(b => b.Kod == "irtibat").Alanlar.RemoveAll(a => a.Kod is "kira_kiraci_adi" or "kira_sozlesme_baslangic");
+            tanim.AlanBul("kira_baslangic")!.Baslik = "Kira Başlangıç Tarihi";
+            tanim.AlanBul("kira_bitis")!.Baslik = "Kira Bitiş Tarihi";
+            tanim.AlanBul("kira_odeme_duzeni")!.Baslik = "Ödeme Düzeni";
+            var snapshot = JsonSerializer.Serialize(new Dictionary<string, string?> { [KontrolRaporu.EskiAlanlarAnahtari] = tanim.ToJson() });
+            tanim = KontrolRaporu.TanimAl(snapshot);
+        }
+        var cevaplar = new KontrolCevaplari();
+        cevaplar.Koy("kira_baslangic", "2020-01-01");
+        cevaplar.Koy("kira_bitis", "2027-01-01");
+        cevaplar.Koy("kira_odeme_duzeni", "Aylık");
+        var html = System.Net.WebUtility.HtmlDecode(await RenderAsync(tanim, cevaplar, tanim.Bolumler.Where(b => b.Kod == "irtibat").ToList()));
+        foreach (var baslik in new[] { "Kiracı Adı", "İlk Sözleşme Tarihi", "Sözleşme Başlangıcı", "Sözleşme Bitişi", "Ödeme Şekli" }) Assert.Contains(baslik, html);
+        foreach (var eski in new[] { "Kira Başlangıç Tarihi", "Kira Bitiş Tarihi", "Ödeme Düzeni" }) Assert.DoesNotContain(eski, html);
+        Assert.Contains("2020-01-01", html);
+        Assert.Contains("2027-01-01", html);
+        Assert.Contains("Aylık", html);
+        Assert.Equal(KontrolAlanTipi.Tarih, tanim.AlanBul("kira_sozlesme_baslangic")!.Tip);
+        Assert.Contains(KontrolFormAdimlari.AlanAra(KontrolFormAdimlari.Olustur(tanim), "Kiracı Adı"), a => a.AlanKodu == "kira_kiraci_adi");
+        var tekrar = JsonSerializer.Serialize(new Dictionary<string, string?> { [KontrolRaporu.EskiAlanlarAnahtari] = tanim.ToJson() });
+        Assert.Single(KontrolRaporu.TanimAl(tekrar).TumAlanlar(), a => a.Kod == "kira_sozlesme_baslangic");
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task DepremBolgesi_YeniVeEskiRaporlardaSecilebilir(bool eskiRapor)
     {
         var tanim = KontrolRaporu.Olustur();
