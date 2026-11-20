@@ -28,6 +28,9 @@ namespace Jenga.DataAccess.Services.TBYS
         public string? Ili { get; set; }
         public string? Ilcesi { get; set; }
         public string? BolgeAdi { get; set; }
+        public string? BolgeKisaAdi { get; set; }
+        public string? MulkiyetSekli { get; set; }
+        public string? Bagisci { get; set; }
         public DateTime KontrolTarihi { get; set; }
         public KontrolDurumu Durum { get; set; }
         public string? KontrolEdenler { get; set; }
@@ -57,6 +60,9 @@ namespace Jenga.DataAccess.Services.TBYS
         public string? Ili { get; set; }
         public string? Ilcesi { get; set; }
         public string? BolgeAdi { get; set; }
+        public string? BolgeKisaAdi { get; set; }
+        public string? MulkiyetSekli { get; set; }
+        public string? Bagisci { get; set; }
         public int? PeriyotSure { get; set; }
         public PeriyotBirimi? PeriyotBirim { get; set; }
         public DateTime? SonrakiKontrolTarihi { get; set; }

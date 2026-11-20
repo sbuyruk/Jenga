@@ -180,6 +180,11 @@ namespace Jenga.Models.TBYS.Kontrol
             AlaniSonrasinaEkle(tanim, "bbo_salon", Mutfak(0));
             AlaniSonrasinaEkle(tanim, "bbo_zemin", Esya(0));
             AlaniSonrasinaEkle(tanim, "konum_koordinat", DepremBolgesi(0));
+            if (tanim.AlanBul("kira_baslangic") is { } ilkSozlesme) ilkSozlesme.Baslik = "İlk Sözleşme Tarihi";
+            if (tanim.AlanBul("kira_bitis") is { } sozlesmeBitisi) sozlesmeBitisi.Baslik = "Sözleşme Bitişi";
+            if (tanim.AlanBul("kira_odeme_duzeni") is { } odemeSekli) odemeSekli.Baslik = "Ödeme Şekli";
+            AlaniSonrasinaEkle(tanim, "kira_bedel", new() { Kod = "kira_kiraci_adi", Baslik = "Kiracı Adı", Tip = KontrolAlanTipi.KisaMetin });
+            AlaniSonrasinaEkle(tanim, "kira_baslangic", new() { Kod = "kira_sozlesme_baslangic", Baslik = "Sözleşme Başlangıcı", Tip = KontrolAlanTipi.Tarih });
             var bagimsizBolum = tanim.Bolumler.FirstOrDefault(b => b.Kod == "bb_ozellik");
             if (bagimsizBolum is not null && !bagimsizBolum.Gruplar.Any(g => g.Kod == "bb_olculer"))
                 bagimsizBolum.Gruplar.Add(Olculer(bagimsizBolum.Gruplar.Select(g => g.Sira).DefaultIfEmpty(0).Max() + 1));
@@ -398,9 +403,11 @@ namespace Jenga.Models.TBYS.Kontrol
             Alan(g17, "irtibat_sifat", "Sıfatı", KontrolAlanTipi.KisaMetin);
             Alan(g17, "irtibat_tel", "Telefon", KontrolAlanTipi.KisaMetin);
             Alan(b17, "kira_bedel", "Aylık Kira Bedeli (TL)", KontrolAlanTipi.OndalikSayi, birim: "TL");
-            Alan(b17, "kira_baslangic", "Kira Başlangıç Tarihi", KontrolAlanTipi.Tarih);
-            Alan(b17, "kira_bitis", "Kira Bitiş Tarihi", KontrolAlanTipi.Tarih);
-            Alan(b17, "kira_odeme_duzeni", "Ödeme Düzeni", KontrolAlanTipi.KisaMetin);
+            Alan(b17, "kira_kiraci_adi", "Kiracı Adı", KontrolAlanTipi.KisaMetin);
+            Alan(b17, "kira_baslangic", "İlk Sözleşme Tarihi", KontrolAlanTipi.Tarih);
+            Alan(b17, "kira_sozlesme_baslangic", "Sözleşme Başlangıcı", KontrolAlanTipi.Tarih);
+            Alan(b17, "kira_bitis", "Sözleşme Bitişi", KontrolAlanTipi.Tarih);
+            Alan(b17, "kira_odeme_duzeni", "Ödeme Şekli", KontrolAlanTipi.KisaMetin);
 
             // 18. Bölgesel gelişmeler
             var b18 = Bolum("bolgesel", "Bölgesel Gelişmeler");

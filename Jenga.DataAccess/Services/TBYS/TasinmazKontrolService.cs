@@ -187,6 +187,9 @@ namespace Jenga.DataAccess.Services.TBYS
                             Ili = t.Ili,
                             Ilcesi = t.Ilcesi,
                             BolgeAdi = k.BolgeAdi,
+                            BolgeKisaAdi = db.Bolge_Table.Where(b => b.Id == k.BolgeId).Select(b => b.KisaAdi).FirstOrDefault(),
+                            MulkiyetSekli = t.MulkiyetSekli,
+                            Bagisci = t.Bagisci,
                             KontrolTarihi = k.KontrolTarihi,
                             Durum = k.Durum,
                             KontrolEdenler = k.KontrolEdenler,
@@ -217,6 +220,7 @@ namespace Jenga.DataAccess.Services.TBYS
                 if (k is null) return Result<TasinmazKontrol>.Failure(Error.NotFound("Kontrol bulunamadı."));
                 if (!await KontroleErisebilirAsync(db, k.TasinmazId, cancellationToken))
                     return Result<TasinmazKontrol>.Failure(Error.Forbidden(BolgeYetkisiYok));
+                if (k.Durum == KontrolDurumu.Taslak) await KiraBilgileriniDoldurAsync(db, k, cancellationToken);
                 return Result<TasinmazKontrol>.Success(k);
             }
             catch (Exception ex)
@@ -290,6 +294,11 @@ namespace Jenga.DataAccess.Services.TBYS
                             BolgeAdi = db.Il_Table.Where(il => il.Id == t.IlId)
                                 .Select(il => db.Bolge_Table.Where(b => b.Id == il.BolgeId).Select(b => b.Adi).FirstOrDefault())
                                 .FirstOrDefault(),
+                            BolgeKisaAdi = db.Il_Table.Where(il => il.Id == t.IlId)
+                                .Select(il => db.Bolge_Table.Where(b => b.Id == il.BolgeId).Select(b => b.KisaAdi).FirstOrDefault())
+                                .FirstOrDefault(),
+                            MulkiyetSekli = t.MulkiyetSekli,
+                            Bagisci = t.Bagisci,
                             PeriyotSure = p != null ? p.PeriyotSure : null,
                             PeriyotBirim = p != null ? p.PeriyotBirim : null,
                             SonrakiKontrolTarihi = p != null ? p.SonrakiKontrolTarihi : null,
@@ -396,6 +405,7 @@ namespace Jenga.DataAccess.Services.TBYS
                     IslemTarihi = revizeEdilen is null ? null : DateTime.Now
                 };
 
+                await KiraBilgileriniDoldurAsync(db, kontrol, cancellationToken);
                 db.SetCurrentUser(kullanici);
                 db.TasinmazKontrol_Table.Add(kontrol);
                 await db.SaveChangesAsync(cancellationToken);
@@ -759,6 +769,36 @@ namespace Jenga.DataAccess.Services.TBYS
         }
 
         /// <summary>Salt okunur taşınmaz alanları istemciden gelen değerle değil, kayıtlı snapshot değeriyle kalır.</summary>
+        private static async Task KiraBilgileriniDoldurAsync(ApplicationDbContext db, TasinmazKontrol kontrol, CancellationToken ct)
+        {
+            var cevaplar = KontrolCevaplari.FromJson(kontrol.CevaplarJson);
+            string[] alanlar = ["kira_kiraci_adi", "kira_baslangic", "kira_sozlesme_baslangic", "kira_bitis", "kira_odeme_duzeni"];
+            if (alanlar.All(kod => !string.IsNullOrWhiteSpace(cevaplar.Al(kod)))) return;
+            var bugun = DateTime.Today;
+            var kira = await (from bag in db.SozlesmeTasinmaz_Table.AsNoTracking()
+                              join soz in db.KiraSozlesme_Table.AsNoTracking() on bag.SozlesmeId equals soz.Id
+                              join kiraci in db.Kiraci_Table.AsNoTracking() on soz.KiraciId equals kiraci.Id into kiracilar
+                              from kiraci in kiracilar.DefaultIfEmpty()
+                              where bag.TasinmazId == kontrol.TasinmazId && soz.Aktif == true
+                                  && (soz.SozBasTar == null || soz.SozBasTar <= bugun)
+                              orderby soz.SozBasTar descending, soz.Id descending
+                              select new { soz.IlkSozlesmeTar, soz.SozBasTar, soz.SozBitTar, soz.OdemeSekli,
+                                  Adi = kiraci != null ? kiraci.Adi : null, Soyadi = kiraci != null ? kiraci.Soyadi : null })
+                .FirstOrDefaultAsync(ct);
+            if (kira is null) return;
+            void Doldur(string kod, string? deger)
+            {
+                if (string.IsNullOrWhiteSpace(cevaplar.Al(kod)) && !string.IsNullOrWhiteSpace(deger)) cevaplar.Koy(kod, deger);
+            }
+            string? Tarih(DateTime? tarih) => tarih?.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+            Doldur("kira_kiraci_adi", string.Join(" ", new[] { kira.Adi?.Trim(), kira.Soyadi?.Trim() }.Where(s => !string.IsNullOrWhiteSpace(s))));
+            Doldur("kira_baslangic", Tarih(kira.IlkSozlesmeTar));
+            Doldur("kira_sozlesme_baslangic", Tarih(kira.SozBasTar));
+            Doldur("kira_bitis", Tarih(kira.SozBitTar));
+            Doldur("kira_odeme_duzeni", kira.OdemeSekli);
+            kontrol.CevaplarJson = cevaplar.ToJson();
+        }
+
         private static void SaltOkunurlariKoru(KontrolFormTanimi tanim, KontrolCevaplari yeni, KontrolCevaplari mevcut)
         {
             foreach (var alan in tanim.TumAlanlar().Where(a => a.VeriKaynagi == KontrolVeriKaynagiTipi.TasinmazSaltOkunur))
