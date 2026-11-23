@@ -153,14 +153,18 @@ namespace Jenga.Models.TBYS.Kontrol
             "Güneş Enerjisi", "Elektrikli Radyatör", "Jeotermal", "Şömine", "VRV", "Isı Pompası"
         ];
 
-        private static readonly string[] DisCepheSecenekleri =
+        private const string DisCepheSistemleriBasligi = "Dış Cephe Sistemleri";
+        private const string DisCepheSayisiBasligi = "Dış Cephe Sayısı";
+
+        private static readonly string[] BinaDisCepheSecenekleri =
         [
-            "Dış Sıva ve Boyalar",
-            "Yapıştırıcıyla tespit edilen plaka halindeki kaplamalar",
-            "Konstrüksiyon sistemiyle uygulanan plaka halindeki kaplamalar",
-            "Prefabrik duvar panelleri",
-            "Giydirme Cepheler"
+            "Mantolama|Mantolama (Isı Yalıtım) Sistemleri",
+            "Giydirme|Giydirme Cephe Sistemleri",
+            "Mekanik|Mekanik Cephe Sistemleri",
+            "Siva|Sıva ve Boya Sistemleri"
         ];
+
+        private static readonly string[] DisCepheSayisiSecenekleri = ["1", "2", "3", "4", "5"];
 
         /// <summary>Geçişten önceki raporların alanları kendi kayıtlarından, yenilerin alanları sabit formdan okunur.</summary>
         public static KontrolFormTanimi TanimAl(string? snapshotJson, string? cevaplarJson = null)
@@ -175,7 +179,8 @@ namespace Jenga.Models.TBYS.Kontrol
             {
                 AlaniSonrasinaEkle(tanim, "bina_isitma", EnerjiKimlikBelgesi(0));
             }
-            SecimAlaniniGuncelle(tanim, "bbo_cephe", "Dış Cephe", DisCepheSecenekleri, cevaplar);
+            SecimAlaniniGuncelle(tanim, "bina_dis_cephe", DisCepheSistemleriBasligi, BinaDisCepheSecenekleri, cevaplar);
+            SecimAlaniniGuncelle(tanim, "bbo_cephe", DisCepheSayisiBasligi, DisCepheSayisiSecenekleri, cevaplar);
             AlaniSonrasinaEkle(tanim, "t_yevmiye", ZeminTipi(0));
             AlaniSonrasinaEkle(tanim, "bbo_salon", Mutfak(0));
             AlaniSonrasinaEkle(tanim, "bbo_zemin", Esya(0));
@@ -205,8 +210,9 @@ namespace Jenga.Models.TBYS.Kontrol
             if (alan is null) return null;
             alan.Baslik = baslik;
             alan.Tip = KontrolAlanTipi.TekliSecim;
-            alan.Secenekler = secenekler.Select((s, i) => new KontrolSecenekTanimi { Kod = s, Etiket = s, Sira = i + 1 }).ToList();
-            // Önceden serbest metinle girilen değer, seçimi değiştirilmeden de görüntülenip kaydedilebilir.
+            alan.Secenekler = [];
+            Secenekleri(alan, secenekler);
+            // Güncel seçeneklerde bulunmayan kayıtlı değer görüntülenip tekrar kaydedilebilir.
             var kayitli = cevaplar.Al(kod);
             if (!string.IsNullOrWhiteSpace(kayitli) && !alan.Secenekler.Any(s => s.Kod == kayitli))
                 alan.Secenekler.Add(new() { Kod = kayitli, Etiket = $"{kayitli} (Kayıtlı değer)", Sira = secenekler.Length + 1 });
@@ -310,7 +316,7 @@ namespace Jenga.Models.TBYS.Kontrol
             Kaynak(b7, "bina_insa_yili", "İnşa Yılı", "InsaYili", KontrolVeriKaynagiTipi.TasinmazBaslangic);
             Kaynak(b7, "bina_kat_sayisi", "Toplam Kat Sayısı", "ToplamKatSayisi", KontrolVeriKaynagiTipi.TasinmazBaslangic);
             Secim(b7, "bina_yapi_tarzi", "Yapı Tarzı", false, "BAK|Betonarme Karkas", "Yigma|Yığma", "Celik|Çelik", "Prefabrik|Prefabrik", "Diger|Diğer");
-            Secim(b7, "bina_dis_cephe", "Dış Cephe", false, "Siva|Sıva/Boya", "Mantolama|Mantolama", "Kaplama|Kaplama", "Diger|Diğer");
+            Secim(b7, "bina_dis_cephe", DisCepheSistemleriBasligi, false, BinaDisCepheSecenekleri);
             Alan(b7, "bina_asansor", "Asansör", KontrolAlanTipi.EvetHayir);
             Secim(b7, "bina_otopark", "Otopark", false,
                 "Acik|Açık Otopark Var", "Kapali|Kapalı Otopark Var", "AcikVeKapali|Açık ve Kapalı Otopark Var",
@@ -326,7 +332,7 @@ namespace Jenga.Models.TBYS.Kontrol
             b8.Alanlar.Add(Mutfak(b8.Alanlar.Count + 1));
             Alan(b8, "bbo_banyo", "Banyo/WC Sayısı", KontrolAlanTipi.TamSayi);
             Alan(b8, "bbo_balkon", "Balkon", KontrolAlanTipi.EvetHayir);
-            Secim(b8, "bbo_cephe", "Dış Cephe", false, DisCepheSecenekleri);
+            Secim(b8, "bbo_cephe", DisCepheSayisiBasligi, false, DisCepheSayisiSecenekleri);
             Alan(b8, "bbo_zemin", "Zemin Kaplaması", KontrolAlanTipi.KisaMetin);
             b8.Alanlar.Add(Esya(b8.Alanlar.Count + 1));
             Secim(b8, "bbo_durum", "Genel Durum", false, "Iyi|İyi", "Orta|Orta", "Kotu|Kötü");

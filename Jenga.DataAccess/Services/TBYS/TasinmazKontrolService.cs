@@ -768,7 +768,6 @@ namespace Jenga.DataAccess.Services.TBYS
             return ekler.GroupBy(e => (e.AlanKodu, e.SatirNo)).ToDictionary(g => g.Key, g => g.Count());
         }
 
-        /// <summary>Salt okunur taşınmaz alanları istemciden gelen değerle değil, kayıtlı snapshot değeriyle kalır.</summary>
         private static async Task KiraBilgileriniDoldurAsync(ApplicationDbContext db, TasinmazKontrol kontrol, CancellationToken ct)
         {
             var cevaplar = KontrolCevaplari.FromJson(kontrol.CevaplarJson);
@@ -779,10 +778,8 @@ namespace Jenga.DataAccess.Services.TBYS
                               join soz in db.KiraSozlesme_Table.AsNoTracking() on bag.SozlesmeId equals soz.Id
                               join kiraci in db.Kiraci_Table.AsNoTracking() on soz.KiraciId equals kiraci.Id into kiracilar
                               from kiraci in kiracilar.DefaultIfEmpty()
-                              where bag.TasinmazId == kontrol.TasinmazId
-                              // Önce başlamış aktif sözleşme; yoksa en son başlamış kayıt, en sonda gelecek sözleşme.
-                              orderby (soz.Aktif == true && (soz.SozBasTar == null || soz.SozBasTar <= bugun)) descending,
-                                  (soz.SozBasTar == null || soz.SozBasTar <= bugun) descending,
+                              where bag.TasinmazId == kontrol.TasinmazId && soz.Aktif == true
+                              orderby (soz.SozBasTar == null || soz.SozBasTar <= bugun) descending,
                                   soz.SozBasTar descending, soz.Id descending
                               select new { soz.KiraBedeli, soz.IlkSozlesmeTar, soz.SozBasTar, soz.SozBitTar, soz.OdemeSekli,
                                   Adi = kiraci != null ? kiraci.Adi : null, Soyadi = kiraci != null ? kiraci.Soyadi : null })
@@ -802,6 +799,7 @@ namespace Jenga.DataAccess.Services.TBYS
             kontrol.CevaplarJson = cevaplar.ToJson();
         }
 
+        /// <summary>Salt okunur taşınmaz alanları istemciden gelen değerle değil, kayıtlı snapshot değeriyle kalır.</summary>
         private static void SaltOkunurlariKoru(KontrolFormTanimi tanim, KontrolCevaplari yeni, KontrolCevaplari mevcut)
         {
             foreach (var alan in tanim.TumAlanlar().Where(a => a.VeriKaynagi == KontrolVeriKaynagiTipi.TasinmazSaltOkunur))

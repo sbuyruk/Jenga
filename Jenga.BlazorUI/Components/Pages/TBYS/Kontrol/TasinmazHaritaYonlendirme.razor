@@ -1,0 +1,10 @@
+@page "/tbys/tasinmaz-kontrol/harita"
+@inject NavigationManager Nav
+
+@code {
+    protected override void OnInitialized()
+    {
+        var mevcutAdres = Nav.ToAbsoluteUri(Nav.Uri);
+        Nav.NavigateTo($"/tbys/tasinmaz-harita{mevcutAdres.Query}{mevcutAdres.Fragment}", replace: true);
+    }
+}

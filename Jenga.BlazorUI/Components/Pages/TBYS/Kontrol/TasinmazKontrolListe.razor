@@ -22,7 +22,7 @@
         <li class="nav-item"><button class="nav-link py-1 @(_sekme == 1 ? "active" : "")" @onclick="() => SekmeDegistirAsync(1)" disabled="@_loading">Kontrol Geçmişi</button></li>
     </ul>
     <div class="ms-auto d-flex gap-2 align-items-center">
-        <a class="btn btn-sm btn-outline-primary" href="/tbys/tasinmaz-kontrol/harita"><i class="bi bi-map me-1"></i>Taşınmaz Haritası</a>
+        <a class="btn btn-sm btn-outline-primary" href="/tbys/tasinmaz-harita"><i class="bi bi-map me-1"></i>Taşınmaz Haritası</a>
         @if (_sekme == 0)
         {
             <div class="form-check form-check-sm mb-0">
@@ -68,11 +68,11 @@ else if (_sekme == 0)
                     <th style="width:5%">Bölge</th>
                     <th style="width:13%">İşlem</th>
                     <th style="width:5%">Durum</th>
-                    <th style="width:26%">Adres</th>
-                    <th style="width:6%">Cinsi</th>
-                    <th style="width:6%">Mülkiyet Şekli</th>
                     <th style="width:12%">Bağışçı</th>
+                    <th style="width:6%">Mülkiyet Şekli</th>
+                    <th style="width:26%">Adres</th>
                     <th style="width:8%">İli / İlçesi</th>
+                    <th style="width:6%">Cinsi</th>
                     <th style="width:7%">Kontrol Sıklığı</th>
                     <th style="width:6%">Son Kontrol</th>
                     <th style="width:6%">Sonraki Kontrol</th>
@@ -96,11 +96,11 @@ else if (_sekme == 0)
                         else if (p.SonrakiKontrolTarihi is null) { <span class="badge bg-light text-dark border">Plansız</span> }
                         else { <span class="badge bg-success">Planlı</span> }
                     </td>
-                    <td title="Sicil No: @p.EmlakSicilNo">@p.Adres</td>
-                    <td>@p.Cinsi</td>
-                    <td>@(p.MulkiyetSekli ?? "—")</td>
                     <td>@(p.Bagisci ?? "—")</td>
+                    <td>@(p.MulkiyetSekli ?? "—")</td>
+                    <td title="Sicil No: @p.EmlakSicilNo">@p.Adres</td>
                     <td>@p.Ili / @p.Ilcesi</td>
+                    <td>@p.Cinsi</td>
                     <td>@KontrolPeriyodu.Etiket(p.PeriyotSure, p.PeriyotBirim)</td>
                     <td>@(p.SonKontrolId is null ? "—" : "")@if (p.SonKontrolId is not null) { <a href="/tbys/tasinmaz-kontrol/@p.SonKontrolId">@p.SonKontrolTarihi?.ToString("d", Tr)</a> }</td>
                     <td class="@(p.Gecikmis ? "fw-bold text-danger" : "")">@(p.SonrakiKontrolTarihi?.ToString("d", Tr) ?? "—")</td>
@@ -130,11 +130,11 @@ else
                     <th>#</th>
                     <th>Rapor No</th>
                     <th>Durum</th>
+                    <th>Bağışçı</th>
+                    <th>Mülkiyet Şekli</th>
                     <th>Tarih</th>
                     <th>Sicil No</th>
                     <th>Cinsi</th>
-                    <th>Mülkiyet Şekli</th>
-                    <th>Bağışçı</th>
                     <th>İli / İlçesi</th>
                     <th>Kontrol Edenler</th>
                     <th>Sonraki</th>
@@ -144,11 +144,11 @@ else
                     <td><a href="/tbys/tasinmaz-kontrol/@k.Id">#@k.Id</a>@if (k.RevizeEdilenKontrolId is not null) { <small class="text-muted"> (rev. #@k.RevizeEdilenKontrolId)</small> }</td>
                     <td>@(k.RaporNo ?? "—")</td>
                     <td><span class="badge @TasinmazKontrolDetay.DurumRenk(k.Durum)">@TasinmazKontrolDetay.DurumEtiket(k.Durum)</span></td>
+                    <td>@(k.Bagisci ?? "—")</td>
+                    <td>@(k.MulkiyetSekli ?? "—")</td>
                     <td>@k.KontrolTarihi.ToString("d", Tr)</td>
                     <td>@k.EmlakSicilNo</td>
                     <td>@k.Cinsi</td>
-                    <td>@(k.MulkiyetSekli ?? "—")</td>
-                    <td>@(k.Bagisci ?? "—")</td>
                     <td>@k.Ili / @k.Ilcesi</td>
                     <td>@k.KontrolEdenler</td>
                     <td>@(k.SonrakiKontrolTarihi?.ToString("d", Tr) ?? "—")</td>
@@ -189,9 +189,9 @@ else
 @code {
     private static readonly CultureInfo Tr = new("tr-TR");
     private static readonly string[] PlanExportHeaders =
-        ["Bölge", "Durum", "Adres", "Cinsi", "Mülkiyet Şekli", "Bağışçı", "İli / İlçesi", "Kontrol Sıklığı", "Son Kontrol", "Sonraki Kontrol"];
+        ["Bölge", "Durum", "Bağışçı", "Mülkiyet Şekli", "Adres", "İli / İlçesi", "Cinsi", "Kontrol Sıklığı", "Son Kontrol", "Sonraki Kontrol"];
     private static readonly string[] KontrolExportHeaders =
-        ["Bölge", "#", "Rapor No", "Durum", "Tarih", "Sicil No", "Cinsi", "Mülkiyet Şekli", "Bağışçı", "İli / İlçesi", "Kontrol Edenler", "Sonraki"];
+        ["Bölge", "#", "Rapor No", "Durum", "Bağışçı", "Mülkiyet Şekli", "Tarih", "Sicil No", "Cinsi", "İli / İlçesi", "Kontrol Edenler", "Sonraki"];
 
     private static string BolgeEtiketi(string? kisaAdi, string? adi) => !string.IsNullOrWhiteSpace(kisaAdi) ? kisaAdi : adi ?? "—";
 
@@ -199,7 +199,7 @@ else
     [
         BolgeEtiketi(p.BolgeKisaAdi, p.BolgeAdi),
         p.AcikTaslakId is not null ? "Taslak açık" : p.Gecikmis ? "Gecikmiş" : p.SonrakiKontrolTarihi is null ? "Plansız" : "Planlı",
-        p.Adres, p.Cinsi, p.MulkiyetSekli ?? "—", p.Bagisci ?? "—", $"{p.Ili} / {p.Ilcesi}",
+        p.Bagisci ?? "—", p.MulkiyetSekli ?? "—", p.Adres, $"{p.Ili} / {p.Ilcesi}", p.Cinsi,
         KontrolPeriyodu.Etiket(p.PeriyotSure, p.PeriyotBirim),
         p.SonKontrolId is null ? "—" : p.SonKontrolTarihi?.ToString("d", Tr),
         p.SonrakiKontrolTarihi?.ToString("d", Tr) ?? "—"
@@ -209,8 +209,8 @@ else
     [
         BolgeEtiketi(k.BolgeKisaAdi, k.BolgeAdi),
         $"#{k.Id}" + (k.RevizeEdilenKontrolId is null ? "" : $" (rev. #{k.RevizeEdilenKontrolId})"),
-        k.RaporNo ?? "—", TasinmazKontrolDetay.DurumEtiket(k.Durum), k.KontrolTarihi.ToString("d", Tr),
-        k.EmlakSicilNo, k.Cinsi, k.MulkiyetSekli ?? "—", k.Bagisci ?? "—", $"{k.Ili} / {k.Ilcesi}", k.KontrolEdenler,
+        k.RaporNo ?? "—", TasinmazKontrolDetay.DurumEtiket(k.Durum), k.Bagisci ?? "—", k.MulkiyetSekli ?? "—",
+        k.KontrolTarihi.ToString("d", Tr), k.EmlakSicilNo, k.Cinsi, $"{k.Ili} / {k.Ilcesi}", k.KontrolEdenler,
         k.SonrakiKontrolTarihi?.ToString("d", Tr) ?? "—"
     ];
 

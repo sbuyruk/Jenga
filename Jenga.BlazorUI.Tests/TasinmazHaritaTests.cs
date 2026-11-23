@@ -1,4 +1,5 @@
 using System.Reflection;
+using Jenga.BlazorUI.Components.Pages.TBYS;
 using Jenga.BlazorUI.Components.Pages.TBYS.Kontrol;
 using Jenga.DataAccess.Services.TBYS;
 using Jenga.Utility.Results;
@@ -14,6 +15,24 @@ namespace Jenga.BlazorUI.Tests;
 
 public class TasinmazHaritaTests
 {
+    [Fact]
+    public async Task EskiAdres_SorguyuKoruyarakTbysHaritasinaYonlendirir()
+    {
+        var eskiRota = typeof(TasinmazHaritaYonlendirme).GetCustomAttribute<RouteAttribute>()!.Template;
+        Assert.Equal("/tbys/tasinmaz-kontrol/harita", eskiRota);
+        var navigation = new HaritaNavigation();
+        using var services = new ServiceCollection().AddLogging()
+            .AddSingleton<NavigationManager>(navigation)
+            .BuildServiceProvider();
+        await using var renderer = new HtmlRenderer(services, services.GetRequiredService<ILoggerFactory>());
+
+        await renderer.Dispatcher.InvokeAsync(() => renderer.RenderComponentAsync<TasinmazHaritaYonlendirme>());
+
+        var yeniRota = typeof(TasinmazHaritaSayfasi).GetCustomAttribute<RouteAttribute>()!.Template;
+        Assert.Equal("/tbys/tasinmaz-harita", yeniRota);
+        Assert.Equal($"{yeniRota}?il=Ankara#harita", navigation.Hedef);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -68,6 +87,15 @@ public class TasinmazHaritaTests
     private static ServiceProvider Services(Result<List<TasinmazHaritaNoktasi>> sonuc) => new ServiceCollection().AddLogging()
         .AddSingleton(KontrolListeTests.Fake<ITasinmazKontrolService>.Olustur((ad, _) => ad == "GetHaritaNoktalariAsync" ? Task.FromResult(sonuc) : throw new InvalidOperationException(ad)))
         .AddSingleton<IJSRuntime, NullJS>().BuildServiceProvider();
+
+    private sealed class HaritaNavigation : NavigationManager
+    {
+        public HaritaNavigation() => Initialize("http://localhost/", "http://localhost/tbys/tasinmaz-kontrol/harita?il=Ankara#harita");
+
+        public string? Hedef { get; private set; }
+
+        protected override void NavigateToCore(string uri, NavigationOptions options) => Hedef = uri;
+    }
 
     public sealed class Host : ComponentBase
     {

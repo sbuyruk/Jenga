@@ -311,26 +311,59 @@ public class KontrolFormTests
     }
 
     [Fact]
-    public async Task Cephe_DisCepheAdiVeIstenenSeceneklerleGosterilir()
+    public async Task DisCepheSistemleri_BaslikVeSeceneklerleGosterilir()
     {
-        var tanim = KontrolRaporu.Olustur();
-        var alan = tanim.AlanBul("bbo_cephe")!;
-        Assert.Equal("Dış Cephe", alan.Baslik);
+        var tanim = KontrolRaporu.TanimAl(null);
+        var bina = tanim.Bolumler.Single(b => b.Kod == "bina");
+        var alan = bina.Alanlar.Single(a => a.Kod == "bina_dis_cephe");
+        Assert.Equal("Dış Cephe Sistemleri", alan.Baslik);
         Assert.Equal(KontrolAlanTipi.TekliSecim, alan.Tip);
         Assert.Equal(new[]
         {
-            "Dış Sıva ve Boyalar",
-            "Yapıştırıcıyla tespit edilen plaka halindeki kaplamalar",
-            "Konstrüksiyon sistemiyle uygulanan plaka halindeki kaplamalar",
-            "Prefabrik duvar panelleri",
-            "Giydirme Cepheler"
-        }, alan.Secenekler.Select(s => s.Etiket));
+            "Mantolama (Isı Yalıtım) Sistemleri",
+            "Giydirme Cephe Sistemleri",
+            "Mekanik Cephe Sistemleri",
+            "Sıva ve Boya Sistemleri"
+        }, alan.Secenekler.OrderBy(s => s.Sira).Select(s => s.Etiket));
         var cevaplar = new KontrolCevaplari();
-        cevaplar.Koy("bbo_cephe", "Giydirme Cepheler");
+        cevaplar.Koy(alan.Kod, "Giydirme");
         Assert.Empty(KontrolFormDogrulayici.CevaplariDogrula(tanim, cevaplar, (_, _) => 0, false));
-        Assert.Equal("Giydirme Cepheler", KontrolCevaplari.FromJson(cevaplar.ToJson()).Al("bbo_cephe"));
-        var html = System.Net.WebUtility.HtmlDecode(await RenderAsync(tanim, cevaplar, tanim.Bolumler.Where(b => b.Kod == "bb_ozellik").ToList()));
+        var html = System.Net.WebUtility.HtmlDecode(await RenderAsync(tanim, cevaplar, [bina]));
+        Assert.Matches("<select[^>]*id=\"f_bina_dis_cephe_x\"", html);
+        Assert.Contains("Dış Cephe Sistemleri", html);
+        Assert.Contains("Giydirme Cephe Sistemleri</option>", html);
+    }
+
+    [Theory]
+    [InlineData("Siva", "Sıva ve Boya Sistemleri")]
+    [InlineData("Mantolama", "Mantolama (Isı Yalıtım) Sistemleri")]
+    [InlineData("Kaplama", "Kaplama (Kayıtlı değer)")]
+    public void DisCepheSistemleri_EskiKayitliDegeriKorur(string kayitliDeger, string etiket)
+    {
+        var cevaplar = new KontrolCevaplari();
+        cevaplar.Koy("bina_dis_cephe", kayitliDeger);
+        var tanim = KontrolRaporu.TanimAl(null, cevaplar.ToJson());
+        var alan = tanim.AlanBul("bina_dis_cephe")!;
+        Assert.Contains(alan.Secenekler, s => s.Kod == kayitliDeger && s.Etiket == etiket);
+        Assert.Empty(KontrolFormDogrulayici.CevaplariDogrula(tanim, cevaplar, (_, _) => 0, false));
+    }
+
+    [Fact]
+    public async Task DisCepheSayisi_BaslikVeBirdenBeseKadarSeceneklerleGosterilir()
+    {
+        var tanim = KontrolRaporu.TanimAl(null);
+        var bolum = tanim.Bolumler.Single(b => b.Kod == "bb_ozellik");
+        var alan = bolum.Alanlar.Single(a => a.Kod == "bbo_cephe");
+        Assert.Equal("Dış Cephe Sayısı", alan.Baslik);
+        Assert.Equal(KontrolAlanTipi.TekliSecim, alan.Tip);
+        Assert.Equal(new[] { "1", "2", "3", "4", "5" }, alan.Secenekler.OrderBy(s => s.Sira).Select(s => s.Etiket));
+        var cevaplar = new KontrolCevaplari();
+        cevaplar.Koy(alan.Kod, "3");
+        Assert.Empty(KontrolFormDogrulayici.CevaplariDogrula(tanim, cevaplar, (_, _) => 0, false));
+        Assert.Equal("3", KontrolCevaplari.FromJson(cevaplar.ToJson()).Al(alan.Kod));
+        var html = System.Net.WebUtility.HtmlDecode(await RenderAsync(tanim, cevaplar, [bolum]));
         Assert.Matches("<select[^>]*id=\"f_bbo_cephe_x\"", html);
+        Assert.Contains("Dış Cephe Sayısı", html);
     }
 
     [Fact]
@@ -345,7 +378,7 @@ public class KontrolFormTests
         var cevaplar = new KontrolCevaplari();
         cevaplar.Koy("bbo_cephe", "Kuzey");
         var tanim = KontrolRaporu.TanimAl(snapshot, cevaplar.ToJson());
-        Assert.Equal("Dış Cephe", tanim.AlanBul("bbo_cephe")!.Baslik);
+        Assert.Equal("Dış Cephe Sayısı", tanim.AlanBul("bbo_cephe")!.Baslik);
         Assert.Equal(KontrolAlanTipi.TekliSecim, tanim.AlanBul("bbo_cephe")!.Tip);
         Assert.Contains(tanim.AlanBul("bbo_cephe")!.Secenekler, s => s.Kod == "Kuzey" && s.Etiket.Contains("Kayıtlı değer"));
         Assert.Empty(KontrolFormDogrulayici.CevaplariDogrula(tanim, cevaplar, (_, _) => 0, false));

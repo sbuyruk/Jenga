@@ -16,13 +16,12 @@ namespace Jenga.BlazorUI.Tests;
 public class KontrolPlanTests
 {
     [Theory]
-    [InlineData(null, false)]
-    [InlineData(false, false)]
-    [InlineData(true, true)]
-    public async Task KiraBilgileri_AktifIsaretiOlmayanVeyaGelecekSozlesmeVarsaDaDolar(bool? aktif, bool gelecek)
+    [InlineData(null)]
+    [InlineData(false)]
+    public async Task KiraBilgileri_TasinmazinAktifSozlesmesiYoksaBosKalir(bool? aktif)
     {
         await using var factory = await Database.AcAsync();
-        var baslangic = DateTime.Today.AddMonths(gelecek ? 1 : -1);
+        var baslangic = DateTime.Today.AddMonths(-1);
         await using (var db = factory.CreateDbContext())
         {
             db.Kiraci_Table.Add(new() { Id = 1, Adi = "Ali", Soyadi = "Demir" });
@@ -37,15 +36,7 @@ public class KontrolPlanTests
         var sonuc = await servis.GetByIdAsync(1);
         Assert.True(sonuc.IsSuccess, sonuc.IsFailure ? sonuc.Error.Message : "");
         var cevaplar = KontrolCevaplari.FromJson(sonuc.Value.CevaplarJson);
-        Assert.Equal("9876.54", cevaplar.Al("kira_bedel"));
-        Assert.Equal("Ali Demir", cevaplar.Al("kira_kiraci_adi"));
-        Assert.Equal(baslangic.AddYears(-2).ToString("yyyy-MM-dd"), cevaplar.Al("kira_baslangic"));
-        Assert.Equal(baslangic.ToString("yyyy-MM-dd"), cevaplar.Al("kira_sozlesme_baslangic"));
-        Assert.Equal(baslangic.AddYears(1).ToString("yyyy-MM-dd"), cevaplar.Al("kira_bitis"));
-        Assert.Equal("Peşin", cevaplar.Al("kira_odeme_duzeni"));
-        // Okuma işlemi veritabanına yazmaz; kullanıcı taslağı kaydettiğinde kalıcılaşır.
-        await using var tekrar = factory.CreateDbContext();
-        Assert.Equal("{}", (await tekrar.TasinmazKontrol_Table.SingleAsync()).CevaplarJson);
+        Assert.Empty(cevaplar.Alanlar);
     }
 
     [Fact]
