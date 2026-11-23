@@ -90,7 +90,7 @@ namespace Jenga.DataAccess.Services.TBYS
                             where k.Durum == KontrolDurumu.Taslak || k.Durum == KontrolDurumu.Tamamlandi
                             orderby k.KontrolTarihi descending, k.Id descending
                             select new { k.Id, k.TasinmazId, k.CevaplarJson, k.Durum,
-                                t.EmlakSicilNo, t.Adres, t.Cinsi, t.Ili, t.Ilcesi };
+                                t.EmlakSicilNo, t.Adres, t.Cinsi, t.KiraDurumu, t.Ili, t.Ilcesi };
                 var noktalar = new Dictionary<int, TasinmazHaritaNoktasi>();
                 await foreach (var satir in sorgu.AsAsyncEnumerable().WithCancellation(cancellationToken))
                 {
@@ -103,7 +103,8 @@ namespace Jenga.DataAccess.Services.TBYS
                     {
                         TasinmazId = satir.TasinmazId, KontrolId = satir.Id,
                         EmlakSicilNo = satir.EmlakSicilNo, Adres = satir.Adres, Cinsi = satir.Cinsi,
-                        Ili = satir.Ili, Ilcesi = satir.Ilcesi, Enlem = enlem, Boylam = boylam,
+                        KiraDurumu = satir.KiraDurumu, Ili = satir.Ili, Ilcesi = satir.Ilcesi,
+                        Enlem = enlem, Boylam = boylam,
                         Taslak = satir.Durum == KontrolDurumu.Taslak
                     });
                 }
@@ -113,7 +114,7 @@ namespace Jenga.DataAccess.Services.TBYS
                     .Select(t => new TasinmazHaritaNoktasi
                     {
                         TasinmazId = t.Id, EmlakSicilNo = t.EmlakSicilNo, Adres = t.Adres,
-                        Cinsi = t.Cinsi, Ili = t.Ili, Ilcesi = t.Ilcesi,
+                        Cinsi = t.Cinsi, KiraDurumu = t.KiraDurumu, Ili = t.Ili, Ilcesi = t.Ilcesi,
                         ParselGeometrisiGeoJson = t.ParselGeometrisiGeoJson
                     });
                 await foreach (var parsel in parseller.AsAsyncEnumerable().WithCancellation(cancellationToken))

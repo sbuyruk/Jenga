@@ -1,4 +1,4 @@
-.harita-filtreler { display: grid; grid-template-columns: minmax(0, 1fr) minmax(10rem, 15rem) auto; align-items: end; gap: .75rem; }
+.harita-filtreler { display: grid; grid-template-columns: minmax(0, 1fr) minmax(10rem, 15rem) minmax(16rem, 18rem) auto; align-items: end; gap: .75rem; }
 .tasinmaz-harita { height: min(68vh, 750px); min-height: 360px; border: 1px solid var(--bs-border-color); border-radius: 10px; z-index: 0; }
 .tasinmaz-harita ::deep .tasinmaz-isaret { display: flex; justify-content: center; align-items: center; background: #087f8c; color: white; border: 2px solid white; border-radius: 50%; box-shadow: 0 2px 8px #0005; font-size: 14px; font-weight: 600; }
 .tasinmaz-harita ::deep .parsel-isaret,
@@ -50,8 +50,13 @@
 .tasinmaz-harita ::deep .tasinmaz-bilgi p { margin: 6px 0; overflow-wrap: anywhere; }
 .tasinmaz-harita ::deep .tasinmaz-bilgi a { display: inline-block; margin: 6px 12px 0 0; }
 .tasinmaz-harita ::deep .harita-zemin-hatasi { max-width: 250px; background: white; padding: 8px; border-radius: 6px; color: #a33600; }
+@media (max-width: 991.98px) {
+    .harita-filtreler { grid-template-columns: minmax(0, 1fr) minmax(16rem, 1fr); }
+    .harita-filtreler > :first-child,
+    .harita-filtreler > button { grid-column: 1 / -1; }
+    .harita-filtreler > button { justify-self: end; }
+}
 @media (max-width: 575.98px) {
-    .harita-filtreler { grid-template-columns: minmax(0, 1fr) auto; }
-    .harita-filtreler > :first-child { grid-column: 1 / -1; }
+    .harita-filtreler { grid-template-columns: minmax(0, 1fr); }
     .tasinmaz-harita { height: 60vh; min-height: 320px; }
 }

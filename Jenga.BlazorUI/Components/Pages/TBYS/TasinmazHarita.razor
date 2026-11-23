@@ -40,6 +40,16 @@ else
                         }
                     </select>
                 </div>
+                <div>
+                    <label for="harita-kira-durumu" class="form-label small">Kira durumu</label>
+                    <select id="harita-kira-durumu" class="form-select form-select-sm" @bind="_kiraDurumu" @bind:after="Filtrele">
+                        <option value="">Tümü</option>
+                        @foreach (var kiraDurumu in KiraDurumuSecenekleri)
+                        {
+                            <option value="@kiraDurumu">@kiraDurumu</option>
+                        }
+                    </select>
+                </div>
                 <button class="btn btn-sm btn-outline-primary" @onclick="TumunuGoster" disabled="@(_harita is null)">Tümünü Göster</button>
             </div>
             <div class="d-flex justify-content-between flex-wrap gap-2 small mb-2" role="status">
@@ -52,7 +62,7 @@ else
             }
             else if (_gosterilen.Count == 0)
             {
-                <div class="alert alert-info py-2 small">Aramanızla eşleşen taşınmaz bulunamadı.</div>
+                <div class="alert alert-info py-2 small">Seçili ölçütlerle eşleşen taşınmaz bulunamadı.</div>
             }
             @if (_haritaHatasi is not null)
             {
@@ -64,8 +74,22 @@ else
 }
 
 @code {
+    // PortalApps TasinmazGirisiWP.KiraDurumuDDLDoldur ile aynı değerler ve sıra.
+    private static readonly string[] KiraDurumuSecenekleri =
+    [
+        "Kiralandı",
+        "Kirada Değil - Boş",
+        "Kirada Değil - Çıplak Mülkiyet",
+        "Kirada Değil - Taahhütname Verilen",
+        "Kirada Değil - Hisseli",
+        "Kirada Değil - Hukuki Sorun",
+        "Kirada Değil - Vakıf Kullanımında",
+        "Kirada Değil - Kiralanma Talebi Olmayan",
+        "Kirada Değil - Yeniden İnşa"
+    ];
+
     private List<TasinmazHaritaNoktasi> _noktalar = [], _gosterilen = [];
-    private string _arama = "", _cinsi = "";
+    private string _arama = "", _cinsi = "", _kiraDurumu = "";
     private string? _veriHatasi, _haritaHatasi;
     private bool _loading = true, _yenile, _disposed, _haritaIslemi;
     private ElementReference _haritaElementi;
@@ -95,11 +119,18 @@ else
     {
         var kelimeler = KontrolFormAdimlari.AramaMetni(_arama).Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         _gosterilen = _noktalar.Where(n => (_cinsi.Length == 0 || n.Cinsi == _cinsi)
+            && (_kiraDurumu.Length == 0 || n.KiraDurumu?.Trim() == _kiraDurumu)
             && kelimeler.All(k => KontrolFormAdimlari.AramaMetni($"{n.EmlakSicilNo} {n.Adres} {n.Cinsi} {n.Ili} {n.Ilcesi}").Contains(k, StringComparison.Ordinal))).ToList();
         _yenile = true;
     }
 
-    private void TumunuGoster() { _arama = ""; _cinsi = ""; Filtrele(); }
+    private void TumunuGoster()
+    {
+        _arama = "";
+        _cinsi = "";
+        _kiraDurumu = "";
+        Filtrele();
+    }
     private void HaritayiYenidenDene() { _haritaHatasi = null; _yenile = true; }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -141,7 +172,7 @@ else
     {
         try
         {
-            if (_harita is not null) { await _harita.InvokeVoidAsync("kapat"); await _harita.DisposeAsync(); }
+            if (_harita is not null) {  durumu fiawait _harita.InvokeVoidAsync("kapat"); await _harita.DisposeAsync(); }
             if (_module is not null) await _module.DisposeAsync();
         }
         catch (Exception ex) when (ex is JSException or TaskCanceledException) { }

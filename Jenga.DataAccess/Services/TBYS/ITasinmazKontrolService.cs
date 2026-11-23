@@ -10,6 +10,7 @@ namespace Jenga.DataAccess.Services.TBYS
         public string? EmlakSicilNo { get; set; }
         public string? Adres { get; set; }
         public string? Cinsi { get; set; }
+        public string? KiraDurumu { get; set; }
         public string? Ili { get; set; }
         public string? Ilcesi { get; set; }
         public decimal? Enlem { get; set; }

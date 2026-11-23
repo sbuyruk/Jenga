@@ -175,11 +175,12 @@ public class KontrolPlanTests
             var t = await db.Tasinmaz_Table.SingleAsync();
             t.IlId = 1; t.EmlakSicilNo = "S-1"; t.Adres = "Test adresi"; t.Cinsi = "Mesken"; t.Ili = "Ankara"; t.Ilcesi = "Çankaya";
             t.ParselGeometrisiGeoJson = geometri;
+            t.KiraDurumu = "Kirada";
             db.Tasinmaz_Table.AddRange(
                 new Tasinmaz { Id = 2, IlId = 1 },
                 new Tasinmaz { Id = 3, IlId = 2, ParselGeometrisiGeoJson = geometri },
                 new Tasinmaz { Id = 4, IlId = 1 },
-                new Tasinmaz { Id = 5, IlId = 1, ParselGeometrisiGeoJson = geometri });
+                new Tasinmaz { Id = 5, IlId = 1, KiraDurumu = "Kirada Değil - Yeniden İnşa", ParselGeometrisiGeoJson = geometri });
             var ilk = await db.TasinmazKontrol_Table.SingleAsync();
             ilk.KontrolTarihi = new(2020, 1, 1); ilk.CevaplarJson = KoordinatJson("38, 31");
             db.TasinmazKontrol_Table.AddRange(
@@ -205,8 +206,10 @@ public class KontrolPlanTests
         Assert.Equal("S-1", nokta.EmlakSicilNo); Assert.Equal("Test adresi", nokta.Adres);
         Assert.Equal("Mesken", nokta.Cinsi); Assert.Equal("Ankara", nokta.Ili); Assert.Equal("Çankaya", nokta.Ilcesi);
         Assert.True(nokta.Taslak);
+        Assert.Equal("Kirada", nokta.KiraDurumu);
         Assert.Equal(geometri, nokta.ParselGeometrisiGeoJson);
         var sadeceParsel = Assert.Single(sonuc.Value, n => n.TasinmazId == 5);
+        Assert.Equal("Kirada Değil - Yeniden İnşa", sadeceParsel.KiraDurumu);
         Assert.Equal(geometri, sadeceParsel.ParselGeometrisiGeoJson);
         Assert.Null(sadeceParsel.KontrolId);
         Assert.Null(sadeceParsel.Enlem);
