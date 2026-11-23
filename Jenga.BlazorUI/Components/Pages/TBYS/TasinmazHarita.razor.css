@@ -1,6 +1,50 @@
 .harita-filtreler { display: grid; grid-template-columns: minmax(0, 1fr) minmax(10rem, 15rem) auto; align-items: end; gap: .75rem; }
 .tasinmaz-harita { height: min(68vh, 750px); min-height: 360px; border: 1px solid var(--bs-border-color); border-radius: 10px; z-index: 0; }
 .tasinmaz-harita ::deep .tasinmaz-isaret { display: flex; justify-content: center; align-items: center; background: #087f8c; color: white; border: 2px solid white; border-radius: 50%; box-shadow: 0 2px 8px #0005; font-size: 14px; font-weight: 600; }
+.tasinmaz-harita ::deep .parsel-isaret,
+.tasinmaz-harita ::deep .harita-lejant-simge { background: var(--parsel-rengi, #475569); }
+.tasinmaz-harita ::deep .parsel-isaret { box-sizing: border-box; }
+.tasinmaz-harita ::deep .parsel-isaret::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    pointer-events: none;
+    border: 5px solid transparent;
+    border-top-color: white;
+}
+.tasinmaz-harita ::deep .parsel-isaret-arsa { --parsel-rengi: #955223; }
+.tasinmaz-harita ::deep .parsel-isaret-isyeri { --parsel-rengi: #6d28a4; }
+.tasinmaz-harita ::deep .parsel-isaret-mesken { --parsel-rengi: #1d4ed8; }
+.tasinmaz-harita ::deep .parsel-isaret-bina { --parsel-rengi: #b4233a; }
+.tasinmaz-harita ::deep .parsel-isaret-tarla { --parsel-rengi: #237045; }
+.tasinmaz-harita ::deep .harita-lejant {
+    padding: 6px 9px;
+    border-radius: 6px;
+    background: var(--bs-body-bg, white);
+    color: var(--bs-body-color, #172b40);
+    box-shadow: 0 1px 5px #0004;
+}
+.tasinmaz-harita ::deep .harita-lejant summary { cursor: pointer; font-weight: 600; }
+.tasinmaz-harita ::deep .harita-lejant ul {
+    display: grid;
+    grid-template-columns: max-content max-content;
+    gap: 4px 10px;
+    margin: 5px 0 0;
+    padding: 0;
+    list-style: none;
+}
+.tasinmaz-harita ::deep .harita-lejant li { display: flex; align-items: center; gap: 5px; }
+.tasinmaz-harita ::deep .harita-lejant-simge {
+    display: grid;
+    width: 18px;
+    height: 18px;
+    place-items: center;
+    border-radius: 50%;
+    color: white;
+    line-height: 1;
+}
 .tasinmaz-harita ::deep .leaflet-popup-content { margin: 14px; min-width: min(220px, calc(100vw - 140px)); max-width: min(320px, calc(100vw - 120px)); max-height: min(320px, 38vh); overflow-y: auto; color: #172b40; }
 .tasinmaz-harita ::deep .tasinmaz-bilgi + .tasinmaz-bilgi { border-top: 1px solid #d9e0e7; margin-top: 14px; padding-top: 14px; }
 .tasinmaz-harita ::deep .tasinmaz-bilgi p { margin: 6px 0; overflow-wrap: anywhere; }
