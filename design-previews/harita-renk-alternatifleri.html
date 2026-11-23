@@ -1,0 +1,162 @@
+<div id="harita-renk-alternatifleri" data-palet="toprak">
+  <div class="viz-controls">
+    <label class="form-label" for="harita-palet-secimi">Alternatif palet
+      <select id="harita-palet-secimi" class="form-select">
+        <option value="toprak">Toprak ve orman</option>
+        <option value="canli">Canlı ve dengeli</option>
+        <option value="koyu">Koyu tonlar</option>
+      </select>
+    </label>
+  </div>
+  <div class="viz-dotted-background palet-ornekleri">
+  <table aria-label="Mevcut ve seçili parsel renklerinin karşılaştırması">
+    <colgroup span="2"></colgroup>
+    <colgroup span="2"></colgroup>
+    <thead>
+      <tr>
+        <th colspan="2" scope="colgroup">Mevcut palet</th>
+        <th colspan="2" scope="colgroup" data-palet-adi>Toprak ve orman</th>
+      </tr>
+      <tr>
+        <th scope="col">İşaretçi</th>
+        <th scope="col">Lejant</th>
+        <th scope="col">İşaretçi</th>
+        <th scope="col">Lejant</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="arsa">
+        <td><span class="isaretci" aria-hidden="true"><i data-lucide="grid-2x2"></i></span></td>
+        <td class="lejant"><span class="simge" aria-hidden="true"><i data-lucide="grid-2x2"></i></span>Arsa</td>
+        <td><span class="isaretci" aria-hidden="true"><i data-lucide="grid-2x2"></i></span></td>
+        <td class="lejant"><span class="simge" aria-hidden="true"><i data-lucide="grid-2x2"></i></span>Arsa</td>
+      </tr>
+      <tr class="isyeri">
+        <td><span class="isaretci" aria-hidden="true"><i data-lucide="store"></i></span></td>
+        <td class="lejant"><span class="simge" aria-hidden="true"><i data-lucide="store"></i></span>İşyeri</td>
+        <td><span class="isaretci" aria-hidden="true"><i data-lucide="store"></i></span></td>
+        <td class="lejant"><span class="simge" aria-hidden="true"><i data-lucide="store"></i></span>İşyeri</td>
+      </tr>
+      <tr class="mesken">
+        <td><span class="isaretci" aria-hidden="true"><i data-lucide="house"></i></span></td>
+        <td class="lejant"><span class="simge" aria-hidden="true"><i data-lucide="house"></i></span>Mesken</td>
+        <td><span class="isaretci" aria-hidden="true"><i data-lucide="house"></i></span></td>
+        <td class="lejant"><span class="simge" aria-hidden="true"><i data-lucide="house"></i></span>Mesken</td>
+      </tr>
+      <tr class="bina">
+        <td><span class="isaretci" aria-hidden="true"><i data-lucide="building-2"></i></span></td>
+        <td class="lejant"><span class="simge" aria-hidden="true"><i data-lucide="building-2"></i></span>Bina</td>
+        <td><span class="isaretci" aria-hidden="true"><i data-lucide="building-2"></i></span></td>
+        <td class="lejant"><span class="simge" aria-hidden="true"><i data-lucide="building-2"></i></span>Bina</td>
+      </tr>
+      <tr class="tarla">
+        <td><span class="isaretci" aria-hidden="true"><i data-lucide="tractor"></i></span></td>
+        <td class="lejant"><span class="simge" aria-hidden="true"><i data-lucide="tractor"></i></span>Tarla</td>
+        <td><span class="isaretci" aria-hidden="true"><i data-lucide="tractor"></i></span></td>
+        <td class="lejant"><span class="simge" aria-hidden="true"><i data-lucide="tractor"></i></span>Tarla</td>
+      </tr>
+      <tr>
+        <td><span class="isaretci" aria-hidden="true"><i data-lucide="layers"></i></span></td>
+        <td class="lejant"><span class="simge" aria-hidden="true"><i data-lucide="layers"></i></span>Farklı cinsler</td>
+        <td><span class="isaretci" aria-hidden="true"><i data-lucide="layers"></i></span></td>
+        <td class="lejant"><span class="simge" aria-hidden="true"><i data-lucide="layers"></i></span>Farklı cinsler</td>
+      </tr>
+      <tr>
+        <td><span class="isaretci" aria-hidden="true"><i data-lucide="map-pin"></i></span></td>
+        <td class="lejant"><span class="simge" aria-hidden="true"><i data-lucide="map-pin"></i></span>Diğer / belirsiz</td>
+        <td><span class="isaretci" aria-hidden="true"><i data-lucide="map-pin"></i></span></td>
+        <td class="lejant"><span class="simge" aria-hidden="true"><i data-lucide="map-pin"></i></span>Diğer / belirsiz</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<style>
+  #harita-renk-alternatifleri .palet-ornekleri {
+    --simge-rengi: #fff;
+    --lejant-zemini: light-dark(#fff, #20262b);
+    --yazi-rengi: light-dark(#172b40, #eff4f8);
+    --ayirici: light-dark(#c7d0d6, #48525b);
+    color: var(--yazi-rengi);
+    padding: 10px 4px 14px;
+  }
+  #harita-renk-alternatifleri table { width: 100%; max-width: 560px; border-collapse: collapse; margin-inline: auto; }
+  #harita-renk-alternatifleri th { font-weight: 500; }
+  #harita-renk-alternatifleri th,
+  #harita-renk-alternatifleri td { padding: 6px clamp(4px, 1.4vw, 12px); text-align: center; }
+  #harita-renk-alternatifleri thead tr:first-child th + th,
+  #harita-renk-alternatifleri tr > :nth-child(3) { border-inline-start: 1px solid var(--ayirici); }
+  #harita-renk-alternatifleri tbody tr > :nth-child(-n+2) { --parsel-rengi: var(--mevcut, #475569); }
+  #harita-renk-alternatifleri tbody tr > :nth-child(n+3) { --parsel-rengi: var(--onerilen, #475569); }
+  #harita-renk-alternatifleri .arsa { --mevcut: #955223; --onerilen: #815c3b; }
+  #harita-renk-alternatifleri .isyeri { --mevcut: #6d28a4; --onerilen: #6d547c; }
+  #harita-renk-alternatifleri .mesken { --mevcut: #1d4ed8; --onerilen: #365f8a; }
+  #harita-renk-alternatifleri .bina { --mevcut: #b4233a; --onerilen: #8b4857; }
+  #harita-renk-alternatifleri .tarla { --mevcut: #237045; --onerilen: #386b52; }
+  #harita-renk-alternatifleri[data-palet="canli"] .arsa { --onerilen: #8a5a22; }
+  #harita-renk-alternatifleri[data-palet="canli"] .isyeri { --onerilen: #7050a0; }
+  #harita-renk-alternatifleri[data-palet="canli"] .mesken { --onerilen: #18648c; }
+  #harita-renk-alternatifleri[data-palet="canli"] .bina { --onerilen: #a04456; }
+  #harita-renk-alternatifleri[data-palet="canli"] .tarla { --onerilen: #1d7451; }
+  #harita-renk-alternatifleri[data-palet="koyu"] .arsa { --onerilen: #624b39; }
+  #harita-renk-alternatifleri[data-palet="koyu"] .isyeri { --onerilen: #574468; }
+  #harita-renk-alternatifleri[data-palet="koyu"] .mesken { --onerilen: #28476d; }
+  #harita-renk-alternatifleri[data-palet="koyu"] .bina { --onerilen: #733b49; }
+  #harita-renk-alternatifleri[data-palet="koyu"] .tarla { --onerilen: #29533f; }
+  #harita-renk-alternatifleri td.lejant { background: var(--lejant-zemini); text-align: start; }
+  #harita-renk-alternatifleri .isaretci,
+  #harita-renk-alternatifleri .simge {
+    display: inline-grid;
+    place-items: center;
+    vertical-align: middle;
+    border-radius: 50%;
+    background: var(--parsel-rengi);
+    color: var(--simge-rengi);
+  }
+  #harita-renk-alternatifleri .isaretci {
+    position: relative;
+    box-sizing: border-box;
+    width: 28px;
+    height: 28px;
+    border: 2px solid var(--simge-rengi);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--yazi-rengi), transparent 70%);
+  }
+  #harita-renk-alternatifleri .isaretci::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: var(--simge-rengi);
+  }
+  #harita-renk-alternatifleri .isaretci > [data-lucide] { width: 16px; height: 16px; }
+  #harita-renk-alternatifleri .simge { width: 18px; height: 18px; margin-inline-end: 5px; }
+  #harita-renk-alternatifleri .simge > [data-lucide] { width: 13px; height: 13px; }
+</style>
+
+<script>
+  (() => {
+    const root = document.getElementById('harita-renk-alternatifleri');
+    const secim = root.querySelector('#harita-palet-secimi');
+    const baslik = root.querySelector('[data-palet-adi]');
+
+    function paletiGoster(deger) {
+      const secenek = Array.from(secim.options).find(option => option.value === deger) ?? secim.options[0];
+      secim.value = secenek.value;
+      root.dataset.palet = secenek.value;
+      baslik.textContent = secenek.textContent;
+    }
+
+    paletiGoster(window.openai?.widgetState?.modelContent?.palet);
+    window.addEventListener('openai:set_globals', event => {
+      const kayit = event.detail?.globals?.widgetState;
+      if (kayit) paletiGoster(kayit.modelContent?.palet);
+    });
+    secim.addEventListener('change', () => {
+      paletiGoster(secim.value);
+      window.openai?.setWidgetState?.({ modelContent: { palet: secim.value } })?.catch(() => {});
+    });
+  })();
+</script>

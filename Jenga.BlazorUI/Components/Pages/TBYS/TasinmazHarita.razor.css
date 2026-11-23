@@ -2,7 +2,10 @@
 .tasinmaz-harita { height: min(68vh, 750px); min-height: 360px; border: 1px solid var(--bs-border-color); border-radius: 10px; z-index: 0; }
 .tasinmaz-harita ::deep .tasinmaz-isaret { display: flex; justify-content: center; align-items: center; background: #087f8c; color: white; border: 2px solid white; border-radius: 50%; box-shadow: 0 2px 8px #0005; font-size: 14px; font-weight: 600; }
 .tasinmaz-harita ::deep .parsel-isaret,
-.tasinmaz-harita ::deep .harita-lejant-simge { background: var(--parsel-rengi, #475569); }
+.tasinmaz-harita ::deep .harita-lejant-simge {
+    background: var(--parsel-zemini, #475569);
+    color: white;
+}
 .tasinmaz-harita ::deep .parsel-isaret { box-sizing: border-box; }
 .tasinmaz-harita ::deep .parsel-isaret::after {
     content: "";
@@ -14,11 +17,23 @@
     border: 5px solid transparent;
     border-top-color: white;
 }
-.tasinmaz-harita ::deep .parsel-isaret-arsa { --parsel-rengi: #955223; }
-.tasinmaz-harita ::deep .parsel-isaret-isyeri { --parsel-rengi: #6d28a4; }
-.tasinmaz-harita ::deep .parsel-isaret-mesken { --parsel-rengi: #1d4ed8; }
-.tasinmaz-harita ::deep .parsel-isaret-bina { --parsel-rengi: #b4233a; }
-.tasinmaz-harita ::deep .parsel-isaret-tarla { --parsel-rengi: #237045; }
+.tasinmaz-harita ::deep .parsel-isaret-arsa { --parsel-zemini: #8b1c55; }
+.tasinmaz-harita ::deep .parsel-isaret-isyeri { --parsel-zemini: #00698b; }
+.tasinmaz-harita ::deep .parsel-isaret-mesken { --parsel-zemini: #4b36a9; }
+.tasinmaz-harita ::deep .parsel-isaret-bina { --parsel-zemini: #a64a0b; }
+.tasinmaz-harita ::deep .parsel-isaret-tarla { --parsel-zemini: #007249; }
+.tasinmaz-harita ::deep .parsel-tarla-simge::before {
+    content: "";
+    display: block;
+    width: 16px;
+    height: 16px;
+    background: currentColor;
+    mask: url("./images/tarla-traktor.svg") center / contain no-repeat;
+}
+.tasinmaz-harita ::deep .harita-lejant-simge.parsel-tarla-simge::before {
+    width: 13px;
+    height: 13px;
+}
 .tasinmaz-harita ::deep .harita-lejant {
     padding: 6px 9px;
     border-radius: 6px;
@@ -42,7 +57,6 @@
     height: 18px;
     place-items: center;
     border-radius: 50%;
-    color: white;
     line-height: 1;
 }
 .tasinmaz-harita ::deep .leaflet-popup-content { margin: 14px; min-width: min(220px, calc(100vw - 140px)); max-width: min(320px, calc(100vw - 120px)); max-height: min(320px, 38vh); overflow-y: auto; color: #172b40; }

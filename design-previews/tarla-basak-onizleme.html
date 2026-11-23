@@ -1,0 +1,75 @@
+<div id="tarla-basak-onizleme" class="viz-dotted-background">
+  <figure aria-label="Başak simgesinin harita işaretçisinde ve lejantta görünümü">
+    <div class="ornek">
+      <span class="isaretci" aria-hidden="true"><i data-lucide="wheat"></i></span>
+      <span>Harita işaretçisi</span>
+    </div>
+    <div class="ornek">
+      <span class="lejant">
+        <span class="lejant-simge" aria-hidden="true"><i data-lucide="wheat"></i></span>
+        Tarla
+      </span>
+      <span>Lejant</span>
+    </div>
+  </figure>
+</div>
+
+<style>
+  #tarla-basak-onizleme {
+    --tarla-yesili: #237045;
+    --simge-rengi: #fff;
+    --lejant-zemini: light-dark(#fff, #20262b);
+    --yazi-rengi: light-dark(#172b40, #eff4f8);
+    color: var(--yazi-rengi);
+    padding: 18px;
+  }
+  #tarla-basak-onizleme figure {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px 32px;
+    margin: 0;
+  }
+  #tarla-basak-onizleme .ornek {
+    display: grid;
+    justify-items: center;
+    grid-template-rows: 40px auto;
+    align-items: center;
+    gap: 4px;
+  }
+  #tarla-basak-onizleme .isaretci,
+  #tarla-basak-onizleme .lejant-simge {
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--tarla-yesili);
+    color: var(--simge-rengi);
+  }
+  #tarla-basak-onizleme .isaretci {
+    position: relative;
+    box-sizing: border-box;
+    width: 28px;
+    height: 28px;
+    border: 2px solid var(--simge-rengi);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--yazi-rengi), transparent 70%);
+  }
+  #tarla-basak-onizleme .isaretci::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: var(--simge-rengi);
+  }
+  #tarla-basak-onizleme .isaretci [data-lucide] { width: 16px; height: 16px; }
+  #tarla-basak-onizleme .lejant {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 9px;
+    border-radius: 6px;
+    background: var(--lejant-zemini);
+  }
+  #tarla-basak-onizleme .lejant-simge { width: 18px; height: 18px; }
+  #tarla-basak-onizleme .lejant-simge [data-lucide] { width: 13px; height: 13px; }
+</style>

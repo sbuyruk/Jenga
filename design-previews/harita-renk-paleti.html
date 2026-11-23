@@ -1,0 +1,116 @@
+<div id="harita-renk-paleti" class="viz-dotted-background">
+  <table aria-label="Mevcut ve önerilen parsel renklerinin karşılaştırması">
+    <colgroup span="2"></colgroup>
+    <colgroup span="2"></colgroup>
+    <thead>
+      <tr>
+        <th colspan="2" scope="colgroup">Mevcut palet</th>
+        <th colspan="2" scope="colgroup">Önerilen palet</th>
+      </tr>
+      <tr>
+        <th scope="col">İşaretçi</th>
+        <th scope="col">Lejant</th>
+        <th scope="col">İşaretçi</th>
+        <th scope="col">Lejant</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="arsa">
+        <td><span class="isaretci" aria-hidden="true"><i data-lucide="grid-2x2"></i></span></td>
+        <td class="lejant"><span class="simge" aria-hidden="true"><i data-lucide="grid-2x2"></i></span>Arsa</td>
+        <td><span class="isaretci" aria-hidden="true"><i data-lucide="grid-2x2"></i></span></td>
+        <td class="lejant"><span class="simge" aria-hidden="true"><i data-lucide="grid-2x2"></i></span>Arsa</td>
+      </tr>
+      <tr class="isyeri">
+        <td><span class="isaretci" aria-hidden="true"><i data-lucide="store"></i></span></td>
+        <td class="lejant"><span class="simge" aria-hidden="true"><i data-lucide="store"></i></span>İşyeri</td>
+        <td><span class="isaretci" aria-hidden="true"><i data-lucide="store"></i></span></td>
+        <td class="lejant"><span class="simge" aria-hidden="true"><i data-lucide="store"></i></span>İşyeri</td>
+      </tr>
+      <tr class="mesken">
+        <td><span class="isaretci" aria-hidden="true"><i data-lucide="house"></i></span></td>
+        <td class="lejant"><span class="simge" aria-hidden="true"><i data-lucide="house"></i></span>Mesken</td>
+        <td><span class="isaretci" aria-hidden="true"><i data-lucide="house"></i></span></td>
+        <td class="lejant"><span class="simge" aria-hidden="true"><i data-lucide="house"></i></span>Mesken</td>
+      </tr>
+      <tr class="bina">
+        <td><span class="isaretci" aria-hidden="true"><i data-lucide="building-2"></i></span></td>
+        <td class="lejant"><span class="simge" aria-hidden="true"><i data-lucide="building-2"></i></span>Bina</td>
+        <td><span class="isaretci" aria-hidden="true"><i data-lucide="building-2"></i></span></td>
+        <td class="lejant"><span class="simge" aria-hidden="true"><i data-lucide="building-2"></i></span>Bina</td>
+      </tr>
+      <tr class="tarla">
+        <td><span class="isaretci" aria-hidden="true"><i data-lucide="tractor"></i></span></td>
+        <td class="lejant"><span class="simge" aria-hidden="true"><i data-lucide="tractor"></i></span>Tarla</td>
+        <td><span class="isaretci" aria-hidden="true"><i data-lucide="tractor"></i></span></td>
+        <td class="lejant"><span class="simge" aria-hidden="true"><i data-lucide="tractor"></i></span>Tarla</td>
+      </tr>
+      <tr>
+        <td><span class="isaretci" aria-hidden="true"><i data-lucide="layers"></i></span></td>
+        <td class="lejant"><span class="simge" aria-hidden="true"><i data-lucide="layers"></i></span>Farklı cinsler</td>
+        <td><span class="isaretci" aria-hidden="true"><i data-lucide="layers"></i></span></td>
+        <td class="lejant"><span class="simge" aria-hidden="true"><i data-lucide="layers"></i></span>Farklı cinsler</td>
+      </tr>
+      <tr>
+        <td><span class="isaretci" aria-hidden="true"><i data-lucide="map-pin"></i></span></td>
+        <td class="lejant"><span class="simge" aria-hidden="true"><i data-lucide="map-pin"></i></span>Diğer / belirsiz</td>
+        <td><span class="isaretci" aria-hidden="true"><i data-lucide="map-pin"></i></span></td>
+        <td class="lejant"><span class="simge" aria-hidden="true"><i data-lucide="map-pin"></i></span>Diğer / belirsiz</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<style>
+  #harita-renk-paleti {
+    --simge-rengi: #fff;
+    --lejant-zemini: light-dark(#fff, #20262b);
+    --yazi-rengi: light-dark(#172b40, #eff4f8);
+    --ayirici: light-dark(#c7d0d6, #48525b);
+    color: var(--yazi-rengi);
+    padding: 10px 4px 14px;
+  }
+  #harita-renk-paleti table { width: 100%; max-width: 560px; border-collapse: collapse; margin-inline: auto; }
+  #harita-renk-paleti th { font-weight: 500; }
+  #harita-renk-paleti th,
+  #harita-renk-paleti td { padding: 6px clamp(4px, 1.4vw, 12px); text-align: center; }
+  #harita-renk-paleti thead tr:first-child th + th,
+  #harita-renk-paleti tr > :nth-child(3) { border-inline-start: 1px solid var(--ayirici); }
+  #harita-renk-paleti tbody tr > :nth-child(-n+2) { --parsel-rengi: var(--mevcut, #475569); }
+  #harita-renk-paleti tbody tr > :nth-child(n+3) { --parsel-rengi: var(--onerilen, #475569); }
+  #harita-renk-paleti .arsa { --mevcut: #955223; --onerilen: #815c3b; }
+  #harita-renk-paleti .isyeri { --mevcut: #6d28a4; --onerilen: #6d547c; }
+  #harita-renk-paleti .mesken { --mevcut: #1d4ed8; --onerilen: #365f8a; }
+  #harita-renk-paleti .bina { --mevcut: #b4233a; --onerilen: #8b4857; }
+  #harita-renk-paleti .tarla { --mevcut: #237045; --onerilen: #386b52; }
+  #harita-renk-paleti td.lejant { background: var(--lejant-zemini); text-align: start; }
+  #harita-renk-paleti .isaretci,
+  #harita-renk-paleti .simge {
+    display: inline-grid;
+    place-items: center;
+    vertical-align: middle;
+    border-radius: 50%;
+    background: var(--parsel-rengi);
+    color: var(--simge-rengi);
+  }
+  #harita-renk-paleti .isaretci {
+    position: relative;
+    box-sizing: border-box;
+    width: 28px;
+    height: 28px;
+    border: 2px solid var(--simge-rengi);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--yazi-rengi), transparent 70%);
+  }
+  #harita-renk-paleti .isaretci::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: var(--simge-rengi);
+  }
+  #harita-renk-paleti .isaretci > [data-lucide] { width: 16px; height: 16px; }
+  #harita-renk-paleti .simge { width: 18px; height: 18px; margin-inline-end: 5px; }
+  #harita-renk-paleti .simge > [data-lucide] { width: 13px; height: 13px; }
+</style>

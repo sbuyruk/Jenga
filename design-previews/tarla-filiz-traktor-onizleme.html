@@ -1,0 +1,76 @@
+<div id="tarla-filiz-traktor-onizleme" class="viz-dotted-background">
+  <table aria-label="Tarla için filiz ve traktör simgeleri">
+    <thead>
+      <tr>
+        <td></td>
+        <th scope="col">Harita işaretçisi</th>
+        <th scope="col">Lejant</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th scope="row">Filiz</th>
+        <td><span class="isaretci" aria-hidden="true"><i data-lucide="sprout"></i></span></td>
+        <td><span class="lejant"><span class="lejant-simge" aria-hidden="true"><i data-lucide="sprout"></i></span>Tarla</span></td>
+      </tr>
+      <tr>
+        <th scope="row">Traktör</th>
+        <td><span class="isaretci" aria-hidden="true"><i data-lucide="tractor"></i></span></td>
+        <td><span class="lejant"><span class="lejant-simge" aria-hidden="true"><i data-lucide="tractor"></i></span>Tarla</span></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<style>
+  #tarla-filiz-traktor-onizleme {
+    --tarla-yesili: #237045;
+    --simge-rengi: #fff;
+    --lejant-zemini: light-dark(#fff, #20262b);
+    --yazi-rengi: light-dark(#172b40, #eff4f8);
+    padding: 12px;
+    color: var(--yazi-rengi);
+  }
+  #tarla-filiz-traktor-onizleme table { border-collapse: collapse; }
+  #tarla-filiz-traktor-onizleme th,
+  #tarla-filiz-traktor-onizleme td { padding: 8px 12px; text-align: center; }
+  #tarla-filiz-traktor-onizleme th { font-weight: 500; }
+  #tarla-filiz-traktor-onizleme th[scope="row"] { text-align: start; }
+  #tarla-filiz-traktor-onizleme .isaretci,
+  #tarla-filiz-traktor-onizleme .lejant-simge {
+    display: inline-grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--tarla-yesili);
+    color: var(--simge-rengi);
+    vertical-align: middle;
+  }
+  #tarla-filiz-traktor-onizleme .isaretci {
+    position: relative;
+    box-sizing: border-box;
+    width: 28px;
+    height: 28px;
+    border: 2px solid var(--simge-rengi);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--yazi-rengi), transparent 70%);
+  }
+  #tarla-filiz-traktor-onizleme .isaretci::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: var(--simge-rengi);
+  }
+  #tarla-filiz-traktor-onizleme .isaretci > [data-lucide] { width: 16px; height: 16px; }
+  #tarla-filiz-traktor-onizleme .lejant {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 9px;
+    border-radius: 6px;
+    background: var(--lejant-zemini);
+  }
+  #tarla-filiz-traktor-onizleme .lejant-simge { width: 18px; height: 18px; }
+  #tarla-filiz-traktor-onizleme .lejant-simge > [data-lucide] { width: 13px; height: 13px; }
+</style>

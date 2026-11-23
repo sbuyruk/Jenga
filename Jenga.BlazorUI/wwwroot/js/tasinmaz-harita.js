@@ -9,18 +9,18 @@ const parselTurleri = new Map([
 ]);
 
 const parselSimgeleri = {
-    arsa: { etiket: 'Arsa', ikon: 'bi-grid' },
-    isyeri: { etiket: 'İşyeri', ikon: 'bi-shop' },
-    mesken: { etiket: 'Mesken', ikon: 'bi-house-door-fill' },
-    bina: { etiket: 'Bina', ikon: 'bi-buildings' },
-    tarla: { etiket: 'Tarla', ikon: 'bi-flower1' },
-    karma: { etiket: 'Farklı cinsler', ikon: 'bi-layers-half' },
-    diger: { etiket: 'Diğer / belirsiz', ikon: 'bi-geo-alt-fill' }
+    arsa: { etiket: 'Arsa', ikon: 'bi bi-grid' },
+    isyeri: { etiket: 'İşyeri', ikon: 'bi bi-shop' },
+    mesken: { etiket: 'Mesken', ikon: 'bi bi-house-door-fill' },
+    bina: { etiket: 'Bina', ikon: 'bi bi-buildings' },
+    tarla: { etiket: 'Tarla', ikon: 'parsel-tarla-simge' },
+    karma: { etiket: 'Farklı cinsler', ikon: 'bi bi-layers-half' },
+    diger: { etiket: 'Diğer / belirsiz', ikon: 'bi bi-geo-alt-fill' }
 };
 
 function parselSimgeElemani(tur) {
     const simge = document.createElement('i');
-    simge.className = `bi ${parselSimgeleri[tur].ikon}`;
+    simge.className = parselSimgeleri[tur].ikon;
     simge.setAttribute('aria-hidden', 'true');
     return simge;
 }
