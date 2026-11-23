@@ -1,3 +1,4 @@
+@using System.Globalization
 @using Jenga.BlazorUI.Components.Pages.TBYS.Kontrol
 @using Jenga.DataAccess.Services.TBYS
 @implements IAsyncDisposable
@@ -34,7 +35,8 @@ else
                     <label for="harita-cinsi" class="form-label small">Cinsi</label>
                     <select id="harita-cinsi" class="form-select form-select-sm" @bind="_cinsi" @bind:after="Filtrele">
                         <option value="">Tümü</option>
-                        @foreach (var cins in _noktalar.Select(n => n.Cinsi).Where(c => !string.IsNullOrWhiteSpace(c)).Distinct().OrderBy(c => c))
+                        @foreach (var cins in _noktalar.Select(n => n.Cinsi?.Trim()).Where(c => !string.IsNullOrEmpty(c))
+                            .Distinct(CinsKarsilastirici).OrderBy(c => c, CinsKarsilastirici))
                         {
                             <option value="@cins">@cins</option>
                         }
@@ -74,6 +76,8 @@ else
 }
 
 @code {
+    private static readonly StringComparer CinsKarsilastirici = StringComparer.Create(CultureInfo.GetCultureInfo("tr-TR"), ignoreCase: true);
+
     // PortalApps TasinmazGirisiWP.KiraDurumuDDLDoldur ile aynı değerler ve sıra.
     private static readonly string[] KiraDurumuSecenekleri =
     [
@@ -118,7 +122,7 @@ else
     private void Filtrele()
     {
         var kelimeler = KontrolFormAdimlari.AramaMetni(_arama).Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        _gosterilen = _noktalar.Where(n => (_cinsi.Length == 0 || n.Cinsi == _cinsi)
+        _gosterilen = _noktalar.Where(n => (_cinsi.Length == 0 || CinsKarsilastirici.Equals(n.Cinsi?.Trim(), _cinsi))
             && (_kiraDurumu.Length == 0 || n.KiraDurumu?.Trim() == _kiraDurumu)
             && kelimeler.All(k => KontrolFormAdimlari.AramaMetni($"{n.EmlakSicilNo} {n.Adres} {n.Cinsi} {n.Ili} {n.Ilcesi}").Contains(k, StringComparison.Ordinal))).ToList();
         _yenile = true;

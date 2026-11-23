@@ -57,8 +57,10 @@ public class TasinmazHaritaTests
         using var services = Services(Result<List<TasinmazHaritaNoktasi>>.Success([
             new() { TasinmazId = 1, EmlakSicilNo = "S-1", Cinsi = "Mesken", Adres = "Çankaya Test Sokak", Ili = "Ankara", KiraDurumu = yenidenInsa, Enlem = 39, Boylam = 32 },
             new() { TasinmazId = 2, EmlakSicilNo = "S-2", Cinsi = "Arsa", Adres = "Çankaya Diğer Sokak", Ili = "Ankara", KiraDurumu = yenidenInsa, ParselGeometrisiGeoJson = "{\"type\":\"Polygon\",\"coordinates\":[[[32,39],[33,39],[33,40],[32,39]]]}" },
-            new() { TasinmazId = 3, EmlakSicilNo = "S-3", Cinsi = "Mesken", Adres = "Çankaya Test Sokak", Ili = "Ankara", KiraDurumu = "Kiralandı", Enlem = 40, Boylam = 33 },
-            new() { TasinmazId = 4, EmlakSicilNo = "S-4", Cinsi = "Arsa", Ili = "Ankara" }
+            new() { TasinmazId = 3, EmlakSicilNo = "S-3", Cinsi = " MESKEN ", Adres = "Çankaya Test Sokak", Ili = "Ankara", KiraDurumu = "Kiralandı", Enlem = 40, Boylam = 33 },
+            new() { TasinmazId = 4, EmlakSicilNo = "S-4", Cinsi = "Arsa", Ili = "Ankara" },
+            new() { TasinmazId = 5, Cinsi = "Tarla ", Enlem = 38, Boylam = 32 },
+            new() { TasinmazId = 6, Cinsi = "Tarla", Enlem = 37, Boylam = 32 }
         ]));
         await using var renderer = new HtmlRenderer(services, services.GetRequiredService<ILoggerFactory>());
         await renderer.Dispatcher.InvokeAsync(async () =>
@@ -77,8 +79,16 @@ public class TasinmazHaritaTests
                 typeof(ComponentBase).GetMethod("StateHasChanged", flags)!.Invoke(form, null);
             }
             List<TasinmazHaritaNoktasi> Gosterilen() => (List<TasinmazHaritaNoktasi>)typeof(TasinmazHarita).GetField("_gosterilen", flags)!.GetValue(form)!;
-            Assert.Equal(4, Gosterilen().Count);
+            Assert.Equal(6, Gosterilen().Count);
             var html = System.Net.WebUtility.HtmlDecode(root.ToHtmlString());
+            var cinsSecici = Regex.Match(html, """<select id="harita-cinsi"[^>]*>(.*?)</select>""", RegexOptions.Singleline);
+            var cinsler = Regex.Matches(cinsSecici.Groups[1].Value, """<option\b[^>]*>([^<]*)</option>""")
+                .Select(eslesme => eslesme.Groups[1].Value);
+            Assert.Equal(new[] { "Tümü", "Arsa", "Mesken", "Tarla" }, cinsler);
+            Filtre("", "Mesken");
+            Assert.Equal(new[] { 1, 3 }, Gosterilen().Select(n => n.TasinmazId));
+            Filtre("", "Tarla");
+            Assert.Equal(new[] { 5, 6 }, Gosterilen().Select(n => n.TasinmazId));
             var kiraSecici = Regex.Match(html, """<select id="harita-kira-durumu"[^>]*>(.*?)</select>""", RegexOptions.Singleline);
             var secenekler = Regex.Matches(kiraSecici.Groups[1].Value, """<option\b([^>]*)>([^<]*)</option>""")
                 .Select(eslesme => (
@@ -109,7 +119,7 @@ public class TasinmazHaritaTests
             Assert.Empty(Gosterilen());
             Assert.Contains("eşleşen taşınmaz bulunamadı", System.Net.WebUtility.HtmlDecode(root.ToHtmlString()));
             typeof(TasinmazHarita).GetMethod("TumunuGoster", flags)!.Invoke(form, null);
-            Assert.Equal(4, Gosterilen().Count);
+            Assert.Equal(6, Gosterilen().Count);
         });
     }
 
