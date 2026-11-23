@@ -89,7 +89,7 @@ function leafletYukle() {
     return leafletReady;
 }
 
-function bilgiKartlari(noktalar, parsel = false) {
+function bilgiKartlari(noktalar, parselMerkezi) {
     const root = document.createElement('div');
     for (const nokta of noktalar) {
         const kart = document.createElement('section');
@@ -107,28 +107,43 @@ function bilgiKartlari(noktalar, parsel = false) {
             satir.append(label, document.createTextNode(deger || '—'));
             kart.appendChild(satir);
         }
-        if (parsel) {
+        const [enlem, boylam] = Number.isFinite(nokta.enlem) && Number.isFinite(nokta.boylam)
+            ? [nokta.enlem, nokta.boylam]
+            : [parselMerkezi.lat, parselMerkezi.lng];
+        const googleKoordinati = encodeURIComponent(`${enlem},${boylam}`);
+        if (parselMerkezi) {
             const detay = document.createElement('a');
             detay.href = `/tbys/tasinmaz/${nokta.tasinmazId}?geri=%2Ftbys%2Ftasinmaz-kontrol%2Fharita`;
             detay.textContent = 'Taşınmaz Detayını Aç';
             kart.appendChild(detay);
-            root.appendChild(kart);
-            continue;
+        } else {
+            if (nokta.taslak) {
+                const not = document.createElement('p');
+                not.textContent = 'Koordinat kaynağı: açık taslak';
+                kart.appendChild(not);
+            }
+            const rapor = document.createElement('a');
+            rapor.href = `/tbys/tasinmaz-kontrol/${nokta.kontrolId}`;
+            rapor.textContent = 'Kontrol Raporunu Aç';
+            const google = document.createElement('a');
+            google.href = `https://www.google.com/maps/search/?api=1&query=${googleKoordinati}`;
+            google.target = '_blank';
+            google.rel = 'noopener noreferrer';
+            google.textContent = 'Google Haritalar';
+            kart.append(rapor, google);
         }
-        if (nokta.taslak) {
-            const not = document.createElement('p');
-            not.textContent = 'Koordinat kaynağı: açık taslak';
-            kart.appendChild(not);
+        const yandexKoordinati = encodeURIComponent(`${boylam},${enlem}`);
+        for (const [etiket, adres] of [
+            ['Google Sokak Görünümü', `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${googleKoordinati}`],
+            ['Yandex Sokak Görünümü', `https://yandex.com.tr/maps/?l=stv%2Csta&ll=${yandexKoordinati}&z=18&panorama%5Bpoint%5D=${yandexKoordinati}&panorama%5Bfull%5D=true`]
+        ]) {
+            const baglanti = document.createElement('a');
+            baglanti.href = adres;
+            baglanti.target = '_blank';
+            baglanti.rel = 'noopener noreferrer';
+            baglanti.textContent = etiket;
+            kart.appendChild(baglanti);
         }
-        const rapor = document.createElement('a');
-        rapor.href = `/tbys/tasinmaz-kontrol/${nokta.kontrolId}`;
-        rapor.textContent = 'Kontrol Raporunu Aç';
-        const google = document.createElement('a');
-        google.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${nokta.enlem},${nokta.boylam}`)}`;
-        google.target = '_blank';
-        google.rel = 'noopener noreferrer';
-        google.textContent = 'Google Haritalar';
-        kart.append(rapor, google);
         root.appendChild(kart);
     }
     return root;
@@ -226,11 +241,11 @@ export async function olustur(element) {
     });
     const yaklasmayiIptalEt = () => {
         if (!yaklasma) return;
-        map.off('moveend', yaklasma.bitti);
+        map.off('moveend', yaklasma);
         map.off('movestart popupopen', yaklasmayiIptalEt);
         yaklasma = null;
     };
-    const konumaYaklas = (kaynak, katman, sinir, merkez, maxZoom = 19) => {
+    const konumaYaklas = (kaynak, sinir, merkez, maxZoom = 19) => {
         acilisiIptalEt();
         yaklasmayiIptalEt();
         geriDonus = null;
@@ -238,7 +253,7 @@ export async function olustur(element) {
 
         const oncekiGorunum = { merkez: map.getCenter(), zoom: map.getZoom() };
         const kartiAc = () => {
-            geriDonus = { popup: kaynak.getPopup(), katman, ...oncekiGorunum };
+            geriDonus = { popup: kaynak.getPopup(), ...oncekiGorunum };
             kaynak.openPopup(merkez);
         };
         const secenekler = { padding: [50, 50], maxZoom };
@@ -253,18 +268,10 @@ export async function olustur(element) {
             yaklasmayiIptalEt();
             kartiAc();
         };
-        yaklasma = { katman, bitti };
+        yaklasma = bitti;
         map.once('moveend', bitti);
         map.on('movestart popupopen', yaklasmayiIptalEt);
     };
-    const katmanKaldirildi = ({ target }) => {
-        if (geriDonus?.katman === target) geriDonus = null;
-        if (yaklasma?.katman !== target) return;
-        yaklasmayiIptalEt();
-        map.stop();
-    };
-    kontrolKatmani.on('remove', katmanKaldirildi);
-    parselKatmani.on('remove', katmanKaldirildi);
 
     const sigdir = (animasyonlu = false) => {
         const sinirlar = L.latLngBounds([]);
@@ -285,22 +292,25 @@ export async function olustur(element) {
         }
     };
 
-    let filtreZamanlayicisi;
-    const filtreGorunumunuIptalEt = () => {
-        clearTimeout(filtreZamanlayicisi);
-        map.off('movestart', filtreGorunumunuIptalEt);
+    let sonuclariSigdir = false;
+    let gorunumZamanlayicisi;
+    const gorunumGuncellemesiniIptalEt = () => {
+        clearTimeout(gorunumZamanlayicisi);
+        map.off('movestart', gorunumGuncellemesiniIptalEt);
     };
-    const filtreGorunumunuGuncelle = () => {
-        filtreGorunumunuIptalEt();
+    const gorunumuGuncelle = () => {
+        acilisiIptalEt();
+        sonuclariSigdir = true;
+        gorunumGuncellemesiniIptalEt();
         if (!hareketTercihi.matches || !L.Browser.any3d) {
             sigdir();
             return;
         }
-        filtreZamanlayicisi = setTimeout(() => {
-            filtreGorunumunuIptalEt();
+        gorunumZamanlayicisi = setTimeout(() => {
+            gorunumGuncellemesiniIptalEt();
             sigdir(true);
         }, 180);
-        map.once('movestart', filtreGorunumunuIptalEt);
+        map.once('movestart', gorunumGuncellemesiniIptalEt);
     };
     const parselIsaretleriniGuncelle = () => {
         for (const { sinir, isaret } of parselGorunumleri) {
@@ -316,7 +326,20 @@ export async function olustur(element) {
     };
     map.on('zoomend', parselIsaretleriniGuncelle);
 
-    let guncellemeSayisi = 0;
+    let veriYuklendi = false;
+    let kapali = false;
+    const katmanGorunumuDegisti = () => {
+        if (kapali) return;
+        geriDonus = null;
+        if (yaklasma) {
+            yaklasmayiIptalEt();
+            map.stop();
+        }
+        gorunumuGuncelle();
+    };
+    kontrolKatmani.on('add remove', katmanGorunumuDegisti);
+    parselKatmani.on('add remove', katmanGorunumuDegisti);
+
     const observer = new ResizeObserver(() => {
         const oncekiBoyut = map.getSize();
         if (oncekiBoyut.x !== element.clientWidth || oncekiBoyut.y !== element.clientHeight) {
@@ -324,13 +347,12 @@ export async function olustur(element) {
         }
         map.invalidateSize();
         if (oncekiBoyut.equals(map.getSize())) return;
-        if (guncellemeSayisi > 1) sigdir();
+        if (sonuclariSigdir) sigdir();
         else if (!acilisBekliyor) turkiyeyiSigdir();
         kontrolKatmani.eachLayer(marker => { if (marker.isPopupOpen()) marker.getPopup().update(); });
         parselSinirlari.eachLayer(parsel => { if (parsel.isPopupOpen()) parsel.getPopup().update(); });
     });
     observer.observe(element);
-    let kapali = false;
     return {
         guncelle(noktalar) {
             if (kapali) return;
@@ -366,7 +388,7 @@ export async function olustur(element) {
                         return;
                     }
                     const sinir = L.latLngBounds(merkez, merkez);
-                    konumaYaklas(isaret, kontrolKatmani, sinir, merkez, Math.max(16, map.getZoom()));
+                    konumaYaklas(isaret, sinir, merkez, Math.max(16, map.getZoom()));
                 };
                 // Leaflet'in kartı hemen açan varsayılan işleyicilerini kamera geçişiyle değiştir.
                 isaret.off('click keypress').on('click', sec).on('keypress', ({ originalEvent }) => {
@@ -380,29 +402,27 @@ export async function olustur(element) {
                     const parsel = L.geoJSON(geometri, { style: { color: '#0f766e', weight: 2, fillOpacity: 0.22 } });
                     const sinir = parsel.getBounds();
                     if (!sinir.isValid()) continue;
+                    const merkez = sinir.getCenter();
                     parsel
-                        .bindPopup(() => bilgiKartlari(grup, true), { maxWidth: 320, autoPanPadding: [16, 16] })
+                        .bindPopup(() => bilgiKartlari(grup, merkez), { maxWidth: 320, autoPanPadding: [16, 16] })
                         .addTo(parselSinirlari);
 
-                    const merkez = sinir.getCenter();
                     const isaret = L.marker(merkez, { ...parselSimgesi(L, grup), zIndexOffset: 1000 })
-                        .on('click', () => konumaYaklas(parsel, parselKatmani, sinir, merkez));
+                        .on('click', () => konumaYaklas(parsel, sinir, merkez));
                     parselGorunumleri.push({ sinir, isaret });
                 } catch (error) {
                     console.warn('Parsel sınırı çizilemedi.', grup.map(nokta => nokta.tasinmazId), error);
                 }
             }
-            if (++guncellemeSayisi > 1) {
-                acilisiIptalEt();
-                filtreGorunumunuGuncelle();
-            }
+            if (veriYuklendi || sonuclariSigdir) gorunumuGuncelle();
+            veriYuklendi = true;
             parselIsaretleriniGuncelle();
         },
         kapat() {
             if (kapali) return;
             kapali = true;
             acilisiIptalEt();
-            filtreGorunumunuIptalEt();
+            gorunumGuncellemesiniIptalEt();
             yaklasmayiIptalEt();
             geriDonus = null;
             observer.disconnect();
