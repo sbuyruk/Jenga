@@ -98,7 +98,7 @@ function bilgiKartlari(noktalar, parselMerkezi) {
         baslik.textContent = `Sicil No: ${nokta.emlakSicilNo || '—'}`;
         kart.appendChild(baslik);
         for (const [etiket, deger] of [
-            ['Cinsi', nokta.cinsi], ['Adres', nokta.adres],
+            ['Cinsi', nokta.cinsi], ['Kira Durumu', nokta.kiraDurumu?.trim()], ['Adres', nokta.adres],
             ['İl / İlçe', [nokta.ili, nokta.ilcesi].filter(Boolean).join(' / ')]
         ]) {
             const satir = document.createElement('p');
