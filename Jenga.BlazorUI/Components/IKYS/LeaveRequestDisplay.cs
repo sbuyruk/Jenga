@@ -7,7 +7,8 @@ namespace Jenga.BlazorUI.Components.IKYS;
 internal static class LeaveRequestDisplay
 {
     public static bool CanPrint(LeaveRequestRow row) =>
-        row.Type != (int)LeaveType.Nursing && row.Status is Status.KontrolEdildi or Status.KayitlaraIslendi;
+        row.Type != (int)LeaveType.Nursing && (row.Status is Status.KontrolEdildi or Status.KayitlaraIslendi ||
+            row.Type == (int)LeaveType.Paid && row.Status == Status.DilekceBekleniyor);
 
     public static string FormatDate(DateTime? date, int? type) =>
         date?.ToString(type is (int)LeaveType.Personal or (int)LeaveType.Nursing ? "dd.MM.yyyy HH:mm" : "dd.MM.yyyy") ?? "—";

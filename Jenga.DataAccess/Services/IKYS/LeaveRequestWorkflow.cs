@@ -92,12 +92,14 @@ public sealed partial class LeaveRequestWorkflow(
                     .OrderByDescending(x => x.Id).FirstOrDefaultAsync(ct);
             }
             var balance = GetDocumentBalance(request, period, approvedMovement);
+            var futureOffset = IsFuturePeriodOffset(request)
+                ? await GetFutureOffsetAsync(db, request, period, personnelOffice, ct) : null;
             var documentInfo = request.IzinTipi != (int)LeaveType.Nursing &&
-                request.OnayDurumu is Status.KontrolEdildi or Status.KayitlaraIslendi
+                (futureOffset is not null || request.OnayDurumu is Status.KontrolEdildi or Status.KayitlaraIslendi)
                 ? await GetDocumentInfoAsync(db, request, periods, ct) : null;
             return new LeaveRequestDetail(row, request.Adres, request.Aciklama,
                 signers.Find(x => x.Id == request.VekilImza)?.Name, signers.Find(x => x.Id == request.AmirImza)?.Name,
-                periods, movements, DocumentUrl(request, period, balance), balance, documentInfo);
+                periods, movements, DocumentUrl(request, period, balance), balance, documentInfo, futureOffset);
         }, cancellationToken);
 
     public Task<Result<List<LeaveOption>>> ListPersonnelForEntryAsync(CancellationToken cancellationToken = default) =>
@@ -140,7 +142,8 @@ public sealed partial class LeaveRequestWorkflow(
                     EndTime = row.BitisTarihi is { } end ? TimeOnly.FromDateTime(end) : null,
                     SubstituteId = row.VekilImza is > 0 ? row.VekilImza : null,
                     ManagerId = row.AmirImza is > 0 ? row.AmirImza : null,
-                    Address = row.Adres, Description = row.Aciklama, Notify = row.EPostaGonder == true
+                    Address = row.Adres, Description = row.Aciklama, Notify = row.EPostaGonder == true,
+                    RequestFuturePeriodOffset = IsFuturePeriodOffset(row)
                 };
                 var legacySigners = await db.Personel_Table.Where(x => x.Id == input.ManagerId || x.Id == input.SubstituteId)
                     .Select(x => new LeaveOption(x.Id, x.Adi + " " + x.Soyadi)).ToListAsync(ct);
@@ -193,8 +196,7 @@ public sealed partial class LeaveRequestWorkflow(
         var ct = cancellationToken;
         var target = await ResolveTargetAsync(db, input, personnelOffice, ct);
         if (target.IsFailure) return target.Error;
-        var prepared = await PrepareAsync(db, target.Value.Person, input, target.Value.Request?.OnayDurumu == Status.DilekceBekleniyor,
-            ct, includePending: true);
+        var prepared = await PrepareAsync(db, target.Value.Person, input, ct, includePending: true);
         return prepared.IsSuccess ? Result.Success(prepared.Value.Calculation) : Result.Failure<LeaveCalculation>(prepared.Error);
     }, cancellationToken);
 
@@ -212,7 +214,7 @@ public sealed partial class LeaveRequestWorkflow(
         if (input.Type.HasValue && await PendingRequests(db, person.Id, type, input.Id).AnyAsync(ct))
             return Error.Conflict("Bu izin türünde işlemi devam eden bir talep bulunuyor.");
 
-        var prepared = await PrepareAsync(db, person, input, existing?.OnayDurumu == Status.DilekceBekleniyor, ct);
+        var prepared = await PrepareAsync(db, person, input, ct);
         if (prepared.IsFailure) return prepared.Error;
 
         if (string.IsNullOrWhiteSpace(input.Address))
@@ -222,10 +224,26 @@ public sealed partial class LeaveRequestWorkflow(
             (needsManager && !await IsValidSignerAsync(db, input.ManagerId, existing?.AmirImza, false, ct)))
             return Error.Validation(needsSubstitute ? "Geçerli bir vekil ve amir seçiniz." : "Geçerli bir amir seçiniz.");
 
-        db.SetCurrentUser(await authorization.GetUserNameAsync(ct));
         var leave = prepared.Value;
+        var futureOffset = existing is not null && IsFuturePeriodOffset(existing);
+        if (input.RequestFuturePeriodOffset && !futureOffset)
+        {
+            if (existing is not null || type != LeaveType.Paid || !leave.Calculation.CanRequestFuturePeriodOffset)
+                return Error.Validation("Gelecek dönem mahsup dilekçesi, mevcut bakiyenin yetmediği yeni yıllık izin talepleri için oluşturulabilir.");
+            futureOffset = true;
+        }
+        if (type == LeaveType.Paid && leave.Calculation.CanRequestFuturePeriodOffset && !futureOffset)
+            return Error.Validation("Yıllık izin bakiyesi yetersiz. Süreyi hesaplayıp mahsup dilekçesi oluşturabilir veya izin tarihlerini değiştirebilirsiniz.",
+                "LeaveRequest.FutureOffsetAvailable");
+
+        db.SetCurrentUser(await authorization.GetUserNameAsync(ct));
         var request = existing ?? new IzinTalep { PersonelId = person.Id, IzinTipi = (int)type, Aktif = true, OnayDurumu = Status.IslemBekliyor };
         if (existing is null) db.IzinTalep_Table.Add(request);
+        if (futureOffset)
+        {
+            request.GelecekDonemMahsubu = true;
+            request.OnayDurumu = Status.DilekceBekleniyor;
+        }
         if (leave.Period is { } period)
         {
             if (period.Id == 0)

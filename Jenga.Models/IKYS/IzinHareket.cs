@@ -13,6 +13,7 @@ public class IzinHareket : BaseModel
     public int? IzinTalepId { get; set; }
     [DisplayName("İzin Dönem Id")]
     public int? IzinDonemId { get; set; }
+    public IzinDonem? IzinDonem { get; set; }
     [DisplayName("İzin Tipi")]
     public int? IzinTipi { get; set; }
     [DisplayName("Başlangıç Tarihi")]

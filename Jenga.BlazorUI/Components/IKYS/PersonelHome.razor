@@ -437,10 +437,10 @@ else
                 .OrderByDescending(x => x.BaslangicTarihi ?? DateTime.MinValue)
                 .ToListAsync();
 
-            var leavePeriod = leavePeriods.FirstOrDefault();
-            var currentYear = DateTime.Today.Year;
+            var today = DateTime.Today;
+            var leavePeriod = leavePeriods.FirstOrDefault(x => x.BaslangicTarihi is not { } start || start.Date <= today);
             var previousYearBalances = leavePeriods
-                .Where(x => x.BaslangicTarihi.HasValue && x.BaslangicTarihi.Value.Year < currentYear)
+                .Where(x => x.BaslangicTarihi.HasValue && x.BaslangicTarihi.Value.Year < today.Year)
                 .Select(x => TryParseDayValue(x.KalanIzin))
                 .Where(x => x.HasValue)
                 .ToList();
@@ -479,6 +479,7 @@ else
                 .Where(x => x.PersonelId == personel.Id && x.Aktif == true)
                 .OrderByDescending(x => x.BaslangicTarihi ?? DateTime.MinValue)
                 .Take(4)
+                .Select(x => new { x.IzinTipi, x.BaslangicTarihi, x.BitisTarihi, x.OnayDurumu })
                 .ToListAsync();
 
             var leaveTypes = await db.IzinTanim_Table

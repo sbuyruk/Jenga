@@ -110,6 +110,7 @@ namespace Jenga.DataAccess.Data
         public DbSet<IzinDonem> IzinDonem_Table { get; set; }
         public DbSet<IzinTalep> IzinTalep_Table { get; set; }
         public DbSet<IzinHareket> IzinHareket_Table { get; set; }
+        public DbSet<Mahsup> Mahsup_Table { get; set; }
         public DbSet<YabanciDil> YabanciDil_Table { get; set; }
         public DbSet<TahsilTanim> TahsilTanim_Table { get; set; }
         // IKYS bölümüne diğer DbSet'lerin yanına eklenecek:

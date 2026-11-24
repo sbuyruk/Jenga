@@ -31,6 +31,7 @@ public sealed class LeaveRequestInput
     public string? Address { get; set; }
     public string? Description { get; set; }
     public bool Notify { get; set; } = true;
+    public bool RequestFuturePeriodOffset { get; set; }
 }
 
 public sealed record LeaveRequestForm(
@@ -46,6 +47,11 @@ public sealed record LeaveMovementRow(int Id, string TypeName, int? Type, DateTi
 
 public sealed record LeaveDocumentBalance(string? Before, string? After);
 
+public sealed record FutureLeavePeriod(int Id, DateTime Start, DateTime End, int AvailableDays);
+
+public sealed record FutureLeaveOffset(
+    DateTime? SourceStart, DateTime? SourceEnd, List<FutureLeavePeriod> Targets, FutureLeavePeriod? AppliedPeriod);
+
 public sealed record LeaveDocumentInfo(
     DateTime? SubmittedAt, int? PersonnelNumber, string? Title, string? Department, string? SubstituteTitle,
     string? ManagerTitle, DateTime? PeriodStart, DateTime? PeriodEnd, string? Entitlement,
@@ -54,10 +60,12 @@ public sealed record LeaveDocumentInfo(
 public sealed record LeaveRequestDetail(
     LeaveRequestRow Row, string? Address, string? Description, string? Substitute, string? Manager,
     List<IzinDonem> Periods, List<LeaveMovementRow> Movements, string? DocumentUrl,
-    LeaveDocumentBalance? DocumentBalance = null, LeaveDocumentInfo? DocumentInfo = null);
+    LeaveDocumentBalance? DocumentBalance = null, LeaveDocumentInfo? DocumentInfo = null,
+    FutureLeaveOffset? FutureOffset = null);
 
 public sealed record LeaveCalculation(string Duration, string Unit, string? Available, string? Remaining,
     string? PendingDuration = null, string? AvailableAfterPending = null,
-    string? CombinedDuration = null, string? BalanceWarning = null, int? PreviousPeriodBalance = null);
+    string? CombinedDuration = null, string? BalanceWarning = null, int? PreviousPeriodBalance = null,
+    bool CanRequestFuturePeriodOffset = false);
 
 public sealed record LeaveWriteResult(int Id, bool NotificationFailed = false);

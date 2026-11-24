@@ -242,6 +242,10 @@
                                 {
                                     <p class="leave-entry-helper mt-2">Bu hesapta bekleyen taleplerden düşülecek süre bulunmuyor.</p>
                                 }
+                                @if (CanCreateFutureOffset)
+                                {
+                                    <p class="leave-entry-helper mt-2">Tarihleri değiştirebilir veya izin süresinin tamamı için gelecek dönem mahsup dilekçesi oluşturabilirsiniz.</p>
+                                }
                             }
                             else
                             {
@@ -262,7 +266,8 @@
                             </div>
                         }
                         <button type="submit" class="btn btn-primary leave-entry-submit" disabled="@(_pendingRequests.Count > 0)">
-                            @(RequestId.HasValue ? "Değişiklikleri Kaydet" : "Talebi Gönder")
+                            @(form.Input.RequestFuturePeriodOffset ? "Dilekçeyi Güncelle" : CanCreateFutureOffset ? "Mahsup Dilekçesi Oluştur"
+                                : RequestId.HasValue ? "Değişiklikleri Kaydet" : "Talebi Gönder")
                             <i class="bi @(RequestId.HasValue ? "bi-check-lg" : "bi-arrow-right")" aria-hidden="true"></i>
                         </button>
                     </footer>
@@ -284,6 +289,7 @@
     private string ListUrl => ReturnsToOffice ? "/ikys/leave-requests/manage" : PersonalListUrl;
     private bool IsPersonal => _form?.Input.Type == LeaveType.Personal;
     private bool IsNursing => _form?.Input.Type == LeaveType.Nursing;
+    private bool CanCreateFutureOffset => !RequestId.HasValue && _calculation?.CanRequestFuturePeriodOffset == true;
     private bool _ready, _loading = true, _busy, _saved, _canManage;
     private LeaveRequestForm? _form;
     private LeaveCalculation? _calculation;
@@ -409,19 +415,31 @@
         if (_busy || _saved || _form is null) return;
         _busy = true;
         _feedback = null;
-        var result = await Workflow.SaveAsync(_form.Input, _canManage);
+        var input = _form.Input;
+        var existingPetition = input.RequestFuturePeriodOffset;
+        var futureOffset = existingPetition || CanCreateFutureOffset;
+        input.RequestFuturePeriodOffset = futureOffset;
+        var result = await Workflow.SaveAsync(input, _canManage);
+        input.RequestFuturePeriodOffset = existingPetition;
+        _busy = false;
         if (result.IsSuccess)
         {
             _saved = true;
-            Navigation.NavigateTo(PersonalListUrl);
-            var message = RequestId.HasValue ? "İzin talebi güncellendi." : "İzin talebi gönderildi.";
+            var detailsUrl = (_canManage ? "/ikys/leave-requests/manage" : PersonalListUrl) + $"?requestId={result.Value.Id}";
+            Navigation.NavigateTo(futureOffset ? detailsUrl : PersonalListUrl);
+            var message = futureOffset ? (RequestId.HasValue ? "Mahsup dilekçesi güncellendi." : "Mahsup dilekçesi oluşturuldu.")
+                : RequestId.HasValue ? "İzin talebi güncellendi." : "İzin talebi gönderildi.";
             if (result.Value.NotificationFailed)
                 ToastService.ShowWarning(message + " E-posta bildirimi gönderilemedi.", 6000);
             else
                 ToastService.ShowSuccess(message);
         }
-        else ToastService.ShowError(result.Error.Message, 6000);
-        _busy = false;
+        else
+        {
+            if (!RequestId.HasValue && result.Error.Code == "LeaveRequest.FutureOffsetAvailable")
+                await CalculateAsync();
+            ToastService.ShowError(result.Error.Message, 6000);
+        }
     }
 
     private void ClearCalculation()

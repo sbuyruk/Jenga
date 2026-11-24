@@ -19,5 +19,5 @@ public interface ILeaveRequestWorkflow
     Task<Result<LeaveWriteResult>> SaveAsync(LeaveRequestInput input, bool personnelOffice, CancellationToken cancellationToken = default);
     Task<Result> DeleteAsync(int id, bool personnelOffice, CancellationToken cancellationToken = default);
     Task<Result<LeaveWriteResult>> DecideAsync(int id, LeaveDecision decision, string? note, bool documentReceived,
-        CancellationToken cancellationToken = default);
+        int? targetPeriodId = null, CancellationToken cancellationToken = default);
 }
