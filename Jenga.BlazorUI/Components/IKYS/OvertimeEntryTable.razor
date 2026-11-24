@@ -12,8 +12,24 @@
             </div>
         }
         <GenericTable TItem="OvertimeEntry" Items="month.Entries" TableHeight="Auto" ShowSearch="true" ShowExport="true" ExportFileName="@(month.Month.HasValue ? $"fazla-mesailer-{month.Month.Value:yyyy-MM}.xlsx" : "fazla-mesailer.xlsx")"
-                      ExportHeaders="ExportHeaders" ExportRow="ExportEntry" KeySelector="x => x.Id">
-            <HeaderTemplate><th>Personel</th><th>Tarih</th><th>Çalışma Aralıkları</th><th>Süre</th><th>Çalışma Sebebi</th><th>Durum</th><th>İşlemler</th></HeaderTemplate>
+                      ExportHeaders="ExportHeaders" ExportRow="ExportEntry" KeySelector="x => x.Id" @ref="_table">
+            <HeaderTemplate>
+                @foreach (var (label, field) in Headers)
+                {
+                    if (!GroupByMonth && field is not null)
+                    {
+                        <th scope="col" aria-sort="@SortDirection(field)">
+                            <button type="button" class="ot-sort-button" @onclick="() => _table?.SortBy(field)">
+                                @label <i class="@SortIcon(field)" aria-hidden="true"></i>
+                            </button>
+                        </th>
+                    }
+                    else
+                    {
+                        <th scope="col">@label</th>
+                    }
+                }
+            </HeaderTemplate>
             <RowTemplate Context="entry">
                 <td>@entry.FullName<div class="small text-muted">@entry.UnitName</div></td>
                 <td>@entry.WorkDate.ToString("dd.MM.yyyy")</td>
@@ -47,6 +63,33 @@
 }
 
 @code {
+    private static readonly (string Label, string? Field)[] Headers =
+    [
+        ("Personel", nameof(OvertimeEntry.FullName)),
+        ("Tarih", nameof(OvertimeEntry.WorkDate)),
+        ("Çalışma Aralıkları", null),
+        ("Süre", null),
+        ("Çalışma Sebebi", null),
+        ("Durum", nameof(OvertimeEntry.Status)),
+        ("İşlemler", null)
+    ];
+    private GenericTable<OvertimeEntry>? _table;
+
+    private string? SortDirection(string field)
+    {
+        if (string.IsNullOrEmpty(_table?.CurrentSortField))
+            return field == nameof(OvertimeEntry.WorkDate) ? "descending" : null;
+
+        return _table.CurrentSortField == field ? (_table.CurrentSortDescending ? "descending" : "ascending") : null;
+    }
+
+    private string SortIcon(string field) => SortDirection(field) switch
+    {
+        "ascending" => "bi bi-caret-up-fill",
+        "descending" => "bi bi-caret-down-fill",
+        _ => "bi bi-arrow-down-up text-body-secondary"
+    };
+
     private sealed record MonthEntries(DateTime? Month, List<OvertimeEntry> Entries);
     private List<MonthEntries> _months = [];
 

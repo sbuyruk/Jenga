@@ -1,2 +1,19 @@
 .ot-reason { white-space: pre-wrap; overflow-wrap: anywhere; max-width: 28rem; }
 .ot-month-heading { border-bottom: 1px solid var(--bs-border-color); padding-bottom: .5rem; }
+
+.ot-sort-button {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+}
+
+.ot-sort-button:hover,
+.ot-sort-button:focus-visible,
+th[aria-sort] .ot-sort-button {
+    color: var(--theme-accent);
+}
