@@ -228,14 +228,26 @@
                 @if (CanPrint(detail.Row))
                 {
                     <div class="leave-document">
-                        @if (detail.Row.Status == Status.KontrolEdildi)
+                        @if (detail.FutureOffset is { } offset)
+                        {
+                            @if (offset.AppliedPeriod is { } applied)
+                            {
+                                <div>Mahsup edilen dönem @(PeriodRange(applied))</div>
+                            }
+                            else
+                            {
+                                <div>Mahsup dilekçesini yazdırın, imzalatın ve Personel Kısmına teslim edin.</div>
+                            }
+                        }
+                        else if (detail.Row.Status == Status.KontrolEdildi)
                         {
                             <div>İzin belgesini yazdırın, imzalatın ve Personel Kısmına teslim edin.</div>
                         }
                         <a class="btn btn-sm btn-primary"
                            href="@($"/ikys/leave-requests/print/{detail.Row.Id}{(PersonnelOffice ? "?scope=manage" : "")}")"
                            target="_blank" rel="noopener noreferrer">
-                            <i class="bi bi-printer me-1" aria-hidden="true"></i> İzin Belgesini Yazdır
+                            <i class="bi bi-printer me-1" aria-hidden="true"></i>
+                            @(detail.FutureOffset is null ? "İzin Belgesini Yazdır" : "Mahsup Dilekçesini Yazdır")
                         </a>
                     </div>
                 }
@@ -293,16 +305,34 @@
                         <textarea id="leave-note" class="form-control mb-3" rows="2" @bind="_note" disabled="@_busy"></textarea>
                         @if (detail.Row.Status == Status.KontrolEdildi && detail.Row.Type != (int)LeaveType.Nursing)
                         {
+                            @if (detail.FutureOffset is { } offset)
+                            {
+                                <label class="form-label" for="leave-target-period">Mahsup edilecek izin dönemi</label>
+                                <select id="leave-target-period" class="form-select mb-3" @bind="_targetPeriodId"
+                                        disabled="@(_busy || offset.Targets.Count == 0)">
+                                    <option value="">Hedef dönem seçiniz</option>
+                                    @foreach (var target in offset.Targets)
+                                    {
+                                        <option value="@target.Id">@PeriodRange(target) · @target.AvailableDays gün @(target.Id == 0 ? "(onayda oluşturulacak)" : "")</option>
+                                    }
+                                </select>
+                                @if (offset.Targets.Count == 0)
+                                {
+                                    <p class="leave-muted">Talep süresini karşılayan bir gelecek izin dönemi bulunmuyor.</p>
+                                }
+                            }
                             <div class="form-check mb-3">
                                 <input type="checkbox" class="form-check-input" id="leave-document-received" @bind="_documentReceived" disabled="@_busy" />
-                                <label class="form-check-label" for="leave-document-received">İmzalı izin belgesi teslim alındı.</label>
+                                <label class="form-check-label" for="leave-document-received">@(detail.FutureOffset is null
+                                    ? "İmzalı izin belgesi teslim alındı." : "İmzalı mahsup dilekçesi teslim alındı.")</label>
                             </div>
                         }
                         <div class="leave-detail-actions">
                             @if (detail.Row.Status == Status.KontrolEdildi)
                             {
                                 <button type="button" class="btn btn-success"
-                                        disabled="@(_busy || (detail.Row.Type != (int)LeaveType.Nursing && !_documentReceived))"
+                                        disabled="@(_busy || (detail.Row.Type != (int)LeaveType.Nursing && !_documentReceived) ||
+                                            (detail.FutureOffset is not null && !_targetPeriodId.HasValue))"
                                         @onclick="() => DecideAsync(LeaveDecision.Approve)">Onayla ve Kayıtlara İşle</button>
                             }
                             else
@@ -367,6 +397,7 @@
     private List<LeaveOption>? _personnelOptions;
     private string? _personnelLookupError;
     private bool _documentReceived, _confirmDelete, _focusDetail;
+    private int? _targetPeriodId;
     private string? _note, _feedback;
     private string _feedbackClass = "alert-success";
     private LeaveListFilter _filter;
@@ -488,6 +519,7 @@
     private void CloseDetail()
     {
         _detail = null;
+        _targetPeriodId = null;
         _note = null;
         _documentReceived = _confirmDelete = _focusDetail = false;
     }
@@ -497,7 +529,8 @@
         if (_busy || _detail is null) return;
         _busy = true;
         var id = _detail.Row.Id;
-        var result = await Workflow.DecideAsync(id, decision, _note, _documentReceived);
+        var result = await Workflow.DecideAsync(id, decision, _note, _documentReceived,
+            targetPeriodId: decision == LeaveDecision.Approve ? _targetPeriodId : null);
         if (result.IsFailure)
         {
             Feedback(result.Error.Message, "alert-danger");
@@ -538,6 +571,7 @@
     }
 
     private string EntryUrl(int? id = null) => "/ikys/leave-request-entry" + (id is { } value ? $"/{value}" : "") + (PersonnelOffice ? "?returnTo=manage" : "");
+    private static string PeriodRange(FutureLeavePeriod period) => $"{period.Start:dd.MM.yyyy} – {period.End:dd.MM.yyyy}";
     private string? RequestRowClass(LeaveTableRow item) => _detail?.Row.Id == item.Request.Id ? "leave-row-active" : null;
 
     private string? SortDirection(string field) => _table?.CurrentSortField == field

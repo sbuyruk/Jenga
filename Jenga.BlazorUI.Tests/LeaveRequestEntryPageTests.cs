@@ -14,12 +14,14 @@ namespace Jenga.BlazorUI.Tests;
 public sealed class LeaveRequestEntryPageTests
 {
     [Theory]
-    [InlineData(true, null, null, ToastType.Success)]
-    [InlineData(true, 42, 42, ToastType.Warning)]
-    [InlineData(true, 99, null, ToastType.Error)]
-    [InlineData(false, 42, 17, ToastType.Success)]
+    [InlineData(true, null, null, ToastType.Success, false)]
+    [InlineData(true, 42, 42, ToastType.Warning, false)]
+    [InlineData(true, 99, null, ToastType.Error, false)]
+    [InlineData(false, 42, 17, ToastType.Success, false)]
+    [InlineData(false, null, 17, ToastType.Success, true)]
+    [InlineData(true, 42, 42, ToastType.Success, true)]
     public async Task EntryUsesManagePermissionAndShowsStandardSaveNotification(
-        bool canManage, int? selectedId, int? expectedId, ToastType expectedToast)
+        bool canManage, int? selectedId, int? expectedId, ToastType expectedToast, bool futureOffset)
     {
         var page = new LeaveRequestEntryPage();
         typeof(LeaveRequestEntryPage).GetProperty(nameof(LeaveRequestEntryPage.SelectedPersonelId))!.SetValue(page, selectedId);
@@ -58,9 +60,12 @@ public sealed class LeaveRequestEntryPageTests
             }
             if (name is nameof(ILeaveRequestWorkflow.CalculateAsync) or nameof(ILeaveRequestWorkflow.SaveAsync))
                 processedPeople.Add(((LeaveRequestInput)args[0]!).PersonelId);
+            if (name == nameof(ILeaveRequestWorkflow.SaveAsync))
+                Assert.Equal(futureOffset, ((LeaveRequestInput)args[0]!).RequestFuturePeriodOffset);
             return name switch
             {
-                nameof(ILeaveRequestWorkflow.CalculateAsync) => Task.FromResult(Result.Success(new LeaveCalculation("1", "Gün", null, null))),
+                nameof(ILeaveRequestWorkflow.CalculateAsync) => Task.FromResult(Result.Success(new LeaveCalculation("1", "Gün", null, null,
+                    CanRequestFuturePeriodOffset: futureOffset))),
                 nameof(ILeaveRequestWorkflow.SaveAsync) => Task.FromResult(expectedToast == ToastType.Error
                     ? Result.Failure<LeaveWriteResult>(Error.Validation("Personel seçiniz."))
                     : Result.Success(new LeaveWriteResult(1, NotificationFailed: expectedToast == ToastType.Warning))),
@@ -75,13 +80,15 @@ public sealed class LeaveRequestEntryPageTests
         Assert.Equal(new[] { canManage, canManage, canManage }, scopes);
         Assert.Equal(new[] { expectedId, expectedId }, processedPeople);
         var (notification, path) = Assert.Single(notifications);
-        Assert.Equal(expectedToast == ToastType.Error ? "/ikys/leave-request-entry" : "/ikys/leave-requests", path);
+        Assert.Equal(expectedToast == ToastType.Error ? "/ikys/leave-request-entry" :
+            futureOffset && canManage ? "/ikys/leave-requests/manage" : "/ikys/leave-requests", path);
+        if (futureOffset) Assert.Equal("?requestId=1", new Uri(navigation.Uri).Query);
         Assert.Equal(expectedToast, notification.Type);
         Assert.Equal(expectedToast switch
         {
             ToastType.Error => "Personel seçiniz.",
             ToastType.Warning => "İzin talebi gönderildi. E-posta bildirimi gönderilemedi.",
-            _ => "İzin talebi gönderildi."
+            _ => futureOffset ? "Mahsup dilekçesi oluşturuldu." : "İzin talebi gönderildi."
         }, notification.Message);
 
         void SetService(string name, object service) =>

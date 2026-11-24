@@ -107,6 +107,23 @@ dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 .leave-personal-form .leave-fields { padding-inline: 0; }
 .leave-print-note { margin: 5mm 4mm 0; font-size: 8.5pt; }
 
+.leave-petition { font-size: 10pt; }
+.leave-petition-addressee {
+    clear: both;
+    padding-top: 6mm;
+    margin-bottom: 5mm;
+    text-align: center;
+}
+.leave-petition-signatures {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6mm;
+    margin-top: 7mm;
+    text-align: center;
+    break-inside: avoid;
+}
+.leave-petition-signatures p { margin: 1mm 0; }
+
 @page leave-request { size: A5 portrait; margin: 7mm; }
 
 @media print {

@@ -47,4 +47,5 @@ public class IzinTalep : BaseModel
     public OnayDurumuTipi? OnayDurumu { get; set; }
     [DisplayName("E-Posta Gönder")]
     public bool? EPostaGonder { get; set; }
+    public bool? GelecekDonemMahsubu { get; set; }
 }

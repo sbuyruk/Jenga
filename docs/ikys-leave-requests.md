@@ -8,7 +8,15 @@ Formun başında, seçilen personelin seçili izin türündeki işlemi devam ede
 
 - **İşlem Bekliyor** veya **Dilekçe Bekleniyor** durumundaki mevcut talep düzenlenebilir, silinebilir, kontrol edilebilir veya reddedilebilir.
 - **Kontrol Edildi** durumunda personel **Belge ve Detay → İzin Belgesini Yazdır** adımından A5 çıktıyı alır ve imzalı belgeyi Personel Kısmına teslim eder. Saatlik mazeret izni ayrı şablonla yazdırılır. Süt izni için belge düzenlenmez ve İKYS nihai onayı belge teslimi olmadan verir. **Kayıtlara İşlendi** durumunda aynı ekrandan yeniden çıktı alınabilir. Mazeret izninin yeniden çıktısı için talebe bağlı izin hareketindeki bakiye bilgisi kullanılır.
-- Nihai onay aynı işlemde izin hareketini oluşturur. Yıllık ve mazeret izinlerinde bakiye, asker statüsü dışındaki personelin ücretsiz izninde ise izin dönemi başlangıcı güncellenir. Yeni mahsup dilekçesi ve mahsup yönetimi sonraki etabın kapsamındadır.
+- Nihai onay aynı işlemde izin hareketini oluşturur. Yıllık ve mazeret izinlerinde bakiye, asker statüsü dışındaki personelin ücretsiz izninde ise izin dönemi başlangıcı güncellenir.
+
+## Gelecek dönemden yıllık izin mahsubu
+
+İznin ait olduğu dönem ile geçmiş dönemlerden kalan bakiye talebi karşılamıyorsa, **Süreyi Hesapla** adımından sonra **Mahsup Dilekçesi Oluştur** seçilebilir. Talep **Dilekçe Bekleniyor** durumunda açılır. Talep sahibi **Mahsup Dilekçesini Yazdır** ile A5 çıktıyı alıp imzalatarak Personel Kısmına teslim eder.
+
+İKYS talebi kontrol ettikten sonra imzalı dilekçenin teslimini doğrular ve nihai onayda izin süresinin tamamını karşılayan bir gelecek dönem seçer. İlk gelecek dönem henüz açılmamışsa ve hak edişi yeterliyse dönem onay sırasında oluşturulabilir. Talep iznin ait olduğu döneme bağlı kalır. İzin hareketi, mahsup kaydı ve kullanılan bakiye seçilen gelecek döneme işlenir.
+
+Bu sürümü yayımlamadan önce aynı İKYS veritabanında [yıllık izin mahsup SQL betiğini](sql/2026-11-24-IKYS-YillikIzinMahsup.sql) çalıştırın. Betik mevcut `Mahsup_Table` tablosunu kullanır ve yıllık izin türündeki açık **Dilekçe Bekleniyor** kayıtlarını işaretler. PortalApps’te daha önce **Kontrol Edildi** durumuna geçirilmiş mahsup kayıtlarını Personel Kısmıyla doğrulayın. Eski sistem bu durumda dilekçe bilgisi için ayrı bir alan tutmadığından bu kayıtlar otomatik olarak ayırt edilemez.
 
 ## Yapılandırma
 
