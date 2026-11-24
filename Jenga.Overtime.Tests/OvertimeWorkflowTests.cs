@@ -704,9 +704,9 @@ public sealed class OvertimeWorkflowTests(OvertimeDatabase database) : IClassFix
     {
         await Reset(45);
         var input = Input(Monday); input.Submit = submit;
-        input.Intervals = [new() { Start = new(16, 59), End = new(20, 0) }];
+        input.Intervals = [new() { Start = new(15, 59), End = new(20, 0) }];
         Assert.False((await Service("worker").SaveEntryAsync(input)).IsSuccess);
-        input.Intervals = [new() { Start = new(17, 0), End = new(20, 0) }];
+        input.Intervals = [new() { Start = new(16, 0), End = new(19, 0) }];
         Success(await Service("worker").SaveEntryAsync(input));
         if (submit)
         {
@@ -834,8 +834,10 @@ public sealed class OvertimeWorkflowTests(OvertimeDatabase database) : IClassFix
     [InlineData(420, 481, false)]
     [InlineData(480, 540, false)]
     [InlineData(420, 1200, false)]
+    [InlineData(960, 1200, true)]
+    [InlineData(990, 1200, true)]
     [InlineData(1020, 1200, true)]
-    public async Task OrdinaryWeekdayAllowsOnlyIntervalsOutside0800To1700(int start, int end, bool allowed)
+    public async Task OrdinaryWeekdayAllowsOnlyIntervalsOutside0800To1600(int start, int end, bool allowed)
     {
         await Reset(45);
         var input = Input(Monday);

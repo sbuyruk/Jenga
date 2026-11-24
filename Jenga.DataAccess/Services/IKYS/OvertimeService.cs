@@ -326,7 +326,10 @@ public sealed class OvertimeService(IDbContextFactory<ApplicationDbContext> fact
         if (input.WorkDate.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday))
         {
             var holidayStarts = await PublicHolidayStartMinutesAsync(db, input.WorkDate.Date, input.WorkDate.Date, cancellationToken);
-            var earliest = holidayStarts.TryGetValue(input.WorkDate.Date, out var holidayStart) ? Math.Min(17 * 60, holidayStart) : 17 * 60;
+            const int eveningStart = 16 * 60;
+            var earliest = holidayStarts.TryGetValue(input.WorkDate.Date, out var holidayStart)
+                ? Math.Min(eveningStart, holidayStart)
+                : eveningStart;
             Require(intervals.All(x => x.EndMinute <= 8 * 60 || x.StartMinute >= earliest),
                 $"{input.WorkDate:dd.MM.yyyy}: Fazla mesai 08:00'e kadar bitmeli veya {OvertimeDisplay.Duration(earliest)} ve sonrasında başlamalıdır. Normal mesai saatleriyle çakışan aralıkları ayırın.");
         }
