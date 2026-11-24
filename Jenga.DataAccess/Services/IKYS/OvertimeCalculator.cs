@@ -10,7 +10,20 @@ public static class OvertimeCalculator
         => grossMinutes - (day.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday || publicHolidays?.Contains(day.Date) == true ? RestMinutes(grossMinutes) : 0);
     public static int RoundTotal(int minutes) => checked((minutes + 29) / 30 * 30);
 
-    public static List<OvertimeWeek> Calculate(IEnumerable<OvertimeEntry> entries, DateTime start, DateTime end, IReadOnlySet<DateTime>? publicHolidays = null)
+    private static int RestEligibleMinutes(DateTime day, int startMinute, int endMinute, IReadOnlySet<DateTime>? holidays, IReadOnlyDictionary<DateTime, int>? holidayStarts)
+    {
+        if (day.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday) return endMinute - startMinute;
+        if (holidayStarts?.TryGetValue(day.Date, out var from) == true) return Math.Max(0, endMinute - Math.Max(startMinute, from));
+        return holidays?.Contains(day.Date) == true ? endMinute - startMinute : 0;
+    }
+
+    public static int NetMinutes(DateTime day, IEnumerable<OvertimeInterval> intervals, IReadOnlySet<DateTime>? holidays = null, IReadOnlyDictionary<DateTime, int>? holidayStarts = null)
+    {
+        var rows = intervals.ToList();
+        return rows.Sum(x => x.EndMinute - x.StartMinute) - RestMinutes(rows.Sum(x => RestEligibleMinutes(day, x.StartMinute, x.EndMinute, holidays, holidayStarts)));
+    }
+
+    public static List<OvertimeWeek> Calculate(IEnumerable<OvertimeEntry> entries, DateTime start, DateTime end, IReadOnlySet<DateTime>? publicHolidays = null, IReadOnlyDictionary<DateTime, int>? holidayStarts = null)
     {
         if (start.DayOfWeek != DayOfWeek.Monday || end.DayOfWeek != DayOfWeek.Sunday || end.Date < start.Date)
             throw new ArgumentException("Dönem, Pazartesi başlayıp Pazar biten tam haftalardan oluşmalıdır.");
@@ -18,7 +31,7 @@ public static class OvertimeCalculator
         var source = entries.ToList();
         if (source.Select(x => x.PersonelId).Distinct().Count() > 1)
             throw new ArgumentException("Hesaplama tek personel için yapılmalıdır.");
-        var days = new Dictionary<DateTime, (int Gross, int Normal)>();
+        var days = new Dictionary<DateTime, (int Gross, int Normal, int RestEligible)>();
         foreach (var entry in source)
         {
             if (entry.NormalWeeklyMinutes is not (2400 or 2700))
@@ -35,7 +48,8 @@ public static class OvertimeCalculator
                     var old = days.GetValueOrDefault(from.Date);
                     if (old.Normal != 0 && old.Normal != entry.NormalWeeklyMinutes)
                         throw new ArgumentException("Aynı gün için farklı çalışma grupları bulunuyor.");
-                    days[from.Date] = (old.Gross + (int)(next - from).TotalMinutes, entry.NormalWeeklyMinutes);
+                    var eligible = RestEligibleMinutes(from.Date, (int)from.TimeOfDay.TotalMinutes, (int)(next - from.Date).TotalMinutes, publicHolidays, holidayStarts);
+                    days[from.Date] = (old.Gross + (int)(next - from).TotalMinutes, entry.NormalWeeklyMinutes, old.RestEligible + eligible);
                     from = next;
                 }
             }
@@ -48,7 +62,7 @@ public static class OvertimeCalculator
             if (groups.Count != 1)
                 throw new ArgumentException("Aynı haftada farklı çalışma grupları var; İK kontrolü gerekiyor.");
             var gross = week.Sum(x => x.Value.Gross);
-            var rest = week.Sum(x => x.Value.Gross - NetMinutes(x.Key, x.Value.Gross, publicHolidays));
+            var rest = week.Sum(x => RestMinutes(x.Value.RestEligible));
             weeks.Add(new(week.Key, groups[0], gross, rest, Math.Max(0, groups[0] + gross - rest - 2700)));
         }
         return weeks;

@@ -32,8 +32,7 @@ public sealed partial class LeaveRequestWorkflow
         };
         if (!next.HasValue || await HasMovementAsync(db, id, ct)) return ChangedRequest;
         if (decision == LeaveDecision.Approve && request.IzinTipi != (int)LeaveType.Nursing && !documentReceived)
-            return Error.Validation(futureOffset ? "İmzalı mahsup dilekçesinin teslim alındığını doğrulayınız."
-                : "İmzalı izin belgesinin teslim alındığını doğrulayınız.");
+            return Error.Validation("İmzalı izin belgesinin teslim alındığını doğrulayınız.");
 
         IzinDonem? period = null;
         if (decision != LeaveDecision.Reject)
@@ -55,6 +54,15 @@ public sealed partial class LeaveRequestWorkflow
                 if (period is null || !(period.BaslangicTarihi?.Date <= start.Date && period.BitisTarihi?.Date >= start.Date))
                     return Error.Validation("Talebe ait geçerli izin dönemi bulunamadı.");
             }
+            if (futureOffset)
+            {
+                var requested = Days(request.Sure);
+                if (requested <= 0) return Error.Validation("Yıllık izin süresi geçersiz.");
+                var offsetDays = OffsetDays(requested, await PaidBalanceAsync(db, period!, ct));
+                if (offsetDays == 0 || (request.GelecekDonemMahsupGun is { } recorded && recorded != offsetDays))
+                    return Error.Validation("İzin bakiyesi değiştiği için dilekçedeki mahsup süresi geçerli değil. Talebi güncelleyip dilekçeyi yeniden yazdırınız.");
+                request.GelecekDonemMahsupGun = offsetDays;
+            }
             if (decision == LeaveDecision.Approve)
             {
                 IzinDonem? target = null;
@@ -62,7 +70,7 @@ public sealed partial class LeaveRequestWorkflow
                 {
                     if (targetPeriodId is null)
                         return Error.Validation("Mahsup için hedef izin dönemini seçiniz.");
-                    var eligible = await FutureOffsetTargetsAsync(db, person, period!, Days(request.Sure), ct);
+                    var eligible = await FutureOffsetTargetsAsync(db, person, period!, request.GelecekDonemMahsupGun!.Value, ct);
                     target = eligible.Find(x => x.Id == targetPeriodId);
                     if (target is null)
                         return Error.Validation("Hedef izin dönemi artık uygun değil veya bakiyesi yetersiz. Talep detayını yenileyiniz.");
@@ -71,7 +79,9 @@ public sealed partial class LeaveRequestWorkflow
                 {
                     return Error.Validation("Hedef dönem yalnızca gelecek dönem mahsup taleplerinde seçilebilir.");
                 }
-                var applied = await AddMovementAsync(db, request, person, type.Value, period, start, end, ct, target);
+                var applied = target is null
+                    ? await AddMovementAsync(db, request, person, type.Value, period, start, end, ct)
+                    : await ApplyFutureOffsetAsync(db, request, period!, target, start, end, ct);
                 if (applied.IsFailure) return applied.Error;
             }
         }
@@ -86,35 +96,19 @@ public sealed partial class LeaveRequestWorkflow
         return new LeaveWriteResult(request.Id, failed);
     }, cancellationToken);
 
-    private static async Task<Result> AddMovementAsync(ApplicationDbContext db, IzinTalep request, Personel person,
-        LeaveType type, IzinDonem? period, DateTime start, DateTime end, CancellationToken ct, IzinDonem? offsetTarget)
-    {
-        var movement = new IzinHareket
+    private static IzinHareket CreateMovement(IzinTalep request, DateTime start, DateTime end) =>
+        new()
         {
-            IzinTalepId = request.Id, PersonelId = person.Id, IzinTipi = request.IzinTipi,
-            IzinDonemId = offsetTarget is null ? request.IzinDonemId : null, BaslangicTarihi = start, BitisTarihi = end,
+            IzinTalepId = request.Id, PersonelId = request.PersonelId, IzinTipi = request.IzinTipi,
+            IzinDonemId = request.IzinDonemId, BaslangicTarihi = start, BitisTarihi = end,
             Sure = request.Sure, Birim = request.Birim, Adres = request.Adres, VekilImza = request.VekilImza,
             AmirImza = request.AmirImza, OnayImza = request.OnayImza, Mahsup = false
         };
 
-        if (offsetTarget is not null)
-        {
-            if (offsetTarget.Id == 0) db.IzinDonem_Table.Add(offsetTarget);
-            var requested = Days(request.Sure);
-            movement.Mahsup = true;
-            movement.IzinDonem = offsetTarget;
-            movement.OncekiIzinStr = offsetTarget.KalanIzin;
-            movement.KullanilanIzinStr = request.Sure;
-            offsetTarget.KullanilanIzin = Number(Days(offsetTarget.KullanilanIzin) + requested);
-            offsetTarget.KalanIzin = Number(Days(offsetTarget.KalanIzin) - requested);
-            movement.KalanIzinStr = offsetTarget.KalanIzin;
-            db.Mahsup_Table.Add(new Mahsup
-            {
-                PersonelId = person.Id, IzinTipi = (int)type, IzinHareket = movement, MahsupDonem = offsetTarget,
-                KullanildigiDonemId = period!.Id, Aciklama = "Yıllık izin gelecek dönemden mahsup edildi."
-            });
-            return Result.Success();
-        }
+    private static async Task<Result> AddMovementAsync(ApplicationDbContext db, IzinTalep request, Personel person,
+        LeaveType type, IzinDonem? period, DateTime start, DateTime end, CancellationToken ct)
+    {
+        var movement = CreateMovement(request, start, end);
         if (period is not null)
         {
             movement.OncekiIzinStr = period.KalanIzin;
@@ -122,15 +116,9 @@ public sealed partial class LeaveRequestWorkflow
             if (type == LeaveType.Paid)
             {
                 var requested = Days(request.Sure);
-                var otherBalances = await db.IzinDonem_Table.Where(x => x.Id != period.Id &&
-                    x.PersonelId == person.Id && x.IzinTipi == (int)type &&
-                    x.BitisTarihi < period.BaslangicTarihi!.Value.Date).Select(x => x.KalanIzin).ToListAsync(ct);
-                var used = Days(period.KullanilanIzin);
-                var allowance = Days(period.IzinHakki);
-                if (requested <= 0 || allowance - used + otherBalances.Sum(Days) < requested)
+                if (requested <= 0 || await PaidBalanceAsync(db, period, ct) < requested)
                     return Result.Failure(Error.Validation("Yıllık izin bakiyesi yetersiz veya talep süresi geçersiz."));
-                period.KullanilanIzin = Number(used + requested);
-                period.KalanIzin = Number(allowance - used - requested);
+                ApplyPaidDays(period, movement, requested);
             }
             else
             {
@@ -230,7 +218,6 @@ public sealed partial class LeaveRequestWorkflow
             {
                 Status.DilekceBekleniyor when futureOffset =>
                     "Gelecek dönem mahsup dilekçeniz oluşturuldu. Dilekçenizi yazdırın, imzalatın ve Personel Kısmına teslim edin.",
-                Status.KontrolEdildi when futureOffset => "Gelecek dönem mahsup talebiniz kontrol edildi.",
                 Status.KontrolEdildi when request.IzinTipi != (int)LeaveType.Nursing =>
                     "İzin talebiniz kontrol edildi. İzin belgenizi yazdırın, imzalatın ve Personel Kısmına teslim edin.",
                 Status.KontrolEdildi => "İzin talebiniz kontrol edildi.",
@@ -239,11 +226,11 @@ public sealed partial class LeaveRequestWorkflow
                 _ => "İzin talebiniz oluşturuldu."
             };
             var site = SiteUrl("BaseUrl");
-            if (futureOffset && request.OnayDurumu is (Status.DilekceBekleniyor or Status.KontrolEdildi) && site is not null)
+            if (futureOffset && request.OnayDurumu == Status.DilekceBekleniyor && site is not null)
             {
                 body += $" <a href=\"{WebUtility.HtmlEncode($"{site}/ikys/leave-requests/print/{request.Id}")}\">Mahsup Dilekçesini Yazdır</a>";
             }
-            else if (request.OnayDurumu == Status.KontrolEdildi && request.IzinTipi != (int)LeaveType.Nursing && !futureOffset)
+            else if (request.OnayDurumu == Status.KontrolEdildi && request.IzinTipi != (int)LeaveType.Nursing)
             {
                 var document = site is not null
                     ? $"{site}/ikys/leave-requests/print/{request.Id}"

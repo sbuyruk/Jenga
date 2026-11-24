@@ -14,9 +14,11 @@ Formun başında, seçilen personelin seçili izin türündeki işlemi devam ede
 
 İznin ait olduğu dönem ile geçmiş dönemlerden kalan bakiye talebi karşılamıyorsa, **Süreyi Hesapla** adımından sonra **Mahsup Dilekçesi Oluştur** seçilebilir. Talep **Dilekçe Bekleniyor** durumunda açılır. Talep sahibi **Mahsup Dilekçesini Yazdır** ile A5 çıktıyı alıp imzalatarak Personel Kısmına teslim eder.
 
-İKYS talebi kontrol ettikten sonra imzalı dilekçenin teslimini doğrular ve nihai onayda izin süresinin tamamını karşılayan bir gelecek dönem seçer. İlk gelecek dönem henüz açılmamışsa ve hak edişi yeterliyse dönem onay sırasında oluşturulabilir. Talep iznin ait olduğu döneme bağlı kalır. İzin hareketi, mahsup kaydı ve kullanılan bakiye seçilen gelecek döneme işlenir.
+İKYS talebi **Kontrol Edildi** durumuna aldığında personel **İzin Belgesini Yazdır** adımından standart izin belgesini alır. İKYS nihai onayda imzalı izin belgesinin teslimini doğrular ve eksik günleri karşılayan bir gelecek dönem seçer. Örneğin 1 gün mevcut bakiyeyle 3 gün izin istenirse dilekçede 2 gün yazılır. Onayda 1 gün mevcut bakiyeden, 2 gün seçilen gelecek dönemden düşülür. İki bakiye de kullanıldığında talebe bağlı iki hareket oluşturulur ve mahsup kaydı yalnızca gelecek döneme ait harekete bağlanır. İlk gelecek dönem henüz açılmamışsa ve hak edişi yeterliyse dönem onay sırasında oluşturulabilir.
 
 Bu sürümü yayımlamadan önce aynı İKYS veritabanında [yıllık izin mahsup SQL betiğini](sql/2026-11-24-IKYS-YillikIzinMahsup.sql) çalıştırın. Betik mevcut `Mahsup_Table` tablosunu kullanır ve yıllık izin türündeki açık **Dilekçe Bekleniyor** kayıtlarını işaretler. PortalApps’te daha önce **Kontrol Edildi** durumuna geçirilmiş mahsup kayıtlarını Personel Kısmıyla doğrulayın. Eski sistem bu durumda dilekçe bilgisi için ayrı bir alan tutmadığından bu kayıtlar otomatik olarak ayırt edilemez.
+
+Ardından [mahsup gün sayısı betiğini](sql/2026-11-24-IKYS-YillikIzinMahsupGun.sql) uygulayın. Önceki sürümde oluşturulmuş **Dilekçe Bekleniyor** durumundaki talepler için dilekçe çıktısını yeniden alın.
 
 ## Yapılandırma
 

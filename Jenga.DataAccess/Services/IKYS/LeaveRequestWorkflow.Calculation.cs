@@ -189,19 +189,25 @@ public sealed partial class LeaveRequestWorkflow
         return totalYears >= 15 ? 26 : totalYears > 5 ? 20 : 14;
     }
 
-    private static async Task<int> CountPaidDaysAsync(ApplicationDbContext db, DateTime start, DateTime end, CancellationToken ct)
+    private static async Task<int> CountPaidDaysAsync(ApplicationDbContext db, DateTime start, DateTime end, CancellationToken ct) =>
+        (await PaidWorkdaysAsync(db, start, end, ct)).Count();
+
+    private static async Task<IEnumerable<DateTime>> PaidWorkdaysAsync(ApplicationDbContext db, DateTime start, DateTime end, CancellationToken ct)
     {
         var holidays = await db.ResmiTatil_Table.AsNoTracking()
             .Where(x => x.Yil == 0 || (x.BaslamaTarihi <= end && x.BitisTarihi >= start)).ToListAsync(ct);
-        var total = 0;
-        for (var date = start; date <= end; date = date.AddDays(1))
+        return Workdays();
+
+        IEnumerable<DateTime> Workdays()
         {
-            if (date.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday) continue;
-            if (holidays.Any(x => (x.BaslamaTarihi <= date && x.BitisTarihi >= date) ||
-                (x.Yil == 0 && x.Ay == date.Month && x.BaslamaTarihi.Day <= date.Day && x.BitisTarihi.Day >= date.Day &&
-                 (x.IlanTarihi is null || x.IlanTarihi <= date) && (x.IptalTarihi is null || x.IptalTarihi >= date)))) continue;
-            total++;
+            for (var date = start; date <= end; date = date.AddDays(1))
+            {
+                if (date.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday) continue;
+                if (holidays.Any(x => (x.BaslamaTarihi <= date && x.BitisTarihi >= date) ||
+                    (x.Yil == 0 && x.Ay == date.Month && x.BaslamaTarihi.Day <= date.Day && x.BitisTarihi.Day >= date.Day &&
+                     (x.IlanTarihi is null || x.IlanTarihi <= date) && (x.IptalTarihi is null || x.IptalTarihi >= date)))) continue;
+                yield return date;
+            }
         }
-        return total;
     }
 }

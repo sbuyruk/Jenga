@@ -107,11 +107,11 @@
                         {
                             var entry = person.SingleOrDefault(x => x.WorkDate.Date == day.Date);
                             var gross = entry?.Intervals.Sum(x => x.EndMinute - x.StartMinute) ?? 0;
-                            var net = OvertimeCalculator.NetMinutes(day, gross, _report.PublicHolidays);
+                            var net = OvertimeCalculator.NetMinutes(day, entry?.Intervals ?? [], _report.PublicHolidays, _report.PublicHolidayStartMinutes);
                             <tr><td>@day.ToString("dd.MM.yyyy")</td><td>@(entry is null ? "" : string.Join(" / ", entry.Intervals.OrderBy(x => x.StartMinute).Select(x => $"{OvertimeDisplay.Duration(x.StartMinute)}–{OvertimeDisplay.Duration(x.EndMinute)}")))</td><td>@(entry is null ? "" : OvertimeDisplay.Duration(gross))</td><td>@(entry is null ? "" : OvertimeDisplay.Duration(net))</td><td></td><td class="ot-reason">@entry?.Reason</td></tr>
                         }
                         </tbody>
-                        <tfoot><tr><th colspan="2">GENEL TOPLAM</th><td>@OvertimeDisplay.Duration(person.Sum(x => x.Intervals.Sum(i => i.EndMinute - i.StartMinute)))</td><td>@OvertimeDisplay.Duration(person.Sum(x => OvertimeCalculator.NetMinutes(x.WorkDate, x.Intervals.Sum(i => i.EndMinute - i.StartMinute), _report.PublicHolidays)))</td><td colspan="2"></td></tr></tfoot>
+                        <tfoot><tr><th colspan="2">GENEL TOPLAM</th><td>@OvertimeDisplay.Duration(person.Sum(x => x.Intervals.Sum(i => i.EndMinute - i.StartMinute)))</td><td>@OvertimeDisplay.Duration(person.Sum(x => OvertimeCalculator.NetMinutes(x.WorkDate, x.Intervals, _report.PublicHolidays, _report.PublicHolidayStartMinutes)))</td><td colspan="2"></td></tr></tfoot>
                     </table>
                     <div class="ot-signatures">
                         @if (_report.DelegateName is not null)

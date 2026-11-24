@@ -50,7 +50,7 @@ public sealed record LeaveDocumentBalance(string? Before, string? After);
 public sealed record FutureLeavePeriod(int Id, DateTime Start, DateTime End, int AvailableDays);
 
 public sealed record FutureLeaveOffset(
-    DateTime? SourceStart, DateTime? SourceEnd, List<FutureLeavePeriod> Targets, FutureLeavePeriod? AppliedPeriod);
+    DateTime? SourceStart, DateTime? SourceEnd, List<FutureLeavePeriod> Targets, FutureLeavePeriod? AppliedPeriod, int OffsetDays);
 
 public sealed record LeaveDocumentInfo(
     DateTime? SubmittedAt, int? PersonnelNumber, string? Title, string? Department, string? SubstituteTitle,

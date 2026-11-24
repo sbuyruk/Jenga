@@ -162,6 +162,7 @@ public sealed record OvertimeExternalInstitution(int PersonelId, string FullName
 public sealed class OvertimeReport
 {
     public HashSet<DateTime> PublicHolidays { get; set; } = [];
+    public Dictionary<DateTime, int> PublicHolidayStartMinutes { get; set; } = [];
     public OvertimePeriod Period { get; set; } = new();
     public List<OvertimeEntry> Entries { get; set; } = [];
     public List<OvertimePersonResult> Results { get; set; } = [];

@@ -227,27 +227,28 @@
 
                 @if (CanPrint(detail.Row))
                 {
+                    var isPetition = IsOffsetPetition(detail.Row);
                     <div class="leave-document">
                         @if (detail.FutureOffset is { } offset)
                         {
+                            <div>Gelecek dönemden mahsup süresi @offset.OffsetDays gün</div>
                             @if (offset.AppliedPeriod is { } applied)
                             {
                                 <div>Mahsup edilen dönem @(PeriodRange(applied))</div>
                             }
-                            else
-                            {
-                                <div>Mahsup dilekçesini yazdırın, imzalatın ve Personel Kısmına teslim edin.</div>
-                            }
+                        }
+                        @if (isPetition)
+                        {
+                            <div>Mahsup dilekçesini yazdırın, imzalatın ve Personel Kısmına teslim edin.</div>
                         }
                         else if (detail.Row.Status == Status.KontrolEdildi)
                         {
                             <div>İzin belgesini yazdırın, imzalatın ve Personel Kısmına teslim edin.</div>
                         }
                         <a class="btn btn-sm btn-primary"
-                           href="@($"/ikys/leave-requests/print/{detail.Row.Id}{(PersonnelOffice ? "?scope=manage" : "")}")"
-                           target="_blank" rel="noopener noreferrer">
+                           href="@($"/ikys/leave-requests/print/{detail.Row.Id}{(PersonnelOffice ? "?scope=manage" : "")}")">
                             <i class="bi bi-printer me-1" aria-hidden="true"></i>
-                            @(detail.FutureOffset is null ? "İzin Belgesini Yazdır" : "Mahsup Dilekçesini Yazdır")
+                            @(isPetition ? "Mahsup Dilekçesini Yazdır" : "İzin Belgesini Yazdır")
                         </a>
                     </div>
                 }
@@ -323,8 +324,7 @@
                             }
                             <div class="form-check mb-3">
                                 <input type="checkbox" class="form-check-input" id="leave-document-received" @bind="_documentReceived" disabled="@_busy" />
-                                <label class="form-check-label" for="leave-document-received">@(detail.FutureOffset is null
-                                    ? "İmzalı izin belgesi teslim alındı." : "İmzalı mahsup dilekçesi teslim alındı.")</label>
+                                <label class="form-check-label" for="leave-document-received">İmzalı izin belgesi teslim alındı.</label>
                             </div>
                         }
                         <div class="leave-detail-actions">

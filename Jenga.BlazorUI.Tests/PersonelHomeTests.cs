@@ -109,6 +109,7 @@ public sealed class PersonelHomeTests
                 new IzinDonem { PersonelId = person.Id, BaslangicTarihi = today.AddYears(1), IzinHakki = "26", KalanIzin = "25" });
             await db.SaveChangesAsync();
             await db.Database.ExecuteSqlRawAsync("ALTER TABLE IzinTalep_Table DROP COLUMN GelecekDonemMahsubu");
+            await db.Database.ExecuteSqlRawAsync("ALTER TABLE IzinTalep_Table DROP COLUMN GelecekDonemMahsupGun");
         }
         var current = Fake<ICurrentUserService>((method, _) => method == "GetCurrentPersonelAsync"
             ? Task.FromResult<Personel?>(person) : throw new InvalidOperationException(method));

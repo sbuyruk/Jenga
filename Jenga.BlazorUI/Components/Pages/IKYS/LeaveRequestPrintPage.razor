@@ -29,42 +29,38 @@
     {
         var info = detail.DocumentInfo;
         var date = DateText(info?.SubmittedAt ?? detail.Row.Start);
-        @if (detail.FutureOffset is { } offset)
+        @if (IsOffsetPetition(detail.Row) && detail.FutureOffset is { } offset)
         {
+            var entitlement = offset.SourceEnd is { Year: < 9999 } sourceEnd
+                ? $"{DateText(sourceEnd.AddDays(1))} tarihinden itibaren"
+                : "gelecek izin dönemimde";
             <article id="@PrintId" class="leave-sheet leave-petition" aria-labelledby="leave-sheet-title">
-                <header class="leave-general-header">
-                    <div class="leave-crest"><img src="/images/logo-light.png" alt="TSKGV amblemi" /></div>
-                    <h1 id="leave-sheet-title">Gelecek Dönem Yıllık İzin Mahsup Dilekçesi</h1>
-                </header>
-                <div class="leave-date">@date</div>
-                <h2 class="leave-petition-addressee">Türk Silahlı Kuvvetlerini Güçlendirme Vakfı<br />Genel Müdürlüğüne</h2>
-                <p>@DateText(detail.Row.Start) – @DateText(detail.Row.End) tarihleri arasında kullanmak istediğim
-                    @DurationText(detail.Row.Duration, detail.Row.Unit) yıllık ücretli iznimin tamamının gelecek yıllık izin
-                    dönemlerimden birinden mahsup edilmesini arz ederim.</p>
-                <dl class="leave-fields">
-                    <div><dt>Talep No</dt><dd>@detail.Row.Id</dd></div>
-                    <div><dt>Adı Soyadı</dt><dd>@detail.Row.Person</dd></div>
-                    <div><dt>Sicil No</dt><dd>@info?.PersonnelNumber</dd></div>
-                    <div><dt>Görevi</dt><dd>@info?.Title</dd></div>
-                    <div><dt>İzin Adresi</dt><dd>@detail.Address</dd></div>
-                    <div><dt>İznin Ait Olduğu Dönem</dt><dd>@PeriodText(offset.SourceStart, offset.SourceEnd)</dd></div>
-                    @if (offset.AppliedPeriod is { } applied)
-                    {
-                        <div><dt>Mahsup Edilen Dönem</dt><dd>@PeriodText(applied.Start, applied.End)</dd></div>
-                    }
-                </dl>
-                <div class="leave-petition-signatures">
-                    <section>
-                        <h2>Talep Sahibi</h2>
-                        <p>@detail.Row.Person</p>
-                        <p>İmza</p>
-                    </section>
-                    <section>
-                        <h2>Amir</h2>
-                        <p>@detail.Manager<br />@info?.ManagerTitle</p>
-                        <p>İmza</p>
-                    </section>
-                </div>
+                <p class="leave-petition-date">@date</p>
+                <h1 id="leave-sheet-title" class="leave-petition-addressee">
+                    TÜRK SİLAHLI KUVVETLERİNİ GÜÇLENDİRME VAKFI<br />GENEL MÜDÜRLÜĞÜNE
+                </h1>
+                <p class="leave-petition-statement">
+                    @DateText(detail.Row.Start) - @DateText(detail.Row.End) tarihleri arasında
+                    @DurationText(detail.Row.Duration, "gün") ücretli izin kullanmak istiyorum.
+                    Mevcut yıllık ücretli izin bakiyem talep ettiğim süreyi karşılamadığından, kullanacağım iznin @offset.OffsetDays gününün
+                    @entitlement hak edeceğim yıllık izin süremden mahsup edilmesini arz ederim.
+                </p>
+                <section class="leave-petition-signature">
+                    <h2>PERSONEL</h2>
+                    <dl class="leave-fields">
+                        <div><dt>Adı Soyadı</dt><dd>@detail.Row.Person</dd></div>
+                        <div><dt>Görevi</dt><dd>@info?.Title</dd></div>
+                        <div><dt>Personelin İmzası</dt><dd class="leave-signature"></dd></div>
+                    </dl>
+                </section>
+                <section class="leave-petition-signature">
+                    <h2>AMİR</h2>
+                    <dl class="leave-fields">
+                        <div><dt>Adı Soyadı</dt><dd>@detail.Manager</dd></div>
+                        <div><dt>Görevi</dt><dd>@info?.ManagerTitle</dd></div>
+                        <div><dt>İmzası</dt><dd class="leave-signature"></dd></div>
+                    </dl>
+                </section>
             </article>
         }
         else if (detail.Row.Type == (int)LeaveType.Personal)
@@ -177,7 +173,8 @@
     [SupplyParameterFromQuery] public string? Scope { get; set; }
 
     private bool PersonnelOffice => string.Equals(Scope, "manage", StringComparison.OrdinalIgnoreCase);
-    private string DocumentTitle => _detail?.FutureOffset is null ? "İzin Belgesi" : "Gelecek Dönem Yıllık İzin Mahsup Dilekçesi";
+    private string DocumentTitle => _detail is { } detail && IsOffsetPetition(detail.Row)
+        ? "Gelecek Dönem Yıllık İzin Mahsup Dilekçesi" : "İzin Belgesi";
     private string ListUrl => $"/ikys/leave-requests{(PersonnelOffice ? "/manage" : "")}?requestId={RequestId}";
     private bool _ready;
     private bool _loading = true;

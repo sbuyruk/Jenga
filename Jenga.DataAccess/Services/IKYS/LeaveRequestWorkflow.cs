@@ -235,6 +235,8 @@ public sealed partial class LeaveRequestWorkflow(
         if (type == LeaveType.Paid && leave.Calculation.CanRequestFuturePeriodOffset && !futureOffset)
             return Error.Validation("Yıllık izin bakiyesi yetersiz. Süreyi hesaplayıp mahsup dilekçesi oluşturabilir veya izin tarihlerini değiştirebilirsiniz.",
                 "LeaveRequest.FutureOffsetAvailable");
+        if (futureOffset && !leave.Calculation.CanRequestFuturePeriodOffset)
+            return Error.Validation("Mevcut yıllık izin bakiyesi talebi karşılıyor. Bu dilekçeyi silip normal izin talebi oluşturabilirsiniz.");
 
         db.SetCurrentUser(await authorization.GetUserNameAsync(ct));
         var request = existing ?? new IzinTalep { PersonelId = person.Id, IzinTipi = (int)type, Aktif = true, OnayDurumu = Status.IslemBekliyor };
@@ -242,6 +244,7 @@ public sealed partial class LeaveRequestWorkflow(
         if (futureOffset)
         {
             request.GelecekDonemMahsubu = true;
+            request.GelecekDonemMahsupGun = OffsetDays(Days(leave.Calculation.Duration), Days(leave.Calculation.Available));
             request.OnayDurumu = Status.DilekceBekleniyor;
         }
         if (leave.Period is { } period)

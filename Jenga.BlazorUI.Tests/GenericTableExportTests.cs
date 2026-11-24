@@ -189,10 +189,10 @@ public sealed class GenericTableExportTests
                 expected = new() { ["İl"] = "Ankara", ["Ay"] = "Kasım", ["Bağışçı"] = "1.234", ["Yeni Bağışçı"] = "56" }; break;
             case "plan":
                 component = new TasinmazKontrolListe(); values = new() { ["TasinmazId"] = 111, ["AcikTaslakId"] = 5, ["Adres"] = "Adres", ["AdaNo"] = "Ada", ["ParselNo"] = "Parsel", ["Cinsi"] = "Arsa", ["Ili"] = "Ankara", ["Ilcesi"] = "Çankaya", ["BolgeAdi"] = "Merkez", ["BolgeKisaAdi"] = "MRK", ["MulkiyetSekli"] = "TM", ["Bagisci"] = "Ayşe Yılmaz" };
-                expected = new() { ["Bölge"] = "MRK", ["Durum"] = "Taslak açık", ["Adres"] = "Adres", ["Cinsi"] = "Arsa", ["Mülkiyet Şekli"] = "TM", ["Bağışçı"] = "Ayşe Yılmaz", ["İli / İlçesi"] = "Ankara / Çankaya", ["Kontrol Sıklığı"] = KontrolPeriyodu.Etiket(null, null), ["Son Kontrol"] = "—", ["Sonraki Kontrol"] = "—" }; break;
+                expected = new() { ["Bölge"] = "MRK", ["Durum"] = "Taslak açık", ["Bağışçı"] = "Ayşe Yılmaz", ["Mülkiyet Şekli"] = "TM", ["Adres"] = "Adres", ["İli / İlçesi"] = "Ankara / Çankaya", ["Cinsi"] = "Arsa", ["Kontrol Sıklığı"] = KontrolPeriyodu.Etiket(null, null), ["Son Kontrol"] = "—", ["Sonraki Kontrol"] = "—" }; break;
             case "inspection":
                 component = new TasinmazKontrolListe(); values = new() { ["Id"] = 111, ["TasinmazId"] = 222, ["RaporNo"] = "R-1", ["Durum"] = KontrolDurumu.Tamamlandi, ["KontrolTarihi"] = date, ["EmlakSicilNo"] = "S-1", ["Cinsi"] = "Arsa", ["Ili"] = "Ankara", ["Ilcesi"] = "Çankaya", ["BolgeAdi"] = "Merkez", ["BolgeKisaAdi"] = "MRK", ["MulkiyetSekli"] = "ÇM", ["Bagisci"] = "Ali Demir", ["KontrolEdenler"] = "Personel", ["RevizeEdilenKontrolId"] = 12 };
-                expected = new() { ["Bölge"] = "MRK", ["#"] = "#111 (rev. #12)", ["Rapor No"] = "R-1", ["Durum"] = "Tamamlandı", ["Tarih"] = "15.11.2026", ["Sicil No"] = "S-1", ["Cinsi"] = "Arsa", ["Mülkiyet Şekli"] = "ÇM", ["Bağışçı"] = "Ali Demir", ["İli / İlçesi"] = "Ankara / Çankaya", ["Kontrol Edenler"] = "Personel", ["Sonraki"] = "—" }; break;
+                expected = new() { ["Bölge"] = "MRK", ["#"] = "#111 (rev. #12)", ["Rapor No"] = "R-1", ["Durum"] = "Tamamlandı", ["Bağışçı"] = "Ali Demir", ["Mülkiyet Şekli"] = "ÇM", ["Tarih"] = "15.11.2026", ["Sicil No"] = "S-1", ["Cinsi"] = "Arsa", ["İli / İlçesi"] = "Ankara / Çankaya", ["Kontrol Edenler"] = "Personel", ["Sonraki"] = "—" }; break;
             default: throw new ArgumentOutOfRangeException(nameof(scenario));
         }
         return (component, values, expected,

@@ -113,7 +113,7 @@
     {
         if (firstRender)
         {
-            var minimumOpeningDuration = Task.Delay(TimeSpan.FromSeconds(5));
+            var minimumOpeningDuration = Task.Delay(TimeSpan.FromSeconds(3));
             await ThemeService.InitializeAsync();
 
             // JS interop is now available.

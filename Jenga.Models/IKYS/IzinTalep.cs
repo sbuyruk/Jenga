@@ -48,4 +48,5 @@ public class IzinTalep : BaseModel
     [DisplayName("E-Posta Gönder")]
     public bool? EPostaGonder { get; set; }
     public bool? GelecekDonemMahsubu { get; set; }
+    public int? GelecekDonemMahsupGun { get; set; }
 }

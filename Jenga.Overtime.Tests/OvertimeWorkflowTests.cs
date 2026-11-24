@@ -700,7 +700,7 @@ public sealed class OvertimeWorkflowTests(OvertimeDatabase database) : IClassFix
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public async Task OrdinaryWeekdayRequiresEveryIntervalToStartAtOrAfter1700(bool submit)
+    public async Task OrdinaryWeekdayRejectsWorkHoursAndAllowsEvening(bool submit)
     {
         await Reset(45);
         var input = Input(Monday); input.Submit = submit;
@@ -744,7 +744,7 @@ public sealed class OvertimeWorkflowTests(OvertimeDatabase database) : IClassFix
         var periodId = Success(await hr.CreatePeriodAsync("Tatil", Monday, Monday.AddDays(6), Monday.AddDays(9)));
         var preview = Assert.Single(Success(await hr.GetReportAsync(periodId, null, null)).Results);
         Assert.Equal(420, preview.RawMinutes);
-        Assert.Equal("2026-11-v2", preview.RuleVersion);
+        Assert.Equal("2026-11-v3", preview.RuleVersion);
         var delivery = await Delivery();
         Success(await hr.IssueUnitAsync(delivery.Id, delivery.Version));
         delivery = await Delivery();
@@ -758,13 +758,123 @@ public sealed class OvertimeWorkflowTests(OvertimeDatabase database) : IClassFix
         Assert.Equal(420, Assert.Single(Success(await hr.GetReportAsync(periodId, null, null)).Results).RawMinutes);
     }
 
+    [Theory]
+    [InlineData(779, false, false)]
+    [InlineData(780, true, false)]
+    [InlineData(781, true, false)]
+    [InlineData(1020, true, false)]
+    [InlineData(779, false, true)]
+    [InlineData(780, true, true)]
+    public async Task HalfDayHolidayUsesCalendarStartTimeIncludingAnnualDefinitions(int startMinute, bool allowed, bool annual)
+    {
+        await Reset(45);
+        var date = Monday.AddDays(2); // 28 October 2026.
+        await using (var db = database.CreateDbContext())
+        {
+            var source = annual ? new DateTime(2000, 10, 28) : date;
+            db.ResmiTatil_Table.Add(new() { Tatil = "Cumhuriyet Bayramı", Gun = 28, Ay = 10, Yil = annual ? 0 : 2026,
+                BaslamaTarihi = source.AddHours(13), BitisTarihi = source.AddDays(1) });
+            await db.SaveChangesAsync();
+        }
+        var input = Input(date);
+        input.Intervals = [new() { Start = TimeOnly.FromTimeSpan(TimeSpan.FromMinutes(startMinute)), End = new(20, 0) }];
+        var result = await Service("worker").SaveEntryAsync(input);
+        Assert.Equal(allowed, result.IsSuccess);
+        if (!allowed) { Assert.Contains("13:00", result.Error.Message); return; }
+        var entry = await Entry();
+        Success(await Service("manager").ReviewAsync(entry.Id, entry.Version, OvertimeEntryStatus.Approved, ""));
+        var hr = Service("hr", true);
+        var periodId = Success(await hr.CreatePeriodAsync("Yarım gün", Monday, Monday.AddDays(6), Monday.AddDays(9)));
+        var report = Success(await hr.GetReportAsync(periodId, null, null));
+        Assert.Contains(date, report.PublicHolidays);
+        var gross = 1200 - startMinute;
+        Assert.Equal(gross - OvertimeCalculator.RestMinutes(gross), Assert.Single(report.Results).RawMinutes);
+        // The following full holiday has no 13:00 boundary.
+        var nextDay = Input(date.AddDays(1)); nextDay.Intervals = [new() { Start = new(8, 0), End = new(12, 0) }];
+        Success(await Service("worker").SaveEntryAsync(nextDay));
+    }
+
     [Fact]
-    public async Task OvernightToOrdinaryWeekdayRejectsEarlyMorningPartAndRollsBackWholeEntry()
+    public async Task HalfDayHolidayRejectsNormalWorkHoursButAllowsEarlyMorningOvernightPart()
+    {
+        await Reset(45);
+        var date = Monday.AddDays(2);
+        await using (var db = database.CreateDbContext())
+        {
+            db.ResmiTatil_Table.Add(new() { Tatil = "Yarım gün", Gun = 28, Ay = 10, Yil = 2026, BaslamaTarihi = date.AddHours(13), BitisTarihi = date });
+            await db.SaveChangesAsync();
+        }
+        var input = Input(date);
+        input.Intervals = [new() { Start = new(13, 0), End = new(14, 0) }, new() { Start = new(12, 0), End = new(12, 30) }];
+        Assert.False((await Service("worker").SaveEntryAsync(input)).IsSuccess);
+        input.WorkDate = date.AddDays(-1); input.EndWorkDate = date;
+        input.Intervals = [new() { Start = new(22, 0), End = new(2, 0) }];
+        Success(await Service("worker").SaveEntryAsync(input));
+        await using var check = database.CreateDbContext();
+        Assert.Equal(2, await check.OvertimeEntries.CountAsync());
+        Assert.Equal(2, await check.OvertimeEvents.CountAsync());
+    }
+
+    [Fact]
+    public async Task OvernightToOrdinaryWeekdayAllowsEarlyMorningPart()
     {
         await Reset(45);
         var input = Input(Monday.AddDays(6));
         input.EndWorkDate = Monday.AddDays(7);
         input.Intervals = [new() { Start = new(22, 0), End = new(2, 0) }];
+        Success(await Service("worker").SaveEntryAsync(input));
+        await using var db = database.CreateDbContext();
+        Assert.Equal(2, await db.OvertimeEntries.CountAsync());
+        Assert.Equal(2, await db.OvertimeEvents.CountAsync());
+    }
+
+    [Theory]
+    [InlineData(360, 480, true)]
+    [InlineData(479, 480, true)]
+    [InlineData(420, 481, false)]
+    [InlineData(480, 540, false)]
+    [InlineData(420, 1200, false)]
+    [InlineData(1020, 1200, true)]
+    public async Task OrdinaryWeekdayAllowsOnlyIntervalsOutside0800To1700(int start, int end, bool allowed)
+    {
+        await Reset(45);
+        var input = Input(Monday);
+        input.Intervals = [new() { Start = TimeOnly.FromTimeSpan(TimeSpan.FromMinutes(start)), End = TimeOnly.FromTimeSpan(TimeSpan.FromMinutes(end)) }];
+        Assert.Equal(allowed, (await Service("worker").SaveEntryAsync(input)).IsSuccess);
+    }
+
+    [Theory]
+    [InlineData(false, 300)]
+    [InlineData(true, 345)]
+    public async Task MorningAndLaterWorkAreSavedTogetherWithoutRestOnNormalMorningHours(bool halfHoliday, int expectedNet)
+    {
+        await Reset(45);
+        var date = halfHoliday ? Monday.AddDays(2) : Monday;
+        if (halfHoliday)
+        {
+            await using var db = database.CreateDbContext();
+            db.ResmiTatil_Table.Add(new() { Tatil = "Yarım gün", Gun = 28, Ay = 10, Yil = 2026, BaslamaTarihi = date.AddHours(13), BitisTarihi = date });
+            await db.SaveChangesAsync();
+        }
+        var input = Input(date);
+        input.Intervals = [new() { Start = new(6, 0), End = new(8, 0) },
+            new() { Start = halfHoliday ? new(13, 0) : new(17, 0), End = halfHoliday ? new(17, 0) : new(20, 0) }];
+        Success(await Service("worker").SaveEntryAsync(input));
+        var entry = await Entry();
+        Success(await Service("manager").ReviewAsync(entry.Id, entry.Version, OvertimeEntryStatus.Approved, ""));
+        var hr = Service("hr", true);
+        var periodId = Success(await hr.CreatePeriodAsync("Sabah mesaisi", Monday, Monday.AddDays(6), Monday.AddDays(9)));
+        var report = Success(await hr.GetReportAsync(periodId, null, null));
+        Assert.Equal(expectedNet, Assert.Single(report.Results).RawMinutes);
+        Assert.Equal(expectedNet, OvertimeCalculator.NetMinutes(date, Assert.Single(report.Entries).Intervals, report.PublicHolidays, report.PublicHolidayStartMinutes));
+    }
+
+    [Fact]
+    public async Task OvernightCrossing0800RollsBackBothDays()
+    {
+        await Reset(45);
+        var input = Input(Monday.AddDays(6)); input.EndWorkDate = Monday.AddDays(7);
+        input.Intervals = [new() { Start = new(22, 0), End = new(9, 0) }];
         Assert.False((await Service("worker").SaveEntryAsync(input)).IsSuccess);
         await using var db = database.CreateDbContext();
         Assert.Empty(await db.OvertimeEntries.ToListAsync());

@@ -290,7 +290,7 @@ public sealed class LeaveRequestWorkflowTests
     }
 
     [Fact]
-    public async Task FutureOffsetPetitionUsesTheSelectedPeriodAndRecordsOneMovement()
+    public async Task FutureOffsetPetitionUsesExistingBalanceBeforeDebitingTheSelectedPeriod()
     {
         await using var data = await TestData.CreateAsync();
         var past = new DateTime(2025, 3, 1);
@@ -306,7 +306,7 @@ public sealed class LeaveRequestWorkflowTests
         var employee = data.Service("employee");
         var office = data.Service("office", manage: true);
         data.Configuration["LeaveRequests:BaseUrl"] = "https://jenga.example.test";
-        var input = Request(LeaveType.Paid, Friday, Friday.AddDays(3));
+        var input = Request(LeaveType.Paid, Friday, Friday.AddDays(4));
         var calculated = Success(await employee.CalculateAsync(input, false));
         Assert.Equal("1", calculated.Available);
         Assert.True(calculated.CanRequestFuturePeriodOffset);
@@ -316,18 +316,24 @@ public sealed class LeaveRequestWorkflowTests
         var id = Success(await employee.SaveAsync(input, false)).Id;
         var pending = Success(await employee.DetailAsync(id, false));
         Assert.Equal(Status.DilekceBekleniyor, pending.Row.Status);
+        Assert.Equal(2, pending.FutureOffset?.OffsetDays);
         Assert.Equal(past.AddYears(1), pending.FutureOffset?.SourceStart);
         Assert.Equal(2, pending.DocumentInfo?.PersonnelNumber);
         Assert.Contains(data.Email.Messages, message => message.Contains($"/ikys/leave-requests/print/{id}"));
+        Assert.Contains(data.Email.Messages, message => message.Contains("Mahsup Dilekçesini Yazdır"));
         Assert.True((await data.Service("stranger").DetailAsync(id, false)).IsFailure);
         Assert.True((await employee.LoadFormAsync(id, false)).Value.Input.RequestFuturePeriodOffset);
 
         Assert.True((await office.DecideAsync(id, LeaveDecision.Check, null, false)).IsSuccess);
+        Assert.Contains("İzin Belgesini Yazdır", data.Email.Messages.Last());
+        Assert.DoesNotContain("Mahsup Dilekçesini Yazdır", data.Email.Messages.Last());
         var checkedDetail = Success(await office.DetailAsync(id, true));
         Assert.Equal(new[] { 103, 106 }, checkedDetail.FutureOffset?.Targets.Select(x => x.Id));
+        Assert.Equal(2, checkedDetail.FutureOffset?.OffsetDays);
         Assert.Empty(Success(await employee.DetailAsync(id, false)).FutureOffset!.Targets);
         Assert.True((await office.DecideAsync(id, LeaveDecision.Approve, null, true)).IsFailure);
-        Assert.True((await office.DecideAsync(id, LeaveDecision.Approve, null, false, targetPeriodId: 103)).IsFailure);
+        var missingDocument = await office.DecideAsync(id, LeaveDecision.Approve, null, false, targetPeriodId: 103);
+        Assert.Equal("İmzalı izin belgesinin teslim alındığını doğrulayınız.", missingDocument.Error.Message);
         foreach (var invalidId in new[] { 101, 102, 104, 105 })
             Assert.True((await office.DecideAsync(id, LeaveDecision.Approve, null, true, targetPeriodId: invalidId)).IsFailure);
 
@@ -339,24 +345,54 @@ public sealed class LeaveRequestWorkflowTests
             await db.SaveChangesAsync();
         }
         Assert.True((await office.DecideAsync(id, LeaveDecision.Approve, null, true, targetPeriodId: 103)).IsFailure);
+        await using (var db = data.CreateDbContext())
+        {
+            var source = (await db.IzinDonem_Table.FindAsync(102))!;
+            source.KullanilanIzin = "20";
+            source.KalanIzin = "0";
+            await db.SaveChangesAsync();
+        }
+        Assert.True((await office.DecideAsync(id, LeaveDecision.Approve, null, true, targetPeriodId: 106)).IsFailure);
+        await using (var db = data.CreateDbContext())
+        {
+            Assert.Empty(await db.IzinHareket_Table.ToListAsync());
+            Assert.Empty(await db.Mahsup_Table.ToListAsync());
+            var source = (await db.IzinDonem_Table.FindAsync(102))!;
+            source.KullanilanIzin = "19";
+            source.KalanIzin = "1";
+            await db.SaveChangesAsync();
+        }
         Assert.True((await office.DecideAsync(id, LeaveDecision.Approve, null, true, targetPeriodId: 106)).IsSuccess);
         Assert.True((await office.DecideAsync(id, LeaveDecision.Approve, null, true, targetPeriodId: 106)).IsFailure);
 
         await using var persisted = data.CreateDbContext();
-        var movement = await persisted.IzinHareket_Table.SingleAsync();
+        var movements = await persisted.IzinHareket_Table.OrderBy(x => x.BaslangicTarihi).ToListAsync();
+        Assert.Equal(2, movements.Count);
+        var current = movements[0];
+        Assert.False(current.Mahsup);
+        Assert.Equal(id, current.IzinTalepId);
+        Assert.Equal(102, current.IzinDonemId);
+        Assert.Equal("1", current.Sure);
+        Assert.Equal(Friday, current.BaslangicTarihi?.Date);
+        Assert.Equal(Friday, current.BitisTarihi?.Date);
+        var movement = movements[1];
         var offset = await persisted.Mahsup_Table.SingleAsync();
         Assert.True(movement.Mahsup);
         Assert.Equal(id, movement.IzinTalepId);
         Assert.Equal(106, movement.IzinDonemId);
+        Assert.Equal("2", movement.Sure);
+        Assert.Equal(Friday.AddDays(3), movement.BaslangicTarihi?.Date);
         Assert.Equal("19", movement.OncekiIzinStr);
         Assert.Equal("17", movement.KalanIzinStr);
         Assert.Equal(movement.Id, offset.IzinHareketId);
         Assert.Equal(102, offset.KullanildigiDonemId);
         Assert.Equal(106, offset.MahsupDonemId);
-        Assert.Equal("1", (await persisted.IzinDonem_Table.FindAsync(102))!.KalanIzin);
+        Assert.Equal("0", (await persisted.IzinDonem_Table.FindAsync(102))!.KalanIzin);
         Assert.Equal("17", (await persisted.IzinDonem_Table.FindAsync(106))!.KalanIzin);
         Assert.Equal(102, (await persisted.IzinTalep_Table.FindAsync(id))!.IzinDonemId);
-        Assert.Equal(106, Success(await employee.DetailAsync(id, false)).FutureOffset?.AppliedPeriod?.Id);
+        var approved = Success(await employee.DetailAsync(id, false)).FutureOffset;
+        Assert.Equal(106, approved?.AppliedPeriod?.Id);
+        Assert.Equal(2, approved?.OffsetDays);
     }
 
     [Fact]
