@@ -49,15 +49,15 @@
         </div>
         @if (_scope is "mine" or "delegated")
         {
-            <OvertimeEntryTable Entries="_workspace.Entries" IsBusy="_busy" OnEdit="EditEntry" OnWithdraw="Withdraw" OnHistory="ShowHistory" />
+            <OvertimeEntryTable Entries="_workspace.Entries" GroupByMonth="false" IsBusy="_busy" OnEdit="EditEntry" OnWithdraw="Withdraw" OnHistory="ShowHistory" />
         }
         else if (_scope == "hr")
         {
-            <OvertimeEntryTable Entries="_workspace.Entries" IsBusy="_busy" OnHistory="ShowHistory" />
+            <OvertimeEntryTable Entries="_workspace.Entries" GroupByMonth="false" IsBusy="_busy" OnHistory="ShowHistory" />
         }
         else
         {
-            <OvertimeEntryTable Entries="_workspace.Entries" IsBusy="_busy" OnApprove="Approve" OnHistory="ShowHistory"
+            <OvertimeEntryTable Entries="_workspace.Entries" GroupByMonth="false" IsBusy="_busy" OnApprove="Approve" OnHistory="ShowHistory"
                                 OnCorrection="entry => StartReview(entry, OvertimeEntryStatus.Correction)" OnReject="entry => StartReview(entry, OvertimeEntryStatus.Rejected)" />
         }
 

@@ -52,14 +52,22 @@
 
     protected override void OnParametersSet()
     {
-        _months = Entries.GroupBy(x => new DateTime(x.WorkDate.Year, x.WorkDate.Month, 1))
+        var orderedEntries = Entries.OrderByDescending(x => x.WorkDate).ThenBy(x => x.FullName);
+        if (!GroupByMonth)
+        {
+            _months = [new(null, orderedEntries.ToList())];
+            return;
+        }
+
+        _months = orderedEntries.GroupBy(x => new DateTime(x.WorkDate.Year, x.WorkDate.Month, 1))
             .OrderByDescending(x => x.Key)
-            .Select(x => new MonthEntries(x.Key, x.OrderByDescending(entry => entry.WorkDate).ThenBy(entry => entry.FullName).ToList()))
+            .Select(x => new MonthEntries(x.Key, x.ToList()))
             .ToList();
         if (_months.Count == 0) _months.Add(new(null, []));
     }
 
     [Parameter] public List<OvertimeEntry> Entries { get; set; } = [];
+    [Parameter] public bool GroupByMonth { get; set; } = true;
     [Parameter] public bool IsBusy { get; set; }
     [Parameter] public EventCallback<OvertimeEntry> OnEdit { get; set; }
     [Parameter] public EventCallback<OvertimeEntry> OnWithdraw { get; set; }
