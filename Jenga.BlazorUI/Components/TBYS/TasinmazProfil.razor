@@ -29,7 +29,6 @@
     {
         var t      = _vm.Tasinmaz;
         var aktif  = _vm.Sozlesmeler.Where(s => s.Sozlesme.Aktif == true).ToList();
-        var gecmis = _vm.Sozlesmeler.Where(s => s.Sozlesme.Aktif != true).ToList();
         var fotolar = Fotolar(t).ToList();
 
         <!-- Geri Butonu -->
@@ -365,31 +364,15 @@
                 </div>
                 @foreach (var sv in aktif)
                 {
-                    <SozlesmeKart Sozlesme="sv" />
+                    <SozlesmeKart Sozlesme="sv" KiraciBilgileriniGoster="true" />
                 }
             </div>
         }
-
-        <!-- ── BÖLÜM: GEÇMİŞ SÖZLEŞMELER ── -->
-        @if (gecmis.Count > 0)
-        {
-            <div class="detay-section">
-                <div class="detay-section-baslik text-secondary">
-                    <i class="bi bi-file-earmark-x me-2"></i>Geçmiş Kira Sözleşmeleri
-                    <span class="badge bg-secondary ms-2">@gecmis.Count</span>
-                </div>
-                @foreach (var sv in gecmis)
-                {
-                    <SozlesmeKart Sozlesme="sv" />
-                }
-            </div>
-        }
-
-        @if (_vm.Sozlesmeler.Count == 0)
+        else
         {
             <div class="detay-section text-muted d-flex align-items-center gap-2">
                 <i class="bi bi-info-circle fs-5"></i>
-                Bu taşınmaza ait kayıtlı sözleşme bulunmuyor.
+                Bu taşınmaza ait aktif kira sözleşmesi bulunmuyor.
             </div>
         }
     }

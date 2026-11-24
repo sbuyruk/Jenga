@@ -5,12 +5,13 @@
 
 @foreach (var bolum in (Bolumler ?? Tanim.Bolumler).OrderBy(b => b.Sira))
 {
+    var bolumSaltOkunur = ReadOnly || bolum.SaltOkunur;
     <section class="kontrol-bolum">
         <div class="kontrol-bolum-baslik"><strong>@bolum.Baslik</strong>
             @if (!string.IsNullOrWhiteSpace(bolum.Aciklama)) { <small class="text-muted ms-2">@bolum.Aciklama</small> }
         </div>
         <div class="kontrol-bolum-icerik">
-            @if (bolum.Kod == "kanaat" && !ReadOnly)
+            @if (bolum.Kod == "kanaat" && !bolumSaltOkunur)
             {
                 <div class="alert alert-info small mb-3" role="note">
                     <div class="fw-semibold mb-2"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Genel Değerlendirme ve Öneriler alanları mutlaka doldurulmalıdır.</div>
@@ -33,7 +34,7 @@
                     {
                         <div @key="alan.Kod" class="kontrol-alan @KontrolFormAdimlari.AlanGenisligi(alan) @(SeciliAlanKodu == alan.Kod ? "kontrol-alan-secili" : "")"
                              tabindex="-1" @ref="_alanReferanslari[alan.Kod]">
-                            @RenderAlan(alan, () => Cevaplar.Al(alan.Kod), v => Cevaplar.Alanlar[alan.Kod] = v, null, null)
+                            @RenderAlan(alan, () => Cevaplar.Al(alan.Kod), v => Cevaplar.Alanlar[alan.Kod] = v, null, null, bolumSaltOkunur)
                         </div>
                     }
                 </div>
@@ -41,12 +42,12 @@
 
             @foreach (var grup in bolum.Gruplar.OrderBy(g => g.Sira))
             {
-                var satirlar = Satirlar(grup);
+                var satirlar = Satirlar(grup, bolumSaltOkunur);
                 <div @key="grup.Kod" class="mt-3 @(SeciliGrupKodu == grup.Kod && satirlar.Count == 0 ? "kontrol-alan-secili" : "")"
                      tabindex="-1" @ref="_grupReferanslari[grup.Kod]">
                     <div class="d-flex align-items-center mb-2">
                         <strong class="me-auto">@grup.Baslik</strong>
-                        @if (!ReadOnly && grup.Tekrarlanabilir)
+                        @if (!bolumSaltOkunur && grup.Tekrarlanabilir)
                         {
                             <button type="button" class="btn btn-sm btn-outline-primary" @onclick="async () => { satirlar.Add(new(StringComparer.OrdinalIgnoreCase)); Cevaplar.Gruplar[grup.Kod] = satirlar; await OnChanged.InvokeAsync(); }">
                                 <i class="bi bi-plus-lg me-1"></i>Satır Ekle
@@ -56,7 +57,7 @@
                     @if (satirlar.Count == 0)
                     {
                         <div class="text-muted small fst-italic">Kayıt yok.</div>
-                        @if (SeciliGrupKodu == grup.Kod && !ReadOnly)
+                        @if (SeciliGrupKodu == grup.Kod && !bolumSaltOkunur)
                         {
                             <div class="small mt-1">Aradığınız “@grup.Alanlar.FirstOrDefault(a => a.Kod == SeciliAlanKodu)?.Baslik” alanını doldurmak için Satır Ekle düğmesini kullanabilirsiniz.</div>
                         }
@@ -70,7 +71,7 @@
                             {
                                 <div class="d-flex align-items-center mb-1">
                                     <small class="text-muted me-auto">#@(idx + 1)</small>
-                                    @if (!ReadOnly && grup.Tekrarlanabilir)
+                                    @if (!bolumSaltOkunur && grup.Tekrarlanabilir)
                                     {
                                         var belgeEkleriVar = grup.Kod == "tasinmaz_belge_satirlari" && Ekler.Any(e => e.GrupKodu == grup.Kod && e.SatirNo >= idx);
                                         <button type="button" class="btn btn-sm btn-link text-danger p-0" disabled="@belgeEkleriVar" @onclick="async () => { satirlar.RemoveAt(idx); await OnChanged.InvokeAsync(); }" title="@(belgeEkleriVar ? "Bu ve sonraki satırların dosyalarını kaldırdıktan sonra satırı silebilirsiniz." : "Satırı sil")"><i class="bi bi-trash"></i></button>
@@ -81,11 +82,11 @@
                                 @foreach (var alan in grup.Alanlar.OrderBy(a => a.Sira))
                                 {
                                     <div class="kontrol-alan @KontrolFormAdimlari.AlanGenisligi(alan) @(SeciliAlanKodu == alan.Kod ? "kontrol-alan-secili" : "")" tabindex="-1">
-                                        @RenderAlan(alan, () => satir.TryGetValue(alan.Kod, out var v) ? v : null, v => { satir[alan.Kod] = v; Cevaplar.Gruplar[grup.Kod] = satirlar; }, grup.Kod, idx)
+                                        @RenderAlan(alan, () => satir.TryGetValue(alan.Kod, out var v) ? v : null, v => { satir[alan.Kod] = v; Cevaplar.Gruplar[grup.Kod] = satirlar; }, grup.Kod, idx, bolumSaltOkunur)
                                     </div>
                                 }
                             </div>
-                            @if (grup.Kod == "bb_olculer" && !ReadOnly && grup.Tekrarlanabilir)
+                            @if (grup.Kod == "bb_olculer" && !bolumSaltOkunur && grup.Tekrarlanabilir)
                             {
                                 <button type="button" class="btn btn-sm btn-outline-danger kontrol-olcu-sil" @onclick="async () => { satirlar.RemoveAt(idx); await OnChanged.InvokeAsync(); }" title="Ölçü satırını sil" aria-label="Ölçü satırını sil"><i class="bi bi-trash" aria-hidden="true"></i></button>
                             }
@@ -132,18 +133,23 @@
         return false;
     }
 
-    private List<Dictionary<string, string?>> Satirlar(KontrolGrupTanimi grup)
+    private List<Dictionary<string, string?>> Satirlar(KontrolGrupTanimi grup, bool saltOkunur)
     {
-        if (Cevaplar.Gruplar.TryGetValue(grup.Kod, out var s) && (s.Count > 0 || grup.Tekrarlanabilir || ReadOnly)) return s;
+        if (Cevaplar.Gruplar.TryGetValue(grup.Kod, out var s) && (s.Count > 0 || grup.Tekrarlanabilir || saltOkunur)) return s;
         // Yalnızca görüntülemek cevapları değiştirmez. Satır, kullanıcı düzenlediğinde kayda eklenir.
-        return !grup.Tekrarlanabilir && !ReadOnly ? new() { new(StringComparer.OrdinalIgnoreCase) } : new();
+        return !grup.Tekrarlanabilir && !saltOkunur ? new() { new(StringComparer.OrdinalIgnoreCase) } : new();
     }
 
-    private RenderFragment RenderAlan(KontrolAlanTanimi alan, Func<string?> oku, Action<string?> yaz, string? grupKodu, int? satirNo) => __builder =>
+    private RenderFragment RenderAlan(KontrolAlanTanimi alan, Func<string?> oku, Action<string?> yaz, string? grupKodu, int? satirNo, bool bolumSaltOkunur) => __builder =>
     {
-        var saltOkunur = ReadOnly || alan.VeriKaynagi == KontrolVeriKaynagiTipi.TasinmazSaltOkunur;
+        var saltOkunur = bolumSaltOkunur || alan.VeriKaynagi == KontrolVeriKaynagiTipi.TasinmazSaltOkunur;
         var deger = oku();
-        async Task YazAsync(string? v) { yaz(v); await OnChanged.InvokeAsync(); }
+        async Task YazAsync(string? v)
+        {
+            if (saltOkunur) return;
+            yaz(v);
+            await OnChanged.InvokeAsync();
+        }
         var id = $"f_{alan.Kod}_{satirNo?.ToString() ?? "x"}";
 
         <label class="form-label small mb-1" for="@id">
@@ -163,14 +169,14 @@
                         <div class="d-flex align-items-center gap-2 small mb-1">
                             <a href="/api/tbys/kontrol-ek/@ek.Id" target="_blank"><i class="bi bi-paperclip"></i> @ek.DosyaAdi</a>
                             <span class="text-muted">(@((ek.Boyut / 1024.0).ToString("N0")) KB)</span>
-                            @if (!ReadOnly)
+                            @if (!bolumSaltOkunur)
                             {
                                 <button type="button" class="btn btn-sm btn-link text-danger p-0" @onclick="() => OnEkSil.InvokeAsync(ek)"><i class="bi bi-x-circle"></i></button>
                             }
                         </div>
                     }
                     @if (ekler.Count == 0) { <div class="text-muted small fst-italic">Ek yok.</div> }
-                    @if (!ReadOnly && EkYukleTemplate is not null) { @EkYukleTemplate((alan.Kod, grupKodu, satirNo)) }
+                    @if (!bolumSaltOkunur && EkYukleTemplate is not null) { @EkYukleTemplate((alan.Kod, grupKodu, satirNo)) }
                 </div>
                 break;
 

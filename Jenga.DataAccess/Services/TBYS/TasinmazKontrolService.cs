@@ -221,7 +221,12 @@ namespace Jenga.DataAccess.Services.TBYS
                 if (k is null) return Result<TasinmazKontrol>.Failure(Error.NotFound("Kontrol bulunamadı."));
                 if (!await KontroleErisebilirAsync(db, k.TasinmazId, cancellationToken))
                     return Result<TasinmazKontrol>.Failure(Error.Forbidden(BolgeYetkisiYok));
-                if (k.Durum == KontrolDurumu.Taslak) await KiraBilgileriniDoldurAsync(db, k, cancellationToken);
+                if (k.Durum == KontrolDurumu.Taslak)
+                {
+                    var cevaplar = KontrolCevaplari.FromJson(k.CevaplarJson);
+                    if (await KiraBilgileriniDoldurAsync(db, k.TasinmazId, cevaplar, cancellationToken))
+                        k.CevaplarJson = cevaplar.ToJson();
+                }
                 return Result<TasinmazKontrol>.Success(k);
             }
             catch (Exception ex)
@@ -399,14 +404,14 @@ namespace Jenga.DataAccess.Services.TBYS
                     KontrolTarihi = istek.KontrolTarihi.Date,
                     Durum = KontrolDurumu.Taslak,
                     TasinmazSnapshotJson = System.Text.Json.JsonSerializer.Serialize(snapshot, KontrolFormTanimi.JsonOptions),
-                    CevaplarJson = cevaplar.ToJson(),
                     RevizeEdilenKontrolId = revizeEdilen?.Id,
                     IslemGerekcesi = revizeEdilen is null ? null : istek.RevizyonGerekcesi!.Trim(),
                     IslemYapan = revizeEdilen is null ? null : kullanici,
                     IslemTarihi = revizeEdilen is null ? null : DateTime.Now
                 };
 
-                await KiraBilgileriniDoldurAsync(db, kontrol, cancellationToken);
+                await KiraBilgileriniDoldurAsync(db, kontrol.TasinmazId, cevaplar, cancellationToken);
+                kontrol.CevaplarJson = cevaplar.ToJson();
                 db.SetCurrentUser(kullanici);
                 db.TasinmazKontrol_Table.Add(kontrol);
                 await db.SaveChangesAsync(cancellationToken);
@@ -436,11 +441,10 @@ namespace Jenga.DataAccess.Services.TBYS
                 if (k.KayitSurumu != kayitSurumu) return Result.Failure(Error.Conflict(EszamanlilikMesaji));
 
                 var tanim = KontrolRaporu.TanimAl(k.TasinmazSnapshotJson, k.CevaplarJson);
+                await SaltOkunurlariKoruAsync(db, k, tanim, cevaplar, cancellationToken);
                 var ekler = await EkSayilariAsync(db, kontrolId, cancellationToken);
                 var hatalar = KontrolFormDogrulayici.CevaplariDogrula(tanim, cevaplar, (kod, satir) => ekler.GetValueOrDefault((kod, satir)), zorunluKontrol: false);
                 if (hatalar.Count > 0) return Result.Failure(Error.Validation(string.Join(" ", hatalar)));
-
-                SaltOkunurlariKoru(tanim, cevaplar, KontrolCevaplari.FromJson(k.CevaplarJson));
 
                 k.CevaplarJson = cevaplar.ToJson();
                 k.KontrolEdenler = kontrolEdenler?.Trim();
@@ -490,11 +494,11 @@ namespace Jenga.DataAccess.Services.TBYS
                 if (k.KayitSurumu != istek.KayitSurumu) return Result.Failure(Error.Conflict(EszamanlilikMesaji));
 
                 var tanim = KontrolRaporu.TanimAl(k.TasinmazSnapshotJson, k.CevaplarJson);
+                await SaltOkunurlariKoruAsync(db, k, tanim, istek.Cevaplar, cancellationToken);
                 var ekler = await EkSayilariAsync(db, k.Id, cancellationToken);
                 var hatalar = KontrolFormDogrulayici.CevaplariDogrula(tanim, istek.Cevaplar, (kod, satir) => ekler.GetValueOrDefault((kod, satir)), zorunluKontrol: true);
                 if (string.IsNullOrWhiteSpace(istek.ImzalayanMakam)) hatalar.Insert(0, "'Raporu İmzalayan Makam' zorunludur.");
                 if (hatalar.Count > 0) return Result.Failure(Error.Validation(string.Join(" ", hatalar)));
-                SaltOkunurlariKoru(tanim, istek.Cevaplar, KontrolCevaplari.FromJson(k.CevaplarJson));
 
                 var plan = await db.TasinmazKontrolPlani_Table.FirstOrDefaultAsync(p => p.TasinmazId == k.TasinmazId, cancellationToken);
                 var varsayilanPeriyot = KontrolRaporu.PeriyotAl(k.TasinmazSnapshotJson);
@@ -769,23 +773,22 @@ namespace Jenga.DataAccess.Services.TBYS
             return ekler.GroupBy(e => (e.AlanKodu, e.SatirNo)).ToDictionary(g => g.Key, g => g.Count());
         }
 
-        private static async Task KiraBilgileriniDoldurAsync(ApplicationDbContext db, TasinmazKontrol kontrol, CancellationToken ct)
+        private static async Task<bool> KiraBilgileriniDoldurAsync(ApplicationDbContext db, int tasinmazId, KontrolCevaplari cevaplar, CancellationToken ct)
         {
-            var cevaplar = KontrolCevaplari.FromJson(kontrol.CevaplarJson);
             string[] alanlar = ["kira_bedel", "kira_kiraci_adi", "kira_baslangic", "kira_sozlesme_baslangic", "kira_bitis", "kira_odeme_duzeni"];
-            if (alanlar.All(kod => !string.IsNullOrWhiteSpace(cevaplar.Al(kod)))) return;
+            if (alanlar.All(kod => !string.IsNullOrWhiteSpace(cevaplar.Al(kod)))) return false;
             var bugun = DateTime.Today;
             var kira = await (from bag in db.SozlesmeTasinmaz_Table.AsNoTracking()
                               join soz in db.KiraSozlesme_Table.AsNoTracking() on bag.SozlesmeId equals soz.Id
                               join kiraci in db.Kiraci_Table.AsNoTracking() on soz.KiraciId equals kiraci.Id into kiracilar
                               from kiraci in kiracilar.DefaultIfEmpty()
-                              where bag.TasinmazId == kontrol.TasinmazId && soz.Aktif == true
+                              where bag.TasinmazId == tasinmazId && soz.Aktif == true
                               orderby (soz.SozBasTar == null || soz.SozBasTar <= bugun) descending,
                                   soz.SozBasTar descending, soz.Id descending
                               select new { soz.KiraBedeli, soz.IlkSozlesmeTar, soz.SozBasTar, soz.SozBitTar, soz.OdemeSekli,
                                   Adi = kiraci != null ? kiraci.Adi : null, Soyadi = kiraci != null ? kiraci.Soyadi : null })
                 .FirstOrDefaultAsync(ct);
-            if (kira is null) return;
+            if (kira is null) return false;
             void Doldur(string kod, string? deger)
             {
                 if (string.IsNullOrWhiteSpace(cevaplar.Al(kod)) && !string.IsNullOrWhiteSpace(deger)) cevaplar.Koy(kod, deger);
@@ -797,16 +800,28 @@ namespace Jenga.DataAccess.Services.TBYS
             Doldur("kira_sozlesme_baslangic", Tarih(kira.SozBasTar));
             Doldur("kira_bitis", Tarih(kira.SozBitTar));
             Doldur("kira_odeme_duzeni", kira.OdemeSekli);
-            kontrol.CevaplarJson = cevaplar.ToJson();
+            return true;
         }
 
-        /// <summary>Salt okunur taşınmaz alanları istemciden gelen değerle değil, kayıtlı snapshot değeriyle kalır.</summary>
-        private static void SaltOkunurlariKoru(KontrolFormTanimi tanim, KontrolCevaplari yeni, KontrolCevaplari mevcut)
+        private static async Task SaltOkunurlariKoruAsync(ApplicationDbContext db, TasinmazKontrol kontrol,
+            KontrolFormTanimi tanim, KontrolCevaplari yeni, CancellationToken ct)
         {
-            foreach (var alan in tanim.TumAlanlar().Where(a => a.VeriKaynagi == KontrolVeriKaynagiTipi.TasinmazSaltOkunur))
+            var mevcut = KontrolCevaplari.FromJson(kontrol.CevaplarJson);
+            var saltOkunurBolumler = tanim.Bolumler.Where(b => b.SaltOkunur).ToList();
+            if (saltOkunurBolumler.Count > 0)
+                await KiraBilgileriniDoldurAsync(db, kontrol.TasinmazId, mevcut, ct);
+
+            foreach (var alan in tanim.TumAlanlar().Where(a => a.VeriKaynagi == KontrolVeriKaynagiTipi.TasinmazSaltOkunur)
+                         .Concat(saltOkunurBolumler.SelectMany(b => b.Alanlar)))
             {
                 if (mevcut.Alanlar.TryGetValue(alan.Kod, out var v)) yeni.Alanlar[alan.Kod] = v;
                 else yeni.Alanlar.Remove(alan.Kod);
+            }
+
+            foreach (var grup in saltOkunurBolumler.SelectMany(b => b.Gruplar))
+            {
+                if (mevcut.Gruplar.TryGetValue(grup.Kod, out var satirlar)) yeni.Gruplar[grup.Kod] = satirlar;
+                else yeni.Gruplar.Remove(grup.Kod);
             }
         }
 

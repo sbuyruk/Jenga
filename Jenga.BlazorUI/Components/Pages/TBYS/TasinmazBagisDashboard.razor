@@ -1010,10 +1010,11 @@
                                     <thead class="table-light">
                                         <tr>
                                             <th class="text-center">Sıra No</th>
-                                            <th>Taşınmazın Cinsi</th>
+                                            <th>Bağışçı Adı</th>
                                             <th>Adresi</th>
                                             <th>İlçesi</th>
                                             <th>İli</th>
+                                            <th>Taşınmazın Cinsi</th>
                                             <th>Mülkiyet Şekli</th>
                                             <th class="text-end">Emlak Beyan Değeri (₺)</th>
                                             <th class="text-end">Tah. Ray. Değeri (₺)</th>
@@ -1026,10 +1027,11 @@
                                             var item = currentYearDonations[i];
                                             <tr>
                                                 <td class="text-center">@(i + 1)</td>
-                                                <td>@(item.Tasinmaz.Cinsi ?? "–")</td>
+                                                <td>@(string.IsNullOrWhiteSpace(item.BagisciAdi) ? "–" : item.BagisciAdi)</td>
                                                 <td>@(item.Tasinmaz.Adres ?? "–")</td>
                                                 <td>@(item.Tasinmaz.Ilcesi ?? "–")</td>
                                                 <td>@(item.Tasinmaz.Ili ?? "–")</td>
+                                                <td>@(item.Tasinmaz.Cinsi ?? "–")</td>
                                                 <td>@(item.Tasinmaz.MulkiyetSekli ?? "–")</td>
                                                 <td class="text-end font-monospace">@(item.Tasinmaz.EmlakBeyanDegeri?.ToString("N0", TrCulture) ?? "–")</td>
                                                 <td class="text-end font-monospace">@(item.Tasinmaz.TahminiRayicDegeri?.ToString("N0", TrCulture) ?? "–")</td>
@@ -1039,7 +1041,7 @@
                                         @if (currentYearDonations.Count == 0)
                                         {
                                             <tr>
-                                                <td colspan="9" class="text-center text-muted py-3">Bu yıl için bağış kaydı bulunamadı.</td>
+                                                <td colspan="10" class="text-center text-muted py-3">Bu yıl için bağış kaydı bulunamadı.</td>
                                             </tr>
                                         }
                                     </tbody>
@@ -1197,16 +1199,19 @@
             .Count();
     }
 
-    private List<(Bagis Bagis, Tasinmaz Tasinmaz)> GetCurrentYearDonations()
+    private List<(string? BagisciAdi, Tasinmaz Tasinmaz)> GetCurrentYearDonations()
     {
         var currentYear = DateTime.Today.Year;
         var tasinmazlarById = _tasinmazlar.ToDictionary(x => x.Id);
+        var bagisciAdlari = _bagiscilar.ToDictionary(b => b.Id,
+            b => b.Gizli == true ? "***" : $"{b.Adi?.Trim()} {b.Soyadi?.Trim()}".Trim());
 
         return _bagislar
             .Where(b => (b.BagisYili == currentYear || b.BagisTarihi?.Year == currentYear) &&
                         b.TasinmazId.HasValue && tasinmazlarById.ContainsKey(b.TasinmazId.Value))
             .OrderByDescending(b => b.BagisTarihi)
-            .Select(b => (Bagis: b, Tasinmaz: tasinmazlarById[b.TasinmazId!.Value]))
+            .Select(b => (BagisciAdi: b.BagisciId is int id ? bagisciAdlari.GetValueOrDefault(id) : null,
+                          Tasinmaz: tasinmazlarById[b.TasinmazId!.Value]))
             .ToList();
     }
 
