@@ -10,7 +10,11 @@
 <div class="container-fluid px-0">
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
         <div><h3>Mesai Giriş Yetkileri</h3><p class="text-muted mb-0">Bir kullanıcıya, seçtiğiniz personeller adına mesai girişi yapma yetkisi verin.</p></div>
-        <div class="d-flex gap-2"><a class="btn btn-outline-secondary" href="/ikys/overtime/hr">İK Dönem İşlemleri</a><button class="btn btn-outline-secondary" disabled="@_busy" @onclick="LoadAsync">Yenile</button></div>
+        <div class="d-flex flex-wrap gap-2">
+            <a class="btn btn-outline-secondary" href="/ikys/overtime/hr">İK Dönem İşlemleri</a>
+            <a class="btn btn-outline-secondary" href="/ikys/overtime/kilavuz?returnTo=delegations#ik"><i class="bi bi-book me-1" aria-hidden="true"></i>Kullanım Kılavuzu</a>
+            <button class="btn btn-outline-secondary" disabled="@_busy" @onclick="LoadAsync">Yenile</button>
+        </div>
     </div>
     @if (_busy && _data is null) { <JengaLoading Message="Yetki bilgileri yükleniyor…" /> }
     @if (_data is not null)

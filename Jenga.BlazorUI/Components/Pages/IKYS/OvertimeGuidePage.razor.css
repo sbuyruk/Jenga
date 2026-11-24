@@ -1,0 +1,83 @@
+.ot-guide {
+    max-width: 68rem;
+    margin: 0 auto;
+    padding-bottom: 2rem;
+}
+
+.ot-guide-flow {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+    gap: .75rem;
+    counter-reset: guide-step;
+    margin: 1.5rem 0;
+}
+
+.ot-guide-flow li {
+    counter-increment: guide-step;
+    display: flex;
+    align-items: center;
+    gap: .65rem;
+    padding: .85rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: .6rem;
+    background: var(--bs-tertiary-bg);
+}
+
+.ot-guide-flow li::before {
+    content: counter(guide-step);
+    font-weight: 700;
+}
+
+.ot-guide-section {
+    scroll-margin-top: 1rem;
+    margin-top: 1.25rem;
+    padding: clamp(1rem, 3vw, 1.65rem);
+    border: 1px solid var(--bs-border-color);
+    border-radius: .75rem;
+    background: var(--bs-body-bg);
+}
+
+.ot-guide-section h2 { font-size: 1.35rem; margin-bottom: 1rem; }
+.ot-guide-section h3 { font-size: 1.1rem; margin: 1.1rem 0 .65rem; }
+.ot-guide-section li { margin-bottom: .55rem; }
+.ot-guide-section li:last-child { margin-bottom: 0; }
+.ot-guide-section > :last-child { margin-bottom: 0; }
+
+.ot-guide-example {
+    padding: .75rem 1rem;
+    margin: 1rem 0;
+    border: 1px solid var(--bs-border-color);
+    border-radius: .6rem;
+    background: var(--bs-tertiary-bg);
+}
+
+.ot-guide-example summary { cursor: pointer; font-weight: 600; }
+.ot-guide-example p { margin: .75rem 0 0; }
+.ot-guide-sample { margin-top: .85rem; }
+.ot-guide-sample h4 { font-size: 1rem; }
+.ot-guide-fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+    gap: .65rem;
+    margin-bottom: 0;
+}
+
+.ot-guide-fields > div {
+    padding: .65rem .8rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: .4rem;
+    background: var(--bs-body-bg);
+}
+
+.ot-guide-fields dd { margin: .15rem 0 0; }
+
+.ot-guide-figure { margin: 1rem 0; }
+.ot-guide-figure a { display: block; }
+.ot-guide-figure img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border: 1px solid var(--bs-border-color);
+    border-radius: .5rem;
+}
+.ot-guide-figure figcaption { margin-top: .55rem; font-size: .9rem; }

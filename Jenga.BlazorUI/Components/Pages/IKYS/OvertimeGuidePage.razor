@@ -1,0 +1,214 @@
+@page "/ikys/overtime/kilavuz"
+
+<PageTitle>Fazla Mesai Kullanım Kılavuzu</PageTitle>
+
+<article class="ot-guide">
+    <header class="mb-4">
+        <a class="btn btn-sm btn-outline-secondary mb-3" href="@BackUrl"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i>@BackLabel</a>
+        <h1 class="h3">Fazla Mesai Kullanım Kılavuzu</h1>
+        <p>Mesai kaydı oluşturma, amir onayı, çizelge yazdırma ve İK dönem işlemleri.</p>
+        <nav class="d-flex flex-wrap gap-2" aria-label="Kılavuz bölümleri">
+            @foreach (var (id, label) in Topics)
+            {
+                <a class="btn btn-sm btn-outline-primary" href="@($"{GuideUrl}#{id}")">@label</a>
+            }
+        </nav>
+    </header>
+
+    <ol class="ot-guide-flow list-unstyled" aria-label="Fazla mesai işlem sırası">
+        <li><i class="bi bi-pencil-square" aria-hidden="true"></i>Mesaiyi gir</li>
+        <li><i class="bi bi-check2-circle" aria-hidden="true"></i>Amir onayı al</li>
+        <li><i class="bi bi-printer" aria-hidden="true"></i>Çizelgeyi yazdır ve imzalat</li>
+        <li><i class="bi bi-folder-check" aria-hidden="true"></i>İK dönem işlemlerini tamamla</li>
+    </ol>
+
+    <section id="personel" class="ot-guide-section">
+        <h2>Personel işlemleri</h2>
+        <h3>Mesai ekleme</h3>
+        <figure class="ot-guide-figure">
+            <a href="/images/overtime-guide/mesailerim.png" target="_blank" rel="noopener" aria-label="Mesailerim ekran görüntüsünü büyüt">
+                <img src="/images/overtime-guide/mesailerim.png" alt="Mesailerim ekranında, kayıt tablosunun sağ üstündeki Mesai Ekle düğmesi 1 numarayla işaretli." width="1180" height="450" loading="lazy" />
+            </a>
+            <figcaption><strong>1.</strong> Yeni kayıt için <strong>Mesai Ekle</strong>. Görseli büyütmek için üzerine tıklayın.</figcaption>
+        </figure>
+        <ol>
+            <li><strong>Mesailerim</strong> ekranında <strong>Mesai Ekle</strong> düğmesine basın.</li>
+            <li><strong>Başlangıç</strong> ve <strong>Bitiş</strong> tarihlerini ve saatlerini girin. Çalışma gece yarısını aşıyorsa bitiş için ertesi günü seçin. Bu durumda tek saat aralığı girin. Sistem kaydı takvim günlerine ayırır.</li>
+            <li>Aynı gün birden fazla kez çalıştıysanız <strong>Aynı güne başka saat aralığı ekle</strong> bağlantısını kullanın. Sabah ve akşam çalışmalarını ayrı aralıklar olarak girin. Aralıklar birbiriyle çakışamaz.</li>
+            <li><strong>Çalışma sebebi</strong> alanına yapılan işi yazın. Formdaki <strong>Girilen çalışma süresi</strong> brüt süredir.</li>
+            <li>Sonradan tamamlamak için <strong>Taslak Kaydet</strong>, incelemeye göndermek için <strong>Amire Gönder</strong> düğmesine basın.</li>
+        </ol>
+        <details class="ot-guide-example">
+            <summary>Mesai Ekle penceresinin ekran görüntüsünü göster</summary>
+            <figure class="ot-guide-figure">
+                <a href="/images/overtime-guide/mesai-ekle.png" target="_blank" rel="noopener" aria-label="Mesai Ekle ekran görüntüsünü büyüt">
+                    <img src="/images/overtime-guide/mesai-ekle.png" alt="Mesai Ekle penceresinde başlangıç ve bitiş saatleri 17:00 ve 20:00. Alt sağdaki Taslak Kaydet düğmesi 2, Amire Gönder düğmesi 3 numarayla işaretli." width="850" height="900" loading="lazy" />
+                </a>
+                <figcaption><strong>2.</strong> Sonradan tamamlamak için <strong>Taslak Kaydet</strong>. <strong>3.</strong> Onaya sunmak için <strong>Amire Gönder</strong>.</figcaption>
+            </figure>
+            <div class="ot-guide-sample">
+                <h4>Mesai Ekle · Örnek kayıt</h4>
+                <dl class="ot-guide-fields">
+                    <div><dt>Başlangıç</dt><dd>İş günü · 17:00</dd></div>
+                    <div><dt>Bitiş</dt><dd>Aynı gün · 20:00</dd></div>
+                    <div><dt>Çalışma sebebi</dt><dd>Yönetim Kurulu toplantısı hazırlığı</dd></div>
+                    <div><dt>Girilen çalışma süresi</dt><dd>3 saat</dd></div>
+                </dl>
+            </div>
+        </details>
+
+        <h3>Listeyi kullanma ve kaydı düzeltme</h3>
+        <ul>
+            <li><strong>Tarih Aralığı</strong> düğmesinden başlangıç ve bitiş tarihlerini seçin, ardından <strong>Listeyi Göster</strong> düğmesine basın. Liste varsayılan olarak geçen ayın ilk gününden gelecek ayın son gününe kadar olan kayıtları kapsar.</li>
+            <li>Tabloda arama yapabilir, <strong>Personel</strong>, <strong>Tarih</strong> ve <strong>Durum</strong> başlıklarına tıklayarak sıralayabilir, listeyi kopyalayabilir veya Excel’e aktarabilirsiniz. <strong>Yenile</strong> düğmesi güncel durumları getirir.</li>
+            <li><strong>Taslak</strong> kaydı <strong>Düzenle</strong> ile açın. Kayıt <strong>Amir onayında</strong> ise değişiklik için önce <strong>Geri Çek</strong> düğmesine basın.</li>
+            <li>Amir düzeltme istediyse kayıttaki gerekçeyi okuyun, <strong>Düzenle</strong> ile değişikliği yapın ve <strong>Amire Gönder</strong> düğmesine basın. Ret veya düzeltme kararının ayrıntıları için <strong>İşlemler</strong> penceresini açın.</li>
+            <li>Aynı kişi ve gün için mevcut kayıt varsa ek saatleri o kayda ekleyin. Kayıt onaylandıysa amirinizden düzeltme isteyin. Çizelgeye alınmış kayıt için İK’ya başvurun.</li>
+        </ul>
+    </section>
+
+    <section id="baskasi" class="ot-guide-section">
+        <h2>Başkası adına mesai</h2>
+        <ol>
+            <li>İK size yetki verdiğinde <strong>Başkası Adına Mesai</strong> sekmesini açıp <strong>Mesai Ekle</strong> düğmesine basın.</li>
+            <li>Ad, soyad veya sicil numarasıyla arayarak mesaisi girilecek personeli işaretleyin. Aynı faaliyet için birden fazla kişiyi seçebilirsiniz.</li>
+            <li>Tarihleri, saatleri ve çalışma sebebini bir kez girip taslak olarak kaydedin veya amir onayına gönderin. Her kişi için ayrı kayıt oluşur ve kayıt ilgili kişinin amirine gider. Seçilenlerden biri için kayıt oluşturulamazsa toplu girişin tamamı durur.</li>
+            <li>Mevcut bir kaydı <strong>Düzenle</strong> ile açtığınızda değişiklik yalnızca o kayda uygulanır. Girişi yapan kullanıcı <strong>İşlemler</strong> penceresindeki geçmişte görünür.</li>
+            <li>Çıktı için <strong>Dönemler ve Toplama Çağrıları</strong> bölümünde <strong>Çizelgesi görüntülenecek personel</strong> alanından kişiyi seçin. İlgili dönemde <strong>Çizelgeyi Görüntüle / Yazdır</strong> düğmesine basın.</li>
+        </ol>
+    </section>
+
+    <section id="amir" class="ot-guide-section">
+        <h2>Amir işlemleri</h2>
+        <figure class="ot-guide-figure">
+            <a href="/images/overtime-guide/amir.png" target="_blank" rel="noopener" aria-label="Amir İşlemleri ekran görüntüsünü büyüt">
+                <img src="/images/overtime-guide/amir.png" alt="Amir İşlemleri sekmesi 1, kayıt satırındaki Onayla, Reddet ve Düzeltme İste düğmeleri 2, 3 ve 4, dönem kartındaki Çizelgeyi Sabitle ve Aç düğmesi 5 numarayla işaretli." width="1240" height="860" loading="lazy" />
+            </a>
+            <figcaption><strong>1.</strong> Amir İşlemleri sekmesini açın. Kayda göre <strong>2.</strong> Onayla, <strong>3.</strong> Reddet veya <strong>4.</strong> Düzeltme İste seçeneğini kullanın. <strong>5.</strong> Birimin tüm kayıtları sonuçlanınca Çizelgeyi Sabitle ve Aç.</figcaption>
+        </figure>
+        <ol>
+            <li><strong>Amir İşlemleri</strong> sekmesini açın. İlgili tarih aralığını seçip personelin çalışma saatlerini ve çalışma sebebini inceleyin.</li>
+            <li>Uygun kayıtta <strong>Onayla</strong> düğmesine basın. Değişiklik gerekiyorsa <strong>Düzeltme İste</strong>, kabul etmiyorsanız <strong>Reddet</strong> düğmesini kullanın. Açılan pencerede gerekçeyi yazıp kararı kaydedin.</li>
+            <li>Onaylı bir kayıt çizelgeye alınmadan önce tekrar düzeltmeye gönderilebilir. Kendi mesai kaydınıza amir onayı veremezsiniz.</li>
+            <li>İK toplama çağrısı açtığında dönem kartında biriminizi ve son teslim tarihini kontrol edin. Personelin imzaya sunduğu çizelgeleri inceleyin. Taslak, onay veya düzeltme bekleyen kayıtlar sonuçlandıktan sonra <strong>Çizelgeyi Sabitle ve Aç</strong> düğmesine basın.</li>
+            <li>Sabitlemeden sonra dönem kartındaki <strong>Birim Çizelgesi</strong> bağlantısından belgeye yeniden erişebilirsiniz. İmzalı nüshayı İK’ya teslim edin. Sabitlenmiş kayıtlarda düzeltme gerekiyorsa İK birimi yeniden açabilir.</li>
+        </ol>
+    </section>
+
+    <section id="cikti" class="ot-guide-section">
+        <h2>Çizelge ve PDF alma</h2>
+        <ol>
+            <li><strong>Dönemler ve Toplama Çağrıları</strong> bölümünde ilgili dönemi bulun. Kendi belgeniz için <strong>Kendi Çizelgem</strong> bağlantısını açın. Dönem listede yoksa tarih filtresini ve İK’nın toplama çağrısı açıp açmadığını kontrol edin.</li>
+            <li>Çizelgede yalnızca onaylı mesailer yer alır. <strong>Brüt Süre</strong> girilen toplam çalışmayı, <strong>Net Süre</strong> dinlenme kesintisi sonrası günlük süreyi gösterir.</li>
+            <li><strong>Yazdır</strong> düğmesine basın. Kâğıt çıktı için yazıcıyı, dosya oluşturmak için <strong>PDF olarak kaydet</strong> seçeneğini kullanın.</li>
+            <li>Personel çizelgesini birim çizelgesi sabitlenmeden önce alıp direktörünüze imzalatabilirsiniz. Çizelgeyi hangi ekrandan açtığınıza ve personelin bağlı olduğu üstlere göre imza alanları değişebilir.</li>
+        </ol>
+    </section>
+
+    <section id="ik" class="ot-guide-section">
+        <h2>İK dönem işlemleri</h2>
+        <h3>İlk tanımlar ve yetkiler</h3>
+        <ol>
+            <li><strong>Unvanların haftalık çalışma süreleri</strong> bölümünde unvanı seçin, <strong>40 saat</strong> veya <strong>45 saat</strong> grubunu belirleyip kaydedin. Değişiklik önceden girilmiş kayıtların grubunu değiştirmez.</li>
+            <li><strong>Kadro harici personelin kurum bilgileri</strong> bölümünde personeli ve kurumunu seçin veya kurum adını girin. Kadro harici personel için kurum bilgisi gerekir.</li>
+            <li><strong>Mesai Giriş Yetkileri</strong> sayfasında önce girişi yapacak kullanıcıyı, ardından adına giriş yapılabilecek aktif personelleri seçin. <strong>Yetkileri Kaydet</strong> düğmesine basın. Mevcut bir yetkiyi <strong>Değiştir</strong> ile düzenleyebilir veya <strong>Yetkileri Kaldır</strong> ile kaldırabilirsiniz.</li>
+        </ol>
+
+        <h3>Toplama, imza ve arşiv</h3>
+        <figure class="ot-guide-figure">
+            <a href="/images/overtime-guide/ik.png" target="_blank" rel="noopener" aria-label="Toplama çağrısı ekran görüntüsünü büyüt">
+                <img src="/images/overtime-guide/ik.png" alt="İK Dönem İşlemleri ekranında Yeni dönem bölümü açık ve Toplama Çağrısı Aç düğmesi 1 numarayla işaretli." width="1180" height="614" loading="lazy" />
+            </a>
+            <figcaption><strong>1.</strong> Dönem bilgilerini doldurduktan sonra <strong>Toplama Çağrısı Aç</strong> düğmesine basın.</figcaption>
+        </figure>
+        <details class="ot-guide-example">
+            <summary>Teslim, imza ve kesinleştirme düğmelerini gör</summary>
+            <figure class="ot-guide-figure">
+                <a href="/images/overtime-guide/ik-imza.png" target="_blank" rel="noopener" aria-label="İK teslim ve imza ekran görüntüsünü büyüt">
+                    <img src="/images/overtime-guide/ik-imza.png" alt="İki örnek dönem kartında İmzalı Evrak Teslim Alındı 2, Hesaplama ve İmza Listesi 3, GMY İmzasına Hazırla 4, İmzalı Belgeyi Kaydet ve Kesinleştir 5 numarayla işaretli." width="1180" height="770" loading="lazy" />
+                </a>
+                <figcaption><strong>2.</strong> İmzalı Evrak Teslim Alındı. <strong>3.</strong> Hesaplama ve İmza Listesi. <strong>4.</strong> GMY İmzasına Hazırla. <strong>5.</strong> GMY imzasından sonra İmzalı Belgeyi Kaydet ve Kesinleştir. Düğmeler dönemin aşamasına göre değişir.</figcaption>
+            </figure>
+        </details>
+        <ol>
+            <li><strong>Yeni dönem / Birimlerden toplama çağrısı</strong> bölümünde dönem adını, başlangıç ve bitiş tarihlerini, son teslim gününü girin. Dönem pazartesi başlar, pazar biter ve en az bir tam hafta içerir. Başka bir dönemle çakışamaz. Son teslim, dönem bitişinden önce olamaz. <strong>Toplama Çağrısı Aç</strong> düğmesine basın.</li>
+            <li>Dönem kartından birim çizelgelerini takip edin. Islak imzalı evrak size ulaştığında, ilgili birim için <strong>İmzalı Evrak Teslim Alındı</strong> düğmesine basın. Onaylı mesaisi olmayan birimden boş çizelge istenmez. Bekleyen kayıtların sonuçlandırılması gerekir.</li>
+            <li><strong>Hesaplama ve İmza Listesi</strong> bağlantısıyla kadrolu personel sonuçlarını inceleyin. <strong>Hesaplama Ayrıntıları</strong> bölümünde haftalık döküm, <strong>Dönem İşlem Geçmişi</strong> bölümünde dönem işlemleri görünür.</li>
+            <li>Kadro harici çıktı için <strong>Kadro Harici Personel Çizelgesi</strong> bağlantısını açıp ilgili kurumu seçin. Her kurumun çıktısını ayrı alın. Kurum veya personel tipi eksikse İK bilgilerini tamamlayın.</li>
+            <li>Gerekli teslimler tamamlandığında <strong>GMY İmzasına Hazırla</strong> düğmesine basın. Onay listesini yeniden açıp <strong>Yazdır</strong> ile yatay çıktı alın ve GMY’ye ıslak imza için sunun.</li>
+            <li>İmzadan dönen belgeyi <strong>İmzalı Belgeyi Kaydet ve Kesinleştir</strong> penceresinde seçip kaydedin. PDF, JPEG veya PNG kabul edilir. Dosya sınırı 10 MB’dır. Belgeye daha sonra <strong>İmzalı Belge / Arşiv</strong> üzerinden ulaşabilirsiniz.</li>
+        </ol>
+        <details class="ot-guide-example">
+            <summary>Çizelge veya imza listesi düzeltmeye nasıl açılır?</summary>
+            <p>İmza bekleyen dönemde <strong>İmza Listesini Geri Al</strong> düğmesine basıp gerekçe yazın. Önceki imza listesi geçersiz olur ve dönem yeniden toplama aşamasına geçer. Birimde kayıt değişikliği gerekiyorsa <strong>Birimi Yeniden Aç</strong> işlemini de gerekçesiyle yapın. Kayıtlar yeniden düzeltme ve onay sürecine girer. Kesinleşmiş dönem değiştirilemez.</p>
+        </details>
+    </section>
+
+    <section id="hesap" class="ot-guide-section">
+        <h2>Saat ve hesaplama kuralları</h2>
+        <div class="table-responsive">
+            <table class="table table-bordered mb-3">
+                <thead><tr><th scope="col">Gün</th><th scope="col">Mesai girişi</th><th scope="col">Dinlenme kesintisi</th></tr></thead>
+                <tbody>
+                    <tr><th scope="row">Normal iş günü</th><td>08:00’e kadar biten veya 16:00 ve sonrasında başlayan aralıklar. Yeni form 17:00 ile açılır.</td><td>Uygulanmaz.</td></tr>
+                    <tr><th scope="row">Hafta sonu ve tam gün resmî tatil</th><td>Günün herhangi bir saatinde giriş yapılabilir.</td><td>Günlük çalışma toplamına göre uygulanır.</td></tr>
+                    <tr><th scope="row">Hafta içine denk gelen yarım gün resmî tatil</th><td>08:00’e kadar biten veya takvimdeki tatil başlangıç saatinde ve sonrasında başlayan aralıklar. Örneğin tatil 13:00’te başlıyorsa öğleden sonraki mesai 13:00’te başlayabilir.</td><td>Yalnızca tatil saatlerine denk gelen çalışma üzerinden uygulanır.</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <ul>
+            <li>Tatil veya hafta sonu çalışmasında toplam süre <strong>4 saate kadar 15 dakika</strong>, <strong>4 saati aşıp 7 saat 30 dakikayı geçmiyorsa 30 dakika</strong>, <strong>7 saat 30 dakikayı aşıyorsa 60 dakika</strong> dinlenme düşülür.</li>
+            <li>Hafta pazartesiden pazara hesaplanır. Normal haftalık çalışma tamamlanmış kabul edilir. Haftalık normal süreye net mesai eklenir ve toplamın <strong>45 saati aşan kısmı</strong> dikkate alınır. 40 saatlik grupta ilk 5 saat bu farkı kapatır.</li>
+            <li>Haftalık sonuçlar toplandıktan sonra kişinin <strong>dönem toplamı</strong> 30 dakikanın katına yukarı yuvarlanır. 7 saat 1 dakika, dönem sonucunda 7 saat 30 dakika olur. Yarım saatin katı olan süreler olduğu gibi kalır.</li>
+        </ul>
+        <details class="ot-guide-example">
+            <summary>Örnek hesaplamayı göster</summary>
+            <p>40 saatlik gruptaki bir personel, normal bir iş gününde 3 saat ve cumartesi 4 saat çalışırsa cumartesiden 15 dakika düşülür. Haftanın net ek çalışması 6 saat 45 dakikadır. Bunun 1 saat 45 dakikası 45 saatlik eşiğin üzerindedir. Dönemde başka sonuç yoksa onay listesinde 2 saat görünür.</p>
+        </details>
+    </section>
+
+    <section id="sorunlar" class="ot-guide-section">
+        <h2>Sık karşılaşılan durumlar</h2>
+        <details class="ot-guide-example">
+            <summary>Mesai girişinde çalışma grubu veya kurum uyarısı görüyorum</summary>
+            <p>İK’nın personelin aktif birim ve unvan bilgilerini, unvan için 40/45 saat çalışma grubunu ve kadro harici personelin kurumunu kontrol etmesini isteyin. Tanımlar tamamlandıktan sonra işlemi tekrar deneyin.</p>
+        </details>
+        <details class="ot-guide-example">
+            <summary>Başkası Adına Mesai veya Amir İşlemleri sekmesi görünmüyor</summary>
+            <p>Başkası adına giriş sekmesi yetki tanımlandığında, amir sekmesi ilgili yönetici ataması yapıldığında görünür. Yetki veya atama yeni değiştiyse sayfayı yenileyin. Sekme hâlâ yoksa İK ile görüşün.</p>
+        </details>
+        <details class="ot-guide-example">
+            <summary>Çizelgeyi sabitleyemiyorum veya liste önizleme olarak açılıyor</summary>
+            <p>Birim için onaylı kayıt bulunmalı, bekleyen kayıtlar sonuçlanmalıdır. Onay listesi önizlemedeyse önce gerekli imzalı birim teslimlerini kaydedin, sonra dönem kartından <strong>GMY İmzasına Hazırla</strong> işlemini yapın.</p>
+        </details>
+    </section>
+</article>
+
+@code {
+    [SupplyParameterFromQuery(Name = "returnTo")] public string? ReturnTo { get; set; }
+
+    private const string Route = "/ikys/overtime/kilavuz";
+    private string GuideUrl => ReturnTo switch
+    {
+        "hr" => Route + "?returnTo=hr",
+        "delegations" => Route + "?returnTo=delegations",
+        _ => Route
+    };
+    private string BackUrl => ReturnTo switch
+    {
+        "hr" => "/ikys/overtime/hr",
+        "delegations" => "/ikys/overtime/delegations",
+        _ => "/ikys/overtime"
+    };
+    private string BackLabel => ReturnTo switch
+    {
+        "hr" => "İK Dönem İşlemlerine dön",
+        "delegations" => "Mesai Giriş Yetkilerine dön",
+        _ => "Mesailerim ekranına dön"
+    };
+    private static readonly (string Id, string Label)[] Topics =
+    [
+        ("personel", "Personel"), ("baskasi", "Başkası adına mesai"), ("amir", "Amir"),
+        ("cikti", "Çizelge ve PDF"), ("ik", "İK"), ("hesap", "Hesaplama kuralları"), ("sorunlar", "Sık karşılaşılan durumlar")
+    ];
+}

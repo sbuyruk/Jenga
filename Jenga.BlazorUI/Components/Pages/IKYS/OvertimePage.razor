@@ -12,7 +12,10 @@
 <div class="overtime-page">
     <div class="d-flex flex-wrap justify-content-between gap-2 mb-3">
         <div><h3><i class="bi bi-clock-history me-2"></i>@(_scope == "hr" ? "Fazla Mesai" : "Mesailerim")</h3><span class="text-muted">@_workspace?.FullName</span></div>
-        <button class="btn btn-outline-secondary" disabled="@_busy" @onclick="LoadAsync">Yenile</button>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <a class="btn btn-outline-primary" href="/ikys/overtime/kilavuz"><i class="bi bi-book me-1" aria-hidden="true"></i>Kullanım Kılavuzu</a>
+            <button class="btn btn-outline-secondary" disabled="@_busy" @onclick="LoadAsync">Yenile</button>
+        </div>
     </div>
     @if (_workspace is null)
     {
