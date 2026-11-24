@@ -157,14 +157,32 @@ public sealed partial class LeaveRequestWorkflow(
     {
         var target = await ResolveTargetAsync(db, input, personnelOffice, cancellationToken);
         if (target.IsFailure) return target.Error;
+        if (input.Type is not { } type) return new List<LeaveRequestRow>();
 
-        var requests = PendingRequests(db, target.Value.Person.Id, input.Id)
+        var requests = PendingRequests(db, target.Value.Person.Id, type, input.Id)
             .OrderByDescending(x => x.BaslangicTarihi).ThenByDescending(x => x.Id);
         return await Rows(db, requests).ToListAsync(cancellationToken);
     }, cancellationToken);
 
-    private static IQueryable<IzinTalep> PendingRequests(ApplicationDbContext db, int personelId, int excludedId) =>
-        db.IzinTalep_Table.AsNoTracking().Where(x => x.PersonelId == personelId && x.Aktif == true &&
+    public Task<Result<string>> GetNursingAddressAsync(int personelId, bool personnelOffice, CancellationToken cancellationToken = default) =>
+        RunAsync<string>("GetNursingAddress", async db =>
+        {
+            var target = await ResolveTargetAsync(db, new LeaveRequestInput { PersonelId = personelId }, personnelOffice, cancellationToken);
+            if (target.IsFailure) return target.Error;
+
+            var contact = await (from info in db.IletisimBilgileri_Table.AsNoTracking()
+                                 join district in db.Ilce_Table on info.Ilcesi equals (int?)district.Id into districts
+                                 from district in districts.DefaultIfEmpty()
+                                 where info.PersonelId == target.Value.Person.Id
+                                 orderby info.Id
+                                 select new { info.Adres, info.Semt, District = district.IlceAdi })
+                .FirstOrDefaultAsync(info => info.Adres != null && info.Adres.Trim() != "", cancellationToken);
+            return contact is null ? "" : string.Join(" ", new[] { contact.Adres, contact.Semt, contact.District }
+                .Where(part => !string.IsNullOrWhiteSpace(part)).Select(part => part!.Trim()));
+        }, cancellationToken);
+
+    private static IQueryable<IzinTalep> PendingRequests(ApplicationDbContext db, int personelId, LeaveType type, int excludedId) =>
+        db.IzinTalep_Table.AsNoTracking().Where(x => x.PersonelId == personelId && x.IzinTipi == (int)type && x.Aktif == true &&
             x.Id != excludedId &&
             (x.OnayDurumu == Status.IslemBekliyor || x.OnayDurumu == Status.KontrolEdildi || x.OnayDurumu == Status.DilekceBekleniyor) &&
             !db.IzinHareket_Table.Any(movement => movement.IzinTalepId == x.Id));
@@ -191,17 +209,18 @@ public sealed partial class LeaveRequestWorkflow(
         var type = input.Type.GetValueOrDefault();
         var needsSubstitute = type is not (LeaveType.Personal or LeaveType.Nursing);
         var needsManager = type != LeaveType.Nursing;
+        if (input.Type.HasValue && await PendingRequests(db, person.Id, type, input.Id).AnyAsync(ct))
+            return Error.Conflict("Bu izin türünde işlemi devam eden bir talep bulunuyor.");
+
         var prepared = await PrepareAsync(db, person, input, existing?.OnayDurumu == Status.DilekceBekleniyor, ct);
         if (prepared.IsFailure) return prepared.Error;
+
+        if (string.IsNullOrWhiteSpace(input.Address))
+            return Error.Validation(type == LeaveType.Personal ? "Mazeretinizi giriniz." : "İzin adresinizi giriniz.");
 
         if ((needsSubstitute && !await IsValidSignerAsync(db, input.SubstituteId, existing?.VekilImza, true, ct)) ||
             (needsManager && !await IsValidSignerAsync(db, input.ManagerId, existing?.AmirImza, false, ct)))
             return Error.Validation(needsSubstitute ? "Geçerli bir vekil ve amir seçiniz." : "Geçerli bir amir seçiniz.");
-
-        if (await db.IzinTalep_Table.AnyAsync(x => x.PersonelId == person.Id && x.IzinTipi == (int)type &&
-            x.Id != input.Id && x.OnayDurumu != null && x.OnayDurumu != Status.KayitlaraIslendi &&
-            x.OnayDurumu != Status.Reddedildi && x.OnayDurumu != Status.IptalEdildi, ct))
-            return Error.Conflict("Bu izin türünde işlemi devam eden bir talep bulunuyor.");
 
         db.SetCurrentUser(await authorization.GetUserNameAsync(ct));
         var leave = prepared.Value;

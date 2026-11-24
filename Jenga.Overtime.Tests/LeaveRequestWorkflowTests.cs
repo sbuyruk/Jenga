@@ -1,6 +1,7 @@
 using Jenga.DataAccess.Data;
 using Jenga.DataAccess.Services.Common;
 using Jenga.DataAccess.Services.IKYS;
+using Jenga.Models.Common;
 using Jenga.Models.Enums;
 using Jenga.Models.IKYS;
 using Jenga.Utility.Logging;
@@ -119,7 +120,7 @@ public sealed class LeaveRequestWorkflowTests
 
         var employee = data.Service("employee");
         var pending = Success(await employee.ListPendingForEntryAsync(input, false));
-        Assert.Equal(new[] { 100, 101, 102, 109 }, pending.Select(x => x.Id).Order());
+        Assert.Equal(new[] { 100, 101, 102 }, pending.Select(x => x.Id).Order());
         Assert.True((await data.Service("stranger").ListPendingForEntryAsync(input, false)).IsFailure);
 
         var calculation = Success(await employee.CalculateAsync(input, false));
@@ -129,6 +130,7 @@ public sealed class LeaveRequestWorkflowTests
         Assert.Equal("8", calculation.AvailableAfterPending);
         Assert.Equal("-1", calculation.Remaining);
         Assert.NotNull(calculation.BalanceWarning);
+        Assert.Equal("General.Conflict", (await employee.SaveAsync(input, false)).Error.Code);
 
         var edit = Success(await employee.LoadFormAsync(100, false)).Input;
         Assert.DoesNotContain(Success(await employee.ListPendingForEntryAsync(edit, false)), row => row.Id == 100);
@@ -136,8 +138,71 @@ public sealed class LeaveRequestWorkflowTests
         Assert.Equal("9", editedCalculation.PendingDuration);
         Assert.Equal("10", editedCalculation.Remaining);
         Assert.Null(editedCalculation.BalanceWarning);
+
+        await using (var db = data.CreateDbContext())
+        {
+            var active = await db.IzinTalep_Table.Where(x => x.Id >= 100 && x.Id <= 102).ToListAsync();
+            foreach (var request in active) request.Aktif = false;
+            await db.SaveChangesAsync();
+        }
+        Assert.Empty(Success(await employee.ListPendingForEntryAsync(input, false)));
         await using var persisted = data.CreateDbContext();
         Assert.Empty(await persisted.IzinDonem_Table.ToListAsync());
+        Assert.True((await employee.SaveAsync(input, false)).IsSuccess);
+    }
+
+    [Fact]
+    public async Task PaidCalculationShowsOnlyPreviousPeriodsInTheCarryoverBalance()
+    {
+        await using var data = await TestData.CreateAsync();
+        await using (var db = data.CreateDbContext())
+        {
+            db.IzinDonem_Table.AddRange(
+                new IzinDonem { PersonelId = 2, IzinTipi = (int)LeaveType.Paid, BitisTarihi = new DateTime(2026, 2, 28), KalanIzin = "4" },
+                new IzinDonem { PersonelId = 2, IzinTipi = (int)LeaveType.Paid, BitisTarihi = new DateTime(2028, 2, 29), KalanIzin = "11" });
+            await db.SaveChangesAsync();
+        }
+        var calculation = Success(await data.Service("employee").CalculateAsync(Request(LeaveType.Paid, Friday, Friday), false));
+        Assert.Equal(4, calculation.PreviousPeriodBalance);
+    }
+
+    [Theory]
+    [InlineData(LeaveType.Paid, "İzin adresinizi giriniz.")]
+    [InlineData(LeaveType.Personal, "Mazeretinizi giriniz.")]
+    public async Task SavingLeaveRequiresAddressOrReason(LeaveType type, string message)
+    {
+        await using var data = await TestData.CreateAsync();
+        var input = Request(type, Friday, Friday);
+        input.StartTime = new TimeOnly(9, 0);
+        input.EndTime = new TimeOnly(10, 0);
+        input.Address = "  ";
+
+        var result = await data.Service("employee").SaveAsync(input, false);
+        Assert.Equal(message, result.Error.Message);
+        await using var persisted = data.CreateDbContext();
+        Assert.Empty(await persisted.IzinTalep_Table.ToListAsync());
+        Assert.Empty(await persisted.IzinDonem_Table.ToListAsync());
+    }
+
+    [Fact]
+    public async Task NursingAddressUsesSelectedPersonnelContactAndRespectsEntryPermissions()
+    {
+        await using var data = await TestData.CreateAsync();
+        await using (var db = data.CreateDbContext())
+        {
+            db.Il_Table.Add(new Il { Id = 6, IlAdi = "Ankara" });
+            db.Ilce_Table.Add(new Ilce { Id = 12, IlId = 6, IlAdi = "Ankara", IlceId = 99, IlceAdi = "Çankaya", Aktif = true });
+            db.IletisimBilgileri_Table.Add(new IletisimBilgileri { PersonelId = 2, Adres = " Atatürk Bulvarı ", Semt = "Kızılay", Ilcesi = 12 });
+            await db.SaveChangesAsync();
+        }
+
+        var employee = data.Service("employee");
+        var office = data.Service("office", manage: true);
+        Assert.Equal("Atatürk Bulvarı Kızılay Çankaya", Success(await employee.GetNursingAddressAsync(2, false)));
+        Assert.Equal("Atatürk Bulvarı Kızılay Çankaya", Success(await office.GetNursingAddressAsync(2, true)));
+        Assert.Equal("", Success(await office.GetNursingAddressAsync(3, true)));
+        Assert.True((await employee.GetNursingAddressAsync(3, false)).IsFailure);
+        Assert.True((await employee.GetNursingAddressAsync(3, true)).IsFailure);
     }
 
     [Fact]
@@ -495,7 +560,7 @@ public sealed class LeaveRequestWorkflowTests
                 {
                     typeof(Personel), typeof(IsBilgileri), typeof(BirimTanim), typeof(UnvanTanim), typeof(GorevTanim),
                     typeof(IletisimBilgileri), typeof(IzinTalep), typeof(IzinTanim), typeof(IzinDonem), typeof(IzinHareket),
-                    typeof(ResmiTatil), typeof(Aile)
+                    typeof(ResmiTatil), typeof(Aile), typeof(Il), typeof(Ilce)
                 };
                 foreach (var type in modelBuilder.Model.GetEntityTypes().Select(x => x.ClrType).Where(x => !keep.Contains(x)).ToList())
                     modelBuilder.Ignore(type);

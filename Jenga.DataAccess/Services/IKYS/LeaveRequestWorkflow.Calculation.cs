@@ -116,8 +116,7 @@ public sealed partial class LeaveRequestWorkflow
             end = end.AddHours(17);
         }
 
-        var pending = includePending ? await PendingRequests(db, person.Id, input.Id)
-            .Where(x => x.IzinTipi == (int)type)
+        var pending = includePending ? await PendingRequests(db, person.Id, type, input.Id)
             .Select(x => new PendingLeave(x.Sure, x.IzinDonemId, x.BaslangicTarihi)).ToListAsync(ct) : [];
 
         if (!HasBalance(type))
@@ -162,6 +161,8 @@ public sealed partial class LeaveRequestWorkflow
         var annualAllowance = PaidAllowance(person, serviceYears, job.VakifOncesiPrimGunSayisi);
         var periodBalance = annualAllowance - Days(period.KullanilanIzin);
         var available = periodBalance + periods.Where(x => x.Id != period.Id).Sum(x => Days(x.KalanIzin));
+        var previousPeriodBalance = periods.Where(x => x.Id != period.Id && x.BitisTarihi?.Date < periodStart)
+            .Sum(x => Days(x.KalanIzin));
         var reservedDays = pending.Sum(x => Math.Max(0, Days(x.Duration)));
         var availableDaysAfterPending = available - reservedDays;
         var afterRequest = availableDaysAfterPending - Days(duration);
@@ -171,7 +172,8 @@ public sealed partial class LeaveRequestWorkflow
         var paidCalculation = new LeaveCalculation(duration, unit, Number(available), Number(afterRequest),
             PendingDuration: reservedDays > 0 ? Number(reservedDays) : null,
             AvailableAfterPending: reservedDays > 0 ? Number(availableDaysAfterPending) : null,
-            BalanceWarning: afterRequest < 0 && reservedDays > 0 ? "Bekleyen talepler hesaba katıldığında yıllık izin bakiyesi yetersiz." : null);
+            BalanceWarning: afterRequest < 0 && reservedDays > 0 ? "Bekleyen talepler hesaba katıldığında yıllık izin bakiyesi yetersiz." : null,
+            PreviousPeriodBalance: previousPeriodBalance);
         return new PreparedLeave(start, end, paidCalculation, period, periodStart, periodEnd, Number(annualAllowance), Number(periodBalance));
     }
 

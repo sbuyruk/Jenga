@@ -58,6 +58,6 @@ public sealed record LeaveRequestDetail(
 
 public sealed record LeaveCalculation(string Duration, string Unit, string? Available, string? Remaining,
     string? PendingDuration = null, string? AvailableAfterPending = null,
-    string? CombinedDuration = null, string? BalanceWarning = null);
+    string? CombinedDuration = null, string? BalanceWarning = null, int? PreviousPeriodBalance = null);
 
 public sealed record LeaveWriteResult(int Id, bool NotificationFailed = false);

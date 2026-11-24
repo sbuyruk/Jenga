@@ -46,6 +46,7 @@ public sealed class LeaveRequestEntryPageTests
             {
                 Assert.Equal(canManage, office);
                 Assert.Equal(expectedId, ((LeaveRequestInput)args[0]!).PersonelId);
+                Assert.Equal(LeaveType.Paid, ((LeaveRequestInput)args[0]!).Type);
                 return Task.FromResult(Result.Success(new List<LeaveRequestRow>()));
             }
             scopes.Add(office);
@@ -53,7 +54,7 @@ public sealed class LeaveRequestEntryPageTests
             {
                 List<LeaveOption> people = office ? [new(17, "Talep Sahibi"), new(42, "Diğer Personel")] : [new(17, "Talep Sahibi")];
                 return Task.FromResult(Result.Success(new LeaveRequestForm(
-                    new LeaveRequestInput { PersonelId = office ? null : 17 }, people, [], [], [])));
+                    new LeaveRequestInput { PersonelId = office ? null : 17, Type = LeaveType.Paid }, people, [], [], [])));
             }
             if (name is nameof(ILeaveRequestWorkflow.CalculateAsync) or nameof(ILeaveRequestWorkflow.SaveAsync))
                 processedPeople.Add(((LeaveRequestInput)args[0]!).PersonelId);

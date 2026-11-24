@@ -35,22 +35,19 @@
         }
         else if (_form is { } form && !_saved)
         {
-            var pendingRequests = form.Input.Type is { } selectedType
-                ? _pendingRequests.Where(request => request.Type == (int)selectedType).ToList()
-                : [];
-
             @if (_pendingLoadFailed && form.Input.Type.HasValue)
             {
                 <div class="alert alert-warning mb-0" role="status">İşlemi devam eden izin talepleri getirilemedi.</div>
             }
-            @if (pendingRequests.Count > 0)
+            @if (_pendingRequests.Count > 0)
             {
                 <section class="leave-entry-existing" aria-labelledby="leave-existing-heading">
                     <h2 id="leave-existing-heading">
                         <i class="bi bi-clock-history" aria-hidden="true"></i> İşlemi devam eden izin talepleri
                     </h2>
+                    <p class="leave-entry-helper">Bu izin türündeki diğer talepler sonuçlanana kadar bu talep kaydedilemez.</p>
                     <ul class="leave-entry-existing-list">
-                        @foreach (var request in pendingRequests)
+                        @foreach (var request in _pendingRequests)
                         {
                             <li @key="request.Id">
                                 <strong>@request.TypeName</strong>
@@ -83,7 +80,7 @@
                                 </div>
                                 <div>
                                     <label class="form-label" for="leave-type">İzin türü</label>
-                                    <InputSelect id="leave-type" class="form-select" @bind-Value="form.Input.Type" @bind-Value:after="ClearCalculation"
+                                    <InputSelect id="leave-type" class="form-select" @bind-Value="form.Input.Type" @bind-Value:after="OnLeaveTypeChangedAsync"
                                                  disabled="@RequestId.HasValue">
                                         <option value="">İzin türü seçiniz</option>
                                         @foreach (var type in form.Types)
@@ -165,8 +162,13 @@
                                     }
                                     <div class="leave-entry-wide">
                                         <label class="form-label" for="leave-address">@(IsPersonal ? "Mazeret" : "İzin adresi")</label>
-                                        <InputTextArea id="leave-address" class="form-control" rows="2" @bind-Value="form.Input.Address" />
+                                        <InputTextArea id="leave-address" class="form-control" rows="2" required
+                                                       @bind-Value="form.Input.Address" />
                                     </div>
+                                    @if (IsPersonal)
+                                    {
+                                        <p class="leave-entry-helper leave-entry-wide">Kullanılmayan mazeret izni sonraki yıla devretmez.</p>
+                                    }
                                     @if (!IsPersonal)
                                     {
                                         <div class="leave-entry-wide">
@@ -194,6 +196,13 @@
                                         <div>
                                             <dt>@(calculation.AvailableAfterPending is null ? "Kullanılabilir bakiye" : "Güncel bakiye")</dt>
                                             <dd>@calculation.Available @calculation.Unit</dd>
+                                        </div>
+                                    }
+                                    @if (calculation.PreviousPeriodBalance is { } previousPeriodBalance)
+                                    {
+                                        <div>
+                                            <dt>Geçmiş dönemlerden kalan</dt>
+                                            <dd>@previousPeriodBalance gün</dd>
                                         </div>
                                     }
                                     @if (calculation.PendingDuration is { } pendingDuration)
@@ -229,7 +238,7 @@
                                 {
                                     <p class="leave-entry-balance-warning">@balanceWarning</p>
                                 }
-                                else if (calculation.PendingDuration is null && pendingRequests.Count > 0)
+                                else if (calculation.PendingDuration is null && _pendingRequests.Count > 0)
                                 {
                                     <p class="leave-entry-helper mt-2">Bu hesapta bekleyen taleplerden düşülecek süre bulunmuyor.</p>
                                 }
@@ -252,7 +261,7 @@
                                 <label class="form-check-label" for="leave-notify">E-posta bildirimi gönder</label>
                             </div>
                         }
-                        <button type="submit" class="btn btn-primary leave-entry-submit">
+                        <button type="submit" class="btn btn-primary leave-entry-submit" disabled="@(_pendingRequests.Count > 0)">
                             @(RequestId.HasValue ? "Değişiklikleri Kaydet" : "Talebi Gönder")
                             <i class="bi @(RequestId.HasValue ? "bi-check-lg" : "bi-arrow-right")" aria-hidden="true"></i>
                         </button>
@@ -265,6 +274,7 @@
 
 @code {
     private const string PersonalListUrl = "/ikys/leave-requests";
+    private const string NursingDescription = "Süt izni (günde 90 dakika).";
 
     [Parameter] public int? RequestId { get; set; }
     [SupplyParameterFromQuery(Name = "personelId")] public int? SelectedPersonelId { get; set; }
@@ -280,6 +290,7 @@
     private List<LeaveRequestRow> _pendingRequests = [];
     private bool _pendingLoadFailed;
     private int _pendingLoadVersion;
+    private string? _defaultNursingAddress;
     private string? _feedback;
     private string _feedbackClass = "alert-danger";
 
@@ -301,6 +312,7 @@
         _loading = true;
         _saved = false;
         _form = null;
+        _defaultNursingAddress = null;
         _pendingLoadVersion++;
         ClearCalculation();
         _canManage = await CurrentUser.HasPermissionAsync(ModuleName.IKYS, Operation.Manage);
@@ -323,8 +335,47 @@
 
     private Task OnPersonnelChangedAsync()
     {
+        if (_form is { } form)
+        {
+            form.Input.Address = null;
+            _defaultNursingAddress = null;
+        }
+        return RefreshEntryOptionsAsync();
+    }
+
+    private Task OnLeaveTypeChangedAsync()
+    {
+        if (!IsNursing && _form is { } form)
+        {
+            if (form.Input.Address == _defaultNursingAddress)
+                form.Input.Address = null;
+            if (form.Input.Description == NursingDescription)
+                form.Input.Description = null;
+            _defaultNursingAddress = null;
+        }
+        return RefreshEntryOptionsAsync();
+    }
+
+    private async Task RefreshEntryOptionsAsync()
+    {
         ClearCalculation();
-        return LoadPendingRequestsAsync();
+        await Task.WhenAll(LoadPendingRequestsAsync(), ApplyNursingDefaultsAsync());
+    }
+
+    private async Task ApplyNursingDefaultsAsync()
+    {
+        if (RequestId.HasValue || _form?.Input is not { Type: LeaveType.Nursing } input) return;
+
+        if (string.IsNullOrWhiteSpace(input.Description))
+            input.Description = NursingDescription;
+        if (input.PersonelId is not > 0 || !string.IsNullOrWhiteSpace(input.Address)) return;
+
+        var version = _pendingLoadVersion;
+        var result = await Workflow.GetNursingAddressAsync(input.PersonelId.Value, _canManage);
+        if (version != _pendingLoadVersion || !result.IsSuccess || !string.IsNullOrWhiteSpace(input.Address) ||
+            string.IsNullOrWhiteSpace(result.Value)) return;
+
+        input.Address = _defaultNursingAddress = result.Value;
     }
 
     private async Task LoadPendingRequestsAsync()
@@ -332,7 +383,7 @@
         var version = ++_pendingLoadVersion;
         _pendingRequests = [];
         _pendingLoadFailed = false;
-        if (_form?.Input is not { PersonelId: > 0 } input) return;
+        if (_form?.Input is not { PersonelId: > 0, Type: not null } input) return;
 
         var lookup = new LeaveRequestInput { Id = input.Id, PersonelId = input.PersonelId, Type = input.Type };
         var result = await Workflow.ListPendingForEntryAsync(lookup, _canManage);
