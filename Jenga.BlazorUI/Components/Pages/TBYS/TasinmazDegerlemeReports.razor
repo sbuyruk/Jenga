@@ -2,6 +2,7 @@
 @rendermode InteractiveServer
 
 @using Jenga.BlazorUI.Components.Common
+@using Jenga.BlazorUI.Components.TBYS
 @using Jenga.DataAccess.Services.TBYS
 @using Jenga.Models.TBYS
 @using System.Globalization
@@ -101,8 +102,5 @@ else
     }
 
     private async Task AcRaporAsync(int tasinmazId)
-        => await JS.InvokeVoidAsync("open", GetPortalUrl(tasinmazId), "_blank");
-
-    private static string GetPortalUrl(int tasinmazId)
-        => $"https://portal.tskgv.org.tr/YonetimBirimleri/InsaatVeEmlakYonetimiSubesi/TBYSBelgeleri/TasinmazRaporu{tasinmazId}.pdf";
+        => await JS.InvokeVoidAsync("open", TbysBelgeUrl.Olustur(TbysBelgeUrl.TasinmazRaporu, tasinmazId), "_blank");
 }

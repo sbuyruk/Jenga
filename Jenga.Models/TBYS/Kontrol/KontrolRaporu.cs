@@ -198,6 +198,16 @@ namespace Jenga.Models.TBYS.Kontrol
                     ?? Alan(irtibat, "kira_kiraci_adi", "Kiracı Adı", KontrolAlanTipi.KisaMetin);
                 irtibat.Alanlar.Remove(kiraci);
                 irtibat.Alanlar = [kiraci, .. irtibat.Alanlar.OrderBy(a => a.Sira)];
+                if (irtibat.Alanlar.FirstOrDefault(a => a.Kod == "kira_bedel") is { } kiraBedeli)
+                {
+                    kiraBedeli.Baslik = "Aylık Kira Bedeli";
+                    kiraBedeli.Birim = "TL";
+                    if (irtibat.Alanlar.FirstOrDefault(a => a.Kod == "kira_odeme_duzeni") is { } odeme)
+                    {
+                        irtibat.Alanlar.Remove(kiraBedeli);
+                        irtibat.Alanlar.Insert(irtibat.Alanlar.IndexOf(odeme) + 1, kiraBedeli);
+                    }
+                }
                 for (var i = 0; i < irtibat.Alanlar.Count; i++) irtibat.Alanlar[i].Sira = i + 1;
             }
             var bagimsizBolum = tanim.Bolumler.FirstOrDefault(b => b.Kod == "bb_ozellik");
@@ -419,11 +429,11 @@ namespace Jenga.Models.TBYS.Kontrol
             Alan(g17, "irtibat_sifat", "Sıfatı", KontrolAlanTipi.KisaMetin);
             Alan(g17, "irtibat_tel", "Telefon", KontrolAlanTipi.KisaMetin);
             Alan(b17, "kira_kiraci_adi", "Kiracı Adı", KontrolAlanTipi.KisaMetin);
-            Alan(b17, "kira_bedel", "Aylık Kira Bedeli (TL)", KontrolAlanTipi.OndalikSayi, birim: "TL");
             Alan(b17, "kira_baslangic", "İlk Sözleşme Tarihi", KontrolAlanTipi.Tarih);
             Alan(b17, "kira_sozlesme_baslangic", "Sözleşme Başlangıcı", KontrolAlanTipi.Tarih);
             Alan(b17, "kira_bitis", "Sözleşme Bitişi", KontrolAlanTipi.Tarih);
             Alan(b17, "kira_odeme_duzeni", "Ödeme Şekli", KontrolAlanTipi.KisaMetin);
+            Alan(b17, "kira_bedel", "Aylık Kira Bedeli", KontrolAlanTipi.OndalikSayi, birim: "TL");
 
             // 18. Bölgesel gelişmeler
             var b18 = Bolum("bolgesel", "Bölgesel Gelişmeler");

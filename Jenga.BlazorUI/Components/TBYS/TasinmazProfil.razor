@@ -354,6 +354,21 @@
             </div>
         }
 
+        <div class="detay-section">
+            <div class="detay-section-baslik">
+                <i class="bi bi-folder2-open me-2 text-primary" aria-hidden="true"></i>Belgeler
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                @foreach (var (baslik, dosyaOnEki) in BelgeTurleri)
+                {
+                    <a class="btn btn-sm btn-outline-primary" href="@TbysBelgeUrl.Olustur(dosyaOnEki, t.Id)"
+                       target="_blank" rel="noopener noreferrer">
+                        <i class="bi bi-file-earmark-pdf me-1" aria-hidden="true"></i>@baslik
+                    </a>
+                }
+            </div>
+        </div>
+
         <!-- ── BÖLÜM: AKTİF SÖZLEŞMELER ── -->
         @if (aktif.Count > 0)
         {
@@ -405,6 +420,15 @@
 }
 
 @code {
+    private static readonly (string Baslik, string DosyaOnEki)[] BelgeTurleri =
+    [
+        ("Emlak Beyanı (pdf)", "EmlakBeyanFormu"),
+        ("Yapı Kayıt Belgesi (pdf)", "YapiKayitBelgesi"),
+        ("Tapu Kayıt Belgesi (pdf)", "TapuKayitBelgesi"),
+        ("İmar Durumu Belgesi (pdf)", "ImarDurumu"),
+        ("Taşınmaz Raporu (pdf)", TbysBelgeUrl.TasinmazRaporu)
+    ];
+
     /// <summary>Gösterilecek taşınmazın ID'si. Zorunlu parametre.</summary>
     [Parameter, EditorRequired] public int TasinmazId { get; set; }
 

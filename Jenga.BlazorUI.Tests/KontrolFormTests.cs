@@ -25,9 +25,11 @@ public class KontrolFormTests
         {
             var eskiAlanlar = tanim.Bolumler.Single(b => b.Kod == "irtibat").Alanlar;
             eskiAlanlar.RemoveAll(a => a.Kod == "kira_sozlesme_baslangic" || (kiraciEksik && a.Kod == "kira_kiraci_adi"));
+            var eskiKiraBedeli = tanim.AlanBul("kira_bedel")!;
+            eskiKiraBedeli.Baslik = "Aylık Kira Bedeli (TL)";
+            eskiKiraBedeli.Sira = 1;
             if (!kiraciEksik)
             {
-                tanim.AlanBul("kira_bedel")!.Sira = 1;
                 tanim.AlanBul("kira_kiraci_adi")!.Sira = 2;
             }
             tanim.AlanBul("kira_baslangic")!.Baslik = "Kira Başlangıç Tarihi";
@@ -45,8 +47,11 @@ public class KontrolFormTests
         var bolum = Assert.Single(tanim.Bolumler, b => b.Kod == "irtibat");
         var html = System.Net.WebUtility.HtmlDecode(await RenderAsync(tanim, cevaplar, [bolum]));
         foreach (var baslik in new[] { "Kiracı Adı", "İlk Sözleşme Tarihi", "Sözleşme Başlangıcı", "Sözleşme Bitişi", "Ödeme Şekli" }) Assert.Contains(baslik, html);
-        Assert.Equal("kira_kiraci_adi", bolum.Alanlar.OrderBy(a => a.Sira).First().Kod);
-        Assert.True(html.IndexOf("Kiracı Adı", StringComparison.Ordinal) < html.IndexOf("Aylık Kira Bedeli", StringComparison.Ordinal));
+        Assert.Equal(
+            new[] { "kira_kiraci_adi", "kira_baslangic", "kira_sozlesme_baslangic", "kira_bitis", "kira_odeme_duzeni", "kira_bedel" },
+            bolum.Alanlar.OrderBy(a => a.Sira).Select(a => a.Kod));
+        Assert.True(html.IndexOf("Ödeme Şekli", StringComparison.Ordinal) < html.IndexOf("Aylık Kira Bedeli", StringComparison.Ordinal));
+        Assert.Matches("""<label[^>]*for="f_kira_bedel_x"[^>]*>\s*Aylık Kira Bedeli\s*<span[^>]*>\(TL\)</span>\s*</label>""", html);
         foreach (var alan in bolum.Alanlar)
             Assert.Matches($"<input[^>]*id=\"f_{alan.Kod}_x\"[^>]*disabled", html);
         foreach (var alan in Assert.Single(bolum.Gruplar).Alanlar)
