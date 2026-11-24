@@ -15,14 +15,21 @@ namespace Jenga.BlazorUI.Tests;
 public class KontrolFormTests
 {
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task KiraAlanlari_YeniVeEskiRaporlardaYeniBasliklarlaGosterilir(bool eskiRapor)
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task KiraAlanlari_YeniVeEskiRaporlardaIlkAlanKiraciVeSaltOkunur(bool eskiRapor, bool kiraciEksik)
     {
         var tanim = KontrolRaporu.Olustur();
         if (eskiRapor)
         {
-            tanim.Bolumler.Single(b => b.Kod == "irtibat").Alanlar.RemoveAll(a => a.Kod is "kira_kiraci_adi" or "kira_sozlesme_baslangic");
+            var eskiAlanlar = tanim.Bolumler.Single(b => b.Kod == "irtibat").Alanlar;
+            eskiAlanlar.RemoveAll(a => a.Kod == "kira_sozlesme_baslangic" || (kiraciEksik && a.Kod == "kira_kiraci_adi"));
+            if (!kiraciEksik)
+            {
+                tanim.AlanBul("kira_bedel")!.Sira = 1;
+                tanim.AlanBul("kira_kiraci_adi")!.Sira = 2;
+            }
             tanim.AlanBul("kira_baslangic")!.Baslik = "Kira Başlangıç Tarihi";
             tanim.AlanBul("kira_bitis")!.Baslik = "Kira Bitiş Tarihi";
             tanim.AlanBul("kira_odeme_duzeni")!.Baslik = "Ödeme Düzeni";
@@ -30,11 +37,24 @@ public class KontrolFormTests
             tanim = KontrolRaporu.TanimAl(snapshot);
         }
         var cevaplar = new KontrolCevaplari();
+        cevaplar.Koy("kira_kiraci_adi", "Ayşe Yılmaz");
         cevaplar.Koy("kira_baslangic", "2020-01-01");
         cevaplar.Koy("kira_bitis", "2027-01-01");
         cevaplar.Koy("kira_odeme_duzeni", "Aylık");
-        var html = System.Net.WebUtility.HtmlDecode(await RenderAsync(tanim, cevaplar, tanim.Bolumler.Where(b => b.Kod == "irtibat").ToList()));
+        cevaplar.GrupSatirlari("irtibat_kisiler").Add(new() { ["irtibat_ad"] = "Ali Demir", ["irtibat_tel"] = "03121234567" });
+        var bolum = Assert.Single(tanim.Bolumler, b => b.Kod == "irtibat");
+        var html = System.Net.WebUtility.HtmlDecode(await RenderAsync(tanim, cevaplar, [bolum]));
         foreach (var baslik in new[] { "Kiracı Adı", "İlk Sözleşme Tarihi", "Sözleşme Başlangıcı", "Sözleşme Bitişi", "Ödeme Şekli" }) Assert.Contains(baslik, html);
+        Assert.Equal("kira_kiraci_adi", bolum.Alanlar.OrderBy(a => a.Sira).First().Kod);
+        Assert.True(html.IndexOf("Kiracı Adı", StringComparison.Ordinal) < html.IndexOf("Aylık Kira Bedeli", StringComparison.Ordinal));
+        foreach (var alan in bolum.Alanlar)
+            Assert.Matches($"<input[^>]*id=\"f_{alan.Kod}_x\"[^>]*disabled", html);
+        foreach (var alan in Assert.Single(bolum.Gruplar).Alanlar)
+            Assert.Matches($"<input[^>]*id=\"f_{alan.Kod}_0\"[^>]*disabled", html);
+        Assert.DoesNotContain("Satır Ekle", html);
+        Assert.DoesNotContain("Satırı sil", html);
+        Assert.Contains("Ayşe Yılmaz", html);
+        Assert.Contains("Ali Demir", html);
         foreach (var eski in new[] { "Kira Başlangıç Tarihi", "Kira Bitiş Tarihi", "Ödeme Düzeni" }) Assert.DoesNotContain(eski, html);
         Assert.Contains("2020-01-01", html);
         Assert.Contains("2027-01-01", html);

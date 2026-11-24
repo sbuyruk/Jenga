@@ -27,6 +27,14 @@
     {
         <div class="sozlesme-kart-body">
 
+            @if (KiraciBilgileriniGoster)
+            {
+                <div class="d-flex flex-wrap gap-3 mb-3">
+                    <DetailField Label="Kiracı Adı" Value="@Sozlesme.KiraciAdi" />
+                    <DetailField Label="Kiracı Adresi" Value="@Sozlesme.KiraciAdresi" />
+                </div>
+            }
+
             <!-- Sözleşme Detayları -->
             <div class="detay-grid sozlesme-detay-grid">
                 <DetailField Label="İlk Sözleşme Tarihi" Value="@FormatTarih(Sozlesme.Sozlesme.IlkSozlesmeTar)" />
@@ -135,6 +143,7 @@
 
 @code {
     [Parameter, EditorRequired] public KiraSozlesmeDetayVM Sozlesme { get; set; } = null!;
+    [Parameter] public bool KiraciBilgileriniGoster { get; set; }
 
     private bool _acik = true;
 

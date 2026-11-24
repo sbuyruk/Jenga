@@ -82,6 +82,14 @@ public class KontrolPlanTests
             Assert.True(baslat.IsSuccess, baslat.IsFailure ? baslat.Error.Message : "");
             id = baslat.Value;
         }
+        await using (var db = factory.CreateDbContext())
+        {
+            var kontrol = await db.TasinmazKontrol_Table.SingleAsync(k => k.Id == id);
+            var mevcut = KontrolCevaplari.FromJson(kontrol.CevaplarJson);
+            mevcut.GrupSatirlari("irtibat_kisiler").Add(new() { ["irtibat_ad"] = "Kayıtlı kişi" });
+            kontrol.CevaplarJson = mevcut.ToJson();
+            await db.SaveChangesAsync();
+        }
         var sonuc = await servis.GetByIdAsync(id);
         Assert.True(sonuc.IsSuccess, sonuc.IsFailure ? sonuc.Error.Message : "");
         var cevaplar = KontrolCevaplari.FromJson(sonuc.Value.CevaplarJson);
@@ -92,9 +100,17 @@ public class KontrolPlanTests
         Assert.Equal(DateTime.Today.AddYears(1).ToString("yyyy-MM-dd"), cevaplar.Al("kira_bitis"));
         Assert.Equal("Aylık", cevaplar.Al("kira_odeme_duzeni"));
         cevaplar.Koy("kira_kiraci_adi", "Elle güncellenen isim");
+        cevaplar.Koy("kira_bedel", "geçersiz");
+        cevaplar.GrupSatirlari("irtibat_kisiler").Clear();
+        cevaplar.GrupSatirlari("irtibat_kisiler").Add(new() { ["irtibat_ad"] = "Elle eklenen kişi" });
         var kaydet = await servis.TaslakKaydetAsync(id, sonuc.Value.KayitSurumu, cevaplar, null, DateTime.Today);
         Assert.True(kaydet.IsSuccess, kaydet.IsFailure ? kaydet.Error.Message : "");
-        Assert.Equal("Elle güncellenen isim", KontrolCevaplari.FromJson((await servis.GetByIdAsync(id)).Value.CevaplarJson).Al("kira_kiraci_adi"));
+        await using var kayitDb = factory.CreateDbContext();
+        var kayit = await kayitDb.TasinmazKontrol_Table.SingleAsync(k => k.Id == id);
+        var kayitliCevaplar = KontrolCevaplari.FromJson(kayit.CevaplarJson);
+        Assert.Equal("Ayşe Yılmaz", kayitliCevaplar.Al("kira_kiraci_adi"));
+        Assert.Equal("12345.67", kayitliCevaplar.Al("kira_bedel"));
+        Assert.Equal("Kayıtlı kişi", Assert.Single(kayitliCevaplar.GrupSatirlari("irtibat_kisiler"))["irtibat_ad"]);
     }
 
     [Fact]

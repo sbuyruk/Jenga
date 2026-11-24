@@ -124,6 +124,17 @@ namespace Jenga.DataAccess.Services.TBYS
                     .OrderByDescending(s => s.SozBasTar)
                     .ToListAsync(cancellationToken);
 
+                var kiraciIds = sozlesmeler
+                    .Where(s => s.Aktif == true && s.KiraciId.HasValue)
+                    .Select(s => s.KiraciId!.Value)
+                    .Distinct()
+                    .ToList();
+
+                var kiracilar = await db.Kiraci_Table.AsNoTracking()
+                    .Where(k => kiraciIds.Contains(k.Id))
+                    .Select(k => new { k.Id, k.Adi, k.Soyadi, k.Adres })
+                    .ToDictionaryAsync(k => k.Id, cancellationToken);
+
                 // Her sözleşmenin diğer taşınmazlarını da getir
                 var tumSozlesmeTasinmazlar = await db.SozlesmeTasinmaz_Table.AsNoTracking()
                     .Where(st => st.SozlesmeId != null && sozlesmeIds.Contains(st.SozlesmeId.Value))
@@ -147,18 +158,26 @@ namespace Jenga.DataAccess.Services.TBYS
                 {
                     Tasinmaz = tasinmaz,
                     Bagisci = bagisci,
-                    Sozlesmeler = sozlesmeler.Select(s => new KiraSozlesmeDetayVM
+                    Sozlesmeler = sozlesmeler.Select(s =>
                     {
-                        Sozlesme = s,
-                        Tasinmazlar = tumSozlesmeTasinmazlar
-                            .Where(st => st.SozlesmeId == s.Id && st.TasinmazId.HasValue)
-                            .Select(st => sozlesmeTasinmazDetay.FirstOrDefault(t => t.Id == st.TasinmazId!.Value)!)
-                            .Where(t => t is not null)
-                            .ToList(),
-                        OdemePlanlari = odemePlanlari
-                            .Where(op => op.SozlesmeId == s.Id)
-                            .OrderBy(op => op.VadeBasTar)
-                            .ToList()
+                        var kiraci = s.Aktif == true && s.KiraciId is int kiraciId
+                            ? kiracilar.GetValueOrDefault(kiraciId)
+                            : null;
+                        return new KiraSozlesmeDetayVM
+                        {
+                            Sozlesme = s,
+                            KiraciAdi = kiraci is null ? null : $"{kiraci.Adi?.Trim()} {kiraci.Soyadi?.Trim()}".Trim(),
+                            KiraciAdresi = kiraci?.Adres,
+                            Tasinmazlar = tumSozlesmeTasinmazlar
+                                .Where(st => st.SozlesmeId == s.Id && st.TasinmazId.HasValue)
+                                .Select(st => sozlesmeTasinmazDetay.FirstOrDefault(t => t.Id == st.TasinmazId!.Value)!)
+                                .Where(t => t is not null)
+                                .ToList(),
+                            OdemePlanlari = odemePlanlari
+                                .Where(op => op.SozlesmeId == s.Id)
+                                .OrderBy(op => op.VadeBasTar)
+                                .ToList()
+                        };
                     }).ToList()
                 };
 

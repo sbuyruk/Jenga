@@ -12,6 +12,8 @@ namespace Jenga.Models.TBYS.Search
     public class KiraSozlesmeDetayVM
     {
         public KiraSozlesme Sozlesme { get; set; } = new();
+        public string? KiraciAdi { get; set; }
+        public string? KiraciAdresi { get; set; }
         public List<Tasinmaz> Tasinmazlar { get; set; } = [];
         public List<OdemePlani> OdemePlanlari { get; set; } = [];
     }
