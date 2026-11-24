@@ -2,11 +2,11 @@
 
 `/admin/switch-user` gerçek oturum sahibinin **Admin / Manage** izniyle kullanılabilir. Hedef kullanıcının izinleriyle test yapılır. Yönetici olmayan bir hesaba geçildiğinde de aynı adresten gerçek kullanıcıya dönülebilir.
 
-Projedeki `appsettings.json`, geçici test için 24 Kasım 2026 Türkiye saatiyle 23:59'a kadar etkinleştirilmiştir. Bu süre sonunda erişim otomatik kapanır. Canlı sunucuda ortam değişkenleri veya `appsettings.Production.json` aynı anahtarları tanımlıyorsa proje ayarını geçersiz kılabilir. Gerekirse bu değerleri dağıtım yapılandırmasına uygulayın:
+Projedeki `appsettings.json`, geçici test için 24 Ocak 2027 Türkiye saatiyle 23:59'a kadar etkinleştirilmiştir. Bu süre sonunda erişim otomatik kapanır. Canlı sunucuda ortam değişkenleri veya `appsettings.Production.json` aynı anahtarları tanımlıyorsa proje ayarını geçersiz kılabilir. Gerekirse bu değerleri dağıtım yapılandırmasına uygulayın:
 
 ```text
 Auth__Impersonation__Enabled=true
-Auth__Impersonation__ExpiresAtUtc=2026-11-24T20:59:00Z
+Auth__Impersonation__ExpiresAtUtc=2027-01-24T20:59:00Z
 ```
 
 Bitiş tarihi UTC biçimindedir (`yyyy-MM-ddTHH:mm:ssZ`). Eksik, hatalı veya geçmiş tarih erişimi açmaz. IIS ortam değişkeni değişikliklerinden sonra uygulama havuzunu yeniden başlatın. Sayfa, erişimin kapalı olması, geçersiz bitiş tarihi, süre dolması ve gerçek hesabın yönetici izninin eksik olması durumlarını ayrı mesajlarla gösterir.
