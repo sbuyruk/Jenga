@@ -1,0 +1,88 @@
+.leave-guide {
+    max-width: 68rem;
+    margin-inline: auto;
+    padding-bottom: 2rem;
+}
+
+.leave-guide > section,
+.guide-flow {
+    margin: 1.25rem 0 0;
+    padding: clamp(1rem, 3vw, 1.65rem);
+    border: 1px solid var(--bs-border-color);
+    border-radius: .75rem;
+    background: var(--bs-body-bg);
+    scroll-margin-top: 1rem;
+}
+
+.leave-guide h2 { margin-bottom: 1rem; font-size: 1.35rem; }
+.leave-guide h3 { margin: 1.1rem 0 .65rem; font-size: 1.1rem; }
+.leave-guide li + li { margin-top: .55rem; }
+.leave-guide section > :last-child { margin-bottom: 0; }
+
+.guide-flow {
+    background: var(--bs-tertiary-bg);
+    text-align: center;
+}
+
+.flow-step {
+    display: grid;
+    align-content: center;
+    gap: .2rem;
+    padding: .65rem 1rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: .55rem;
+    background: var(--bs-body-bg);
+}
+
+.guide-flow > .flow-step { max-width: 29rem; margin-inline: auto; }
+.flow-step small { color: var(--bs-secondary-color); }
+.flow-options {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .65rem;
+    max-width: 49rem;
+    margin-inline: auto;
+}
+
+.guide-flow > .flow-options,
+.flow-options + .flow-step { position: relative; margin-top: 1.55rem; }
+.guide-flow > .flow-options::before,
+.flow-options + .flow-step::before {
+    content: "";
+    position: absolute;
+    bottom: calc(100% + .45rem);
+    left: 50%;
+    width: .65rem;
+    height: .65rem;
+    border: solid var(--bs-secondary-color);
+    border-width: 0 2px 2px 0;
+    transform: translateX(-50%) rotate(45deg);
+}
+
+.leave-guide details {
+    margin-top: .85rem;
+    padding: .75rem 1rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: .6rem;
+    background: var(--bs-tertiary-bg);
+}
+
+.leave-guide summary { cursor: pointer; font-weight: 600; }
+.leave-guide details p { margin: .75rem 0 0; }
+.guide-screenshot { margin: 1rem 0; }
+.guide-screenshot a { display: block; width: fit-content; max-width: 100%; }
+.guide-screenshot img {
+    display: block;
+    max-width: 100%;
+    max-height: 36rem;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border: 1px solid var(--bs-border-color);
+    border-radius: .5rem;
+}
+.guide-screenshot figcaption { margin-top: .55rem; font-size: .9rem; }
+
+@media (max-width: 575.98px) {
+    .flow-options { grid-template-columns: 1fr; }
+}

@@ -1,0 +1,186 @@
+@page "/ikys/leave-request-entry/kilavuz"
+
+<PageTitle>İzin Talebi Kullanım Kılavuzu</PageTitle>
+
+<article class="leave-guide">
+    <header class="mb-4">
+        <a class="btn btn-sm btn-outline-secondary mb-3" href="/ikys/leave-request-entry">
+            <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>İzin Talep girişine dön
+        </a>
+        <h1 class="h3">İzin Talebi Kullanım Kılavuzu</h1>
+        <p>İzin talebinizi nasıl göndereceğinizi, hangi aşamada belge teslim edeceğinizi ve sonucu nereden takip edeceğinizi öğrenin.</p>
+        <nav class="d-flex flex-wrap gap-2" aria-label="Kılavuz bölümleri">
+            @foreach (var (id, label) in Topics)
+            {
+                <a class="btn btn-sm btn-outline-primary" href="@($"{GuideUrl}#{id}")">@label</a>
+            }
+        </nav>
+    </header>
+
+    <figure class="guide-flow" aria-labelledby="akis">
+        <figcaption id="akis" class="h5 mb-3">İzin talebi akış şeması</figcaption>
+        <div class="flow-step">
+            <small>Personel veya İKYS yetkilisi</small>
+            <strong>Yeni İzin Talebi</strong>
+            <span>İzin türünü seçin, formu doldurun ve süreyi hesaplayın.</span>
+        </div>
+        <div class="flow-options" role="group" aria-label="Talebin gönderilmesi">
+            <div class="flow-step"><strong>Normal talep</strong><span>Talebi Gönder → İşlem Bekliyor</span></div>
+            <div class="flow-step border-warning"><strong>Yıllık bakiye yetmiyorsa</strong><span>Mahsup Dilekçesi Oluştur → Dilekçe Bekleniyor. Dilekçeyi yazdırıp imzalatarak teslim edin.</span></div>
+        </div>
+        <div class="flow-step border-primary">
+            <small>İKYS yetkilisi</small>
+            <strong>Kontrol/Red → Kabul Et</strong>
+            <span>Talep Kontrol Edildi aşamasına geçer. Reddet seçilirse süreç Reddedildi durumunda biter.</span>
+        </div>
+        <div class="flow-options" role="group" aria-label="Kabul edilen talebin belge işlemleri">
+            <div class="flow-step"><strong>Süt izni dışındaki izinler</strong><span>Personel izin belgesini yazdırır, imzalatır ve Personel Kısmına teslim eder.</span></div>
+            <div class="flow-step"><strong>Süt izni</strong><span>Belge teslimi gerekmez. İKYS nihai karara geçebilir.</span></div>
+        </div>
+        <div class="flow-step border-primary">
+            <small>İKYS yetkilisi</small><strong>Kayıt/Red</strong>
+            <span>Gereken belgeyi teslim alın. Mahsup varsa hedef dönemi seçin.</span>
+        </div>
+        <div class="flow-options" role="group" aria-label="Nihai karar">
+            <div class="flow-step border-success"><strong>Onayla → Kayıtlara İşlendi</strong><span>İzin hareketi oluşur.</span></div>
+            <div class="flow-step border-danger"><strong>Reddet → Reddedildi</strong><span>Talep ret kararıyla kapanır.</span></div>
+        </div>
+    </figure>
+
+    <section id="giris">
+        <h2>Talep girişi</h2>
+        <ol>
+            <li>Kişisel sayfanızdaki <strong>İzin Taleplerim → Tümünü gör</strong> bağlantısını açın. <strong>Yeni İzin Talebi</strong> düğmesine basın. Liste boşsa <strong>Talep Oluştur</strong> da aynı formu açar.</li>
+            <li>Adınızı kontrol edin. <strong>İzin türü</strong> seçilince o türe ait alanlar açılır. Tarihleri ve gerekiyorsa saatleri girin. Vekil ve amir isteniyorsa listeden seçin. İzin adresinizi veya mazeretinizi yazın. Açıklama alanına ek bilgi girebilirsiniz.</li>
+            <li><strong>Süreyi Hesapla</strong> ile talep edilen süreyi ve varsa kalan bakiyeyi kontrol edin. Tarihi, saati veya izin türünü değiştirirseniz yeniden hesaplayın.</li>
+            <li><strong>Talebi Gönder</strong> düğmesine basın. Yeni talep <strong>İzin Taleplerim</strong> listesinde görünür.</li>
+        </ol>
+        @Screenshot("talep-girisi", "Yıllık izin formunda tarihler, vekil, amir, izin adresi, süre hesabı ve Talebi Gönder düğmesi.", "7–9 Aralık için 3 iş günü isteniyor. Kullanılabilir 12 günden 9 gün kalıyor.")
+        <details>
+            <summary>İKYS yetkilisi olarak personel adına nasıl talep açarım?</summary>
+            <p><strong>İzin Taleplerim → Personel Adına Talep</strong> yoluyla çalışan kadrolu veya kadro harici personeli seçip <strong>Talep Formunu Aç</strong> düğmesine basın. Yeni formdaki personel listesinden de seçim yapabilirsiniz. Göndermeden önce <strong>E-posta bildirimi gönder</strong> seçeneğini kontrol edin. Kişisel girişte bildirim açıktır.</p>
+        </details>
+    </section>
+
+    <section id="turler">
+        <h2>İzin türleri ve süre hesabı</h2>
+        <div class="table-responsive">
+            <table class="table table-bordered align-middle">
+                <thead><tr><th scope="col">İzin türü</th><th scope="col">Tarih ve süre</th><th scope="col">Formda tamamlanacak alanlar</th></tr></thead>
+                <tbody>
+                    <tr><th scope="row">Yıllık ücretli izin</th><td>Başlangıç ve bitiş tarihleri arasındaki iş günleri sayılır. Hafta sonları ve sistemdeki resmî tatiller çıkarılır.</td><td>Vekil, amir ve izin adresi</td></tr>
+                    <tr><th scope="row">Mazeret izni (saatlik)</th><td>Tek tarih, başlangıç ve bitiş saati. Öğle arası çıkarılır.</td><td>Amir ve mazeret</td></tr>
+                    <tr><th scope="row">Ücretsiz izin</th><td>Başlangıç ve bitiş dâhil takvim günü. Nihai onayda asker statüsü dışındaki personelin izin dönemi başlangıcı bu süre kadar ileri alınır.</td><td>Vekil, amir ve izin adresi</td></tr>
+                    <tr><th scope="row">Evlenme, doğum, babalık ve ölüm izinleri</th><td>Formda ilgili türü seçin. Her birinde başlangıç ve bitiş dâhil takvim günleri sayılır.</td><td>Vekil, amir ve izin adresi</td></tr>
+                    <tr><th scope="row">Süt izni</th><td>Başlangıç ve bitiş tarihleri ile günlük başlangıç saati. Günde 90 dakika uygulanır.</td><td>İzin adresi. Kayıtlı adres gelirse kontrol edin.</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <details>
+            <summary>Mazeret izninde hangi saatleri seçebilirim?</summary>
+            <p>08.00–17.00 arasında beş dakikalık aralıklarla seçim yapın. Sabah izni 12.00’de bitebilir, öğleden sonra izni 13.00’te başlayabilir. Saat aralığı öğle arasını kapsarsa 12.00–13.00 çıkarılır. Yeni mazeret dönemi 27 saatle açılır. Kullanılmayan süre sonraki yıla devretmez.</p>
+            @Screenshot("mazeret-saatleri", "Saatlik mazeret izninde başlangıç 11.30 ve bitiş 14.00 seçili.", "11.30–14.00 için bakiyeden 1 saat 30 dakika düşülür.")
+        </details>
+        <details>
+            <summary>Süt izninde tarih ve başlangıç saatini nasıl girerim?</summary>
+            <p>Aile kaydındaki en küçük çocuğun doğum tarihi ile ilk yaş günü arasında bir tarih aralığı seçin. Günlük başlangıç saati 08.00–15.30 arasında, öğle arası dışında ve beş dakikalık aralıkta olmalıdır. Bitiş saati 90 dakika sonrasıdır. Formdaki süre, seçtiğiniz aralığın gün sayısıdır.</p>
+            @Screenshot("sut-izni", "Süt izninde tarih aralığı ve günlük başlangıç saati alanları.", "Saat 14.00’te başlayan süt izni 15.30’da biter.")
+        </details>
+        <details>
+            <summary>Bakiyede bekleyen talepler nasıl gösterilir?</summary>
+            <p>Yıllık iznin kullanılabilir bakiyesine geçmiş dönemlerden kalan günler de dâhildir. Sistem tahmini kalanı hesaplarken aynı türdeki açık yıllık talepleri, mazeret izninde ise ilgili yılın açık saatlerini düşer. Bakiyesi izlenmeyen türlerde bekleyen süre ile yeni talebin toplamını gösterir.</p>
+        </details>
+    </section>
+
+    <section id="mahsup">
+        <h2>Yıllık izin bakiyesi yetmediğinde</h2>
+        <p>Tarihleri kısaltıp süreyi yeniden hesaplayabilir veya eksik günleri gelecek dönemden kullanmak için mahsup dilekçesi oluşturabilirsiniz. Örneğin <strong>3 gün</strong> izin istiyor ve <strong>1 gün</strong> bakiyeniz bulunuyorsa dilekçe <strong>2 gün</strong> için hazırlanır.</p>
+        <ol>
+            <li>Yeni yıllık izin formunda <strong>Süreyi Hesapla → Mahsup Dilekçesi Oluştur</strong> adımlarını izleyin. Talep <strong>Dilekçe Bekleniyor</strong> durumunda açılır.</li>
+            <li><strong>Mahsup Dilekçesini Yazdır → Yazdır</strong> ile A5 çıktıyı alın. Dilekçeyi imzalayın, amirinize imzalatın ve Personel Kısmına teslim edin. Bekleyen dilekçeyi değiştirirseniz <strong>Dilekçeyi Güncelle</strong> düğmesine basıp yeni çıktıyı alın.</li>
+            <li>İKYS dilekçeyi kabul edince durum <strong>Kontrol Edildi</strong> olur. Bu aşamada standart izin belgesini de yazdırıp imzalatarak teslim edin.</li>
+            <li>İKYS nihai onayda eksik günleri karşılayan gelecek dönemi seçer. İşlem tamamlanınca mahsup edilen dönemi ve gün sayısını talep detayında görebilirsiniz.</li>
+        </ol>
+        <details>
+            <summary>Örnek mahsup dilekçesini göster</summary>
+            @Screenshot("mahsup-dilekcesi", "Üç günlük talebin iki gününün gelecek dönemden karşılanması için düzenlenen örnek dilekçe.", "İmzadan önce dilekçedeki tarihleri ve mahsup edilecek gün sayısını kontrol edin.")
+        </details>
+    </section>
+
+    <section id="takip">
+        <h2>Talebi takip etme, düzenleme ve silme</h2>
+        @Screenshot("talep-listesi", "İzin Taleplerim listesinde izin grupları, durum filtresi ve satıra göre değişen işlem düğmeleri.", "Talebinizi tür, tarih veya durumla bulun. Yapabileceğiniz işlemler ilgili satırın sağında görünür.")
+        <ul>
+            <li><strong>İşlem Bekliyor</strong> veya <strong>Dilekçe Bekleniyor</strong> aşamasında yetkiniz varsa <strong>Düzenle</strong> ile tarihleri ve ayrıntıları değiştirebilirsiniz. Normal talepte <strong>Değişiklikleri Kaydet</strong>, mahsup dilekçesinde <strong>Dilekçeyi Güncelle</strong> düğmesine basın.</li>
+            <li>Personel veya izin türü yanlışsa bekleyen kaydın detayında <strong>Talebi Sil</strong> düğmesine basın. İkinci <strong>Talebi Sil</strong> seçimi kaydı kaldırır. İşlemden dönmek için <strong>Vazgeç</strong> seçeneğini kullanın. Ardından doğru bilgilerle yeni talep açabilirsiniz.</li>
+            <li><strong>Kontrol Edildi</strong> aşamasında belge gereken izinlerde <strong>Belge ve Detay</strong> görünür. <strong>Kayıtlara İşlendi</strong> işlemin tamamlandığını gösterir. <strong>Reddedildi</strong> veya <strong>İptal Edildi</strong> durumunda <strong>İncele</strong> ile kaydı ve varsa açıklamayı okuyun.</li>
+            <li>Detayda <strong>İzin dönemleri ve son izin hareketleri</strong> bölümünü açarak dönem hakkını, kullanılan ve kalan süreyi inceleyebilirsiniz.</li>
+        </ul>
+        <details>
+            <summary>Listeyi filtreleme ve Excel’e aktarma</summary>
+            <p><strong>Tümü</strong>, <strong>Genel İzinler</strong> veya <strong>Mazeret İzinleri</strong> grubunu seçin. <strong>Durum</strong> ve arama kutusuyla sonuçları daraltın. Sütun başlıklarına basarak sıralamayı, <strong>Satır Göster</strong> ile sayfa büyüklüğünü değiştirin. <strong>Kopyala</strong> görünen tabloyu panoya alır. <strong>Excel’e Aktar</strong> filtrelenmiş sonuçları dosyaya yazar.</p>
+        </details>
+    </section>
+
+    <section id="belge">
+        <h2>İzin belgesini yazdırma ve teslim</h2>
+        <ol>
+            <li>Talep <strong>Kontrol Edildi</strong> olduğunda <strong>İzin Taleplerim → Belge ve Detay → İzin Belgesini Yazdır</strong> yolunu izleyin. Süt izni belge teslimi olmadan İKYS onayına geçer.</li>
+            <li>Belgede adı, izin türünü, tarihleri ve süreyi kontrol edin. <strong>Yazdır</strong> düğmesiyle A5 dikey çıktı alın. <strong>Talebe Dön</strong> düğmesi kaydı açar.</li>
+            <li>Genel izin belgesinde personel, vekil ve amir imzalarını tamamlayın. Saatlik mazeret belgesini imzalayıp yetkili amirinize onaylatın. İmzalı belgeyi Personel Kısmına teslim edin.</li>
+            <li><strong>Kayıtlara İşlendi</strong> durumunda aynı menüden yeniden çıktı alabilirsiniz. Saatlik mazeret belgesinde o işleme ait bakiye gösterilir.</li>
+        </ol>
+        <details>
+            <summary>Genel izin ve saatlik mazeret belgesi örneklerini göster</summary>
+            @Screenshot("belge-ornekleri", "Genel personel izin belgesi ve saatlik mazeret belgesinin üst bölümleri yan yana.", "Genel belgede izin dönemi, saatlik mazeret belgesinde izin saati ve bakiye bilgileri bulunur.")
+        </details>
+    </section>
+
+    <section id="ikys">
+        <h2>İKYS kontrolü ve nihai karar</h2>
+        <p><strong>Bekleyen İşlemler → İzin Talepleri</strong> yolunu açın. Liste çalışan personelin genel izinleriyle açılır. Saatlik talepler için <strong>Mazeret İzinleri</strong> veya <strong>Tümü</strong> seçin.</p>
+        <h3>İlk kontrol</h3>
+        <p>Bekleyen kayıtta <strong>Kontrol/Red</strong> düğmesine basın. Tarihleri, süreyi, imzacıları, dönem ve hareket bilgilerini inceleyin. Mahsup talebinde teslim edilen dilekçeyi de kontrol edin. Gerekirse <strong>Karar açıklaması</strong> yazın. <strong>Kabul Et</strong> talebi belge aşamasına geçirir. <strong>Reddet</strong> talebi kapatır. <strong>Kapat</strong> ile karar vermeden listeye dönebilirsiniz.</p>
+        <h3>Nihai karar</h3>
+        <p><strong>Kontrol Edildi</strong> satırında <strong>Kayıt/Red</strong> düğmesine basın. Belgeyi teslim aldıysanız <strong>İmzalı izin belgesi teslim alındı.</strong> kutusunu işaretleyin. Süt izninde bu adım atlanır. Mahsupta ayrıca <strong>Mahsup edilecek izin dönemi</strong> alanından yeterli bakiyesi olan dönemi seçin.</p>
+        @Screenshot("nihai-onay", "Nihai karar ekranında mahsup dönemi seçilmiş ve imzalı belgenin teslim alındığı işaretlenmiş.", "Hedef dönemde “onayda oluşturulacak” yazıyorsa sistem dönemi onay sırasında açar.")
+        <p><strong>Onayla</strong> ile izin hareketi oluşur ve durum <strong>Kayıtlara İşlendi</strong> olur. Yıllık ve mazeret izinlerinde bakiye güncellenir. Uygun bulmadığınız talep için bu aşamada da <strong>Reddet</strong> seçilebilir.</p>
+    </section>
+
+    <section id="sorunlar">
+        <h2>Sık karşılaşılan durumlar</h2>
+        <details>
+            <summary>Talebi Gönder düğmesi neden kapalı?</summary>
+            <p>Formun üstündeki <strong>İşlemi devam eden izin talepleri</strong> bölümüne bakın. Aynı personelin aynı türde başka bir açık talebi varsa sonuçlanmasını bekleyin. Yanlış açılmış bir kayıt hâlâ düzenlenebiliyorsa onu düzeltebilir veya silebilirsiniz.</p>
+        </details>
+        <details>
+            <summary>İzin belgesini yazdırma düğmesini göremiyorum</summary>
+            <p><strong>İşlem Bekliyor</strong> durumunda İKYS’nin ilk kontrolünü bekleyin. Mahsupta önce dilekçeyi yazdırın. <strong>Kontrol Edildi</strong> durumunda standart veya saatlik mazeret belgesi açılır. Süt izninin durumunu <strong>İncele</strong> ile takip edin.</p>
+        </details>
+        <details>
+            <summary>Mahsup dönemi seçilemiyor veya bakiye değişmiş görünüyor</summary>
+            <p>İKYS talep detayını yenileyip eksik gün sayısını kontrol eder. Eksik günleri karşılayan bir gelecek dönem bulunması gerekir. Bakiye bekleyen dilekçeyi karşılamaya başladıysa dilekçeyi silip normal yıllık izin talebi oluşturabilirsiniz.</p>
+        </details>
+        <details>
+            <summary>Talebi gönderdikten sonra e-posta uyarısı aldım</summary>
+            <p><strong>İzin Taleplerim</strong> listesini açıp kaydı ve durumunu kontrol edin. Talep listede görünüyorsa süreci o kayıt üzerinden takip edin.</p>
+        </details>
+    </section>
+</article>
+
+@code {
+    private const string GuideUrl = "/ikys/leave-request-entry/kilavuz";
+    private static readonly (string Id, string Label)[] Topics =
+    [
+        ("giris", "Talep girişi"), ("turler", "İzin türleri"), ("mahsup", "Yıllık izin mahsubu"),
+        ("takip", "Talep takibi"), ("belge", "Belge ve imza"), ("ikys", "İKYS işlemleri"),
+        ("sorunlar", "Sık karşılaşılan durumlar")
+    ];
+
+    private static RenderFragment Screenshot(string name, string alt, string caption) => @<figure class="guide-screenshot">
+        <a href="@($"/images/leave-guide/{name}.png")" target="_blank" rel="noopener" title="Görseli büyüt (yeni sekme)">
+            <img src="@($"/images/leave-guide/{name}.png")" alt="@alt" loading="lazy" />
+        </a>
+        <figcaption>@caption</figcaption>
+    </figure>;
+}
