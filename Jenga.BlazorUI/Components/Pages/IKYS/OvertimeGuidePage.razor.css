@@ -5,27 +5,64 @@
 }
 
 .ot-guide-flow {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
-    gap: .75rem;
-    counter-reset: guide-step;
     margin: 1.5rem 0;
-}
-
-.ot-guide-flow li {
-    counter-increment: guide-step;
-    display: flex;
-    align-items: center;
-    gap: .65rem;
-    padding: .85rem;
+    padding: clamp(1rem, 3vw, 1.65rem);
     border: 1px solid var(--bs-border-color);
-    border-radius: .6rem;
+    border-radius: .75rem;
     background: var(--bs-tertiary-bg);
+    text-align: center;
 }
 
-.ot-guide-flow li::before {
-    content: counter(guide-step);
-    font-weight: 700;
+.ot-flow-node {
+    display: grid;
+    gap: .2rem;
+    max-width: 27rem;
+    margin: 0 auto;
+    padding: .65rem .85rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: .55rem;
+    background: var(--bs-body-bg);
+}
+
+.ot-flow-role { color: var(--bs-secondary-color); font-size: .8rem; }
+.ot-flow-arrow { display: block; color: var(--bs-secondary-color); font-size: 1.2rem; line-height: 1.35; }
+.ot-flow-decision { border-color: var(--bs-primary); }
+.ot-flow-approved { border-color: var(--bs-success); }
+.ot-flow-correction { border-color: var(--bs-warning); }
+.ot-flow-rejected { border-color: var(--bs-danger); }
+.ot-flow-branches {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: .65rem;
+    max-width: 49rem;
+    margin: .55rem auto 0;
+}
+
+.ot-flow-branches::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 16.67%;
+    right: 16.67%;
+    border-top: 1px solid var(--bs-secondary-color);
+}
+
+.ot-flow-decision::after {
+    content: "";
+    position: absolute;
+    height: .55rem;
+    inset: 100% auto auto 50%;
+    border-left: 1px solid var(--bs-secondary-color);
+}
+
+.ot-flow-decision { position: relative; }
+.ot-flow-continuation > p { color: var(--bs-secondary-color); }
+
+@media (max-width: 575.98px) {
+    .ot-flow-branches { grid-template-columns: 1fr; }
+    .ot-flow-branches::before, .ot-flow-decision::after, .ot-flow-branch > .ot-flow-arrow { display: none; }
+    .ot-flow-branch:has(.ot-flow-approved) { order: 1; }
 }
 
 .ot-guide-section {

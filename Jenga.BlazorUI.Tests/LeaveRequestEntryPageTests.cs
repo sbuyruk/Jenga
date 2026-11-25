@@ -1,3 +1,4 @@
+using System.Net;
 using System.Reflection;
 using Jenga.BlazorUI.Components.Pages.IKYS;
 using Jenga.BlazorUI.Services.Common;
@@ -7,6 +8,11 @@ using Jenga.Models.Enums;
 using Jenga.Models.IKYS;
 using Jenga.Utility.Results;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.HtmlRendering.Infrastructure;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.JSInterop;
+using Status = Jenga.Models.IKYS.IzinTalep.OnayDurumuTipi;
 using Xunit;
 
 namespace Jenga.BlazorUI.Tests;
@@ -111,13 +117,17 @@ public sealed class LeaveRequestEntryPageTests
         pageType.GetProperty("CurrentUser", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(page,
             Stub<ICurrentUserService>((_, args) => Task.FromResult((Operation)args[1]! != Operation.Manage || office)));
         var detailCalls = new List<int>();
+        var filters = new List<LeaveListFilter>();
         var detail = new LeaveRequestDetail(new LeaveRequestRow(71, "Personel", "Yıllık izin", 1, null, null, "2", "Gün",
             IzinTalep.OnayDurumuTipi.KontrolEdildi), null, null, null, null, [], [], "/izin-belgesi");
         pageType.GetProperty("Workflow", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(page,
             Stub<ILeaveRequestWorkflow>((name, args) =>
             {
                 if (name == nameof(ILeaveRequestWorkflow.ListAsync))
+                {
+                    filters.Add((LeaveListFilter)args[1]!);
                     return Task.FromResult(Result.Success(new LeaveRequestList([], 0)));
+                }
                 Assert.Equal(nameof(ILeaveRequestWorkflow.DetailAsync), name);
                 Assert.Equal(office, args[1]);
                 detailCalls.Add((int)args[0]!);
@@ -129,7 +139,117 @@ public sealed class LeaveRequestEntryPageTests
 
         Assert.Equal(71, Assert.Single(detailCalls));
         Assert.Equal(canViewRequest ? detail : null, pageType.GetField("_detail", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(page));
+        await (Task)pageType.GetMethod("SetGroupAsync", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(page, [LeaveListFilter.Personal])!;
+        await (Task)pageType.GetMethod("ClearFiltersAsync", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(page, null)!;
+        var expectedDefault = office ? LeaveListFilter.General : LeaveListFilter.All;
+        Assert.Equal(new[] { expectedDefault, LeaveListFilter.Personal, expectedDefault }, filters);
     }
+
+    [Theory]
+    [InlineData(true, Status.IslemBekliyor, "Kontrol/Red", "Kabul Et")]
+    [InlineData(true, Status.DilekceBekleniyor, "Kontrol/Red", "Kabul Et")]
+    [InlineData(true, Status.KontrolEdildi, "Kayıt/Red", "Onayla")]
+    [InlineData(true, Status.KayitlaraIslendi, "Belge ve Detay", null)]
+    [InlineData(true, Status.Reddedildi, "İncele", null)]
+    [InlineData(true, Status.IptalEdildi, "İncele", null)]
+    [InlineData(false, Status.KontrolEdildi, "Belge ve Detay", null)]
+    public async Task SelectedRowOpensTheDecisionForItsScopeAndStatus(bool office, Status status, string action, string? decision)
+    {
+        var row = new LeaveRequestRow(71, "Personel", "Yıllık izin", 1, null, null, "2", "Gün", status);
+        var start = new DateTime(2026, 1, 1);
+        var period = new IzinDonem { Id = 1, IzinTipi = (int)LeaveType.Paid, BaslangicTarihi = start, BitisTarihi = start.AddYears(1).AddDays(-1) };
+        var next = start.AddYears(1);
+        var detail = new LeaveRequestDetail(row, "Ankara", "Mevcut açıklama", null, null, [period],
+            [new LeaveMovementRow(1, "Yıllık izin", (int)LeaveType.Paid, next, next, "1", "Gün")], null,
+            DecisionPeriod: decision is null ? null : period);
+        var services = new ServiceCollection().AddLogging();
+        services.AddSingleton<NavigationManager>(new TestNavigation());
+        services.AddSingleton(Stub<ICurrentUserService>((_, _) => Task.FromResult(true)));
+        services.AddSingleton(Stub<IJSRuntime>((method, _) => throw new InvalidOperationException(method)));
+        services.AddSingleton(Stub<ILeaveRequestWorkflow>((method, args) => method switch
+        {
+            nameof(ILeaveRequestWorkflow.ListAsync) => Task.FromResult(Result.Success(new LeaveRequestList([row], 1))),
+            nameof(ILeaveRequestWorkflow.DetailAsync) when Equals(args[0], row.Id) && Equals(args[1], office) && Equals(args[3], office)
+                => Task.FromResult(Result.Success(detail)),
+            _ => throw new InvalidOperationException(method)
+        }));
+        await using var provider = services.BuildServiceProvider();
+        await using var renderer = new PageRenderer(provider, provider.GetRequiredService<ILoggerFactory>());
+        var html = await renderer.Dispatcher.InvokeAsync(async () =>
+        {
+            var root = renderer.BeginRenderingComponent(typeof(SelectedRowPage), ParameterView.FromDictionary(
+                new Dictionary<string, object?> { [nameof(LeaveRequestsPage.Scope)] = office ? "manage" : null }));
+            await root.QuiescenceTask;
+            return WebUtility.HtmlDecode(root.ToHtmlString());
+        });
+
+        Assert.Contains(action, html);
+        Assert.Contains("Ankara", html);
+        Assert.Equal(decision is not null, html.Contains("<dialog"));
+        Assert.Equal(decision is not null, html.Contains("Yeni izin dönemi"));
+        Assert.Equal(decision is not null, html.Contains("Güncel Dönemin İzin Hareketleri"));
+        Assert.Equal(decision == "Kabul Et", html.Contains(">Kabul Et</button>"));
+        Assert.Equal(decision == "Onayla", html.Contains(">Onayla</button>"));
+        Assert.Equal(decision is not null, html.Contains(">Reddet</button>"));
+        if (decision is not null) Assert.Contains("Mevcut açıklama</textarea>", html);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task DecisionClosesAndRefreshesOnSuccessAndKeepsTheNoteOnFailure(bool success)
+    {
+        var page = new LeaveRequestsPage();
+        var pageType = typeof(LeaveRequestsPage);
+        const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
+        var row = new LeaveRequestRow(71, "Personel", "Yıllık izin", 1, null, null, "2", "Gün", Status.IslemBekliyor);
+        var detail = new LeaveRequestDetail(row, null, "Önceki açıklama", null, null, [], [], null);
+        pageType.GetProperty(nameof(LeaveRequestsPage.Scope))!.SetValue(page, "manage");
+        var refreshCount = 0;
+        pageType.GetProperty("Workflow", flags)!.SetValue(page, Stub<ILeaveRequestWorkflow>((method, args) =>
+        {
+            if (method == nameof(ILeaveRequestWorkflow.DetailAsync)) return Task.FromResult(Result.Success(detail));
+            if (method == nameof(ILeaveRequestWorkflow.ListAsync))
+            {
+                refreshCount++;
+                return Task.FromResult(Result.Success(new LeaveRequestList([], 0)));
+            }
+            Assert.Equal(nameof(ILeaveRequestWorkflow.DecideAsync), method);
+            Assert.Equal(row.Id, args[0]);
+            Assert.Equal(LeaveDecision.Reject, args[1]);
+            Assert.Equal("Karar açıklaması", args[2]);
+            return Task.FromResult(success ? Result.Success(new LeaveWriteResult(row.Id, false)) :
+                Result.Failure<LeaveWriteResult>(Error.Conflict("Talebin durumu değişti.")));
+        }));
+
+        await (Task)pageType.GetMethod("OpenDetailAsync", flags)!.Invoke(page, [row.Id])!;
+        var note = pageType.GetField("_note", flags)!;
+        Assert.Equal(detail.Description, note.GetValue(page));
+        note.SetValue(page, "Karar açıklaması");
+        await (Task)pageType.GetMethod("DecideAsync", flags)!.Invoke(page, [LeaveDecision.Reject])!;
+
+        Assert.Equal(success ? 1 : 0, refreshCount);
+        Assert.Equal(success ? null : detail, pageType.GetField("_detail", flags)!.GetValue(page));
+        Assert.Equal(success ? null : "Karar açıklaması", note.GetValue(page));
+        Assert.Equal(success ? null : "Talebin durumu değişti.", pageType.GetField("_decisionError", flags)!.GetValue(page));
+    }
+
+    private sealed class SelectedRowPage : LeaveRequestsPage
+    {
+        protected override Task OnParametersSetAsync()
+        {
+            RequestedDetailId = 71;
+            return (Task)typeof(LeaveRequestsPage).GetMethod("InitializeAsync", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(this, null)!;
+        }
+    }
+
+#pragma warning disable BL0006
+    private sealed class PageRenderer(IServiceProvider services, ILoggerFactory logger) : StaticHtmlRenderer(services, logger)
+    {
+        protected override IComponent ResolveComponentForRenderMode(Type componentType, int? parentComponentId,
+            IComponentActivator componentActivator, IComponentRenderMode renderMode) => componentActivator.CreateInstance(componentType);
+    }
+#pragma warning restore BL0006
 
     private sealed class TestNavigation : NavigationManager
     {

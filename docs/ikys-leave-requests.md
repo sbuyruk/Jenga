@@ -2,6 +2,8 @@
 
 Personel, kişisel sayfasındaki **İzin Taleplerim** kartından taleplerini açar. İKYS yetkilileri **Bekleyen İşlemler** sayfasındaki **İzin Talepleri** bağlantısından çalışma durumu **Çalışıyor** olan personelin açık ve sonuçlanmış taleplerini listeleyebilir. Kişisel ekran, kullanıcının kendi kayıtlarını getirir. Kişisel işlemlerde ilgili `IKYS/View`, `Create`, `Edit` ve `Delete` izinleri, İKYS işlem ekranında `IKYS/Manage` denetlenir.
 
+Yönetim listesi **Genel İzinler** ile açılır. **Mazeret İzinleri** seçeneği saatlik mazeret taleplerini, **Tümü** ise her iki grubu gösterir. **Filtreleri Temizle** yönetim listesini **Genel İzinler** seçimine döndürür. Çalışma durumu, yönetim ekranında talep kimliğiyle detay açılırken ve karar kaydedilirken de kontrol edilir.
+
 İzin giriş formunda personel seçimi `IKYS/Manage` yetkisiyle açılır. Yetkili kullanıcı çalışan kadrolu veya kadro harici personel adına, diğer kullanıcılar kendi adlarına izin talebi oluşturabilir. **İzin Taleplerim → Personel Adına Talep** üzerinden seçilen personel giriş formunda hazır gelir.
 
 Formun başında, seçilen personelin seçili izin türündeki işlemi devam eden talepleri görünür. Süre hesabında bu taleplerin süresi ayrı gösterilir. Yıllık izin hesabında bu süre toplam bakiyeden, mazeret izninde ilgili dönem bakiyesinden düşülerek tahmini kalan süre hesaplanır.

@@ -627,14 +627,16 @@ public sealed class OvertimeService(IDbContextFactory<ApplicationDbContext> fact
             var period = await PeriodHeaders(db).SingleOrDefaultAsync(x => x.Id == periodId, cancellationToken);
             Require(period is not null, "Dönem bulunamadı.");
             Require(!unitId.HasValue || !personelId.HasValue, "Birim ve personel filtresi birlikte kullanılamaz. Birim çizelgesi bütün onaylı kayıtları içermelidir.");
+            if (!unitId.HasValue && !actor.IsHr)
+                personelId ??= actor.Id;
+
+            var isDelegatedReport = personelId is int targetId && targetId != actor.Id &&
+                await DelegatedPersonIds(db, actor).ContainsAsync(targetId, cancellationToken);
+
             if (unitId.HasValue)
                 Require(actor.IsHr || await db.OvertimeDeliveries.AnyAsync(x => x.PeriodId == periodId && x.UnitId == unitId && x.ManagerId == actor.Id, cancellationToken), "Birim çizelgesini görme yetkiniz yok.");
-            else if (!actor.IsHr)
-            {
-                personelId ??= actor.Id;
-                if (personelId != actor.Id && !await DelegatedPersonIds(db, actor).ContainsAsync(personelId.Value, cancellationToken))
-                    throw new RuleException(Error.Forbidden("Bu personelin çizelgesini görme yetkiniz bulunmuyor."));
-            }
+            else if (!actor.IsHr && personelId != actor.Id && !isDelegatedReport)
+                throw new RuleException(Error.Forbidden("Bu personelin çizelgesini görme yetkiniz bulunmuyor."));
             var entries = db.OvertimeEntries.AsNoTracking().Include(x => x.Intervals)
                 .Where(x => x.WorkDate >= period!.StartDate && x.WorkDate <= period.EndDate && x.Status == OvertimeEntryStatus.Approved);
             if (unitId.HasValue) entries = entries.Where(x => x.UnitId == unitId);
@@ -674,8 +676,7 @@ public sealed class OvertimeService(IDbContextFactory<ApplicationDbContext> fact
                     if (deputyNames.Count == 1) result.SummaryDeputyGeneralManagerName = deputyNames[0];
                 }
             }
-            if (personelId.HasValue && personelId != actor.Id &&
-                await DelegatedPersonIds(db, actor).ContainsAsync(personelId.Value, cancellationToken))
+            if (isDelegatedReport)
             {
                 result.DelegateName = actor.FullName;
                 var info = await db.IsBilgileri_Table.AsNoTracking().Where(x => x.PersonelId == actor.Id)
@@ -687,14 +688,16 @@ public sealed class OvertimeService(IDbContextFactory<ApplicationDbContext> fact
                 result.DelegateDuty = !string.IsNullOrWhiteSpace(info?.Duty) ? info.Duty
                     : !string.IsNullOrWhiteSpace(info?.Title) ? info.Title : "Görev tanımlanmamış";
             }
-            if (summary || personelId == actor.Id)
+            if (summary || personelId == actor.Id || isDelegatedReport)
             {
                 if (period!.Status == OvertimePeriodStatus.Collecting)
                 {
                     result.Results = CalculateResults(periodId, list, period.StartDate, period.EndDate, result.PublicHolidays, result.PublicHolidayStartMinutes);
                 }
                 else
-                    result.Results = await db.OvertimeResults.AsNoTracking().Where(x => x.PeriodId == periodId && (summary || x.PersonelId == actor.Id)).OrderBy(x => x.FullName).ToListAsync(cancellationToken);
+                    result.Results = await db.OvertimeResults.AsNoTracking()
+                        .Where(x => x.PeriodId == periodId && (summary || x.PersonelId == personelId))
+                        .OrderBy(x => x.FullName).ToListAsync(cancellationToken);
                 foreach (var item in result.Results.Where(x => x.PersonnelType is null))
                     item.PersonnelType = list.FirstOrDefault(x => x.PersonelId == item.PersonelId)?.PersonnelType;
                 foreach (var item in result.Results.Where(x => x.PersonnelType == PersonelTipi.KadroHarici && string.IsNullOrWhiteSpace(x.KadroHariciKurum)))

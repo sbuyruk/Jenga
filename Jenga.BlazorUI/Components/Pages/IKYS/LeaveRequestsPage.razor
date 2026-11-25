@@ -113,7 +113,7 @@
             {
                 <div class="leave-list-state">
                     <i class="bi bi-calendar2-x leave-empty-icon" aria-hidden="true"></i>
-                    <h2>@(HasFilters ? "Filtrelerle eşleşen talep yok" : "Henüz izin talebi yok")</h2>
+                    <h2>@(HasFilters ? "Filtrelerle eşleşen talep yok" : PersonnelOffice ? "Genel izin talebi bulunmuyor" : "Henüz izin talebi yok")</h2>
                     @if (HasFilters)
                     {
                         <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="ClearFiltersAsync">Filtreleri Temizle</button>
@@ -165,11 +165,13 @@
                                     <a class="btn btn-sm btn-outline-secondary" href="@EntryUrl(row.Id)"
                                        aria-label="@($"{row.TypeName} talebini düzenle")">Düzenle</a>
                                 }
-                                <button type="button" class="btn btn-sm btn-outline-primary" disabled="@_busy"
+                                @{ var action = DecisionAction(row.Status); }
+                                <button type="button" class="btn btn-sm btn-outline-primary" disabled="@(_busy || _loading)"
+                                        aria-haspopup="@(action is null ? null : "dialog")"
                                         aria-expanded="@(_detail?.Row.Id == row.Id ? "true" : "false")"
-                                        aria-controls="@(_detail?.Row.Id == row.Id ? "leave-detail-panel" : null)"
+                                        aria-controls="@(_detail?.Row.Id == row.Id ? (DecisionOpen ? "leave-decision-dialog" : "leave-detail-panel") : null)"
                                         @onclick="() => OpenDetailAsync(row.Id)">
-                                    @(CanPrint(row) ? "Belge ve Detay" : "İncele")
+                                    @(action ?? (CanPrint(row) ? "Belge ve Detay" : "İncele"))
                                     <i class="bi bi-chevron-right ms-1" aria-hidden="true"></i>
                                 </button>
                             </div>
@@ -188,7 +190,7 @@
 
         @if (_detail is { } detail)
         {
-            <section class="leave-surface leave-detail" id="leave-detail-panel" aria-labelledby="leave-detail">
+            RenderFragment content = @<section class="leave-surface leave-detail" id="leave-detail-panel" aria-labelledby="leave-detail">
                 <header class="leave-detail-header">
                     <div>
                         <h2 id="leave-detail" tabindex="-1" @ref="_detailHeading">@detail.Row.TypeName</h2>
@@ -199,7 +201,7 @@
                     {
                         <a class="btn btn-sm btn-outline-primary" href="@EntryUrl(detail.Row.Id)">Talebi Düzenle</a>
                     }
-                    <button type="button" class="btn-close" aria-label="Ayrıntıyı kapat" disabled="@_busy" @onclick="CloseDetail"></button>
+                    <button type="button" class="btn-close" aria-label="Kapat" disabled="@_busy" @onclick="DismissDetail"></button>
                 </header>
                 <dl class="leave-detail-grid">
                     <div>
@@ -254,7 +256,9 @@
                 }
 
                 <details class="leave-history" open="@PersonnelOffice">
-                    <summary>İzin dönemleri ve son izin hareketleri</summary>
+                    <summary>@(DecisionOpen
+                        ? (detail.Row.Type == (int)LeaveType.Personal ? "Mazeret izni dönemleri ve hareketleri" : "Yıllık ücretli izin dönemleri ve hareketleri")
+                        : "İzin dönemleri ve son izin hareketleri")</summary>
                     <h3>İzin Dönemleri</h3>
                     @if (detail.Periods.Count == 0)
                     {
@@ -278,10 +282,15 @@
                         </GenericTable>
                     }
 
-                    <h3>Son İzin Hareketleri</h3>
+                    <h3>@(DecisionOpen ? "Güncel Dönemin İzin Hareketleri" : "Son İzin Hareketleri")</h3>
+                    @if (detail.DecisionPeriod is { } current)
+                    {
+                        <p>@DateRange(current.BaslangicTarihi, current.BitisTarihi)</p>
+                    }
                     @if (detail.Movements.Count == 0)
                     {
-                        <p class="leave-muted">İzin hareketi bulunmuyor.</p>
+                        <p class="leave-muted">@(DecisionOpen && detail.DecisionPeriod is null
+                            ? "Bugün için geçerli izin dönemi bulunmuyor." : "İzin hareketi bulunmuyor.")</p>
                     }
                     else
                     {
@@ -292,16 +301,27 @@
                                 <th scope="col">İzin türü</th><th scope="col">Başlangıç</th><th scope="col">Bitiş</th><th scope="col">Süre</th>
                             </HeaderTemplate>
                             <RowTemplate Context="movement">
-                                <td>@movement.TypeName</td><td>@FormatDate(movement.Start, movement.Type)</td>
+                                <td>@movement.TypeName</td>
+                                <td>
+                                    @FormatDate(movement.Start, movement.Type)
+                                    @if (movement.Start > detail.DecisionPeriod?.BitisTarihi)
+                                    {
+                                        <span class="d-block text-danger">Yeni izin dönemi</span>
+                                    }
+                                </td>
                                 <td>@FormatDate(movement.End, movement.Type)</td><td>@DurationText(movement.Duration, movement.Unit)</td>
                             </RowTemplate>
                         </GenericTable>
                     }
                 </details>
 
-                @if (PersonnelOffice && (IsPending(detail.Row.Status) || detail.Row.Status == Status.KontrolEdildi))
+                @if (DecisionOpen)
                 {
                     <div class="leave-decision">
+                        @if (_decisionError is not null)
+                        {
+                            <div class="alert alert-danger" role="alert">@_decisionError</div>
+                        }
                         <label class="form-label" for="leave-note">Karar açıklaması</label>
                         <textarea id="leave-note" class="form-control mb-3" rows="2" @bind="_note" disabled="@_busy"></textarea>
                         @if (detail.Row.Status == Status.KontrolEdildi && detail.Row.Type != (int)LeaveType.Nursing)
@@ -333,15 +353,16 @@
                                 <button type="button" class="btn btn-success"
                                         disabled="@(_busy || (detail.Row.Type != (int)LeaveType.Nursing && !_documentReceived) ||
                                             (detail.FutureOffset is not null && !_targetPeriodId.HasValue))"
-                                        @onclick="() => DecideAsync(LeaveDecision.Approve)">Onayla ve Kayıtlara İşle</button>
+                                        @onclick="() => DecideAsync(LeaveDecision.Approve)">Onayla</button>
                             }
                             else
                             {
                                 <button type="button" class="btn btn-primary" disabled="@_busy"
-                                        @onclick="() => DecideAsync(LeaveDecision.Check)">Kontrol Edildi Olarak İşaretle</button>
+                                        @onclick="() => DecideAsync(LeaveDecision.Check)">Kabul Et</button>
                             }
                             <button type="button" class="btn btn-outline-danger" disabled="@_busy"
                                     @onclick="() => DecideAsync(LeaveDecision.Reject)">Reddet</button>
+                            <button type="button" class="btn btn-outline-secondary" disabled="@_busy" @onclick="DismissDetail">Kapat</button>
                         </div>
                     </div>
                 }
@@ -365,7 +386,17 @@
                         }
                     </div>
                 }
-            </section>
+            </section>;
+            if (DecisionOpen)
+            {
+                <LeaveDecisionDialog @key="detail.Row.Id">
+                    @content
+                </LeaveDecisionDialog>
+            }
+            else
+            {
+                @content
+            }
         }
     </div>
 </PermissionGuard>
@@ -402,15 +433,26 @@
     private string _feedbackClass = "alert-success";
     private LeaveListFilter _filter;
     private Status? _status;
-    private bool HasFilters => _filter != LeaveListFilter.All || _status.HasValue;
+    private LeaveListFilter DefaultFilter => PersonnelOffice ? LeaveListFilter.General : LeaveListFilter.All;
+    private bool HasFilters => _filter != DefaultFilter || _status.HasValue;
     private List<LeaveTableRow>? _rows;
     private GenericTable<LeaveTableRow>? _table;
     private LeaveRequestDetail? _detail;
     private ElementReference _detailHeading;
+    private string? _decisionError;
+    private bool DecisionOpen => _detail is not null && DecisionAction(_detail.Row.Status) is not null;
+
+    private string? DecisionAction(Status? status) => PersonnelOffice ? status switch
+    {
+        Status.IslemBekliyor or Status.DilekceBekleniyor => "Kontrol/Red",
+        Status.KontrolEdildi => "Kayıt/Red",
+        _ => null
+    } : null;
 
     protected override async Task OnParametersSetAsync()
     {
         if (_ready) await InitializeAsync();
+        else _filter = DefaultFilter;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -447,7 +489,7 @@
             _canEdit = await CurrentUser.HasPermissionAsync(ModuleName.IKYS, Operation.Edit);
             _canDelete = await CurrentUser.HasPermissionAsync(ModuleName.IKYS, Operation.Delete);
         }
-        _filter = LeaveListFilter.All;
+        _filter = DefaultFilter;
         _status = null;
         _feedback = null;
         CloseDetail();
@@ -491,7 +533,7 @@
 
     private Task ClearFiltersAsync()
     {
-        _filter = LeaveListFilter.All;
+        _filter = DefaultFilter;
         _status = null;
         return LoadListAsync();
     }
@@ -507,13 +549,20 @@
 
     private async Task OpenDetailAsync(int id)
     {
+        if (_busy) return;
         _busy = true;
         CloseDetail();
-        var result = await Workflow.DetailAsync(id, PersonnelOffice);
+        var result = await Workflow.DetailAsync(id, PersonnelOffice, includeDecisionHistory: PersonnelOffice);
         _busy = false;
         if (result.IsFailure) { Feedback(result.Error.Message, "alert-danger"); return; }
         _detail = result.Value;
-        _focusDetail = true;
+        if (DecisionOpen) _note = _detail.Description;
+        _focusDetail = !DecisionOpen;
+    }
+
+    private void DismissDetail()
+    {
+        if (!_busy) CloseDetail();
     }
 
     private void CloseDetail()
@@ -521,19 +570,21 @@
         _detail = null;
         _targetPeriodId = null;
         _note = null;
+        _decisionError = null;
         _documentReceived = _confirmDelete = _focusDetail = false;
     }
 
     private async Task DecideAsync(LeaveDecision decision)
     {
-        if (_busy || _detail is null) return;
+        if (_busy || _detail is null || !DecisionOpen) return;
         _busy = true;
+        _decisionError = null;
         var id = _detail.Row.Id;
-        var result = await Workflow.DecideAsync(id, decision, _note, _documentReceived,
+        var result = await Workflow.DecideAsync(id, decision, _note == _detail.Description ? null : _note, _documentReceived,
             targetPeriodId: decision == LeaveDecision.Approve ? _targetPeriodId : null);
         if (result.IsFailure)
         {
-            Feedback(result.Error.Message, "alert-danger");
+            _decisionError = result.Error.Message;
             _busy = false;
             return;
         }
@@ -545,8 +596,9 @@
         };
         Feedback(result.Value.NotificationFailed ? message + " E-posta bildirimi gönderilemedi." : message,
             result.Value.NotificationFailed ? "alert-warning" : "alert-success");
+        CloseDetail();
         await LoadListAsync();
-        await OpenDetailAsync(id);
+        _busy = false;
     }
 
     private async Task DeleteAsync()
@@ -560,6 +612,7 @@
             Feedback("İzin talebi silindi.", "alert-success");
             await LoadListAsync();
         }
+        else if (DecisionOpen) _decisionError = result.Error.Message;
         else Feedback(result.Error.Message, "alert-danger");
         _busy = false;
     }

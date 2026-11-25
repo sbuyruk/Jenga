@@ -107,10 +107,43 @@ public sealed class OvertimeReportTests
         Assert.Matches($"<td[^>]*>3:00</td>\\s*<td[^>]*>{net}</td>", html);
     }
 
-    private static async Task<string> RenderAsync(OvertimeReport report, int group, string? institution = null)
+    [Fact]
+    public async Task HrCalculationViewShowsAllPersonnelAcrossGroupsAndInstitutions()
+    {
+        var report = new OvertimeReport { CanSeeSummary = true };
+        report.Results.AddRange([
+            new() { FullName = "Kadrolu Örnek", PersonnelType = PersonelTipi.Kadrolu },
+            new() { FullName = "Birinci Kurum Örnek", PersonnelType = PersonelTipi.KadroHarici, KadroHariciKurum = "Kurum A" },
+            new() { FullName = "İkinci Kurum Örnek", PersonnelType = PersonelTipi.KadroHarici, KadroHariciKurum = "Kurum B" }
+        ]);
+
+        var html = await RenderAsync(report, 2, "Kurum A", calculationsOnly: true);
+        var heading = html.IndexOf("Tüm Personelin Hesaplama Ayrıntıları", StringComparison.Ordinal);
+        Assert.True(heading >= 0);
+        Assert.Contains("Kadrolu Örnek", html[heading..]);
+        Assert.Contains("Birinci Kurum Örnek", html[heading..]);
+        Assert.Contains("İkinci Kurum Örnek", html[heading..]);
+        Assert.DoesNotContain(">Yazdır</button>", html);
+    }
+
+    [Fact]
+    public async Task ApprovalListSortsByDisplayedDurationInDescendingNumericOrder()
+    {
+        var report = new OvertimeReport { CanSeeSummary = true };
+        report.Results.AddRange([
+            new() { FullName = "Dokuz Saat", PersonnelType = PersonelTipi.Kadrolu, RoundedMinutes = 540 },
+            new() { FullName = "On Saat", PersonnelType = PersonelTipi.Kadrolu, RoundedMinutes = 600 },
+            new() { FullName = "Dokuz Buçuk Saat", PersonnelType = PersonelTipi.Kadrolu, RoundedMinutes = 570 }
+        ]);
+
+        var html = await RenderAsync(report, 1);
+        Assert.Matches(@"(?s)<tbody[^>]*>.*On Saat.*Dokuz Buçuk Saat.*Dokuz Saat.*</tbody>", html);
+    }
+
+    private static async Task<string> RenderAsync(OvertimeReport report, int group, string? institution = null, bool calculationsOnly = false)
     {
         var services = new ServiceCollection().AddLogging();
-        services.AddSingleton<IComponentActivator>(new ReportActivator(report, group, institution));
+        services.AddSingleton<IComponentActivator>(new ReportActivator(report, group, institution, calculationsOnly));
         services.AddSingleton(DispatchProxy.Create<IOvertimeService, UnusedService>());
         services.AddSingleton<IToastService, ToastService>();
         services.AddSingleton<IJSRuntime, TestJs>();
@@ -124,7 +157,7 @@ public sealed class OvertimeReportTests
         });
     }
 
-    private sealed class ReportActivator(OvertimeReport report, int group, string? institution) : IComponentActivator
+    private sealed class ReportActivator(OvertimeReport report, int group, string? institution, bool calculationsOnly) : IComponentActivator
     {
         public IComponent CreateInstance(Type componentType)
         {
@@ -133,6 +166,7 @@ public sealed class OvertimeReportTests
             {
                 page.PersonnelGroup = group;
                 page.Institution = institution;
+                page.CalculationsOnly = calculationsOnly;
                 typeof(OvertimeReportPage).GetField("_report", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(page, report);
             }
             return component;

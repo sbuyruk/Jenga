@@ -19,10 +19,16 @@
                 <span class="leave-entry-title-icon" aria-hidden="true"><i class="bi bi-calendar2-check"></i></span>
                 <h1>@Title</h1>
             </div>
-            <a class="btn btn-outline-secondary leave-entry-back" href="@ListUrl">
-                <i class="bi bi-arrow-left" aria-hidden="true"></i>
-                @(ReturnsToOffice ? "İKYS İşlem Listesi" : "İzin Taleplerim")
-            </a>
+            <div class="d-flex flex-wrap gap-2">
+                <a class="btn btn-outline-primary" href="@Assets["kilavuzlar/Izin-Talepleri-Kullanim-Kilavuzu.pdf"]"
+                   target="_blank" rel="noopener">
+                    <i class="bi bi-book me-1" aria-hidden="true"></i>Kullanım Kılavuzu<span class="visually-hidden"> (PDF, yeni sekmede açılır)</span>
+                </a>
+                <a class="btn btn-outline-secondary leave-entry-back" href="@ListUrl">
+                    <i class="bi bi-arrow-left" aria-hidden="true"></i>
+                    @(ReturnsToOffice ? "İKYS İşlem Listesi" : "İzin Taleplerim")
+                </a>
+            </div>
         </header>
 
         @if (_feedback is not null)

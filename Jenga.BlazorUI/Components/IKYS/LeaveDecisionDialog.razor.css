@@ -1,0 +1,13 @@
+dialog {
+    width: min(48rem, calc(100% - 2rem));
+    max-height: calc(100dvh - 2rem);
+    padding: 0;
+    border: 0;
+    border-radius: .85rem;
+    background: var(--theme-card-bg);
+    color: var(--theme-text);
+}
+
+dialog::backdrop {
+    background: rgb(0 0 0 / 45%);
+}

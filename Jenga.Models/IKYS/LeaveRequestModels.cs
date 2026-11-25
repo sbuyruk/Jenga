@@ -61,7 +61,7 @@ public sealed record LeaveRequestDetail(
     LeaveRequestRow Row, string? Address, string? Description, string? Substitute, string? Manager,
     List<IzinDonem> Periods, List<LeaveMovementRow> Movements, string? DocumentUrl,
     LeaveDocumentBalance? DocumentBalance = null, LeaveDocumentInfo? DocumentInfo = null,
-    FutureLeaveOffset? FutureOffset = null);
+    FutureLeaveOffset? FutureOffset = null, IzinDonem? DecisionPeriod = null);
 
 public sealed record LeaveCalculation(string Duration, string Unit, string? Available, string? Remaining,
     string? PendingDuration = null, string? AvailableAfterPending = null,

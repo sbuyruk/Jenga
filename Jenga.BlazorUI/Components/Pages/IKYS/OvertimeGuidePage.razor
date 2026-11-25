@@ -15,12 +15,57 @@
         </nav>
     </header>
 
-    <ol class="ot-guide-flow list-unstyled" aria-label="Fazla mesai işlem sırası">
-        <li><i class="bi bi-pencil-square" aria-hidden="true"></i>Mesaiyi gir</li>
-        <li><i class="bi bi-check2-circle" aria-hidden="true"></i>Amir onayı al</li>
-        <li><i class="bi bi-printer" aria-hidden="true"></i>Çizelgeyi yazdır ve imzalat</li>
-        <li><i class="bi bi-folder-check" aria-hidden="true"></i>İK dönem işlemlerini tamamla</li>
-    </ol>
+    <figure class="ot-guide-flow" aria-labelledby="ot-flow-title">
+        <figcaption id="ot-flow-title" class="h5 mb-3">Fazla mesai akış şeması</figcaption>
+        <div class="ot-flow-node">
+            <span class="ot-flow-role">Personel veya yetkili kullanıcı</span>
+            <strong>Mesaiyi gir ve amire gönder</strong>
+            <small>Taslak olarak kaydedilen mesai, gönderilene kadar onaya düşmez.</small>
+        </div>
+        <span class="ot-flow-arrow" aria-hidden="true">↓</span>
+        <div class="ot-flow-node ot-flow-decision">
+            <span class="ot-flow-role">Amir</span>
+            <strong>Kaydı incele ve karar ver</strong>
+        </div>
+        <div class="ot-flow-branches" role="group" aria-label="Amir kararları">
+            <div class="ot-flow-branch">
+                <span class="ot-flow-arrow" aria-hidden="true">↓</span>
+                <div class="ot-flow-node ot-flow-correction">
+                    <strong>Düzeltme İste</strong>
+                    <small>Personel kaydı düzeltir ve yeniden amire gönderir.</small>
+                </div>
+            </div>
+            <div class="ot-flow-branch">
+                <span class="ot-flow-arrow" aria-hidden="true">↓</span>
+                <div class="ot-flow-node ot-flow-approved">
+                    <strong>Onayla</strong>
+                    <small>Kayıt çizelgeye alınabilir.</small>
+                </div>
+            </div>
+            <div class="ot-flow-branch">
+                <span class="ot-flow-arrow" aria-hidden="true">↓</span>
+                <div class="ot-flow-node ot-flow-rejected">
+                    <strong>Reddet</strong>
+                    <small>Kayıt çizelgeye alınmaz.</small>
+                </div>
+            </div>
+        </div>
+        <div class="ot-flow-continuation">
+            <span class="ot-flow-arrow" aria-hidden="true">↓</span>
+            <p class="small mb-2">Onaylanan kayıt için</p>
+            <div class="ot-flow-node">
+                <span class="ot-flow-role">Personel ve birim amiri</span>
+                <strong>Çizelgeyi yazdır, imzalat ve sabitle</strong>
+                <small>İK toplama çağrısını açınca birim amiri çizelgeyi sabitler ve imzalı evrakı İK’ya teslim eder.</small>
+            </div>
+            <span class="ot-flow-arrow" aria-hidden="true">↓</span>
+            <div class="ot-flow-node">
+                <span class="ot-flow-role">İK ve Genel Müdür Yardımcısı</span>
+                <strong>Hesapla, ıslak imzaya sun ve arşivle</strong>
+                <small>İK teslimi kaydeder, onay listesini hazırlar ve imzalı belgeyle dönemi kesinleştirir.</small>
+            </div>
+        </div>
+    </figure>
 
     <section id="personel" class="ot-guide-section">
         <h2>Personel işlemleri</h2>
@@ -74,7 +119,7 @@
             <li>Ad, soyad veya sicil numarasıyla arayarak mesaisi girilecek personeli işaretleyin. Aynı faaliyet için birden fazla kişiyi seçebilirsiniz.</li>
             <li>Tarihleri, saatleri ve çalışma sebebini bir kez girip taslak olarak kaydedin veya amir onayına gönderin. Her kişi için ayrı kayıt oluşur ve kayıt ilgili kişinin amirine gider. Seçilenlerden biri için kayıt oluşturulamazsa toplu girişin tamamı durur.</li>
             <li>Mevcut bir kaydı <strong>Düzenle</strong> ile açtığınızda değişiklik yalnızca o kayda uygulanır. Girişi yapan kullanıcı <strong>İşlemler</strong> penceresindeki geçmişte görünür.</li>
-            <li>Çıktı için <strong>Dönemler ve Toplama Çağrıları</strong> bölümünde <strong>Çizelgesi görüntülenecek personel</strong> alanından kişiyi seçin. İlgili dönemde <strong>Çizelgeyi Görüntüle / Yazdır</strong> düğmesine basın.</li>
+            <li>Çıktı için <strong>Dönemler ve Toplama Çağrıları</strong> bölümünde <strong>Çizelgesi görüntülenecek personel</strong> alanından kişiyi seçin. İlgili dönemde <strong>Çizelgeyi Görüntüle / Yazdır</strong> düğmesine basın. Çizelgenin altındaki <strong>Hesaplama Ayrıntıları</strong> bölümünde seçili kişinin haftalık hesabını inceleyebilirsiniz.</li>
         </ol>
     </section>
 
@@ -133,7 +178,7 @@
         <ol>
             <li><strong>Yeni dönem / Birimlerden toplama çağrısı</strong> bölümünde dönem adını, başlangıç ve bitiş tarihlerini, son teslim gününü girin. Dönem pazartesi başlar, pazar biter ve en az bir tam hafta içerir. Başka bir dönemle çakışamaz. Son teslim, dönem bitişinden önce olamaz. <strong>Toplama Çağrısı Aç</strong> düğmesine basın.</li>
             <li>Dönem kartından birim çizelgelerini takip edin. Islak imzalı evrak size ulaştığında, ilgili birim için <strong>İmzalı Evrak Teslim Alındı</strong> düğmesine basın. Onaylı mesaisi olmayan birimden boş çizelge istenmez. Bekleyen kayıtların sonuçlandırılması gerekir.</li>
-            <li><strong>Hesaplama ve İmza Listesi</strong> bağlantısıyla kadrolu personel sonuçlarını inceleyin. <strong>Hesaplama Ayrıntıları</strong> bölümünde haftalık döküm, <strong>Dönem İşlem Geçmişi</strong> bölümünde dönem işlemleri görünür.</li>
+            <li><strong>Hesaplama ve İmza Listesi</strong> bağlantısıyla kadrolu personel sonuçlarını inceleyin. Dönem kartındaki <strong>Tüm Personelin Hesaplama Ayrıntıları</strong> bağlantısı, onaylı mesaisi bulunan herkesin haftalık hesabını aynı ekranda açar. <strong>Dönem İşlem Geçmişi</strong> bölümünde dönem işlemleri görünür.</li>
             <li>Kadro harici çıktı için <strong>Kadro Harici Personel Çizelgesi</strong> bağlantısını açıp ilgili kurumu seçin. Her kurumun çıktısını ayrı alın. Kurum veya personel tipi eksikse İK bilgilerini tamamlayın.</li>
             <li>Gerekli teslimler tamamlandığında <strong>GMY İmzasına Hazırla</strong> düğmesine basın. Onay listesini yeniden açıp <strong>Yazdır</strong> ile yatay çıktı alın ve GMY’ye ıslak imza için sunun.</li>
             <li>İmzadan dönen belgeyi <strong>İmzalı Belgeyi Kaydet ve Kesinleştir</strong> penceresinde seçip kaydedin. PDF, JPEG veya PNG kabul edilir. Dosya sınırı 10 MB’dır. Belgeye daha sonra <strong>İmzalı Belge / Arşiv</strong> üzerinden ulaşabilirsiniz.</li>

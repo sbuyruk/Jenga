@@ -29,16 +29,7 @@ public sealed partial class LeaveRequestWorkflow(
         var actor = await FindActorAsync(db, personnelOffice, Operation.View, ct);
         if (actor.IsFailure) return actor.Error;
 
-        var requests = db.IzinTalep_Table.AsNoTracking().Where(x => x.Aktif == true);
-        if (personnelOffice)
-        {
-            var workingPersonnelIds = WorkingPersonnel(db).Select(person => (int?)person.Id);
-            requests = requests.Where(request => workingPersonnelIds.Contains(request.PersonelId));
-        }
-        else
-        {
-            requests = requests.Where(x => x.PersonelId == actor.Value.Id);
-        }
+        var requests = ScopedRequests(db, actor.Value, personnelOffice).AsNoTracking();
         if (filter == LeaveListFilter.General) requests = requests.Where(x => x.IzinTipi != (int)LeaveType.Personal);
         if (filter == LeaveListFilter.Personal) requests = requests.Where(x => x.IzinTipi == (int)LeaveType.Personal);
         if (status.HasValue) requests = requests.Where(x => x.OnayDurumu == status);
@@ -60,7 +51,8 @@ public sealed partial class LeaveRequestWorkflow(
         return new LeaveRequestList(items, total);
     }, cancellationToken);
 
-    public Task<Result<LeaveRequestDetail>> DetailAsync(int id, bool personnelOffice, CancellationToken cancellationToken = default) =>
+    public Task<Result<LeaveRequestDetail>> DetailAsync(int id, bool personnelOffice, CancellationToken cancellationToken = default,
+        bool includeDecisionHistory = false) =>
         RunAsync<LeaveRequestDetail>("Detail", async db =>
         {
             var ct = cancellationToken;
@@ -75,13 +67,29 @@ public sealed partial class LeaveRequestWorkflow(
             var periods = await db.IzinDonem_Table.AsNoTracking().Where(x => x.PersonelId == request.PersonelId &&
                 (x.IzinTipi == (int)LeaveType.Paid || x.IzinTipi == (int)LeaveType.Personal))
                 .OrderByDescending(x => x.BaslangicTarihi).ThenByDescending(x => x.Id).ToListAsync(ct);
-            var movements = await (from movement in db.IzinHareket_Table.AsNoTracking()
-                                   join type in db.IzinTanim_Table on movement.IzinTipi equals (int?)type.Id into types
-                                   from type in types.DefaultIfEmpty()
-                                   where movement.PersonelId == request.PersonelId
-                                   orderby movement.BaslangicTarihi descending, movement.Id descending
-                                   select new LeaveMovementRow(movement.Id, type.Adi ?? "İzin", movement.IzinTipi, movement.BaslangicTarihi,
-                                       movement.BitisTarihi, movement.Sure, movement.Birim)).Take(10).ToListAsync(ct);
+            var historyPeriods = periods;
+            IzinDonem? decisionPeriod = null;
+            var movementQuery = db.IzinHareket_Table.AsNoTracking().Where(x => x.PersonelId == request.PersonelId);
+            var decisionHistory = includeDecisionHistory && personnelOffice && (CanEdit(request) || request.OnayDurumu == Status.KontrolEdildi);
+            if (decisionHistory)
+            {
+                var historyType = request.IzinTipi == (int)LeaveType.Personal ? (int)LeaveType.Personal : (int)LeaveType.Paid;
+                historyPeriods = periods.FindAll(p => p.IzinTipi == historyType);
+                var today = DateTime.Today;
+                // PortalApps selects the earliest starting match if entitlement periods overlap.
+                decisionPeriod = historyPeriods.LastOrDefault(p => p.BaslangicTarihi <= today && p.BitisTarihi > today.AddDays(-1));
+                var since = new DateTime(today.Year - 30, 1, 1);
+                var periodId = decisionPeriod?.Id;
+                movementQuery = movementQuery.Where(x => periodId.HasValue && x.IzinDonemId == periodId &&
+                    x.IzinTipi == historyType && x.BaslangicTarihi >= since);
+            }
+            var movementRows = from movement in movementQuery
+                               join type in db.IzinTanim_Table on movement.IzinTipi equals (int?)type.Id into types
+                               from type in types.DefaultIfEmpty()
+                               orderby movement.BaslangicTarihi descending, movement.Id descending
+                               select new LeaveMovementRow(movement.Id, type.Adi ?? "İzin", movement.IzinTipi, movement.BaslangicTarihi,
+                                   movement.BitisTarihi, movement.Sure, movement.Birim);
+            var movements = await (decisionHistory ? movementRows : movementRows.Take(10)).ToListAsync(ct);
             var period = periods.Find(x => x.Id == request.IzinDonemId);
             IzinHareket? approvedMovement = null;
             if (request.OnayDurumu == Status.KayitlaraIslendi && period is not null)
@@ -99,7 +107,7 @@ public sealed partial class LeaveRequestWorkflow(
                 ? await GetDocumentInfoAsync(db, request, periods, ct) : null;
             return new LeaveRequestDetail(row, request.Adres, request.Aciklama,
                 signers.Find(x => x.Id == request.VekilImza)?.Name, signers.Find(x => x.Id == request.AmirImza)?.Name,
-                periods, movements, DocumentUrl(request, period, balance), balance, documentInfo, futureOffset);
+                historyPeriods, movements, DocumentUrl(request, period, balance), balance, documentInfo, futureOffset, decisionPeriod);
         }, cancellationToken);
 
     public Task<Result<List<LeaveOption>>> ListPersonnelForEntryAsync(CancellationToken cancellationToken = default) =>
@@ -331,9 +339,18 @@ public sealed partial class LeaveRequestWorkflow(
         return person is null ? Result.Failure<Personel>(AccessDenied) : person;
     }
 
+    private static IQueryable<IzinTalep> ScopedRequests(ApplicationDbContext db, Personel actor, bool personnelOffice)
+    {
+        var requests = db.IzinTalep_Table.Where(request => request.Aktif == true);
+        if (!personnelOffice) return requests.Where(request => request.PersonelId == actor.Id);
+
+        var workingPersonnelIds = WorkingPersonnel(db).Select(person => (int?)person.Id);
+        return requests.Where(request => workingPersonnelIds.Contains(request.PersonelId));
+    }
+
     private static Task<IzinTalep?> FindRequestAsync(ApplicationDbContext db, int id, Personel actor,
-        bool personnelOffice, CancellationToken ct) => db.IzinTalep_Table.Include(x => x.Personel)
-        .FirstOrDefaultAsync(x => x.Id == id && x.Aktif == true && (personnelOffice || x.PersonelId == actor.Id), ct);
+        bool personnelOffice, CancellationToken ct) => ScopedRequests(db, actor, personnelOffice)
+        .Include(x => x.Personel).FirstOrDefaultAsync(x => x.Id == id, ct);
 
     private static IQueryable<LeaveRequestRow> Rows(ApplicationDbContext db, IQueryable<IzinTalep> requests) =>
         from request in requests

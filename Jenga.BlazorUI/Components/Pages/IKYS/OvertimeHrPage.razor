@@ -94,6 +94,7 @@
                     <p>@period.StartDate.ToString("dd.MM.yyyy") – @period.EndDate.ToString("dd.MM.yyyy") · Son teslim: @period.DueDate.ToString("dd.MM.yyyy")</p>
                     <div class="d-flex flex-wrap gap-2 mb-3">
                         <a class="btn btn-sm btn-outline-primary" href="@($"/ikys/overtime/report/{period.Id}?returnTo=hr")">Hesaplama ve İmza Listesi</a>
+                        <a class="btn btn-sm btn-outline-secondary" href="@($"/ikys/overtime/report/{period.Id}?returnTo=hr&calculationsOnly=true")">Tüm Personelin Hesaplama Ayrıntıları</a>
                         <a class="btn btn-sm btn-outline-secondary" href="@($"/ikys/overtime/report/{period.Id}?returnTo=hr&personnelType=2")">Kadro Harici Personel Çizelgesi</a>
                         @if (period.Status == OvertimePeriodStatus.Collecting)
                         { <button class="btn btn-sm btn-primary" disabled="@_busy" @onclick='() => Act(() => Overtime.PrepareSignatureAsync(period.Id, period.Version), "Hesaplar sabitlendi; liste GMY ıslak imzasına hazır.")'>GMY İmzasına Hazırla</button> }

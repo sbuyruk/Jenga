@@ -106,6 +106,17 @@ window.taskApprovalReport = {
 
 window.isMobileViewport = () => window.innerWidth < 768;
 
+window.openLeaveDecisionDialog = (dialog) => {
+    if (!dialog?.isConnected || dialog.open) return;
+    const closeButton = dialog.querySelector(".btn-close");
+    dialog.addEventListener("cancel", event => {
+        event.preventDefault();
+        closeButton.click();
+    });
+    dialog.showModal();
+    dialog.querySelector("h2").focus();
+};
+
 window.kontrolKonum = {
     al: () => new Promise(resolve => {
         if (!window.isSecureContext) {

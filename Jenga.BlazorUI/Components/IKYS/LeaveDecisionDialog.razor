@@ -1,0 +1,16 @@
+@inject IJSRuntime JS
+
+<dialog id="leave-decision-dialog" aria-labelledby="leave-detail" @ref="_dialog">
+    @ChildContent
+</dialog>
+
+@code {
+    [Parameter, EditorRequired] public RenderFragment ChildContent { get; set; } = default!;
+    private ElementReference _dialog;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+            await JS.InvokeVoidAsync("openLeaveDecisionDialog", _dialog);
+    }
+}

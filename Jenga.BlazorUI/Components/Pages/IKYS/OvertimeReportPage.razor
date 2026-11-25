@@ -12,14 +12,30 @@
 <div class="d-flex flex-wrap gap-2 mb-3 no-print">
     <a class="btn btn-outline-secondary" href="@(ReturnTo == "hr" ? "/ikys/overtime/hr" : ReturnTo == "delegated" ? "/ikys/overtime?scope=delegated" : "/ikys/overtime")">@(ReturnTo == "hr" ? "İK Dönem İşlemlerine Dön" : ReturnTo == "delegated" ? "Başkası Adına Mesaiye Dön" : "Mesailerime Dön")</a>
     <button class="btn btn-outline-secondary" disabled="@_busy" @onclick="LoadAsync">Yenile</button>
-    <button class="btn btn-primary" disabled="@(_busy || _report is null || (_report.CanSeeSummary && (_personnelGroup == 0 || !DisplayedResults.Any() || (_personnelGroup == 2 && SelectedInstitutionKey.Length == 0))))" @onclick="Print">Yazdır</button>
-    @if (_report?.CanSeeSummary == true && _personnelGroup == 1 && _report.Period.Status == OvertimePeriodStatus.Finalized)
-    { <button class="btn btn-outline-success" disabled="@_busy" @onclick="Download">İmzalı Belgeyi İndir</button> }
+    @if (ShowAllCalculations)
+    {
+        <a class="btn btn-outline-primary" href="@($"/ikys/overtime/report/{PeriodId}?returnTo=hr")">Hesaplama ve İmza Listesi</a>
+    }
+    else
+    {
+        <button class="btn btn-primary" disabled="@(_busy || _report is null || (_report.CanSeeSummary && (_personnelGroup == 0 || !DisplayedResults.Any() || (_personnelGroup == 2 && SelectedInstitutionKey.Length == 0))))" @onclick="Print">Yazdır</button>
+        @if (_report?.CanSeeSummary == true && _personnelGroup == 1 && _report.Period.Status == OvertimePeriodStatus.Finalized)
+        { <button class="btn btn-outline-success" disabled="@_busy" @onclick="Download">İmzalı Belgeyi İndir</button> }
+    }
 </div>
 @if (_busy) { <JengaLoading Message="Çizelge hazırlanıyor…" /> }
 @if (_report is not null)
 {
-    @if (_report.CanSeeSummary)
+    @if (ShowAllCalculations)
+    {
+        <h4>@_report.Period.Name</h4>
+        <p class="text-muted">@_report.Period.StartDate.ToString("dd.MM.yyyy") – @_report.Period.EndDate.ToString("dd.MM.yyyy")</p>
+        @if (_report.IsPreview)
+        {
+            <p class="text-muted">Ön hesaplama, şu ana kadar onaylanan kayıtlara dayanır.</p>
+        }
+    }
+    @if (_report.CanSeeSummary && !ShowAllCalculations)
     {
         <div class="nav nav-pills gap-2 mb-3 no-print" aria-label="Personel grubu">
             <button class="nav-link @(_personnelGroup == 1 ? "active" : "")" @onclick="() => _personnelGroup = 1">Kadrolu Personel</button>
@@ -42,7 +58,7 @@
             </div>
         }
     }
-    <div id="overtime-report" class="overtime-report">
+    <div id="overtime-report" class="overtime-report" hidden="@ShowAllCalculations">
         @if (_report.IsPreview && (_report.CanSeeSummary || UnitId.HasValue))
         { <p class="alert alert-warning">ÖNİZLEME — İmzaya esas değildir. Kayıtlar henüz sabitlenmemiştir.</p> }
         @if (_report.CanSeeSummary)
@@ -56,7 +72,7 @@
                     <thead><tr><th>Sıra No</th><th>Adı Soyadı</th><th>Ünvanı</th><th>Normal Mesai Başlama Saati</th><th>Normal Mesai Bitirme Saati</th><th>Fazla Çalışma Süresi</th><th>Fazla Çalışmayı Gerektiren Sebepler</th></tr></thead>
                     <tbody>
                     @{ var index = 0; }
-                    @foreach (var person in DisplayedResults)
+                    @foreach (var person in DisplayedResults.OrderByDescending(x => x.RoundedMinutes).ThenBy(x => x.FullName))
                     {
                         var entries = _report.Entries.Where(x => x.PersonelId == person.PersonelId).OrderBy(x => x.WorkDate).ToList();
                         var info = entries.FirstOrDefault();
@@ -128,11 +144,12 @@
             }
         }
     </div>
-    @if (DisplayedResults.Any())
+    @if (ShowAllCalculations || CalculationResults.Any())
     {
         <section class="card card-body my-3 no-print">
-            <h5>Hesaplama Ayrıntıları</h5>
-            @foreach (var person in DisplayedResults)
+            <h5>@(ShowAllCalculations ? "Tüm Personelin Hesaplama Ayrıntıları" : "Hesaplama Ayrıntıları")</h5>
+            @if (!CalculationResults.Any()) { <p class="text-muted mb-0">Bu dönemde hesaplanacak onaylı fazla mesai kaydı bulunmamaktadır.</p> }
+            @foreach (var person in CalculationResults)
             {
                 <details class="mb-3"><summary>@person.FullName — Sonuç: @OvertimeDisplay.Duration(person.RoundedMinutes)</summary>
                     <div class="table-responsive"><table class="table table-sm"><thead><tr><th>Hafta</th><th>Normal Süre</th><th>Ek Çalışma</th><th>Dinlenme</th><th>45 Saat Üzeri</th></tr></thead><tbody>
@@ -159,6 +176,9 @@
     [SupplyParameterFromQuery] public string? ReturnTo { get; set; }
     [SupplyParameterFromQuery(Name = "personnelType")] public int? PersonnelGroup { get; set; }
     [SupplyParameterFromQuery(Name = "institution")] public string? Institution { get; set; }
+    [SupplyParameterFromQuery] public bool CalculationsOnly { get; set; }
+    private bool ShowAllCalculations => CalculationsOnly && _report?.CanSeeSummary == true;
+    private IEnumerable<OvertimePersonResult> CalculationResults => ShowAllCalculations ? _report!.Results : DisplayedResults;
     private int _personnelGroup = 1;
     private string? _institutionKey;
     private List<string> InstitutionOptions => (_report?.Results ?? []).Where(x => x.PersonnelType == PersonelTipi.KadroHarici)

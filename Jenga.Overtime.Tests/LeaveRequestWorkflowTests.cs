@@ -67,7 +67,71 @@ public sealed class LeaveRequestWorkflowTests
     }
 
     [Fact]
-    public async Task OfficeListIncludesOnlyPersonnelWithWorkingStatus()
+    public async Task DecisionHistoryUsesTheCurrentPeriodForTheRequestsGroup()
+    {
+        var today = DateTime.Today;
+        await using var data = await TestData.CreateAsync();
+        await using var db = data.CreateDbContext();
+        IzinDonem Period(int id, LeaveType type, int start, int end, int person = 2) => new()
+        {
+            Id = id, PersonelId = person, IzinTipi = (int)type, BaslangicTarihi = today.AddDays(start), BitisTarihi = today.AddDays(end)
+        };
+        IzinHareket Movement(int id, LeaveType type, int? period, DateTime start, int person = 2) => new()
+        {
+            Id = id, PersonelId = person, IzinTipi = (int)type, IzinDonemId = period, BaslangicTarihi = start
+        };
+        db.IzinDonem_Table.AddRange(
+            Period(1, LeaveType.Paid, -60, 0), Period(2, LeaveType.Paid, -3, 10),
+            Period(3, LeaveType.Personal, 0, 30), Period(4, LeaveType.Paid, -100, -61),
+            Period(5, LeaveType.Paid, -60, 0, person: 3));
+        db.IzinTalep_Table.AddRange(
+            StoredRequest(1, LeaveType.Unpaid, Status.IslemBekliyor, "1", today.AddDays(-80)),
+            StoredRequest(2, LeaveType.Personal, Status.KontrolEdildi, "01:00", today),
+            StoredRequest(3, LeaveType.Paid, Status.Reddedildi, "1", today));
+        db.IzinHareket_Table.AddRange(Enumerable.Range(1, 12).Select(id => Movement(id, LeaveType.Paid, 1, today.AddDays(id - 12))));
+        db.IzinHareket_Table.AddRange(
+            Movement(13, LeaveType.Paid, 1, today.AddDays(1)), Movement(14, LeaveType.Personal, 3, today),
+            Movement(15, LeaveType.Paid, 2, today), Movement(16, LeaveType.Unpaid, 1, today),
+            Movement(17, LeaveType.Paid, null, today), Movement(18, LeaveType.Paid, 1, today, person: 3),
+            Movement(19, LeaveType.Paid, 1, new DateTime(today.Year - 31, 12, 31)));
+        await db.SaveChangesAsync();
+
+        var office = data.Service("office", manage: true);
+        var general = Success(await office.DetailAsync(1, true, includeDecisionHistory: true));
+        Assert.Equal(new[] { 2, 1, 4 }, general.Periods.Select(p => p.Id));
+        Assert.Equal(1, general.DecisionPeriod?.Id);
+        Assert.Equal(Enumerable.Range(1, 13).Reverse(), general.Movements.Select(m => m.Id));
+        Assert.Equal(13, Assert.Single(general.Movements, m => m.Start > general.DecisionPeriod!.BitisTarihi).Id);
+
+        var personal = Success(await office.DetailAsync(2, true, includeDecisionHistory: true));
+        Assert.Equal(3, Assert.Single(personal.Periods).Id);
+        Assert.Equal(14, Assert.Single(personal.Movements).Id);
+        Assert.Equal(3, personal.DecisionPeriod?.Id);
+
+        var employee = data.Service("employee");
+        foreach (var ordinary in new[] { Success(await employee.DetailAsync(1, false)), Success(await office.DetailAsync(1, true)),
+                     Success(await office.DetailAsync(3, true, includeDecisionHistory: true)) })
+        {
+            Assert.Null(ordinary.DecisionPeriod);
+            Assert.Equal(10, ordinary.Movements.Count);
+            Assert.Equal(4, ordinary.Periods.Count);
+        }
+
+        var personalPeriod = await db.IzinDonem_Table.FindAsync(3);
+        personalPeriod!.BaslangicTarihi = today.AddDays(1);
+        await db.SaveChangesAsync();
+        var noCurrent = Success(await office.DetailAsync(2, true, includeDecisionHistory: true));
+        Assert.Single(noCurrent.Periods);
+        Assert.Null(noCurrent.DecisionPeriod);
+        Assert.Empty(noCurrent.Movements);
+
+        db.IsBilgileri_Table.Remove(await db.IsBilgileri_Table.SingleAsync(job => job.PersonelId == 2));
+        await db.SaveChangesAsync();
+        Assert.Equal("General.NotFound", (await office.DetailAsync(1, true, includeDecisionHistory: true)).Error.Code);
+    }
+
+    [Fact]
+    public async Task OfficeListDetailsAndDecisionsUseTheSameWorkingPersonnelScope()
     {
         await using var data = await TestData.CreateAsync();
         await using (var db = data.CreateDbContext())
@@ -91,6 +155,32 @@ public sealed class LeaveRequestWorkflowTests
         var page = Success(await office.ListAsync(true, LeaveListFilter.General, Status.IslemBekliyor, 0));
         Assert.Equal(1, page.Total);
         Assert.Equal(302, Assert.Single(page.Items).Id);
+        Assert.Equal(305, Assert.Single(Success(await office.ListAsync(true, LeaveListFilter.Personal, null)).Items).Id);
+        Assert.Equal(302, Success(await office.DetailAsync(302, true, includeDecisionHistory: true)).Row.Id);
+
+        var viewer = data.Service("stranger");
+        Assert.Equal("General.Forbidden", (await viewer.ListAsync(true, LeaveListFilter.General, null)).Error.Code);
+        Assert.Equal("General.Forbidden", (await viewer.DetailAsync(302, true)).Error.Code);
+        Assert.Equal("General.Forbidden", (await viewer.DecideAsync(302, LeaveDecision.Reject, null, false)).Error.Code);
+
+        foreach (var id in new[] { 303, 304 })
+        {
+            Assert.Equal("General.NotFound", (await office.DetailAsync(id, true)).Error.Code);
+            Assert.Equal("General.NotFound", (await office.DecideAsync(id, LeaveDecision.Reject, null, false)).Error.Code);
+        }
+
+        await using (var db = data.CreateDbContext())
+        {
+            (await db.IsBilgileri_Table.SingleAsync(job => job.PersonelId == 2)).CalismaDurumu = CalismaDurumu.Ayrildi;
+            await db.SaveChangesAsync();
+        }
+        Assert.Empty(Success(await office.ListAsync(true, LeaveListFilter.All, null)).Items);
+        Assert.Equal("General.NotFound", (await office.DetailAsync(302, true, includeDecisionHistory: true)).Error.Code);
+        foreach (var decision in Enum.GetValues<LeaveDecision>())
+            Assert.Equal("General.NotFound", (await office.DecideAsync(302, decision, null, true)).Error.Code);
+        var own = Success(await data.Service("employee").DetailAsync(302, false));
+        Assert.Equal(Status.IslemBekliyor, own.Row.Status);
+        Assert.Empty(own.Movements);
 
         var personal = Success(await data.Service("stranger").ListAsync(false, LeaveListFilter.All, null));
         Assert.Equal(303, Assert.Single(personal.Items).Id);

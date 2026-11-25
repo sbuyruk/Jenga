@@ -619,6 +619,9 @@ public sealed class OvertimeWorkflowTests(OvertimeDatabase database) : IClassFix
         var report = Success(await delegated.GetReportAsync(periodId, null, seed.Worker));
         Assert.Equal(seed.Worker, Assert.Single(report.Entries).PersonelId);
         Assert.Equal(entry.Id, Assert.Single(report.Entries).Id);
+        var previewCalculation = Assert.Single(report.Results);
+        Assert.Equal(seed.Worker, previewCalculation.PersonelId);
+        Assert.Equal(120, previewCalculation.RawMinutes);
         Assert.False(report.CanSeeSummary);
         Assert.Equal("other Test", report.DelegateName);
         Assert.Equal("İdari İşler Görevlisi", report.DelegateDuty);
@@ -628,6 +631,24 @@ public sealed class OvertimeWorkflowTests(OvertimeDatabase database) : IClassFix
         Assert.False((await delegated.GetReportAsync(periodId, seed.Unit, null)).IsSuccess);
         Assert.False((await delegated.GetReportAsync(periodId, seed.Unit, seed.Worker)).IsSuccess);
         Assert.Empty(Success(await delegated.GetReportAsync(periodId, null, null)).Entries);
+        var manager = Service("manager");
+        var pending = Assert.Single(Success(await manager.LoadAsync("team", Monday, Monday.AddDays(6))).Entries,
+            x => x.Status == OvertimeEntryStatus.Pending);
+        Success(await manager.ReviewAsync(pending.Id, pending.Version, OvertimeEntryStatus.Rejected, "Örnek ret"));
+        Success(await delegated.SaveEntryAsync(Input()));
+        var otherEntry = await Entry("other");
+        Success(await manager.ReviewAsync(otherEntry.Id, otherEntry.Version, OvertimeEntryStatus.Approved, ""));
+        var delivery = await Delivery();
+        Success(await manager.IssueUnitAsync(delivery.Id, delivery.Version));
+        delivery = await Delivery();
+        Success(await hr.ReceiveUnitAsync(delivery.Id, delivery.Version));
+        Success(await hr.PrepareSignatureAsync(periodId, (await Period()).Version));
+
+        Assert.Equal(2, Success(await hr.GetReportAsync(periodId, null, null)).Results.Count);
+        var frozenCalculation = Assert.Single(Success(await delegated.GetReportAsync(periodId, null, seed.Worker)).Results);
+        Assert.Equal(seed.Worker, frozenCalculation.PersonelId);
+        Assert.Equal(previewCalculation.WeeksJson, frozenCalculation.WeeksJson);
+
         if (change == "revoked")
             Success(await hr.SetDelegationsAsync(otherId, [], [seed.Worker]));
         else
